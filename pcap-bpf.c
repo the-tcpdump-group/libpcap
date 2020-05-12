@@ -601,21 +601,94 @@ bpf_open(char *errbuf)
  *
  * Use BIOCSETLIF if available (meaning "on Solaris"), as it supports
  * longer device names.
+ *
+ * If the name is longer than will fit, return PCAP_ERROR_NO_SUCH_DEVICE
+ * before trying to bind the interface, as there cannot be such a device.
+ *
+ * If the attempt succeeds, return BPF_BIND_SUCCEEDED.
+ *
+ * If the attempt fails:
+ *
+ *    if it fails with ENXIO, return PCAP_ERROR_NO_SUCH_DEVICE, as
+ *    the device doesn't exist;
+ *
+ *    if it fails with ENETDOWN, return PCAP_ERROR_IFACE_NOT_UP, as
+ *    the interface exists but isn't up and the OS doesn't allow
+ *    binding to an interface that isn't up;
+ *
+ *    if it fails with ENOBUFS, return BPF_BIND_BUFFER_TOO_BIG, and
+ *    fill in an error message, as the buffer being requested is too
+ *    large;
+ *
+ *    otherwise, return PCAP_ERROR and fill in an error message.
  */
+#define BPF_BIND_SUCCEEDED	0
+#define BPF_BIND_BUFFER_TOO_BIG	1
+
 static int
-bpf_bind(int fd, const char *name)
+bpf_bind(int fd, const char *name, char *errbuf)
 {
+	int status;
 #ifdef LIFNAMSIZ
 	struct lifreq ifr;
 
+	if (strlen(name) >= sizeof(ifr.lifr_name)) {
+		/* The name is too long, so it can't possibly exist. */
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
-	return (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr));
+	status = ioctl(fd, BIOCSETLIF, (caddr_t)&ifr);
 #else
 	struct ifreq ifr;
 
+	if (strlen(name) >= sizeof(ifr.ifr_name)) {
+		/* The name is too long, so it can't possibly exist. */
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
-	return (ioctl(fd, BIOCSETIF, (caddr_t)&ifr));
+	status = ioctl(fd, BIOCSETIF, (caddr_t)&ifr);
 #endif
+
+	if (status < 0) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case ENETDOWN:
+			/*
+			 * Return a "network down" indication, so that
+			 * the application can report that rather than
+			 * saying we had a mysterious failure and
+			 * suggest that they report a problem to the
+			 * libpcap developers.
+			 */
+			return (PCAP_ERROR_IFACE_NOT_UP);
+
+		case ENOBUFS:
+			/*
+			 * The buffer size is too big.
+			 * Return a special indication so that, if we're
+			 * trying to crank the buffer size down, we know
+			 * we have to continue; add an error message that
+			 * tells the user what needs to be fixed.
+			 */
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "The requested buffer size for %s is too large",
+			    name);
+			return (BPF_BIND_BUFFER_TOO_BIG);
+			
+		default:
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "Binding interface %s to BPF device failed",
+			    name);
+			return (PCAP_ERROR);
+		}
+	}
+	return (BPF_BIND_SUCCEEDED);
 }
 
 /*
@@ -630,6 +703,7 @@ static int
 bpf_open_and_bind(const char *name, char *errbuf)
 {
 	int fd;
+	int status;
 
 	/*
 	 * First, open a BPF device.
@@ -641,34 +715,18 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	/*
 	 * Now bind to the device.
 	 */
-	if (bpf_bind(fd, name) < 0) {
-		switch (errno) {
-
-		case ENXIO:
+	status = bpf_bind(fd, name, errbuf);
+	if (status != BPF_BIND_SUCCEEDED) {
+		close(fd);
+		if (status == BPF_BIND_BUFFER_TOO_BIG) {
 			/*
-			 * There's no such device.
+			 * We didn't specify a buffer size, so
+			 * this *really* shouldn't fail because
+			 * there's no buffer space.  Fail.
 			 */
-			close(fd);
-			return (PCAP_ERROR_NO_SUCH_DEVICE);
-
-		case ENETDOWN:
-			/*
-			 * Return a "network down" indication, so that
-			 * the application can report that rather than
-			 * saying we had a mysterious failure and
-			 * suggest that they report a problem to the
-			 * libpcap developers.
-			 */
-			close(fd);
-			return (PCAP_ERROR_IFACE_NOT_UP);
-
-		default:
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "Binding BPF device to interface failed: %s",
-			    name);
-			close(fd);
 			return (PCAP_ERROR);
 		}
+		return (status);
 	}
 
 	/*
@@ -684,11 +742,19 @@ device_exists(int fd, const char *name, char *errbuf)
 #ifdef LIFNAMSIZ
 	struct lifreq ifr;
 
+	if (strlen(name) >= sizeof(ifr.lifr_name)) {
+		/* The name is too long, so it can't possibly exist. */
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
 	status = ioctl(fd, SIOCGLIFFLAGS, (caddr_t)&ifr);
 #else
 	struct ifreq ifr;
 
+	if (strlen(name) >= sizeof(ifr.ifr_name)) {
+		/* The name is too long, so it can't possibly exist. */
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
 #endif
@@ -808,6 +874,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	int fd;
 #ifdef BIOCGDLTLIST
 	struct bpf_dltlist bdl;
+	int err;
 #endif
 
 	/*
@@ -900,34 +967,18 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	/*
 	 * Now bind to the device.
 	 */
-	if (bpf_bind(fd, p->opt.device) < 0) {
-		switch (errno) {
-
-		case ENXIO:
+	err = bpf_bind(fd, p->opt.device, p->errbuf);
+	if (err != BPF_BIND_SUCCEEDED) {
+		close(fd);
+		if (err == BPF_BIND_BUFFER_TOO_BIG) {
 			/*
-			 * There's no such device.
+			 * We didn't specify a buffer size, so
+			 * this *really* shouldn't fail because
+			 * there's no buffer space.  Fail.
 			 */
-			close(fd);
-			return (PCAP_ERROR_NO_SUCH_DEVICE);
-
-		case ENETDOWN:
-			/*
-			 * Return a "network down" indication, so that
-			 * the application can report that rather than
-			 * saying we had a mysterious failure and
-			 * suggest that they report a problem to the
-			 * libpcap developers.
-			 */
-			close(fd);
-			return (PCAP_ERROR_IFACE_NOT_UP);
-
-		default:
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "Binding BPF device to interface failed: %s",
-			    p->opt.device);
-			close(fd);
 			return (PCAP_ERROR);
 		}
+		return (err);
 	}
 
 	/*
@@ -1600,7 +1651,7 @@ check_setif_failure(pcap_t *p, int error)
 	int err;
 #endif
 
-	if (error == ENXIO) {
+	if (error == PCAP_ERROR_NO_SUCH_DEVICE) {
 		/*
 		 * No such device exists.
 		 */
@@ -1667,25 +1718,13 @@ check_setif_failure(pcap_t *p, int error)
 		 * No such device.
 		 */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
-	} else if (error == ENETDOWN) {
-		/*
-		 * Return a "network down" indication, so that
-		 * the application can report that rather than
-		 * saying we had a mysterious failure and
-		 * suggest that they report a problem to the
-		 * libpcap developers.
-		 */
-		return (PCAP_ERROR_IFACE_NOT_UP);
-	} else {
-		/*
-		 * Some other error; fill in the error string, and
-		 * return PCAP_ERROR.
-		 */
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    error, "Binding BPF device to interface failed: %s",
-		    p->opt.device);
-		return (PCAP_ERROR);
 	}
+
+	/*
+	 * Just return the error status; it's what we want, and, if it's
+	 * PCAP_ERROR, the error string has been filled in.
+	 */
+	return (error);
 }
 
 /*
@@ -2058,11 +2097,19 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		if (bpf_bind(fd, p->opt.device, ifnamsiz) < 0) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "Binding BPF device to interface failed: %s",
-			    p->opt.device);
-			status = PCAP_ERROR;
+		status = bpf_bind(fd, p->opt.device, ifnamsiz, p->errbuf);
+		if (status != BPF_BIND_SUCCEEDED) {
+			if (status == BPF_BIND_BUFFER_TOO_BIG) {
+				/*
+				 * The requested buffer size
+				 * is too big.  Fail.
+				 *
+				 * XXX - should we do the "keep cutting
+				 * the buffer size in half" loop here if
+				 * we're using the default buffer size?
+				 */
+				status = PCAP_ERROR;
+			}
 			goto bad;
 		}
 		v = pb->zbufsize - sizeof(struct bpf_zbuf_header);
@@ -2089,8 +2136,23 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Now bind to the device.
 			 */
-			if (bpf_bind(fd, p->opt.device) < 0) {
-				status = check_setif_failure(p, errno);
+			status = bpf_bind(fd, p->opt.device, p->errbuf);
+			if (status != BPF_BIND_SUCCEEDED) {
+				if (status == BPF_BIND_BUFFER_TOO_BIG) {
+					/*
+					 * The requested buffer size
+					 * is too big.  Fail.
+					 */
+					status = PCAP_ERROR;
+					goto bad;
+				}
+
+				/*
+				 * Special checks on macOS to deal with
+				 * the way monitor mode was done on
+				 * 10.4 Tiger.
+				 */
+				status = check_setif_failure(p, status);
 				goto bad;
 			}
 		} else {
@@ -2116,11 +2178,24 @@ pcap_activate_bpf(pcap_t *p)
 				 */
 				(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
-				if (bpf_bind(fd, p->opt.device) >= 0)
+				status = bpf_bind(fd, p->opt.device, p->errbuf);
+				if (status == BPF_BIND_SUCCEEDED)
 					break;	/* that size worked; we're done */
 
-				if (errno != ENOBUFS) {
-					status = check_setif_failure(p, errno);
+				/*
+				 * If the attempt failed because the
+				 * buffer was too big, cut the buffer
+				 * size in half and try again.
+				 *
+				 * Otherwise, fail.
+				 */
+				if (errno != BPF_BIND_BUFFER_TOO_BIG) {
+					/*
+					 * Special checks on macOS to deal
+					 * with the way monitor mode was
+					 * done on 10.4 Tiger.
+					 */
+					status = check_setif_failure(p, status);
 					goto bad;
 				}
 			}
