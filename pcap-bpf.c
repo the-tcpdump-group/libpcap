@@ -596,6 +596,29 @@ bpf_open(char *errbuf)
 }
 
 /*
+ * Bind a network adapter to a BPF device, given a descriptor for the
+ * BPF device and the name of the network adapter.
+ *
+ * Use BIOCSETLIF if available (meaning "on Solaris"), as it supports
+ * longer device names.
+ */
+static int
+bpf_bind(int fd, const char *name)
+{
+#ifdef LIFNAMSIZ
+	struct lifreq ifr;
+
+	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
+	return (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr));
+#else
+	struct ifreq ifr;
+
+	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	return (ioctl(fd, BIOCSETIF, (caddr_t)&ifr));
+#endif
+}
+
+/*
  * Open and bind to a device; used if we're not actually going to use
  * the device, but are just testing whether it can be opened, or opening
  * it to get information about it.
@@ -607,7 +630,6 @@ static int
 bpf_open_and_bind(const char *name, char *errbuf)
 {
 	int fd;
-	struct ifreq ifr;
 
 	/*
 	 * First, open a BPF device.
@@ -619,8 +641,7 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	/*
 	 * Now bind to the device.
 	 */
-	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
-	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+	if (bpf_bind(fd, name) < 0) {
 		switch (errno) {
 
 		case ENXIO:
@@ -643,7 +664,8 @@ bpf_open_and_bind(const char *name, char *errbuf)
 
 		default:
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "BIOCSETIF: %s", name);
+			    errno, "Binding BPF device to interface failed: %s",
+			    name);
 			close(fd);
 			return (PCAP_ERROR);
 		}
@@ -653,6 +675,48 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	 * Success.
 	 */
 	return (fd);
+}
+
+static int
+device_exists(int fd, const char *name, char *errbuf)
+{
+	int status;
+#ifdef LIFNAMSIZ
+	struct lifreq ifr;
+
+	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
+	status = ioctl(fd, SIOCGLIFFLAGS, (caddr_t)&ifr);
+#else
+	struct ifreq ifr;
+
+	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
+#endif
+
+	if (status < 0) {
+		if (errno == ENXIO || errno == EINVAL) {
+			/*
+			 * macOS and *BSD return one of those two
+			 * errors if the device doesn't exist.
+			 * Don't fill in an error, as this is
+			 * an "expected" condition.
+			 */
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+		}
+
+		/*
+		 * Some other error - provide a message for it, as
+		 * it's "unexpected".
+		 */
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "Can't get interface flags on %s", name);
+		return (PCAP_ERROR);
+	}
+
+	/*
+	 * The device exists.
+	 */
+	return (0);
 }
 
 #ifdef BIOCGDLTLIST
@@ -741,7 +805,6 @@ static int
 pcap_can_set_rfmon_bpf(pcap_t *p)
 {
 	struct utsname osinfo;
-	struct ifreq ifr;
 	int fd;
 #ifdef BIOCGDLTLIST
 	struct bpf_dltlist bdl;
@@ -782,6 +845,9 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		return (0);
 	}
 	if (osinfo.release[0] == '8' && osinfo.release[1] == '.') {
+		char *wlt_name;
+		int status;
+
 		/*
 		 * 10.4 (Darwin 8.x).  s/en/wlt/, and check
 		 * whether the device exists.
@@ -798,16 +864,24 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			    errno, "socket");
 			return (PCAP_ERROR);
 		}
-		pcap_strlcpy(ifr.ifr_name, "wlt", sizeof(ifr.ifr_name));
-		pcap_strlcat(ifr.ifr_name, p->opt.device + 2, sizeof(ifr.ifr_name));
-		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
-			/*
-			 * No such device?
-			 */
+		if (pcap_asprintf(&wlt_name, "wlt%s", p->opt.device + 2) == -1) {
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			close(fd);
-			return (0);
+			return (PCAP_ERROR);
 		}
+		status = device_exists(fd, wlt_name, p->errbuf);
+		free(wlt_name);
 		close(fd);
+		if (status != 0) {
+			if (status == PCAP_ERROR_NO_SUCH_DEVICE)
+				return (0);
+
+			/*
+			 * Error.
+			 */
+			return (status);
+		}
 		return (1);
 	}
 
@@ -826,8 +900,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	/*
 	 * Now bind to the device.
 	 */
-	(void)strncpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
-	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+	if (bpf_bind(fd, p->opt.device) < 0) {
 		switch (errno) {
 
 		case ENXIO:
@@ -850,7 +923,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 
 		default:
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "BIOCSETIF: %s", p->opt.device);
+			    errno, "Binding BPF device to interface failed: %s",
+			    p->opt.device);
 			close(fd);
 			return (PCAP_ERROR);
 		}
@@ -1523,7 +1597,6 @@ check_setif_failure(pcap_t *p, int error)
 {
 #ifdef __APPLE__
 	int fd;
-	struct ifreq ifr;
 	int err;
 #endif
 
@@ -1542,33 +1615,38 @@ check_setif_failure(pcap_t *p, int error)
 			 */
 			fd = socket(AF_INET, SOCK_DGRAM, 0);
 			if (fd != -1) {
-				pcap_strlcpy(ifr.ifr_name, "en",
-				    sizeof(ifr.ifr_name));
-				pcap_strlcat(ifr.ifr_name, p->opt.device + 3,
-				    sizeof(ifr.ifr_name));
-				if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
+				char *en_name;
+
+				if (pcap_asprintf(&en_name, "en%s",
+				    p->opt.device + 3) == -1) {
 					/*
-					 * We assume this failed because
-					 * the underlying device doesn't
-					 * exist.
+					 * We can't find out whether there's
+					 * an underlying "enN" device, so
+					 * just report "no such device".
 					 */
-					err = PCAP_ERROR_NO_SUCH_DEVICE;
 					pcap_fmt_errmsg_for_errno(p->errbuf,
 					    PCAP_ERRBUF_SIZE, errno,
-					    "SIOCGIFFLAGS on %s failed",
-					    ifr.ifr_name);
-				} else {
-					/*
-					 * The underlying "enN" device
-					 * exists, but there's no
-					 * corresponding "wltN" device;
-					 * that means that the "enN"
-					 * device doesn't support
-					 * monitor mode, probably because
-					 * it's an Ethernet device rather
-					 * than a wireless device.
-					 */
-					err = PCAP_ERROR_RFMON_NOTSUP;
+					    "malloc");
+					close(fd);
+					return (PCAP_ERROR_NO_SUCH_DEVICE);
+				}
+				err = device_exists(fd, en_name, p->errbuf);
+				free(en_name);
+				if (err != 0) {
+					if (err == PCAP_ERROR_NO_SUCH_DEVICE) {
+						/*
+						 * The underlying "enN" device
+						 * exists, but there's no
+						 * corresponding "wltN" device;
+						 * that means that the "enN"
+						 * device doesn't support
+						 * monitor mode, probably
+						 * because it's an Ethernet
+						 * device rather than a
+						 * wireless device.
+						 */
+						err = PCAP_ERROR_RFMON_NOTSUP;
+					}
 				}
 				close(fd);
 			} else {
@@ -1604,7 +1682,8 @@ check_setif_failure(pcap_t *p, int error)
 		 * return PCAP_ERROR.
 		 */
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    error, "BIOCSETIF: %s", p->opt.device);
+		    error, "Binding BPF device to interface failed: %s",
+		    p->opt.device);
 		return (PCAP_ERROR);
 	}
 }
@@ -1635,13 +1714,6 @@ pcap_activate_bpf(pcap_t *p)
 	int fd;
 #ifdef LIFNAMSIZ
 	char *zonesep;
-	struct lifreq ifr;
-	char *ifrname = ifr.lifr_name;
-	const size_t ifnamsiz = sizeof(ifr.lifr_name);
-#else
-	struct ifreq ifr;
-	char *ifrname = ifr.ifr_name;
-	const size_t ifnamsiz = sizeof(ifr.ifr_name);
 #endif
 	struct bpf_version bv;
 #ifdef __APPLE__
@@ -1794,24 +1866,19 @@ pcap_activate_bpf(pcap_t *p)
 					 */
 					sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 					if (sockfd != -1) {
-						pcap_strlcpy(ifrname,
-						    p->opt.device, ifnamsiz);
-						if (ioctl(sockfd, SIOCGIFFLAGS,
-						    (char *)&ifr) < 0) {
+						status = device_exists(sockfd,
+						    p->opt.device, p->errbuf);
+						if (status == 0) {
 							/*
-							 * We assume this
-							 * failed because
-							 * the underlying
-							 * device doesn't
-							 * exist.
+							 * The device exists,
+							 * but it's not an
+							 * enN device; that
+							 * means it doesn't
+							 * support monitor
+							 * mode.
 							 */
-							status = PCAP_ERROR_NO_SUCH_DEVICE;
-							pcap_fmt_errmsg_for_errno(p->errbuf,
-							    PCAP_ERRBUF_SIZE,
-							    errno,
-							    "SIOCGIFFLAGS failed");
-						} else
 							status = PCAP_ERROR_RFMON_NOTSUP;
+						}
 						close(sockfd);
 					} else {
 						/*
@@ -1991,10 +2058,10 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		(void)strncpy(ifrname, p->opt.device, ifnamsiz);
-		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+		if (bpf_bind(fd, p->opt.device, ifnamsiz) < 0) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "BIOCSETIF: %s", p->opt.device);
+			    errno, "Binding BPF device to interface failed: %s",
+			    p->opt.device);
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -2022,13 +2089,7 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Now bind to the device.
 			 */
-			(void)strncpy(ifrname, p->opt.device, ifnamsiz);
-#ifdef BIOCSETLIF
-			if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) < 0)
-#else
-			if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0)
-#endif
-			{
+			if (bpf_bind(fd, p->opt.device) < 0) {
 				status = check_setif_failure(p, errno);
 				goto bad;
 			}
@@ -2055,12 +2116,7 @@ pcap_activate_bpf(pcap_t *p)
 				 */
 				(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
-				(void)strncpy(ifrname, p->opt.device, ifnamsiz);
-#ifdef BIOCSETLIF
-				if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) >= 0)
-#else
-				if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) >= 0)
-#endif
+				if (bpf_bind(fd, p->opt.device) >= 0)
 					break;	/* that size worked; we're done */
 
 				if (errno != ENOBUFS) {
