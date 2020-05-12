@@ -1751,7 +1751,8 @@ pcap_activate_bpf(pcap_t *p)
 	int retv;
 #endif
 	int fd;
-#ifdef LIFNAMSIZ
+#if defined(LIFNAMSIZ) && defined(ZONENAME_MAX) && defined(lifr_zoneid)
+	struct lifreq ifr;
 	char *zonesep;
 #endif
 	struct bpf_version bv;
