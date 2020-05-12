@@ -636,7 +636,7 @@ bpf_bind(int fd, const char *name, char *errbuf)
 		/* The name is too long, so it can't possibly exist. */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
-	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
+	(void)pcap_strlcpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
 	status = ioctl(fd, BIOCSETLIF, (caddr_t)&ifr);
 #else
 	struct ifreq ifr;
@@ -645,7 +645,7 @@ bpf_bind(int fd, const char *name, char *errbuf)
 		/* The name is too long, so it can't possibly exist. */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
-	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	(void)pcap_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	status = ioctl(fd, BIOCSETIF, (caddr_t)&ifr);
 #endif
 
@@ -746,7 +746,7 @@ device_exists(int fd, const char *name, char *errbuf)
 		/* The name is too long, so it can't possibly exist. */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
-	(void)strncpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
+	(void)pcap_strlcpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
 	status = ioctl(fd, SIOCGLIFFLAGS, (caddr_t)&ifr);
 #else
 	struct ifreq ifr;
@@ -755,7 +755,7 @@ device_exists(int fd, const char *name, char *errbuf)
 		/* The name is too long, so it can't possibly exist. */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
-	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	(void)pcap_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
 #endif
 
@@ -1561,7 +1561,7 @@ pcap_cleanup_bpf(pcap_t *p)
 				    strerror(errno));
 			} else {
 				memset(&req, 0, sizeof(req));
-				strncpy(req.ifm_name, pb->device,
+				pcap_strlcpy(req.ifm_name, pb->device,
 				    sizeof(req.ifm_name));
 				if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
 					fprintf(stderr,
@@ -1575,7 +1575,7 @@ pcap_cleanup_bpf(pcap_t *p)
 						 * turn it off.
 						 */
 						memset(&ifr, 0, sizeof(ifr));
-						(void)strncpy(ifr.ifr_name,
+						(void)pcap_strlcpy(ifr.ifr_name,
 						    pb->device,
 						    sizeof(ifr.ifr_name));
 						ifr.ifr_media =
@@ -2884,7 +2884,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		return (-1);
 	}
 	memset(&req, 0, sizeof(req));
-	strncpy(req.ifm_name, name, sizeof(req.ifm_name));
+	pcap_strlcpy(req.ifm_name, name, sizeof(req.ifm_name));
 	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
 		if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENOTTY ||
 		    errno == ENODEV || errno == EPERM
@@ -3027,7 +3027,7 @@ monitor_mode(pcap_t *p, int set)
 	}
 
 	memset(&req, 0, sizeof req);
-	strncpy(req.ifm_name, p->opt.device, sizeof req.ifm_name);
+	pcap_strlcpy(req.ifm_name, p->opt.device, sizeof req.ifm_name);
 
 	/*
 	 * Find out how many media types we have.
@@ -3137,7 +3137,7 @@ monitor_mode(pcap_t *p, int set)
 				return (PCAP_ERROR);
 			}
 			memset(&ifr, 0, sizeof(ifr));
-			(void)strncpy(ifr.ifr_name, p->opt.device,
+			(void)pcap_strlcpy(ifr.ifr_name, p->opt.device,
 			    sizeof(ifr.ifr_name));
 			ifr.ifr_media = req.ifm_current | IFM_IEEE80211_MONITOR;
 			if (ioctl(sock, SIOCSIFMEDIA, &ifr) == -1) {
