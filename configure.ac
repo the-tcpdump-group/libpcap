@@ -751,7 +751,7 @@ dlpi)
 	# Also, due to the bug above applications that link to libpcap with
 	# libdlpi will have to add "-L/lib" option to "configure".
 	#
-	saved_ldflags=$LDFLAGS
+	save_LDFLAGS="$LDFLAGS"
 	LDFLAGS="$LIBS -L/lib"
 	AC_CHECK_LIB(dlpi, dlpi_walk,
 		[
@@ -774,7 +774,7 @@ dlpi)
 			#
 			PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
 		])
-	LDFLAGS=$saved_ldflags
+	LDFLAGS="$save_LDFLAGS"
 
 	#
 	# Checks whether <sys/dlpi.h> is usable, to catch weird SCO
@@ -1211,11 +1211,13 @@ if test "$want_dag" != no; then
 		dag_lib_dir="$dag_root/lib"
 	fi
 
-	V_INCLS="$V_INCLS -I$dag_include_dir"
-
+	save_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -I$dag_include_dir"
 	AC_CHECK_HEADERS([dagapi.h])
 
 	if test "$ac_cv_header_dagapi_h" = yes; then
+
+		V_INCLS="$V_INCLS -I$dag_include_dir"
 
 		if test $V_PCAP != dag ; then
 			 MODULE_C_SRC="$MODULE_C_SRC pcap-dag.c"
@@ -1224,7 +1226,7 @@ if test "$want_dag" != no; then
 		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
-		saved_ldflags=$LDFLAGS
+		save_LDFLAGS="$LDFLAGS"
 		LDFLAGS="-L$dag_lib_dir"
 		AC_CHECK_LIB([dag], [dag_attach_stream],
 		    [],
@@ -1235,7 +1237,7 @@ if test "$want_dag" != no; then
 		AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_STREAM_ERF_TYPES, 1, [define if you have dag_get_stream_erf_types()])])
 
-		LDFLAGS=$saved_ldflags
+		LDFLAGS="$save_LDFLAGS"
 
 		#
 		# We assume that if we have libdag we have libdagconf,
@@ -1271,6 +1273,7 @@ if test "$want_dag" != no; then
 			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
 		fi
 	fi
+	CFLAGS="$save_CFLAGS"
 fi
 
 AC_ARG_WITH(septel,
@@ -1419,10 +1422,10 @@ if test "$with_snf" != no; then
 
 	if test -f "$snf_include_dir/snf.h"; then
 		# We found a header; make sure we can link with the library
-		saved_ldflags=$LDFLAGS
+		save_LDFLAGS="$LDFLAGS"
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"])
-		LDFLAGS="$saved_ldflags"
+		LDFLAGS="$save_LDFLAGS"
 		if test "$ac_cv_lbl_snf_api" = no; then
 			AC_MSG_ERROR(SNF API cannot correctly be linked; check config.log)
 		fi

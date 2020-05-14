@@ -6650,7 +6650,7 @@ done
 	# Also, due to the bug above applications that link to libpcap with
 	# libdlpi will have to add "-L/lib" option to "configure".
 	#
-	saved_ldflags=$LDFLAGS
+	save_LDFLAGS="$LDFLAGS"
 	LDFLAGS="$LIBS -L/lib"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlpi_walk in -ldlpi" >&5
 $as_echo_n "checking for dlpi_walk in -ldlpi... " >&6; }
@@ -6714,7 +6714,7 @@ else
 
 fi
 
-	LDFLAGS=$saved_ldflags
+	LDFLAGS="$save_LDFLAGS"
 
 	#
 	# Checks whether <sys/dlpi.h> is usable, to catch weird SCO
@@ -7466,8 +7466,8 @@ if test "$want_dag" != no; then
 		dag_lib_dir="$dag_root/lib"
 	fi
 
-	V_INCLS="$V_INCLS -I$dag_include_dir"
-
+	save_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -I$dag_include_dir"
 	for ac_header in dagapi.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "dagapi.h" "ac_cv_header_dagapi_h" "$ac_includes_default"
@@ -7483,6 +7483,8 @@ done
 
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
+		V_INCLS="$V_INCLS -I$dag_include_dir"
+
 		if test $V_PCAP != dag ; then
 			 MODULE_C_SRC="$MODULE_C_SRC pcap-dag.c"
 		fi
@@ -7490,7 +7492,7 @@ done
 		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
-		saved_ldflags=$LDFLAGS
+		save_LDFLAGS="$LDFLAGS"
 		LDFLAGS="-L$dag_lib_dir"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream in -ldag" >&5
 $as_echo_n "checking for dag_attach_stream in -ldag... " >&6; }
@@ -7668,7 +7670,7 @@ $as_echo "#define HAVE_DAG_GET_STREAM_ERF_TYPES 1" >>confdefs.h
 fi
 
 
-		LDFLAGS=$saved_ldflags
+		LDFLAGS="$save_LDFLAGS"
 
 		#
 		# We assume that if we have libdag we have libdagconf,
@@ -7751,6 +7753,7 @@ $as_echo "#define HAVE_DAG_API 1" >>confdefs.h
 			as_fn_error $? "DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support" "$LINENO" 5
 		fi
 	fi
+	CFLAGS="$save_CFLAGS"
 fi
 
 
@@ -7921,7 +7924,7 @@ $as_echo_n "checking whether we have Myricom Sniffer API... " >&6; }
 
 	if test -f "$snf_include_dir/snf.h"; then
 		# We found a header; make sure we can link with the library
-		saved_ldflags=$LDFLAGS
+		save_LDFLAGS="$LDFLAGS"
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for snf_init in -lsnf" >&5
 $as_echo_n "checking for snf_init in -lsnf... " >&6; }
@@ -7963,7 +7966,7 @@ if test "x$ac_cv_lib_snf_snf_init" = xyes; then :
   ac_cv_lbl_snf_api="yes"
 fi
 
-		LDFLAGS="$saved_ldflags"
+		LDFLAGS="$save_LDFLAGS"
 		if test "$ac_cv_lbl_snf_api" = no; then
 			as_fn_error $? "SNF API cannot correctly be linked; check config.log" "$LINENO" 5
 		fi
