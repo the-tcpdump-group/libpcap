@@ -1209,6 +1209,13 @@ if test "$want_dag" != no; then
 
 	if test -z "$dag_lib_dir"; then
 		dag_lib_dir="$dag_root/lib"
+		#
+		# Handle multiarch systems.
+		#
+		if test -d "$dag_lib_dir/$host"
+		then
+			dag_lib_dir="$dag_lib_dir/$host"
+		fi
 	fi
 
 	save_CFLAGS="$CFLAGS"
@@ -1418,6 +1425,13 @@ if test "$with_snf" != no; then
 
 	if test -z "$snf_lib_dir"; then
 		snf_lib_dir="$snf_root/lib"
+		#
+		# Handle multiarch systems.
+		#
+		if test -d "$snf_lib_dir/$host"
+		then
+			snf_lib_dir="$snf_lib_dir/$host"
+		fi
 	fi
 
 	if test -f "$snf_include_dir/snf.h"; then
@@ -2389,6 +2403,13 @@ if test "$want_dpdk" != no; then
 	#
 	dpdk_inc_dir="$dpdk_dir/include/dpdk"
 	dpdk_lib_dir="$dpdk_dir/lib"
+	#
+	# Handle multiarch systems.
+	#
+	if test -d "$dpdk_lib_dir/$host"
+	then
+		dpdk_lib_dir="$dpdk_lib_dir/$host"
+	fi
 	DPDK_MACHINE_CFLAGS="-march=native"
 	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
 	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
