@@ -200,11 +200,14 @@
 
 struct slist;
 
+/*
+ * A single statement, corresponding to an instruction in a block.
+ */
 struct stmt {
-	int code;
-	struct slist *jt;	/*only for relative jump in block*/
-	struct slist *jf;	/*only for relative jump in block*/
-	bpf_u_int32 k;
+	int code;		/* opcode */
+	struct slist *jt;	/* only for relative jump in block */
+	struct slist *jf;	/* only for relative jump in block */
+	bpf_u_int32 k;		/* k field */
 };
 
 struct slist {
@@ -231,15 +234,25 @@ typedef bpf_u_int32 *uset;
  */
 #define N_ATOMS (BPF_MEMWORDS+2)
 
+/*
+ * Control flow graph of a program.
+ * This corresponds to an edge in the CFG.
+ * It's a directed graph, so an edge has a predecessor and a successor.
+ */
 struct edge {
 	int id;
-	int code;
+	int code;		/* opcode for branch corresponding to this edge */
 	uset edom;
-	struct block *succ;
-	struct block *pred;
+	struct block *succ;	/* successor vertex */
+	struct block *pred;	/* predecessor vertex */
 	struct edge *next;	/* link list of incoming edges for a node */
 };
 
+/*
+ * A block is a vertex in the CFG.
+ * It has a list of statements, with the final statement being a
+ * branch to successor blocks.
+ */
 struct block {
 	int id;
 	struct slist *stmts;	/* side effect stmts */
@@ -250,17 +263,17 @@ struct block {
 	int level;
 	int offset;
 	int sense;
-	struct edge et;
-	struct edge ef;
+	struct edge et;		/* edge corresponding to the jt branch */
+	struct edge ef;		/* edge corresponding to the jf branch */
 	struct block *head;
 	struct block *link;	/* link field used by optimizer */
 	uset dom;
 	uset closure;
-	struct edge *in_edges;
+	struct edge *in_edges;	/* first edge in the set (linked list) of edges with this as a successor */
 	atomset def, kill;
 	atomset in_use;
 	atomset out_use;
-	int oval;
+	int oval;		/* value ID for value tested in branch stmt */
 	bpf_u_int32 val[N_ATOMS];
 };
 

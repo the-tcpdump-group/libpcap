@@ -253,8 +253,8 @@ typedef struct {
 	 * A bit vector set representation of the dominators.
 	 * We round up the set size to the next power of two.
 	 */
-	int nodewords;
-	int edgewords;
+	int nodewords;	/* number of 32-bit words for a bit vector of "number of nodes" bits */
+	int edgewords;	/* number of 32-bit words for a bit vector of "number of edges" bits */
 	struct block **levels;
 	bpf_u_int32 *space;
 
@@ -1442,7 +1442,10 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	 * value that is already there, or if this block is a return,
 	 * eliminate all the statements.
 	 *
-	 * XXX - what if it does a store?
+	 * XXX - what if it does a store?  Presumably that falls under
+	 * the heading of "if we don't use anything from this block",
+	 * i.e., if we use any memory location set to a different
+	 * value by this block, then we use something from this block.
 	 *
 	 * XXX - why does it matter whether we use anything from this
 	 * block?  If the accumulator or index register doesn't change
@@ -1504,6 +1507,13 @@ use_conflict(struct block *b, struct block *succ)
 	return 0;
 }
 
+/*
+ * Given a block that is the successor of an edge, and an edge that
+ * dominates that edge, return either a pointer to a child of that
+ * block (a block to which that block jumps) if that block is a
+ * candidate to replace the successor of the latter edge or NULL
+ * if neither of the children of the first block are candidates.
+ */
 static struct block *
 fold_edge(struct block *child, struct edge *ep)
 {
@@ -1512,11 +1522,26 @@ fold_edge(struct block *child, struct edge *ep)
 	int code = ep->code;
 
 	if (code < 0) {
+		/*
+		 * This edge is a "branch if false" edge.
+		 */
 		code = -code;
 		sense = 0;
-	} else
+	} else {
+		/*
+		 * This edge is a "branch if true" edge.
+		 */
 		sense = 1;
+	}
 
+	/*
+	 * If the opcode for the branch at the end of the block we
+	 * were handed isn't the same as the opcode for the branch
+	 * to which the edge we were handed corresponds, the tests
+	 * for those branches aren't testing the same conditions,
+	 * so the blocks to which the first block branches aren't
+	 * candidates to replace the successor of the edge.
+	 */
 	if (child->s.code != code)
 		return 0;
 
@@ -1525,13 +1550,21 @@ fold_edge(struct block *child, struct edge *ep)
 	aval1 = ep->pred->val[A_ATOM];
 	oval1 = ep->pred->oval;
 
+	/*
+	 * If the A register value on exit from the successor block
+	 * isn't the same as the A register value on exit from the
+	 * predecessor of the edge, the blocks to which the first
+	 * block branches aren't candidates to replace the successor
+	 * of the edge.
+	 */
 	if (aval0 != aval1)
 		return 0;
 
 	if (oval0 == oval1)
 		/*
 		 * The operands of the branch instructions are
-		 * identical, so the result is true if a true
+		 * identical, so the branches are testing the
+		 * same condition, and the result is true if a true
 		 * branch was taken to get here, otherwise false.
 		 */
 		return sense ? JT(child) : JF(child);
@@ -1556,21 +1589,55 @@ fold_edge(struct block *child, struct edge *ep)
 	return 0;
 }
 
+/*
+ * If we can make this edge go directly to a child of the edge's current
+ * successor, do so.
+ */
 static void
 opt_j(opt_state_t *opt_state, struct edge *ep)
 {
 	register int i, k;
 	register struct block *target;
 
+	/*
+	 * Does this edge go to a block where, if the test
+	 * at the end of it succeeds, it goes to a block
+	 * that's a leaf node of the DAG, i.e. a return
+	 * statement?
+	 * If so, there's nothing to optimize.
+	 */
 	if (JT(ep->succ) == 0)
 		return;
 
+	/*
+	 * Does this edge go to a block that goes, in turn, to
+	 * the same block regardless of whether the test at the
+	 * end succeeds or fails?
+	 */
 	if (JT(ep->succ) == JF(ep->succ)) {
 		/*
 		 * Common branch targets can be eliminated, provided
 		 * there is no data dependency.
+		 *
+		 * Check whether any register used on exit from the
+		 * block to which the successor of this edge goes
+		 * has a value at that point that's different from
+		 * the value it has on exit from the predecessor of
+		 * this edge.  If not, the predecessor of this edge
+		 * can just go to the block to which the successor
+		 * of this edge goes, bypassing the successor of this
+		 * edge, as the successor of this edge isn't doing
+		 * any calculations whose results are different
+		 * from what the blocks before it did and isn't
+		 * doing any tests the results of which matter.
 		 */
 		if (!use_conflict(ep->pred, ep->succ->et.succ)) {
+			/*
+			 * No, there isn't.
+			 * Make this edge go to the block to
+			 * which the successor of that edge
+			 * goes.
+			 */
 			opt_state->done = 0;
 			ep->succ = JT(ep->succ);
 		}
@@ -1584,19 +1651,34 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 	 */
  top:
 	for (i = 0; i < opt_state->edgewords; ++i) {
+		/* i'th word in the bitset of dominators */
 		register bpf_u_int32 x = ep->edom[i];
 
 		while (x != 0) {
+			/* Find the next dominator in that word and mark it as found */
 			k = lowest_set_bit(x);
 			x &=~ ((bpf_u_int32)1 << k);
 			k += i * BITS_PER_WORD;
 
 			target = fold_edge(ep->succ, opt_state->edges[k]);
 			/*
+			 * We have a candidate to replace the successor
+			 * of ep.
+			 *
 			 * Check that there is no data dependency between
-			 * nodes that will be violated if we move the edge.
+			 * nodes that will be violated if we move the edge;
+			 * i.e., if any register used on exit from the
+			 * candidate has a value at that point different
+			 * from the value it has when we exit the
+			 * predecessor of that edge, there's a data
+			 * dependency that will be violated.
 			 */
 			if (target != 0 && !use_conflict(ep->pred, target)) {
+				/*
+				 * It's safe to replace the successor of
+				 * ep; do so, and note that we've made
+				 * at least one change.
+				 */
 				opt_state->done = 0;
 				ep->succ = target;
 				if (JT(target) != 0)
@@ -1610,7 +1692,25 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 	}
 }
 
-
+/*
+ * XXX - is this, and and_pullup(), what's described in section 6.1.2
+ * "Predicate Assertion Propagation" in the BPF+ paper?
+ *
+ * Note that this looks at block dominators, not edge dominators.
+ * Don't think so.
+ *
+ * "A or B" compiles into
+ *
+ *          A
+ *       t / \ f
+ *        /   B
+ *       / t / \ f
+ *      \   /
+ *       \ /
+ *        X
+ *
+ *
+ */
 static void
 or_pullup(opt_state_t *opt_state, struct block *b)
 {
@@ -1633,39 +1733,106 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 		if (val != ep->pred->val[A_ATOM])
 			return;
 
+	/*
+	 * For the first edge in the list of edges coming into this block,
+	 * see whether the predecessor of that edge comes here via a true
+	 * branch or a false branch.
+	 */
 	if (JT(b->in_edges->pred) == b)
-		diffp = &JT(b->in_edges->pred);
+		diffp = &JT(b->in_edges->pred);	/* jt */
 	else
-		diffp = &JF(b->in_edges->pred);
+		diffp = &JF(b->in_edges->pred);	/* jf */
 
+	/*
+	 * diffp is a pointer to a pointer to the block.
+	 *
+	 * Go down the false chain looking as far as you can,
+	 * making sure that each jump-compare is doing the
+	 * same as the original block.
+	 *
+	 * If you reach the bottom before you reach a
+	 * different jump-compare, just exit.  There's nothing
+	 * to do here.  XXX - no, this version is checking for
+	 * the value leaving the block; that's from the BPF+
+	 * pullup routine.
+	 */
 	at_top = 1;
 	for (;;) {
+		/*
+		 * Done if that's not going anywhere XXX
+		 */
 		if (*diffp == 0)
 			return;
 
+		/*
+		 * Done if that predecessor blah blah blah isn't
+		 * going the same place we're going XXX
+		 *
+		 * Does the true edge of this block point to the same
+		 * location as the true edge of b?
+		 */
 		if (JT(*diffp) != JT(b))
 			return;
 
+		/*
+		 * Done if this node isn't a dominator of that
+		 * node blah blah blah XXX
+		 *
+		 * Does b dominate diffp?
+		 */
 		if (!SET_MEMBER((*diffp)->dom, b->id))
 			return;
 
+		/*
+		 * Break out of the loop if that node's value of A
+		 * isn't the value of A above XXX
+		 */
 		if ((*diffp)->val[A_ATOM] != val)
 			break;
 
+		/*
+		 * Get the JF for that node XXX
+		 * Go down the false path.
+		 */
 		diffp = &JF(*diffp);
 		at_top = 0;
 	}
+
+	/*
+	 * Now that we've found a different jump-compare in a chain
+	 * below b, search further down until we find another
+	 * jump-compare that looks at the original value.  This
+	 * jump-compare should get pulled up.  XXX again we're
+	 * comparing values not jump-compares.
+	 */
 	samep = &JF(*diffp);
 	for (;;) {
+		/*
+		 * Done if that's not going anywhere XXX
+		 */
 		if (*samep == 0)
 			return;
 
+		/*
+		 * Done if that predecessor blah blah blah isn't
+		 * going the same place we're going XXX
+		 */
 		if (JT(*samep) != JT(b))
 			return;
 
+		/*
+		 * Done if this node isn't a dominator of that
+		 * node blah blah blah XXX
+		 *
+		 * Does b dominate samep?
+		 */
 		if (!SET_MEMBER((*samep)->dom, b->id))
 			return;
 
+		/*
+		 * Break out of the loop if that node's value of A
+		 * is the value of A above XXX
+		 */
 		if ((*samep)->val[A_ATOM] == val)
 			break;
 
@@ -1817,6 +1984,10 @@ opt_blks(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 		 */
 		return;
 
+	/*
+	 * Is this what the BPF+ paper describes in sections 6.1.1,
+	 * 6.1.2, and 6.1.3?
+	 */
 	for (i = 1; i <= maxlevel; ++i) {
 		for (p = opt_state->levels[i]; p; p = p->link) {
 			opt_j(opt_state, &p->et);
