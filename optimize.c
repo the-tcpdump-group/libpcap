@@ -2364,8 +2364,8 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 		opt_error(opt_state, "malloc");
 	}
 
-	opt_state->edgewords = opt_state->n_edges / (8 * sizeof(bpf_u_int32)) + 1;
-	opt_state->nodewords = opt_state->n_blocks / (8 * sizeof(bpf_u_int32)) + 1;
+	opt_state->edgewords = opt_state->n_edges / BITS_PER_WORD + 1;
+	opt_state->nodewords = opt_state->n_blocks / BITS_PER_WORD + 1;
 
 	/* XXX */
 	opt_state->space = (bpf_u_int32 *)malloc(2 * opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->space)
