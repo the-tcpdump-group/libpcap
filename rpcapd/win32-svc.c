@@ -47,9 +47,9 @@ static void WINAPI svc_main(DWORD argc, char **argv);
 static void WINAPI svc_control_handler(DWORD Opcode);
 static void update_svc_status(DWORD state, DWORD progress_indicator);
 
-int svc_start(void)
+BOOL svc_start(void)
 {
-	int rc;
+	BOOL rc;
 	SERVICE_TABLE_ENTRY ste[] =
 	{
 		{ PROGRAM_NAME, svc_main },

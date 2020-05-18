@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
 		//
 		// If this call succeeds, it is blocking on Win32
 		//
-		if (svc_start() != 1)
+		if (!svc_start())
 			rpcapd_log(LOGPRIO_DEBUG, "Unable to start the service");
 
 		// When the previous call returns, the entire application has to be stopped.
