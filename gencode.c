@@ -8175,6 +8175,53 @@ gen_multicast(compiler_state_t *cstate, int proto)
 	/*NOTREACHED*/
 }
 
+struct block *
+gen_ifindex(compiler_state_t *cstate, int ifindex)
+{
+	register struct block *b0;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	/*
+	 * Only some data link types support ifindex qualifiers.
+	 */
+	switch (cstate->linktype) {
+	case DLT_LINUX_SLL2:
+		/* match packets on this interface */
+		b0 = gen_cmp(cstate, OR_LINKHDR, 4, BPF_W, ifindex);
+		break;
+        default:
+#if defined(linux)
+		/*
+		 * This is Linux with PF_PACKET support.
+		 * If this is a *live* capture, we can look at
+		 * special meta-data in the filter expression;
+		 * if it's a savefile, we can't.
+		 */
+		if (cstate->bpf_pcap->rfile != NULL) {
+			/* We have a FILE *, so this is a savefile */
+			bpf_error(cstate, "ifindex not supported on %s when reading savefiles",
+			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+			b0 = NULL;
+			/*NOTREACHED*/
+		}
+		/* match ifindex */
+		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
+		             ifindex);
+#else /* defined(linux) */
+		bpf_error(cstate, "ifindex not supported on %s",
+		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		/*NOTREACHED*/
+#endif /* defined(linux) */
+	}
+	return (b0);
+}
+
 /*
  * Filter on inbound (dir == 0) or outbound (dir == 1) traffic.
  * Outbound traffic is sent by this machine, while inbound traffic is
