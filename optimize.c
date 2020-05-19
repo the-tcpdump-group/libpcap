@@ -240,9 +240,22 @@ typedef struct {
 	/*
 	 * A flag to indicate that further optimization is needed.
 	 * Iterative passes are continued until a given pass yields no
-	 * branch movement.
+	 * code simplification or branch movement.
 	 */
 	int done;
+
+	/*
+	 * XXX - detect loops that do nothing but repeated AND/OR pullups
+	 * and edge moves.
+	 * If 100 passes in a row do nothing but that, treat that as a
+	 * sign that we're in a loop that just shuffles in a cycle in
+	 * which each pass just shuffles the code and we eventually
+	 * get back to the original configuration.
+	 *
+	 * XXX - we need a non-heuristic way of detecting, or preventing,
+	 * such a cycle.
+	 */
+	int non_branch_movement_performed;
 
 	int n_blocks;
 	struct block **blocks;
@@ -833,6 +846,10 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 	}
 	s->k = a;
 	s->code = BPF_LD|BPF_IMM;
+	/*
+	 * XXX - optimizer loop detection.
+	 */
+	opt_state->non_branch_movement_performed = 1;
 	opt_state->done = 0;
 }
 
@@ -889,6 +906,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		if (s->s.code == BPF_ST &&
 		    next->s.code == (BPF_LDX|BPF_MEM) &&
 		    s->s.k == next->s.k) {
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 			next->s.code = BPF_MISC|BPF_TAX;
 		}
@@ -900,6 +921,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		    next->s.code == (BPF_MISC|BPF_TAX)) {
 			s->s.code = BPF_LDX|BPF_IMM;
 			next->s.code = BPF_MISC|BPF_TXA;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 		/*
@@ -979,6 +1004,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			s->s.code = NOP;
 			add->s.code = NOP;
 			tax->s.code = NOP;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 	}
@@ -1009,6 +1038,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				 */
 				b->s.k += opt_state->vmap[val].const_val;
 				last->s.code = NOP;
+				/*
+				 * XXX - optimizer loop detection.
+				 */
+				opt_state->non_branch_movement_performed = 1;
 				opt_state->done = 0;
 			} else if (b->s.k == 0) {
 				/*
@@ -1022,6 +1055,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				 */
 				last->s.code = NOP;
 				b->s.code = BPF_JMP|BPF_JEQ|BPF_X;
+				/*
+				 * XXX - optimizer loop detection.
+				 */
+				opt_state->non_branch_movement_performed = 1;
 				opt_state->done = 0;
 			}
 		}
@@ -1034,6 +1071,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K)) {
 			last->s.code = NOP;
 			b->s.k += last->s.k;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 		/*
@@ -1048,6 +1089,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			b->s.k = last->s.k;
 			b->s.code = BPF_JMP|BPF_K|BPF_JSET;
 			last->s.code = NOP;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 			opt_not(b);
 		}
@@ -1101,8 +1146,13 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		default:
 			abort();
 		}
-		if (JF(b) != JT(b))
+		if (JF(b) != JT(b)) {
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
+		}
 		if (v)
 			JF(b) = JT(b);
 		else
@@ -1139,6 +1189,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 			s->code = BPF_LD|BPF_ABS|BPF_SIZE(s->code);
 			s->k += opt_state->vmap[v].const_val;
 			v = F(opt_state, s->code, s->k, 0L);
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 		else
@@ -1266,6 +1320,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				    s->k > 31)
 					opt_error(opt_state,
 					    "shift by more than 31 bits");
+				/*
+				 * XXX - optimizer loop detection.
+				 */
+				opt_state->non_branch_movement_performed = 1;
 				opt_state->done = 0;
 				val[A_ATOM] =
 					F(opt_state, s->code, val[A_ATOM], K(s->k));
@@ -1310,6 +1368,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		if (alter && opt_state->vmap[v].is_const) {
 			s->code = BPF_LD|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 		vstore(s, &val[A_ATOM], v, alter);
@@ -1324,6 +1386,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		if (alter && opt_state->vmap[v].is_const) {
 			s->code = BPF_LDX|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 		vstore(s, &val[X_ATOM], v, alter);
@@ -1356,6 +1422,10 @@ deadstmt(opt_state_t *opt_state, register struct stmt *s, register struct stmt *
 	atom = atomdef(s);
 	if (atom >= 0) {
 		if (last[atom]) {
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 			last[atom]->code = NOP;
 		}
@@ -1379,6 +1449,10 @@ opt_deadstores(opt_state_t *opt_state, register struct block *b)
 	for (atom = 0; atom < N_ATOMS; ++atom)
 		if (last[atom] && !ATOMELEM(b->out_use, atom)) {
 			last[atom]->code = NOP;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 }
@@ -1469,6 +1543,10 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
 		if (b->stmts != 0) {
 			b->stmts = 0;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 		}
 	} else {
@@ -1637,7 +1715,10 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 			 * Make this edge go to the block to
 			 * which the successor of that edge
 			 * goes.
+			 *
+			 * XXX - optimizer loop detection.
 			 */
+			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
 			ep->succ = JT(ep->succ);
 		}
@@ -1678,6 +1759,10 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 				 * It's safe to replace the successor of
 				 * ep; do so, and note that we've made
 				 * at least one change.
+				 *
+				 * XXX - this is one of the operations that
+				 * happens when the optimizer gets into
+				 * one of those infinite loops.
 				 */
 				opt_state->done = 0;
 				ep->succ = target;
@@ -1868,6 +1953,10 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 	else
 		*diffp = pull;
 
+	/*
+	 * XXX - this is one of the operations that happens when the
+	 * optimizer gets into one of those infinite loops.
+	 */
 	opt_state->done = 0;
 }
 
@@ -1960,6 +2049,10 @@ and_pullup(opt_state_t *opt_state, struct block *b)
 	else
 		*diffp = pull;
 
+	/*
+	 * XXX - this is one of the operations that happens when the
+	 * optimizer gets into one of those infinite loops.
+	 */
 	opt_state->done = 0;
 }
 
@@ -1981,6 +2074,15 @@ opt_blks(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 		/*
 		 * No point trying to move branches; it can't possibly
 		 * make a difference at this point.
+		 *
+		 * XXX - this might be after we detect a loop where
+		 * we were just looping infinitely moving branches
+		 * in such a fashion that we went through two or more
+		 * versions of the machine code, eventually returning
+		 * to the first version.  (We're really not doing a
+		 * full loop detection, we're just testing for two
+		 * passes in a row where where we do nothing but
+		 * move branches.)
 		 */
 		return;
 
@@ -2066,8 +2168,17 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 		opt_dump(opt_state, ic);
 	}
 #endif
-	do {
+
+	/*
+	 * XXX - optimizer loop detection.
+	 */
+	int loop_count = 0;
+	for (;;) {
 		opt_state->done = 1;
+		/*
+		 * XXX - optimizer loop detection.
+		 */
+		opt_state->non_branch_movement_performed = 0;
 		find_levels(opt_state, ic);
 		find_dom(opt_state, ic->root);
 		find_closure(opt_state, ic->root);
@@ -2080,7 +2191,51 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 			opt_dump(opt_state, ic);
 		}
 #endif
-	} while (!opt_state->done);
+
+		/*
+		 * Was anything done in this optimizer pass?
+		 */
+		if (opt_state->done) {
+			/*
+			 * No, so we've reached a fixed point.
+			 * We're done.
+			 */
+			break;
+		}
+
+		/*
+		 * XXX - was anything done other than branch movement
+		 * in this pass?
+		 */
+		if (opt_state->non_branch_movement_performed) {
+			/*
+			 * Yes.  Clear any loop-detection counter;
+			 * we're making some form of progress (assuming
+			 * we can't get into a cycle doing *other*
+			 * optimizations...).
+			 */
+			loop_count = 0;
+		} else {
+			/*
+			 * No - increment the counter, and quit if
+			 * it's up to 100.
+			 */
+			loop_count++;
+			if (loop_count >= 100) {
+				/*
+				 * We've done nothing but branch movement
+				 * for 100 passes; we're probably
+				 * in a cycle and will never reach a
+				 * fixed point.
+				 *
+				 * XXX - yes, we really need a non-
+				 * heuristic way of detecting a cycle.
+				 */
+				opt_state->done = 1;
+				break;
+			}
+		}
+	}
 }
 
 /*
@@ -2094,6 +2249,7 @@ bpf_optimize(struct icode *ic, char *errbuf)
 
 	memset(&opt_state, 0, sizeof(opt_state));
 	opt_state.errbuf = errbuf;
+	opt_state.non_branch_movement_performed = 0;
 	if (setjmp(opt_state.top_ctx)) {
 		opt_cleanup(&opt_state);
 		return -1;
