@@ -731,6 +731,11 @@ AC_MSG_RESULT($V_PCAP)
 AC_SUBST(VALGRINDTEST_SRC)
 
 #
+# Do we have pkg-config?
+#
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
+
+#
 # Handle each capture type.
 #
 case "$V_PCAP" in
@@ -1128,11 +1133,6 @@ if test "$enable_ipv6" != "no"; then
 	#
 	AC_DEFINE(INET6,1,[IPv6])
 fi
-
-#
-# Do we have pkg-config?
-#
-AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
