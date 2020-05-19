@@ -10,7 +10,6 @@ find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules(dpdk QUIET libdpdk)
 endif()
-
 message(STATUS "Executing Finddpdk")
 if(NOT dpdk_INCLUDE_DIRS)
   message(STATUS "Executing find_path")
@@ -32,54 +31,62 @@ if(NOT dpdk_INCLUDE_DIRS)
   if(NOT dpdk_config_INCLUDE_DIR EQUAL dpdk_common_INCLUDE_DIR)
     list(APPEND dpdk_INCLUDE_DIRS "${dpdk_common_INCLUDE_DIR}")
   endif()
-endif()
 
-set(components
-  bus_pci
-  cmdline
-  eal
-  ethdev
-  hash
-  kvargs
-  mbuf
-  mempool
-  mempool_ring
-  mempool_stack
-  pci
-  pmd_af_packet
-  pmd_bond
-  pmd_i40e
-  pmd_ixgbe
-  pmd_mlx5
-  pmd_ring
-  pmd_vmxnet3_uio
-  ring)
+  set(components
+    bus_pci
+    cmdline
+    eal
+    ethdev
+    hash
+    kvargs
+    mbuf
+    mempool
+    mempool_ring
+    mempool_stack
+    pci
+    pmd_af_packet
+    pmd_bond
+    pmd_i40e
+    pmd_ixgbe
+    pmd_mlx5
+    pmd_ring
+    pmd_vmxnet3_uio
+    ring)
 
-set(dpdk_LIBRARIES)
+  set(dpdk_LIBRARIES)
 
-foreach(c ${components})
-  find_library(DPDK_rte_${c}_LIBRARY rte_${c}
-    HINTS
-      ENV DPDK_DIR
-      ${dpdk_LIBRARY_DIRS}
-    PATH_SUFFIXES lib)
-  if(DPDK_rte_${c}_LIBRARY)
-    set(dpdk_lib dpdk::${c})
-    if (NOT TARGET ${dpdk_lib})
-      add_library(${dpdk_lib} UNKNOWN IMPORTED)
-      set_target_properties(${dpdk_lib} PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${dpdk_INCLUDE_DIRS}"
-        IMPORTED_LOCATION "${DPDK_rte_${c}_LIBRARY}")
-      if(c STREQUAL pmd_mlx5)
-        find_package(verbs QUIET)
-        if(verbs_FOUND)
-          target_link_libraries(${dpdk_lib} INTERFACE IBVerbs::verbs)
+  foreach(c ${components})
+    find_library(DPDK_rte_${c}_LIBRARY rte_${c}
+      HINTS
+        ENV DPDK_DIR
+        ${dpdk_LIBRARY_DIRS}
+      PATH_SUFFIXES lib)
+    if(DPDK_rte_${c}_LIBRARY)
+      set(dpdk_lib dpdk::${c})
+      if (NOT TARGET ${dpdk_lib})
+        add_library(${dpdk_lib} UNKNOWN IMPORTED)
+        set_target_properties(${dpdk_lib} PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${dpdk_INCLUDE_DIRS}"
+          IMPORTED_LOCATION "${DPDK_rte_${c}_LIBRARY}")
+        if(c STREQUAL pmd_mlx5)
+          find_package(verbs QUIET)
+          if(verbs_FOUND)
+            target_link_libraries(${dpdk_lib} INTERFACE IBVerbs::verbs)
+          endif()
         endif()
       endif()
+      list(APPEND dpdk_LIBRARIES ${dpdk_lib})
     endif()
-    list(APPEND dpdk_LIBRARIES ${dpdk_lib})
-  endif()
-endforeach()
+  endforeach()
+
+  #
+  # Where the heck did this list come from?  libdpdk on Ubuntu 20.04,
+  # for example, doesn't even *have* -ldpdk; that's why we go with
+  # pkg-config, in the hopes that it provides a correct set of flags
+  # for this tangled mess.
+  #
+  list(APPEND dpdk_LIBRARIES dpdk rt m numo dl)
+endif()
 
 mark_as_advanced(dpdk_INCLUDE_DIRS ${dpdk_LIBRARIES})
 
