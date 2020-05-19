@@ -449,7 +449,7 @@ usage(void)
 	(void)fprintf(stderr, "%s, with %s\n", program_name,
 	    pcap_lib_version());
 	(void)fprintf(stderr,
-	    "Usage: %s [-aI] [ -F file ] [ -I interface ] [ expression ]\n",
+	    "Usage: %s [-aI] [ -F file ] [ -i interface ] [ expression ]\n",
 	    program_name);
 	exit(1);
 }
