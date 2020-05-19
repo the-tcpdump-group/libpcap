@@ -320,9 +320,9 @@ if(WIN32)
     message(STATUS "checking for Npcap's version.h")
     check_symbol_exists(WINPCAP_PRODUCT_NAME "../../version.h" HAVE_VERSION_H)
     if(HAVE_VERSION_H)
-	    message(STATUS "HAVE version.h")
+        message(STATUS "HAVE version.h")
     else(HAVE_VERSION_H)
-	    message(STATUS "MISSING version.h")
+        message(STATUS "MISSING version.h")
     endif(HAVE_VERSION_H)
 
 endif(WIN32)
@@ -1591,9 +1591,9 @@ if(NOT DISABLE_DPDK)
         #
         # We include rte_bus.h, and older versions of DPDK didn't have
         # it, so check for it.
-	#
-	# Also, we call rte_eth_dev_count_avail(), and older versions
-	# of DPDK didn't have it, so check for it.
+        #
+        # Also, we call rte_eth_dev_count_avail(), and older versions
+        # of DPDK didn't have it, so check for it.
         #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_INCLUDES ${dpdk_INCLUDE_DIRS})
