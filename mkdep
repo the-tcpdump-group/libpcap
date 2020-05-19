@@ -48,6 +48,11 @@ while :
 			SOURCE_DIRECTORY=$2
 			shift; shift ;;
 
+		# -include takes an argument
+		-include)
+			flags="$flags $1 $2"
+			shift; shift ;;
+
 		# other command-line flag
 		-*)
 			flags="$flags $1"
