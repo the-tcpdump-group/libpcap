@@ -2402,16 +2402,40 @@ if test "$want_dpdk" != no; then
 	# add that to the list of include directories to search.
 	#
 	dpdk_inc_dir="$dpdk_dir/include/dpdk"
+	dpdk_inc_flags="-I$dpdk_inc_dir"
 	dpdk_lib_dir="$dpdk_dir/lib"
 	#
 	# Handle multiarch systems.
 	#
-	if test -d "$dpdk_lib_dir/$host"
+	# Step 1: run the C compiler with the -dumpmachine option; if
+	# it succeeds, the output would be the multiarch directory name
+	# if your system has multiarch directories.
+	#
+	multiarch_dir=`$CC -dumpmachine 2>/dev/null`
+	if test ! -z "$multiarch_dir"
 	then
-		dpdk_lib_dir="$dpdk_lib_dir/$host"
+		#
+		# OK, we have a multiarch directory.
+		#
+		# Now deal with includes.  On Ubuntu 20.04, for example,
+		# we have /usr/include/dpdk *and*
+		# /usr/include/$multiarch_dir/dpdk, and must search both.
+		#
+		if test -d "$dpdk_dir/include/$multiarch_dir/dpdk"
+		then
+			dpdk_inc_flags="-I$dpdk_dir/include/$multiarch_dir/dpdk $dpdk_inc_flags"
+		fi
+
+		#
+		# Now deal with libraries.
+		#
+		if test -d "$dpdk_lib_dir/$multiarch_dir"
+		then
+			dpdk_lib_dir="$dpdk_lib_dir/$multiarch_dir"
+		fi
 	fi
 	DPDK_MACHINE_CFLAGS="-march=native"
-	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS $dpdk_inc_flags"
 	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
 
 	save_CFLAGS="$CFLAGS"
