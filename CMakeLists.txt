@@ -1319,9 +1319,9 @@ else(WIN32)
                     set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
                     include_directories("/usr/include/libnl3")
                 endif()
-            else()
-                unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
             endif()
+        else()
+            unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
