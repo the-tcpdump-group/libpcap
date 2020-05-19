@@ -75,18 +75,6 @@
 /* if libnl exists */
 #cmakedefine HAVE_LIBNL 1
 
-/* if libnl exists and is version 2.x */
-#cmakedefine HAVE_LIBNL_2_x 1
-
-/* if libnl exists and is version 3.x */
-#cmakedefine HAVE_LIBNL_3_x 1
-
-/* libnl has NLE_FAILURE */
-#cmakedefine HAVE_LIBNL_NLE 1
-
-/* libnl has new-style socket api */
-#cmakedefine HAVE_LIBNL_SOCKETS 1
-
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #cmakedefine HAVE_LINUX_COMPILER_H 1
 

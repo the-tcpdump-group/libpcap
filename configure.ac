@@ -846,6 +846,12 @@ linux)
 
 	#
 	# Do we have libnl?
+	# We only want version 3.  Version 2 was, apparently,
+	# short-lived, and version 1 is source and binary
+	# incompatible with version 3, and it appears that,
+	# these days, everybody's using version 3.  We're
+	# not supporting older versions of the Linux kernel;
+	# let's drop support for older versions of libnl, too.
 	#
 	AC_ARG_WITH(libnl,
 	AC_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
@@ -869,9 +875,6 @@ linux)
                   ;;
                 esac
 
-		#
-		# Try libnl 3.x first.
-		#
 		AC_CHECK_LIB(nl-3, nl_socket_alloc,
 		[
 			#
@@ -879,54 +882,16 @@ linux)
 			#
 			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			AC_DEFINE(HAVE_LIBNL_3_x,1,[if libnl exists and is version 3.x])
-			AC_DEFINE(HAVE_LIBNL_NLE,1,[libnl has NLE_FAILURE])
-			AC_DEFINE(HAVE_LIBNL_SOCKETS,1,[libnl has new-style socket api])
 			V_INCLS="$V_INCLS ${incdir}"
 			have_any_nl="yes"
-		],[], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )
-
-		if test x$have_any_nl = xno ; then
-			#
-			# Try libnl 2.x
-			#
-			AC_CHECK_LIB(nl, nl_socket_alloc,
-			[
-				#
-				# Yes, we have libnl 2.x.
-				#
-				LIBS="${libnldir} -lnl-genl -lnl $LIBS"
-				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-				AC_DEFINE(HAVE_LIBNL_2_x,1,[if libnl exists and is version 2.x])
-				AC_DEFINE(HAVE_LIBNL_NLE,1,[libnl has NLE_FAILURE])
-				AC_DEFINE(HAVE_LIBNL_SOCKETS,1,[libnl has new-style socket api])
-				have_any_nl="yes"
-			])
-		fi
-
-		if test x$have_any_nl = xno ; then
-			#
-			# No, we don't; do we have libnl 1.x?
-			#
-			AC_CHECK_LIB(nl, nl_handle_alloc,
-			[
-				#
-				# Yes.
-				#
-				LIBS="${libnldir} -lnl $LIBS"
-				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-				have_any_nl="yes"
-			])
-		fi
-
-		if test x$have_any_nl = xno ; then
+		],[
 			#
 			# No, we don't have libnl at all.
 			#
 			if test x$with_libnl = xyes ; then
 				AC_MSG_ERROR([libnl support requested but libnl not found])
 			fi
-		fi
+		], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )
 	fi
 
 	#

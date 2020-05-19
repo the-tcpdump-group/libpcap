@@ -1294,11 +1294,14 @@ else(WIN32)
 
         #
         # Do we have libnl?
+        # We only want version 3.  Version 2 was, apparently,
+        # short-lived, and version 1 is source and binary
+        # incompatible with version 3, and it appears that,
+        # these days, everybody's using version 3.  We're
+        # not supporting older versions of the Linux kernel;
+        # let's drop support for older versions of libnl, too.
         #
         if(BUILD_WITH_LIBNL)
-            #
-            # Try libnl 3.x first.
-            #
             cmake_push_check_state()
             set(CMAKE_REQUIRED_LIBRARIES nl-3)
             check_function_exists(nl_socket_alloc HAVE_LIBNL)
@@ -1308,38 +1311,7 @@ else(WIN32)
                 # Yes, we have libnl 3.x.
                 #
                 set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
-                set(HAVE_LIBNL_3_x ON)
-                set(HAVE_LIBNL_NLE ON)
-                set(HAVE_LIBNL_SOCKETS ON)
                 include_directories("/usr/include/libnl3")
-            else()
-                #
-                # Try libnl 2.x.
-                #
-                cmake_push_check_state()
-                set(CMAKE_REQUIRED_LIBRARIES nl)
-                check_function_exists(nl_socket_alloc HAVE_LIBNL)
-                cmake_pop_check_state()
-                if(HAVE_LIBNL)
-                    #
-                    # Yes, we have libnl 2.x.
-                    #
-                    set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
-                    set(HAVE_LIBNL_2_x ON)
-                    set(HAVE_LIBNL_NLE ON)
-                    set(HAVE_LIBNL_SOCKETS ON)
-                else()
-                    #
-                    # No, we don't; do we have libnl 1.x?
-                    #
-                    cmake_push_check_state()
-                    set(CMAKE_REQUIRED_LIBRARIES nl)
-                    check_function_exists(nl_handle_alloc HAVE_LIBNL)
-                    cmake_pop_check_state()
-                    if(HAVE_LIBNL)
-                        set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
-                    endif()
-                endif()
             endif()
         else()
             unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache

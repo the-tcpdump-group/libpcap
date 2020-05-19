@@ -6836,6 +6836,12 @@ done
 
 	#
 	# Do we have libnl?
+	# We only want version 3.  Version 2 was, apparently,
+	# short-lived, and version 1 is source and binary
+	# incompatible with version 3, and it appears that,
+	# these days, everybody's using version 3.  We're
+	# not supporting older versions of the Linux kernel;
+	# let's drop support for older versions of libnl, too.
 	#
 
 # Check whether --with-libnl was given.
@@ -6864,9 +6870,6 @@ fi
                   ;;
                 esac
 
-		#
-		# Try libnl 3.x first.
-		#
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_socket_alloc in -lnl-3" >&5
 $as_echo_n "checking for nl_socket_alloc in -lnl-3... " >&6; }
 if ${ac_cv_lib_nl_3_nl_socket_alloc+:} false; then :
@@ -6912,148 +6915,20 @@ if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
-
-$as_echo "#define HAVE_LIBNL_3_x 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_LIBNL_NLE 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_LIBNL_SOCKETS 1" >>confdefs.h
-
 			V_INCLS="$V_INCLS ${incdir}"
 			have_any_nl="yes"
 
-fi
-
-
-		if test x$have_any_nl = xno ; then
-			#
-			# Try libnl 2.x
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_socket_alloc in -lnl" >&5
-$as_echo_n "checking for nl_socket_alloc in -lnl... " >&6; }
-if ${ac_cv_lib_nl_nl_socket_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char nl_socket_alloc ();
-int
-main ()
-{
-return nl_socket_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_nl_nl_socket_alloc=yes
-else
-  ac_cv_lib_nl_nl_socket_alloc=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nl_nl_socket_alloc" >&5
-$as_echo "$ac_cv_lib_nl_nl_socket_alloc" >&6; }
-if test "x$ac_cv_lib_nl_nl_socket_alloc" = xyes; then :
-
-				#
-				# Yes, we have libnl 2.x.
-				#
-				LIBS="${libnldir} -lnl-genl -lnl $LIBS"
-
-$as_echo "#define HAVE_LIBNL 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_LIBNL_2_x 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_LIBNL_NLE 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_LIBNL_SOCKETS 1" >>confdefs.h
-
-				have_any_nl="yes"
-
-fi
-
-		fi
-
-		if test x$have_any_nl = xno ; then
-			#
-			# No, we don't; do we have libnl 1.x?
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_handle_alloc in -lnl" >&5
-$as_echo_n "checking for nl_handle_alloc in -lnl... " >&6; }
-if ${ac_cv_lib_nl_nl_handle_alloc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char nl_handle_alloc ();
-int
-main ()
-{
-return nl_handle_alloc ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_nl_nl_handle_alloc=yes
-else
-  ac_cv_lib_nl_nl_handle_alloc=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nl_nl_handle_alloc" >&5
-$as_echo "$ac_cv_lib_nl_nl_handle_alloc" >&6; }
-if test "x$ac_cv_lib_nl_nl_handle_alloc" = xyes; then :
-
-				#
-				# Yes.
-				#
-				LIBS="${libnldir} -lnl $LIBS"
-
-$as_echo "#define HAVE_LIBNL 1" >>confdefs.h
-
-				have_any_nl="yes"
-
-fi
-
-		fi
-
-		if test x$have_any_nl = xno ; then
 			#
 			# No, we don't have libnl at all.
 			#
 			if test x$with_libnl = xyes ; then
 				as_fn_error $? "libnl support requested but libnl not found" "$LINENO" 5
 			fi
-		fi
+
+fi
+
 	fi
 
 	#

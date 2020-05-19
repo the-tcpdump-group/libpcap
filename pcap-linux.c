@@ -462,39 +462,6 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 	return 1;
 }
 
-#ifdef HAVE_LIBNL_SOCKETS
-#define get_nl_errmsg	nl_geterror
-#else
-/* libnl 2.x compatibility code */
-
-#define nl_sock nl_handle
-
-static inline struct nl_handle *
-nl_socket_alloc(void)
-{
-	return nl_handle_alloc();
-}
-
-static inline void
-nl_socket_free(struct nl_handle *h)
-{
-	nl_handle_destroy(h);
-}
-
-#define get_nl_errmsg	strerror
-
-static inline int
-__genl_ctrl_alloc_cache(struct nl_handle *h, struct nl_cache **cache)
-{
-	struct nl_cache *tmp = genl_ctrl_alloc_cache(h);
-	if (!tmp)
-		return -ENOMEM;
-	*cache = tmp;
-	return 0;
-}
-#define genl_ctrl_alloc_cache __genl_ctrl_alloc_cache
-#endif /* !HAVE_LIBNL_SOCKETS */
-
 struct nl80211_state {
 	struct nl_sock *nl_sock;
 	struct nl_cache *nl_cache;
@@ -523,7 +490,7 @@ nl80211_init(pcap_t *handle, struct nl80211_state *state, const char *device)
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate generic netlink cache: %s",
-		    device, get_nl_errmsg(-err));
+		    device, nl_geterror(-err));
 		goto out_handle_destroy;
 	}
 
@@ -585,11 +552,7 @@ DIAG_ON_NARROWING
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0) {
-#if defined HAVE_LIBNL_NLE
 		if (err == -NLE_FAILURE) {
-#else
-		if (err == -ENFILE) {
-#endif
 			/*
 			 * Device not available; our caller should just
 			 * keep trying.  (libnl 2.x maps ENFILE to
@@ -606,18 +569,14 @@ DIAG_ON_NARROWING
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_send_auto_complete failed adding %s interface: %s",
-			    device, mondevice, get_nl_errmsg(-err));
+			    device, mondevice, nl_geterror(-err));
 			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
 	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
-#if defined HAVE_LIBNL_NLE
 		if (err == -NLE_FAILURE) {
-#else
-		if (err == -ENFILE) {
-#endif
 			/*
 			 * Device not available; our caller should just
 			 * keep trying.  (libnl 2.x maps ENFILE to
@@ -634,7 +593,7 @@ DIAG_ON_NARROWING
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_wait_for_ack failed adding %s interface: %s",
-			    device, mondevice, get_nl_errmsg(-err));
+			    device, mondevice, nl_geterror(-err));
 			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
@@ -695,7 +654,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: nl_send_auto_complete failed deleting %s interface: %s",
-		    device, mondevice, get_nl_errmsg(-err));
+		    device, mondevice, nl_geterror(-err));
 		nlmsg_free(msg);
 		return PCAP_ERROR;
 	}
@@ -703,7 +662,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: nl_wait_for_ack failed adding %s interface: %s",
-		    device, mondevice, get_nl_errmsg(-err));
+		    device, mondevice, nl_geterror(-err));
 		nlmsg_free(msg);
 		return PCAP_ERROR;
 	}
