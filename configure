@@ -11327,17 +11327,23 @@ $as_echo "$ac_cv_dpdk_can_compile" >&6; }
 	# didn't have it, so check for it.
 	#
 	if test "$ac_cv_dpdk_can_compile" = yes; then
-		for ac_header in rte_bus.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "rte_bus.h" "ac_cv_header_rte_bus_h" "$ac_includes_default"
+		ac_fn_c_check_header_mongrel "$LINENO" "rte_bus.h" "ac_cv_header_rte_bus_h" "$ac_includes_default"
 if test "x$ac_cv_header_rte_bus_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_RTE_BUS_H 1
-_ACEOF
 
 fi
 
-done
+
+	fi
+
+	#
+	# We call rte_eth_dev_count_avail(), and older versions
+	# of DPDK didn't have it, so check for it.
+	#
+	if test "$ac_cv_header_rte_bus_h" = yes; then
+		ac_fn_c_check_func "$LINENO" "rte_eth_dev_count_avail" "ac_cv_func_rte_eth_dev_count_avail"
+if test "x$ac_cv_func_rte_eth_dev_count_avail" = xyes; then :
+
+fi
 
 	fi
 
@@ -11345,7 +11351,7 @@ done
 	LIBS="$save_LIBS"
 	LDFLAGS="$save_LDFLAGS"
 
-	if test "$ac_cv_header_rte_bus_h" = yes; then
+	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LDFLAGS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
@@ -11358,14 +11364,45 @@ $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 		fi
 	else
 		if test "$V_PCAP" = dpdk; then
-			# User requested "dpdk" capture type but we couldn't
-			# find the DPDK API support.
-			as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+			# User requested DPDK-only capture support, but
+			# we couldn't the DPDK API support at all, or we
+			# found it but it wasn't a sufficiently recent
+			# version.
+			if test "$ac_cv_dpdk_can_compile" != yes; then
+				#
+				# Couldn't even find the headers.
+				#
+				as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+			else
+				#
+				# Found the headers, but we couldn't find
+				# rte_bus.h or rte_eth_dev_count_avail(),
+				# we don't have a sufficiently recent
+				# version of DPDK.
+				#
+				as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later; install a newer version of DPDK, or don't request DPDK support" "$LINENO" 5
+			fi
 		fi
 
 		if test "$want_dpdk" = yes; then
-			# User wanted DPDK support but we couldn't find it.
-			as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+			# User requested DPDK-only capture support, but
+			# we couldn't the DPDK API support at all, or we
+			# found it but it wasn't a sufficiently recent
+			# version.
+			if test "$ac_cv_dpdk_can_compile" != yes; then
+				#
+				# Couldn't even find the headers.
+				#
+				as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+			else
+				#
+				# Found the headers, but we couldn't find
+				# rte_bus.h or rte_eth_dev_count_avail(),
+				# we don't have a sufficiently recent
+				# version of DPDK.
+				#
+				as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later: install a newer version of DPDK, or don't request DPDK support" "$LINENO" 5
+			fi
 		fi
 	fi
 fi

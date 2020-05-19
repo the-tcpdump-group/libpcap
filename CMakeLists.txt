@@ -1591,12 +1591,17 @@ if(NOT DISABLE_DPDK)
         #
         # We include rte_bus.h, and older versions of DPDK didn't have
         # it, so check for it.
+	#
+	# Also, we call rte_eth_dev_count_avail(), and older versions
+	# of DPDK didn't have it, so check for it.
         #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_INCLUDES ${dpdk_INCLUDE_DIRS})
         check_include_file(rte_bus.h HAVE_RTE_BUS_H)
+        set(CMAKE_REQUIRED_LIBRARIES dpdk rt m numo dl)
+        check_function_exists(rte_eth_dev_count_avail HAVE_RTE_ETH_DEV_COUNT_AVAIL)
         cmake_pop_check_state()
-        if(HAVE_RTE_BUS_H)
+        if(HAVE_RTE_BUS_H AND HAVE_RTE_ETH_DEV_COUNT_AVAIL)
             set(DPDK_C_FLAGS "-march=native")
             set(DPDK_LIB dpdk rt m numa dl)
             set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})

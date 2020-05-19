@@ -2436,14 +2436,22 @@ AC_INCLUDES_DEFAULT
 	# didn't have it, so check for it.
 	#
 	if test "$ac_cv_dpdk_can_compile" = yes; then
-		AC_CHECK_HEADERS(rte_bus.h)
+		AC_CHECK_HEADER(rte_bus.h)
+	fi
+
+	#
+	# We call rte_eth_dev_count_avail(), and older versions
+	# of DPDK didn't have it, so check for it.
+	#
+	if test "$ac_cv_header_rte_bus_h" = yes; then
+		AC_CHECK_FUNC(rte_eth_dev_count_avail)
 	fi
 
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 	LDFLAGS="$save_LDFLAGS"
 
-	if test "$ac_cv_header_rte_bus_h" = yes; then
+	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LDFLAGS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
@@ -2454,14 +2462,45 @@ AC_INCLUDES_DEFAULT
 		fi
 	else
 		if test "$V_PCAP" = dpdk; then
-			# User requested "dpdk" capture type but we couldn't
-			# find the DPDK API support.
-			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+			# User requested DPDK-only capture support, but
+			# we couldn't the DPDK API support at all, or we
+			# found it but it wasn't a sufficiently recent
+			# version.
+			if test "$ac_cv_dpdk_can_compile" != yes; then
+				#
+				# Couldn't even find the headers.
+				#
+				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+			else
+				#
+				# Found the headers, but we couldn't find
+				# rte_bus.h or rte_eth_dev_count_avail(),
+				# we don't have a sufficiently recent
+				# version of DPDK.
+				#
+				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later; install a newer version of DPDK, or don't request DPDK support])
+			fi
 		fi
 
 		if test "$want_dpdk" = yes; then
-			# User wanted DPDK support but we couldn't find it.
-			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+			# User requested DPDK-only capture support, but
+			# we couldn't the DPDK API support at all, or we
+			# found it but it wasn't a sufficiently recent
+			# version.
+			if test "$ac_cv_dpdk_can_compile" != yes; then
+				#
+				# Couldn't even find the headers.
+				#
+				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+			else
+				#
+				# Found the headers, but we couldn't find
+				# rte_bus.h or rte_eth_dev_count_avail(),
+				# we don't have a sufficiently recent
+				# version of DPDK.
+				#
+				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later: install a newer version of DPDK, or don't request DPDK support])
+			fi
 		fi
 	fi
 fi

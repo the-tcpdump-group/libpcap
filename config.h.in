@@ -162,9 +162,6 @@
 /* Define to 1 if you have a POSIX-style `strerror_r' function. */
 #undef HAVE_POSIX_STRERROR_R
 
-/* Define to 1 if you have the <rte_bus.h> header file. */
-#undef HAVE_RTE_BUS_H
-
 /* define if you have the Septel API */
 #undef HAVE_SEPTEL_API
 
