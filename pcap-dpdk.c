@@ -115,6 +115,16 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
 
+/*
+ * Deal with API changes that break source compatibility.
+ */
+
+#ifdef HAVE_STRUCT_RTE_ETHER_ADDR
+#define ETHER_ADDR_TYPE	struct rte_ether_addr
+#else
+#define ETHER_ADDR_TYPE	struct ether_addr
+#endif
+
 #define DPDK_DEF_LOG_LEV RTE_LOG_ERR
 //
 // This is set to 0 if we haven't initialized DPDK yet, 1 if we've
@@ -152,7 +162,11 @@ static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
 static uint16_t nb_rxd = RTE_TEST_RX_DESC_DEFAULT;
 static uint16_t nb_txd = RTE_TEST_TX_DESC_DEFAULT;
 
+#ifdef RTE_ETHER_MAX_JUMBO_FRAME_LEN
+#define RTE_ETH_PCAP_SNAPLEN RTE_ETHER_MAX_JUMBO_FRAME_LEN
+#else
 #define RTE_ETH_PCAP_SNAPLEN ETHER_MAX_JUMBO_FRAME_LEN
+#endif
 
 static struct rte_eth_dev_tx_buffer *tx_buffer;
 
@@ -176,7 +190,7 @@ struct pcap_dpdk{
 	uint64_t bps;
 	struct rte_mempool * pktmbuf_pool;
 	struct dpdk_ts_helper ts_helper;
-	struct ether_addr eth_addr;
+	ETHER_ADDR_TYPE eth_addr;
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
@@ -365,7 +379,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 				bp = rte_pktmbuf_mtod(m, u_char *);
 			}else{
 				// use fast buffer pcap_tmp_buf if pkt_len is small, no need to call malloc and free
-				if ( pkt_len <= ETHER_MAX_JUMBO_FRAME_LEN)
+				if ( pkt_len <= RTE_ETH_PCAP_SNAPLEN)
 				{
 					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
 					bp = pd->pcap_tmp_buf;
@@ -472,7 +486,7 @@ static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 	rte_eth_link_get(portid, plink);
 	return plink->link_status == ETH_LINK_UP;
 }
-static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
+static void eth_addr_str(ETHER_ADDR_TYPE *addrp, char* mac_str, int len)
 {
 	int offset=0;
 	if (addrp == NULL){
@@ -973,7 +987,7 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	unsigned int nb_ports = 0;
 	char dpdk_name[DPDK_DEV_NAME_MAX];
 	char dpdk_desc[DPDK_DEV_DESC_MAX];
-	struct ether_addr eth_addr;
+	ETHER_ADDR_TYPE eth_addr;
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	do{

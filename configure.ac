@@ -2498,6 +2498,17 @@ AC_INCLUDES_DEFAULT
 		if test $V_PCAP != dpdk ; then
 			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
 		fi
+
+		#
+		# Check whether the rte_ether.h file defines
+		# struct ether_addr or struct rte_ether_addr.
+		#
+		# ("API compatibility?  That's for losers!")
+		#
+		AC_CHECK_TYPES(struct rte_ether_addr,,,
+		    [
+			#include <rte_ether.h>
+		    ])
 	else
 		if test "$V_PCAP" = dpdk; then
 			# User requested DPDK-only capture support, but

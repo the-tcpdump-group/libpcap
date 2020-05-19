@@ -1589,6 +1589,18 @@ if(NOT DISABLE_DPDK)
             set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${dpdk_LIBRARIES})
             set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
             set(PCAP_SUPPORT_DPDK TRUE)
+
+            #
+            # Check whether the rte_ether.h file defines
+            # struct ether_addr or struct rte_ether_addr.
+            #
+            # ("API compatibility?  That's for losers!")
+            #
+            cmake_push_check_state()
+            set(CMAKE_REQUIRED_INCLUDES ${dpdk_INCLUDE_DIRS})
+            set(CMAKE_EXTRA_INCLUDE_FILES rte_ether.h)
+            check_type_size("struct rte_ether_addr" STRUCT_RTE_ETHER_ADDR)
+            cmake_pop_check_state()
         endif()
     endif()
 endif()

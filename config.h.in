@@ -204,6 +204,9 @@
 /* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
 #undef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 
+/* Define to 1 if the system has the type `struct rte_ether_addr'. */
+#undef HAVE_STRUCT_RTE_ETHER_ADDR
+
 /* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
 #undef HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL
 

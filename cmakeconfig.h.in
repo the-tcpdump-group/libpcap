@@ -198,6 +198,9 @@
 /* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
 #cmakedefine HAVE_STRUCT_MSGHDR_MSG_FLAGS 1
 
+/* Define to 1 if the system has the type `struct rte_ether_addr'. */
+#cmakedefine HAVE_STRUCT_RTE_ETHER_ADDR 1
+
 /* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL 1
 
