@@ -2389,7 +2389,7 @@ if test "$want_dpdk" != no; then
 			AC_MSG_RESULT([found])
 			found_dpdk_with_pkg_config=yes
 			DPDK_CFLAGS=`"$PKGCONFIG" --cflags libdpdk`
-			DPDK_LIBS=`"$PKGCONFIG" --libs libdpdk`
+			DPDK_LDFLAGS=`"$PKGCONFIG" --libs libdpdk`
 		else
 			AC_MSG_RESULT([not found])
 		fi

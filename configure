@@ -11263,7 +11263,7 @@ $as_echo_n "checking for DPDK with pkg-config... " >&6; }
 $as_echo "found" >&6; }
 			found_dpdk_with_pkg_config=yes
 			DPDK_CFLAGS=`"$PKGCONFIG" --cflags libdpdk`
-			DPDK_LIBS=`"$PKGCONFIG" --libs libdpdk`
+			DPDK_LDFLAGS=`"$PKGCONFIG" --libs libdpdk`
 		else
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
