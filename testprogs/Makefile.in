@@ -80,11 +80,11 @@ INSTALL_DATA = @INSTALL_DATA@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
 SRC = @VALGRINDTEST_SRC@ \
-	capturetest.c \
 	can_set_rfmon_test.c \
+	capturetest.c \
 	filtertest.c \
-	findalldevstest.c \
 	findalldevstest-perf.c \
+	findalldevstest.c \
 	opentest.c \
 	reactivatetest.c \
 	selpolltest.c \
