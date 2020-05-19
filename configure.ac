@@ -875,23 +875,46 @@ linux)
                   ;;
                 esac
 
-		AC_CHECK_LIB(nl-3, nl_socket_alloc,
-		[
+		if test "x$PKGCONFIG" != "xno"; then
 			#
-			# Yes, we have libnl 3.x.
+			# We have pkg-config; see if we have libnl-3.0
+			# as a package.
 			#
-			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
-			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			V_INCLS="$V_INCLS ${incdir}"
-			have_any_nl="yes"
-		],[
-			#
-			# No, we don't have libnl at all.
-			#
-			if test x$with_libnl = xyes ; then
-				AC_MSG_ERROR([libnl support requested but libnl not found])
+			AC_MSG_CHECKING([for libnl-3.0 with pkg-config])
+			if "$PKGCONFIG" libnl-3.0; then
+				AC_MSG_RESULT([found])
+				have_libnl=yes
+				libnl_cflags=`"$PKGCONFIG" --cflags libnl-3.0`
+				V_INCLS="$V_INCLS ${libnl_cflags}"
+				libnl_libs=`"$PKGCONFIG" --libs openssl`
+				LIBS="${libnl_libs} $LIBS"
+			else
+				AC_MSG_RESULT([not found])
 			fi
-		], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )
+		fi
+
+		if test x$have_libnl != xyes; then
+			#
+			# Check for it directly.
+			#
+			AC_CHECK_LIB(nl-3, nl_socket_alloc,
+			[
+				#
+				# Yes, we have libnl 3.x.
+				#
+				LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
+				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+				V_INCLS="$V_INCLS ${incdir}"
+				have_libnl=yes
+			],[
+				#
+				# No, we don't have libnl at all.
+				#
+				if test x$with_libnl = xyes ; then
+					AC_MSG_ERROR([libnl support requested but libnl not found])
+				fi
+			], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )
+		fi
 	fi
 
 	#

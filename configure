@@ -6870,7 +6870,32 @@ fi
                   ;;
                 esac
 
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_socket_alloc in -lnl-3" >&5
+		if test "x$PKGCONFIG" != "xno"; then
+			#
+			# We have pkg-config; see if we have libnl-3.0
+			# as a package.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libnl-3.0 with pkg-config" >&5
+$as_echo_n "checking for libnl-3.0 with pkg-config... " >&6; }
+			if "$PKGCONFIG" libnl-3.0; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+				have_libnl=yes
+				libnl_cflags=`"$PKGCONFIG" --cflags libnl-3.0`
+				V_INCLS="$V_INCLS ${libnl_cflags}"
+				libnl_libs=`"$PKGCONFIG" --libs openssl`
+				LIBS="${libnl_libs} $LIBS"
+			else
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+			fi
+		fi
+
+		if test x$have_libnl != xyes; then
+			#
+			# Check for it directly.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_socket_alloc in -lnl-3" >&5
 $as_echo_n "checking for nl_socket_alloc in -lnl-3... " >&6; }
 if ${ac_cv_lib_nl_3_nl_socket_alloc+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6908,27 +6933,28 @@ fi
 $as_echo "$ac_cv_lib_nl_3_nl_socket_alloc" >&6; }
 if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 
-			#
-			# Yes, we have libnl 3.x.
-			#
-			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
+				#
+				# Yes, we have libnl 3.x.
+				#
+				LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
-			V_INCLS="$V_INCLS ${incdir}"
-			have_any_nl="yes"
+				V_INCLS="$V_INCLS ${incdir}"
+				have_libnl=yes
 
 else
 
-			#
-			# No, we don't have libnl at all.
-			#
-			if test x$with_libnl = xyes ; then
-				as_fn_error $? "libnl support requested but libnl not found" "$LINENO" 5
-			fi
+				#
+				# No, we don't have libnl at all.
+				#
+				if test x$with_libnl = xyes ; then
+					as_fn_error $? "libnl support requested but libnl not found" "$LINENO" 5
+				fi
 
 fi
 
+		fi
 	fi
 
 	#

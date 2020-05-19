@@ -1223,6 +1223,8 @@ else()
 endif(WIN32)
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 
+find_package(PkgConfig QUIET)
+
 #
 # Do capture-mechanism-dependent tests.
 #
@@ -1302,19 +1304,24 @@ else(WIN32)
         # let's drop support for older versions of libnl, too.
         #
         if(BUILD_WITH_LIBNL)
-            cmake_push_check_state()
-            set(CMAKE_REQUIRED_LIBRARIES nl-3)
-            check_function_exists(nl_socket_alloc HAVE_LIBNL)
-            cmake_pop_check_state()
-            if(HAVE_LIBNL)
-                #
-                # Yes, we have libnl 3.x.
-                #
-                set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
-                include_directories("/usr/include/libnl3")
+            pkg_check_modules(LIBNL libnl-3.0)
+            if(LIBNL_FOUND)
+                set(PCAP_LINK_LIBRARIES ${LIBNL_LIBRARIES} ${PCAP_LINK_LIBRARIES})
+            else()
+                cmake_push_check_state()
+                set(CMAKE_REQUIRED_LIBRARIES nl-3)
+                check_function_exists(nl_socket_alloc HAVE_LIBNL)
+                cmake_pop_check_state()
+                if(HAVE_LIBNL)
+                    #
+                    # Yes, we have libnl 3.x.
+                    #
+                    set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
+                    include_directories("/usr/include/libnl3")
+                endif()
+            else()
+                unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
             endif()
-        else()
-            unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
