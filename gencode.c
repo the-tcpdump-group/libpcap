@@ -8198,7 +8198,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
         default:
 #if defined(linux)
 		/*
-		 * This is Linux with PF_PACKET support.
+		 * This is Linux; we require PF_PACKET support.
 		 * If this is a *live* capture, we can look at
 		 * special meta-data in the filter expression;
 		 * if it's a savefile, we can't.
@@ -8351,7 +8351,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		 */
 #if defined(linux)
 		/*
-		 * This is Linux; we assume it has PF_PACKET support.
+		 * This is Linux; we require PF_PACKET support.
 		 * If this is a *live* capture, we can look at
 		 * special meta-data in the filter expression;
 		 * if it's a savefile, we can't.
