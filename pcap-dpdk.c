@@ -284,7 +284,7 @@ static uint32_t dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_m
 }
 
 
-static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
+static int dpdk_read_with_timeout(pcap_t *p, struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int nb_rx = 0;
 	int timeout_ms = p->opt.timeout;
@@ -345,7 +345,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 		}
 		// read once in non-blocking mode, or try many times waiting for timeout_ms.
 		// if timeout_ms == 0, it will be blocked until one packet arrives or break_loop is setted.
-		nb_rx = dpdk_read_with_timeout(p, portid, pkts_burst, burst_cnt);
+		nb_rx = dpdk_read_with_timeout(p, pkts_burst, burst_cnt);
 		if (nb_rx == 0){
 			if (pd->nonblock){
 				RTE_LOG(DEBUG, USER1, "dpdk: no packets available in non-blocking mode.\n");
