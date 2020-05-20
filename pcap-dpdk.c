@@ -272,7 +272,7 @@ static inline void calculate_timestamp(struct dpdk_ts_helper *helper,struct time
 	timeradd(&(helper->start_time), &cur_time, ts);
 }
 
-static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *mbuf)
+static uint32_t dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_mbuf *mbuf)
 {
 	uint32_t total_len = 0;
 	while (mbuf && (total_len+mbuf->data_len) < len ){
