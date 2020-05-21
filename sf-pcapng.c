@@ -197,6 +197,7 @@ typedef enum {
  * Per-interface information.
  */
 struct pcap_ng_if {
+	uint32_t snaplen;		/* snapshot length */
 	uint64_t tsresol;		/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	uint64_t scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
@@ -587,7 +588,8 @@ done:
 }
 
 static int
-add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
+add_interface(pcap_t *p, struct interface_description_block *idbp,
+    struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
 	uint64_t tsresol;
@@ -695,6 +697,8 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		ps->ifaces_size = new_ifaces_size;
 		ps->ifaces = new_ifaces;
 	}
+
+	ps->ifaces[ps->ifcount - 1].snaplen = idbp->snaplen;
 
 	/*
 	 * Set the default time stamp resolution and offset.
@@ -1013,7 +1017,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 			/*
 			 * Try to add this interface.
 			 */
-			if (!add_interface(p, &cursor, errbuf))
+			if (!add_interface(p, idbp, &cursor, errbuf))
 				goto fail;
 
 			goto done;
@@ -1251,7 +1255,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Try to add this interface.
 			 */
-			if (!add_interface(p, &cursor, p->errbuf))
+			if (!add_interface(p, idbp, &cursor, p->errbuf))
 				return (-1);
 			break;
 
