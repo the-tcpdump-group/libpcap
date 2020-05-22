@@ -240,7 +240,7 @@ typedef bpf_u_int32 *uset;
  * It's a directed graph, so an edge has a predecessor and a successor.
  */
 struct edge {
-	int id;
+	u_int id;
 	int code;		/* opcode for branch corresponding to this edge */
 	uset edom;
 	struct block *succ;	/* successor vertex */
@@ -254,7 +254,7 @@ struct edge {
  * branch to successor blocks.
  */
 struct block {
-	int id;
+	u_int id;
 	struct slist *stmts;	/* side effect stmts */
 	struct stmt s;		/* branch stmt */
 	int mark;

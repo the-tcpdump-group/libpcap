@@ -427,7 +427,8 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	 */
 	x = opt_state->all_dom_sets;
 	/*
-	 * XXX - what if the multiplication overflows?
+	 * In opt_init(), we've also made sure the product doesn't
+	 * overflow.
 	 */
 	i = opt_state->n_blocks * opt_state->nodewords;
 	while (i != 0) {
@@ -476,7 +477,8 @@ find_edom(opt_state_t *opt_state, struct block *root)
 
 	x = opt_state->all_edge_sets;
 	/*
-	 * XXX - what if the multiplication overflows?
+	 * In opt_init(), we've also made sure the product doesn't
+	 * overflow.
 	 */
 	for (i = opt_state->n_edges * opt_state->edgewords; i != 0; ) {
 		--i;
@@ -2457,13 +2459,19 @@ count_blocks(struct icode *ic, struct block *p)
 static void
 number_blks_r(opt_state_t *opt_state, struct icode *ic, struct block *p)
 {
-	int n;
+	u_int n;
 
 	if (p == 0 || isMarked(ic, p))
 		return;
 
 	Mark(ic, p);
 	n = opt_state->n_blocks++;
+	if (opt_state->n_blocks == 0) {
+		/*
+		 * Overflow.
+		 */
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
 	p->id = n;
 	opt_state->blocks[n] = p;
 
@@ -2511,6 +2519,8 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 {
 	bpf_u_int32 *p;
 	int i, n, max_stmts;
+	u_int product;
+	size_t block_memsize, edge_memsize;
 
 	/*
 	 * First, count the blocks, so we can malloc an array to map
@@ -2526,6 +2536,12 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	number_blks_r(opt_state, ic, ic->root);
 
 	opt_state->n_edges = 2 * opt_state->n_blocks;
+	if ((opt_state->n_edges / 2) != opt_state->n_blocks) {
+		/*
+		 * Overflow.
+		 */
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
 	opt_state->edges = (struct edge **)calloc(opt_state->n_edges, sizeof(*opt_state->edges));
 	if (opt_state->edges == NULL) {
 		opt_error(opt_state, "malloc");
@@ -2542,9 +2558,59 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	opt_state->edgewords = opt_state->n_edges / BITS_PER_WORD + 1;
 	opt_state->nodewords = opt_state->n_blocks / BITS_PER_WORD + 1;
 
+	/*
+	 * Make sure opt_state->n_blocks * opt_state->nodewords fits
+	 * in a u_int; we use it as a u_int number-of-iterations
+	 * value.
+	 */
+	product = opt_state->n_blocks * opt_state->nodewords;
+	if ((product / opt_state->n_blocks) != opt_state->nodewords) {
+		/*
+		 * XXX - just punt and don't try to optimize?
+		 * In practice, this is unlikely to happen with
+		 * a normal filter.
+		 */
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
+
+	/*
+	 * Make sure the total memory required for that doesn't
+	 * overflow.
+	 */
+	block_memsize = (size_t)2 * product * sizeof(*opt_state->space);
+	if ((block_memsize / product) != 2 * sizeof(*opt_state->space)) {
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
+
+	/*
+	 * Make sure opt_state->n_edges * opt_state->edgewords fits
+	 * in a u_int; we use it as a u_int number-of-iterations
+	 * value.
+	 */
+	product = opt_state->n_edges * opt_state->edgewords;
+	if ((product / opt_state->n_edges) != opt_state->edgewords) {
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
+
+	/*
+	 * Make sure the total memory required for that doesn't
+	 * overflow.
+	 */
+	edge_memsize = (size_t)product * sizeof(*opt_state->space);
+	if (edge_memsize / product != sizeof(*opt_state->space)) {
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
+
+	/*
+	 * Make sure the total memory required for both of them dosn't
+	 * overflow.
+	 */
+	if (block_memsize > SIZE_MAX - edge_memsize) {
+		opt_error(opt_state, "filter is too complex to optimize");
+	}
+
 	/* XXX */
-	opt_state->space = (bpf_u_int32 *)malloc(2 * opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->space)
-				 + opt_state->n_edges * opt_state->edgewords * sizeof(*opt_state->space));
+	opt_state->space = (bpf_u_int32 *)malloc(block_memsize + edge_memsize);
 	if (opt_state->space == NULL) {
 		opt_error(opt_state, "malloc");
 	}
@@ -2920,7 +2986,7 @@ dot_dump_node(struct icode *ic, struct block *block, struct bpf_program *prog,
 	icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
 	noffset = min(block->offset + icount, (int)prog->bf_len);
 
-	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"BLOCK%d\\n", block->id, block->id, block->id);
+	fprintf(out, "\tblock%u [shape=ellipse, id=\"block-%u\" label=\"BLOCK%u\\n", block->id, block->id, block->id);
 	for (i = block->offset; i < noffset; i++) {
 		fprintf(out, "\\n%s", bpf_image(prog->bf_insns + i, i));
 	}
@@ -2947,9 +3013,9 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
 	Mark(ic, block);
 
 	if (JT(block)) {
-		fprintf(out, "\t\"block%d\":se -> \"block%d\":n [label=\"T\"]; \n",
+		fprintf(out, "\t\"block%u\":se -> \"block%u\":n [label=\"T\"]; \n",
 				block->id, JT(block)->id);
-		fprintf(out, "\t\"block%d\":sw -> \"block%d\":n [label=\"F\"]; \n",
+		fprintf(out, "\t\"block%u\":sw -> \"block%u\":n [label=\"F\"]; \n",
 			   block->id, JF(block)->id);
 	}
 	dot_dump_edge(ic, JT(block), out);
