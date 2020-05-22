@@ -427,8 +427,7 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	 */
 	x = opt_state->all_dom_sets;
 	/*
-	 * In opt_init(), we've also made sure the product doesn't
-	 * overflow.
+	 * In opt_init(), we've made sure the product doesn't overflow.
 	 */
 	i = opt_state->n_blocks * opt_state->nodewords;
 	while (i != 0) {
@@ -477,8 +476,7 @@ find_edom(opt_state_t *opt_state, struct block *root)
 
 	x = opt_state->all_edge_sets;
 	/*
-	 * In opt_init(), we've also made sure the product doesn't
-	 * overflow.
+	 * In opt_init(), we've made sure the product doesn't overflow.
 	 */
 	for (i = opt_state->n_edges * opt_state->edgewords; i != 0; ) {
 		--i;
