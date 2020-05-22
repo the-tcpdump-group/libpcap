@@ -103,7 +103,7 @@ pcap_set_print_dot_graph(int value)
  * Takes a 32-bit integer as an argument.
  *
  * If handed a non-zero value, returns the index of the lowest set bit,
- * counting upwards fro zero.
+ * counting upwards from zero.
  *
  * If handed zero, the results are platform- and compiler-dependent.
  * Keep it out of the light, don't give it any water, don't feed it
