@@ -427,20 +427,18 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	 */
 	x = opt_state->all_dom_sets;
 	/*
-	 * These are both guaranteed to be > 0, so the product is
-	 * guaranteed to be > 0.
-	 *
-	 * XXX - but what if it overflows?
+	 * XXX - what if the multiplication overflows?
 	 */
 	i = opt_state->n_blocks * opt_state->nodewords;
-	do
+	while (i != 0) {
+		--i;
 		*x++ = 0xFFFFFFFFU;
-	while (--i != 0);
+	}
 	/* Root starts off empty. */
-	i = opt_state->nodewords;
-	do
+	for (i = opt_state->nodewords; i != 0;) {
+		--i;
 		root->dom[i] = 0;
-	while (--i != 0);
+	}
 
 	/* root->level is the highest level no found. */
 	for (level = root->level; level >= 0; --level) {
@@ -478,15 +476,12 @@ find_edom(opt_state_t *opt_state, struct block *root)
 
 	x = opt_state->all_edge_sets;
 	/*
-	 * These are both guaranteed to be > 0, so the product is
-	 * guaranteed to be > 0.
-	 *
-	 * XXX - but what if it overflows?
+	 * XXX - what if the multiplication overflows?
 	 */
-	i = opt_state->n_edges * opt_state->edgewords;
-	do
+	for (i = opt_state->n_edges * opt_state->edgewords; i != 0; ) {
+		--i;
 		x[i] = 0xFFFFFFFFU;
-	while (--i != 0);
+	}
 
 	/* root->level is the highest level no found. */
 	memset(root->et.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
@@ -2138,17 +2133,19 @@ link_inedge(struct edge *parent, struct block *child)
 static void
 find_inedges(opt_state_t *opt_state, struct block *root)
 {
+	u_int i;
+	int level;
 	struct block *b;
 
-	for (u_int i = 0; i < opt_state->n_blocks; ++i)
+	for (i = 0; i < opt_state->n_blocks; ++i)
 		opt_state->blocks[i]->in_edges = 0;
 
 	/*
 	 * Traverse the graph, adding each edge to the predecessor
 	 * list of its successors.  Skip the leaves (i.e. level 0).
 	 */
-	for (int i = root->level; i > 0; --i) {
-		for (b = opt_state->levels[i]; b != 0; b = b->link) {
+	for (level = root->level; level > 0; --level) {
+		for (b = opt_state->levels[level]; b != 0; b = b->link) {
 			link_inedge(&b->et, JT(b));
 			link_inedge(&b->ef, JF(b));
 		}
