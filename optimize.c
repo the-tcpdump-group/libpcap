@@ -115,7 +115,7 @@ pcap_set_print_dot_graph(int value)
   /*
    * GCC 3.4 and later; we have __builtin_ctz().
    */
-  #define lowest_set_bit(mask) __builtin_ctz(mask)
+  #define lowest_set_bit(mask) ((u_int)__builtin_ctz(mask))
 #elif defined(_MSC_VER)
   /*
    * Visual Studio; we support only 2005 and later, so use
@@ -127,7 +127,7 @@ pcap_set_print_dot_graph(int value)
 #pragma intrinsic(_BitScanForward)
 #endif
 
-static __forceinline int
+static __forceinline u_int
 lowest_set_bit(int mask)
 {
 	unsigned long bit;
@@ -138,14 +138,14 @@ lowest_set_bit(int mask)
 	 */
 	if (_BitScanForward(&bit, (unsigned int)mask) == 0)
 		abort();	/* mask is zero */
-	return (int)bit;
+	return (u_int)bit;
 }
 #elif defined(MSDOS) && defined(__DJGPP__)
   /*
    * MS-DOS with DJGPP, which declares ffs() in <string.h>, which
    * we've already included.
    */
-  #define lowest_set_bit(mask)	(ffs((mask)) - 1)
+  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
 #elif (defined(MSDOS) && defined(__WATCOMC__)) || defined(STRINGS_H_DECLARES_FFS)
   /*
    * MS-DOS with Watcom C, which has <strings.h> and declares ffs() there,
@@ -153,18 +153,18 @@ lowest_set_bit(int mask)
    * of the Single UNIX Specification).
    */
   #include <strings.h>
-  #define lowest_set_bit(mask)	(ffs((mask)) - 1)
+  #define lowest_set_bit(mask)	(u_int)((ffs((mask)) - 1))
 #else
 /*
  * None of the above.
  * Use a perfect-hash-function-based function.
  */
-static int
+static u_int
 lowest_set_bit(int mask)
 {
 	unsigned int v = (unsigned int)mask;
 
-	static const int MultiplyDeBruijnBitPosition[32] = {
+	static const u_int MultiplyDeBruijnBitPosition[32] = {
 		0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
 		31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
 	};
@@ -257,17 +257,17 @@ typedef struct {
 	 */
 	int non_branch_movement_performed;
 
-	int n_blocks;
+	u_int n_blocks;		/* number of blocks in the CFG; guaranteed to be > 0, as it's a RET instruction at a minimum */
 	struct block **blocks;
-	int n_edges;
+	u_int n_edges;		/* twice n_blocks, so guaranteed to be > 0 */
 	struct edge **edges;
 
 	/*
 	 * A bit vector set representation of the dominators.
 	 * We round up the set size to the next power of two.
 	 */
-	int nodewords;	/* number of 32-bit words for a bit vector of "number of nodes" bits */
-	int edgewords;	/* number of 32-bit words for a bit vector of "number of edges" bits */
+	u_int nodewords;	/* number of 32-bit words for a bit vector of "number of nodes" bits; guaranteed to be > 0 */
+	u_int edgewords;	/* number of 32-bit words for a bit vector of "number of edges" bits; guaranteed to be > 0 */
 	struct block **levels;
 	bpf_u_int32 *space;
 
@@ -292,32 +292,35 @@ typedef struct {
 
 /*
  * a := a intersect b
+ * n must be guaranteed to be > 0
  */
 #define SET_INTERSECT(a, b, n)\
 {\
 	register bpf_u_int32 *_x = a, *_y = b;\
-	register int _n = n;\
-	while (--_n >= 0) *_x++ &= *_y++;\
+	register u_int _n = n;\
+	do *_x++ &= *_y++; while (--_n != 0);\
 }
 
 /*
  * a := a - b
+ * n must be guaranteed to be > 0
  */
 #define SET_SUBTRACT(a, b, n)\
 {\
 	register bpf_u_int32 *_x = a, *_y = b;\
-	register int _n = n;\
-	while (--_n >= 0) *_x++ &=~ *_y++;\
+	register u_int _n = n;\
+	do *_x++ &=~ *_y++; while (--_n != 0);\
 }
 
 /*
  * a := a union b
+ * n must be guaranteed to be > 0
  */
 #define SET_UNION(a, b, n)\
 {\
 	register bpf_u_int32 *_x = a, *_y = b;\
-	register int _n = n;\
-	while (--_n >= 0) *_x++ |= *_y++;\
+	register u_int _n = n;\
+	do *_x++ |= *_y++; while (--_n != 0);\
 }
 
 	uset all_dom_sets;
@@ -414,7 +417,8 @@ find_levels(opt_state_t *opt_state, struct icode *ic)
 static void
 find_dom(opt_state_t *opt_state, struct block *root)
 {
-	int i;
+	u_int i;
+	int level;
 	struct block *b;
 	bpf_u_int32 *x;
 
@@ -422,16 +426,25 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	 * Initialize sets to contain all nodes.
 	 */
 	x = opt_state->all_dom_sets;
+	/*
+	 * These are both guaranteed to be > 0, so the product is
+	 * guaranteed to be > 0.
+	 *
+	 * XXX - but what if it overflows?
+	 */
 	i = opt_state->n_blocks * opt_state->nodewords;
-	while (--i >= 0)
+	do
 		*x++ = 0xFFFFFFFFU;
+	while (--i != 0);
 	/* Root starts off empty. */
-	for (i = opt_state->nodewords; --i >= 0;)
+	i = opt_state->nodewords;
+	do
 		root->dom[i] = 0;
+	while (--i != 0);
 
 	/* root->level is the highest level no found. */
-	for (i = root->level; i >= 0; --i) {
-		for (b = opt_state->levels[i]; b; b = b->link) {
+	for (level = root->level; level >= 0; --level) {
+		for (b = opt_state->levels[level]; b; b = b->link) {
 			SET_INSERT(b->dom, b->id);
 			if (JT(b) == 0)
 				continue;
@@ -458,19 +471,28 @@ propedom(opt_state_t *opt_state, struct edge *ep)
 static void
 find_edom(opt_state_t *opt_state, struct block *root)
 {
-	int i;
+	u_int i;
 	uset x;
+	int level;
 	struct block *b;
 
 	x = opt_state->all_edge_sets;
-	for (i = opt_state->n_edges * opt_state->edgewords; --i >= 0; )
+	/*
+	 * These are both guaranteed to be > 0, so the product is
+	 * guaranteed to be > 0.
+	 *
+	 * XXX - but what if it overflows?
+	 */
+	i = opt_state->n_edges * opt_state->edgewords;
+	do
 		x[i] = 0xFFFFFFFFU;
+	while (--i != 0);
 
 	/* root->level is the highest level no found. */
 	memset(root->et.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
 	memset(root->ef.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
-	for (i = root->level; i >= 0; --i) {
-		for (b = opt_state->levels[i]; b != 0; b = b->link) {
+	for (level = root->level; level >= 0; --level) {
+		for (b = opt_state->levels[level]; b != 0; b = b->link) {
 			propedom(opt_state, &b->et);
 			propedom(opt_state, &b->ef);
 		}
@@ -487,7 +509,7 @@ find_edom(opt_state_t *opt_state, struct block *root)
 static void
 find_closure(opt_state_t *opt_state, struct block *root)
 {
-	int i;
+	int level;
 	struct block *b;
 
 	/*
@@ -497,8 +519,8 @@ find_closure(opt_state_t *opt_state, struct block *root)
 	      opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->all_closure_sets));
 
 	/* root->level is the highest level no found. */
-	for (i = root->level; i >= 0; --i) {
-		for (b = opt_state->levels[i]; b; b = b->link) {
+	for (level = root->level; level >= 0; --level) {
+		for (b = opt_state->levels[level]; b; b = b->link) {
 			SET_INSERT(b->closure, b->id);
 			if (JT(b) == 0)
 				continue;
@@ -1674,7 +1696,7 @@ fold_edge(struct block *child, struct edge *ep)
 static void
 opt_j(opt_state_t *opt_state, struct edge *ep)
 {
-	register int i, k;
+	register u_int i, k;
 	register struct block *target;
 
 	/*
@@ -2116,17 +2138,16 @@ link_inedge(struct edge *parent, struct block *child)
 static void
 find_inedges(opt_state_t *opt_state, struct block *root)
 {
-	int i;
 	struct block *b;
 
-	for (i = 0; i < opt_state->n_blocks; ++i)
+	for (u_int i = 0; i < opt_state->n_blocks; ++i)
 		opt_state->blocks[i]->in_edges = 0;
 
 	/*
 	 * Traverse the graph, adding each edge to the predecessor
 	 * list of its successors.  Skip the leaves (i.e. level 0).
 	 */
-	for (i = root->level; i > 0; --i) {
+	for (int i = root->level; i > 0; --i) {
 		for (b = opt_state->levels[i]; b != 0; b = b->link) {
 			link_inedge(&b->et, JT(b));
 			link_inedge(&b->ef, JF(b));
@@ -2336,7 +2357,7 @@ static void
 intern_blocks(opt_state_t *opt_state, struct icode *ic)
 {
 	struct block *p;
-	int i, j;
+	u_int i, j;
 	int done1; /* don't shadow global */
  top:
 	done1 = 1;
@@ -2345,7 +2366,8 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 
 	mark_code(ic);
 
-	for (i = opt_state->n_blocks - 1; --i >= 0; ) {
+	for (i = opt_state->n_blocks - 1; i != 0; ) {
+		--i;
 		if (!isMarked(ic, opt_state->blocks[i]))
 			continue;
 		for (j = i + 1; j < opt_state->n_blocks; ++j) {
