@@ -321,7 +321,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	struct pcap_pkthdr pcap_header;
-	uint16_t portid = pd->portid;
 	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
 	uint32_t pkt_len = 0;
 	uint32_t caplen = 0;
