@@ -1666,6 +1666,116 @@ can_be_bound(const char *name _U_)
 }
 
 /*
+ * Get a socket to use with various interface ioctls.
+ */
+static int
+get_if_ioctl_socket(void)
+{
+	int fd;
+	int save_errno;
+
+	/*
+	 * This is a bit ugly:
+	 *
+	 * AF_INET should suffice *if* you have IPv4 configured into the
+	 * kernel, but, apparently, soe systems have network adapters but
+	 * have kernels without IPv4 support.
+	 *
+	 * AF_UNIX should suffice, except that some SELinux systems don't
+	 * allow you create them - and it might also be possible to create
+	 * a kernel without that.
+	 *
+	 * AF_INET6 should suffice *if* you have IPv6 configured into the
+	 * kernel, but if you don't have AF_INET, you might not have
+	 * AF_INET6, either.
+	 *
+	 * AF_NETLINK should suffice *if* you have Netlink configured into
+	 * the kernel (can it be configured out if you have any networking
+	 * support at all?) *and* if you're running a sufficiently recent
+	 * kernel, but not all the kernels we support are sufficiently
+	 * recent - that feature was introduced in Linux 4.6.
+	 *
+	 * AF_PACKET would work, except that some of these calls should
+	 * work even if you *don't* have capture permission (you should be
+	 * able to enumerate interfaces and get information about them
+	 * without capture permission; you shouldn't get a failure until
+	 * you try pcap_activate()).  (If you don't allow programs to
+	 * get as much information as possible about interfaces if you
+	 * don't have permission to capture, you run the risk of users
+	 * asking "why isn't it showing XXX" - or, worse, if you don't
+	 * show interfaces *at all* if you don't have permission to
+	 * capture on them, "why do no interfaces show up?" - when the
+	 * real problem is a permissions problem.  Error reports of that
+	 * type require a lot more back-and-forth to debug, as evidenced
+	 * by many Wireshark bugs/mailing list questions/Q&A questoins.)
+	 *
+	 * So:
+	 *
+	 * we first try an AF_UNIX socket;
+	 *
+	 * if that fails for any reason other than the two "out of FDs"
+	 * failures, we try an AF_INET socket;
+	 *
+	 * if that fails for any reason other than the two "out of FDs"
+	 * failures, we try an AF_NETLINK socket, where "try" includes
+	 * "try to do a device ioctl on it".
+	 */
+	fd = socket(AF_UNIX, SOCK_RAW, 0);
+	if (fd != -1) {
+		/*
+		 * OK, we got it!
+		 */
+		return (fd);
+	}
+
+	/*
+	 * OK, try an AF_INET socket.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd != -1) {
+		/*
+		 * OK, we got it!
+		 */
+		return (fd);
+	}
+
+	/*
+	 * OK, that failed, too.  Try an AF_NETLINK socket.
+	 * Do an SIOCGIFNAME ioctl on it to see whether it
+	 * supports device ioctls.  If it fails with
+	 * EOPNOTSUPP, that means the kernel doesn't support
+	 * device ioctls on AF_NETLINK sockets, so close the
+	 * socket and return the error from the *previous*
+	 * socket() call, as if we'd never tried AF_NETLINK
+	 * in the first place.
+	 */
+	save_errno = errno;
+	fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+	if (fd != -1) {
+		/*
+		 * OK, let's make sure we can do an SIOCGIFNAME
+		 * ioctl.
+		 */
+		struct ifreq ifr;
+
+		memset(&ifr, 0, sizeof(ifr));
+		if (ioctl(fd, SIOCGIFNAME, &ifr) == -1 &&
+		    errno == EOPNOTSUPP) {
+			/*
+			 * It failed because device ioctls aren't
+			 * supported.  Pretend we didn't try an
+			 * AF_NETLINK socket in the first place.
+			 */
+			close(fd);
+			errno = save_errno;
+			return (-1);
+		}
+		return (fd);
+	}
+	return (-1);	
+}
+
+/*
  * Get additional flags for a device, using SIOCGIFMEDIA.
  */
 static int
@@ -1686,7 +1796,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		return 0;
 	}
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = get_if_ioctl_socket();
 	if (sock == -1) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
 		    "Can't create socket to get ethtool information for %s",
@@ -5395,7 +5505,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	/*
 	 * Create a socket from which to fetch time stamping capabilities.
 	 */
-	fd = socket(PF_UNIX, SOCK_RAW, 0);
+	fd = get_if_ioctl_socket();
 	if (fd < 0) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO)");
