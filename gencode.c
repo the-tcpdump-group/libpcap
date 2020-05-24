@@ -6491,7 +6491,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		/*NOTREACHED*/
 
 	case Q_ESP:
-		bpf_error(cstate, "'ah proto' is bogus");
+		bpf_error(cstate, "'esp proto' is bogus");
 		/*NOTREACHED*/
 
 	case Q_PIM:
