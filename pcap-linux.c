@@ -1672,28 +1672,31 @@ static int
 get_if_ioctl_socket(void)
 {
 	int fd;
-	int save_errno;
 
 	/*
-	 * This is a bit ugly:
+	 * This is a bit ugly.
 	 *
-	 * AF_INET should suffice *if* you have IPv4 configured into the
-	 * kernel, but, apparently, soe systems have network adapters but
-	 * have kernels without IPv4 support.
+	 * There isn't a socket type that's guaranteed to work.
 	 *
-	 * AF_UNIX should suffice, except that some SELinux systems don't
-	 * allow you create them - and it might also be possible to create
-	 * a kernel without that.
-	 *
-	 * AF_INET6 should suffice *if* you have IPv6 configured into the
-	 * kernel, but if you don't have AF_INET, you might not have
-	 * AF_INET6, either.
-	 *
-	 * AF_NETLINK should suffice *if* you have Netlink configured into
-	 * the kernel (can it be configured out if you have any networking
+	 * AF_NETLINK will work *if* you have Netlink configured into th
+	 * kernel (can it be configured out if you have any networking
 	 * support at all?) *and* if you're running a sufficiently recent
 	 * kernel, but not all the kernels we support are sufficiently
 	 * recent - that feature was introduced in Linux 4.6.
+	 *
+	 * AF_UNIX will work *if* you have UNIX-domain sockets configured
+	 * into the kernel and *if* you're not on a system that doesn't
+	 * allow them - some SELinux systems don't allow you create them.
+	 * Most systems probably have them configured in, but all systems
+	 * have them configured in and allow them to be created.
+	 *
+	 * AF_INET will work *if* you have IPv4 configured into the kernel,
+	 * but, apparently, some systems have network adapters but have
+	 * kernels without IPv4 support.
+	 *
+	 * AF_INET6 will work *if* you have IPv6 configured into the
+	 * kernel, but if you don't have AF_INET, you might not have
+	 * AF_INET6, either.
 	 *
 	 * AF_PACKET would work, except that some of these calls should
 	 * work even if you *don't* have capture permission (you should be
@@ -1711,14 +1714,47 @@ get_if_ioctl_socket(void)
 	 *
 	 * So:
 	 *
-	 * we first try an AF_UNIX socket;
+	 * we first try an AF_NETLINK socket, where "try" includes
+	 * "try to do a device ioctl on it", as, in the future, once
+	 * pre-4.6 kernels are sufficiently rare, that will probably
+	 * be the mechanism most likely to work;
 	 *
-	 * if that fails for any reason other than the two "out of FDs"
-	 * failures, we try an AF_INET socket;
+	 * if that fails, we try an AF_UNIX socket, as that's less
+	 * likely to be configured out on a networking-capable system
+	 * than is IP;
 	 *
-	 * if that fails for any reason other than the two "out of FDs"
-	 * failures, we try an AF_NETLINK socket, where "try" includes
-	 * "try to do a device ioctl on it".
+	 * if that fails, we try an AF_INET socket.
+	 */
+	fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+	if (fd != -1) {
+		/*
+		 * OK, let's make sure we can do an SIOCGIFNAME
+		 * ioctl.
+		 */
+		struct ifreq ifr;
+
+		memset(&ifr, 0, sizeof(ifr));
+		if (ioctl(fd, SIOCGIFNAME, &ifr) == 0 ||
+		    errno != EOPNOTSUPP) {
+			/*
+			 * It succeeded, or failed for some reason
+			 * other than "netlink sockets don't support
+			 * device ioctls".  Go with the AF_NETLINK
+			 * socket.
+			 */
+			return (fd);
+		}
+
+		/*
+		 * OK, that didn't work, so it's as bad as "netlink
+		 * sockets aren't available".  Close the socket and
+		 * drive on.
+		 */
+		close(fd);
+	}
+
+	/*
+	 * Now try an AF_UNIX socket.
 	 */
 	fd = socket(AF_UNIX, SOCK_RAW, 0);
 	if (fd != -1) {
@@ -1729,50 +1765,14 @@ get_if_ioctl_socket(void)
 	}
 
 	/*
-	 * OK, try an AF_INET socket.
+	 * Now try an AF_INET socket.
+	 *
+	 * XXX - if that fails, is there anything else we should try?
+	 * AF_CAN, for embedded systems in vehicles, in case they're
+	 * built without Internet protocol support?  Any other socket
+	 * types popular in non-Internet embedded systems?
 	 */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd != -1) {
-		/*
-		 * OK, we got it!
-		 */
-		return (fd);
-	}
-
-	/*
-	 * OK, that failed, too.  Try an AF_NETLINK socket.
-	 * Do an SIOCGIFNAME ioctl on it to see whether it
-	 * supports device ioctls.  If it fails with
-	 * EOPNOTSUPP, that means the kernel doesn't support
-	 * device ioctls on AF_NETLINK sockets, so close the
-	 * socket and return the error from the *previous*
-	 * socket() call, as if we'd never tried AF_NETLINK
-	 * in the first place.
-	 */
-	save_errno = errno;
-	fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
-	if (fd != -1) {
-		/*
-		 * OK, let's make sure we can do an SIOCGIFNAME
-		 * ioctl.
-		 */
-		struct ifreq ifr;
-
-		memset(&ifr, 0, sizeof(ifr));
-		if (ioctl(fd, SIOCGIFNAME, &ifr) == -1 &&
-		    errno == EOPNOTSUPP) {
-			/*
-			 * It failed because device ioctls aren't
-			 * supported.  Pretend we didn't try an
-			 * AF_NETLINK socket in the first place.
-			 */
-			close(fd);
-			errno = save_errno;
-			return (-1);
-		}
-		return (fd);
-	}
-	return (-1);	
+	return (socket(AF_INET, SOCK_DGRAM, 0));
 }
 
 /*
