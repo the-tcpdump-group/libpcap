@@ -294,7 +294,7 @@ struct rpcap_pkthdr
 	uint32 timestamp_sec;	/* 'struct timeval' compatible, it represents the 'tv_sec' field */
 	uint32 timestamp_usec;	/* 'struct timeval' compatible, it represents the 'tv_usec' field */
 	uint32 caplen;		/* Length of portion present in the capture */
-	uint32 len;		/* Real length this packet (off wire) */
+	uint32 len;		/* Real length of this packet (off wire) */
 	uint32 npkt;		/* Ordinal number of the packet (i.e. the first one captured has '1', the second one '2', etc) */
 };
 

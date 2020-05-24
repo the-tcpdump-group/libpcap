@@ -393,7 +393,7 @@ struct pcap_timeval {
 struct pcap_sf_pkthdr {
     struct pcap_timeval ts;	/* time stamp */
     bpf_u_int32 caplen;		/* length of portion present */
-    bpf_u_int32 len;		/* length this packet (off wire) */
+    bpf_u_int32 len;		/* length of this packet (off wire) */
 };
 
 /*
@@ -409,7 +409,7 @@ struct pcap_sf_pkthdr {
 struct pcap_sf_patched_pkthdr {
     struct pcap_timeval ts;	/* time stamp */
     bpf_u_int32 caplen;		/* length of portion present */
-    bpf_u_int32 len;		/* length this packet (off wire) */
+    bpf_u_int32 len;		/* length of this packet (off wire) */
     int		index;
     unsigned short protocol;
     unsigned char pkt_type;
