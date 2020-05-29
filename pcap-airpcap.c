@@ -772,12 +772,6 @@ airpcap_activate(pcap_t *p)
 	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
 		p->snapshot = MAXIMUM_SNAPLEN;
 
-	if (p->snapshot < 96)
-		/*
-		 * NIT requires a snapshot length of at least 96.
-		 */
-		p->snapshot = 96;
-
 	/*
 	 * If the buffer size wasn't explicitly set, default to
 	 * AIRPCAP_DEFAULT_KERNEL_BUFFER_SIZE.
