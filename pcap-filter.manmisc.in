@@ -361,9 +361,9 @@ True if the packet is an IPv6 multicast packet.
 .IP  "\fBether proto \fIprotocol\fR"
 True if the packet is of ether type \fIprotocol\fR.
 \fIProtocol\fP can be a number or one of the names
-\fBip\fP, \fBip6\fP, \fBarp\fP, \fBrarp\fP, \fBatalk\fP, \fBaarp\fP,
-\fBdecnet\fP, \fBsca\fP, \fBlat\fP, \fBmopdl\fP, \fBmoprc\fP,
-\fBiso\fP, \fBstp\fP, \fBipx\fP, or \fBnetbeui\fP.
+\fBaarp\fP, \fBarp\fP, \fBatalk\fP, \fBdecnet\fP, \fBip\fP, \fBip6\fP,
+\fBipx\fP, \fBiso\fP, \fBlat\fP, \fBmopdl\fP, \fBmoprc\fP, \fBnetbeui\fP,
+\fBrarp\fP, \fBsca\fP or \fBstp\fP.
 Note these identifiers are also keywords
 and must be escaped via backslash (\\).
 .IP
