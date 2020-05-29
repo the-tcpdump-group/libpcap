@@ -753,7 +753,7 @@ airpcap_activate(pcap_t *p)
 		status = p_AirpcapSetDeviceMacFlags(pa->adapter,
 		    AIRPCAP_MF_ACK_FRAMES_ON);
 	if (!status) {
-		AirpcapClose(pa->adapter);
+		p_AirpcapClose(pa->adapter);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "AirpcapSetDeviceMacFlags() failed: %s",
 		    p_AirpcapGetLastError(pa->adapter));
@@ -983,6 +983,6 @@ airpcap_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			return (-1);
 		}
 	}
-	AirpcapFreeDeviceList(airpcap_devices);
+	p_AirpcapFreeDeviceList(airpcap_devices);
 	return (0);
 }
