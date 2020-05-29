@@ -2533,6 +2533,12 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	opt_state->n_blocks = 0;
 	number_blks_r(opt_state, ic, ic->root);
 
+	/*
+	 * This "should not happen".
+	 */
+	if (opt_state->n_blocks == 0)
+		opt_error(opt_state, "filter has no instructions; please report this as a libpcap issue");
+
 	opt_state->n_edges = 2 * opt_state->n_blocks;
 	if ((opt_state->n_edges / 2) != opt_state->n_blocks) {
 		/*
