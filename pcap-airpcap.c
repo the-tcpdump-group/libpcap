@@ -60,6 +60,7 @@ typedef BOOL (*AirpcapGetDeviceListHandler)(PAirpcapDeviceDescription *, PCHAR);
 typedef VOID (*AirpcapFreeDeviceListHandler)(PAirpcapDeviceDescription);
 typedef PAirpcapHandle (*AirpcapOpenHandler)(PCHAR, PCHAR);
 typedef VOID (*AirpcapCloseHandler)(PAirpcapHandle);
+typedef BOOL (*AirpcapSetDeviceMacFlagsHandler)(PAirpcapHandle, UINT);
 typedef BOOL (*AirpcapSetLinkTypeHandler)(PAirpcapHandle, AirpcapLinkType);
 typedef BOOL (*AirpcapGetLinkTypeHandler)(PAirpcapHandle, PAirpcapLinkType);
 typedef BOOL (*AirpcapSetKernelBufferHandler)(PAirpcapHandle, UINT);
@@ -75,6 +76,7 @@ static AirpcapGetDeviceListHandler p_AirpcapGetDeviceList;
 static AirpcapFreeDeviceListHandler p_AirpcapFreeDeviceList;
 static AirpcapOpenHandler p_AirpcapOpen;
 static AirpcapCloseHandler p_AirpcapClose;
+static AirpcapSetDeviceMacFlagsHandler p_AirpcapSetDeviceMacFlags;
 static AirpcapSetLinkTypeHandler p_AirpcapSetLinkType;
 static AirpcapGetLinkTypeHandler p_AirpcapGetLinkType;
 static AirpcapSetKernelBufferHandler p_AirpcapSetKernelBuffer;
@@ -178,6 +180,7 @@ load_airpcap_functions(void)
 		p_AirpcapFreeDeviceList = (AirpcapFreeDeviceListHandler) pcap_find_function(airpcap_lib, "AirpcapFreeDeviceList");
 		p_AirpcapOpen = (AirpcapOpenHandler) pcap_find_function(airpcap_lib, "AirpcapOpen");
 		p_AirpcapClose = (AirpcapCloseHandler) pcap_find_function(airpcap_lib, "AirpcapClose");
+		p_AirpcapSetDeviceMacFlags = (AirpcapSetDeviceMacFlagsHandler) pcap_find_function(airpcap_lib, "AirpcapSetDeviceMacFlags");
 		p_AirpcapSetLinkType = (AirpcapSetLinkTypeHandler) pcap_find_function(airpcap_lib, "AirpcapSetLinkType");
 		p_AirpcapGetLinkType = (AirpcapGetLinkTypeHandler) pcap_find_function(airpcap_lib, "AirpcapGetLinkType");
 		p_AirpcapSetKernelBuffer = (AirpcapSetKernelBufferHandler) pcap_find_function(airpcap_lib, "AirpcapSetKernelBuffer");
@@ -196,6 +199,7 @@ load_airpcap_functions(void)
 		    p_AirpcapFreeDeviceList != NULL &&
 		    p_AirpcapOpen != NULL &&
 		    p_AirpcapClose != NULL &&
+		    p_AirpcapSetDeviceMacFlags != NULL &&
 		    p_AirpcapSetLinkType != NULL &&
 		    p_AirpcapGetLinkType != NULL &&
 		    p_AirpcapSetKernelBuffer != NULL &&
@@ -718,7 +722,7 @@ airpcap_cleanup(pcap_t *p)
 	struct pcap_airpcap *pa = p->priv;
 
 	if (pa->adapter != NULL) {
-		AirpcapClose(pa->adapter);
+		p_AirpcapClose(pa->adapter);
 		pa->adapter = NULL;
 	}
 	pcap_cleanup_live_common(p);
@@ -743,10 +747,10 @@ airpcap_activate(pcap_t *p)
 	 * Always turn off the "ACK frames sent to the card" mode.
 	 */
 	if (p->opt.rfmon) {
-		status = AirpcapSetDeviceMacFlags(pa->adapter,
+		status = p_AirpcapSetDeviceMacFlags(pa->adapter,
 		    AIRPCAP_MF_MONITOR_MODE_ON);
 	} else
-		status = AirpcapSetDeviceMacFlags(pa->adapter,
+		status = p_AirpcapSetDeviceMacFlags(pa->adapter,
 		    AIRPCAP_MF_ACK_FRAMES_ON);
 	if (!status) {
 		AirpcapClose(pa->adapter);
@@ -975,7 +979,7 @@ airpcap_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			/*
 			 * Failure.
 			 */
-			AirpcapFreeDeviceList(airpcap_devices);
+			p_AirpcapFreeDeviceList(airpcap_devices);
 			return (-1);
 		}
 	}
