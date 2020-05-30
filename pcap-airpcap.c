@@ -435,7 +435,11 @@ airpcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 	p->stat.ps_recv = tas.Recvs;
 	p->stat.ps_drop = tas.Drops;
 	p->stat.ps_ifdrop = tas.IfDrops;
-#ifdef ENABLE_REMOTE
+	/*
+	 * Just in case this is ever compiled for a target other than
+	 * Windows, which is extremely unlikely at best.
+	 */
+#ifdef _WIN32
 	p->stat.ps_capt = tas.Capt;
 #endif
 	return (&p->stat);
