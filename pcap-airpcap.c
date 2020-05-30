@@ -735,6 +735,7 @@ airpcap_activate(pcap_t *p)
 	char *device = p->opt.device;
 	char airpcap_errbuf[AIRPCAP_ERRBUF_SIZE];
 	BOOL status;
+	AirpcapLinkType link_type;
 
 	pa->adapter = p_AirpcapOpen(device, airpcap_errbuf);
 	if (pa->adapter == NULL) {
@@ -824,9 +825,51 @@ airpcap_activate(pcap_t *p)
 	}
 
 	/*
-	 * AirPcap devices support Radiotap, PPI, and raw 802.11.
+	 * Find out what the default link-layer header type is,
+	 * and set p->datalink to that.
+	 *
+	 * We don't force it to another value because there
+	 * might be some programs using WinPcap/Npcap that,
+	 * when capturing on AirPcap devices, assume the
+	 * default value set with the AirPcap configuration
+	 * program is what you get.
+	 *
+	 * The out-of-the-box default appears to be radiotap.
 	 */
-	p->linktype = DLT_IEEE802_11_RADIO;
+	if (!p_AirpcapGetLinkType(pa->adapter, &link_type)) {
+		/* That failed. */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "AirpcapGetLinkType() failed: %s",
+		    p_AirpcapGetLastError(pa->adapter));
+		goto bad;
+	}
+	switch (link_type) {
+
+	case AIRPCAP_LT_802_11_PLUS_RADIO:
+		p->linktype = DLT_IEEE802_11_RADIO;
+		break;
+
+	case AIRPCAP_LT_802_11_PLUS_PPI:
+		p->linktype = DLT_PPI;
+		break;
+
+	case AIRPCAP_LT_802_11:
+		p->linktype = DLT_IEEE802_11;
+		break;
+
+	default:
+		/* OK, what? */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "AirpcapGetLinkType() returned unknown link type %u",
+		    link_type);
+		goto bad;
+	}
+
+	/*
+	 * Now provide a list of all the supported types; we
+	 * assume they all work.  We put radiotap at the top,
+	 * followed by PPI, followed by "no radio metadata".
+	 */
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
 	if (p->dlt_list == NULL)
 		goto bad;
