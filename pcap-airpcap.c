@@ -728,6 +728,24 @@ airpcap_cleanup(pcap_t *p)
 	pcap_cleanup_live_common(p);
 }
 
+static void
+airpcap_breakloop(pcap_t *p)
+{
+	HANDLE read_event;
+
+	pcap_breakloop_common(p);
+	struct pcap_airpcap *pa = p->priv;
+
+	/* XXX - what if either of these fail? */
+	/*
+	 * XXX - will SetEvent() force a wakeup and, if so, will
+	 * the AirPcap read code handle that sanely?
+	 */
+	if (!p_AirpcapGetReadEvent(pa->adapter, &read_event))
+		return;
+	SetEvent(read_event);
+}
+
 static int
 airpcap_activate(pcap_t *p)
 {
@@ -885,6 +903,7 @@ airpcap_activate(pcap_t *p)
 	p->set_datalink_op = airpcap_set_datalink;
 	p->getnonblock_op = airpcap_getnonblock;
 	p->setnonblock_op = airpcap_setnonblock;
+	p->breakloop_op = airpcap_breakloop;
 	p->stats_op = airpcap_stats;
 	p->stats_ex_op = airpcap_stats_ex;
 	p->setbuff_op = airpcap_setbuff;
