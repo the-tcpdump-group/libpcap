@@ -978,10 +978,6 @@ airpcap_create(const char *device, char *ebuf, int *is_ours)
 	 * Is this an AirPcap device?
 	 */
 	ret = device_is_airpcap(device, ebuf);
-	if (ret == -1) {
-		/* Error. */
-		return (NULL);
-	}
 	if (ret == 0) {
 		/* No. */
 		*is_ours = 0;
