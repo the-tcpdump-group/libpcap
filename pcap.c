@@ -3467,12 +3467,6 @@ pcap_file(pcap_t *p)
 }
 
 #ifdef _WIN32
-HANDLE
-pcap_handle(pcap_t *p)
-{
-	return (p->handle);
-}
-
 int
 pcap_fileno(pcap_t *p)
 {

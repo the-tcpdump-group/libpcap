@@ -550,12 +550,12 @@ PCAP_API int	pcap_bufsize(pcap_t *);
 PCAP_API FILE	*pcap_file(pcap_t *);
 #ifdef _WIN32
 /*
- * This returns a HANDLE, cast to an int; UN*X code that uses the
- * result of pcap_fileno() will probably not work on Windows.
- * We keep it around for backwards compatibility, but also provide
- * pcap_handle(), which returns a HANDLE.
+ * This probably shouldn't have been kept in WinPcap; most if not all
+ * UN*X code that used it won't work on Windows.  We deprecate it; if
+ * anybody really needs access to whatever HANDLE may be associated
+ * with a pcap_t (there's no guarantee that there is one), we can add
+ * a Windows-only pcap_handle() API that returns the HANDLE.
  */
-PCAP_API HANDLE	pcap_handle(pcap_t *);
 PCAP_API int	pcap_fileno(pcap_t *)
 PCAP_DEPRECATED(pcap_fileno, "use 'pcap_handle'");
 #else /* _WIN32 */
