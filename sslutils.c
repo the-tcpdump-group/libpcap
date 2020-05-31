@@ -140,7 +140,7 @@ SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 	}
 
 	SSL *ssl = SSL_new(ctx); // TODO: also a DTLS context
-	SSL_set_fd(ssl, s);
+	SSL_set_fd(ssl, (int)s);
 
 	if (is_server) {
 		if (SSL_accept(ssl) <= 0) {
