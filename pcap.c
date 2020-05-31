@@ -3485,7 +3485,7 @@ pcap_fileno(pcap_t *p)
 		 */
 DIAG_OFF_NARROWING
 		return ((int)(DWORD)p->handle);
-DIAG_ON_WARINING
+DIAG_ON_NARROWING
 	} else
 		return (PCAP_ERROR);
 }
