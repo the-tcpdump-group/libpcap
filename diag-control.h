@@ -72,7 +72,8 @@
    */
   #define DIAG_OFF_NARROWING \
     __pragma(warning(push)) \
-    __pragma(warning(disable:4242))
+    __pragma(warning(disable:4242)) \
+    __pragma(warning(disable:4311))
   #define DIAG_ON_NARROWING \
     __pragma(warning(pop))
 

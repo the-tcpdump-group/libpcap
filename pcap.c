@@ -3464,18 +3464,36 @@ pcap_file(pcap_t *p)
 	return (p->rfile);
 }
 
+#ifdef _WIN32
+HANDLE
+pcap_handle(pcap_t *p)
+{
+	return (p->handle);
+}
+
 int
 pcap_fileno(pcap_t *p)
 {
-#ifndef _WIN32
-	return (p->fd);
-#else
-	if (p->handle != INVALID_HANDLE_VALUE)
+	if (p->handle != INVALID_HANDLE_VALUE) {
+		/*
+		 * This is a bogus and now-deprecated API; we
+		 * squelch the narrowing warning for the cast
+		 * from HANDLE to DWORD - Windows programmers
+		 * should use pcap_handle().
+		 */
+DIAG_OFF_NARROWING
 		return ((int)(DWORD)p->handle);
-	else
+DIAG_ON_WARINING
+	} else
 		return (PCAP_ERROR);
-#endif
 }
+#else /* _WIN32 */
+int
+pcap_fileno(pcap_t *p)
+{
+	return (p->fd);
+}
+#endif /* _WIN32 */
 
 #if !defined(_WIN32) && !defined(MSDOS)
 int
