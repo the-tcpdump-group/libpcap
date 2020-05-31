@@ -1933,6 +1933,11 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         # XXX - add /Qspectre if that is really worth doing.
         #
         check_and_add_compiler_option(-wd5045)
+
+        #
+        # Treat all (remaining) warnings as errors.
+        #
+        check_and_add_compiler_option(-WX)
     else()
         #
         # Other compilers, including MSVC with a Clang front end and
