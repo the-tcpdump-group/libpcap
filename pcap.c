@@ -63,6 +63,8 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <errno.h>
 #include <limits.h>
 
+#include "diag-control.h"
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
