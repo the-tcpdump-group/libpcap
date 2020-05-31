@@ -48,7 +48,7 @@
 #endif
 
 /*
- * Suppress Flex warnings.
+ * Suppress Flex, narrowing, and deprecation warnings.
  */
 #if defined(_MSC_VER)
   /*
