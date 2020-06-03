@@ -3890,9 +3890,46 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			 * Now check the event device.
 			 */
 			if (pollinfo[1].revents & POLLIN) {
+				ssize_t nread;
 				uint64_t value;
-				(void)read(handlep->poll_breakloop_fd, &value,
+
+				/*
+				 * This should never fail, but, just
+				 * in case....
+				 */
+				nread = read(handlep->poll_breakloop_fd, &value,
 				    sizeof(value));
+				if (nread == -1) {
+					pcap_fmt_errmsg_for_errno(handle->errbuf,
+					    PCAP_ERRBUF_SIZE,
+					    errno,
+					    "Error reading from event FD");
+					return PCAP_ERROR;
+				}
+
+				/*
+				 * According to the Linux read(2) man
+				 * page, read() will transfer at most
+				 * 2^31-1 bytes, so the return value is
+				 * either -1 or a value between 0
+				 * and 2^31-1, so it's non-negative.
+				 *
+				 * Cast it to size_t to squelch
+				 * warnings from the compiler; add this
+				 * comment to squelch warnings from
+				 * humans reading the code. :-)
+				 *
+				 * Don't treat an EOF as an error, but
+				 * *do* treat a short read as an error;
+				 * that "shouldn't happen", but....
+				 */
+				if (nread != 0 &&
+				    (size_t)nread < sizeof(value)) {
+					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					    "Short read from event FD: expected %zu, got %zd",
+					    sizeof(value), nread);
+					return PCAP_ERROR;
+				}
 
 				/*
 				 * This event gets signaled by a
