@@ -41,6 +41,8 @@
 #include "pcap-usb-linux.h"
 #include "pcap/usb.h"
 
+#include "extract.h"
+
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
 #endif
@@ -562,7 +564,7 @@ probe_devices(int bus)
 		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
 		if (ret >= 0) {
 			uint16_t wtotallength;
-			wtotallength = (configdesc[2]) | (configdesc[3] << 8);
+			wtotallength = EXTRACT_LE_U_2(&configdesc[2]);
 #ifdef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 			ctrl.wLength = wtotallength;
 #else
