@@ -614,9 +614,9 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 			/*
 			 * Assumed to be UN*X.
 			 */
-			snprintf(errbuf, errbuflen,
-			    "%sAn error occurred when looking up %s: %s",
-			    prefix, hostport, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, errbuflen, errno,
+			    "%sAn error occurred when looking up %s",
+			    prefix, hostport);
 			break;
 #endif
 

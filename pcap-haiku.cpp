@@ -162,8 +162,8 @@ pcap_activate_haiku(pcap_t *handle)
 
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
-			 pcap_strerror(errno) );
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+			errno, "strdup");
 		return PCAP_ERROR;
 	}
 
@@ -173,8 +173,8 @@ pcap_activate_haiku(pcap_t *handle)
 	// allocate buffer for monitoring the device
 	handle->buffer = (u_char*)malloc(handle->bufsize);
 	if (handle->buffer == NULL) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "buffer malloc: %s",
-			strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+			errno, "buffer malloc");
 		return PCAP_ERROR;
 	}
 
