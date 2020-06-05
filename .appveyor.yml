@@ -75,16 +75,12 @@ environment:
       AIRPCAP: -DDISABLE_AIRPCAP=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
-      ARCHFLAG: "-A Win32"
-      SDK: WpdPack
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      GENERATOR: "Visual Studio 16 2019"
       ARCHFLAG: "-A x64"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
-      ARCHFLAG: "-A Win32"
+      ARCHFLAG: "-A x86"
       SDK: npcap-sdk-1.05
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
