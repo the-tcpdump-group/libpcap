@@ -103,11 +103,7 @@ build_script:
   # that breaks MinGW builds - CMake checks for that and fails in the
   # configuration stage
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
-  # Debugging stuff
-  - cmake --version
-  - dir "C:\Program Files (x86)"
-  - dir "C:\Program Files"
-  - if NOT "%GENERATOR%"=="Visual Studio 16 2019"  cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" ..
-  - if "%GENERATOR%"=="Visual Studio 16 2019" cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
+  - if NOT DEFINED PLATFORM  cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" ..
+  - if DEFINED PLATFORM cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
