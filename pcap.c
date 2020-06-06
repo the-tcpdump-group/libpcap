@@ -3474,8 +3474,11 @@ pcap_fileno(pcap_t *p)
 		/*
 		 * This is a bogus and now-deprecated API; we
 		 * squelch the narrowing warning for the cast
-		 * from HANDLE to DWORD - Windows programmers
-		 * should use pcap_handle().
+		 * from HANDLE to DWORD.  If Windows programmmers
+		 * need to get at the HANDLE for a pcap_t, *if*
+		 * there is one, they should request such a
+		 * routine (and be prepared for it to return
+		 * INVALID_HANDLE_VALUE).
 		 */
 DIAG_OFF_NARROWING
 		return ((int)(DWORD)p->handle);
