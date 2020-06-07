@@ -49,16 +49,26 @@ is returned and
 .I errbuf
 is filled in with an appropriate error message; otherwise, 0 is
 returned.
+.PP
 In
 ``non-blocking'' mode, an attempt to read from the capture descriptor
 with
 .BR pcap_dispatch (3PCAP)
+and
+.BR pcap_next_ex (3PCAP)
 will, if no packets are currently available to be read, return 0
 immediately rather than blocking waiting for packets to arrive.
+.PP
 .BR pcap_loop (3PCAP)
-and
+will loop forever, consuming CPU time when no packets are currently
+available;
+.BR pacp_dispatch ()
+should be used instead.
 .BR pcap_next (3PCAP)
-will not work in ``non-blocking'' mode.
+will return NULL if there are no packets currently available to read;
+this is indistinguishable from an error, so
+.BR pcap_next_ex ()
+should be used instead.
 .PP
 When first activated with
 .BR pcap_activate (3PCAP)
