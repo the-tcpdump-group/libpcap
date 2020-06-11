@@ -112,7 +112,7 @@
   #endif
 #endif
 
-#include <pcap/funcattrs.h>
+#include "pcap/funcattrs.h"
 
 #include <pcap/pcap-inttypes.h>
 
@@ -164,6 +164,16 @@ typedef struct pcap pcap_t;
 typedef struct pcap_dumper pcap_dumper_t;
 typedef struct pcap_if pcap_if_t;
 typedef struct pcap_addr pcap_addr_t;
+#ifdef TX_MMAP
+/*typedef union pcap_ringattr{
+	struct tpacket_req3 req3;
+	struct tpacket_req req;
+}pcap_ringattr_t;*/
+typedef struct pcap_timestamps{
+	struct timespec ts;
+	u_int seqid;
+}pcap_timestamps_t;
+#endif
 
 /*
  * The first record in the file contains saved values for some
@@ -213,6 +223,7 @@ struct pcap_file_header {
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
 	bpf_u_int32 linktype;	/* data link type (LINKTYPE_*) */
 };
+
 
 /*
  * Macros for the value returned by pcap_datalink_ext().
@@ -402,6 +413,9 @@ PCAP_API int	pcap_set_rfmon(pcap_t *, int);
 PCAP_API int	pcap_set_timeout(pcap_t *, int);
 PCAP_API int	pcap_set_tstamp_type(pcap_t *, int);
 PCAP_API int	pcap_set_immediate_mode(pcap_t *, int);
+#ifdef TX_MMAP
+PCAP_API int	pcap_set_tximmediate_mode(pcap_t *, int);
+#endif
 PCAP_API int	pcap_set_buffer_size(pcap_t *, int);
 PCAP_API int	pcap_set_tstamp_precision(pcap_t *, int);
 PCAP_API int	pcap_get_tstamp_precision(pcap_t *);
@@ -519,6 +533,9 @@ PCAP_API int 	pcap_setdirection(pcap_t *, pcap_direction_t);
 PCAP_API int	pcap_getnonblock(pcap_t *, char *);
 PCAP_API int	pcap_setnonblock(pcap_t *, int, char *);
 PCAP_API int	pcap_inject(pcap_t *, const void *, size_t);
+#ifdef TX_MMAP
+void* pcap_get_txframe(pcap_t *);
+#endif
 PCAP_API int	pcap_sendpacket(pcap_t *, const u_char *, int);
 PCAP_API const char *pcap_statustostr(int);
 PCAP_API const char *pcap_strerror(int);
@@ -1041,6 +1058,16 @@ PCAP_API int	pcap_remoteact_list(char *hostlist, char sep, int size,
 	    char *errbuf);
 PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf);
 PCAP_API void	pcap_remoteact_cleanup(void);
+#ifdef TX_MMAP
+extern int
+pcap_get_noofframes(pcap_t *handle);
+extern void
+pcap_set_txpolltimeout(pcap_t *handle, int timeout);
+/*extern int
+pcap_get_tx_timestamps(pcap_t *handle, void *psHwts);
+extern void
+pcap_get_ring_attributes(pcap_t *handle, pcap_ringattr_t *psRingattr);*/
+#endif
 
 #ifdef __cplusplus
 }
