@@ -393,6 +393,7 @@ EXTRA_DIST = \
 	testprogs/capturetest.c \
 	testprogs/filtertest.c \
 	testprogs/findalldevstest.c \
+	testprogs/findalldevstest-perf.c \
 	testprogs/fuzz/CMakeLists.txt \
 	testprogs/fuzz/fuzz_both.c \
 	testprogs/fuzz/fuzz_both.options \
@@ -407,6 +408,7 @@ EXTRA_DIST = \
 	testprogs/threadsignaltest.c \
 	testprogs/unix.h \
 	testprogs/valgrindtest.c \
+	testprogs/writecaptest.c \
 	tests/shb-option-too-long.pcapng \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
