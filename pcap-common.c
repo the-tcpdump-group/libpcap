@@ -1350,7 +1350,7 @@ linktype_to_dlt(int linktype)
 
 	/*
 	 * If we don't have an entry for this LINKTYPE, return
-	 * the link type value; it may be a DLT from an older
+	 * the link type value; it may be a DLT from an newer
 	 * version of libpcap.
 	 */
 	return linktype;
