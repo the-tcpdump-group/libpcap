@@ -696,7 +696,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 				prev_iff = iff;
 
 				newname = translate_IOP_to_pcap_name(u, iff->name, interfaceType);		/* add a translation entry and get a point to the mangled name */
-				bigger_buffer = realloc(iff->name, strlen(newname) + 1));
+				bigger_buffer = realloc(iff->name, strlen(newname) + 1);
 				if (bigger_buffer == NULL) {	/* we now re-write the name stored in the interface list */
 					pcap_fmt_errmsg_for_errno(errbuf,
 					    PCAP_ERRBUF_SIZE, errno, "realloc");
