@@ -2688,7 +2688,6 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 	struct slist *src;
 	u_int slen;
 	u_int off;
-	u_char extrajmps;	/* number of extra jumps inserted */
 	struct slist **offset = NULL;
 
 	if (p == 0 || isMarked(ic, p))
@@ -2812,7 +2811,8 @@ filled:
 	dst->code = (u_short)p->s.code;
 	dst->k = p->s.k;
 	if (JT(p)) {
-		extrajmps = 0;
+		/* number of extra jumps inserted */
+		u_char extrajmps = 0;
 		off = JT(p)->offset - (p->offset + slen) - 1;
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
