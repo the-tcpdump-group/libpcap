@@ -1023,7 +1023,7 @@ airpcap_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	if (!p_AirpcapGetDeviceList(&airpcap_devices, airpcap_errbuf)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "AirpcapGetDeviceList() failed: %s", errbuf);
+		    "AirpcapGetDeviceList() failed: %s", airpcap_errbuf);
 		return (-1);
 	}
 
