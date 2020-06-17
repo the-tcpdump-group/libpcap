@@ -2688,7 +2688,7 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 	struct slist *src;
 	u_int slen;
 	u_int off;
-	u_int extrajmps;	/* number of extra jumps inserted */
+	u_char extrajmps;	/* number of extra jumps inserted */
 	struct slist **offset = NULL;
 
 	if (p == 0 || isMarked(ic, p))
@@ -2821,12 +2821,7 @@ filled:
 			p->longjt++;
 			return(0);
 		    }
-		    /* branch if T to following jump */
-		    if (extrajmps >= 256) {
-			conv_error(conv_state, "too many extra jumps");
-			/*NOTREACHED*/
-		    }
-		    dst->jt = (u_char)extrajmps;
+		    dst->jt = extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
 		    dst[extrajmps].k = off - extrajmps;
@@ -2843,11 +2838,7 @@ filled:
 		    }
 		    /* branch if F to following jump */
 		    /* if two jumps are inserted, F goes to second one */
-		    if (extrajmps >= 256) {
-			conv_error(conv_state, "too many extra jumps");
-			/*NOTREACHED*/
-		    }
-		    dst->jf = (u_char)extrajmps;
+		    dst->jf = extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
 		    dst[extrajmps].k = off - extrajmps;
