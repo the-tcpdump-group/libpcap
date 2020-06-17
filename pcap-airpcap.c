@@ -385,7 +385,7 @@ airpcap_stats(pcap_t *p, struct pcap_stat *ps)
 		    p_AirpcapGetLastError(pa->adapter));
 		return (-1);
 	}
-		
+
 	ps->ps_drop = tas.Drops;
 	ps->ps_recv = tas.Recvs;
 	ps->ps_ifdrop = tas.IfDrops;
@@ -431,7 +431,7 @@ airpcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 		    p_AirpcapGetLastError(pa->adapter));
 		return (NULL);
 	}
-		
+
 	p->stat.ps_recv = tas.Recvs;
 	p->stat.ps_drop = tas.Drops;
 	p->stat.ps_ifdrop = tas.IfDrops;
@@ -782,7 +782,6 @@ airpcap_activate(pcap_t *p)
 		    p_AirpcapGetLastError(pa->adapter));
 		return (PCAP_ERROR);
 	}
-		
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of

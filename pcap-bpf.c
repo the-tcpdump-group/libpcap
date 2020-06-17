@@ -312,7 +312,7 @@ pcap_next_zbuf_shm(pcap_t *p, int *cc)
 		    atomic_load_acq_int(&bzh->bzh_kernel_gen)) {
 			pb->bzh = bzh;
 			pb->zbuffer = (u_char *)pb->zbuf2;
-  			p->buffer = pb->zbuffer + sizeof(*bzh);
+			p->buffer = pb->zbuffer + sizeof(*bzh);
 			*cc = bzh->bzh_kernel_len;
 			return (1);
 		}
@@ -680,7 +680,7 @@ bpf_bind(int fd, const char *name, char *errbuf)
 			    errno, "The requested buffer size for %s is too large",
 			    name);
 			return (BPF_BIND_BUFFER_TOO_BIG);
-			
+
 		default:
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "Binding interface %s to BPF device failed",

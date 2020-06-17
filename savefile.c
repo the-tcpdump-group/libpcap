@@ -309,7 +309,7 @@ charset_fopen(const char *path, const char *mode)
 			utf16_mode[i] = c;
 		}
 		utf16_mode[i] = '\0';
-		
+
 		/*
 		 * OK, we have UTF-16LE strings; hand them to
 		 * _wfopen().

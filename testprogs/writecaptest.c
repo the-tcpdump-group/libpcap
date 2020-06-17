@@ -170,7 +170,7 @@ main(int argc, char **argv)
 		pcap_close(pd);
 		return 0;
 	}
-		
+
 	if (savefile == NULL)
 		error("no savefile specified");
 
