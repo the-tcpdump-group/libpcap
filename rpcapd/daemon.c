@@ -747,7 +747,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		//
 		// Be carefully: the capture can have been started, but an error occurred (so session != NULL, but
 		//  sockdata is 0
-		if ((!pars.isactive) &&  ((session == NULL) || ((session != NULL) && (session->sockdata == 0))))
+		if ((!pars.isactive) && (session == NULL || session->sockdata == 0))
 		{
 			// Check for the initial timeout
 			FD_ZERO(&rfds);
