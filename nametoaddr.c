@@ -590,9 +590,9 @@ struct eproto {
  */
 PCAP_API struct eproto eproto_db[];
 PCAP_API_DEF struct eproto eproto_db[] = {
+	{ "aarp", ETHERTYPE_AARP },
 	{ "arp", ETHERTYPE_ARP },
 	{ "atalk", ETHERTYPE_ATALK },
-	{ "atalkarp", ETHERTYPE_AARP },
 	{ "decnet", ETHERTYPE_DN },
 	{ "ip", ETHERTYPE_IP },
 #ifdef INET6
