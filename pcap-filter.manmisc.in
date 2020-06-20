@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "10 January 2020"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "20 June 2020"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -47,7 +47,7 @@ different kinds of qualifier:
 qualifiers say what kind of thing the id name or number refers to.
 Possible types are
 .BR host ,
-.B net ,
+.BR net ,
 .B port
 and
 .BR portrange .
