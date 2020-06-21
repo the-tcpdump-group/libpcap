@@ -866,8 +866,8 @@ intervening fragment.
 Some offsets and field values may be expressed as names rather than
 as numeric values.
 The following protocol header field offsets are
-available: \fBicmptype\fP (ICMP type field), \fBicmp6type (ICMP v6 type field)
-\fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMP v6 code field), and
+available: \fBicmptype\fP (ICMP type field), \fBicmp6type\fP (ICMPv6 type field),
+\fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMPv6 code field) and
 \fBtcpflags\fP (TCP flags field).
 
 The following ICMP type field values are available: \fBicmp-echoreply\fP,
