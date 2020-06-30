@@ -2447,7 +2447,7 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # captures.)
         #
         set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386;ppc")
-    else()
+    elseif(SYSTEM_VERSION_MAJOR LESS 12)
         #
         # Post-Snow Leopard.  Build for x86-64 and 32-bit x86,
         # with x86-64 first.  (That's what Apple does)
@@ -2496,6 +2496,11 @@ main(void)
               endif()
           endif()
         endif()
+    else()
+        #
+        # Big Sur.  Build for x86-64, arm64, with x86-64 first. 
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "arm64;x86_64")
     endif()
     if(BUILD_SHARED_LIBS)
         set_target_properties(${LIBRARY_NAME} PROPERTIES
