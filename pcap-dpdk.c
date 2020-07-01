@@ -972,7 +972,7 @@ pcap_t * pcap_dpdk_create(const char *device, char *ebuf, int *is_ours)
 	if (! *is_ours)
 		return NULL;
 	//memset will happen
-	p = pcap_create_common(ebuf, sizeof(struct pcap_dpdk));
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_dpdk);
 
 	if (p == NULL)
 		return NULL;

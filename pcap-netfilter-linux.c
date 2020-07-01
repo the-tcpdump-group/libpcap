@@ -743,7 +743,7 @@ netfilter_create(const char *device, char *ebuf, int *is_ours)
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(ebuf, sizeof (struct pcap_netfilter));
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_netfilter);
 	if (p == NULL)
 		return (NULL);
 

@@ -2437,27 +2437,16 @@ initialize_ops(pcap_t *p)
 }
 
 static pcap_t *
-pcap_alloc_pcap_t(char *ebuf, size_t size)
+pcap_alloc_pcap_t(char *ebuf, size_t total_size, size_t private_offset)
 {
 	char *chunk;
 	pcap_t *p;
 
 	/*
-	 * Allocate a chunk of memory big enough for a pcap_t
-	 * plus a structure following it of size "size".  The
-	 * structure following it is a private data structure
-	 * for the routines that handle this pcap_t.
-	 *
-	 * The structure following it must be aligned on
-	 * the appropriate alignment boundary for this platform.
-	 * We align on an 8-byte boundary as that's probably what
-	 * at least some platforms do, even with 32-bit integers,
-	 * and because we can't be sure that some values won't
-	 * require 8-byte alignment even on platforms with 32-bit
-	 * integers.
+	 * total_size is the size of a structure containing a pcap_t
+	 * followed by a private structure.
 	 */
-#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7U) & ~0x7U)
-	chunk = calloc(PCAP_T_ALIGNED_SIZE + size, 1);
+	chunk = calloc(total_size, 1);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
@@ -2479,26 +2468,24 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 #endif /* MSDOS */
 #endif /* _WIN32 */
 
-	if (size == 0) {
-		/* No private data was requested. */
-		p->priv = NULL;
-	} else {
-		/*
-		 * Set the pointer to the private data; that's the structure
-		 * of size "size" following the pcap_t.
-		 */
-		p->priv = (void *)(chunk + PCAP_T_ALIGNED_SIZE);
-	}
+	/*
+	 * private_offset is the offset, in bytes, of the private
+	 * data from the beginning of the structure.
+	 *
+	 * Set the pointer to the private data; that's private_offset
+	 * bytes past the pcap_t.
+	 */
+	p->priv = (void *)(chunk + private_offset);
 
 	return (p);
 }
 
 pcap_t *
-pcap_create_common(char *ebuf, size_t size)
+pcap_create_common(char *ebuf, size_t total_size, size_t private_offset)
 {
 	pcap_t *p;
 
-	p = pcap_alloc_pcap_t(ebuf, size);
+	p = pcap_alloc_pcap_t(ebuf, total_size, private_offset);
 	if (p == NULL)
 		return (NULL);
 
@@ -2878,11 +2865,11 @@ fail:
 }
 
 pcap_t *
-pcap_open_offline_common(char *ebuf, size_t size)
+pcap_open_offline_common(char *ebuf, size_t total_size, size_t private_offset)
 {
 	pcap_t *p;
 
-	p = pcap_alloc_pcap_t(ebuf, size);
+	p = pcap_alloc_pcap_t(ebuf, total_size, private_offset);
 	if (p == NULL)
 		return (NULL);
 

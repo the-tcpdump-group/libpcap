@@ -72,6 +72,14 @@ typedef struct unit {
 	int			len;		/* the current size of the inbound message */
 } unit_t;
 
+/*
+ * Private data.
+ * Currently contains nothing.
+ */
+struct pcap_sita {
+	int	dummy;
+};
+
 static unit_t		units[MAX_CHASSIS+1][MAX_GEOSLOT+1];	/* we use indexes of 1 through 8, but we reserve/waste index 0 */
 static fd_set		readfds;				/* a place to store the file descriptors for the connections to the IOPs */
 static int		max_fs;
@@ -1033,7 +1041,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 pcap_t *pcap_create_interface(const char *device _U_, char *ebuf) {
 	pcap_t *p;
 
-	p = pcap_create_common(ebuf, 0);
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_sita);
 	if (p == NULL)
 		return (NULL);
 

@@ -238,8 +238,7 @@ pcap_create_interface(const char *device, char *errorBuffer)
 		return NULL;
 	}
 
-	pcap_t* handle = pcap_create_common(errorBuffer,
-		sizeof (struct pcap_haiku));
+	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "malloc: %s", strerror(errno));
 		close(socket);

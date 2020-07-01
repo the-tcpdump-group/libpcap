@@ -1315,7 +1315,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(ebuf, sizeof(struct pcap_win));
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_win);
 	if (p == NULL)
 		return (NULL);
 

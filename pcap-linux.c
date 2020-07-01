@@ -329,7 +329,7 @@ pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
 
-	handle = pcap_create_common(ebuf, sizeof (struct pcap_linux));
+	handle = PCAP_CREATE_COMMON(ebuf, struct pcap_linux);
 	if (handle == NULL)
 		return NULL;
 

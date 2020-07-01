@@ -991,7 +991,7 @@ airpcap_create(const char *device, char *ebuf, int *is_ours)
 	 * Yes.
 	 */
 	*is_ours = 1;
-	p = pcap_create_common(ebuf, sizeof (struct pcap_airpcap));
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_airpcap);
 	if (p == NULL)
 		return (NULL);
 

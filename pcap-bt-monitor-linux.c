@@ -50,6 +50,14 @@
 #define INTERFACE_NAME "bluetooth-monitor"
 
 /*
+ * Private data.
+ * Currently contains nothing.
+ */
+struct pcap_bt_monitor {
+	int	dummy;
+};
+
+/*
  * Fields and alignment must match the declaration in the Linux kernel 3.4+.
  * See struct hci_mon_hdr in include/net/bluetooth/hci_mon.h.
  */
@@ -256,7 +264,7 @@ bt_monitor_create(const char *device, char *ebuf, int *is_ours)
     }
 
     *is_ours = 1;
-    p = pcap_create_common(ebuf, 0);
+    p = PCAP_CREATE_COMMON(ebuf, struct pcap_bt_monitor);
     if (p == NULL)
         return NULL;
 

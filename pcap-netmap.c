@@ -286,7 +286,7 @@ pcap_netmap_create(const char *device, char *ebuf, int *is_ours)
 	*is_ours = (!strncmp(device, "netmap:", 7) || !strncmp(device, "vale", 4));
 	if (! *is_ours)
 		return NULL;
-	p = pcap_create_common(ebuf, sizeof (struct pcap_netmap));
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_netmap);
 	if (p == NULL)
 		return (NULL);
 	p->activate_op = pcap_netmap_activate;

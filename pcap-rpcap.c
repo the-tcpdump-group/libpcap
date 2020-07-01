@@ -2319,7 +2319,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_openreply openreply;	/* open reply message */
 
-	fp = pcap_create_common(errbuf, sizeof (struct pcap_rpcap));
+	fp = PCAP_CREATE_COMMON(errbuf, struct pcap_rpcap);
 	if (fp == NULL)
 	{
 		return NULL;

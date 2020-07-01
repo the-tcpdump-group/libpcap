@@ -395,7 +395,7 @@ rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 		    !strncmp(device, dev_list[i]->name, namelen)) {
 			*is_ours = 1;
 
-			p = pcap_create_common(ebuf, sizeof (struct pcap_rdmasniff));
+			p = PCAP_CREATE_COMMON(ebuf, struct pcap_rdmasniff);
 			if (p) {
 				p->activate_op = rdmasniff_activate;
 				priv = p->priv;

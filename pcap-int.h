@@ -34,6 +34,8 @@
 #ifndef pcap_int_h
 #define	pcap_int_h
 
+#include <stddef.h>
+
 #include <signal.h>
 
 #include <pcap/pcap.h>
@@ -461,7 +463,19 @@ int	pcap_setnonblock_fd(pcap_t *p, int);
  * by pcap_create routines.
  */
 pcap_t	*pcap_create_interface(const char *, char *);
-pcap_t	*pcap_create_common(char *, size_t);
+
+/*
+ * This wrapper takes an error buffer pointer and a type to use for the
+ * private data, and calls pcap_create_common(), passing it the error
+ * buffer pointer, the size fo the private data type, in bytes, and the
+ * offset of the private data from the beginning of the structure, in
+ * bytes.
+ */
+#define PCAP_CREATE_COMMON(ebuf, type) \
+	pcap_create_common(ebuf, \
+	    sizeof (struct { pcap_t __common; type __private; }), \
+	    offsetof (struct { pcap_t __common; type __private; }, __private))
+pcap_t	*pcap_create_common(char *, size_t, size_t);
 int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
@@ -533,7 +547,20 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
  * treats the pathname as being in UTF-8, rather than the local
  * code page, on Windows.
  */
-pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
+
+/*
+ * This wrapper takes an error buffer pointer and a type to use for the
+ * private data, and calls pcap_create_common(), passing it the error
+ * buffer pointer, the size fo the private data type, in bytes, and the
+ * offset of the private data from the beginning of the structure, in
+ * bytes.
+ */
+#define PCAP_OPEN_OFFLINE_COMMON(ebuf, type) \
+	pcap_open_offline_common(ebuf, \
+	    sizeof (struct { pcap_t __common; type __private; }), \
+	    offsetof (struct { pcap_t __common; type __private; }, __private))
+pcap_t	*pcap_open_offline_common(char *ebuf, size_t total_size,
+    size_t private_data);
 bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen);
 void	sf_cleanup(pcap_t *p);
 #ifdef _WIN32

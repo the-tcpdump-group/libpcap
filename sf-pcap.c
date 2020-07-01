@@ -240,7 +240,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	 * OK, this is a good pcap file.
 	 * Allocate a pcap_t for it.
 	 */
-	p = pcap_open_offline_common(errbuf, sizeof (struct pcap_sf));
+	p = PCAP_OPEN_OFFLINE_COMMON(errbuf, struct pcap_sf);
 	if (p == NULL) {
 		/* Allocation failed. */
 		*err = 1;
