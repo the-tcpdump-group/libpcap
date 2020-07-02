@@ -1218,8 +1218,6 @@ pcap_activate_npf(pcap_t *p)
 		while(FALSE);
 
 
-		p->snapshot = PacketSetSnapLen(pw->adapter, p->snapshot);
-
 		/* Set the length of the FCS associated to any packet. This value
 		 * will be subtracted to the packet length */
 		pw->dag_fcs_bits = pw->adapter->DagFcsLen;
@@ -1229,6 +1227,20 @@ pcap_activate_npf(pcap_t *p)
 		 */
 		goto bad;
 #endif /* HAVE_DAG_API */
+	}
+
+	/* snaplen 0 rejects all packets; tcpdump treats -s0 as max snaplen
+	 * (whole packet), so we'll not apply it in that case. */
+	if (p->snapshot)
+	{
+		/* PacketSetSnapLen is no-op in WinPcap for non-DAG cards, but
+		 * will be supported in newer versions of Npcap. */
+		res = PacketSetSnapLen(pw->adapter, p->snapshot);
+		if (res != 0)
+		{
+			/* May differ from initial value due to alignment. */
+			p->snapshot = res;
+		}
 	}
 
 	PacketSetReadTimeout(pw->adapter, p->opt.timeout);
