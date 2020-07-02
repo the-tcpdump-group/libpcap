@@ -2125,7 +2125,7 @@ pcap_lib_version(void)
 		/*
 		 * Generate the version string.
 		 */
-		char *packet_version_string = PacketGetVersion();
+		const char *packet_version_string = PacketGetVersion();
 
 		if (strcmp(WINPCAP_VER_STRING, packet_version_string) == 0) {
 			/*
