@@ -146,16 +146,6 @@ struct pcap_sf {
 };
 
 /*
- * PART OF A TEMPORARY TEST OF COMPILER WARNINGS FOR DE-CONSTIFYING
- * POINTERS.
- */
-const char *
-func1(void)
-{
-	return "";
-}
-
-/*
  * Check whether this is a pcap savefile and, if it is, extract the
  * relevant information from the header.
  */
