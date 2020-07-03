@@ -48,6 +48,26 @@
 #endif
 
 /*
+ * Suppress "enum value not explicitly handled in switch" warnings.
+ * We may have to build on multiple different Windows SDKs, so we
+ * may not be able to include all enum values in a switch, as they
+ * won't necessarily be defined on all the SDKs, and, unlike
+ * #defines, there's no easy way to test whether a given enum has
+ * a given value.  It *could* be done by the configure script or
+ * CMake tests.
+ */
+#if defined(_MSC_VER)
+  #define DIAG_OFF_ENUM_SWITCH \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4061))
+  #define DIAG_ON_ENUM_SWITCH \
+    __pragma(warning(pop))
+#else
+  #define DIAG_OFF_ENUM_SWITCH
+  #define DIAG_ON_ENUM_SWITCH
+#endif
+
+/*
  * Suppress Flex, narrowing, and deprecation warnings.
  */
 #if defined(_MSC_VER)

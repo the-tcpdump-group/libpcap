@@ -1701,7 +1701,13 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	if (status == 0) {
 		/*
 		 * We got the physical medium.
+		 *
+		 * XXX - we might want to check for NdisPhysicalMediumWiMax
+		 * and NdisPhysicalMediumNative802_15_4 being
+		 * part of the enum, and check for those in the "wireless"
+		 * case.
 		 */
+DIAG_OFF_ENUM_SWITCH
 		switch (phys_medium) {
 
 		case NdisPhysicalMediumWirelessLan:
@@ -1718,10 +1724,11 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 
 		default:
 			/*
-			 * Not wireless.
+			 * Not wireless or unknown
 			 */
 			break;
 		}
+DIAG_ON_ENUM_SWITCH
 	}
 #endif
 
@@ -1753,6 +1760,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
 			break;
 
+		case MediaConnectStateUnknown:
 		default:
 			/*
 			 * It's unknown whether it's connected or not.
