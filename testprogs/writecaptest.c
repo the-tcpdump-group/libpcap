@@ -76,13 +76,15 @@ stop_capture(int signum _U_)
 }
 #endif
 
-#define COMMAND_OPTIONS	"Li:w:y:"
+#define COMMAND_OPTIONS	"Li:s:w:y:"
 
 int
 main(int argc, char **argv)
 {
-	register int op;
-	register char *cp, *cmdbuf, *device, *savefile = NULL;
+	int op;
+	char *cp, *cmdbuf = NULL, *device, *end, *savefile = NULL;
+	int snaplen;
+	int snaplen_set = 0;
 	pcap_if_t *devlist;
 	int show_dlt_types = 0;
 	int ndlts;
@@ -114,6 +116,14 @@ main(int argc, char **argv)
 
 		case 'i':
 			device = optarg;
+			break;
+
+		case 's':
+			snaplen = (int)strtol(optarg, &end, 0);
+			if (optarg == end || *end != '\0' || snaplen < 0)
+				error("invalid snaplen %s (must be >= 0)",
+				    optarg);
+			snaplen_set = 1;
 			break;
 
 		case 'w':
@@ -179,10 +189,12 @@ main(int argc, char **argv)
 	pd = pcap_create(device, ebuf);
 	if (pd == NULL)
 		error("%s", ebuf);
-	status = pcap_set_snaplen(pd, 262144);
-	if (status != 0)
-		error("%s: pcap_set_snaplen failed: %s",
+	if (snaplen_set) {
+		status = pcap_set_snaplen(pd, snaplen);
+		if (status != 0)
+			error("%s: pcap_set_snaplen failed: %s",
 			    device, pcap_statustostr(status));
+	}
 	status = pcap_set_timeout(pd, 100);
 	if (status != 0)
 		error("%s: pcap_set_timeout failed: %s",
@@ -216,13 +228,21 @@ main(int argc, char **argv)
 			error("%s: %s", device, pcap_geterr(pd));
 	}
 
-	cmdbuf = copy_argv(&argv[optind]);
+	/*
+	 * Don't set a filter unless we were given one on the
+	 * command line; if capturing doesn't work, or doesn't
+	 * use the snapshot length, without a filter, that's
+	 * a bug.
+	 */
+	if (optind < argc) {
+		cmdbuf = copy_argv(&argv[optind]);
 
-	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
-		error("%s", pcap_geterr(pd));
+		if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
+			error("%s", pcap_geterr(pd));
 
-	if (pcap_setfilter(pd, &fcode) < 0)
-		error("%s", pcap_geterr(pd));
+		if (pcap_setfilter(pd, &fcode) < 0)
+			error("%s", pcap_geterr(pd));
+	}
 
 	pdd = pcap_dump_open(pd, savefile);
 	if (pdd == NULL)
@@ -276,15 +296,17 @@ main(int argc, char **argv)
 		    program_name, pcap_geterr(pd));
 	}
 	pcap_close(pd);
-	pcap_freecode(&fcode);
-	free(cmdbuf);
+	if (cmdbuf != NULL) {
+		pcap_freecode(&fcode);
+		free(cmdbuf);
+	}
 	exit(status == -1 ? 1 : 0);
 }
 
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s -L [ -i interface ] [ -w file ] [ -y dlt ] [expression]\n",
+	(void)fprintf(stderr, "Usage: %s -L [ -i interface ] [ -s snaplen ] [ -w file ] [ -y dlt ] [expression]\n",
 	    program_name);
 	exit(1);
 }
