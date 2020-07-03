@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DUMP_OPEN 3PCAP "23 August 2018"
+.TH PCAP_DUMP_OPEN 3PCAP "3 July 2020"
 .SH NAME
 pcap_dump_open, pcap_dump_open_append, pcap_dump_fopen \- open a file to
 which to write packets
@@ -43,6 +43,8 @@ the same format as those used by
 .BR tcpdump (1)
 and
 .BR tcpslice (1).
+If the file does not exist, it will be created; if the file exists, it
+will be truncated and overwritten.
 The name "-" is a synonym
 for
 .BR stdout .
@@ -71,10 +73,9 @@ are used as the link-layer type and snapshot length of the output file.
 .BR pcap_dump_open_append ()
 is like
 .BR pcap_dump_open ()
-but does not create the file if it does not exist and, if it does
-already exist, and is a pcap file with the same byte order as the host
-opening the file, and has the same time stamp precision, link-layer
-header type, and snapshot length as
+but, if the file already exists, and is a pcap file with the same byte
+order as the host opening the file, and has the same time stamp
+precision, link-layer header type, and snapshot length as
 .IR p ,
 it will write new packets at the end of the file.
 .SH RETURN VALUES
