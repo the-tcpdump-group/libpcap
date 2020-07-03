@@ -76,7 +76,155 @@ stop_capture(int signum _U_)
 }
 #endif
 
-#define COMMAND_OPTIONS	"Li:s:w:y:"
+static long
+parse_interface_number(const char *device)
+{
+	const char *p;
+	long devnum;
+	char *end;
+
+	/*
+	 * Search for a colon, terminating any scheme at the beginning
+	 * of the device.
+	 */
+	p = strchr(device, ':');
+	if (p != NULL) {
+		/*
+		 * We found it.  Is it followed by "//"?
+		 */
+		p++;	/* skip the : */
+		if (strncmp(p, "//", 2) == 0) {
+			/*
+			 * Yes.  Search for the next /, at the end of the
+			 * authority part of the URL.
+			 */
+			p += 2;	/* skip the // */
+			p = strchr(p, '/');
+			if (p != NULL) {
+				/*
+				 * OK, past the / is the path.
+				 */
+				device = p + 1;
+			}
+		}
+	}
+	devnum = strtol(device, &end, 10);
+	if (device != end && *end == '\0') {
+		/*
+		 * It's all-numeric, but is it a valid number?
+		 */
+		if (devnum <= 0) {
+			/*
+			 * No, it's not an ordinal.
+			 */
+			error("Invalid adapter index");
+		}
+		return (devnum);
+	} else {
+		/*
+		 * It's not all-numeric; return -1, so our caller
+		 * knows that.
+		 */
+		return (-1);
+	}
+}
+
+static char *
+find_interface_by_number(long devnum)
+{
+	pcap_if_t *dev, *devlist;
+	long i;
+	char ebuf[PCAP_ERRBUF_SIZE];
+	char *device;
+	int status;
+
+	status = pcap_findalldevs(&devlist, ebuf);
+	if (status < 0)
+		error("%s", ebuf);
+	/*
+	 * Look for the devnum-th entry in the list of devices (1-based).
+	 */
+	for (i = 0, dev = devlist; i < devnum-1 && dev != NULL;
+	    i++, dev = dev->next)
+		;
+	if (dev == NULL)
+		error("Invalid adapter index");
+	device = strdup(dev->name);
+	pcap_freealldevs(devlist);
+	return (device);
+}
+
+static pcap_t *
+open_interface(const char *device, int snaplen_set, int snaplen, char *ebuf)
+{
+	pcap_t *pc;
+	int status;
+	char *cp;
+
+	pc = pcap_create(device, ebuf);
+	if (pc == NULL) {
+		/*
+		 * If this failed with "No such device", that means
+		 * the interface doesn't exist; return NULL, so that
+		 * the caller can see whether the device name is
+		 * actually an interface index.
+		 */
+		if (strstr(ebuf, "No such device") != NULL)
+			return (NULL);
+		error("%s", ebuf);
+	}
+	if (snaplen_set) {
+		status = pcap_set_snaplen(pc, snaplen);
+		if (status != 0)
+			error("%s: pcap_set_snaplen failed: %s",
+			    device, pcap_statustostr(status));
+	}
+	status = pcap_set_timeout(pc, 100);
+	if (status != 0)
+		error("%s: pcap_set_timeout failed: %s",
+		    device, pcap_statustostr(status));
+	status = pcap_activate(pc);
+	if (status < 0) {
+		/*
+		 * pcap_activate() failed.
+		 */
+		cp = pcap_geterr(pc);
+		if (status == PCAP_ERROR)
+			error("%s", cp);
+		else if (status == PCAP_ERROR_NO_SUCH_DEVICE) {
+			/*
+			 * Return an error for our caller to handle.
+			 */
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)",
+			    device, pcap_statustostr(status), cp);
+		} else if (status == PCAP_ERROR_PERM_DENIED && *cp != '\0')
+			error("%s: %s\n(%s)", device,
+			    pcap_statustostr(status), cp);
+		else
+			error("%s: %s", device,
+			    pcap_statustostr(status));
+		pcap_close(pc);
+		return (NULL);
+	} else if (status > 0) {
+		/*
+		 * pcap_activate() succeeded, but it's warning us
+		 * of a problem it had.
+		 */
+		cp = pcap_geterr(pc);
+		if (status == PCAP_WARNING)
+			warning("%s", cp);
+		else if (status == PCAP_WARNING_PROMISC_NOTSUP &&
+		         *cp != '\0')
+			warning("%s: %s\n(%s)", device,
+			    pcap_statustostr(status), cp);
+		else
+			warning("%s: %s", device,
+			    pcap_statustostr(status));
+	}
+	return (pc);
+}
+
+#define COMMAND_OPTIONS	"DLi:s:w:y:"
 
 int
 main(int argc, char **argv)
@@ -86,6 +234,8 @@ main(int argc, char **argv)
 	int snaplen = 0;
 	int snaplen_set = 0;
 	pcap_if_t *devlist;
+	long devnum;
+	int show_interfaces = 0;
 	int show_dlt_types = 0;
 	int ndlts;
 	int *dlts;
@@ -109,6 +259,10 @@ main(int argc, char **argv)
 	opterr = 0;
 	while ((op = getopt(argc, argv, COMMAND_OPTIONS)) != -1) {
 		switch (op) {
+
+		case 'D':
+			show_interfaces = 1;
+			break;
 
 		case 'L':
 			show_dlt_types = 1;
@@ -138,6 +292,22 @@ main(int argc, char **argv)
 			usage();
 			/* NOTREACHED */
 		}
+	}
+
+	if (show_interfaces) {
+		pcap_if_t *dev;
+		int i;
+
+		if (pcap_findalldevs(&devlist, ebuf) < 0)
+			error("%s", ebuf);
+		for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next) {
+			printf("%d.%s", i+1, dev->name);
+			if (dev->description != NULL)
+				printf(" (%s)", dev->description);
+			printf("\n");
+		}
+		pcap_freealldevs(devlist);
+		return (0);
 	}
 
 	if (device == NULL) {
@@ -186,34 +356,38 @@ main(int argc, char **argv)
 
 	*ebuf = '\0';
 
-	pd = pcap_create(device, ebuf);
-	if (pd == NULL)
-		error("%s", ebuf);
-	if (snaplen_set) {
-		status = pcap_set_snaplen(pd, snaplen);
-		if (status != 0)
-			error("%s: pcap_set_snaplen failed: %s",
-			    device, pcap_statustostr(status));
-	}
-	status = pcap_set_timeout(pd, 100);
-	if (status != 0)
-		error("%s: pcap_set_timeout failed: %s",
-		    device, pcap_statustostr(status));
-	status = pcap_activate(pd);
-	if (status < 0) {
+	pd = open_interface(device, snaplen_set, snaplen, ebuf);
+	if (pd == NULL) {
 		/*
-		 * pcap_activate() failed.
+		 * That failed because the interface couldn't be found.
+		 *
+		 * If we can get a list of interfaces, and the interface name
+		 * is purely numeric, try to use it as a 1-based index
+		 * in the list of interfaces.
 		 */
-		error("%s: %s\n(%s)", device,
-		    pcap_statustostr(status), pcap_geterr(pd));
-	} else if (status > 0) {
+		devnum = parse_interface_number(device);
+		if (devnum == -1) {
+			/*
+			 * It's not a number; just report
+			 * the open error and fail.
+			 */
+			error("%s", ebuf);
+		}
+
 		/*
-		 * pcap_activate() succeeded, but it's warning us
-		 * of a problem it had.
+		 * OK, it's a number; try to find the
+		 * interface with that index, and try
+		 * to open it.
+		 *
+		 * find_interface_by_number() exits if it
+		 * couldn't be found.
 		 */
-		warning("%s: %s\n(%s)", device,
-		    pcap_statustostr(status), pcap_geterr(pd));
+		device = find_interface_by_number(devnum);
+		pd = open_interface(device, snaplen_set, snaplen, ebuf);
+		if (pd == NULL)
+			error("%s", ebuf);
 	}
+
 	if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) {
 		localnet = 0;
 		netmask = 0;
@@ -306,7 +480,7 @@ main(int argc, char **argv)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s -L [ -i interface ] [ -s snaplen ] [ -w file ] [ -y dlt ] [expression]\n",
+	(void)fprintf(stderr, "Usage: %s -D -L [ -i interface ] [ -s snaplen ] [ -w file ] [ -y dlt ] [expression]\n",
 	    program_name);
 	exit(1);
 }
