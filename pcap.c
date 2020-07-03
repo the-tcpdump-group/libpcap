@@ -316,6 +316,19 @@ pcap_init(unsigned int opts, char *errbuf)
 }
 
 /*
+ * PART OF A TEMPORARY TEST OF COMPILER WARNINGS FOR DE-CONSTIFYING
+ * POINTERS.
+ */
+extern const char *func1(void);
+
+const char *
+func2(void)
+{
+	char *str = func1();
+	return str;
+}
+
+/*
  * String containing the library version.
  * Not explicitly exported via a header file - the right API to use
  * is pcap_lib_version() - but some programs included it, so we
