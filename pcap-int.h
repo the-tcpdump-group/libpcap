@@ -483,16 +483,6 @@ void	pcap_cleanup_live_common(pcap_t *);
 int	pcap_check_activated(pcap_t *);
 void	pcap_breakloop_common(pcap_t *);
 
-#ifdef _WIN32
-/*
- * XXX - TEMPORARY TO FIGURE OUT WHY WE'RE NOT GETTING WARNINGS ABOUT
- * ASSIGNMENT OF A POINTER TO CONST CHAR VALUE TO A POINTER TO CHAR
- * VARIABLE.
- */
-LPCSTR PacketGetLPCSTR(void);
-const char *PacketGetConstCharStar(void);
-#endif
-
 /*
  * Internal interfaces for "pcap_findalldevs()".
  *

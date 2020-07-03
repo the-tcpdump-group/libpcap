@@ -38,7 +38,6 @@
 #include <errno.h>
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <Packet32.h>
-
 #include <pcap-int.h>
 #include <pcap/dlt.h>
 
@@ -2127,8 +2126,6 @@ pcap_lib_version(void)
 		 * Generate the version string.
 		 */
 		char *packet_version_string = PacketGetVersion();
-		char *packet_LPCSTR = PacketGetLPCSTR();
-		char *packet_const_char_star = PacketGetConstCharStar();
 
 		if (strcmp(WINPCAP_VER_STRING, packet_version_string) == 0) {
 			/*
@@ -2148,9 +2145,8 @@ pcap_lib_version(void)
 			char *full_pcap_version_string;
 
 			if (pcap_asprintf(&full_pcap_version_string,
-			    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING " blah blah blah %s %s",
-			    packet_version_string,
-			    packet_LPCSTR, packet_const_char_star) != -1) {
+			    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING,
+			    packet_version_string) != -1) {
 				/* Success */
 				pcap_lib_version_string = full_pcap_version_string;
 			}
@@ -2174,12 +2170,10 @@ pcap_lib_version(void)
 		 * version.
 		 */
 		char *full_pcap_version_string;
-		char *packet_LPCSTR = PacketGetLPCSTR();
-		char *packet_const_char_star = PacketGetConstCharStar();
 
 		if (pcap_asprintf(&full_pcap_version_string,
-		    PCAP_VERSION_STRING " (packet.dll version %s) blah blah blah %s",
-		    PacketGetVersion(), packet_LPCSTR, packet_const_char_star) != -1) {
+		    PCAP_VERSION_STRING " (packet.dll version %s)",
+		    PacketGetVersion()) != -1) {
 			/* Success */
 			pcap_lib_version_string = full_pcap_version_string;
 		}

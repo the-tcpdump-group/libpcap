@@ -130,20 +130,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #endif
 
 #ifdef _WIN32
-LPCSTR
-PacketGetLPCSTR(void)
-{
-	return "LPCSTR";
-}
-
-const char *
-PacketGetConstCharStar(void)
-{
-	return "const char *";
-}
-#endif
-
-#ifdef _WIN32
 /*
  * DllMain(), required when built as a Windows DLL.
  *
