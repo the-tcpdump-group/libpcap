@@ -129,7 +129,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-airpcap.h"
 #endif
 
-#ifdef _WI32
+#ifdef _WIN32
 LPCSTR
 PacketGetLPCSTR(void)
 {
