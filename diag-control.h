@@ -254,8 +254,8 @@
   /*
    * Bison.
    *
-   * The generated code may have functions with unreachable code, so
-   * suppress warnings about those.
+   * The generated code may have functions with unreachable code and
+   * switches with only a default case, so suppress warnings about those.
    */
   #if defined(_MSC_VER)
     /*
@@ -265,10 +265,11 @@
      * Suppress some /Wall warnings.
      */
     #define DIAG_OFF_BISON_BYACC \
+      __pragma(warning(disable:4065)) \
       __pragma(warning(disable:4127)) \
       __pragma(warning(disable:4242)) \
       __pragma(warning(disable:4244)) \
-      __pragma(warning(disable:4702))
+      __pragma(warning(disable:4702)) 
   #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
