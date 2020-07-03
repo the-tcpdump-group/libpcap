@@ -100,6 +100,31 @@ struct pcap_win {
 #endif
 };
 
+/* XXX - see if *this* gets a de-constification warning */
+
+extern const char *pcap_xyzzy_version(void);
+
+const char *
+pcap_xyzzy_version(void)
+{
+	/*
+	 * Generate the version string.
+	 */
+	char *packet_version_string = PacketGetVersion();
+	char *packet_LPCSTR = PacketGetLPCSTR();
+	char *packet_const_char_star = PacketGetConstCharStar();
+	char *full_pcap_version_string;
+
+	if (pcap_asprintf(&full_pcap_version_string,
+	    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING " blah blah blah %s %s",
+	    packet_version_string,
+	    packet_LPCSTR, packet_const_char_star) != -1) {
+		/* Success */
+		return (full_pcap_version_string);
+	}
+	return "";
+}
+
 /*
  * Define stub versions of the monitor-mode support routines if this
  * isn't Npcap. HAVE_NPCAP_PACKET_API is defined by Npcap but not
