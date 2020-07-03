@@ -91,8 +91,8 @@ static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
  * ASSIGNMENT OF A POINTER TO CONST CHAR VALUE TO A POINTER TO CHAR
  * VARIABLE.
  */
-extern LPCSTR PacketGetLPCSTR(void);
-extern const char *PacketGetConstCharStar(void);
+LPCSTR PacketGetLPCSTR(void);
+const char *PacketGetConstCharStar(void);
 
 LPCSTR
 PacketGetLPCSTR(void)
