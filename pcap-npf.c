@@ -116,7 +116,7 @@ pcap_xyzzy_version(void)
 	char *full_pcap_version_string;
 
 	if (pcap_asprintf(&full_pcap_version_string,
-	    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING " blah blah blah %s %s",
+	    "blah blah blah %s %s %s",
 	    packet_version_string,
 	    packet_LPCSTR, packet_const_char_star) != -1) {
 		/* Success */
