@@ -1899,31 +1899,6 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	return (ret);
 }
 
-/* XXX - see if *this* gets a de-constification warning */
-
-extern const char *pcap_xyzzy_version(void);
-
-const char *
-pcap_xyzzy_version(void)
-{
-	/*
-	 * Generate the version string.
-	 */
-	char *packet_version_string = PacketGetVersion();
-	char *packet_LPCSTR = PacketGetLPCSTR();
-	char *packet_const_char_star = PacketGetConstCharStar();
-	char *full_pcap_version_string;
-
-	if (pcap_asprintf(&full_pcap_version_string,
-	    "blah blah blah %s %s %s",
-	    packet_version_string,
-	    packet_LPCSTR, packet_const_char_star) != -1) {
-		/* Success */
-		return (full_pcap_version_string);
-	}
-	return "";
-}
-
 /*
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
@@ -2080,6 +2055,31 @@ DIAG_ON_DEPRECATION
 		free(TAdaptersName);
 		return (char *)(AdaptersName);
 	}
+}
+
+/* XXX - see if *this* gets a de-constification warning */
+
+extern const char *pcap_xyzzy_version(void);
+
+const char *
+pcap_xyzzy_version(void)
+{
+	/*
+	 * Generate the version string.
+	 */
+	char *packet_version_string = PacketGetVersion();
+	char *packet_LPCSTR = PacketGetLPCSTR();
+	char *packet_const_char_star = PacketGetConstCharStar();
+	char *full_pcap_version_string;
+
+	if (pcap_asprintf(&full_pcap_version_string,
+	    "blah blah blah %s %s %s",
+	    packet_version_string,
+	    packet_LPCSTR, packet_const_char_star) != -1) {
+		/* Success */
+		return (full_pcap_version_string);
+	}
+	return "";
 }
 
 /*
