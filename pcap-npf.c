@@ -2057,31 +2057,6 @@ DIAG_ON_DEPRECATION
 	}
 }
 
-/* XXX - see if *this* gets a de-constification warning */
-
-extern const char *pcap_xyzzy_version(void);
-
-const char *
-pcap_xyzzy_version(void)
-{
-	/*
-	 * Generate the version string.
-	 */
-	char *packet_version_string = PacketGetVersion();
-	char *packet_LPCSTR = PacketGetLPCSTR();
-	char *packet_const_char_star = PacketGetConstCharStar();
-	char *full_pcap_version_string;
-
-	if (pcap_asprintf(&full_pcap_version_string,
-	    "blah blah blah %s %s %s",
-	    packet_version_string,
-	    packet_LPCSTR, packet_const_char_star) != -1) {
-		/* Success */
-		return (full_pcap_version_string);
-	}
-	return "";
-}
-
 /*
  * We can't use the same code that we use on UN*X, as that's doing
  * UN*X-specific calls.
@@ -2199,10 +2174,12 @@ pcap_lib_version(void)
 		 * version.
 		 */
 		char *full_pcap_version_string;
+		char *packet_LPCSTR = PacketGetLPCSTR();
+		char *packet_const_char_star = PacketGetConstCharStar();
 
 		if (pcap_asprintf(&full_pcap_version_string,
-		    PCAP_VERSION_STRING " (packet.dll version %s)",
-		    PacketGetVersion()) != -1) {
+		    PCAP_VERSION_STRING " (packet.dll version %s) blah blah blah %s",
+		    PacketGetVersion(), packet_LPCSTR, packet_const_char_star) != -1) {
 			/* Success */
 			pcap_lib_version_string = full_pcap_version_string;
 		}
