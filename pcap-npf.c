@@ -41,6 +41,17 @@
 #include <pcap-int.h>
 #include <pcap/dlt.h>
 
+/*
+ * XXX - Packet32.h defines bpf_program, so we can't include
+ * <pcap/bpf.h>, which also defines it; that's why we define
+ * PCAP_DONT_INCLUDE_PCAP_BPF_H,
+ *
+ * However, no header in the WinPcap or Npcap SDKs defines the
+ * macros for BPF code, so we have to define them ourselves.
+ */
+#define		BPF_RET		0x06
+#define		BPF_K		0x00
+
 /* Old-school MinGW have these headers in a different place.
  */
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
@@ -908,6 +919,8 @@ pcap_activate_npf(pcap_t *p)
 	NetType type;
 	int res;
 	int status = 0;
+	struct bpf_insn total_insn;
+	struct bpf_program total_prog;
 
 	if (p->opt.rfmon) {
 		/*
@@ -1229,6 +1242,29 @@ pcap_activate_npf(pcap_t *p)
 		 */
 		goto bad;
 #endif /* HAVE_DAG_API */
+	}
+
+	/*
+	 * If there's no filter program installed, there's
+	 * no indication to the kernel of what the snapshot
+	 * length should be, so no snapshotting is done.
+	 *
+	 * Therefore, when we open the device, we install
+	 * an "accept everything" filter with the specified
+	 * snapshot length.
+	 */
+	total_insn.code = (u_short)(BPF_RET | BPF_K);
+	total_insn.jt = 0;
+	total_insn.jf = 0;
+	total_insn.k = p->snapshot;
+
+	total_prog.bf_len = 1;
+	total_prog.bf_insns = &total_insn;
+	if (!PacketSetBpf(pw->adapter, &total_prog)) {
+		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		    GetLastError(), "PacketSetBpf");
+		status = PCAP_ERROR;
+		goto bad;
 	}
 
 	PacketSetReadTimeout(pw->adapter, p->opt.timeout);
