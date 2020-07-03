@@ -83,7 +83,7 @@ main(int argc, char **argv)
 {
 	int op;
 	char *cp, *cmdbuf = NULL, *device, *end, *savefile = NULL;
-	int snaplen;
+	int snaplen = 0;
 	int snaplen_set = 0;
 	pcap_if_t *devlist;
 	int show_dlt_types = 0;
