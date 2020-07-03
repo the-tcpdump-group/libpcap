@@ -45,6 +45,7 @@
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
 #include "extract.h"
+#include "diag-control.h"
 
 #define EXTRACT_SHORT	EXTRACT_BE_U_2
 #define EXTRACT_LONG	EXTRACT_BE_U_4
@@ -134,6 +135,13 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			continue;
 
 		case BPF_LD|BPF_B|BPF_ABS:
+			/*
+			 * Yes, we know, this switch doesn't do
+			 * anything unless we're building for
+			 * a Linux kernel with removed VLAN
+			 * tags available as meta-data.
+			 */
+DIAG_OFF_DEFAULT_ONLY_SWITCH
 			switch (pc->k) {
 
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
@@ -157,6 +165,7 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 				A = p[k];
 				break;
 			}
+DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_LD|BPF_W|BPF_LEN:

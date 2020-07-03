@@ -68,6 +68,22 @@
 #endif
 
 /*
+ * Suppress "switch statement has only a default case" warnings.
+ * There's a switch in bpf_filter.c that only has additional
+ * cases on Linux.
+ */
+#if defined(_MSC_VER)
+  #define DIAG_OFF_DEFAULT_ONLY_SWITCH \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4065))
+  #define DIAG_ON_DEFAULT_ONLY_SWITCH \
+    __pragma(warning(pop))
+#else
+  #define DIAG_OFF_DEFAULT_ONLY_SWITCH
+  #define DIAG_ON_DEFAULT_ONLY_SWITCH
+#endif
+
+/*
  * Suppress Flex, narrowing, and deprecation warnings.
  */
 #if defined(_MSC_VER)
