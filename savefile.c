@@ -85,6 +85,28 @@ static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
   #endif
 #endif
 
+#ifdef _WI32
+/*
+ * XXX - TEMPORARY TO FIGURE OUT WHY WE'RE NOT GETTING WARNINGS ABOUT
+ * ASSIGNMENT OF A POINTER TO CONST CHAR VALUE TO A POINTER TO CHAR
+ * VARIABLE.
+ */
+extern LPCSTR PacketGetLPCSTR(void);
+extern const char *PacketGetConstCharStar(void);
+
+LPCSTR
+PacketGetLPCSTR(void)
+{
+	return "LPCSTR";
+}
+
+const char *
+PacketGetConstCharStar(void)
+{
+	return "const char *";
+}
+#endif
+
 static int
 sf_getnonblock(pcap_t *p _U_)
 {
