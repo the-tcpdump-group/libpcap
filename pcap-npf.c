@@ -39,13 +39,6 @@
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <Packet32.h>
 
-/*
- * XXX - TEMPORARY TO FIGURE OUT WHY WE'RE NOT GETTING WARNINGS ABOUT
- * ASSIGNMENT OF A POINTER TO CONST CHAR VALUE TO A POINTER TO CHAR
- * VARIABLE.
- */
-LPCSTR PacketGetLPCSTR(void);
-const char *PacketGetConstCharStar(void);
 #include <pcap-int.h>
 #include <pcap/dlt.h>
 
