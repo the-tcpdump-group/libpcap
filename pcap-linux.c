@@ -4243,6 +4243,13 @@ static int pcap_handle_packet_mmap(
 	 *
 	 * Trim the snapshot length to be no longer than the
 	 * specified snapshot length.
+	 *
+	 * XXX - an alternative is to put a filter, consisting
+	 * of a "ret <snaplen>" instruction, on the socket
+	 * in the activate routine, so that the truncation is
+	 * done in the kernel even if nobody specified a filter;
+	 * that means that less buffer space is consumed in
+	 * the memory-mapped buffer.
 	 */
 	if (pcaphdr.caplen > (bpf_u_int32)handle->snapshot)
 		pcaphdr.caplen = handle->snapshot;
