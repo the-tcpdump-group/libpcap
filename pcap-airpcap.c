@@ -878,6 +878,7 @@ airpcap_activate(pcap_t *p)
 		p->linktype = DLT_IEEE802_11;
 		break;
 
+	case AIRPCAP_LT_UNKNOWN:
 	default:
 		/* OK, what? */
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
