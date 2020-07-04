@@ -882,17 +882,18 @@ linux)
 
 		if test "x$PKGCONFIG" != "xno"; then
 			#
-			# We have pkg-config; see if we have libnl-3.0
+			# We have pkg-config; see if we have libnl-genl-3.0
 			# as a package.
 			#
-			AC_MSG_CHECKING([for libnl-3.0 with pkg-config])
-			if "$PKGCONFIG" libnl-3.0; then
+			AC_MSG_CHECKING([for libnl-genl-3.0 with pkg-config])
+			if "$PKGCONFIG" libnl-genl3.0; then
 				AC_MSG_RESULT([found])
 				have_libnl=yes
-				libnl_cflags=`"$PKGCONFIG" --cflags libnl-3.0`
-				V_INCLS="$V_INCLS ${libnl_cflags}"
-				libnl_libs=`"$PKGCONFIG" --libs openssl`
-				LIBS="${libnl_libs} $LIBS"
+				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
+				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
+				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
+				LIBS="${libnl_genl_libs} $LIBS"
+				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 			else
 				AC_MSG_RESULT([not found])
 			fi

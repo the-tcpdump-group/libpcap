@@ -6914,19 +6914,22 @@ fi
 
 		if test "x$PKGCONFIG" != "xno"; then
 			#
-			# We have pkg-config; see if we have libnl-3.0
+			# We have pkg-config; see if we have libnl-genl-3.0
 			# as a package.
 			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libnl-3.0 with pkg-config" >&5
-$as_echo_n "checking for libnl-3.0 with pkg-config... " >&6; }
-			if "$PKGCONFIG" libnl-3.0; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libnl-genl-3.0 with pkg-config" >&5
+$as_echo_n "checking for libnl-genl-3.0 with pkg-config... " >&6; }
+			if "$PKGCONFIG" libnl-genl3.0; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 				have_libnl=yes
-				libnl_cflags=`"$PKGCONFIG" --cflags libnl-3.0`
-				V_INCLS="$V_INCLS ${libnl_cflags}"
-				libnl_libs=`"$PKGCONFIG" --libs openssl`
-				LIBS="${libnl_libs} $LIBS"
+				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
+				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
+				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
+				LIBS="${libnl_genl_libs} $LIBS"
+
+$as_echo "#define HAVE_LIBNL 1" >>confdefs.h
+
 			else
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
