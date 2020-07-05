@@ -130,13 +130,6 @@
 #include <linux/if_bonding.h>
 
 /*
- * Got Wireless Extensions?
- */
-#ifdef HAVE_LINUX_WIRELESS_H
-#include <linux/wireless.h>
-#endif /* HAVE_LINUX_WIRELESS_H */
-
-/*
  * Got libnl?
  */
 #ifdef HAVE_LIBNL
@@ -204,8 +197,8 @@ struct pcap_linux {
  * Prototypes for internal functions and methods.
  */
 static int get_if_flags(const char *, bpf_u_int32 *, char *);
-static int is_wifi(int, const char *);
-static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
+static int is_wifi(const char *);
+static void map_arphrd_to_dlt(pcap_t *, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_pf_packet(pcap_t *, int);
 static int setup_mmapped(pcap_t *, int *);
@@ -301,9 +294,6 @@ static int	iface_get_id(int fd, const char *device, char *ebuf);
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 static int 	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
-#ifdef IW_MODE_MONITOR
-static int	has_wext(int sock_fd, const char *device, char *ebuf);
-#endif /* IW_MODE_MONITOR */
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
@@ -680,168 +670,7 @@ nla_put_failure:
 	nlmsg_free(msg);
 	return PCAP_ERROR;
 }
-
-static int
-enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
-{
-	struct pcap_linux *handlep = handle->priv;
-	int ret;
-	char phydev_path[PATH_MAX+1];
-	struct nl80211_state nlstate;
-	struct ifreq ifr;
-	u_int n;
-
-	/*
-	 * Is this a mac80211 device?
-	 */
-	ret = get_mac80211_phydev(handle, device, phydev_path, PATH_MAX);
-	if (ret < 0)
-		return ret;	/* error */
-	if (ret == 0)
-		return 0;	/* no error, but not mac80211 device */
-
-	/*
-	 * XXX - is this already a monN device?
-	 * If so, we're done.
-	 * Is that determined by old Wireless Extensions ioctls?
-	 */
-
-	/*
-	 * OK, it's apparently a mac80211 device.
-	 * Try to find an unused monN device for it.
-	 */
-	ret = nl80211_init(handle, &nlstate, device);
-	if (ret != 0)
-		return ret;
-	for (n = 0; n < UINT_MAX; n++) {
-		/*
-		 * Try mon{n}.
-		 */
-		char mondevice[3+10+1];	/* mon{UINT_MAX}\0 */
-
-		snprintf(mondevice, sizeof mondevice, "mon%u", n);
-		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
-		if (ret == 1) {
-			/*
-			 * Success.  We don't clean up the libnl state
-			 * yet, as we'll be using it later.
-			 */
-			goto added;
-		}
-		if (ret < 0) {
-			/*
-			 * Hard failure.  Just return ret; handle->errbuf
-			 * has already been set.
-			 */
-			nl80211_cleanup(&nlstate);
-			return ret;
-		}
-	}
-
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-	    "%s: No free monN interfaces", device);
-	nl80211_cleanup(&nlstate);
-	return PCAP_ERROR;
-
-added:
-
-#if 0
-	/*
-	 * Sleep for .1 seconds.
-	 */
-	delay.tv_sec = 0;
-	delay.tv_nsec = 500000000;
-	nanosleep(&delay, NULL);
-#endif
-
-	/*
-	 * If we haven't already done so, arrange to have
-	 * "pcap_close_all()" called when we exit.
-	 */
-	if (!pcap_do_addexit(handle)) {
-		/*
-		 * "atexit()" failed; don't put the interface
-		 * in rfmon mode, just give up.
-		 */
-		del_mon_if(handle, sock_fd, &nlstate, device,
-		    handlep->mondevice);
-		nl80211_cleanup(&nlstate);
-		return PCAP_ERROR;
-	}
-
-	/*
-	 * Now configure the monitor interface up.
-	 */
-	memset(&ifr, 0, sizeof(ifr));
-	pcap_strlcpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
-	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "%s: Can't get flags for %s", device,
-		    handlep->mondevice);
-		del_mon_if(handle, sock_fd, &nlstate, device,
-		    handlep->mondevice);
-		nl80211_cleanup(&nlstate);
-		return PCAP_ERROR;
-	}
-	ifr.ifr_flags |= IFF_UP|IFF_RUNNING;
-	if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "%s: Can't set flags for %s", device,
-		    handlep->mondevice);
-		del_mon_if(handle, sock_fd, &nlstate, device,
-		    handlep->mondevice);
-		nl80211_cleanup(&nlstate);
-		return PCAP_ERROR;
-	}
-
-	/*
-	 * Success.  Clean up the libnl state.
-	 */
-	nl80211_cleanup(&nlstate);
-
-	/*
-	 * Note that we have to delete the monitor device when we close
-	 * the handle.
-	 */
-	handlep->must_do_on_close |= MUST_DELETE_MONIF;
-
-	/*
-	 * Add this to the list of pcaps to close when we exit.
-	 */
-	pcap_add_to_pcaps_to_close(handle);
-
-	return 1;
-}
 #endif /* HAVE_LIBNL */
-
-#ifdef IW_MODE_MONITOR
-/*
- * Bonding devices mishandle unknown ioctls; they fail with ENODEV
- * rather than ENOTSUP, EOPNOTSUPP, or ENOTTY, so Wireless Extensions
- * will fail with ENODEV if we try to do them on a bonding device,
- * making us return a "no such device" indication rather than just
- * saying "no Wireless Extensions".
- *
- * So we check for bonding devices, if we can, before trying those
- * ioctls, by trying a bonding device information query ioctl to see
- * whether it succeeds.
- */
-static int
-is_bonding_device(int fd, const char *device)
-{
-	struct ifreq ifr;
-	ifbond ifb;
-
-	memset(&ifr, 0, sizeof ifr);
-	pcap_strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
-	memset(&ifb, 0, sizeof ifb);
-	ifr.ifr_data = (caddr_t)&ifb;
-	if (ioctl(fd, SIOCBONDINFOQUERY, &ifr) == 0)
-		return 1;	/* success, so it's a bonding device */
-
-	return 0;	/* no, it's not a bonding device */
-}
-#endif /* IW_MODE_MONITOR */
 
 static int pcap_protocol(pcap_t *handle)
 {
@@ -861,10 +690,6 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	char phydev_path[PATH_MAX+1];
 	int ret;
 #endif
-#ifdef IW_MODE_MONITOR
-	int sock_fd;
-	struct iwreq ireq;
-#endif
 
 	if (strcmp(handle->opt.device, "any") == 0) {
 		/*
@@ -880,11 +705,6 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	 * we'll just check whether the device appears to be a
 	 * mac80211 device and, if so, assume the device supports
 	 * monitor mode.
-	 *
-	 * wmaster devices don't appear to support the Wireless
-	 * Extensions, but we can create a mon device for a
-	 * wmaster device, so we don't bother checking whether
-	 * a mac80211 device supports the Wireless Extensions.
 	 */
 	ret = get_mac80211_phydev(handle, handle->opt.device, phydev_path,
 	    PATH_MAX);
@@ -894,51 +714,6 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 		return 1;	/* mac80211 device */
 #endif
 
-#ifdef IW_MODE_MONITOR
-	/*
-	 * Bleah.  There doesn't appear to be an ioctl to use to ask
-	 * whether a device supports monitor mode; we'll just do
-	 * SIOCGIWMODE and, if it succeeds, assume the device supports
-	 * monitor mode.
-	 *
-	 * Open a socket on which to attempt to get the mode.
-	 * (We assume that if we have Wireless Extensions support
-	 * we also have PF_PACKET support.)
-	 */
-	sock_fd = socket(PF_PACKET, SOCK_RAW, pcap_protocol(handle));
-	if (sock_fd == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
-		return PCAP_ERROR;
-	}
-
-	if (is_bonding_device(sock_fd, handle->opt.device)) {
-		/* It's a bonding device, so don't even try. */
-		close(sock_fd);
-		return 0;
-	}
-
-	/*
-	 * Attempt to get the current mode.
-	 */
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
-		/*
-		 * Well, we got the mode; assume we can set it.
-		 */
-		close(sock_fd);
-		return 1;
-	}
-	if (errno == ENODEV) {
-		/* The device doesn't even exist. */
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "SIOCGIWMODE failed");
-		close(sock_fd);
-		return PCAP_ERROR_NO_SUCH_DEVICE;
-	}
-	close(sock_fd);
-#endif
 	return 0;
 }
 
@@ -992,15 +767,10 @@ linux_if_drops(const char * if_name)
 static void	pcap_cleanup_linux( pcap_t *handle )
 {
 	struct pcap_linux *handlep = handle->priv;
-	struct ifreq	ifr;
 #ifdef HAVE_LIBNL
 	struct nl80211_state nlstate;
 	int ret;
 #endif /* HAVE_LIBNL */
-#ifdef IW_MODE_MONITOR
-	int oldflags;
-	struct iwreq ireq;
-#endif /* IW_MODE_MONITOR */
 
 	if (handlep->must_do_on_close != 0) {
 		/*
@@ -1023,68 +793,6 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			}
 		}
 #endif /* HAVE_LIBNL */
-
-#ifdef IW_MODE_MONITOR
-		if (handlep->must_do_on_close & MUST_CLEAR_RFMON) {
-			/*
-			 * We put the interface into rfmon mode;
-			 * take it out of rfmon mode.
-			 *
-			 * XXX - if somebody else wants it in rfmon
-			 * mode, this code cannot know that, so it'll take
-			 * it out of rfmon mode.
-			 */
-
-			/*
-			 * First, take the interface down if it's up;
-			 * otherwise, we might get EBUSY.
-			 * If we get errors, just drive on and print
-			 * a warning if we can't restore the mode.
-			 */
-			oldflags = 0;
-			memset(&ifr, 0, sizeof(ifr));
-			pcap_strlcpy(ifr.ifr_name, handlep->device,
-			    sizeof(ifr.ifr_name));
-			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) != -1) {
-				if (ifr.ifr_flags & IFF_UP) {
-					oldflags = ifr.ifr_flags;
-					ifr.ifr_flags &= ~IFF_UP;
-					if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1)
-						oldflags = 0;	/* didn't set, don't restore */
-				}
-			}
-
-			/*
-			 * Now restore the mode.
-			 */
-			pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, handlep->device,
-			    sizeof ireq.ifr_ifrn.ifrn_name);
-			ireq.u.mode = handlep->oldmode;
-			if (ioctl(handle->fd, SIOCSIWMODE, &ireq) == -1) {
-				/*
-				 * Scientist, you've failed.
-				 */
-				fprintf(stderr,
-				    "Can't restore interface %s wireless mode (SIOCSIWMODE failed: %s).\n"
-				    "Please adjust manually.\n",
-				    handlep->device, strerror(errno));
-			}
-
-			/*
-			 * Now bring the interface back up if we brought
-			 * it down.
-			 */
-			if (oldflags != 0) {
-				ifr.ifr_flags = oldflags;
-				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
-					fprintf(stderr,
-					    "Can't bring interface %s back up (SIOCSIFFLAGS failed: %s).\n"
-					    "Please adjust manually.\n",
-					    handlep->device, strerror(errno));
-				}
-			}
-		}
-#endif /* IW_MODE_MONITOR */
 
 		/*
 		 * Take this pcap out of the list of pcaps for which we
@@ -1808,7 +1516,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	 * OK, what type of network is this?
 	 * In particular, is it wired or wireless?
 	 */
-	if (is_wifi(sock, name)) {
+	if (is_wifi(name)) {
 		/*
 		 * Wi-Fi, hence wireless.
 		 */
@@ -1995,17 +1703,10 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 }
 
 static int
-is_wifi(int sock_fd
-#ifndef IW_MODE_MONITOR
-_U_
-#endif
-, const char *device)
+is_wifi(const char *device)
 {
 	char *pathstr;
 	struct stat statb;
-#ifdef IW_MODE_MONITOR
-	char errbuf[PCAP_ERRBUF_SIZE];
-#endif
 
 	/*
 	 * See if there's a sysfs wireless directory for it.
@@ -2023,19 +1724,6 @@ _U_
 	}
 	free(pathstr);
 
-#ifdef IW_MODE_MONITOR
-	/*
-	 * OK, maybe it's not wireless, or maybe this kernel doesn't
-	 * support sysfs.  Try the wireless extensions.
-	 */
-	if (has_wext(sock_fd, device, errbuf) == 1) {
-		/*
-		 * It supports the wireless extensions, so it's a Wi-Fi
-		 * device.
-		 */
-		return 1;
-	}
-#endif
 	return 0;
 }
 
@@ -2057,7 +1745,7 @@ _U_
  *
  *  Sets the link type to -1 if unable to map the type.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
+static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 			      const char *device, int cooked_ok)
 {
 	static const char cdma_rmnet[] = "cdma_rmnet";
@@ -2100,7 +1788,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * is_wifi() to check for 802.11 devices; are there any
 		 * others?
 		 */
-		if (!is_wifi(sock_fd, device)) {
+		if (!is_wifi(device)) {
 			int ret;
 
 			/*
@@ -2667,7 +2355,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 			close(sock_fd);
 			return arptype;
 		}
-		map_arphrd_to_dlt(handle, sock_fd, arptype, device, 1);
+		map_arphrd_to_dlt(handle, arptype, device, 1);
 		if (handle->linktype == -1 ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
@@ -4780,394 +4468,83 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 	return 0;
 }
 
-#ifdef IW_MODE_MONITOR
 /*
- * Check whether the device supports the Wireless Extensions.
- * Returns 1 if it does, 0 if it doesn't, PCAP_ERROR_NO_SUCH_DEVICE
- * if the device doesn't even exist.
+ * Try to enter monitor mode.
+ * If we have libnl, try to create a new monitor-mode device and
+ * capture on that; otherwise, just say "not supported".
  */
+#ifdef HAVE_LIBNL
 static int
-has_wext(int sock_fd, const char *device, char *ebuf)
+enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 {
-	struct iwreq ireq;
-	int ret;
-
-	if (is_bonding_device(sock_fd, device))
-		return 0;	/* bonding device, so don't even try */
-
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
-		return 1;	/* yes */
-	if (errno == ENODEV)
-		ret = PCAP_ERROR_NO_SUCH_DEVICE;
-	else
-		ret = 0;
-	pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
-	    "%s: SIOCGIWNAME", device);
-	return ret;
-}
-
-/*
- * Per me si va ne la citta dolente,
- * Per me si va ne l'etterno dolore,
- *	...
- * Lasciate ogne speranza, voi ch'intrate.
- *
- * XXX - airmon-ng does special stuff with the Orinoco driver and the
- * wlan-ng driver.
- */
-typedef enum {
-	MONITOR_WEXT,
-	MONITOR_HOSTAP,
-	MONITOR_PRISM,
-	MONITOR_PRISM54,
-	MONITOR_ACX100,
-	MONITOR_RT2500,
-	MONITOR_RT2570,
-	MONITOR_RT73,
-	MONITOR_RTL8XXX
-} monitor_type;
-
-/*
- * Use the Wireless Extensions, if we have them, to try to turn monitor mode
- * on if it's not already on.
- *
- * Returns 1 on success, 0 if we don't support the Wireless Extensions
- * on this device, or a PCAP_ERROR_ value if we do support them but
- * we weren't able to turn monitor mode on.
- */
-static int
-enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
-{
-	/*
-	 * XXX - at least some adapters require non-Wireless Extensions
-	 * mechanisms to turn monitor mode on.
-	 *
-	 * Atheros cards might require that a separate "monitor virtual access
-	 * point" be created, with later versions of the madwifi driver.
-	 * airmon-ng does
-	 *
-	 *    wlanconfig ath create wlandev {if_name} wlanmode monitor -bssid
-	 *
-	 * which apparently spits out a line "athN" where "athN" is the
-	 * monitor mode device.  To leave monitor mode, it destroys the
-	 * monitor mode device.
-	 *
-	 * Some Intel Centrino adapters might require private ioctls to get
-	 * radio headers; the ipw2200 and ipw3945 drivers allow you to
-	 * configure a separate "rtapN" interface to capture in monitor
-	 * mode without preventing the adapter from operating normally.
-	 * (airmon-ng doesn't appear to use that, though.)
-	 *
-	 * It would be Truly Wonderful if mac80211 and nl80211 cleaned this
-	 * up, and if all drivers were converted to mac80211 drivers.
-	 *
-	 * If interface {if_name} is a mac80211 driver, the file
-	 * /sys/class/net/{if_name}/phy80211 is a symlink to
-	 * /sys/class/ieee80211/{phydev_name}, for some {phydev_name}.
-	 *
-	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
-	 * least, has a "wmaster0" device and a "wlan0" device; the
-	 * latter is the one with the IP address.  Both show up in
-	 * "tcpdump -D" output.  Capturing on the wmaster0 device
-	 * captures with 802.11 headers.
-	 *
-	 * airmon-ng searches through /sys/class/net for devices named
-	 * monN, starting with mon0; as soon as one *doesn't* exist,
-	 * it chooses that as the monitor device name.  If the "iw"
-	 * command exists, it does
-	 *
-	 *    iw dev {if_name} interface add {monif_name} type monitor"
-	 *
-	 * where {monif_name} is the monitor device.  It then (sigh) sleeps
-	 * .1 second, and then configures the device up.  Otherwise, if
-	 * /sys/class/ieee80211/{phydev_name}/add_iface is a file, it writes
-	 * {mondev_name}, without a newline, to that file, and again (sigh)
-	 * sleeps .1 second, and then iwconfig's that device into monitor
-	 * mode and configures it up.  Otherwise, you can't do monitor mode.
-	 *
-	 * All these devices are "glued" together by having the
-	 * /sys/class/net/{device_name}/phy80211 links pointing to the same
-	 * place, so, given a wmaster, wlan, or mon device, you can
-	 * find the other devices by looking for devices with
-	 * the same phy80211 link.
-	 *
-	 * To turn monitor mode off, delete the monitor interface,
-	 * either with
-	 *
-	 *    iw dev {monif_name} interface del
-	 *
-	 * or by sending {monif_name}, with no NL, down
-	 * /sys/class/ieee80211/{phydev_name}/remove_iface
-	 *
-	 * Note: if you try to create a monitor device named "monN", and
-	 * there's already a "monN" device, it fails, as least with
-	 * the netlink interface (which is what iw uses), with a return
-	 * value of -ENFILE.  (Return values are negative errnos.)  We
-	 * could probably use that to find an unused device.
-	 */
 	struct pcap_linux *handlep = handle->priv;
-	int err;
-	struct iwreq ireq;
-	struct iw_priv_args *priv;
-	monitor_type montype;
-	int i;
-	__u32 cmd;
+	int ret;
+	char phydev_path[PATH_MAX+1];
+	struct nl80211_state nlstate;
 	struct ifreq ifr;
-	int oldflags;
-	int args[2];
-	int channel;
+	u_int n;
 
 	/*
-	 * Does this device *support* the Wireless Extensions?
+	 * Is this a mac80211 device?
 	 */
-	err = has_wext(sock_fd, device, handle->errbuf);
-	if (err <= 0)
-		return err;	/* either it doesn't or the device doesn't even exist */
-	/*
-	 * Start out assuming we have no private extensions to control
-	 * radio metadata.
-	 */
-	montype = MONITOR_WEXT;
-	cmd = 0;
+	ret = get_mac80211_phydev(handle, device, phydev_path, PATH_MAX);
+	if (ret < 0)
+		return ret;	/* error */
+	if (ret == 0)
+		return 0;	/* no error, but not mac80211 device */
 
 	/*
-	 * Try to get all the Wireless Extensions private ioctls
-	 * supported by this device.
-	 *
-	 * First, get the size of the buffer we need, by supplying no
-	 * buffer and a length of 0.  If the device supports private
-	 * ioctls, it should return E2BIG, with ireq.u.data.length set
-	 * to the length we need.  If it doesn't support them, it should
-	 * return EOPNOTSUPP.
+	 * XXX - is this already a monN device?
+	 * If so, we're done.
 	 */
-	memset(&ireq, 0, sizeof ireq);
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.u.data.pointer = (void *)args;
-	ireq.u.data.length = 0;
-	ireq.u.data.flags = 0;
-	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) != -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCGIWPRIV with a zero-length buffer didn't fail!",
-		    device);
-		return PCAP_ERROR;
-	}
-	if (errno != EOPNOTSUPP) {
+
+	/*
+	 * OK, it's apparently a mac80211 device.
+	 * Try to find an unused monN device for it.
+	 */
+	ret = nl80211_init(handle, &nlstate, device);
+	if (ret != 0)
+		return ret;
+	for (n = 0; n < UINT_MAX; n++) {
 		/*
-		 * OK, it's not as if there are no private ioctls.
+		 * Try mon{n}.
 		 */
-		if (errno != E2BIG) {
+		char mondevice[3+10+1];	/* mon{UINT_MAX}\0 */
+
+		snprintf(mondevice, sizeof mondevice, "mon%u", n);
+		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
+		if (ret == 1) {
 			/*
-			 * Failed.
+			 * Success.  We don't clean up the libnl state
+			 * yet, as we'll be using it later.
 			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: SIOCGIWPRIV", device);
-			return PCAP_ERROR;
+			goto added;
 		}
-
-		/*
-		 * OK, try to get the list of private ioctls.
-		 */
-		priv = malloc(ireq.u.data.length * sizeof (struct iw_priv_args));
-		if (priv == NULL) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "malloc");
-			return PCAP_ERROR;
+		if (ret < 0) {
+			/*
+			 * Hard failure.  Just return ret; handle->errbuf
+			 * has already been set.
+			 */
+			nl80211_cleanup(&nlstate);
+			return ret;
 		}
-		ireq.u.data.pointer = (void *)priv;
-		if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: SIOCGIWPRIV", device);
-			free(priv);
-			return PCAP_ERROR;
-		}
-
-		/*
-		 * Look for private ioctls to turn monitor mode on or, if
-		 * monitor mode is on, to set the header type.
-		 */
-		for (i = 0; i < ireq.u.data.length; i++) {
-			if (strcmp(priv[i].name, "monitor_type") == 0) {
-				/*
-				 * Hostap driver, use this one.
-				 * Set monitor mode first.
-				 * You can set it to 0 to get DLT_IEEE80211,
-				 * 1 to get DLT_PRISM, 2 to get
-				 * DLT_IEEE80211_RADIO_AVS, and, with more
-				 * recent versions of the driver, 3 to get
-				 * DLT_IEEE80211_RADIO.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-					break;
-				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-					break;
-				montype = MONITOR_HOSTAP;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "set_prismhdr") == 0) {
-				/*
-				 * Prism54 driver, use this one.
-				 * Set monitor mode first.
-				 * You can set it to 2 to get DLT_IEEE80211
-				 * or 3 or get DLT_PRISM.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-					break;
-				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-					break;
-				montype = MONITOR_PRISM54;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "forceprismheader") == 0) {
-				/*
-				 * RT2570 driver, use this one.
-				 * Do this after turning monitor mode on.
-				 * You can set it to 1 to get DLT_PRISM or 2
-				 * to get DLT_IEEE80211.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-					break;
-				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-					break;
-				montype = MONITOR_RT2570;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "forceprism") == 0) {
-				/*
-				 * RT73 driver, use this one.
-				 * Do this after turning monitor mode on.
-				 * Its argument is a *string*; you can
-				 * set it to "1" to get DLT_PRISM or "2"
-				 * to get DLT_IEEE80211.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_CHAR)
-					break;
-				if (priv[i].set_args & IW_PRIV_SIZE_FIXED)
-					break;
-				montype = MONITOR_RT73;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "prismhdr") == 0) {
-				/*
-				 * One of the RTL8xxx drivers, use this one.
-				 * It can only be done after monitor mode
-				 * has been turned on.  You can set it to 1
-				 * to get DLT_PRISM or 0 to get DLT_IEEE80211.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-					break;
-				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-					break;
-				montype = MONITOR_RTL8XXX;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "rfmontx") == 0) {
-				/*
-				 * RT2500 or RT61 driver, use this one.
-				 * It has one one-byte parameter; set
-				 * u.data.length to 1 and u.data.pointer to
-				 * point to the parameter.
-				 * It doesn't itself turn monitor mode on.
-				 * You can set it to 1 to allow transmitting
-				 * in monitor mode(?) and get DLT_IEEE80211,
-				 * or set it to 0 to disallow transmitting in
-				 * monitor mode(?) and get DLT_PRISM.
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 2)
-					break;
-				montype = MONITOR_RT2500;
-				cmd = priv[i].cmd;
-				break;
-			}
-			if (strcmp(priv[i].name, "monitor") == 0) {
-				/*
-				 * Either ACX100 or hostap, use this one.
-				 * It turns monitor mode on.
-				 * If it takes two arguments, it's ACX100;
-				 * the first argument is 1 for DLT_PRISM
-				 * or 2 for DLT_IEEE80211, and the second
-				 * argument is the channel on which to
-				 * run.  If it takes one argument, it's
-				 * HostAP, and the argument is 2 for
-				 * DLT_IEEE80211 and 3 for DLT_PRISM.
-				 *
-				 * If we see this, we don't quit, as this
-				 * might be a version of the hostap driver
-				 * that also supports "monitor_type".
-				 */
-				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-					break;
-				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-					break;
-				switch (priv[i].set_args & IW_PRIV_SIZE_MASK) {
-
-				case 1:
-					montype = MONITOR_PRISM;
-					cmd = priv[i].cmd;
-					break;
-
-				case 2:
-					montype = MONITOR_ACX100;
-					cmd = priv[i].cmd;
-					break;
-
-				default:
-					break;
-				}
-			}
-		}
-		free(priv);
 	}
 
-	/*
-	 * XXX - ipw3945?  islism?
-	 */
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    "%s: No free monN interfaces", device);
+	nl80211_cleanup(&nlstate);
+	return PCAP_ERROR;
 
-	/*
-	 * Get the old mode.
-	 */
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) == -1) {
-		/*
-		 * We probably won't be able to set the mode, either.
-		 */
-		return PCAP_ERROR_RFMON_NOTSUP;
-	}
+added:
 
+#if 0
 	/*
-	 * Is it currently in monitor mode?
+	 * Sleep for .1 seconds.
 	 */
-	if (ireq.u.mode == IW_MODE_MONITOR) {
-		/*
-		 * Yes.  Just leave things as they are.
-		 * We don't offer multiple link-layer types, as
-		 * changing the link-layer type out from under
-		 * somebody else capturing in monitor mode would
-		 * be considered rude.
-		 */
-		return 1;
-	}
-	/*
-	 * No.  We have to put the adapter into rfmon mode.
-	 */
+	delay.tv_sec = 0;
+	delay.tv_nsec = 500000000;
+	nanosleep(&delay, NULL);
+#endif
 
 	/*
 	 * If we haven't already done so, arrange to have
@@ -5178,277 +4555,47 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * "atexit()" failed; don't put the interface
 		 * in rfmon mode, just give up.
 		 */
-		return PCAP_ERROR_RFMON_NOTSUP;
-	}
-
-	/*
-	 * Save the old mode.
-	 */
-	handlep->oldmode = ireq.u.mode;
-
-	/*
-	 * Put the adapter in rfmon mode.  How we do this depends
-	 * on whether we have a special private ioctl or not.
-	 */
-	if (montype == MONITOR_PRISM) {
-		/*
-		 * We have the "monitor" private ioctl, but none of
-		 * the other private ioctls.  Use this, and select
-		 * the Prism header.
-		 *
-		 * If it fails, just fall back on SIOCSIWMODE.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.u.data.length = 1;	/* 1 argument */
-		args[0] = 3;	/* request Prism header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		if (ioctl(sock_fd, cmd, &ireq) != -1) {
-			/*
-			 * Success.
-			 * Note that we have to put the old mode back
-			 * when we close the device.
-			 */
-			handlep->must_do_on_close |= MUST_CLEAR_RFMON;
-
-			/*
-			 * Add this to the list of pcaps to close
-			 * when we exit.
-			 */
-			pcap_add_to_pcaps_to_close(handle);
-
-			return 1;
-		}
-
-		/*
-		 * Failure.  Fall back on SIOCSIWMODE.
-		 */
-	}
-
-	/*
-	 * First, take the interface down if it's up; otherwise, we
-	 * might get EBUSY.
-	 */
-	memset(&ifr, 0, sizeof(ifr));
-	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
-	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "%s: Can't get flags", device);
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handlep->mondevice);
+		nl80211_cleanup(&nlstate);
 		return PCAP_ERROR;
 	}
-	oldflags = 0;
-	if (ifr.ifr_flags & IFF_UP) {
-		oldflags = ifr.ifr_flags;
-		ifr.ifr_flags &= ~IFF_UP;
-		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: Can't set flags",
-			    device);
-			return PCAP_ERROR;
-		}
+
+	/*
+	 * Now configure the monitor interface up.
+	 */
+	memset(&ifr, 0, sizeof(ifr));
+	pcap_strlcpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
+	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "%s: Can't get flags for %s", device,
+		    handlep->mondevice);
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handlep->mondevice);
+		nl80211_cleanup(&nlstate);
+		return PCAP_ERROR;
+	}
+	ifr.ifr_flags |= IFF_UP|IFF_RUNNING;
+	if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "%s: Can't set flags for %s", device,
+		    handlep->mondevice);
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handlep->mondevice);
+		nl80211_cleanup(&nlstate);
+		return PCAP_ERROR;
 	}
 
 	/*
-	 * Then turn monitor mode on.
+	 * Success.  Clean up the libnl state.
 	 */
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.u.mode = IW_MODE_MONITOR;
-	if (ioctl(sock_fd, SIOCSIWMODE, &ireq) == -1) {
-		/*
-		 * Scientist, you've failed.
-		 * Bring the interface back up if we shut it down.
-		 */
-		ifr.ifr_flags = oldflags;
-		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: Can't set flags",
-			    device);
-			return PCAP_ERROR;
-		}
-		return PCAP_ERROR_RFMON_NOTSUP;
-	}
+	nl80211_cleanup(&nlstate);
 
 	/*
-	 * XXX - airmon-ng does "iwconfig {if_name} key off" after setting
-	 * monitor mode and setting the channel, and then does
-	 * "iwconfig up".
+	 * Note that we have to delete the monitor device when we close
+	 * the handle.
 	 */
-
-	/*
-	 * Now select the appropriate radio header.
-	 */
-	switch (montype) {
-
-	case MONITOR_WEXT:
-		/*
-		 * We don't have any private ioctl to set the header.
-		 */
-		break;
-
-	case MONITOR_HOSTAP:
-		/*
-		 * Try to select the radiotap header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 3;	/* request radiotap header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		if (ioctl(sock_fd, cmd, &ireq) != -1)
-			break;	/* success */
-
-		/*
-		 * That failed.  Try to select the AVS header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 2;	/* request AVS header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		if (ioctl(sock_fd, cmd, &ireq) != -1)
-			break;	/* success */
-
-		/*
-		 * That failed.  Try to select the Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 1;	/* request Prism header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_PRISM:
-		/*
-		 * The private ioctl failed.
-		 */
-		break;
-
-	case MONITOR_PRISM54:
-		/*
-		 * Select the Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 3;	/* request Prism header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_ACX100:
-		/*
-		 * Get the current channel.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		if (ioctl(sock_fd, SIOCGIWFREQ, &ireq) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: SIOCGIWFREQ", device);
-			return PCAP_ERROR;
-		}
-		channel = ireq.u.freq.m;
-
-		/*
-		 * Select the Prism header, and set the channel to the
-		 * current value.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 1;		/* request Prism header */
-		args[1] = channel;	/* set channel */
-		memcpy(ireq.u.name, args, 2*sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_RT2500:
-		/*
-		 * Disallow transmission - that turns on the
-		 * Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 0;	/* disallow transmitting */
-		memcpy(ireq.u.name, args, sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_RT2570:
-		/*
-		 * Force the Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 1;	/* request Prism header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_RT73:
-		/*
-		 * Force the Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.u.data.length = 1;	/* 1 argument */
-		ireq.u.data.pointer = "1";
-		ireq.u.data.flags = 0;
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-
-	case MONITOR_RTL8XXX:
-		/*
-		 * Force the Prism header.
-		 */
-		memset(&ireq, 0, sizeof ireq);
-		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
-		    sizeof ireq.ifr_ifrn.ifrn_name);
-		args[0] = 1;	/* request Prism header */
-		memcpy(ireq.u.name, args, sizeof (int));
-		ioctl(sock_fd, cmd, &ireq);
-		break;
-	}
-
-	/*
-	 * Now bring the interface back up if we brought it down.
-	 */
-	if (oldflags != 0) {
-		ifr.ifr_flags = oldflags;
-		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "%s: Can't set flags",
-			    device);
-
-			/*
-			 * At least try to restore the old mode on the
-			 * interface.
-			 */
-			if (ioctl(handle->fd, SIOCSIWMODE, &ireq) == -1) {
-				/*
-				 * Scientist, you've failed.
-				 */
-				fprintf(stderr,
-				    "Can't restore interface wireless mode (SIOCSIWMODE failed: %s).\n"
-				    "Please adjust manually.\n",
-				    strerror(errno));
-			}
-			return PCAP_ERROR;
-		}
-	}
-
-	/*
-	 * Note that we have to put the old mode back when we
-	 * close the device.
-	 */
-	handlep->must_do_on_close |= MUST_CLEAR_RFMON;
+	handlep->must_do_on_close |= MUST_DELETE_MONIF;
 
 	/*
 	 * Add this to the list of pcaps to close when we exit.
@@ -5457,41 +4604,16 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 
 	return 1;
 }
-#endif /* IW_MODE_MONITOR */
-
-/*
- * Try various mechanisms to enter monitor mode.
- */
+#else /* HAVE_LIBNL */
 static int
-enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
+enter_rfmon_mode(pcap_t *handle _U_, int sock_fd _U_, const char *device _U_)
 {
-#if defined(HAVE_LIBNL) || defined(IW_MODE_MONITOR)
-	int ret;
-#endif
-
-#ifdef HAVE_LIBNL
-	ret = enter_rfmon_mode_mac80211(handle, sock_fd, device);
-	if (ret < 0)
-		return ret;	/* error attempting to do so */
-	if (ret == 1)
-		return 1;	/* success */
-#endif /* HAVE_LIBNL */
-
-#ifdef IW_MODE_MONITOR
-	ret = enter_rfmon_mode_wext(handle, sock_fd, device);
-	if (ret < 0)
-		return ret;	/* error attempting to do so */
-	if (ret == 1)
-		return 1;	/* success */
-#endif /* IW_MODE_MONITOR */
-
 	/*
-	 * Either none of the mechanisms we know about work or none
-	 * of those mechanisms are available, so we can't do monitor
-	 * mode.
+	 * We don't have libnl, so we can't do monitor mode.
 	 */
 	return 0;
 }
+#endif /* HAVE_LIBNL */
 
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 /*
