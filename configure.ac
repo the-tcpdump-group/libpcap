@@ -863,23 +863,6 @@ linux)
 		with_libnl=$withval,with_libnl=if_available)
 
 	if test x$with_libnl != xno ; then
-		have_any_nl="no"
-
-                incdir=-I/usr/include/libnl3
-                libnldir=
-                case "$with_libnl" in
-
-                yes|if_available)
-                  ;;
-
-                *)
-                  if test -d $withval; then
-                    libnldir=-L${withval}/lib/.libs
-                    incdir=-I${withval}/include
-                  fi
-                  ;;
-                esac
-
 		if test "x$PKGCONFIG" != "xno"; then
 			#
 			# We have pkg-config; see if we have libnl-genl-3.0
@@ -901,8 +884,24 @@ linux)
 
 		if test x$have_libnl != xyes; then
 			#
-			# Check for it directly.
+			# OK, either we don't have pkg-config or there
+			# wasn't a .pc file for it; Check for it directly.
 			#
+			case "$with_libnl" in
+
+			yes|if_available)
+				incdir=-I/usr/include/libnl3
+				libnldir=
+				;;
+
+			*)
+				if test -d $withval; then
+					libnldir=-L${withval}/lib/.libs
+					incdir=-I${withval}/include
+				fi
+				;;
+			esac
+
 			AC_CHECK_LIB(nl-3, nl_socket_alloc,
 			[
 				#
