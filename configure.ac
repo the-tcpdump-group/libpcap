@@ -2474,7 +2474,20 @@ AC_INCLUDES_DEFAULT
 	# didn't have it, so check for it.
 	#
 	if test "$ac_cv_dpdk_can_compile" = yes; then
+		#
+		# This runs the preprocessor, so make sure it
+		# looks in the DPDK directories.  Instead of
+		# including dpdk/XXX.h, we include just XXX.h
+		# and assume DPDK_CFLAGS is the directory
+		# containing the DPDK headers (that's how
+		# pkg-config sets it, at least on Ubuntu),
+		# so just looking under /usr/include won't
+		# find it.
+		#
+		save_CPPFLAGS="$CPPFLAGS"
+		CPPFLAGS="$CPPFLAGS $DPDK_CFLAGS"
 		AC_CHECK_HEADER(rte_bus.h)
+		CPPFLAGS="$save_CPPFLAGS"
 	fi
 
 	#

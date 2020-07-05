@@ -11283,12 +11283,25 @@ $as_echo "$ac_cv_dpdk_can_compile" >&6; }
 	# didn't have it, so check for it.
 	#
 	if test "$ac_cv_dpdk_can_compile" = yes; then
+		#
+		# This runs the preprocessor, so make sure it
+		# looks in the DPDK directories.  Instead of
+		# including dpdk/XXX.h, we include just XXX.h
+		# and assume DPDK_CFLAGS is the directory
+		# containing the DPDK headers (that's how
+		# pkg-config sets it, at least on Ubuntu),
+		# so just looking under /usr/include won't
+		# find it.
+		#
+		save_CPPFLAGS="$CPPFLAGS"
+		CPPFLAGS="$CPPFLAGS $DPDK_CFLAGS"
 		ac_fn_c_check_header_mongrel "$LINENO" "rte_bus.h" "ac_cv_header_rte_bus_h" "$ac_includes_default"
 if test "x$ac_cv_header_rte_bus_h" = xyes; then :
 
 fi
 
 
+		CPPFLAGS="$save_CPPFLAGS"
 	fi
 
 	#
