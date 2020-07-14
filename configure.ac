@@ -915,7 +915,7 @@ linux)
 				#
 				# No, we don't have libnl at all.
 				#
-				if test x$with_libnl = xyes ; then
+				if test x$with_libnl != xno ; then
 					AC_MSG_ERROR([libnl support requested but libnl not found])
 				fi
 			], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )

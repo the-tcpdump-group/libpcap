@@ -6992,7 +6992,7 @@ else
 				#
 				# No, we don't have libnl at all.
 				#
-				if test x$with_libnl = xyes ; then
+				if test x$with_libnl != xno ; then
 					as_fn_error $? "libnl support requested but libnl not found" "$LINENO" 5
 				fi
 
