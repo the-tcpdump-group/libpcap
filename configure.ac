@@ -896,7 +896,7 @@ linux)
 
 			*)
 				if test -d $withval; then
-					libnldir=-L${withval}/lib/.libs
+					libnldir=-L${withval}/lib
 					incdir=-I${withval}/include
 				fi
 				;;
