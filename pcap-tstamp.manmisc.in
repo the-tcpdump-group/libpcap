@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-TSTAMP @MAN_MISC_INFO@ "17 November 2019"
+.TH PCAP-TSTAMP @MAN_MISC_INFO@ "14 July 2020"
 .SH NAME
 pcap-tstamp \- packet time stamps in libpcap
 .SH DESCRIPTION
@@ -58,7 +58,20 @@ single adjustment;
 different CPU cores on a multi-core or multi-processor system might be
 running at different speeds, or might not have time counters all
 synchronized, so packets time-stamped by different cores might not have
-consistent time stamps.
+consistent time stamps;
+.IP
+some time sources, such as those that supply POSIX "seconds since the
+Epoch" time, do not count leap seconds, meaning that the seconds
+portion
+.RB ( tv_sec )
+of the time stamp might not be incremented for a leap second, so that
+the fraction-of-a-second part of the time stamp might roll over past
+zero but the second part would not change, or the clock might run
+slightly more slowly for a pariod before the leap second.
+.LP
+For these reasons, time differences between packet time stamps will not
+necessarily accurately reflect the time differences between the receipt
+or transmission times of the packets.
 .LP
 In addition, packets time-stamped by different cores might be
 time-stamped in one order and added to the queue of packets for libpcap
@@ -73,6 +86,9 @@ the host operating system.  Those time stamps might not, however, be
 synchronized with the host operating system's clock, so that, for
 example, the time stamp of a packet might not correspond to the time
 stamp of an event on the host triggered by the arrival of that packet.
+If they are synchronized with the host operating system's clock, some of
+the issues listed above with time stamps supplied by the host operating
+system may also apply to time stamps supplied by the capture device.
 .LP
 Depending on the capture device and the software on the host, libpcap
 might allow different types of time stamp to be used.  The
