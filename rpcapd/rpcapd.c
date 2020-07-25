@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 	if (loadfile[0])
 		fileconf_read();
 
-#ifdef WIN32
+#ifdef _WIN32
 	//
 	// Create a handle to signal the main loop to tell it to do
 	// something.
