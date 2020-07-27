@@ -244,7 +244,7 @@ utf_16le_to_utf_8_truncated(const wchar_t *utf_16, char *utf_8,
 	 * (We started out with enough room, thanks to the test
 	 * for a zero-length buffer at the beginning, and if
 	 * there wasn't enough room for any character we wanted
-	 * to put into the the buffer *plus* a trailing '\0',
+	 * to put into the buffer *plus* a trailing '\0',
 	 * we'd have quit before putting it into the buffer,
 	 * and thus would have left enough room for the trailing
 	 * '\0'.)
