@@ -123,7 +123,7 @@ executable, and put the configuration commands in there. In order for
 rpcapd to execute the commands, you have to restart it on Win32, i.e.
 the initialization file is parsed only at the beginning). The UNIX
 version of rpcapd will reread the configuration file when receiving a
-HUP signel. In that case, all the existing connections remain in place,
+HUP signal. In that case, all the existing connections remain in place,
 while the new connections will be created according to the new parameters.
 .LP
 In case a user does not want to create the configuration file manually,
@@ -267,4 +267,5 @@ as the SSL certificate file.
 .br
 .ad
 .SH "SEE ALSO"
-pcap(3PCAP), rpcapd-config(@MAN_FILE_FORMATS@)
+.BR pcap (3PCAP),
+.BR rpcapd-config (@MAN_FILE_FORMATS@)

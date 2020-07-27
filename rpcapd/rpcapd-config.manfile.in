@@ -75,4 +75,4 @@ means that null authentication is permitted;
 .B No
 means that it is not permitted.
 .SH SEE ALSO
-rpcapd(@MAN_ADMIN_COMMANDS@)
+.BR rpcapd (@MAN_ADMIN_COMMANDS@)
