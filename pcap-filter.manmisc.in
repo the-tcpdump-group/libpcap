@@ -1041,7 +1041,7 @@ icmp6[icmp6type] != icmp6-echo and icmp6[icmp6type] != icmp6-echoreply
 .fi
 .RE
 .SH "SEE ALSO"
-pcap(3PCAP)
+.BR pcap (3PCAP)
 .SH BUGS
 To report a security issue please send an e-mail to security@tcpdump.org.
 .LP

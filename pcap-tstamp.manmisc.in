@@ -198,4 +198,4 @@ the time stamp supplied by the hardware or operating system and, when
 reading a savefile, this does not indicate the actual precision of time
 stamps in the file.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

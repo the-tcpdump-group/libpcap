@@ -63,4 +63,4 @@ If the type value does not correspond to a known
 value, the string "DLT n" is returned, where n is the value of
 the dlt argument.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)
