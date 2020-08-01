@@ -27,7 +27,7 @@ Using BPF:
     If you fix the problems yourself, please submit a patch by forking
     the branch at
 
-	https://github.com/the-tcpdump-group/libpcap/issues
+	https://github.com/the-tcpdump-group/libpcap/tree/master
 
     and issuing a pull request, so we can incorporate the fixes into the
     next release.
