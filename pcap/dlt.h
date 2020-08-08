@@ -818,7 +818,7 @@
  * "received by this host", non-zero (any non-zero value) means "sent by
  * this host" - as per Will Barker <w.barker@zen.co.uk>.
  */
-#define DLT_PPP_WITH_DIR	204	/* Don't confuse with DLT_PPP_WITH_DIRECTION */
+#define DLT_PPP_WITH_DIR	204	/* Don't confuse with DLT_PPP_PPPD */
 
 /*
  * Cisco HDLC, with a one-byte direction pseudo-header prepended - zero
