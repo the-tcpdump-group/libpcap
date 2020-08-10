@@ -2317,7 +2317,7 @@ mark_code(struct icode *ic)
 }
 
 /*
- * True iff the two stmt lists load the same value from the packet into
+ * True if the two stmt lists load the same value from the packet into
  * the accumulator.
  */
 static int

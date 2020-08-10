@@ -1316,7 +1316,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * information, i.e. is not source-routed, the correct
 		 * values are 20 and 22, as they are in the vanilla code.
 		 *
-		 * A packet is source-routed iff the uppermost bit
+		 * A packet is source-routed if the uppermost bit
 		 * of the first byte of the source address, at an
 		 * offset of 8, has the uppermost bit set.  If the
 		 * packet is source-routed, the total number of bytes
