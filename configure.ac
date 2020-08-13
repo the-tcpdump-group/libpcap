@@ -871,7 +871,7 @@ linux)
 			AC_MSG_CHECKING([for libnl-genl-3.0 with pkg-config])
 			if "$PKGCONFIG" libnl-genl-3.0; then
 				AC_MSG_RESULT([found])
-				have_libnl=yes
+				pkg_config_found_libnl=yes
 				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
 				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
 				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
@@ -882,7 +882,7 @@ linux)
 			fi
 		fi
 
-		if test x$have_libnl != xyes; then
+		if test x$pkg_config_found_libnl != xyes; then
 			#
 			# OK, either we don't have pkg-config or there
 			# wasn't a .pc file for it; Check for it directly.
@@ -910,12 +910,13 @@ linux)
 				LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 				V_INCLS="$V_INCLS ${incdir}"
-				have_libnl=yes
 			],[
 				#
 				# No, we don't have libnl at all.
+				# Fail if the user explicitly requested
+				# it.
 				#
-				if test x$with_libnl != xno ; then
+				if test x$with_libnl = xyes ; then
 					AC_MSG_ERROR([libnl support requested but libnl not found])
 				fi
 			], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )

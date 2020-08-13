@@ -6905,7 +6905,7 @@ $as_echo_n "checking for libnl-genl-3.0 with pkg-config... " >&6; }
 			if "$PKGCONFIG" libnl-genl-3.0; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-				have_libnl=yes
+				pkg_config_found_libnl=yes
 				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
 				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
 				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
@@ -6919,7 +6919,7 @@ $as_echo "not found" >&6; }
 			fi
 		fi
 
-		if test x$have_libnl != xyes; then
+		if test x$pkg_config_found_libnl != xyes; then
 			#
 			# OK, either we don't have pkg-config or there
 			# wasn't a .pc file for it; Check for it directly.
@@ -6985,14 +6985,15 @@ if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
 				V_INCLS="$V_INCLS ${incdir}"
-				have_libnl=yes
 
 else
 
 				#
 				# No, we don't have libnl at all.
+				# Fail if the user explicitly requested
+				# it.
 				#
-				if test x$with_libnl != xno ; then
+				if test x$with_libnl = xyes ; then
 					as_fn_error $? "libnl support requested but libnl not found" "$LINENO" 5
 				fi
 
