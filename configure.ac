@@ -869,7 +869,7 @@ linux)
 			# as a package.
 			#
 			AC_MSG_CHECKING([for libnl-genl-3.0 with pkg-config])
-			if "$PKGCONFIG" libnl-genl3.0; then
+			if "$PKGCONFIG" libnl-genl-3.0; then
 				AC_MSG_RESULT([found])
 				have_libnl=yes
 				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
