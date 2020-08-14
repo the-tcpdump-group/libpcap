@@ -899,9 +899,13 @@ usb_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_cha
 		&cnt);
 	if (ret < 8)
 	{
+		char string_truncated[181];
+
+		strncpy(string_truncated, string, sizeof(string_truncated));
+		string_truncated[180] = 0;
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't parse USB bus message '%s', too few tokens (expected 8 got %d)",
-		    string, ret);
+			 "Can't parse USB bus message '%s', too few tokens (expected 8 got %d)",
+			 string_truncated, ret);
 		return -1;
 	}
 	uhdr->id = tag;
