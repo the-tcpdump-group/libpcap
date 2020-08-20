@@ -408,6 +408,7 @@ EXTRA_DIST = \
 	testprogs/threadsignaltest.c \
 	testprogs/unix.h \
 	testprogs/valgrindtest.c \
+	testprogs/visopts.py \
 	testprogs/writecaptest.c \
 	tests/shb-option-too-long.pcapng \
 	Win32/Prj/wpcap.sln \
