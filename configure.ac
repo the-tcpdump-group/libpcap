@@ -2819,6 +2819,11 @@ if test "x$enable_rdma" != "xno"; then
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
 
+dnl check for dynamic gzip support
+AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_HEADERS(dlfcn.h)
+AC_CHECK_FUNCS(dlopen)
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
