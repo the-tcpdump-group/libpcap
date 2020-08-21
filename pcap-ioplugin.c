@@ -161,7 +161,7 @@ pcap_ioplugin_init(const char *name)
 		goto fail;
 	}
 
-#if HAVE_DLOPEN
+#if HAVE_DLOPEN && WANT_IOPLUGIN
 	lib = dlopen(name, RTLD_NOW);
 	if (lib != NULL) {
 		pcap_ioplugin_init_fn ioplugin_init = dlsym(lib, "ioplugin_init");

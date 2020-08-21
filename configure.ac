@@ -1135,6 +1135,17 @@ if test "$enable_ipv6" != "no"; then
 	AC_DEFINE(INET6,1,[IPv6])
 fi
 
+AC_ARG_ENABLE(ioplugin,
+AC_HELP_STRING([--enable-ioplugin],[build support for loading I/O plugins that can do compression, etc. @<:@default=no@:>@]),
+    [],
+    [enable_ioplugin=no])
+if test "$enable_ioplugin" != "yes"; then
+	#
+	# Turn on pluggable I/O modules
+	#
+	AC_DEFINE(HAVE_IOPLUGIN,1,[ioplugin])
+fi
+
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
