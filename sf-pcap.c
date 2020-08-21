@@ -806,6 +806,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		return NULL;
 	}
 
+        /* such as: stdio_open_write() in pcap-ioplugin.c */
 	if (plugin->open_write == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "No file writing function found");

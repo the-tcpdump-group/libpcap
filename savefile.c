@@ -336,6 +336,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		return NULL;
         }
 
+        /* such as: stdio_open_read() in pcap-ioplugin.c */
 	fp = plugin->open_read(fname, errbuf);
 	if (fp == NULL) {
 		return (NULL);
