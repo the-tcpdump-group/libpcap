@@ -72,19 +72,6 @@
 static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 #endif
 
-/*
- * Setting O_BINARY on DOS/Windows is a bit tricky
- */
-#if defined(_WIN32)
-  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
-#elif defined(MSDOS)
-  #if defined(__HIGHC__)
-  #define SET_BINMODE(f)  setmode(f, O_BINARY)
-  #else
-  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
-  #endif
-#endif
-
 static int
 sf_getnonblock(pcap_t *p _U_)
 {
@@ -339,12 +326,18 @@ pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
 {
+	const pcap_ioplugin_t *plugin = pcap_ioplugin_init(getenv("PCAP_IOPLUGIN_READ"));
 	FILE *fp;
 	pcap_t *p;
 
-	if (fname == NULL) {
+	if (plugin->open_read == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "A null pointer was supplied as the file name");
+		    "No file reading function found");
+		return NULL;
+        }
+
+	fp = plugin->open_read(fname, errbuf);
+	if (fp == NULL) {
 		return (NULL);
 	}
 	if (fname[0] == '-' && fname[1] == '\0')
@@ -381,6 +374,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 			return (NULL);
 		}
 	}
+
 	p = pcap_fopen_offline_with_tstamp_precision(fp, precision, errbuf);
 	if (p == NULL) {
 		if (fp != stdin)

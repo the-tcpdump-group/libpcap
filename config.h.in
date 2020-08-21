@@ -42,6 +42,12 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
 
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the `dlopen' function. */
+#undef HAVE_DLOPEN
+
 /* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
 #undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
@@ -74,6 +80,9 @@
 
 /* Define to 1 if you have the `dag' library (-ldag). */
 #undef HAVE_LIBDAG
+
+/* Define to 1 if you have the `dl' library (-ldl). */
+#undef HAVE_LIBDL
 
 /* if libdlpi exists */
 #undef HAVE_LIBDLPI
