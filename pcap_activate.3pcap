@@ -37,7 +37,9 @@ at packets on the network, with the options that were set on the handle
 being in effect.
 .SH RETURN VALUE
 .BR pcap_activate ()
-returns 0 on success without warnings, a non-zero positive value on
+returns
+.B 0
+on success without warnings, a non-zero positive value on
 success with warnings, and a negative value on error.
 A non-zero return value indicates what warning or error condition
 occurred.

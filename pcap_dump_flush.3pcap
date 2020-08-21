@@ -38,7 +38,9 @@ written with
 but not yet written to the ``savefile'' will be written.
 .SH RETURN VALUE
 .BR pcap_dump_flush ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure.
 .SH SEE ALSO

@@ -114,7 +114,11 @@ have some other data link type, such as
 for Ethernet.
 .SH RETURN VALUE
 .BR pcap_next_ex ()
-returns 1 if the packet was read without problems, 0 if packets are
+returns
+.B 1
+if the packet was read without problems,
+.B 0
+if packets are
 being read from a live capture and the packet buffer timeout expired,
 .B PCAP_ERROR
 if an error occurred while reading the packet, and

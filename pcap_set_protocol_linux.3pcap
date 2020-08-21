@@ -59,7 +59,9 @@ but can be filtered by specifying the socket-layer protocol type using
 .BR pcap_set_protocol_linux ().
 .SH RETURN VALUE
 .BR pcap_set_protocol_linux ()
-returns 0 on success or
+returns
+.B 0
+on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
 .SH BACKWARD COMPATIBILITY

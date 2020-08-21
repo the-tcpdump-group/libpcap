@@ -51,7 +51,9 @@ are
 pointers.
 .SH RETURN VALUE
 .BR pcap_lookupnet ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure. If
 .B PCAP_ERROR

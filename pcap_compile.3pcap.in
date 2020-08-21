@@ -69,7 +69,9 @@ in multiple threads in a single process without some form of mutual
 exclusion allowing only one thread to call it at any given time.
 .SH RETURN VALUE
 .BR pcap_compile ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure. If
 .B PCAP_ERROR

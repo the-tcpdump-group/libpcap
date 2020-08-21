@@ -57,7 +57,9 @@ support
 This operation is not supported if a ``savefile'' is being read.
 .SH RETURN VALUE
 .BR pcap_setdirection ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure. If
 .B PCAP_ERROR

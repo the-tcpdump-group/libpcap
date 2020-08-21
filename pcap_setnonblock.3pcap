@@ -47,8 +47,9 @@ If there is an error,
 .B PCAP_ERROR
 is returned and
 .I errbuf
-is filled in with an appropriate error message; otherwise, 0 is
-returned.
+is filled in with an appropriate error message; otherwise,
+.B 0
+is returned.
 .PP
 In
 ``non-blocking'' mode, an attempt to read from the capture descriptor
@@ -56,7 +57,8 @@ with
 .BR pcap_dispatch (3PCAP)
 and
 .BR pcap_next_ex (3PCAP)
-will, if no packets are currently available to be read, return 0
+will, if no packets are currently available to be read, return
+.B 0
 immediately rather than blocking waiting for packets to arrive.
 .PP
 .BR pcap_loop (3PCAP)
@@ -65,7 +67,9 @@ available;
 .BR pacp_dispatch ()
 should be used instead.
 .BR pcap_next (3PCAP)
-will return NULL if there are no packets currently available to read;
+will return
+.B NULL
+if there are no packets currently available to read;
 this is indistinguishable from an error, so
 .BR pcap_next_ex ()
 should be used instead.
@@ -80,7 +84,9 @@ is required in order to put it into ``non-blocking'' mode.
 .SH RETURN VALUE
 .BR pcap_getnonblock ()
 returns the current ``non-blocking'' state of the capture descriptor; it
-always returns 0 on ``savefiles''.
+always returns
+.B 0
+on ``savefiles''.
 If there is an error,
 .B PCAP_ERROR
 is returned and

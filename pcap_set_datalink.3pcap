@@ -38,7 +38,9 @@ to the type specified by
 .IR dlt .
 .SH RETURN VALUE
 .BR pcap_set_datalink ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure. If
 .B PCAP_ERROR

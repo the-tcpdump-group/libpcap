@@ -64,7 +64,9 @@ nominally support sending completely raw and unchanged packets.
 .BR pcap_sendpacket ()
 is like
 .BR pcap_inject (),
-but it returns 0 on success, rather than returning the number of bytes
+but it returns
+.B 0
+on success, rather than returning the number of bytes
 written.
 .RB ( pcap_inject ()
 comes from OpenBSD;
@@ -77,7 +79,9 @@ returns the number of bytes written on success and
 on failure.
 .PP
 .BR pcap_sendpacket ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure.
 .PP

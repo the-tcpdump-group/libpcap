@@ -40,7 +40,9 @@ struct, usually the result of a call to
 .BR \%pcap_compile (3PCAP).
 .SH RETURN VALUE
 .BR pcap_setfilter ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure. If
 .B PCAP_ERROR

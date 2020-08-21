@@ -178,7 +178,9 @@ Note that even if an application does not set promiscuous mode, the
 adapter could well be in promiscuous mode for some other reason.
 .IP
 For now, this doesn't work on the "any" device; if an argument of "any"
-or NULL is supplied, the setting of promiscuous mode is ignored.
+or
+.B NULL
+is supplied, the setting of promiscuous mode is ignored.
 .IP
 Promiscuous mode is set with
 .BR pcap_set_promisc ().
@@ -641,7 +643,9 @@ packet.  It returns a
 .I const u_char
 to the first
 .B caplen
-bytes of the packet on success, and NULL on error.
+bytes of the packet on success, and
+.B NULL
+on error.
 .PP
 .BR pcap_next_ex ()
 is passed two pointer arguments, one of which points to a
@@ -715,7 +719,9 @@ whose value can be used as a timeout in those routines.  When the
 routine returns, an attmept should be made to read packets from the
 device.  If
 .BR pcap_get_required_select_timeout ()
-returns NULL, no such timeout is available, and those routines cannot be
+returns
+.BR NULL ,
+no such timeout is available, and those routines cannot be
 used with the device.
 .PP
 In addition, for various

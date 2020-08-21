@@ -77,8 +77,14 @@ is called, as
 will initialize Winsock itself on Windows.
 .SH RETURN VALUE
 .BR pcap_init ()
-returns 0 on success and \-1 on failure.
-If \-1 is returned,
+returns
+.B 0
+on success and
+.B \-1
+on failure.
+If
+.B \-1
+is returned,
 .I errbuf
 is filled in with an appropriate error message.
 .I errbuf

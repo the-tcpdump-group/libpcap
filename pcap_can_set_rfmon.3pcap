@@ -36,8 +36,11 @@ checks whether monitor mode could be set on a capture handle when
 the handle is activated.
 .SH RETURN VALUE
 .BR pcap_can_set_rfmon ()
-returns 0 if monitor mode could not be set,
-1 if monitor mode could be set, and a negative value on error.
+returns
+.B 0
+if monitor mode could not be set,
+.B 1
+if monitor mode could be set, and a negative value on error.
 A negative return value indicates what error condition occurred.
 The possible error values are:
 .TP
@@ -62,7 +65,10 @@ may be called with
 as an argument to fetch or display a message describing the error.
 .LP
 Additional error codes may be added in the future; a program should
-check for 0, 1, and negative, return codes, and treat all negative
+check for
+.BR 0 ,
+.BR 1 ,
+and negative, return codes, and treat all negative
 return codes as errors.
 .BR pcap_statustostr (3PCAP)
 can be called, with a warning or error code as an argument, to fetch a

@@ -49,7 +49,9 @@ See
 for a list of all the time stamp types.
 .SH RETURN VALUE
 .BR pcap_set_tstamp_type ()
-returns 0 on success if the specified time stamp type is expected to be
+returns
+.B 0
+on success if the specified time stamp type is expected to be
 supported by the capture device,
 .B PCAP_WARNING_TSTAMP_TYPE_NOTSUP
 if the specified time stamp type is not supported by the

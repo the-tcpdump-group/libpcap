@@ -52,7 +52,11 @@ is called, or an error occurs.
 It does
 .B not
 return when live packet buffer timeouts occur.
-A value of \-1 or 0 for
+A value of
+.B \-1
+or
+.B 0
+for
 .I cnt
 is equivalent to infinity, so that packets are processed until another
 ending condition occurs.
@@ -71,7 +75,11 @@ is the maximum number of packets to process before returning, but is not
 a minimum number; when reading a live capture, only one
 bufferful of packets is read at a time, so fewer than
 .I cnt
-packets may be processed. A value of \-1 or 0 for
+packets may be processed. A value of
+.B \-1
+or
+.B 0
+for
 .I cnt
 causes all the packets received in one buffer to be processed when
 reading a live capture, and causes all the packets in the file to be
@@ -87,9 +95,15 @@ but must not rely on it happening.
 .ft B
 (In older versions of libpcap, the behavior when
 \fIcnt\fP
-was 0 was undefined; different platforms and devices behaved
+was
+.B 0
+was undefined; different platforms and devices behaved
 differently, so code that must work with older versions of libpcap
-should use \-1, not 0, as the value of
+should use
+.BR \-1 ,
+not
+.BR 0 ,
+as the value of
 \fIcnt\fP.)
 .ft R
 .PP
@@ -159,7 +173,9 @@ have some other data link type, such as
 for Ethernet.
 .SH RETURN VALUE
 .BR pcap_loop ()
-returns 0 if
+returns
+.B 0
+if
 .I cnt
 is exhausted or if, when reading from a ``savefile'', no more packets
 are available.  It returns

@@ -49,7 +49,9 @@ use options
 to request desired precision. By default, time stamps are in microseconds.
 .SH RETURN VALUE
 .BR pcap_set_tstamp_precision ()
-returns 0 on success if the specified time stamp precision is expected to be
+returns
+.B 0
+on success if the specified time stamp precision is expected to be
 supported by the capture device,
 .B PCAP_ERROR_TSTAMP_PRECISION_NOTSUP
 if the capture device does not support the requested time stamp

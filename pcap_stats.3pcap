@@ -83,7 +83,9 @@ statistic is unavailable, so it should not be treated as an indication
 that the interface did not drop any packets.
 .SH RETURN VALUE
 .BR pcap_stats ()
-returns 0 on success and returns
+returns
+.B 0
+on success and returns
 .B PCAP_ERROR
 if there is an error or if
 .I p

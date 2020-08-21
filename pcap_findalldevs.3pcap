@@ -199,7 +199,9 @@ which frees the list pointed to by
 .IR alldevs .
 .SH RETURN VALUE
 .BR pcap_findalldevs ()
-returns 0 on success and
+returns
+.B 0
+on success and
 .B PCAP_ERROR
 on failure; as indicated, finding no
 devices is considered success, rather than failure, so 0 will be
