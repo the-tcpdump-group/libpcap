@@ -54,7 +54,7 @@ is called to write data to an existing open stream
 .IR fp ;
 this stream will be closed by a subsequent call to
 .BR pcap_dump_close (3PCAP).
-The stream is assumped to be at the beginning of a file that has been
+The stream is assumed to be at the beginning of a file that has been
 newly created or truncated, so that writes will start at the beginning
 of the file.
 Note that on Windows, that stream should be opened in binary mode.
