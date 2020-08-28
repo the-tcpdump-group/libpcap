@@ -117,6 +117,15 @@
 # define HAVE_TPACKET3
 #endif /* TPACKET3_HDRLEN */
 
+#define packet_mmap_acquire(pkt) \
+	(__atomic_load_n(&pkt->tp_status, __ATOMIC_ACQUIRE) != TP_STATUS_KERNEL)
+#define packet_mmap_release(pkt) \
+	(__atomic_store_n(&pkt->tp_status, TP_STATUS_KERNEL, __ATOMIC_RELEASE))
+#define packet_mmap_v3_acquire(pkt) \
+	(__atomic_load_n(&pkt->hdr.bh1.block_status, __ATOMIC_ACQUIRE) != TP_STATUS_KERNEL)
+#define packet_mmap_v3_release(pkt) \
+	(__atomic_store_n(&pkt->hdr.bh1.block_status, TP_STATUS_KERNEL, __ATOMIC_RELEASE))
+
 #include <linux/types.h>
 #include <linux/filter.h>
 
@@ -3368,11 +3377,11 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 	h.raw = RING_GET_FRAME_AT(handle, offset);
 	switch (handlep->tp_version) {
 	case TPACKET_V2:
-		return (h.h2->tp_status);
+		return __atomic_load_n(&h.h2->tp_status, __ATOMIC_ACQUIRE);
 		break;
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
-		return (h.h3->hdr.bh1.block_status);
+		return __atomic_load_n(&h.h3->hdr.bh1.block_status, __ATOMIC_ACQUIRE);
 		break;
 #endif
 	}
@@ -3959,7 +3968,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* wait for frames availability.*/
 	h.raw = RING_GET_CURRENT_FRAME(handle);
-	if (h.h2->tp_status == TP_STATUS_KERNEL) {
+	if (!packet_mmap_acquire(h.h2)) {
 		/*
 		 * The current frame is owned by the kernel; wait for
 		 * a frame to be handed to us.
@@ -3978,7 +3987,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * it's still owned by the kernel.
 		 */
 		h.raw = RING_GET_CURRENT_FRAME(handle);
-		if (h.h2->tp_status == TP_STATUS_KERNEL)
+		if (!packet_mmap_acquire(h.h2))
 			break;
 
 		ret = pcap_handle_packet_mmap(
@@ -4006,7 +4015,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * after having been filtered by the kernel, count
 		 * the one we've just processed.
 		 */
-		h.h2->tp_status = TP_STATUS_KERNEL;
+		packet_mmap_release(h.h2);
 		if (handlep->blocks_to_filter_in_userland > 0) {
 			handlep->blocks_to_filter_in_userland--;
 			if (handlep->blocks_to_filter_in_userland == 0) {
@@ -4045,7 +4054,7 @@ again:
 	if (handlep->current_packet == NULL) {
 		/* wait for frames availability.*/
 		h.raw = RING_GET_CURRENT_FRAME(handle);
-		if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL) {
+		if (!packet_mmap_v3_acquire(h.h3)) {
 			/*
 			 * The current frame is owned by the kernel; wait
 			 * for a frame to be handed to us.
@@ -4057,7 +4066,7 @@ again:
 		}
 	}
 	h.raw = RING_GET_CURRENT_FRAME(handle);
-	if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL) {
+	if (!packet_mmap_v3_acquire(h.h3)) {
 		if (pkts == 0 && handlep->timeout == 0) {
 			/* Block until we see a packet. */
 			goto again;
@@ -4072,7 +4081,7 @@ again:
 
 		if (handlep->current_packet == NULL) {
 			h.raw = RING_GET_CURRENT_FRAME(handle);
-			if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL)
+			if (!packet_mmap_v3_acquire(h.h3))
 				break;
 
 			handlep->current_packet = h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
@@ -4124,7 +4133,7 @@ again:
 			 * filtered by the kernel, count the one we've
 			 * just processed.
 			 */
-			h.h3->hdr.bh1.block_status = TP_STATUS_KERNEL;
+			packet_mmap_v3_release(h.h3);
 			if (handlep->blocks_to_filter_in_userland > 0) {
 				handlep->blocks_to_filter_in_userland--;
 				if (handlep->blocks_to_filter_in_userland == 0) {
