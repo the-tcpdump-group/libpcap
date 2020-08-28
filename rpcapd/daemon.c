@@ -756,8 +756,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			tv.tv_usec = 0;
 
 			FD_SET(pars.sockctrl, &rfds);
-
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+			retval = 1;
+#else
 			retval = select((int)pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
+#endif
 			if (retval == -1)
 			{
 				sock_geterror("select() failed", errmsgbuf, PCAP_ERRBUF_SIZE);
@@ -1105,6 +1108,9 @@ end:
 		session = NULL;
 	}
 
+	if (passiveClients) {
+		free(passiveClients);
+	}
 	//
 	// Finish using the SSL handle for the control socket, if we
 	// have an SSL connection, and close the control socket.
@@ -2853,6 +2859,7 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 */
 void sleep_secs(int secs)
 {
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #ifdef _WIN32
 	Sleep(secs*1000);
 #else
@@ -2863,6 +2870,7 @@ void sleep_secs(int secs)
 	secs_remaining = secs;
 	while (secs_remaining != 0)
 		secs_remaining = sleep(secs_remaining);
+#endif
 #endif
 }
 

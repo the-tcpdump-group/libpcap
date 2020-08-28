@@ -417,7 +417,11 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 		 */
 		FD_SET(pr->rmt_sockdata, &rfds);
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+		retval = 1;
+#else
 		retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
+#endif
 
 		if (retval == -1)
 		{
