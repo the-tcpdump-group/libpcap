@@ -228,7 +228,7 @@ True if the IPv4/v6 address matches \fInet\fR with a netmask \fIlen\fR
 bits wide.
 May be qualified with \fBsrc\fR or \fBdst\fR.
 .IP "\fBdst port \fIport\fR"
-True if the packet is ip/tcp, ip/udp, ip6/tcp or ip6/udp and has a
+True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
 destination port value of \fIport\fP.
 The \fIport\fP can be a number or a name used in /etc/services (see
 .IR tcp (4P)
@@ -245,7 +245,7 @@ True if the packet has a source port value of \fIport\fP.
 .IP "\fBport \fIport\fR"
 True if either the source or destination port of the packet is \fIport\fP.
 .IP "\fBdst portrange \fIport1\fB-\fIport2\fR"
-True if the packet is ip/tcp, ip/udp, ip6/tcp or ip6/udp and has a
+True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
 destination port value between \fIport1\fP and \fIport2\fP.
 .I port1
 and
@@ -268,7 +268,7 @@ the keywords, \fBtcp\fP or \fBudp\fP, as in:
 \fBtcp src port \fIport\fR
 .fi
 .in -.5i
-which matches only tcp packets whose source port is \fIport\fP.
+which matches only TCP packets whose source port is \fIport\fP.
 .IP "\fBless \fIlength\fR"
 True if the packet has a length less than or equal to \fIlength\fP.
 This is equivalent to:
