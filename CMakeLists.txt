@@ -205,9 +205,11 @@ set(PCAP_TYPE "" CACHE STRING "Packet capture type")
 # not having it on UN*X.
 #
 if(WIN32)
-    option(ENABLE_REMOTE "Enable remote capture" ON)
+    option(ENABLE_RPCAPD "Enable building of rpcapd" ON)
+    option(ENABLE_REMOTE "Enable libpcap API for connecting to rpcapd" ON)
 else()
-    option(ENABLE_REMOTE "Enable remote capture" OFF)
+    option(ENABLE_RPCAPD "Enable building of rpcapd" OFF)
+    option(ENABLE_REMOTE "Enable libpcap API for connecting to rpcapd" OFF)
 endif(WIN32)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -2202,9 +2204,9 @@ endif(WIN32)
 # Add subdirectories after we've set various variables, so they pick up
 # pick up those variables.
 #
-if(ENABLE_REMOTE)
+if(ENABLE_RPCAPD)
     add_subdirectory(rpcapd)
-endif(ENABLE_REMOTE)
+endif(ENABLE_RPCAPD)
 add_subdirectory(testprogs)
 
 ######################################
