@@ -51,7 +51,7 @@ Possible types are
 .B port
 and
 .BR portrange .
-E.g., `host foo', `net 128.3', `port 20', `portrange 6000-6008'.
+E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008'.
 If there is no type
 qualifier,
 .B host
@@ -72,11 +72,9 @@ Possible directions are
 .BR addr3 ,
 and
 .BR addr4 .
-E.g., `src foo', `dst net 128.3', `src or dst port ftp-data'.
+E.g., `\fBsrc\fP foo', `\fBdst net\fP 128.3', `\fBsrc or dst port\fP ftp-data'.
 If
-there is no dir qualifier,
-.B "src or dst"
-is assumed.
+there is no dir qualifier, `\fBsrc or dst\fP' is assumed.
 The
 .BR ra ,
 .BR ta ,
@@ -103,16 +101,17 @@ protos are:
 .B tcp
 and
 .BR udp .
-E.g., `ether src foo', `arp net 128.3', `tcp port 21', `udp portrange
-7000-7009', `wlan addr2 0:2:3:4:5:6'.
+E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
+`\fBudp portrange\fP 7000-7009', `\fBwlan addr2\fP 0:2:3:4:5:6'.
 If there is
 no proto qualifier, all protocols consistent with the type are
 assumed.
-E.g., `src foo' means `(ip or arp or rarp) src foo'
-(except the latter is not legal syntax), `net bar' means `(ip or
-arp or rarp) net bar' and `port 53' means `(tcp or udp) port 53'.
+E.g., `\fBsrc\fP foo' means `\fB(ip or arp or rarp) src\fP foo'
+(except the latter is not legal syntax), `\fBnet\fP bar' means `\fB(ip or
+arp or rarp) net\fP bar' and `\fBport\fP 53' means `\fB(tcp or udp)
+port\fP 53'.
 .LP
-[`fddi' is actually an alias for `ether'; the parser treats them
+[\fBfddi\fP is actually an alias for \fBether\fP; the parser treats them
 identically as meaning ``the data link level used on the specified
 network interface''.  FDDI headers contain Ethernet-like source
 and destination addresses, and often contain Ethernet-like packet
@@ -121,7 +120,7 @@ analogous Ethernet fields.
 FDDI headers also contain other fields,
 but you cannot name them explicitly in a filter expression.
 .LP
-Similarly, `tr' and `wlan' are aliases for `ether'; the previous
+Similarly, \fBtr\fP and \fBwlan\fP are aliases for \fBether\fP; the previous
 paragraph's statements about FDDI headers also apply to Token Ring
 and 802.11 wireless LAN headers.  For 802.11 headers, the destination
 address is the DA field and the source address is the SA field; the
@@ -143,11 +142,11 @@ and
 .B not
 (or equivalently: `\fB&&\fP', `\fB||\fP' and `\fB!\fP' respectively)
 to combine primitives.
-E.g., `host foo and not port ftp and not port ftp-data'.
+E.g., `\fBhost\fP foo \fBand not port\fP ftp \fBand not port\fP ftp-data'.
 To save typing, identical qualifier lists can be omitted.
 E.g.,
-`tcp dst port ftp or ftp-data or domain' is exactly the same as
-`tcp dst port ftp or tcp dst port ftp-data or tcp dst port domain'.
+`\fBtcp dst port\fP ftp \fBor\fP ftp-data \fBor\fP domain' is exactly the same as
+`\fBtcp dst port\fP ftp \fBor tcp dst port\fP ftp-data \fBor tcp dst port\fP domain'.
 .LP
 Allowable primitives are:
 .IP "\fBdst host \fIhost\fR"
@@ -168,7 +167,7 @@ Any of the above host expressions can be prepended with the keywords,
 which is equivalent to:
 .in +.5i
 .nf
-\fBether proto \fI\\ip\fB and host \fIhost\fR
+\fBether proto \\ip and host \fIhost\fR
 .fi
 .in -.5i
 If \fIhost\fR is a name with multiple IPv4 addresses, each address will
@@ -238,14 +237,14 @@ and
 If a name is used, both the port
 number and protocol are checked.
 If a number or ambiguous name is used,
-only the port number is checked (e.g., \fBdst port 513\fR will print both
-tcp/login traffic and udp/who traffic, and \fBport domain\fR will print
+only the port number is checked (e.g., `\fBdst port\fR 513' will print both
+tcp/login traffic and udp/who traffic, and `\fBport domain\fR' will print
 both tcp/domain and udp/domain traffic).
 .IP "\fBsrc port \fIport\fR"
 True if the packet has a source port value of \fIport\fP.
 .IP "\fBport \fIport\fR"
 True if either the source or destination port of the packet is \fIport\fP.
-.IP "\fBdst portrange \fIport1\fB-\fIport2\fR"
+.IP "\fBdst portrange \fIport1-port2\fR"
 True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
 destination port value between \fIport1\fP and \fIport2\fP.
 .I port1
@@ -255,10 +254,10 @@ are interpreted in the same fashion as the
 .I port
 parameter for
 .BR port .
-.IP "\fBsrc portrange \fIport1\fB-\fIport2\fR"
+.IP "\fBsrc portrange \fIport1-port2\fR"
 True if the packet has a source port value between \fIport1\fP and
 \fIport2\fP.
-.IP "\fBportrange \fIport1\fB-\fIport2\fR"
+.IP "\fBportrange \fIport1-port2\fR"
 True if either the source or destination port of the packet is between
 \fIport1\fP and \fIport2\fP.
 .IP
@@ -318,7 +317,7 @@ in its protocol header chain.
 For example,
 .in +.5i
 .nf
-\fBip6 protochain 6\fR
+\fBip6 protochain\fR 6
 .fi
 .in -.5i
 matches any IPv6 packet with TCP protocol header in the protocol header chain.
@@ -337,7 +336,7 @@ True if the packet is an IPv4 or IPv6 packet of protocol type
 header chain.
 .IP "\fBether broadcast\fR"
 True if the packet is an Ethernet broadcast packet.
-The \fIether\fP
+The \fBether\fP
 keyword is optional.
 .IP "\fBip broadcast\fR"
 True if the packet is an IPv4 broadcast packet.
@@ -354,7 +353,7 @@ check will not work correctly.
 True if the packet is an Ethernet multicast packet.
 The \fBether\fP
 keyword is optional.
-This is shorthand for `\fBether[0] & 1 != 0\fP'.
+This is shorthand for `\fBether[\fP0\fB] & \fP1\fB != \fP0'.
 .IP "\fBip multicast\fR"
 True if the packet is an IPv4 multicast packet.
 .IP "\fBip6 multicast\fR"
@@ -671,23 +670,23 @@ or a numeric value.
 True if the packet is an IEEE 802.1Q VLAN packet.
 If the optional \fIvlan_id\fR is specified, only true if the packet has the specified
 \fIvlan_id\fR.
-Note that the first \fBvlan\fR keyword encountered in \fIexpression\fR
-changes the decoding offsets for the remainder of \fIexpression\fR on
-the assumption that the packet is a VLAN packet.  The \fBvlan
-\fI[vlan_id]\fR keyword may be used more than once, to filter on VLAN
+Note that the first \fBvlan\fR keyword encountered in an expression
+changes the decoding offsets for the remainder of the expression on
+the assumption that the packet is a VLAN packet.  The `\fBvlan
+\fI[vlan_id]\fR` keyword may be used more than once, to filter on VLAN
 hierarchies.  Each use of that keyword increments the filter offsets
 by 4.
 .IP
 For example:
 .in +.5i
 .nf
-\fBvlan 100 && vlan 200\fR
+\fBvlan\fP 100 \fB&& vlan\fR 200
 .fi
 .in -.5i
 filters on VLAN 200 encapsulated within VLAN 100, and
 .in +.5i
 .nf
-\fBvlan && vlan 300 && ip\fR
+\fBvlan && vlan \fP300 \fB&& ip\fR
 .fi
 .in -.5i
 filters IPv4 protocol encapsulated in VLAN 300 encapsulated within any
@@ -696,24 +695,24 @@ higher order VLAN.
 True if the packet is an MPLS packet.
 If the optional \fIlabel_num\fR is specified, only true if the packet has the specified
 \fIlabel_num\fR.
-Note that the first \fBmpls\fR keyword encountered in \fIexpression\fR
-changes the decoding offsets for the remainder of \fIexpression\fR on
+Note that the first \fBmpls\fR keyword encountered in an expression
+changes the decoding offsets for the remainder of the expression on
 the assumption that the packet is a MPLS-encapsulated IP packet.  The
-\fBmpls \fI[label_num]\fR keyword may be used more than once, to
+`\fBmpls \fI[label_num]\fR` keyword may be used more than once, to
 filter on MPLS hierarchies.  Each use of that keyword increments the
 filter offsets by 4.
 .IP
 For example:
 .in +.5i
 .nf
-\fBmpls 100000 && mpls 1024\fR
+\fBmpls\fP 100000 \fB&& mpls\fR 1024
 .fi
 .in -.5i
 filters packets with an outer label of 100000 and an inner label of
 1024, and
 .in +.5i
 .nf
-\fBmpls && mpls 1024 && host 192.9.200.1\fR
+\fBmpls && mpls\fP 1024 \fB&& host\fR 192.9.200.1
 .fi
 .in -.5i
 filters packets to or from 192.9.200.1 with an inner label of 1024 and
@@ -726,14 +725,14 @@ True if the packet is a PPP-over-Ethernet Session packet (Ethernet
 type 0x8864).
 If the optional \fIsession_id\fR is specified, only true if the packet has the specified
 \fIsession_id\fR.
-Note that the first \fBpppoes\fR keyword encountered in \fIexpression\fR
-changes the decoding offsets for the remainder of \fIexpression\fR on
+Note that the first \fBpppoes\fR keyword encountered in an expression
+changes the decoding offsets for the remainder of the expression on
 the assumption that the packet is a PPPoE session packet.
 .IP
 For example:
 .in +.5i
 .nf
-\fBpppoes 0x27 && ip\fR
+\fBpppoes\fP 0x27 \fB&& ip\fR
 .fi
 .in -.5i
 filters IPv4 protocol encapsulated in PPPoE session id 0x27.
@@ -741,13 +740,13 @@ filters IPv4 protocol encapsulated in PPPoE session id 0x27.
 True if the packet is a Geneve packet (UDP port 6081). If the optional \fIvni\fR
 is specified, only true if the packet has the specified \fIvni\fR.
 Note that when the \fBgeneve\fR keyword is encountered in
-\fIexpression\fR, it changes the decoding offsets for the remainder of
-\fIexpression\fR on the assumption that the packet is a Geneve packet.
+an expression, it changes the decoding offsets for the remainder of
+the expression on the assumption that the packet is a Geneve packet.
 .IP
 For example:
 .in +.5i
 .nf
-\fBgeneve 0xb && ip\fR
+\fBgeneve\fP 0xb \fB&& ip\fR
 .fi
 .in -.5i
 filters IPv4 protocol encapsulated in Geneve with VNI 0xb. This will
@@ -778,8 +777,8 @@ virtual channel identifier of
 .IP \fBlane\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 an ATM LANE packet.
-Note that the first \fBlane\fR keyword encountered in \fIexpression\fR
-changes the tests done in the remainder of \fIexpression\fR
+Note that the first \fBlane\fR keyword encountered in an expression
+changes the tests done in the remainder of the expression
 on the assumption that the packet is either a LANE emulated Ethernet
 packet or a LANE LE Control packet.  If \fBlane\fR isn't specified, the
 tests are done under the assumption that the packet is an
@@ -842,7 +841,7 @@ indicates the protocol layer for the index operation.
 (\fBether, fddi, wlan, tr, ppp, slip\fR and \fBlink\fR all refer to the
 link layer. \fBradio\fR refers to the "radio header" added to some
 802.11 captures.)
-Note that \fItcp, udp\fR and other upper-layer protocol types only
+Note that \fBtcp\fR, \fBudp\fR and other upper-layer protocol types only
 apply to IPv4, not IPv6 (this will be fixed in the future).
 The byte offset, relative to the indicated protocol layer, is
 given by \fIexpr\fR.
@@ -851,16 +850,16 @@ field of interest; it can be either one, two, or four, and defaults to one.
 The length operator, indicated by the keyword \fBlen\fP, gives the
 length of the packet.
 
-For example, `\fBether[0] & 1 != 0\fP' catches all multicast traffic.
-The expression `\fBip[0] & 0xf != 5\fP'
+For example, `\fBether[\fP0\fB] &\fP 1 \fB!=\fP 0' catches all multicast traffic.
+The expression `\fBip[\fP0\fB] &\fP 0xf \fB!=\fP 5'
 catches all IPv4 packets with options.
 The expression
-`\fBip[6:2] & 0x1fff = 0\fP'
+`\fBip[\fP6:2\fB] &\fP 0x1fff \fB=\fP 0'
 catches only unfragmented IPv4 datagrams and frag zero of fragmented
 IPv4 datagrams.
 This check is implicitly applied to the \fBtcp\fP and \fBudp\fP
 index operations.
-For instance, \fBtcp[0]\fP always means the first
+For instance, \fBtcp[\fP0\fB]\fP always means the first
 byte of the TCP \fIheader\fP, and never means the first byte of an
 intervening fragment.
 
@@ -920,57 +919,55 @@ is assumed.
 For example,
 .in +.5i
 .nf
-\fBnot host vs and ace\fR
+\fBnot host\fP vs \fBand\fR ace
 .fi
 .in -.5i
 is short for
 .in +.5i
 .nf
-\fBnot host vs and host ace\fR
+\fBnot host\fP vs \fBand host\fR ace
 .fi
 .in -.5i
 which should not be confused with
 .in +.5i
 .nf
-\fBnot ( host vs or ace )\fR
+\fBnot (host \fPvs\fB or \fPace\fB)\fR
 .fi
 .in -.5i
 .SH EXAMPLES
 .LP
-To select all packets arriving at or departing from \fIsundown\fP:
+To select all packets arriving at or departing from `sundown':
 .RS
 .nf
-\fBhost sundown\fP
+\fBhost\fP sundown
 .fi
 .RE
 .LP
-To select traffic between \fIhelios\fR and either \fIhot\fR or \fIace\fR:
+To select traffic between `helios' and either `hot' or `ace':
 .RS
 .nf
-\fBhost helios and (hot or ace)\fP
+\fBhost\fP helios \fBand (\fPhot \fBor\fP ace\fB)\fP
 .fi
 .RE
 .LP
-To select all IPv4 packets between \fIace\fR and any host except \fIhelios\fR:
+To select all IPv4 packets between `ace' and any host except `helios':
 .RS
 .nf
-\fBip host ace and not helios\fP
+\fBip host\fP ace \fBand not\fP helios
 .fi
 .RE
 .LP
 To select all traffic between local hosts and hosts at Berkeley:
 .RS
 .nf
-.B
-net ucb-ether
+\fBnet\fP ucb-ether
 .fi
 .RE
 .LP
-To select all FTP traffic through Internet gateway \fIsnup\fP:
+To select all FTP traffic through Internet gateway `snup':
 .RS
 .nf
-.B
-gateway snup and (port ftp or ftp-data)
+\fBgateway\fP snup \fBand (port\fP ftp \fBor\fP ftp-data\fB)\fP
 .fi
 .RE
 .LP
@@ -979,8 +976,7 @@ To select IPv4 traffic neither sourced from nor destined for local hosts
 onto your local net).
 .RS
 .nf
-.B
-ip and not net \fIlocalnet\fP
+\fBip and not net \fPlocalnet
 .fi
 .RE
 .LP
@@ -988,8 +984,7 @@ To select the start and end packets (the SYN and FIN packets) of each
 TCP conversation that involves a non-local host.
 .RS
 .nf
-.B
-tcp[tcpflags] & (tcp-syn|tcp-fin) != 0 and not src and dst net \fIlocalnet\fP
+\fBtcp[tcpflags] & (tcp-syn|tcp-fin) !=\fP 0 \fBand not src and dst net\fP localnet
 .fi
 .RE
 .LP
@@ -1008,16 +1003,14 @@ packets that contain data, not, for example, SYN and FIN packets and
 ACK-only packets.  (IPv6 is left as an exercise for the reader.)
 .RS
 .nf
-.B
-tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)
+\fBtcp port\fP 80 \fBand (((ip[\fP2:2\fB] - ((ip[\fP0\fB]&\fP0xf\fB)<<\fP2\fB)) - ((tcp[\fP12\fB]&\fP0xf0\fB)>>\fP2\fB)) != \fP0\fB)
 .fi
 .RE
 .LP
-To select IPv4 packets longer than 576 bytes sent through gateway \fIsnup\fP:
+To select IPv4 packets longer than 576 bytes sent through gateway `snup':
 .RS
 .nf
-.B
-gateway snup and ip[2:2] > 576
+\fBgateway\fP snup \fBand ip[\fP2:2\fB] >\fP 576
 .fi
 .RE
 .LP
@@ -1026,8 +1019,7 @@ To select IPv4 broadcast or multicast packets that were
 sent via Ethernet broadcast or multicast:
 .RS
 .nf
-.B
-ether[0] & 1 = 0 and ip[16] >= 224
+\fBether[\fP0\fB] &\fP 1 \fB=\fP 0 \fBand ip[\fP16\fB] >=\fP 224
 .fi
 .RE
 .LP
@@ -1057,12 +1049,11 @@ not correctly handle source-routed Token Ring packets.
 Filter expressions on fields other than those in 802.11 headers will not
 correctly handle 802.11 data packets with both To DS and From DS set.
 .LP
-.BR "ip6 proto"
+`\fBip6 proto\fP'
 should chase header chain, but at this moment it does not.
-.BR "ip6 protochain"
+`\fBip6 protochain\fP'
 is supplied for this behavior.  For example, to match IPv6 fragments:
-.B
-ip6 protochain 44
+`\fBip6 protochain\fP 44'
 .LP
 Arithmetic expression against transport layer headers, like \fBtcp[0]\fP,
 does not work against IPv6 packets.
