@@ -54,6 +54,22 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
         ${pcap_SOURCE_DIR}/missing/getopt.c
         rpcapd.rc)
     include_directories(${pcap_SOURCE_DIR}/rpcapd ${pcap_SOURCE_DIR}/missing)
+  elseif(ENABLE_RPCAPD_DYNAMIC)
+      # The following functions are defined in libpcap when linking to it
+      # statically but they are not exported in the shared library, so when
+      # linking to the shared library they need to be defined in rpcapd as well.
+      if(NOT HAVE_ASPRINTF)
+          set(RPCAPD_EXTRA_SOURCES ${RPCAPD_EXTRA_SOURCES} ${pcap_SOURCE_DIR}/missing/asprintf.c)
+      endif()
+      if(NOT HAVE_STRLCAT)
+          set(RPCAPD_EXTRA_SOURCES ${RPCAPD_EXTRA_SOURCES} ${pcap_SOURCE_DIR}/missing/strlcat.c)
+      endif(NOT HAVE_STRLCAT)
+      if(NOT HAVE_STRLCPY)
+          set(RPCAPD_EXTRA_SOURCES ${RPCAPD_EXTRA_SOURCES} ${pcap_SOURCE_DIR}/missing/strlcpy.c)
+      endif(NOT HAVE_STRLCPY)
+      if(NOT HAVE_STRTOK_R)
+          set(RPCAPD_EXTRA_SOURCES ${RPCAPD_EXTRA_SOURCES} ${pcap_SOURCE_DIR}/missing/strtok_r.c)
+      endif(NOT HAVE_STRTOK_R)
   endif(WIN32)
 
   add_executable(rpcapd
@@ -112,13 +128,13 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
       OSX_ARCHITECTURES "${OSX_PROGRAM_ARCHITECTURES}")
   endif()
 
-  if(WIN32)
+  if(WIN32 OR ENABLE_RPCAPD_DYNAMIC)
     target_link_libraries(rpcapd ${LIBRARY_NAME}
       ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-  else(WIN32)
+  else(WIN32 OR ENABLE_RPCAPD_DYNAMIC)
     target_link_libraries(rpcapd ${LIBRARY_NAME}_static
       ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-  endif(WIN32)
+  endif(WIN32 OR ENABLE_RPCAPD_DYNAMIC)
 
   ######################################
   # Install rpcap daemon and man pages
