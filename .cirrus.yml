@@ -6,17 +6,20 @@ env:
 
 task:
   freebsd_instance:
+    image_family: $IMAGE_FAMILY
+  env:
     matrix:
-      - image_family: freebsd-11-3-snap
-      - image_family: freebsd-12-1-snap
-      - image_family: freebsd-13-0-snap
+      - IMAGE_FAMILY: freebsd-11-4
+      - IMAGE_FAMILY: freebsd-12-1
+      - IMAGE_FAMILY: freebsd-13-0-snap
   script:
     - freebsd-version
-    - pkg update -f
-    - pkg install -qy git autoconf
+    - pkg install -qy autoconf
     - touch .devel
-    - ./configure --enable-remote
+    - ./configure --enable-remote --prefix=/tmp
     - make -s all
     - make -s testprogs
+    - make install
+    - make releasetar
     - testprogs/findalldevstest
 
