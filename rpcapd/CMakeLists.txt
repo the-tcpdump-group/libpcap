@@ -135,11 +135,15 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
 
   set(MANFILE_EXPAND rpcapd-config.manfile.in)
 
-  if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-    install(TARGETS rpcapd DESTINATION bin/amd64)
-  else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-    install(TARGETS rpcapd DESTINATION bin)
-  endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+  if(NOT MSVC)
+    install(TARGETS rpcapd DESTINATION sbin)
+  else(NOT MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      install(TARGETS rpcapd DESTINATION bin/amd64)
+    else(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      install(TARGETS rpcapd DESTINATION bin)
+    endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  endif(NOT MSVC)
 
   # On UN*X, and on Windows when not using MSVC, generate process man
   # pages and arrange that they be installed.
