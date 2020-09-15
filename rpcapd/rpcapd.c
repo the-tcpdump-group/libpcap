@@ -39,6 +39,7 @@
 #include <errno.h>		// for the errno variable
 #include <string.h>		// for strtok, etc
 #include <stdlib.h>		// for malloc(), free(), ...
+#include <stdio.h>		// for fprintf(), stderr, FILE etc
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include <signal.h>		// for signal()
 
@@ -117,7 +118,7 @@ static unsigned __stdcall main_passive_serviceloop_thread(void *ptr);
 /*!
 	\brief Prints the usage screen if it is launched in console mode.
 */
-static void printusage(void)
+static void printusage(FILE * f)
 {
 	const char *usagetext =
 	"USAGE:"
@@ -161,9 +162,12 @@ static void printusage(void)
 	"                  specified from the command line are ignored\n\n"
 	"  -h              print this help screen\n\n";
 
-	(void)fprintf(stderr, "RPCAPD, a remote packet capture daemon.\n"
-	"Compiled with %s\n\n", pcap_lib_version());
-	printf("%s", usagetext);
+	(void)fprintf(f, "RPCAPD, a remote packet capture daemon.\n"
+	"Compiled with %s\n", pcap_lib_version());
+#if defined(HAVE_OPENSSL) && defined(SSLEAY_VERSION)
+	(void)fprintf(f, "Compiled with %s\n", SSLeay_version(SSLEAY_VERSION));
+#endif
+	(void)fprintf(f, "\n%s", usagetext);
 }
 
 
@@ -237,7 +241,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'i':
 #ifdef _WIN32
-				printusage();
+				printusage(stderr);
 				exit(1);
 #else
 				isrunbyinetd = 1;
@@ -308,7 +312,7 @@ int main(int argc, char *argv[])
 				break;
 #endif
 			case 'h':
-				printusage();
+				printusage(stdout);
 				exit(0);
 				/*NOTREACHED*/
 			default:
