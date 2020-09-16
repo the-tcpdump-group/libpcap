@@ -596,6 +596,8 @@ PCAP_API int64_t	pcap_dump_ftell64(pcap_dumper_t *);
 PCAP_API int	pcap_dump_flush(pcap_dumper_t *);
 PCAP_API void	pcap_dump_close(pcap_dumper_t *);
 PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
+PCAP_API int	pcap_dump_split(u_char *, const struct pcap_pkthdr *, const u_char *, bpf_u_int32,
+	const u_char *, bpf_u_int32);
 
 PCAP_API int	pcap_findalldevs(pcap_if_t **, char *);
 PCAP_API void	pcap_freealldevs(pcap_if_t *);

@@ -761,6 +761,54 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	(void)fwrite(sp, h->caplen, 1, f);
 }
 
+/*
+ * Output a packet in two parts to the initialized dump file.
+ */
+int
+pcap_dump_split(u_char *user, struct pcap_pkthdr *h, const u_char *sp1, bpf_u_int32 sp1_len,
+	const u_char *sp2, bpf_u_int32 sp2_len)
+{
+	register File *f;
+	struct pcap_sf_pkthdr sf_hdr;
+
+	f = (FILE *)user;
+	/*
+	 * Better not try writing pcap files after
+	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
+	 */
+	sf_hdr.ts.tv_sec  = (bpf_int32)h->ts.tv_sec;
+	sf_hdr.ts.tv_usec = (bpf_int32)h->ts.tv_usec;
+	sf_hdr.caplen     = h->caplen;
+	sf_hdr.len        = h->len;
+
+	/*
+	 * Check for overflow due to part lengths
+	 */
+	if ((sp1_len + sp2_len) < sp1_len)
+		return (-1);
+
+	/*
+	 * Check that pcap length matches with length of both parts
+	 */
+	if (sf_hdr.caplen != (sp1_len + sp2_len))
+		return (-1);
+
+	/*
+	 * Write pcap in parts. Return fail if any part fails.
+	 */
+
+	if (fwrite(&sf_hdr, sizeof(sf_hdr), 1, f) != 1)
+		return (-1);
+
+	if (fwrite(sp1, sp1_len, 1, f) != 1)
+		return (-1);
+
+	if (fwrite(sp2, sp2_len, 1, f) != 1)
+		return (-1);
+
+	return (0);
+}
+
 static pcap_dumper_t *
 pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 {
