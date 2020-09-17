@@ -768,7 +768,7 @@ int
 pcap_dump_split(u_char *user, struct pcap_pkthdr *h, const u_char *sp1, bpf_u_int32 sp1_len,
 	const u_char *sp2, bpf_u_int32 sp2_len)
 {
-	register File *f;
+	register FILE *f;
 	struct pcap_sf_pkthdr sf_hdr;
 
 	f = (FILE *)user;
