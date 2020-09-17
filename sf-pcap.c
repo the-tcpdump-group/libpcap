@@ -765,7 +765,7 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
  * Output a packet in two parts to the initialized dump file.
  */
 int
-pcap_dump_split(u_char *user, struct pcap_pkthdr *h, const u_char *sp1, bpf_u_int32 sp1_len,
+pcap_dump_split(u_char *user, const struct pcap_pkthdr *h, const u_char *sp1, bpf_u_int32 sp1_len,
 	const u_char *sp2, bpf_u_int32 sp2_len)
 {
 	register FILE *f;
