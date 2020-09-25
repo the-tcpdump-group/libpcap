@@ -1412,8 +1412,7 @@ get_if_ioctl_socket(void)
 	 * kernels without IPv4 support.
 	 *
 	 * AF_INET6 will work *if* you have IPv6 configured into the
-	 * kernel, but if you don't have AF_INET, you might not have
-	 * AF_INET6, either.
+	 * kernel.
 	 *
 	 * AF_PACKET would work, except that some of these calls should
 	 * work even if you *don't* have capture permission (you should be
@@ -1439,6 +1438,8 @@ get_if_ioctl_socket(void)
 	 * if that fails, we try an AF_UNIX socket, as that's less
 	 * likely to be configured out on a networking-capable system
 	 * than is IP;
+	 *
+	 * if that fails, we try an AF_INET6 socket;
 	 *
 	 * if that fails, we try an AF_INET socket.
 	 */
@@ -1478,6 +1479,14 @@ get_if_ioctl_socket(void)
 		/*
 		 * OK, we got it!
 		 */
+		return (fd);
+	}
+
+	/*
+	 * Now try an AF_INET6 socket.
+	 */
+	fd = socket(AF_INET6, SOCK_DGRAM, 0);
+	if (fd != -1) {
 		return (fd);
 	}
 
