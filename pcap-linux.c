@@ -1395,7 +1395,7 @@ get_if_ioctl_socket(void)
 	 *
 	 * There isn't a socket type that's guaranteed to work.
 	 *
-	 * AF_NETLINK will work *if* you have Netlink configured into th
+	 * AF_NETLINK will work *if* you have Netlink configured into the
 	 * kernel (can it be configured out if you have any networking
 	 * support at all?) *and* if you're running a sufficiently recent
 	 * kernel, but not all the kernels we support are sufficiently
@@ -1404,7 +1404,7 @@ get_if_ioctl_socket(void)
 	 * AF_UNIX will work *if* you have UNIX-domain sockets configured
 	 * into the kernel and *if* you're not on a system that doesn't
 	 * allow them - some SELinux systems don't allow you create them.
-	 * Most systems probably have them configured in, but all systems
+	 * Most systems probably have them configured in, but not all systems
 	 * have them configured in and allow them to be created.
 	 *
 	 * AF_INET will work *if* you have IPv4 configured into the kernel,
@@ -1412,7 +1412,8 @@ get_if_ioctl_socket(void)
 	 * kernels without IPv4 support.
 	 *
 	 * AF_INET6 will work *if* you have IPv6 configured into the
-	 * kernel.
+	 * kernel, but if you don't have AF_INET, you might not have
+	 * AF_INET6, either (that is, independently on its own grounds).
 	 *
 	 * AF_PACKET would work, except that some of these calls should
 	 * work even if you *don't* have capture permission (you should be
