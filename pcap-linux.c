@@ -353,7 +353,6 @@ pcap_create_interface(const char *device, char *ebuf)
 	 * microsecond or nanosecond time stamps on arbitrary
 	 * adapters?
 	 */
-	handle->tstamp_precision_count = 2;
 	handle->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (handle->tstamp_precision_list == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
@@ -363,6 +362,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	}
 	handle->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+	handle->tstamp_precision_count = 2;
 
 	struct pcap_linux *handlep = handle->priv;
 	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
@@ -4651,15 +4651,21 @@ static const struct {
 /*
  * Set the list of time stamping types to include all types.
  */
-static void
-iface_set_all_ts_types(pcap_t *handle)
+static int
+iface_set_all_ts_types(pcap_t *handle, char *ebuf)
 {
 	u_int i;
 
-	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
 	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
+	if (handle->tstamp_type_list == NULL) {
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
+		return -1;
+	}
 	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
 		handle->tstamp_type_list[i] = sof_ts_type_map[i].pcap_tstamp_val;
+	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
+	return 0;
 }
 
 #ifdef ETHTOOL_GET_TS_INFO
@@ -4715,7 +4721,8 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 			 * asking for the time stamping types, so let's
 			 * just return all the possible types.
 			 */
-			iface_set_all_ts_types(handle);
+			if (iface_set_all_ts_types(handle, ebuf) == -1)
+				return -1;
 			return 0;
 
 		case ENODEV:
@@ -4763,15 +4770,20 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 		if (info.so_timestamping & sof_ts_type_map[i].soft_timestamping_val)
 			num_ts_types++;
 	}
-	handle->tstamp_type_count = num_ts_types;
 	if (num_ts_types != 0) {
 		handle->tstamp_type_list = malloc(num_ts_types * sizeof(u_int));
+		if (handle->tstamp_type_list == NULL) {
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
+			return -1;
+		}
 		for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
 			if (info.so_timestamping & sof_ts_type_map[i].soft_timestamping_val) {
 				handle->tstamp_type_list[j] = sof_ts_type_map[i].pcap_tstamp_val;
 				j++;
 			}
 		}
+		handle->tstamp_type_count = num_ts_types;
 	} else
 		handle->tstamp_type_list = NULL;
 
@@ -4779,7 +4791,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
+iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 {
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -4797,7 +4809,8 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
 	 * We don't have an ioctl to use to ask what's supported,
 	 * so say we support everything.
 	 */
-	iface_set_all_ts_types(handle);
+	if (iface_set_all_ts_types(handle, ebuf) == -1)
+		return -1;
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */

@@ -548,7 +548,6 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	/*
 	 * We support microsecond and nanosecond time stamps.
 	 */
-	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
@@ -558,6 +557,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	}
 	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+	p->tstamp_precision_count = 2;
 
 	p->activate_op = snf_activate;
 	ps->snf_boardnum = boardnum;

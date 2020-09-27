@@ -895,10 +895,10 @@ airpcap_activate(pcap_t *p)
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
 	if (p->dlt_list == NULL)
 		goto bad;
-	p->dlt_count = 3;
 	p->dlt_list[0] = DLT_IEEE802_11_RADIO;
 	p->dlt_list[1] = DLT_PPI;
 	p->dlt_list[2] = DLT_IEEE802_11;
+	p->dlt_count = 3;
 
 	p->read_op = airpcap_read;
 	p->inject_op = airpcap_inject;

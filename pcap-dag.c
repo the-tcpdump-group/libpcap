@@ -1084,7 +1084,6 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	 * XXX Our native precision is 2^-32s, but libpcap doesn't support
 	 * power of two precisions yet. We can convert to either MICRO or NANO.
 	 */
-	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
@@ -1094,6 +1093,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	}
 	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+	p->tstamp_precision_count = 2;
 	return p;
 }
 
