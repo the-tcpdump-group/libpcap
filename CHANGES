@@ -682,7 +682,7 @@ Tuesday January 9, 2001. guy@alum.mit.edu. Summary for 0.6 release
 
 	Header files fixed to allow use in C++ programs.
 
-	Removed dependancy on native headers for packet layout.
+	Removed dependency on native headers for packet layout.
 	Removed Linux specific headers that were shipped.
 
 	Security fixes: Strcpy replaced with strlcpy, sprintf replaced

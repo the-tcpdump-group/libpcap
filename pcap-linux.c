@@ -2539,7 +2539,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		}
 	}
 
-	/* Enable auxillary data if supported and reserve room for
+	/* Enable auxiliary data if supported and reserve room for
 	 * reconstructing VLAN headers. */
 #ifdef HAVE_PACKET_AUXDATA
 	val = 1;
@@ -3056,7 +3056,7 @@ create_ring(pcap_t *handle, int *status)
 		return -1;
 	}
 
-	/* compute the minumum block size that will handle this frame.
+	/* compute the minimum block size that will handle this frame.
 	 * The block has to be page size aligned.
 	 * The max block size allowed by the kernel is arch-dependent and
 	 * it's not explicitly checked here. */
@@ -4297,7 +4297,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		if ((err = set_kernel_filter(handle, &fcode)) == 0)
 		{
 			/*
-			 * Installation succeded - using kernel filter,
+			 * Installation succeeded - using kernel filter,
 			 * so userland filtering not needed.
 			 */
 			handlep->filter_in_userland = 0;

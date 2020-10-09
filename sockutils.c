@@ -290,7 +290,7 @@ static int sock_ismcastaddr(const struct sockaddr *saddr)
  *
  * In case of a server socket, the function calls socket(), bind() and listen().
  *
- * This function is usually preceeded by the sock_initaddress().
+ * This function is usually preceded by the sock_initaddress().
  *
  * \param addrinfo: pointer to an addrinfo variable which will be used to
  * open the socket and such. This variable is the one returned by the previous call to

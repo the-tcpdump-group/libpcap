@@ -286,7 +286,7 @@ pcap_stats_ex_npf(pcap_t *p, int *pcap_stat_size)
 	p->stat.ps_ifdrop = bstats.ps_ifdrop;
 	/*
 	 * Just in case this is ever compiled for a target other than
-	 * Windows, which is somewhere between extemely unlikely and
+	 * Windows, which is somewhere between extremely unlikely and
 	 * impossible.
 	 */
 #ifdef _WIN32

@@ -31,7 +31,7 @@ A { text-decoration:none }
 			<TR>
 				<TH VALIGN=TOP>SMP</TH>
 				<TD VALIGN=TOP>The Supervisory Management Processor where Wireshark (or equivalent)
-								runs in conjuction with a libpcap front-end.</TD>
+								runs in conjunction with a libpcap front-end.</TD>
 			</TR>
 			<TR>
 				<TH VALIGN=TOP>IOP</TH>
@@ -43,7 +43,7 @@ A { text-decoration:none }
 	<P>
 	Each IOP will be capable of supporting multiple connections from an SMP
 	enabling monitoring of more than one interface at a time, each through
-	its own seperate connection.  The IOP is responsible to ensure and report
+	its own separate connection.  The IOP is responsible to ensure and report
 	an error if any attempt is made to monitor the same interface more than once.
 	<P>
 	There are three applications that will be supported by the ACN version of libpcap.
@@ -121,8 +121,8 @@ A { text-decoration:none }
 		<TR><TH VALIGN=TOP NOWRAP>IOP -> SMP</TH>
 			<TD>
 			After any required processing is complete, the IOP will return a
-			null terminated string containing an error message if one occured.
-			If no error occured, a empty string is still returned.
+			null terminated string containing an error message if one occurred.
+			If no error occurred, a empty string is still returned.
 			Errors are:
 			<UL>
 			<LI>"Interface (xxx) does not exist."
@@ -298,7 +298,7 @@ A { text-decoration:none }
 			<TD>
 			The SMP reads only the next packet from the reverse channel of the connection
 			between the SMP and the IOP that provides the captured data (via calling pcap_dispatch()
-			with a count of 1) and returns seperate pointers to both the
+			with a count of 1) and returns separate pointers to both the
 			packet header and packet data by invoking an internal callback.
 			</TD>
 		</TR>
@@ -322,7 +322,7 @@ A { text-decoration:none }
 		<TR><TH VALIGN=TOP NOWRAP>IOP -> SMP</TH>
 			<TD>
 			The IOP returns a null terminated error string if it failed to accept the filter.
-			If no error occured, then a NULL terminated empty string is returned instead.
+			If no error occurred, then a NULL terminated empty string is returned instead.
 			Errors are:
 			<UL>
 			<LI>"Invalid BPF."
@@ -370,7 +370,7 @@ A { text-decoration:none }
 			If the IOP detects that its communication session with an SMP
 			has closed, it will terminate any monitoring in progress,
 			release any resources and close its end of the session.
-			It will not maintain persistance of any information or prior mode of operation.
+			It will not maintain persistence of any information or prior mode of operation.
 			</TD>
 		</TR>
 	</TABLE></TD></TR>
@@ -442,7 +442,7 @@ A { text-decoration:none }
 			<TD VALIGN=TOP ALIGN=CENTER NOWRAP>IOP -> SMP</TD>
 			<TD VALIGN=TOP>The IOP returns a list of sequences of information as
 				defined by the return parameter of this function call (as shown in the following table).
-				Elements are specified by providing an unsigned byte preceeding the actual data that contains length information.
+				Elements are specified by providing an unsigned byte preceding the actual data that contains length information.
 				<P>
 				<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=3>
 				<TR>
@@ -839,7 +839,7 @@ A { text-decoration:none }
 	<UL>
 	PCAP, Wireshark and Tcpdump enhancements have been added to the ACN to support
 	monitoring of its ports, however each of these facilities were focused on capturing
-	and displaying traffic from LAN interfaces.  The SITA extentions to these facilities
+	and displaying traffic from LAN interfaces.  The SITA extensions to these facilities
 	are used to also provide the ability to capture, filter, and display information from
 	an ACN's WAN ports.
 	<P>
@@ -849,7 +849,7 @@ A { text-decoration:none }
 	<P>
 	<UL TYPE=DISC>
 		<LI>For Ethernet (like) devices, the packet format is unchanged from the standard Pcap format.
-		<LI>For WAN devices, the packet contains a 5 byte header that preceeds the actual captured data
+		<LI>For WAN devices, the packet contains a 5 byte header that precedes the actual captured data
 			described by the following table:
 	</UL>
 	<P>

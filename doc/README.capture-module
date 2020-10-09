@@ -232,13 +232,13 @@ structure:
 		called whnever pcap_set_datalink() is called
 
 	getnonblock_op
-		called whenver pcap_getnonblock() is called
+		called whenever pcap_getnonblock() is called
 
 	setnonblock_op
 		called whenever pcap_setnonblock() is called
 
 	stats_op
-		called whenver pcap_stats() is called
+		called whenever pcap_stats() is called
 
 	cleanup_op
 		called if the activate routine fails or pcap_close() is

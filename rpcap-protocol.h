@@ -306,7 +306,7 @@ struct rpcap_filter
 	uint32 nitems;		/* Number of items contained into the filter (e.g. BPF instructions for BPF filters) */
 };
 
-/* Structure that keeps a single BPF instuction; it is repeated 'ninsn' times according to the 'rpcap_filterbpf' header */
+/* Structure that keeps a single BPF instruction; it is repeated 'ninsn' times according to the 'rpcap_filterbpf' header */
 struct rpcap_filterbpf_insn
 {
 	uint16 code;	/* opcode of the instruction */

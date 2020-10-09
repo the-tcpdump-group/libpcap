@@ -943,7 +943,7 @@ static void pcap_init_hook (void)
 }
 
 /*
- * Supress PRINT message from Watt-32's sock_init()
+ * Suppress PRINT message from Watt-32's sock_init()
  */
 static void null_print (void) {}
 

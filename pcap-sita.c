@@ -755,9 +755,9 @@ static void wait_for_all_answers(void) {
 
 		memcpy(&working_set, &readfds, sizeof(readfds));				/* otherwise, we still have to listen for more stuff, till we timeout */
 		retval = select(max_fs + 1, &working_set, NULL, NULL, &tv);
-		if (retval == -1) {												/* an error occured !!!!! */
+		if (retval == -1) {												/* an error occurred !!!!! */
 			return;
-		} else if (retval == 0) {										/* timeout occured, so process what we've got sofar and return */
+		} else if (retval == 0) {										/* timeout occurred, so process what we've got sofar and return */
 			printf("timeout\n");
 			return;
 		} else {
@@ -935,10 +935,10 @@ static int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
 	bp = handle->bp;
 	while (count) {
 		retval = select(fd + 1, &w_fds, NULL, NULL, &tv);
-		if (retval == -1) {											/* an error occured !!!!! */
+		if (retval == -1) {											/* an error occurred !!!!! */
 //			fprintf(stderr, "error during packet data read\n");
 			return -1;										/* but we need to return a good indication to prevent unnecessary popups */
-		} else if (retval == 0) {									/* timeout occured, so process what we've got sofar and return */
+		} else if (retval == 0) {									/* timeout occurred, so process what we've got sofar and return */
 //			fprintf(stderr, "timeout during packet data read\n");
 			return -1;
 		} else {
