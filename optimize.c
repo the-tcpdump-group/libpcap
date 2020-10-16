@@ -1474,6 +1474,7 @@ opt_deadstores(opt_state_t *opt_state, register struct block *b)
 			 */
 			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
+			vstore(0, &b->val[atom], VAL_UNKNOWN, 0);
 		}
 }
 
