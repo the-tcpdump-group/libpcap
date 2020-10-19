@@ -1742,21 +1742,52 @@ fi
 #
 AC_PROG_YACC
 
-#
-# Make sure it supports the -p flag and supports processing our
-# grammar.y.
-#
-AC_CACHE_CHECK([for capable yacc/bison], tcpdump_cv_capable_yacc,
-	if $YACC -p pcap_ -o /dev/null $srcdir/grammar.y >/dev/null 2>&1; then
-	    tcpdump_cv_capable_yacc=yes
-	else
-	    tcpdump_cv_capable_yacc=insufficient
-	fi)
-if test $tcpdump_cv_capable_yacc = insufficient ; then
-	AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
+case "$YACC" in
+
+*yacc)
+	#
+	# Make sure this is Berkeley YACC, not AT&T YACC; the latter
+	# doesn't support reentrant parsers.  Run it with "-V";
+	# that succeeds and reports the version number with
+	# Berkeley YACC, but will (probably) fail with various
+	# vendor flavors of AT&T YACC.
+	#
+	AC_CACHE_CHECK([for capable yacc], tcpdump_cv_capable_yacc,
+	    if $YACC -V >/dev/null 2>&1; then
+		tcpdump_cv_capable_yacc=yes
+	    else
+		tcpdump_cv_capable_yacc=insufficient
+	    fi)
+	if test $tcpdump_cv_capable_yacc = insufficient ; then
+	    AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
  libpcap requires Bison, a newer version of Berkeley YACC with support
  for reentrant parsers, or another YACC compatible with them.])
-fi
+	fi
+
+	#
+	# Berkeley YACC doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	REENTRANT_PARSER="%pure-parser"
+	;;
+
+*)
+	#
+	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	bison_major_version=`$YACC -V | sed -n 's/.* \(@<:@1-9@:>@@<:@0-9@:>@*\)\.@<:@1-9@:>@@<:@0-9.@:>@*/\1/p'`
+	bison_minor_version=`$YACC -V | sed -n 's/.* @<:@1-9@:>@@<:@0-9@:>@*\.\(@<:@1-9@:>@@<:@0-9@:>@*\).*/\1/p'`
+	if test "$bison_major_version" -lt 2 -o \
+	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
+	then
+		REENTRANT_PARSER="%pure-parser"
+	else
+		REENTRANT_PARSER="%define api.pure"
+	fi
+	;;
+esac
+AC_SUBST(REENTRANT_PARSER)
 
 #
 # Do various checks for various OSes and versions of those OSes.
@@ -2797,7 +2828,7 @@ AC_OUTPUT_COMMANDS([if test -f .devel; then
 	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend
 fi])
-AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
+AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap

@@ -2058,6 +2058,27 @@ find_program(YACC_EXECUTABLE NAMES bison win_bison byacc yacc)
 if(YACC_EXECUTABLE STREQUAL "YACC_EXECUTABLE-NOTFOUND")
     message(FATAL_ERROR "Neither bison nor win_bison nor byacc nor yacc was found.")
 endif()
+
+if(YACC_EXECUTABLE MATCHES "byacc" OR YACC_EXECUTABLE MATCHES "yacc")
+    #
+    # Berkeley YACC doesn't support "%define api.pure", so use
+    # "%pure-parser".
+    #
+    set(REENTRANT_PARSER "%pure-parser")
+else()
+    #
+    # Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
+    # "%pure-parser".
+    #
+    execute_process(COMMAND ${YACC_EXECUTABLE} -V OUTPUT_VARIABLE bison_full_version)
+    string(REGEX MATCH "[1-9][0-9]*[.][1-9][0-9]*" bison_major_minor ${bison_full_version})
+    if (bison_major_minor VERSION_LESS "2.4")
+        set(REENTRANT_PARSER "%pure-parser")
+    else()
+        set(REENTRANT_PARSER "%define api.pure")
+    endif()
+endif()
+    
 message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
@@ -2456,6 +2477,12 @@ endif()
 ######################################
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+######################################
+# Write out the grammar.y file
+######################################
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/grammar.y.in ${CMAKE_CURRENT_BINARY_DIR}/grammar.y @ONLY)
 
 ######################################
 # Install pcap library, include files, and man pages

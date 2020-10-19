@@ -665,6 +665,7 @@ DEPENDENCY_CFLAG
 LN_S
 AR
 RANLIB
+REENTRANT_PARSER
 YFLAGS
 YACC
 LEXLIB
@@ -8514,7 +8515,7 @@ fi
 #
 # Look for yacc/bison/byacc.
 #
-for ac_prog in 'bison -y' byacc
+for ac_prog in 'boson -y' byacc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -8558,28 +8559,59 @@ done
 test -n "$YACC" || YACC="yacc"
 
 
-#
-# Make sure it supports the -p flag and supports processing our
-# grammar.y.
-#
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for capable yacc/bison" >&5
-$as_echo_n "checking for capable yacc/bison... " >&6; }
+case "$YACC" in
+
+*yacc)
+	#
+	# Make sure this is Berkeley YACC, not AT&T YACC; the latter
+	# doesn't support reentrant parsers.  Run it with "-V";
+	# that succeeds and reports the version number with
+	# Berkeley YACC, but will (probably) fail with various
+	# vendor flavors of AT&T YACC.
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for capable yacc" >&5
+$as_echo_n "checking for capable yacc... " >&6; }
 if ${tcpdump_cv_capable_yacc+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  if $YACC -p pcap_ -o /dev/null $srcdir/grammar.y >/dev/null 2>&1; then
-	    tcpdump_cv_capable_yacc=yes
-	else
-	    tcpdump_cv_capable_yacc=insufficient
-	fi
+  if $YACC -V >/dev/null 2>&1; then
+		tcpdump_cv_capable_yacc=yes
+	    else
+		tcpdump_cv_capable_yacc=insufficient
+	    fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $tcpdump_cv_capable_yacc" >&5
 $as_echo "$tcpdump_cv_capable_yacc" >&6; }
-if test $tcpdump_cv_capable_yacc = insufficient ; then
-	as_fn_error $? "$YACC is insufficient to compile libpcap.
+	if test $tcpdump_cv_capable_yacc = insufficient ; then
+	    as_fn_error $? "$YACC is insufficient to compile libpcap.
  libpcap requires Bison, a newer version of Berkeley YACC with support
  for reentrant parsers, or another YACC compatible with them." "$LINENO" 5
-fi
+	fi
+
+	#
+	# Berkeley YACC doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	REENTRANT_PARSER="%pure-parser"
+	;;
+
+*)
+	#
+	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	bison_major_version=`$YACC -V | sed -n 's/.* \([1-9][0-9]*\)\.[1-9][0-9.]*/\1/p'`
+	bison_minor_version=`$YACC -V | sed -n 's/.* [1-9][0-9]*\.\([1-9][0-9]*\).*/\1/p'`
+	if test "$bison_major_version" -lt 2 -o \
+	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
+	then
+		REENTRANT_PARSER="%pure-parser"
+	else
+		REENTRANT_PARSER="%define api.pure"
+	fi
+	;;
+esac
+
 
 #
 # Do various checks for various OSes and versions of those OSes.
@@ -11845,7 +11877,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_commands="$ac_config_commands default-1"
 
-ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile testprogs/Makefile"
+ac_config_files="$ac_config_files Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile testprogs/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -12549,6 +12581,7 @@ do
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "default-1") CONFIG_COMMANDS="$CONFIG_COMMANDS default-1" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "grammar.y") CONFIG_FILES="$CONFIG_FILES grammar.y" ;;
     "pcap-filter.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-filter.manmisc" ;;
     "pcap-linktype.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-linktype.manmisc" ;;
     "pcap-tstamp.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-tstamp.manmisc" ;;

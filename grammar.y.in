@@ -1,7 +1,7 @@
 /*
  * We want a reentrant parser.
  */
-%pure-parser
+@REENTRANT_PARSER@
 
 /*
  * We also want a reentrant scanner, so we have to pass the
