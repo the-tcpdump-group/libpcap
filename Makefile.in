@@ -280,7 +280,7 @@ EXTRA_DIST = \
 	fad-getad.c \
 	fad-gifc.c \
 	fad-glifc.c \
-	grammar.y \
+	grammar.y.in \
 	install-sh \
 	lbl/os-aix4.h \
 	lbl/os-aix7.h \
@@ -510,7 +510,26 @@ scanner.h: scanner.c
 scanner.o: scanner.c grammar.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
 
-grammar.c: $(srcdir)/grammar.y
+#
+# Generate the grammar.y file.
+#
+# Some Makes, e.g. AIX Make and Solaris Make, can't handle "--file=$@.tmp:$<";
+# for example, the Solaris 9 make man page says
+#
+#	Because make assigns $< and $* as it would for implicit rules
+#	(according to the suffixes list and the directory contents),
+#	they may be unreliable when used within explicit target entries.
+#
+# and this is an explicit target entry.
+#
+# Therefore, instead of using $<, we explicitly put in $(srcdir)/libpcap.pc.in.
+#
+grammar.y: $(srcdir)/grammar.y.in ./config.status
+	@rm -f $@ $@.tmp
+	./config.status --file=$@.tmp:$(srcdir)/grammar.y.in
+	mv $@.tmp $@
+
+grammar.c: grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
 grammar.h: grammar.c
 ## Recover from the removal of $@
@@ -775,7 +794,7 @@ clean:
 	cd testprogs; $(MAKE) clean
 
 distclean: clean
-	rm -f Makefile config.cache config.log config.status \
+	rm -f Makefile grammar.y config.cache config.log config.status \
 	    config.h gnuc.h net os-proto.h libpcap.pc \
 	    pcap-config stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
