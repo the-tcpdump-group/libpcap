@@ -71,7 +71,7 @@ written.
 .RB ( pcap_inject ()
 comes from OpenBSD;
 .BR pcap_sendpacket ()
-comes from WinPcap.  Both are provided for compatibility.)
+comes from WinPcap/Npcap.  Both are provided for compatibility.)
 .SH RETURN VALUE
 .BR pcap_inject ()
 returns the number of bytes written on success and

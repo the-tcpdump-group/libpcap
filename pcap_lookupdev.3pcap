@@ -82,6 +82,5 @@ in the same thread, or calls to
 .BR pcap_lookupdev ()
 in another thread, may overwrite that buffer.
 .LP
-In WinPcap, this function may return a UTF-16 string rather than an
-ASCII or UTF-8 string.
-
+In WinPcap and Npcap, this function may return a UTF-16 string rather
+than an ASCII or UTF-8 string.

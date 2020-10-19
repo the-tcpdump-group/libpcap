@@ -958,8 +958,9 @@ for a live capture, using
 .BR pcap_inject ()
 or
 .BR pcap_sendpacket ().
-(The two routines exist for compatibility with both OpenBSD and WinPcap;
-they perform the same function, but have different return values.)
+(The two routines exist for compatibility with both OpenBSD and
+WinPcap/Npcap; they perform the same function, but have different return
+values.)
 .TP
 .B Routines
 .RS
