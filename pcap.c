@@ -2634,6 +2634,17 @@ pcap_set_immediate_mode(pcap_t *p, int immediate)
 	return (0);
 }
 
+#ifdef TX_MMAP
+int
+pcap_set_tximmediate_mode(pcap_t *p, int immediate)
+{
+	if (pcap_check_activated(p))
+		return (PCAP_ERROR_ACTIVATED);
+	p->opt.tx_immediate = immediate;
+	return (0);
+}
+#endif
+
 int
 pcap_set_buffer_size(pcap_t *p, int buffer_size)
 {
@@ -4057,9 +4068,15 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 		    errno, "The number of bytes to be injected must not be zero");
 		return (PCAP_ERROR);
 	}
-
 	return (p->inject_op(p, buf, (int)size));
 }
+
+#ifdef TX_MMAP
+void* pcap_get_txframe(pcap_t *p)
+{
+	p->gettxframe(p);
+}
+#endif
 
 void
 pcap_close(pcap_t *p)

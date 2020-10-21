@@ -93,6 +93,7 @@
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
+#include <pthread.h>
 #include <poll.h>
 #include <dirent.h>
 #include <sys/eventfd.h>
@@ -183,6 +184,14 @@ struct pcap_linux {
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
 	char	*mondevice;	/* mac80211 monitor device we created */
 	u_char	*mmapbuf;	/* memory-mapped region pointer */
+#ifdef TX_MMAP
+	u_char	*tx_mmapbuf;	/* memory-mapped region pointer */
+	//pcap_ringattr_t req;
+	u_int pcap_seqid;
+	int	txpoll_timeout;	/* timeout for use in poll() in tx path*/
+	pthread_mutex_t mutex;
+	int prev_seqid;
+#endif
 	size_t	mmapbuflen;	/* size of region */
 	int	vlan_offset;	/* offset at which to insert vlan tags; if -1, don't insert */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
@@ -213,6 +222,10 @@ static int activate_pf_packet(pcap_t *, int);
 static int setup_mmapped(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_inject_linux(pcap_t *, const void *, int);
+#ifdef TX_MMAP
+static int pcap_inject_mmap_linux(pcap_t *, const void *, int);
+static void* pcap_get_tx_frame(pcap_t *handle);
+#endif
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
@@ -228,7 +241,11 @@ union thdr {
 };
 
 #define RING_GET_FRAME_AT(h, offset) (((u_char **)h->buffer)[(offset)])
+#define TX_RING_GET_FRAME_AT(h, offset) (((u_char **)h->tx_buffer)[(offset)])
 #define RING_GET_CURRENT_FRAME(h) RING_GET_FRAME_AT(h, h->offset)
+#define TX_RING_GET_CURRENT_FRAME(h) TX_RING_GET_FRAME_AT(h, h->tx_writeoffset)
+#define TX_TIME_WRITE_RING_GET_CURRENT_FRAME(h, buf) ( ((u_char *)(buf)) + (h->tx_writeoffset*sizeof(pcap_timestamps_t)) )
+#define TX_TIME_READ_RING_GET_CURRENT_FRAME(h) ( ((u_char *)(h->tx_timebuffer)) + (h->tx_readoffset*sizeof(pcap_timestamps_t)) )
 
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle, int *status);
@@ -982,6 +999,23 @@ pcap_activate_linux(pcap_t *handle)
 	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
 		handle->snapshot = MAXIMUM_SNAPLEN;
 
+	handle->inject_op = pcap_inject_linux;
+#ifdef TX_MMAP
+	handle->inject_op = pcap_inject_mmap_linux;
+	handle->gettxframe = pcap_get_tx_frame;
+#endif
+	handle->setfilter_op = pcap_setfilter_linux;
+	handle->setdirection_op = pcap_setdirection_linux;
+	handle->set_datalink_op = pcap_set_datalink_linux;
+	handle->getnonblock_op = pcap_getnonblock_fd;
+	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->cleanup_op = pcap_cleanup_linux;
+	handle->read_op = pcap_read_linux;
+	handle->stats_op = pcap_stats_linux;
+#ifdef HAVE_SYS_EVENTFD_H
+	handle->breakloop_op = pcap_breakloop_linux;
+#endif
+
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -1200,6 +1234,174 @@ device_still_exists(pcap_t *handle)
 	return (1);
 }
 
+#ifdef TX_MMAP
+static void* pcap_get_tx_frame(pcap_t *handle)
+{
+	union thdr h;
+	int ret;
+	struct pollfd pfd;
+	struct pcap_linux *handlep = handle->priv;
+
+	h.raw = TX_RING_GET_CURRENT_FRAME(handle);
+	if (!(h.h2->tp_status & (TP_STATUS_SEND_REQUEST | TP_STATUS_SENDING)))
+	{
+		return (void *)(h.raw + TPACKET_HDRLEN - sizeof(struct sockaddr_ll));
+	}
+	else
+	{
+		/* Block using poll
+		 * Timeout is 0 if not set
+		 * memset in done in pcap_alloc_pcap_t
+		 */
+		pfd.fd = handle->fd;
+		pfd.revents = 0;
+		pfd.events = POLLOUT;
+		ret = poll(&pfd, 1, handlep->txpoll_timeout);
+		if (ret < 0 ) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "can't poll on packet socket");
+		}
+		else if (ret == 0) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "timeout occured in poll");
+		}
+		else
+		{
+			return (void *)(h.raw + TPACKET_HDRLEN - sizeof(struct sockaddr_ll));		
+		}
+		return NULL;
+	}
+}
+
+
+/*extern void
+pcap_get_ring_attributes(pcap_t *handle, pcap_ringattr_t *psRingattr)
+{
+	struct pcap_linux *handlep = handle->priv;
+	memcpy((void *)psRingattr, &handlep->req, sizeof(pcap_ringattr_t));
+}*/
+/*
+* Need to implement a way to share timestamps to user
+* in case of non immediate mode
+*/
+/*
+extern int
+pcap_get_tx_timestamps(pcap_t *handle, void *psHwts)
+{
+	pcap_timestamps_t *psHwts_ring = (pcap_timestamps_t *)TX_TIME_READ_RING_GET_CURRENT_FRAME(handle);
+	struct pcap_linux *handlep = handle->priv;
+	pthread_mutex_lock(&handlep->mutex);
+	int seqid = psHwts_ring->seqid;
+	if (seqid)
+	{
+		if (seqid < handlep->prev_seqid)	
+			goto EXIT;
+		handlep->prev_seqid = seqid;
+		memcpy(psHwts, &psHwts_ring->ts, sizeof(struct timespec));
+		if (++handle->tx_readoffset >= handle->cc)
+			handle->tx_readoffset = 0;
+		pthread_mutex_unlock(&handlep->mutex);
+		return seqid;
+	}
+EXIT:
+	pthread_mutex_unlock(&handlep->mutex);
+	return -1;
+}*/
+
+extern int
+pcap_get_noofframes(pcap_t *handle)
+{
+	return handle->cc;
+}
+
+extern void
+pcap_set_txpolltimeout(pcap_t *handle, int timeout)
+{
+	struct pcap_linux *handlep = handle->priv;
+	handlep->txpoll_timeout = timeout;
+}
+
+
+static int
+pcap_inject_mmap_linux(pcap_t *handle, const void *buf, int size)
+{
+	struct pcap_linux *handlep = handle->priv;
+	union thdr h;
+	int ret = 0;
+	pcap_timestamps_t *psHwts;
+
+	h.raw = TX_RING_GET_CURRENT_FRAME(handle);
+	if (++handle->tx_writeoffset >= handle->cc)
+		handle->tx_writeoffset = 0;
+	h.h2->tp_len = size;
+	h.h2->tp_status = TP_STATUS_SEND_REQUEST;
+	if (handle->tx_writeoffset == 0 || (handle->opt.tx_immediate))
+	{
+		send(handle->fd, NULL, 0, MSG_DONTWAIT);
+		ret = 1; //indicate that send was called and timestamps may be available
+
+		if (handle->opt.tx_immediate &&
+			(handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER_UNSYNCED))
+		{
+#ifdef TS_BLOCK
+			while(!(h.h2->tp_status & TP_STATUS_TS_RAW_HARDWARE))
+			{
+				usleep(10) ;
+			}
+#endif
+			if(h.h2->tp_status & TP_STATUS_TS_RAW_HARDWARE)
+			{
+				((struct timespec *)buf)->tv_sec = h.h2->tp_sec;
+				((struct timespec *)buf)->tv_nsec = h.h2->tp_nsec;
+			}
+			else
+			{
+				((struct timespec *)buf)->tv_sec = 0;
+				((struct timespec *)buf)->tv_nsec = 0;
+			}
+		}
+		else if ((handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER_UNSYNCED))
+		{
+			/*
+			 * If immediate flag is not set, send call will send all frames
+			 * Then we walk through all the frames to update timestamps to a user provided buffer
+			 */
+			// offset is zero when we start to walk
+			while(1)
+			{
+				h.raw = TX_RING_GET_CURRENT_FRAME(handle);
+				psHwts = (pcap_timestamps_t *)TX_TIME_WRITE_RING_GET_CURRENT_FRAME(handle, buf);
+				if (h.h2->tp_status & TP_STATUS_TS_RAW_HARDWARE)
+				{
+					psHwts->ts.tv_sec =  h.h2->tp_sec;
+					psHwts->ts.tv_nsec = h.h2->tp_nsec;
+					psHwts->seqid = ++handlep->pcap_seqid;
+				}
+				else
+				{
+#ifdef TS_BLOCK
+					usleep(10);
+					continue;
+#endif
+					psHwts->ts.tv_sec =  0;
+					psHwts->ts.tv_nsec = 0;
+					psHwts->seqid = ++handlep->pcap_seqid;
+				}
+				if (++handle->tx_writeoffset >= handle->cc)
+				{
+					handle->tx_writeoffset = 0;
+					break;
+				}
+			}
+		}
+	}
+EXIT:
+	return ret;
+}
+#endif
+
 static int
 pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 {
@@ -1211,8 +1413,8 @@ pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 		 * We don't support sending on the "any" device.
 		 */
 		pcap_strlcpy(handle->errbuf,
-		    "Sending packets isn't supported on the \"any\" device",
-		    PCAP_ERRBUF_SIZE);
+			"Sending packets isn't supported on the \"any\" device",
+			PCAP_ERRBUF_SIZE);
 		return (-1);
 	}
 
@@ -1225,15 +1427,15 @@ pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 		 * Is a "sendto()" required there?
 		 */
 		pcap_strlcpy(handle->errbuf,
-		    "Sending packets isn't supported in cooked mode",
-		    PCAP_ERRBUF_SIZE);
+			"Sending packets isn't supported in cooked mode",
+			PCAP_ERRBUF_SIZE);
 		return (-1);
 	}
 
 	ret = (int)send(handle->fd, buf, size, 0);
 	if (ret == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "send");
+			errno, "send");
 		return (-1);
 	}
 	return (ret);
@@ -3091,7 +3293,7 @@ create_ring(pcap_t *handle, int *status)
 	    handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER_UNSYNCED) {
 		struct hwtstamp_config hwconfig;
 		struct ifreq ifr;
-		int timesource;
+		int timesource = 0;
 
 		/*
 		 * Ask for hardware time stamps on all packets,
@@ -3163,7 +3365,8 @@ create_ring(pcap_t *handle, int *status)
 				 * timestamp, not synchronized with the
 				 * system clock.
 				 */
-				timesource = SOF_TIMESTAMPING_RAW_HARDWARE;
+				timesource = SOF_TIMESTAMPING_RAW_HARDWARE | SOF_TIMESTAMPING_RX_HARDWARE |
+					SOF_TIMESTAMPING_TX_HARDWARE;
 			}
 			if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
 				(void *)&timesource, sizeof(timesource))) {
@@ -3173,6 +3376,15 @@ create_ring(pcap_t *handle, int *status)
 				*status = PCAP_ERROR;
 				return -1;
 			}
+			if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMPING,
+				(void *)&timesource, sizeof(timesource))) {
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "can't set PACKET_TIMESTAMP");
+				*status = PCAP_ERROR;
+				return -1;
+			}
+
 		}
 	}
 #endif /* HAVE_LINUX_NET_TSTAMP_H && PACKET_TIMESTAMP */
@@ -3235,11 +3447,37 @@ retry:
 		*status = PCAP_ERROR;
 		return -1;
 	}
-
+#ifdef TX_MMAP
+	/* Save ring attributes in priv structure */
+#ifdef HAVE_TPACKET3
+//	memcpy(&handlep->req, &req, sizeof(struct tpacket_req3));
+#else
+//	memcpy(&handlep->req, &req, sizeof(struct tpacket_req));
+#endif
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_TX_RING,
+				(void *) &req, sizeof(req))) {
+		if (errno == ENOPROTOOPT) {
+			/*
+			 * We don't have ring buffer support in this kernel.
+			 */
+			return 0;
+		}
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "can't create rx ring on packet socket");
+		*status = PCAP_ERROR;
+		return -1;
+	}
+#endif
 	/* memory map the rx ring */
 	handlep->mmapbuflen = req.tp_block_nr * req.tp_block_size;
+#ifdef TX_MMAP
+	handlep->mmapbuf = mmap(0, handlep->mmapbuflen*2,
+	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
+#else
 	handlep->mmapbuf = mmap(0, handlep->mmapbuflen,
 	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
+#endif
+
 	if (handlep->mmapbuf == MAP_FAILED) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't mmap rx ring");
@@ -3249,6 +3487,10 @@ retry:
 		*status = PCAP_ERROR;
 		return -1;
 	}
+#ifdef TX_MMAP
+	/* memory map the tx ring */
+	handlep->tx_mmapbuf = handlep->mmapbuf + handlep->mmapbuflen;
+#endif
 
 	/* allocate a ring for each frame header pointer*/
 	handle->cc = req.tp_frame_nr;
@@ -3261,6 +3503,29 @@ retry:
 		*status = PCAP_ERROR;
 		return -1;
 	}
+#ifdef TX_MMAP
+	/* allocate a ring for each frame header pointer for tx ring*/
+	handle->tx_buffer = malloc(handle->cc * sizeof(union thdr *));
+	if (!handle->tx_buffer) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "can't allocate ring of frame headers");
+
+		destroy_ring(handle);
+		*status = PCAP_ERROR;
+		return -1;
+	}
+	/* allocate a ring for each frame timestamp */
+	handle->tx_timebuffer = calloc(handle->cc, sizeof(struct pcap_timestamps));
+	if (!handle->tx_timebuffer) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "can't allocate ring of frame timestamps");
+
+		destroy_ring(handle);
+		*status = PCAP_ERROR;
+		return -1;
+	}
+	pthread_mutex_init(&handlep->mutex, NULL);
+#endif
 
 	/* fill the header ring with proper frame ptr*/
 	handle->offset = 0;
@@ -3272,8 +3537,26 @@ retry:
 		}
 	}
 
+#ifdef TX_MMAP
+	/* fill the header ring with proper frame ptr for tx*/
+	handle->tx_writeoffset = 0;
+	for (i=0; i<req.tp_block_nr; ++i) {
+		u_char *base = &handlep->tx_mmapbuf[i*req.tp_block_size];
+		for (j=0; j<frames_per_block; ++j, ++handle->tx_writeoffset) {
+			TX_RING_GET_CURRENT_FRAME(handle) = base;
+			base += req.tp_frame_size;
+		}
+	}
+#endif
+
+
 	handle->bufsize = req.tp_frame_size;
 	handle->offset = 0;
+
+#ifdef TX_MMAP
+	handle->tx_writeoffset = 0;
+	handle->tx_readoffset = 0;
+#endif
 	return 1;
 }
 
@@ -3312,6 +3595,7 @@ destroy_ring(pcap_t *handle)
  * the callback returns (otherwise, the kernel thinks there's still
  * at least one unprocessed packet available in the ring, so a select()
  * will immediately return indicating that there's data to process), so,
+	
  * in the callback, we have to make a copy of the packet.
  *
  * Yes, this means that, if the capture is using the ring buffer, using

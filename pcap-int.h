@@ -38,10 +38,11 @@
 
 #include <signal.h>
 
-#include <pcap/pcap.h>
+#include "pcap/pcap.h"
 
 #include "varattrs.h"
 #include "fmtutils.h"
+#include <time.h>
 
 /*
  * Version string.
@@ -145,6 +146,9 @@ struct pcap_opt {
 	int	promisc;
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
+#ifdef TX_MMAP
+	int	tx_immediate;	/* tx_immediate mode - send packet as soon as copied to a frame in ring*/
+#endif
 	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
@@ -161,6 +165,9 @@ struct pcap_opt {
 };
 
 typedef int	(*activate_op_t)(pcap_t *);
+#ifdef TX_MMAP
+typedef void*	(*pcap_gettx_frame)(pcap_t *);
+#endif
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
 typedef int	(*next_packet_op_t)(pcap_t *, struct pcap_pkthdr *, u_char **);
@@ -315,6 +322,9 @@ struct pcap {
 	setnonblock_op_t setnonblock_op;
 	stats_op_t stats_op;
 	breakloop_op_t breakloop_op;
+#ifdef TX_MMAP
+	pcap_gettx_frame gettxframe;
+#endif
 
 	/*
 	 * Routine to use as callback for pcap_next()/pcap_next_ex().
@@ -340,6 +350,13 @@ struct pcap {
 	get_airpcap_handle_op_t get_airpcap_handle_op;
 #endif
 	cleanup_op_t cleanup_op;
+#ifdef TX_MMAP
+	void *tx_buffer;
+	void *tx_timebuffer;
+	int tx_writeoffset;		/* offset for proper alignment */
+	int tx_readoffset;		/* offset for proper alignment */
+	struct timespec timestamp;
+#endif
 };
 
 /*
