@@ -1815,7 +1815,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
  *
  */
 static void
-or_pullup(opt_state_t *opt_state, struct block *b)
+or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 {
 	bpf_u_int32 val;
 	int at_top;
@@ -1976,10 +1976,15 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 	 * optimizer gets into one of those infinite loops.
 	 */
 	opt_state->done = 0;
+
+	/*
+	 * Recompute dominator sets as control flow graph has changed.
+	 */
+	find_dom(opt_state, root);
 }
 
 static void
-and_pullup(opt_state_t *opt_state, struct block *b)
+and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 {
 	bpf_u_int32 val;
 	int at_top;
@@ -2072,6 +2077,11 @@ and_pullup(opt_state_t *opt_state, struct block *b)
 	 * optimizer gets into one of those infinite loops.
 	 */
 	opt_state->done = 0;
+
+	/*
+	 * Recompute dominator sets as control flow graph has changed.
+	 */
+	find_dom(opt_state, root);
 }
 
 static void
@@ -2118,8 +2128,8 @@ opt_blks(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 	find_inedges(opt_state, ic->root);
 	for (i = 1; i <= maxlevel; ++i) {
 		for (p = opt_state->levels[i]; p; p = p->link) {
-			or_pullup(opt_state, p);
-			and_pullup(opt_state, p);
+			or_pullup(opt_state, p, ic->root);
+			and_pullup(opt_state, p, ic->root);
 		}
 	}
 }
