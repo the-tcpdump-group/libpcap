@@ -306,7 +306,7 @@ FILES
 	pcap/bpf.h	    - BPF definitions
 	pcap/namedb.h	    - public libpcap name database definitions
 	pcap/pcap.h	    - public libpcap definitions
-	pcap/sll.h	    - public definition of DLT_LINUX_SLL header
+	pcap/sll.h	    - public definitions of DLT_LINUX_SLL and DLT_LINUX_SLL2 headers
 	pcap/usb.h	    - public definition of DLT_USB header
 	pcap-bpf.c	    - BSD Packet Filter support
 	pcap-bpf.h	    - header for backwards compatibility
