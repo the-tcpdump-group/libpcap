@@ -1552,6 +1552,13 @@
  */
 #define DLT_ATSC_ALP		289
 
+ /*
+ * Event Trace For Windows
+ *
+ * Requested by Odysseus Yamg <wiresharkyyh@outlook.com>.
+ */
+#define DLT_ETW		290
+
 /*
  * Event Tracing for Windows messages.
  */
