@@ -312,13 +312,15 @@ if(WIN32)
         # function.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARIES})
-        check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
+        list(APPEND CMAKE_REQUIRED_INCLUDES  ${PACKET_INCLUDE_DIRS})
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARIES})
+        check_symbol_exists(PacketIsLoopbackAdapter "Packet32.h" HAVE_PACKET_IS_LOOPBACK_ADAPTER)
         cmake_pop_check_state()
     endif(PACKET_FOUND)
 
+    ## Pretty questionable: There is no such function, just a manifest constant:
     message(STATUS "checking for Npcap's version.h")
-    check_symbol_exists(WINPCAP_PRODUCT_NAME "../../version.h" HAVE_VERSION_H)
+    check_function_exists(WINPCAP_PRODUCT_NAME HAVE_VERSION_H)
     if(HAVE_VERSION_H)
         message(STATUS "HAVE version.h")
     else(HAVE_VERSION_H)
@@ -404,8 +406,8 @@ endif(NOT WIN32)
 #
 # Functions.
 #
-check_function_exists(strerror HAVE_STRERROR)
-check_function_exists(strerror_r HAVE_STRERROR_R)
+check_symbol_exists(strerror   "string.h" HAVE_STRERROR)
+check_symbol_exists(strerror_r "string.h" HAVE_STRERROR_R)
 if(HAVE_STRERROR_R)
     #
     # We have strerror_r; if we define _GNU_SOURCE, is it a
@@ -432,7 +434,7 @@ else(HAVE_STRERROR_R)
     #
     # We don't have strerror_r; do we have _wcserror_s?
     #
-    check_function_exists(_wcserror_s HAVE__WCSERROR_S)
+    check_symbol_exists(_wcserror_s "string.h;wchar.h" HAVE__WCSERROR_S)
 endif(HAVE_STRERROR_R)
 
 #
@@ -441,7 +443,7 @@ endif(HAVE_STRERROR_R)
 # functions - in Visual Studio, for example, they're inline functions
 # calling a common external function.
 #
-check_symbol_exists(vsnprintf "stdio.h" HAVE_VSNPRINTF)
+check_symbol_exists(vsnprintf "stdio.h;stdarg.h" HAVE_VSNPRINTF)
 if(NOT HAVE_VSNPRINTF)
     message(FATAL_ERROR "vsnprintf() is required but wasn't found")
 endif(NOT HAVE_VSNPRINTF)
@@ -450,13 +452,13 @@ if(NOT HAVE_SNPRINTF)
     message(FATAL_ERROR "snprintf() is required but wasn't found")
 endif()
 
-check_function_exists(strlcpy HAVE_STRLCPY)
-check_function_exists(strlcat HAVE_STRLCAT)
-check_function_exists(asprintf HAVE_ASPRINTF)
-check_function_exists(vasprintf HAVE_VASPRINTF)
-check_function_exists(strtok_r HAVE_STRTOK_R)
+check_symbol_exists(strlcpy   "string.h" HAVE_STRLCPY)
+check_symbol_exists(strlcat   "string.h" HAVE_STRLCAT)
+check_symbol_exists(asprintf  "stdio.h"  HAVE_ASPRINTF)
+check_symbol_exists(vasprintf "stdio.h"  HAVE_VASPRINTF)
+check_symbol_exists(strtok_r  "string.h" HAVE_STRTOK_R)
 if(NOT WIN32)
-    check_function_exists(vsyslog HAVE_VSYSLOG)
+    check_symbol_exists(vsyslog "syslog.h;stdarg.h" HAVE_VSYSLOG)
 endif()
 
 #
@@ -491,7 +493,7 @@ if(WIN32)
     # We need winsock2.h and ws2tcpip.h.
     #
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_LIBRARIES ws2_32)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ws2_32)
     check_symbol_exists(getaddrinfo "winsock2.h;ws2tcpip.h" LIBWS2_32_HAS_GETADDRINFO)
     cmake_pop_check_state()
     if(LIBWS2_32_HAS_GETADDRINFO)
@@ -505,7 +507,7 @@ else(WIN32)
     # for Solaris and possibly other systems that picked up the
     # System V library split.
     #
-    check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
+    check_symbol_exists(getaddrinfo "sys/types.h;sys/socket.h;netdb.h" STDLIBS_HAVE_GETADDRINFO)
     if(NOT STDLIBS_HAVE_GETADDRINFO)
         #
         # Not found in the standard system libraries.
@@ -552,7 +554,7 @@ else(WIN32)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
 
     # DLPI needs putmsg under HPUX so test for -lstr while we're at it
-    check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
+    check_symbol_exists(putmsg "stropts.h" STDLIBS_HAVE_PUTMSG)
     if(NOT STDLIBS_HAVE_PUTMSG)
         check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
         if(LIBSTR_HAS_PUTMSG)
@@ -719,15 +721,18 @@ endif(WIN32)
 #
 # Do we have ffs(), and is it declared in <strings.h>?
 #
-check_function_exists(ffs HAVE_FFS)
-if(HAVE_FFS)
+check_symbol_exists(ffs "string.h" HAVE_FFS)
+if(NOT HAVE_FFS)
     #
-    # OK, we have ffs().  Is it declared in <strings.h>?
+    # Didn't find ffs() in <string.h>.  Is it declared in <strings.h>?
     #
     # This test fails if we don't have <strings.h> or if we do
     # but it doesn't declare ffs().
     #
     check_symbol_exists(ffs strings.h STRINGS_H_DECLARES_FFS)
+    if (STRINGS_H_DECLARES_FFS)
+        set(HAVE_FFS TRUE)
+    endif (STRINGS_H_DECLARES_FFS)
 endif()
 
 #
@@ -747,8 +752,8 @@ endif()
 # Before you is a C compiler.
 #
 cmake_push_check_state()
-set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
-check_function_exists(ether_hostton HAVE_ETHER_HOSTTON)
+list(APPEND CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
+check_symbol_exists(ether_hostton "" HAVE_ETHER_HOSTTON)
 if(HAVE_ETHER_HOSTTON)
     #
     # OK, we have ether_hostton().  Is it declared in <net/ethernet.h>?
@@ -1263,8 +1268,8 @@ else(WIN32)
         # libdlpi will have to add "-L/lib" option to "configure".
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_FLAGS "-L/lib")
-        set(CMAKE_REQUIRED_LIBRARIES dlpi)
+        list(APPEND CMAKE_REQUIRED_FLAGS "-L/lib")
+        list(APPEND CMAKE_REQUIRED_LIBRARIES dlpi)
         check_function_exists(dlpi_walk HAVE_LIBDLPI)
         cmake_pop_check_state()
         if(HAVE_LIBDLPI)
@@ -1381,7 +1386,7 @@ if(NOT WIN32)
     #
     if(NOT PCAP_TYPE STREQUAL "null")
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
         check_function_exists(getifaddrs HAVE_GETIFADDRS)
         cmake_pop_check_state()
         if(NOT HAVE_GETIFADDRS)
@@ -1722,8 +1727,8 @@ if(NOT DISABLE_DAG)
         # Check for various DAG API functions.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIRS})
-        set(CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARIES})
+        list(APPEND CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIRS})
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARIES})
         check_function_exists(dag_attach_stream HAVE_DAG_STREAMS_API)
         if(NOT HAVE_DAG_STREAMS_API)
             message(FATAL_ERROR "DAG library lacks streams support")
