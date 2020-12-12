@@ -256,7 +256,7 @@ pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 	 *	full.
 	 *
 	 *	"ps_ifdrop" counts packets dropped by the network
-	 *	inteface (regardless of whether they would have passed
+	 *	interface (regardless of whether they would have passed
 	 *	the input filter, of course).
 	 *
 	 * If packet filtering is not being done in the kernel:
@@ -268,7 +268,7 @@ pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 	 *	the userland filter.
 	 *
 	 *	"ps_ifdrop" counts packets dropped by the network
-	 *	inteface (regardless of whether they would have passed
+	 *	interface (regardless of whether they would have passed
 	 *	the input filter, of course).
 	 *
 	 * These statistics don't include packets not yet read from

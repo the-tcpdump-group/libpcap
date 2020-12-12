@@ -1419,7 +1419,7 @@ pcap_setfilter_npf(pcap_t *p, struct bpf_program *fp)
 }
 
 /*
- * We filter at user level, since the kernel driver does't process the packets
+ * We filter at user level, since the kernel driver doesn't process the packets
  */
 static int
 pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {

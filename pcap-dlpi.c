@@ -1813,7 +1813,7 @@ get_dlpi_ppa(register int fd, register const char *ifname, register u_int unit,
 	}
 	if (nl[NL_IFNET].n_value == 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "could't find %s kernel symbol",
+		    "couldn't find %s kernel symbol",
 		    nl[NL_IFNET].n_name);
 		return (PCAP_ERROR);
 	}

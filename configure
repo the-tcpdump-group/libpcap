@@ -4349,7 +4349,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    #
 		    V_SONAME_OPT="-Wl,+h,"
 		    #
-		    # By default, directories specifed with -L
+		    # By default, directories specified with -L
 		    # are added to the run-time search path, so
 		    # we don't add them in pcap-config.
 		    #
@@ -4410,7 +4410,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
 		    #
-		    # By default, directories specifed with -L
+		    # By default, directories specified with -L
 		    # are added to the run-time search path, so
 		    # we don't add them in pcap-config.
 		    #

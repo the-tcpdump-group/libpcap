@@ -198,7 +198,7 @@ main(int argc, char **argv)
 		sigemptyset(&action.sa_mask);
 
 		/*
-		 * Should SIGINT interrrupt, or restart, system calls?
+		 * Should SIGINT interrupt, or restart, system calls?
 		 */
 		action.sa_flags = sigrestart ? SA_RESTART : 0;
 

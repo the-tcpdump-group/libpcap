@@ -4205,7 +4205,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		return -1;
 
 	/*
-	 * Run user level packet filter by default. Will be overriden if
+	 * Run user level packet filter by default. Will be overridden if
 	 * installing a kernel filter succeeds.
 	 */
 	handlep->filter_in_userland = 1;

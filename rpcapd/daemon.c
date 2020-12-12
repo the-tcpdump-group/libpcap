@@ -395,7 +395,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			if (sock_send(sockctrl, NULL, (char *) &tls_header,
 			    TLS_RECORD_HEADER_LEN, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			{
-				// That failed; log a messsage and give up.
+				// That failed; log a message and give up.
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
 			}
@@ -405,7 +405,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			if (sock_send(sockctrl, NULL, (char *) &tls_alert,
 			    TLS_ALERT_LEN, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			{
-				// That failed; log a messsage and give up.
+				// That failed; log a message and give up.
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
 			}
@@ -1377,7 +1377,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 	// Send the reply.
 	if (sock_send(pars->sockctrl, pars->ssl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
-		// That failed; log a messsage and give up.
+		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 		return -1;
 	}
@@ -2423,7 +2423,7 @@ daemon_msg_updatefilter_req(uint8 ver, struct daemon_slpars *pars,
 
 	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), pcap_geterr(session->fp), PCAP_ERRBUF_SIZE))
 	{
-		// That failed; log a messsage and give up.
+		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 		return -1;
 	}
@@ -2473,7 +2473,7 @@ daemon_msg_setsampling_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 
 	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
-		// That failed; log a messsage and give up.
+		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 		return -1;
 	}

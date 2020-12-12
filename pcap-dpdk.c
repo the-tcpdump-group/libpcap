@@ -34,7 +34,7 @@ Description:
 
 Limitations:
 1. DPDK support will be on if DPDK is available. Please set DIR for --with-dpdk[=DIR] with ./configure or -DDPDK_DIR[=DIR] with cmake if DPDK is installed manually.
-2. Only support link libdpdk.so dynamicly, because the libdpdk.a will not work correctly.
+2. Only support link libdpdk.so dynamically, because the libdpdk.a will not work correctly.
 3. Only support read operation, and packet injection has not been supported yet.
 
 Usage:
@@ -55,7 +55,7 @@ $RTE_SDK/examples/l2fwd/$RTE_TARGET/l2fwd -dlibrte_pmd_e1000.so -dlibrte_pmd_ixg
 
 3. Compile libpcap with dpdk options.
 
-If DPDK has not been found automatically, you shall export DPDK envionment variable which are used for compiling DPDK. And then pass $RTE_SDK/$RTE_TARGET to --with-dpdk or -DDPDK_DIR
+If DPDK has not been found automatically, you shall export DPDK environment variable which are used for compiling DPDK. And then pass $RTE_SDK/$RTE_TARGET to --with-dpdk or -DDPDK_DIR
 
 export RTE_SDK={your DPDK base directory}
 export RTE_TARGET={your target name}
@@ -293,7 +293,7 @@ static int dpdk_read_with_timeout(pcap_t *p, struct rte_mbuf **pkts_burst, const
 		// In non-blocking mode, just read once, no matter how many packets are captured.
 		nb_rx = (int)rte_eth_rx_burst(pd->portid, 0, pkts_burst, burst_cnt);
 	}else{
-		// In blocking mode, read many times until packets are captured or timeout or break_loop is setted.
+		// In blocking mode, read many times until packets are captured or timeout or break_loop is set.
 		// if timeout_ms == 0, it may be blocked forever.
 		while (timeout_ms == 0 || sleep_ms < timeout_ms){
 			nb_rx = (int)rte_eth_rx_burst(pd->portid, 0, pkts_burst, burst_cnt);
@@ -343,14 +343,14 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			return PCAP_ERROR_BREAK;
 		}
 		// read once in non-blocking mode, or try many times waiting for timeout_ms.
-		// if timeout_ms == 0, it will be blocked until one packet arrives or break_loop is setted.
+		// if timeout_ms == 0, it will be blocked until one packet arrives or break_loop is set.
 		nb_rx = dpdk_read_with_timeout(p, pkts_burst, burst_cnt);
 		if (nb_rx == 0){
 			if (pd->nonblock){
 				RTE_LOG(DEBUG, USER1, "dpdk: no packets available in non-blocking mode.\n");
 			}else{
 				if (p->break_loop){
-					RTE_LOG(DEBUG, USER1, "dpdk: no packets available and break_loop is setted in blocking mode.\n");
+					RTE_LOG(DEBUG, USER1, "dpdk: no packets available and break_loop is set in blocking mode.\n");
 					p->break_loop = 0;
 					return PCAP_ERROR_BREAK;
 
@@ -962,7 +962,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 	return ret;
 }
 
-// device name for dpdk shoud be in the form as dpdk:number, such as dpdk:0
+// device name for dpdk should be in the form as dpdk:number, such as dpdk:0
 pcap_t * pcap_dpdk_create(const char *device, char *ebuf, int *is_ours)
 {
 	pcap_t *p=NULL;

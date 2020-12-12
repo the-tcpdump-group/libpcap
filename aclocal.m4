@@ -271,7 +271,7 @@ dnl with the flag in question, and the "treat warnings as errors" flag
 dnl set, and don't add the flag to the first argument if the compile
 dnl fails; this is for warning options cause problems that can't be
 dnl worked around.  If a third argument is supplied, a fourth argument
-dnl should also be supplied; it's a message desribing what the test
+dnl should also be supplied; it's a message describing what the test
 dnl program is checking.
 dnl
 AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
@@ -522,7 +522,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    #
 		    V_SONAME_OPT="-Wl,+h,"
 		    #
-		    # By default, directories specifed with -L
+		    # By default, directories specified with -L
 		    # are added to the run-time search path, so
 		    # we don't add them in pcap-config.
 		    #
@@ -583,7 +583,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
 		    #
-		    # By default, directories specifed with -L
+		    # By default, directories specified with -L
 		    # are added to the run-time search path, so
 		    # we don't add them in pcap-config.
 		    #

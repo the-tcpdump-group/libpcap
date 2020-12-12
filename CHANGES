@@ -336,7 +336,7 @@ Summary for 1.3.0 libpcap release
 Friday  December 9, 2011.  guy@alum.mit.edu.
 Summary for 1.2.1 libpcap release
 	Update README file.
-	Fix typoes in README.linux file.
+	Fix typos in README.linux file.
 	Clean up some compiler warnings.
 	Fix Linux compile problems and tests for ethtool.h.
 	Treat Debian/kFreeBSD and GNU/Hurd as systems with GNU

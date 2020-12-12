@@ -152,7 +152,7 @@ struct pcap_bpf {
 	 * As there is a header on the front size of the mmap'd buffer, only
 	 * some of the buffer is exposed to libpcap as a whole via bufsize;
 	 * zbufsize is the true size.  zbuffer tracks the current zbuf
-	 * assocated with buffer so that it can be used to decide which the
+	 * associated with buffer so that it can be used to decide which the
 	 * next buffer to read will be.
 	 */
 	u_char *zbuf1, *zbuf2, *zbuffer;

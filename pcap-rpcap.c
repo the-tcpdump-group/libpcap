@@ -1488,7 +1488,7 @@ error_nodiscard:
  * This function can be called in two cases:
  * - pcap_startcapture_remote() is called (we have to send the filter
  *   along with the 'start capture' command)
- * - we want to udpate the filter during a capture (i.e. pcap_setfilter()
+ * - we want to update the filter during a capture (i.e. pcap_setfilter()
  *   after the capture has been started)
  *
  * This function serializes the filter into the sending buffer ('sendbuf',

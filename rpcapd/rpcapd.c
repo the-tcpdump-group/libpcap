@@ -1161,7 +1161,7 @@ accept_connection(SOCKET listen_sock)
 			break;
 		}
 
-		// The accept() call can return this error when a signal is catched
+		// The accept() call can return this error when a signal is caught
 		// In this case, we have simply to ignore this error code
 		// Stevens, pg 124
 #ifdef _WIN32
@@ -1388,7 +1388,7 @@ main_active(void *ptr)
 			    hostlist_copy, nullAuthAllowed, uses_ssl);
 		}
 
-		// If the connection is closed by the user explicitely, don't try to connect to it again
+		// If the connection is closed by the user explicitly, don't try to connect to it again
 		// just exit the program
 		if (activeclose == 1)
 			break;
