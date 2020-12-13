@@ -568,7 +568,7 @@ Tue.	September 19, 2006. ken@xelerance.com. Summary for 0.9.5 libpcap release
 	 beginning+link-layer
 	Add DLT/LINKTYPE for carrying FRF.16 Multi-link Frame Relay
 	Fix allocation of buffer for list of link-layer types
-	Added a new DLT and LINKTYPE value for ARINC 653 Interpartition Communcation Messages
+	Added a new DLT and LINKTYPE value for ARINC 653 Interpartition Communication Messages
 	Fixed a typo in a DLT value: it should start with DLT_ and not LINKTYPE_
 	Redefined DLT_CAN20B and LINKTYPE_CAN20B as #190 (as this is the right value for CAN).
 	Added definition for DLT_A429 and LINKTYPE_A429 as #184.
