@@ -259,6 +259,9 @@
 /* Define to 1 if you have the `_wcserror_s' function. */
 #cmakedefine HAVE__WCSERROR_S 1
 
+/* Define to 1 if you have the `PacketGetTimestampModes' function. */
+#cmakedefine HAVE_PACKET_GET_TIMESTAMP_MODES 1
+
 /* Define to 1 if you have the `PacketIsLoopbackAdapter' function. */
 #cmakedefine HAVE_PACKET_IS_LOOPBACK_ADAPTER 1
 
