@@ -1406,7 +1406,7 @@ pcap_can_set_rfmon_npf(pcap_t *p)
 }
 
 pcap_t *
-pcap_create_interface(const char *device _U_, char *ebuf _U_)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 #ifdef HAVE_PACKET_GET_TIMESTAMP_MODES
