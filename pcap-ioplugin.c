@@ -73,7 +73,7 @@ stdio_open_read(const char *fname, char *errbuf)
         if (fname[0] == '-' && fname[1] == '\0')
         {
                 fp = stdin;
-                if (stdin == NULL) {
+                if (!stdin || ferror(stdin)) {
                         snprintf(errbuf, PCAP_ERRBUF_SIZE,
                                  "The standard input is not open");
                         return (NULL);
@@ -110,7 +110,7 @@ stdio_open_write(const char *fname, char *errbuf)
 
 	if (strcmp(fname, "-") == 0) {
 		fp = stdout;
-                if (stdout == NULL) {
+                if (!stdout || ferror(stdout)) {
                         snprintf(errbuf, PCAP_ERRBUF_SIZE,
                                  "The standard input is not open");
                         return (NULL);
