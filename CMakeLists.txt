@@ -1042,6 +1042,7 @@ set(PROJECT_SOURCE_LIST_C
     nametoaddr.c
     optimize.c
     pcap-common.c
+    pcap-options.c
     pcap.c
     savefile.c
     sf-pcapng.c
@@ -2079,7 +2080,7 @@ else()
         set(REENTRANT_PARSER "%define api.pure")
     endif()
 endif()
-    
+
 message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
