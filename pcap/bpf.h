@@ -263,9 +263,16 @@ struct bpf_insn {
 
 #endif /* __LINUX_FILTER_H__ */
 
+PCAP_AVAILABLE_0_4
 PCAP_API u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+
+PCAP_AVAILABLE_0_6
 PCAP_API int	bpf_validate(const struct bpf_insn *f, int len);
+
+PCAP_AVAILABLE_0_4
 PCAP_API char	*bpf_image(const struct bpf_insn *, int);
+
+PCAP_AVAILABLE_0_6
 PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
 /*

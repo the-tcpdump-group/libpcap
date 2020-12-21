@@ -382,6 +382,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_CHAR_ENC_LOCAL	0x00000000U	/* strings are in the local character encoding */
 #define PCAP_CHAR_ENC_UTF_8	0x00000001U	/* strings are in UTF-8 */
 
+PCAP_AVAILABLE_1_10
 PCAP_API int	pcap_init(unsigned int, char *);
 
 /*
@@ -389,31 +390,66 @@ PCAP_API int	pcap_init(unsigned int, char *);
  * thread-safe, can behave weirdly with WinPcap).  Callers
  * should use pcap_findalldevs() and use the first device.
  */
+PCAP_AVAILABLE_0_4
 PCAP_API char	*pcap_lookupdev(char *)
 PCAP_DEPRECATED(pcap_lookupdev, "use 'pcap_findalldevs' and use the first device");
 
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
 
+PCAP_AVAILABLE_1_0
 PCAP_API pcap_t	*pcap_create(const char *, char *);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_set_snaplen(pcap_t *, int);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_set_promisc(pcap_t *, int);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_can_set_rfmon(pcap_t *);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_set_rfmon(pcap_t *, int);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_set_timeout(pcap_t *, int);
+
+PCAP_AVAILABLE_1_2
 PCAP_API int	pcap_set_tstamp_type(pcap_t *, int);
+
+PCAP_AVAILABLE_1_5
 PCAP_API int	pcap_set_immediate_mode(pcap_t *, int);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_set_buffer_size(pcap_t *, int);
+
+PCAP_AVAILABLE_1_5
 PCAP_API int	pcap_set_tstamp_precision(pcap_t *, int);
+
+PCAP_AVAILABLE_1_5
 PCAP_API int	pcap_get_tstamp_precision(pcap_t *);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_activate(pcap_t *);
 
+PCAP_AVAILABLE_1_2
 PCAP_API int	pcap_list_tstamp_types(pcap_t *, int **);
+
+PCAP_AVAILABLE_1_2
 PCAP_API void	pcap_free_tstamp_types(int *);
+
+PCAP_AVAILABLE_1_2
 PCAP_API int	pcap_tstamp_type_name_to_val(const char *);
+
+PCAP_AVAILABLE_1_2
 PCAP_API const char *pcap_tstamp_type_val_to_name(int);
+
+PCAP_AVAILABLE_1_2
 PCAP_API const char *pcap_tstamp_type_val_to_description(int);
 
 #ifdef __linux__
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_set_protocol_linux(pcap_t *, int);
 #endif
 
@@ -475,13 +511,25 @@ PCAP_API int	pcap_set_protocol_linux(pcap_t *, int);
 #define PCAP_TSTAMP_PRECISION_MICRO	0	/* use timestamps with microsecond precision, default */
 #define PCAP_TSTAMP_PRECISION_NANO	1	/* use timestamps with nanosecond precision */
 
+PCAP_AVAILABLE_0_4
 PCAP_API pcap_t	*pcap_open_live(const char *, int, int, int, char *);
+
+PCAP_AVAILABLE_0_6
 PCAP_API pcap_t	*pcap_open_dead(int, int);
+
+PCAP_AVAILABLE_1_5
 PCAP_API pcap_t	*pcap_open_dead_with_tstamp_precision(int, int, u_int);
+
+PCAP_AVAILABLE_1_5
 PCAP_API pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
+
 #ifdef _WIN32
+  PCAP_AVAILABLE_1_5
   PCAP_API pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int, char *);
+
   PCAP_API pcap_t  *pcap_hopen_offline(intptr_t, char *);
   /*
    * If we're building libpcap, these are internal routines in savefile.c,
@@ -503,51 +551,126 @@ PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
 	pcap_hopen_offline(_get_osfhandle(_fileno(f)), b)
   #endif
 #else /*_WIN32*/
+  PCAP_AVAILABLE_1_5
   PCAP_API pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
+
+  PCAP_AVAILABLE_0_9
   PCAP_API pcap_t	*pcap_fopen_offline(FILE *, char *);
 #endif /*_WIN32*/
 
+PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_close(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API const u_char *pcap_next(pcap_t *, struct pcap_pkthdr *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int 	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
+
+PCAP_AVAILABLE_0_8
 PCAP_API void	pcap_breakloop(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *);
+
+PCAP_AVAILABLE_0_9
 PCAP_API int 	pcap_setdirection(pcap_t *, pcap_direction_t);
+
+PCAP_AVAILABLE_0_7
 PCAP_API int	pcap_getnonblock(pcap_t *, char *);
+
+PCAP_AVAILABLE_0_7
 PCAP_API int	pcap_setnonblock(pcap_t *, int, char *);
+
+PCAP_AVAILABLE_0_9
 PCAP_API int	pcap_inject(pcap_t *, const void *, size_t);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_sendpacket(pcap_t *, const u_char *, int);
+
+PCAP_AVAILABLE_1_0
 PCAP_API const char *pcap_statustostr(int);
+
+PCAP_AVAILABLE_0_4
 PCAP_API const char *pcap_strerror(int);
+
+PCAP_AVAILABLE_0_4
 PCAP_API char	*pcap_geterr(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_perror(pcap_t *, const char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 	    bpf_u_int32);
+
+PCAP_AVAILABLE_0_5
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
+
+/* XXX - this took two arguments in 0.4 and 0.5 */
+PCAP_AVAILABLE_0_6
 PCAP_API void	pcap_freecode(struct bpf_program *);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_offline_filter(const struct bpf_program *,
 	    const struct pcap_pkthdr *, const u_char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_datalink(pcap_t *);
+
+PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_datalink_ext(pcap_t *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_list_datalinks(pcap_t *, int **);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_set_datalink(pcap_t *, int);
+
+PCAP_AVAILABLE_0_8
 PCAP_API void	pcap_free_datalinks(int *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_datalink_name_to_val(const char *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API const char *pcap_datalink_val_to_name(int);
+
+PCAP_AVAILABLE_0_8
 PCAP_API const char *pcap_datalink_val_to_description(int);
+
+PCAP_AVAILABLE_1_10
 PCAP_API const char *pcap_datalink_val_to_description_or_dlt(int);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_snapshot(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_is_swapped(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_major_version(pcap_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_minor_version(pcap_t *);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_bufsize(pcap_t *);
 
 /* XXX */
+PCAP_AVAILABLE_0_4
 PCAP_API FILE	*pcap_file(pcap_t *);
+
 #ifdef _WIN32
 /*
  * This probably shouldn't have been kept in WinPcap; most if not all
@@ -556,9 +679,11 @@ PCAP_API FILE	*pcap_file(pcap_t *);
  * with a pcap_t (there's no guarantee that there is one), we can add
  * a Windows-only pcap_handle() API that returns the HANDLE.
  */
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_fileno(pcap_t *)
 PCAP_DEPRECATED(pcap_fileno, "use 'pcap_handle'");
 #else /* _WIN32 */
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_fileno(pcap_t *);
 #endif /* _WIN32 */
 
@@ -566,9 +691,13 @@ PCAP_API int	pcap_fileno(pcap_t *);
   PCAP_API int	pcap_wsockinit(void);
 #endif
 
+PCAP_AVAILABLE_0_4
 PCAP_API pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
+
 #ifdef _WIN32
+  PCAP_AVAILABLE_0_9
   PCAP_API pcap_dumper_t *pcap_dump_hopen(pcap_t *, intptr_t);
+
   /*
    * If we're building libpcap, this is an internal routine in sf-pcap.c, so
    * we must not define it as a macro.
@@ -587,17 +716,35 @@ PCAP_API pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 	pcap_dump_hopen(p, _get_osfhandle(_fileno(f)))
   #endif
 #else /*_WIN32*/
+  PCAP_AVAILABLE_0_9
   PCAP_API pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
 #endif /*_WIN32*/
+
+PCAP_AVAILABLE_1_7
 PCAP_API pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API FILE	*pcap_dump_file(pcap_dumper_t *);
+
+PCAP_AVAILABLE_0_9
 PCAP_API long	pcap_dump_ftell(pcap_dumper_t *);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int64_t	pcap_dump_ftell64(pcap_dumper_t *);
+
+PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_dump_flush(pcap_dumper_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_dump_close(pcap_dumper_t *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
 
+PCAP_AVAILABLE_0_7
 PCAP_API int	pcap_findalldevs(pcap_if_t **, char *);
+
+PCAP_AVAILABLE_0_7
 PCAP_API void	pcap_freealldevs(pcap_if_t *);
 
 /*
@@ -615,6 +762,7 @@ PCAP_API void	pcap_freealldevs(pcap_if_t *);
  *
  * On Windows, the string is constructed at run time.
  */
+PCAP_AVAILABLE_0_8
 PCAP_API const char *pcap_lib_version(void);
 
 #if defined(_WIN32)
@@ -650,7 +798,10 @@ PCAP_API const char *pcap_lib_version(void);
 
   PCAP_API HANDLE pcap_getevent(pcap_t *p);
 
+  PCAP_AVAILABLE_1_8
   PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t *);
+
+  PCAP_AVAILABLE_1_8
   PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t *);
 
   PCAP_API pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
@@ -693,7 +844,10 @@ PCAP_API const char *pcap_lib_version(void);
    * UN*X definitions
    */
 
+  PCAP_AVAILABLE_0_8
   PCAP_API int	pcap_get_selectable_fd(pcap_t *);
+
+  PCAP_AVAILABLE_1_9
   PCAP_API const struct timeval *pcap_get_required_select_timeout(pcap_t *);
 
 #endif /* _WIN32/MSDOS/UN*X */
@@ -926,10 +1080,15 @@ struct pcap_rmtauth
  * For opening a remote capture, pcap_open() is currently the only
  * API available.
  */
+PCAP_AVAILABLE_1_9
 PCAP_API pcap_t	*pcap_open(const char *source, int snaplen, int flags,
 	    int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_createsrcstr(char *source, int type, const char *host,
 	    const char *port, const char *name, char *errbuf);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
 	    char *port, char *name, char *errbuf);
 
@@ -952,6 +1111,7 @@ PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
  * For listing remote capture devices, pcap_findalldevs_ex() is currently
  * the only API available.
  */
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_findalldevs_ex(const char *source,
 	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf);
 
@@ -1022,6 +1182,7 @@ struct pcap_samp
 /*
  * New functions.
  */
+PCAP_AVAILABLE_1_9
 PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 /*
@@ -1031,15 +1192,24 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 /* Maximum length of an host name (needed for the RPCAP active mode) */
 #define RPCAP_HOSTLIST_SIZE 1024
 
+PCAP_AVAILABLE_1_9
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, char *errbuf);
+
+PCAP_AVAILABLE_1_10
 PCAP_API SOCKET	pcap_remoteact_accept_ex(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_remoteact_list(char *hostlist, char sep, int size,
 	    char *errbuf);
+
+PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf);
+
+PCAP_AVAILABLE_1_9
 PCAP_API void	pcap_remoteact_cleanup(void);
 
 #ifdef __cplusplus
