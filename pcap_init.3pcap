@@ -91,5 +91,9 @@ is filled in with an appropriate error message.
 is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
+.SH BACKWARD COMPATIBILITY
+This function became available in libpcap release 1.10.0.  In previous
+releases, on Windows, all strings supplied as arguments, and all strings
+returned to the caller, are in the local character encoding.
 .SH SEE ALSO
 .BR pcap (3PCAP)

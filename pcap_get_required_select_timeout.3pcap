@@ -160,6 +160,16 @@ should be changed to call it for each call to
 or
 .BR kevent ()
 even if the code must also work with libpcap 1.9.x.
+.SH BACKWARD COMPATIBILITY
+This function became available in libpcap release 1.9.0.  In previous
+releases,
+.BR select (),
+.BR poll (),
+.BR epoll_wait (),
+and
+.BR kevent ()
+could not be used for devices that don't provide a selectable file
+descriptor.
 .SH SEE ALSO
 .BR pcap (3PCAP),
 .BR pcap_get_selectable_fd (3PCAP),
