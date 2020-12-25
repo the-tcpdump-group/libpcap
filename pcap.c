@@ -4080,8 +4080,18 @@ pcap_close(pcap_t *p)
 // C:\Windows\System32) to the relative path of the DLL, so that the DLL
 // is always loaded from an absolute path (it's no longer possible to
 // load modules from the application folder).
-// This solves the DLL Hijacking issue discovered in August 2010
-// http://blog.metasploit.com/2010/08/exploiting-dll-hijacking-flaws.html
+// This solves the DLL Hijacking issue discovered in August 2010:
+//
+// https://blog.rapid7.com/2010/08/23/exploiting-dll-hijacking-flaws/
+// https://blog.rapid7.com/2010/08/23/application-dll-load-hijacking/
+// (the purported Rapid7 blog post link in the first of those two links
+// is broken; the second of those links works.)
+//
+// If any links there are broken from all the content shuffling Rapid&
+// did, see archived versions of the posts at their original homes, at
+//
+// https://web.archive.org/web/20110122175058/http://blog.metasploit.com/2010/08/exploiting-dll-hijacking-flaws.html
+// https://web.archive.org/web/20100828112111/http://blog.rapid7.com/?p=5325
 //
 pcap_code_handle_t
 pcap_load_code(const char *name)
