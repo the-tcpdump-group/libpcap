@@ -1177,7 +1177,7 @@ pcap_activate_npf(pcap_t *p)
 		{
 			pcap_fmt_errmsg_for_win32_err(p->errbuf,
 			    PCAP_ERRBUF_SIZE, GetLastError(),
-			    "failed to set hardware filter to promiscuous mode);
+			    "failed to set hardware filter to promiscuous mode");
 			goto bad;
 		}
 	}
