@@ -1175,7 +1175,9 @@ pcap_activate_npf(pcap_t *p)
 
 		if (PacketSetHwFilter(pw->adapter,NDIS_PACKET_TYPE_PROMISCUOUS) == FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
+			pcap_fmt_errmsg_for_win32_err(p->errbuf,
+			    PCAP_ERRBUF_SIZE, GetLastError(),
+			    "failed to set hardware filter to promiscuous mode);
 			goto bad;
 		}
 	}
@@ -1193,7 +1195,9 @@ pcap_activate_npf(pcap_t *p)
 			NDIS_PACKET_TYPE_BROADCAST |
 			NDIS_PACKET_TYPE_MULTICAST) == FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
+			pcap_fmt_errmsg_for_win32_err(p->errbuf,
+			    PCAP_ERRBUF_SIZE, GetLastError(),
+			    "failed to set hardware filter to non-promiscuous mode");
 			goto bad;
 		}
 	}
