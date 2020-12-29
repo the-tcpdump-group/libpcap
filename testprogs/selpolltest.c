@@ -74,7 +74,7 @@ main(int argc, char **argv)
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *devlist;
-	int selectable_fd;
+	int selectable_fd = -1;
 	const struct timeval *required_timeout;
 	int status;
 	int packet_count;
