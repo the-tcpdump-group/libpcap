@@ -201,7 +201,7 @@ Sunday, June 24, 2018, by mcr@sandelman.ca
     Make VLAN filter handle both metadata and inline tags
     D-Bus captures can now be up to 128MB in size
     Added LORATAP DLT value
-    Added DLT_VSOCK for https://qemu-project.org/Features/VirtioVsock
+    Added DLT_VSOCK for http://qemu-project.org/Features/VirtioVsock
     probe_devices() fixes not to overrun buffer for name of device
     Add linux-specific pcap_set_protocol_linux() to allow specifying a specific capture protocol.
     RDMA sniffing support for pcap
@@ -383,7 +383,7 @@ Summary for 1.5.0 libpcap release
 	    than the mcr repository
 	Checks added for malloc()/realloc()/etc. failures
 	Fixed build on Solaris 11
-	Support filtering E1 SS7 traffic on MTP2 layer Annex A
+	Support filtering filtering E1 SS7 traffic on MTP2 layer Annex A
 	Use "ln -s" to link man pages by default
         Add support for getting nanosecond-resolution time stamps when
 	    capturing and reading capture files
@@ -477,7 +477,7 @@ Summary for 1.2 libpcap release
         Noted real nature of LINKTYPE_ARCNET.
         Add a link-layer type for DVB-CI.
         Fix configure-script discovery of VLAN acceleration support.
-         see https://netoptimizer.blogspot.com/2010/09/tcpdump-vs-vlan-tags.html
+         see http://netoptimizer.blogspot.com/2010/09/tcpdump-vs-vlan-tags.html
         Linux, HP-UX, AIX, NetBSD and OpenBSD compilation/conflict fixes.
         Protect against including AIX 5.x's <net/bpf.h> having been included.
         Add DLT_DBUS, for raw D-Bus messages.
@@ -928,7 +928,7 @@ v0.3 Sat Nov 30 20:56:27 PST 1996
 
 v0.2.1 Sun Jul 14 03:02:26 PDT 1996
 
-- Fixes for HP-UX 10. Thanks in part to Thomas Wolfram
+- Fixes for HP-UX 10. Thanks in part to to Thomas Wolfram
   (wolf@prz.tu-berlin.de) and Rick Jones (raj@hpisrdq.cup.hp.com)
 
 - Added support for SINIX. Thanks to Andrej Borsenkow
