@@ -269,7 +269,7 @@
       __pragma(warning(disable:4127)) \
       __pragma(warning(disable:4242)) \
       __pragma(warning(disable:4244)) \
-      __pragma(warning(disable:4702)) 
+      __pragma(warning(disable:4702))
   #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic

@@ -2079,7 +2079,7 @@ else()
         set(REENTRANT_PARSER "%define api.pure")
     endif()
 endif()
-    
+
 message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
