@@ -14,7 +14,7 @@ os:
   - linux
   - osx
 
-dist: bionic
+dist: focal
 
 compiler:
   - gcc
