@@ -3880,7 +3880,7 @@ static int pcap_handle_packet_mmap(
 	}
 
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		struct bpf_aux_data aux_data;
+		struct pcap_bpf_aux_data aux_data;
 
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
