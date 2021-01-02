@@ -592,7 +592,7 @@ pcap_funcptr_t		pcap_find_function(pcap_code_handle_t, const char *);
  * Linux kernel when the kernel rejects the filter (requiring us to
  * run it in userland).  It contains VLAN tag information.
  */
-struct bpf_aux_data {
+struct pcap_bpf_aux_data {
 	u_short vlan_tag_present;
 	u_short vlan_tag;
 };
@@ -602,7 +602,7 @@ struct bpf_aux_data {
  * argument.
  */
 u_int	pcap_filter_with_aux_data(const struct bpf_insn *,
-    const u_char *, u_int, u_int, const struct bpf_aux_data *);
+    const u_char *, u_int, u_int, const struct pcap_bpf_aux_data *);
 
 /*
  * Filtering routine that doesn't.
