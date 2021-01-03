@@ -105,9 +105,18 @@
    * don't whine about _BSD_SOURCE being deprecated; we still have
    * to define _BSD_SOURCE to handle older versions of GNU libc that
    * don't support _DEFAULT_SOURCE.
+   *
+   * But, if it's already defined, don't define it, so that we don't
+   * get a warning of it being redefined if it's defined as, for
+   * example, 1.
    */
-  #define _DEFAULT_SOURCE
-  #define _BSD_SOURCE
+  #ifndef _DEFAULT_SOURCE
+    #define _DEFAULT_SOURCE
+  #endif
+  /* Avoid redefining _BSD_SOURCE if it's already defined as for ex. 1 */
+  #ifndef _BSD_SOURCE
+    #define _BSD_SOURCE
+  #endif
 #endif
 
 #endif
