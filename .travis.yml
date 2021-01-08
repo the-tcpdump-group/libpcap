@@ -111,7 +111,7 @@ script:
   #
   # Why that happens is as yet unknown.
   #
-  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then echo "Coverity build - nothing more to do"; exit 0; fi
+  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then exit 0; fi
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo travis_fold:start:script.configure; fi
   - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
