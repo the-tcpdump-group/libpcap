@@ -109,9 +109,11 @@ script:
   # COVERITY_SCAN_BRANCH was equal to 0 indicates that the premature
   # exit causes the hang.
   #
-  # Why that happens is as yet unknown.
+  # Why that happens is as yet unknown.  The Travis maintainers
+  # recommended using travis_terminate instead, so that's what
+  # we're doing.
   #
-  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then exit 0; fi
+  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then travis_terminate 0; fi
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo travis_fold:start:script.configure; fi
   - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
