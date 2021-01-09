@@ -55,6 +55,10 @@ env:
     # usual processing: false.
     - coverity_scan_script_test_mode=false
     - MAKEFLAGS='-j 2' # Travis CI VMs come with 2 cores
+    #
+    # Debugging the coverity_scan hangs
+    #
+    - "PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'"
   matrix:
     - REMOTE=disable CMAKE=no
     - ENABLE_REMOTE="" CMAKE=yes
@@ -113,10 +117,12 @@ script:
   # recommended using travis_terminate instead, so that's what
   # we're doing.
   #
-  # On the other hand, using travis_terminate on macOS appears to
-  # *cause* the problem, so we do so only on Linux.
+  # Added some debugging stuff, although, with the shutdown of
+  # travis-ci.org, that won't matter if we end up shifting
+  # to a different CI platform.
   #
-  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then if [ "$TRAVIS_OS_NAME" = linux ]; then travis_terminate 0; else exit 0; fi; fi
+  - set -x
+  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then travis_terminate 0; fi
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo travis_fold:start:script.configure; fi
   - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
