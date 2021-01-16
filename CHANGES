@@ -1,3 +1,9 @@
+Monthday, Month DD, YYYY
+  Summary for 1.10.1 libpcap release (so far!)
+    Building and testing:
+      Rename struct bpf_aux_data to avoid NetBSD compile errors
+      Squelch some compiler warnings
+
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
     Add support for capturing on DPDK devices
