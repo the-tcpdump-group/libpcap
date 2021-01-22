@@ -1,5 +1,7 @@
 Monthday, Month DD, YYYY
   Summary for 1.10.1 libpcap release (so far!)
+    Packet filtering:
+        Fix "type XXX subtype YYY" giving a parse error
     Building and testing:
       Rename struct bpf_aux_data to avoid NetBSD compile errors
       Squelch some compiler warnings
