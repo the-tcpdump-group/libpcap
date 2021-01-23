@@ -60,6 +60,7 @@ LIBS = @LIBS@
 CROSSFLAGS=
 CFLAGS = @CFLAGS@   ${CROSSFLAGS}
 LDFLAGS = @LDFLAGS@ ${CROSSFLAGS}
+YFLAGS = @YFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
@@ -530,7 +531,7 @@ grammar.y: $(srcdir)/grammar.y.in ./config.status
 	mv $@.tmp $@
 
 grammar.c: grammar.y
-	$(YACC) -p pcap_ -o grammar.c -d $<
+	$(YACC) $(YFLAGS) -p pcap_ -o grammar.c -d $<
 grammar.h: grammar.c
 ## Recover from the removal of $@
 	@if test -f $@; then :; else \

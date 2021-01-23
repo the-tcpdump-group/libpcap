@@ -1785,6 +1785,20 @@ case "$YACC" in
 	else
 		REENTRANT_PARSER="%define api.pure"
 	fi
+
+	#
+	# Bison 2.5 and later warn, at least when run with -y, about
+	# use of features not supported by POSIX YACC; we don't care,
+	# we only care about Bison and Berkeley YACC, so we suppress
+	# that warning.
+	#
+	if test "$bison_major_version" -lt 2 -o \
+	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 5 \)
+	then
+		YFLAGS=""
+	else
+		YFLAGS="-Wno-yacc"
+	fi
 	;;
 esac
 AC_SUBST(REENTRANT_PARSER)
