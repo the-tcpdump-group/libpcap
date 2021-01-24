@@ -103,7 +103,20 @@ install:
 before_script:
 
 script:
-  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then echo "Coverity build - nothing more to do"; exit 0; fi
+  #
+  # XXX - on Linux with ppc64le, s390x, and arm64, Travis gets etuck
+  # after executing the next line; testing by exiting if
+  # COVERITY_SCAN_BRANCH was equal to 0 indicates that the premature
+  # exit causes the hang.
+  #
+  # Why that happens is as yet unknown.  The Travis maintainers
+  # recommended using travis_terminate instead, so that's what
+  # we're doing.
+  #
+  # On the other hand, using travis_terminate on macOS appears to
+  # *cause* the problem, so we do so only on Linux.
+  #
+  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then if [ "$TRAVIS_OS_NAME" = linux ]; then travis_terminate 0; else exit 0; fi; fi
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo travis_fold:start:script.configure; fi
   - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
