@@ -60,7 +60,6 @@ LIBS = @LIBS@
 CROSSFLAGS=
 CFLAGS = @CFLAGS@   ${CROSSFLAGS}
 LDFLAGS = @LDFLAGS@ ${CROSSFLAGS}
-YFLAGS = @YFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
@@ -80,7 +79,7 @@ INSTALL_DATA = @INSTALL_DATA@
 RANLIB = @RANLIB@
 
 LEX = @LEX@
-YACC = @YACC@
+BISON_BYACC = @BISON_BYACC@
 
 # Explicitly define compilation rule since SunOS 4's make doesn't like gcc.
 # Also, gcc does not remove the .o before forking 'as', which can be a
@@ -531,7 +530,7 @@ grammar.y: $(srcdir)/grammar.y.in ./config.status
 	mv $@.tmp $@
 
 grammar.c: grammar.y
-	$(YACC) $(YFLAGS) -p pcap_ -o grammar.c -d $<
+	$(BISON_BYACC) -p pcap_ -o grammar.c -d $<
 grammar.h: grammar.c
 ## Recover from the removal of $@
 	@if test -f $@; then :; else \

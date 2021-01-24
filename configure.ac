@@ -1739,27 +1739,68 @@ fi
 
 #
 # Look for yacc/bison/byacc.
+# If it's Bison, we do not want -y, as 1) we will be using -o to cause
+# the output for XXX.y to be written to XXX.c and 2) we don't want
+# it to issue warnings about stuff not supported by POSIX YACC - we
+# want to use that stuff, and don't care whether plain YACC supports
+# it or not, we require either Bison or Berkeley YACC.
 #
-AC_PROG_YACC
-
-case "$YACC" in
-
-*yacc)
+BISON_BYACC=""
+#
+# Look for Bison.
+#
+AC_CHECK_PROGS(BISON_BYACC, bison)
+if test x"$BISON_BYACC" != x; then
 	#
-	# Make sure this is Berkeley YACC, not AT&T YACC; the latter
-	# doesn't support reentrant parsers.  Run it with "-V";
-	# that succeeds and reports the version number with
-	# Berkeley YACC, but will (probably) fail with various
-	# vendor flavors of AT&T YACC.
+	# We found Bison.
 	#
-	AC_CACHE_CHECK([for capable yacc], tcpdump_cv_capable_yacc,
-	    if $YACC -V >/dev/null 2>&1; then
-		tcpdump_cv_capable_yacc=yes
-	    else
-		tcpdump_cv_capable_yacc=insufficient
-	    fi)
-	if test $tcpdump_cv_capable_yacc = insufficient ; then
-	    AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
+	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	bison_major_version=`$BISON_BYACC -V | sed -n 's/.* \(@<:@1-9@:>@@<:@0-9@:>@*\)\.@<:@1-9@:>@@<:@0-9.@:>@*/\1/p'`
+	bison_minor_version=`$BISON_BYACC -V | sed -n 's/.* @<:@1-9@:>@@<:@0-9@:>@*\.\(@<:@1-9@:>@@<:@0-9@:>@*\).*/\1/p'`
+	if test "$bison_major_version" -lt 2 -o \
+	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
+	then
+		REENTRANT_PARSER="%pure-parser"
+	else
+		REENTRANT_PARSER="%define api.pure"
+	fi
+else
+	#
+	# We didn't find Bison; check for Berkeley YACC, under the
+	# names byacc and yacc.
+	#
+	AC_CHECK_PROGS(BISON_BYACC, byacc yacc)
+	if x"$BISON_BYACC" != x; then
+		#
+		# Make sure this is Berkeley YACC, not AT&T YACC;
+		# the latter doesn't support reentrant parsers.
+		# Run it with "-V"; that succeeds and reports the
+		# version number with Berkeley YACC, but will
+		# (probably) fail with various vendor flavors
+		# of AT&T YACC.
+		#
+		# Hopefully this also eliminates any versions
+		# of Berkeley YACC that don't support reentrant
+		# parsers, if there are any.
+		#
+		AC_CACHE_CHECK([for capable yacc], tcpdump_cv_capable_yacc,
+		    if $BISON_BYACC -V >/dev/null 2>&1; then
+			tcpdump_cv_capable_yacc=yes
+		    else
+			tcpdump_cv_capable_yacc=insufficient
+		    fi)
+		if test $tcpdump_cv_capable_yacc = insufficient ; then
+		    AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
+ libpcap requires Bison, a newer version of Berkeley YACC with support
+ for reentrant parsers, or another YACC compatible with them.])
+		fi
+	else
+		#
+		# OK, we found neither byacc nor yacc.
+		#
+		AC_MSG_ERROR([Neither bison, byacc, nor yacc was found.
  libpcap requires Bison, a newer version of Berkeley YACC with support
  for reentrant parsers, or another YACC compatible with them.])
 	fi
@@ -1769,38 +1810,8 @@ case "$YACC" in
 	# "%pure-parser".
 	#
 	REENTRANT_PARSER="%pure-parser"
-	;;
-
-*)
-	#
-	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
-	# "%pure-parser".
-	#
-	bison_major_version=`$YACC -V | sed -n 's/.* \(@<:@1-9@:>@@<:@0-9@:>@*\)\.@<:@1-9@:>@@<:@0-9.@:>@*/\1/p'`
-	bison_minor_version=`$YACC -V | sed -n 's/.* @<:@1-9@:>@@<:@0-9@:>@*\.\(@<:@1-9@:>@@<:@0-9@:>@*\).*/\1/p'`
-	if test "$bison_major_version" -lt 2 -o \
-	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
-	then
-		REENTRANT_PARSER="%pure-parser"
-	else
-		REENTRANT_PARSER="%define api.pure"
-	fi
-
-	#
-	# Bison 2.5 and later warn, at least when run with -y, about
-	# use of features not supported by POSIX YACC; we don't care,
-	# we only care about Bison and Berkeley YACC, so we suppress
-	# that warning.
-	#
-	if test "$bison_major_version" -lt 2 -o \
-	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 5 \)
-	then
-		YFLAGS=""
-	else
-		YFLAGS="-Wno-yacc"
-	fi
-	;;
-esac
+fi
+AC_SUBST(BISON_BYACC)
 AC_SUBST(REENTRANT_PARSER)
 
 #
