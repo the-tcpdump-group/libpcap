@@ -2078,24 +2078,6 @@ else()
     else()
         set(REENTRANT_PARSER "%define api.pure")
     endif()
-
-    #
-    # Bison 2.5 and later warn, at least when run with -y, about
-    # use of features not supported by POSIX YACC; we don't care,
-    # we only care about Bison and Berkeley YACC, so we suppress
-    # that warning.
-    #
-    if (bison_major_minor VERSION_LESS "2.5")
-        set(YFLAGS "")
-    else()
-        set(YFLAGS "-Wno-yacc")
-    endif()
-
-    #
-    # XXX - we run with -y because that's what AC_PROG_YACC in
-    # autoconf causes to happen; do we need to do that?
-    #
-    set(YACC_COMPATIBILITY_FLAG "-y")
 endif()
 
 message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
@@ -2106,7 +2088,7 @@ message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/grammar.c ${CMAKE_CURRENT_BINARY_DIR}/grammar.h
     SOURCE ${pcap_BINARY_DIR}/grammar.y
-    COMMAND ${YACC_EXECUTABLE} ${YACC_COMPATIBILITY_FLAG} ${YFLAGS} -p pcap_ -o ${CMAKE_CURRENT_BINARY_DIR}/grammar.c -d ${pcap_BINARY_DIR}/grammar.y
+    COMMAND ${YACC_EXECUTABLE} -p pcap_ -o ${CMAKE_CURRENT_BINARY_DIR}/grammar.c -d ${pcap_BINARY_DIR}/grammar.y
     DEPENDS ${pcap_BINARY_DIR}/grammar.y
 )
 
