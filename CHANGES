@@ -5,6 +5,7 @@ Monthday, Month DD, YYYY
     Building and testing:
       Rename struct bpf_aux_data to avoid NetBSD compile errors
       Squelch some compiler warnings
+      Squelch some Bison warnings
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
