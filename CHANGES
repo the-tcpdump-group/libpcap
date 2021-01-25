@@ -6,6 +6,7 @@ Monthday, Month DD, YYYY
       Rename struct bpf_aux_data to avoid NetBSD compile errors
       Squelch some compiler warnings
       Squelch some Bison warnings
+      Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
