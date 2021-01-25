@@ -119,8 +119,6 @@ struct bpf_program {
 
 #include <pcap/dlt.h>
 
-#ifndef __LINUX_FILTER_H__
-
 /*
  * The instruction encodings.
  *
@@ -241,8 +239,6 @@ struct bpf_program {
 /*				0xf0	reserved */
 /*				0xf8	reserved */
 
-#endif /* __LINUX_FILTER_H__ */
-
 /*
  * The instruction data structure.
  */
@@ -253,15 +249,24 @@ struct bpf_insn {
 	bpf_u_int32 k;
 };
 
-#ifndef __LINUX_FILTER_H__
-
 /*
  * Macros for insn array initializers.
+ *
+ * In case somebody's included <linux/filter.h>, or something else that
+ * gives the kernel's definitions of BPF statements, get rid of its
+ * definitions, so we can supply ours instead.  If some kernel's
+ * definitions aren't *binary-compatible* with what BPF has had
+ * since it first sprung from the brows of Van Jacobson and Steve
+ * McCanne, that kernel should be fixed.
  */
+#ifdef BPF_STMT
+#undef BPF_STMT
+#endif
 #define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
+#ifdef BPF_JUMP
+#undef BPF_JUMP
+#endif
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
-
-#endif /* __LINUX_FILTER_H__ */
 
 PCAP_AVAILABLE_0_4
 PCAP_API u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
