@@ -1772,7 +1772,7 @@ else
 	# names byacc and yacc.
 	#
 	AC_CHECK_PROGS(BISON_BYACC, byacc yacc)
-	if x"$BISON_BYACC" != x; then
+	if test x"$BISON_BYACC" != x; then
 		#
 		# Make sure this is Berkeley YACC, not AT&T YACC;
 		# the latter doesn't support reentrant parsers.

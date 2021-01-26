@@ -8620,7 +8620,7 @@ fi
   test -n "$BISON_BYACC" && break
 done
 
-	if x"$BISON_BYACC" != x; then
+	if test x"$BISON_BYACC" != x; then
 		#
 		# Make sure this is Berkeley YACC, not AT&T YACC;
 		# the latter doesn't support reentrant parsers.
