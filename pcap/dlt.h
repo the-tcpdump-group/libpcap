@@ -1579,6 +1579,11 @@
 #define DLT_ATSC_ALP		289
 
 /*
+ * Event Tracing for Windows messages.
+ */
+#define DLT_ETW			290
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1588,6 +1593,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	289	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	290	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
