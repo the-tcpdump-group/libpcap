@@ -9,7 +9,9 @@ Monthday, Month DD, YYYY
       Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
     Linux:
       Drop support for text-mode USB captures, as we require a 2.6.27
-          or later kernel
+          or later kernel (credit to Chaoyuan Peng for noting the
+          sscanf vulnerabilities in the text-mode code that got me to
+          realize that we didn't need this code any more)
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
