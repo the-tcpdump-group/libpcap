@@ -16,10 +16,6 @@ os:
 
 dist: focal
 
-compiler:
-  - gcc
-  - clang
-
 #
 # Linux runs on all of the architectures listed above; macOS runs on
 # 64-bit x86 and 64-bit ARM, but Travis doesn't currently have a 64-bit
@@ -55,11 +51,6 @@ env:
     # usual processing: false.
     - coverity_scan_script_test_mode=false
     - MAKEFLAGS='-j 2' # Travis CI VMs come with 2 cores
-  matrix:
-    - REMOTE=disable CMAKE=no
-    - ENABLE_REMOTE="" CMAKE=yes
-    - REMOTE=enable CMAKE=no
-    - ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 matrix:
   fast_finish: true
@@ -117,31 +108,5 @@ script:
   # *cause* the problem, so we do so only on Linux.
   #
   - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then if [ "$TRAVIS_OS_NAME" = linux ]; then travis_terminate 0; else exit 0; fi; fi
-  - touch .devel configure
-  - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo travis_fold:start:script.configure; fi
-  - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
-  - if [ "$CMAKE" = no ]; then echo -n travis_fold:end:script.configure; fi
-  - if [ "$CMAKE" = yes ]; then mkdir build; fi
-  - if [ "$CMAKE" = yes ]; then cd build; fi
-  - if [ "$CMAKE" = yes ]; then echo '$ cmake [...]' && echo travis_fold:start:script.cmake; fi
-  - if [ "$CMAKE" = yes ]; then cmake -DCMAKE_INSTALL_PREFIX=/tmp $ENABLE_REMOTE ..; fi
-  - if [ "$CMAKE" = yes ]; then echo -n travis_fold:end:script.cmake; fi
-  - make -s
-  - make -s testprogs
-  - echo '$ make install [...]' && echo travis_fold:start:script.make_install
-  - PATH=$PATH make install
-  - echo -n travis_fold:end:script.make_install
-  - if [ "$CMAKE" = no ]; then testprogs/findalldevstest; fi
-  - if [ "$CMAKE" = yes ]; then run/findalldevstest; fi
-  - if [ "$CMAKE" = no ]; then make releasetar; fi
-  - echo '$ cat Makefile [...]'; echo travis_fold:start:script.cat_makefile
-  - if [ "$CMAKE" = no ]; then cat Makefile | sed -n '1,/DO NOT DELETE THIS LINE -- mkdep uses it/p'; fi
-  - if [ "$CMAKE" = yes ]; then cat Makefile; fi
-  - echo -n travis_fold:end:script.cat_makefile
-  - echo '$ cat config.h'; echo travis_fold:start:script.cat_config_h
-  - cat config.h
-  - echo -n travis_fold:end:script.cat_config_h
-  - if [ "$CMAKE" = no ]; then echo '$ cat config.log'; echo travis_fold:start:script.cat_config_log; fi
-  - if [ "$CMAKE" = no ]; then cat config.log; fi
-  - if [ "$CMAKE" = no ]; then echo -n travis_fold:end:script.cat_config_log; fi
+  - ./build_matrix.sh
   - if [ "$TRAVIS_OS_NAME" = osx ]; then sleep 10; fi
