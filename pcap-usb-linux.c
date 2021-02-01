@@ -618,12 +618,6 @@ usb_activate(pcap_t* handle)
 	return 0;
 }
 
-static inline int
-ascii_to_int(char c)
-{
-	return c < 'A' ? c- '0': ((c<'a') ? c - 'A' + 10: c-'a'+10);
-}
-
 static int
 usb_inject_linux(pcap_t *handle, const void *buf _U_, int size _U_)
 {
