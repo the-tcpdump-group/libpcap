@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script executes the matrix loops, exclude tests and cleaning.
 # It calls the build.sh script which runs one build with exported variables
