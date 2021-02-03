@@ -6080,7 +6080,18 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	if (cstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
 
-	cstate->no_optimize = 1; /* this code is not compatible with optimizer yet */
+	/*
+	 * To quote a comment in optimize.c:
+	 *
+	 * "These data structures are used in a Cocke and Shwarz style
+	 * value numbering scheme.  Since the flowgraph is acyclic,
+	 * exit values can be propagated from a node's predecessors
+	 * provided it is uniquely defined."
+	 *
+	 * "Acyclic" means "no backward branches", which means "no
+	 * loops", so we have to turn the optimizer off.
+	 */
+	cstate->no_optimize = 1;
 
 	/*
 	 * s[0] is a dummy entry to protect other BPF insn from damage
