@@ -246,7 +246,7 @@ True if the packet has a source port value of \fIport\fP.
 True if either the source or destination port of the packet is \fIport\fP.
 .IP "\fBdst portrange \fIport1-port2\fR"
 True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
-destination port value between \fIport1\fP and \fIport2\fP.
+destination port value between \fIport1\fP and \fIport2\fP (inclusive).
 .I port1
 and
 .I port2
@@ -256,10 +256,10 @@ parameter for
 .BR port .
 .IP "\fBsrc portrange \fIport1-port2\fR"
 True if the packet has a source port value between \fIport1\fP and
-\fIport2\fP.
+\fIport2\fP (inclusive).
 .IP "\fBportrange \fIport1-port2\fR"
 True if either the source or destination port of the packet is between
-\fIport1\fP and \fIport2\fP.
+\fIport1\fP and \fIport2\fP (inclusive).
 .IP
 Any of the above port or port range expressions can be prepended with
 the keywords, \fBtcp\fP or \fBudp\fP, as in:
