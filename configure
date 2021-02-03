@@ -8564,8 +8564,8 @@ if test x"$BISON_BYACC" != x; then
 	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
 	# "%pure-parser".
 	#
-	bison_major_version=`$BISON_BYACC -V | sed -n 's/.* \([1-9][0-9]*\)\.[1-9][0-9.]*/\1/p'`
-	bison_minor_version=`$BISON_BYACC -V | sed -n 's/.* [1-9][0-9]*\.\([1-9][0-9]*\).*/\1/p'`
+	bison_major_version=`$BISON_BYACC -V | sed -n 's/.* \([1-9][0-9]*\)\.[0-9][0-9.]*/\1/p'`
+	bison_minor_version=`$BISON_BYACC -V | sed -n 's/.* [1-9][0-9]*\.\([0-9]+\).*/\1/p'`
 	if test "$bison_major_version" -lt 2 -o \
 	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
 	then

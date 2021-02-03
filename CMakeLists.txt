@@ -2072,7 +2072,7 @@ else()
     # "%pure-parser".
     #
     execute_process(COMMAND ${YACC_EXECUTABLE} -V OUTPUT_VARIABLE bison_full_version)
-    string(REGEX MATCH "[1-9][0-9]*[.][1-9][0-9]*" bison_major_minor ${bison_full_version})
+    string(REGEX MATCH "[1-9][0-9]*[.][0-9]+" bison_major_minor ${bison_full_version})
     if (bison_major_minor VERSION_LESS "2.4")
         set(REENTRANT_PARSER "%pure-parser")
     else()
