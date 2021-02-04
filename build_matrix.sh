@@ -28,13 +28,13 @@ echo_magenta() {
 }
 
 touch .devel configure
-for CC in gcc clang; do
+for CC in ${MATRIX_CC:-gcc clang}; do
     export CC
     # Exclude gcc on OSX (it is just an alias for clang)
     if [ "$CC" = gcc ] && [ "$TRAVIS_OS_NAME" = osx ]; then continue; fi
-    for CMAKE in no yes; do
+    for CMAKE in ${MATRIX_CMAKE:-no yes}; do
         export CMAKE
-        for REMOTE in no yes; do
+        for REMOTE in ${MATRIX_REMOTE:-no yes}; do
             export REMOTE
             echo_magenta "===== SETUP: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
             # LABEL is needed to build the travis fold labels
