@@ -11,6 +11,7 @@ ANSI_MAGENTA="\\033[35;1m"
 ANSI_RESET="\\033[0m"
 # Install directory prefix
 PREFIX=/tmp/local
+COUNT=0
 
 travis_fold() {
     local action="$1"
@@ -36,7 +37,8 @@ for CC in ${MATRIX_CC:-gcc clang}; do
         export CMAKE
         for REMOTE in ${MATRIX_REMOTE:-no yes}; do
             export REMOTE
-            echo_magenta "===== SETUP: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
+            COUNT=$((COUNT+1))
+            echo_magenta "===== SETUP $COUNT: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
             # LABEL is needed to build the travis fold labels
             LABEL="$CC.$CMAKE.$REMOTE"
             # Run one build with exported variables setup: CC, CMAKE and REMOTE
@@ -52,4 +54,5 @@ for CC in ${MATRIX_CC:-gcc clang}; do
         done
     done
 done
+echo_magenta "Tested setup count: $COUNT"
 # vi: set tabstop=4 softtabstop=0 expandtab shiftwidth=4 smarttab autoindent :
