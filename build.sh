@@ -62,7 +62,13 @@ if [ "$CMAKE" = no ]; then
 else
     run/findalldevstest
 fi
-if [ "$CMAKE" = no ]; then make releasetar; fi
+if [ "$CMAKE" = no ]; then
+    system=$(uname -s)
+    if [ "$system" = Darwin ] || [ "$system" = Linux ]; then
+        echo '$ make releasetar'
+        make releasetar
+    fi
+fi
 if [ "$TRAVIS" = true ]; then
     echo '$ cat Makefile [...]'
     travis_fold start cat_makefile
