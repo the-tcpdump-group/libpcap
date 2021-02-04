@@ -46,7 +46,8 @@ for CC in gcc clang; do
             if [ "$CMAKE" = yes ]; then rm -rf build; else make distclean; fi
             rm -rf $PREFIX
             git status -suall
-            git checkout .
+            # Cancel changes in configure
+            git checkout configure
             travis_fold end cleaning
         done
     done
