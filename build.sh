@@ -24,18 +24,10 @@ travis_fold() {
 
 # LABEL is needed to build the travis fold labels
 LABEL="$CC.$CMAKE.$REMOTE"
-if [ "$CMAKE" = yes ]; then
-    # ENABLE_REMOTE is only used by cmake
-    if [ "$REMOTE" = yes ]; then
-        ENABLE_REMOTE="-DENABLE_REMOTE=ON"
-    else
-        ENABLE_REMOTE=""
-    fi
-fi
 if [ "$CMAKE" = no ]; then
     echo '$ ./configure [...]'
     travis_fold start configure
-    ./configure --prefix=$PREFIX --enable-remote=$REMOTE
+    ./configure --prefix=$PREFIX --enable-remote="$REMOTE"
     travis_fold end configure
 else
     # Remove the leftovers from any earlier in-source builds, so this
@@ -46,7 +38,7 @@ else
     cd build
     echo '$ cmake [...]'
     travis_fold start cmake
-    cmake -DCMAKE_INSTALL_PREFIX=$PREFIX "$ENABLE_REMOTE" ..
+    cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DENABLE_REMOTE="$REMOTE" ..
     travis_fold end cmake
 fi
 make -s
