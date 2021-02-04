@@ -2,7 +2,7 @@
 
 # This script executes the matrix loops, exclude tests and cleaning.
 # It calls the build.sh script which runs one build with exported variables
-# setup: CC, CMAKE and REMOTE (default: gcc, no (cmake), disable (remote)).
+# setup: CC, CMAKE and REMOTE (default: gcc, no (cmake), no (remote)).
 
 set -e
 
@@ -34,7 +34,7 @@ for CC in gcc clang; do
     if [ "$CC" = gcc ] && [ "$TRAVIS_OS_NAME" = osx ]; then continue; fi
     for CMAKE in no yes; do
         export CMAKE
-        for REMOTE in disable enable; do
+        for REMOTE in no yes; do
             export REMOTE
             echo_magenta "===== SETUP: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
             # LABEL is needed to build the travis fold labels

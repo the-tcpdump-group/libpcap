@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script runs one build with exported variables setup: CC, CMAKE and
-# REMOTE (default: gcc, no (cmake), disable (remote)).
+# REMOTE (default: gcc, no (cmake), no (remote)).
 
 set -e
 
@@ -9,8 +9,8 @@ set -e
 CC=${CC:-gcc}
 # CMAKE: no or yes
 CMAKE=${CMAKE:-no}
-# REMOTE: disable or enable
-REMOTE=${REMOTE:-disable}
+# REMOTE: no or yes
+REMOTE=${REMOTE:-no}
 # Install directory prefix
 PREFIX=/tmp/local
 
@@ -26,7 +26,7 @@ travis_fold() {
 LABEL="$CC.$CMAKE.$REMOTE"
 if [ "$CMAKE" = yes ]; then
     # ENABLE_REMOTE is only used by cmake
-    if [ "$REMOTE" = enable ]; then
+    if [ "$REMOTE" = yes ]; then
         ENABLE_REMOTE="-DENABLE_REMOTE=ON"
     else
         ENABLE_REMOTE=""
@@ -35,7 +35,7 @@ fi
 if [ "$CMAKE" = no ]; then
     echo '$ ./configure [...]'
     travis_fold start configure
-    ./configure --prefix=$PREFIX "--$REMOTE-remote"
+    ./configure --prefix=$PREFIX --enable-remote=$REMOTE
     travis_fold end configure
 else
     # Remove the leftovers from any earlier in-source builds, so this
