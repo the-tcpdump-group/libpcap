@@ -8,6 +8,7 @@ Monthday, Month DD, YYYY
       Squelch some Bison warnings
       Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
       Fix Bison detection for minor version 0.
+      Fix parallel build with FreeBSD make.
     Linux:
       Drop support for text-mode USB captures, as we require a 2.6.27
           or later kernel (credit to Chaoyuan Peng for noting the
