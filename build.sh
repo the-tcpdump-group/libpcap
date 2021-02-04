@@ -51,12 +51,10 @@ else
 fi
 make -s
 make -s testprogs
-if [ "$TRAVIS" = true ]; then
-    echo '$ make install [...]'
-    travis_fold start make_install
-    make install
-    travis_fold end make_install
-fi
+echo '$ make install'
+travis_fold start make_install
+make install
+travis_fold end make_install
 if [ "$CMAKE" = no ]; then
     testprogs/findalldevstest
 else
