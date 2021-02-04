@@ -38,6 +38,10 @@ if [ "$CMAKE" = no ]; then
     ./configure --prefix=$PREFIX "--$REMOTE-remote"
     travis_fold end configure
 else
+    # Remove the leftovers from any earlier in-source builds, so this
+    # out-of-source build does not break because of that.
+    # https://gitlab.kitware.com/cmake/community/-/wikis/FAQ#what-is-an-out-of-source-build
+    rm -rf CMakeFiles/ CMakeCache.txt
     [ ! -d build ] && mkdir build
     cd build
     echo '$ cmake [...]'
