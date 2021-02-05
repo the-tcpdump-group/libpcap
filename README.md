@@ -65,7 +65,7 @@ kernel source and/or object patches available
 Linux has a number of BPF based systems, and libpcap does not support
 any of the eBPF mechanisms as yet, although it supports many of the
 memory mapped receive mechanisms.
-See the [Linux-specific README](doc/README.linux.md) for more information.
+See the [Linux-specific README](doc/README.linux) for more information.
 
 ### Note to Linux distributions and *BSD systems that include libpcap:
 
