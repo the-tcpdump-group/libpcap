@@ -260,7 +260,7 @@ FILES
 	doc/README.aix	    - notes on using libpcap on AIX
 	doc/README.dag	    - notes on using libpcap to capture on Endace DAG devices
 	doc/README.hpux	    - notes on using libpcap on HP-UX
-	doc/README.linux.md - notes on using libpcap on Linux
+	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 	doc/README.sita	    - notes on using libpcap to capture on SITA devices
