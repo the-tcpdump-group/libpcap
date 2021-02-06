@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "2 September 2020"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "6 February 2021"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -246,7 +246,7 @@ True if the packet has a source port value of \fIport\fP.
 True if either the source or destination port of the packet is \fIport\fP.
 .IP "\fBdst portrange \fIport1-port2\fR"
 True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
-destination port value between \fIport1\fP and \fIport2\fP (inclusive).
+destination port value between \fIport1\fP and \fIport2\fP (both inclusive).
 .I port1
 and
 .I port2
@@ -256,10 +256,10 @@ parameter for
 .BR port .
 .IP "\fBsrc portrange \fIport1-port2\fR"
 True if the packet has a source port value between \fIport1\fP and
-\fIport2\fP (inclusive).
+\fIport2\fP (both inclusive).
 .IP "\fBportrange \fIport1-port2\fR"
 True if either the source or destination port of the packet is between
-\fIport1\fP and \fIport2\fP (inclusive).
+\fIport1\fP and \fIport2\fP (both inclusive).
 .IP
 Any of the above port or port range expressions can be prepended with
 the keywords, \fBtcp\fP or \fBudp\fP, as in:
