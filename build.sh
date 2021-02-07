@@ -41,6 +41,7 @@ else
     cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DENABLE_REMOTE="$REMOTE" ..
     travis_fold end cmake
 fi
+make -s clean
 make -s
 make -s testprogs
 echo '$ make install'
