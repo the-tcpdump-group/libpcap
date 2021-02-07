@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# This script runs one build with exported variables setup: CC, CMAKE and
-# REMOTE (default: gcc, no (cmake), no (remote)).
+# This script runs one build with setup environment variables: CC, CMAKE and
+# REMOTE (default: CC=gcc, CMAKE=no, REMOTE=no).
 
 set -e
 

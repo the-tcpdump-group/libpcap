@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # This script executes the matrix loops, exclude tests and cleaning.
-# It calls the build.sh script which runs one build with exported variables
-# setup: CC, CMAKE and REMOTE (default: gcc, no (cmake), no (remote)).
+# It calls the build.sh script which runs one build with setup environment
+# variables : CC, CMAKE and REMOTE (default: CC=gcc, CMAKE=no, REMOTE=no).
 
 set -e
 
@@ -41,7 +41,7 @@ for CC in ${MATRIX_CC:-gcc clang}; do
             echo_magenta "===== SETUP $COUNT: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
             # LABEL is needed to build the travis fold labels
             LABEL="$CC.$CMAKE.$REMOTE"
-            # Run one build with exported variables setup: CC, CMAKE and REMOTE
+            # Run one build with setup environment variables: CC, CMAKE and REMOTE
             ./build.sh
             echo 'Cleaning...'
             travis_fold start cleaning
