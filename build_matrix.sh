@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 # This script executes the matrix loops, exclude tests and cleaning.
+# The matrix can be configured with environment variables MATRIX_CC,
+# MATRIX_CMAKE and MATRIX_REMOTE (default: MATRIX_CC='gcc clang',
+# MATRIX_CMAKE='no yes', MATRIX_REMOTE='no yes').
 # It calls the build.sh script which runs one build with setup environment
 # variables : CC, CMAKE and REMOTE (default: CC=gcc, CMAKE=no, REMOTE=no).
 
