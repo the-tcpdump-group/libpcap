@@ -22,6 +22,13 @@ travis_fold() {
     sleep 1
 }
 
+# Run a command after displaying it
+run_after_echo() {
+    echo -n '$ '
+    echo "$@"
+    $@
+}
+
 # LABEL is needed to build the travis fold labels
 LABEL="$CC.$CMAKE.$REMOTE"
 if [ "$CMAKE" = no ]; then
@@ -41,23 +48,22 @@ else
     cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DENABLE_REMOTE="$REMOTE" ..
     travis_fold end cmake
 fi
-make -s clean
-make -s
-make -s testprogs
+run_after_echo "make -s clean"
+run_after_echo "make -s"
+run_after_echo "make -s testprogs"
 echo '$ make install'
 travis_fold start make_install
 make install
 travis_fold end make_install
 if [ "$CMAKE" = no ]; then
-    testprogs/findalldevstest
+    run_after_echo "testprogs/findalldevstest"
 else
-    run/findalldevstest
+    run_after_echo "run/findalldevstest"
 fi
 if [ "$CMAKE" = no ]; then
     system=$(uname -s)
     if [ "$system" = Darwin ] || [ "$system" = Linux ]; then
-        echo '$ make releasetar'
-        make releasetar
+        run_after_echo "make releasetar"
     fi
 fi
 if [ "$TRAVIS" = true ]; then
