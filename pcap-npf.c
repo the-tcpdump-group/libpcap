@@ -549,6 +549,11 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 			if (errcode == ERROR_GEN_FAILURE) {
 				/*
+				 * (This comes from STATUS_UNSUCCESSFUL,
+				 * as well as some other NT status codes
+				 * that the Npcap driver is unlikely
+				 * to return.)
+				 *
 				 * The device on which we're capturing
 				 * went away, or it became unusable
 				 * by NPF due to a suspend/resume.
