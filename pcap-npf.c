@@ -565,14 +565,15 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * ERROR_DEVICE_REMOVED comes from
 				 * STATUS_DEVICE_REMOVED.
 				 *
-				 * We report the error code for the
-				 * benefit of attempts to debug cases
-				 * where this error is reported when
-				 * the device *wasn't* removed, either
-				 * because it's not removable, it's
-				 * removable but wasn't removed, or
-				 * it's a device that doesn't correspond
-				 * to a physical device.
+				 * We report the Windows status code
+				 * name and the corresponding NT status
+				 * code name, for the benefit of attempts
+				 * to debug cases where this error is
+				 * reported when the device *wasn't*
+				 * removed, either because it's not
+				 * removable, it's removable but wasn't
+				 * removed, or it's a device that doesn't
+				 * correspond to a physical device.
 				 *
 				 * XXX - we really should return an
 				 * appropriate error for that, but
@@ -580,9 +581,15 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * documented as having error returns
 				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
 				 */
+				const char *errcode_msg;
+
+				if (errcode == ERROR_GEN_FAILURE)
+					errcode_msg = "ERROR_GEN_FAILURE/STATUS_UNSUCCESSFUL";
+				else
+					errcode_msg = "ERROR_DEVICE_REMOVED/STATUS_DEVICE_REMOVED";
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "The interface disappeared (error code %lu)",
-				    errcode);
+				    "The interface disappeared (error code %s)",
+				    errcode_msg);
 			} else {
 				pcap_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
