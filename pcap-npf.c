@@ -543,23 +543,36 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (!PacketReceivePacket(pw->adapter, &Packet, TRUE)) {
 			/*
 			 * Did the device go away?
-			 * If so, the error we get is ERROR_GEN_FAILURE.
+			 * If so, the error we get can either be
+			 * ERROR_GEN_FAILURE or ERROR_DEVICE_REMOVED.
 			 */
 			DWORD errcode = GetLastError();
 
-			if (errcode == ERROR_GEN_FAILURE) {
+			if (errcode == ERROR_GEN_FAILURE ||
+			    errcode == ERROR_DEVICE_REMOVED) {
 				/*
-				 * (This comes from STATUS_UNSUCCESSFUL,
-				 * as well as some other NT status codes
-				 * that the Npcap driver is unlikely
-				 * to return.)
-				 *
 				 * The device on which we're capturing
 				 * went away, or it became unusable
 				 * by NPF due to a suspend/resume.
 				 *
+				 * ERROR_GEN_FAILURE comes from
+				 * STATUS_UNSUCCESSFUL, as well as some
+				 * other NT status codes that the Npcap
+				 * driver is unlikely to return.
 				 * XXX - hopefully no other error
 				 * conditions are indicated by this.
+				 *
+				 * ERROR_DEVICE_REMOVED comes from
+				 * STATUS_DEVICE_REMOVED.
+				 *
+				 * We report the error code for the
+				 * benefit of attempts to debug cases
+				 * where this error is reported when
+				 * the device *wasn't* removed, either
+				 * because it's not removable, it's
+				 * removable but wasn't removed, or
+				 * it's a device that doesn't correspond
+				 * to a physical device.
 				 *
 				 * XXX - we really should return an
 				 * appropriate error for that, but
@@ -568,7 +581,8 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
 				 */
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "The interface disappeared");
+				    "The interface disappeared (error code %d)",
+				    errcode);
 			} else {
 				pcap_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
