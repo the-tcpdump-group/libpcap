@@ -14,6 +14,9 @@ Monthday, Month DD, YYYY
           or later kernel (credit to Chaoyuan Peng for noting the
           sscanf vulnerabilities in the text-mode code that got me to
           realize that we didn't need this code any more)
+    Windows:
+      Add more information in "interface disappeared" error messages, in
+        the hopes of trying to figure out the cause.
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
