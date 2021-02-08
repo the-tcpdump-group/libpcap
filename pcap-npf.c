@@ -581,7 +581,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
 				 */
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "The interface disappeared (error code %d)",
+				    "The interface disappeared (error code %u)",
 				    errcode);
 			} else {
 				pcap_fmt_errmsg_for_win32_err(p->errbuf,
