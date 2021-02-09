@@ -2,20 +2,44 @@
 env:
   CIRRUS_CLONE_DEPTH: 3
   MAKEFLAGS: '-j 2'
-  IGNORE_OSVERSION: yes
-  MATRIX_CC: 'clang gcc48 gcc10'
 
-task:
-  name: nested matrix
+freebsd_task:
+  name: FBSD+BM
   freebsd_instance:
-    image_family: freebsd-$OSREL
-  env:
     matrix:
-      - OSREL: 11-4
-      - OSREL: 12-2
-      - OSREL: 13-0-snap
+      - image_family: freebsd-11-4
+      - image_family: freebsd-12-2
+      - image_family: freebsd-13-0-snap
+  env:
+    IGNORE_OSVERSION: yes
+    MATRIX_CC: clang gcc48 gcc10
   script:
     - freebsd-version
     - pkg install -qy autoconf gcc48 gcc10
     - pkg install -qy bash cmake git # for build_matrix.sh and build.sh
+    - ./build_matrix.sh
+
+linux_task:
+  name: LNX+BM
+  container:
+    image: ubuntu:20.04
+  env:
+    DEBIAN_FRONTEND: noninteractive # libnids-dev -> tzdata -> debconf
+  script:
+    - apt-get -qy update
+    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
+    - apt-get -qy install flex bison autoconf make clang gcc
+    - apt-get -qy install cmake git # for build_matrix.sh and build.sh
+    - apt list --installed 'lib*-dev'
+    - ./build_matrix.sh
+
+macos_task:
+  name: MAC+BM
+  macos_instance:
+    image: big-sur-xcode
+  env:
+    MAKEFLAGS: '-j 12' # macOS VMs always run on 12 cores
+    MATRIX_CC: clang # GCC is a symlink to Clang in macOS
+  script:
+    - brew update >/dev/null
     - ./build_matrix.sh

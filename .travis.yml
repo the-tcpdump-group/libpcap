@@ -5,37 +5,14 @@ language: c
 # "s390x", a/k/a z/Architecture, are little-endian.
 #
 arch:
-  - amd64
   - ppc64le
   - s390x
   - arm64
 
 os:
   - linux
-  - osx
 
 dist: focal
-
-#
-# Linux runs on all of the architectures listed above; macOS runs on
-# 64-bit x86 and 64-bit ARM, but Travis doesn't currently have a 64-bit
-# ARM macOS build environment.  Suppress the macOS builds that don't work.
-#
-# In addition, with newer versions of macOS, Apple ships a "gcc" that's
-# just another front end to Clang, presumably for backwards
-# compatibility with build scripts etc. that expect the compiler to be
-# "gcc", so don't bother doing "gcc" builds on macOS.
-#
-jobs:
-  exclude:
-  - arch: ppc64le
-    os: osx
-  - arch: s390x
-    os: osx
-  - arch: arm64
-    os: osx
-  - compiler: gcc
-    os: osx
 
 cache: ccache
 
@@ -109,4 +86,3 @@ script:
   #
   - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then if [ "$TRAVIS_OS_NAME" = linux ]; then travis_terminate 0; else exit 0; fi; fi
   - ./build_matrix.sh
-  - if [ "$TRAVIS_OS_NAME" = osx ]; then sleep 10; fi
