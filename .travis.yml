@@ -4,10 +4,6 @@ language: c
 # Try building on these 4 architectures; all are 64-bit, and all but
 # "s390x", a/k/a z/Architecture, are little-endian.
 #
-arch:
-  - ppc64le
-  - s390x
-  - arm64
 
 os:
   - linux
@@ -16,6 +12,22 @@ dist: focal
 
 cache: ccache
 
+jobs:
+  fast_finish: true
+  include:
+  - name: "amd64"
+    arch: amd64
+    if: branch = coverity_scan
+  - name: "arm64"
+    arch: arm64
+    if: branch != coverity_scan
+  - name: "ppc64le"
+    arch: ppc64le
+    if: branch != coverity_scan
+  - name: "s390x"
+    arch: s390x
+    if: branch != coverity_scan
+
 env:
   global:
     # encrypted COVERITY_SCAN_TOKEN from
@@ -23,14 +35,11 @@ env:
     - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
-    - coverity_scan_run_condition='"$TRAVIS_CPU_ARCH" = amd64 -a "$TRAVIS_OS_NAME" = linux -a "$CC" = gcc -a "$REMOTE" = enable -a "$CMAKE" = no'
+    - coverity_scan_run_condition='"$TRAVIS_CPU_ARCH" = amd64 -a "$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
     - MAKEFLAGS='-j 2' # Travis CI VMs come with 2 cores
-
-matrix:
-  fast_finish: true
 
 addons:
   coverity_scan:
