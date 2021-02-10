@@ -41,7 +41,7 @@ for CC in ${MATRIX_CC:-gcc clang}; do
         for REMOTE in ${MATRIX_REMOTE:-no yes}; do
             export REMOTE
             COUNT=$((COUNT+1))
-            echo_magenta "===== SETUP $COUNT: compiler:$CC cmake:$CMAKE remote:$REMOTE ====="
+            echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE ====="
             # LABEL is needed to build the travis fold labels
             LABEL="$CC.$CMAKE.$REMOTE"
             # Run one build with setup environment variables: CC, CMAKE and REMOTE
