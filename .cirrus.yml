@@ -1,17 +1,23 @@
 # The internal git client reads CIRRUS_CLONE_DEPTH.
 env:
   CIRRUS_CLONE_DEPTH: 3
-  MAKEFLAGS: '-j 2'
 
 freebsd_task:
   name: FBSD+BM
   freebsd_instance:
     matrix:
       - image_family: freebsd-11-4
+        cpu: 2
+        memory: 2G
       - image_family: freebsd-12-2
+        cpu: 2
+        memory: 2G
       - image_family: freebsd-13-0-snap
+        cpu: 4
+        memory: 4G
   env:
     IGNORE_OSVERSION: yes
+    MAKEFLAGS: -j 4
     MATRIX_CC: clang gcc48 gcc10
   script:
     - freebsd-version
@@ -23,8 +29,11 @@ linux_task:
   name: LNX+BM
   container:
     image: ubuntu:20.04
+    cpu: 2
+    memory: 1G
   env:
     DEBIAN_FRONTEND: noninteractive # libnids-dev -> tzdata -> debconf
+    MAKEFLAGS: -j 3
   script:
     - apt-get -qy update
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
