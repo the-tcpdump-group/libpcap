@@ -1536,7 +1536,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			}
 			if (modes[0] != num_ts_modes) {
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				    "First PacketGetTimestampModes() call gives %lu modes, second call gives %u modes",
+				    "First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
 				    num_ts_modes, modes[0]);
 				free(modes);
 				pcap_close(p);
