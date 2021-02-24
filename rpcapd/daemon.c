@@ -375,7 +375,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				// Immediate EOF
 				goto end;
 			}
-			plen = (tls_header.length_hi << 8) | tls_header.length_lo;
+			plen = (tls_header.length_hi << 8U) | tls_header.length_lo;
 
 			// Discard the rest of the message.
 			if (rpcapd_discard(sockctrl, NULL, plen) == -1)
