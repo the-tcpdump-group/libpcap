@@ -158,7 +158,7 @@ load_airpcap_functions(void)
 	 *	AIRPCAP_API_LOADING, in which case *we're* the
 	 *	ones loading it, and should now try to do so.
 	 */
-	if (current_status  == AIRPCAP_API_LOADED)
+	if (current_status == AIRPCAP_API_LOADED)
 		return AIRPCAP_API_LOADED;
 
 	if (current_status == AIRPCAP_API_CANNOT_LOAD)
@@ -974,7 +974,14 @@ airpcap_create(const char *device, char *ebuf, int *is_ours)
 	 * so do so if we haven't already tried to do so.
 	 */
 	if (load_airpcap_functions() != AIRPCAP_API_LOADED) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Couldn't load AirPcap DLL\n");
+		/*
+		 * We assume this means that we don't have the AirPcap
+		 * software installed, which probably means we don't
+		 * have an AirPcap device.
+		 *
+		 * Don't treat that as an error.
+		 */
+		*is_ours = 0;
 		return (NULL);
 	}
 
