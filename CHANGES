@@ -1,4 +1,8 @@
 Monthday, Month DD, YYYY
+  Summary for 1.11.0 libpcap release (so far!)
+    Add LINKTYPE_ETW/DLT_ETW.
+
+Monthday, Month DD, YYYY
   Summary for 1.10.1 libpcap release (so far!)
     Packet filtering:
         Fix "type XXX subtype YYY" giving a parse error
@@ -10,7 +14,9 @@ Monthday, Month DD, YYYY
       Fix Bison detection for minor version 0.
       Fix parallel build with FreeBSD make.
     Documentation:
-        Improve the description of portrange in filters.
+      Refine Markdown in README.md.
+      Improve the description of portrange in filters.
+      README.linux.md isn't Markdown, rename it just README.linux.
     Linux:
       Drop support for text-mode USB captures, as we require a 2.6.27
           or later kernel (credit to Chaoyuan Peng for noting the
