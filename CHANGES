@@ -9,6 +9,8 @@ Monthday, Month DD, YYYY
       Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
       Fix Bison detection for minor version 0.
       Fix parallel build with FreeBSD make.
+    Documentation:
+        Improve the description of portrange in filters.
     Linux:
       Drop support for text-mode USB captures, as we require a 2.6.27
           or later kernel (credit to Chaoyuan Peng for noting the
@@ -17,6 +19,12 @@ Monthday, Month DD, YYYY
     Windows:
       Add more information in "interface disappeared" error messages, in
         the hopes of trying to figure out the cause.
+      Treat ERROR_DEVICE_REMOVED as "device was removed".
+      Indicate in the error message which "device was removed" error
+          occurred.
+      Report the Windows error status if PacketSendPacket() fails.
+      Use %lu for ULONGs in error message formats.
+      Don't treat the inability to find airpcap.dll as an error.
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
