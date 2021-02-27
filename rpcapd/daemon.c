@@ -2421,7 +2421,7 @@ daemon_msg_updatefilter_req(uint8 ver, struct daemon_slpars *pars,
 	// A response is needed, otherwise the other host does not know that everything went well
 	rpcap_createhdr(&header, ver, RPCAP_MSG_UPDATEFILTER_REPLY, 0, 0);
 
-	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), pcap_geterr(session->fp), PCAP_ERRBUF_SIZE))
+	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE))
 	{
 		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
