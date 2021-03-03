@@ -1,23 +1,20 @@
+git:
+  quiet: true
+  depth: 3
+
+os: linux
+dist: focal # Ubuntu 20.04
 language: c
+cache: ccache
 
 #
-# Try building on these 4 architectures; all are 64-bit, and all but
+# Try building on these architectures; all are 64-bit, and all but
 # "s390x", a/k/a z/Architecture, are little-endian.
 #
-
-os:
-  - linux
-
-dist: focal
-
-cache: ccache
 
 jobs:
   fast_finish: true
   include:
-  - name: "arm64"
-    arch: arm64
-    if: branch IN (master, libpcap-1.10)
   - name: "ppc64le"
     arch: ppc64le
     if: branch IN (master, libpcap-1.10)
@@ -39,18 +36,8 @@ addons:
       - libnl-genl-3-dev
       - libibverbs-dev
 
-git:
-  quiet: true
-  depth: 3
-
-before_install:
+script:
   - uname -a
   - date
-  - if [ "$TRAVIS_OS_NAME" = linux ]; then apt list --installed 'lib*-dev'; fi
-
-install:
-
-before_script:
-
-script:
+  - apt list --installed 'lib*-dev'
   - ./build_matrix.sh
