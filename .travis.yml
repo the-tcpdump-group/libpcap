@@ -15,52 +15,23 @@ cache: ccache
 jobs:
   fast_finish: true
   include:
-  - name: "amd64"
-    arch: amd64
-    if: branch = coverity_scan
   - name: "arm64"
     arch: arm64
-    if: branch != coverity_scan
+    if: branch IN (master, libpcap-1.10)
   - name: "ppc64le"
     arch: ppc64le
-    if: branch != coverity_scan
+    if: branch IN (master, libpcap-1.10)
   - name: "s390x"
     arch: s390x
-    if: branch != coverity_scan
+    if: branch IN (master, libpcap-1.10)
   allow_failures:
     - arch: ppc64le # Since 20 Feb 2021 often times out trying to boot.
 
 env:
   global:
-    # encrypted COVERITY_SCAN_TOKEN from
-    # https://scan.coverity.com/projects/<project_id>/submit_build?tab=travis_ci
-    - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
-    # Coverity run condition (avoid matrix multiple runs), need customized
-    # build script. Need an update if new matrix cases.
-    - coverity_scan_run_condition='"$TRAVIS_CPU_ARCH" = amd64 -a "$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
-    # Coverity script test mode (if true no uploading, avoid reaching the quota)
-    # usual processing: false.
-    - coverity_scan_script_test_mode=false
     - MAKEFLAGS='-j 2' # Travis CI VMs come with 2 cores
 
 addons:
-  coverity_scan:
-    # customized build script URL
-    # TRAVIS_REPO_SLUG: owner_name/repo_name of repository currently being built
-    # TRAVIS_BRANCH: name of the branch currently being built
-    build_script_url: https://raw.githubusercontent.com/$TRAVIS_REPO_SLUG/$TRAVIS_BRANCH/.travis-coverity-scan-build.sh
-    # project metadata
-    project:
-      name: $TRAVIS_REPO_SLUG
-    # Where email notification of build analysis results will be sent
-    #notification_email: tcpdump-workers@lists.tcpdump.org
-    # Commands to prepare for build_command
-    build_command_prepend: ./configure --enable-remote
-    # This command will be added as an argument to "cov-build" to compile
-    # the project for analysis
-    build_command: make
-    # Pattern to match selecting branches that will run analysis
-    branch_pattern: coverity_scan
   apt:
     packages:
       - libdbus-1-dev
@@ -82,18 +53,4 @@ install:
 before_script:
 
 script:
-  #
-  # XXX - on Linux with ppc64le, s390x, and arm64, Travis gets etuck
-  # after executing the next line; testing by exiting if
-  # COVERITY_SCAN_BRANCH was equal to 0 indicates that the premature
-  # exit causes the hang.
-  #
-  # Why that happens is as yet unknown.  The Travis maintainers
-  # recommended using travis_terminate instead, so that's what
-  # we're doing.
-  #
-  # On the other hand, using travis_terminate on macOS appears to
-  # *cause* the problem, so we do so only on Linux.
-  #
-  - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then if [ "$TRAVIS_OS_NAME" = linux ]; then travis_terminate 0; else exit 0; fi; fi
   - ./build_matrix.sh
