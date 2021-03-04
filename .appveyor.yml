@@ -2,6 +2,11 @@ version: '{build}'
 
 clone_depth: 5
 
+branches:
+  only:
+    - master
+    - libpcap-1.10
+
 matrix:
   fast_finish: true
 
