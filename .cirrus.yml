@@ -4,7 +4,7 @@ env:
 
 freebsd_task:
   name: FBSD+BM
-  only_if: $CIRRUS_BRANCH == master || $CIRRUS_BRANCH == libpcap-1.10
+  only_if: $CIRRUS_BRANCH != coverity_scan
   freebsd_instance:
     matrix:
       - image_family: freebsd-11-4
@@ -28,7 +28,7 @@ freebsd_task:
 
 linux_task:
   name: LNX+BM
-  only_if: $CIRRUS_BRANCH == master || $CIRRUS_BRANCH == libpcap-1.10
+  only_if: $CIRRUS_BRANCH != coverity_scan
   container:
     image: ubuntu:20.04
     cpu: 2
@@ -46,7 +46,7 @@ linux_task:
 
 macos_task:
   name: MAC+BM
-  only_if: $CIRRUS_BRANCH == master || $CIRRUS_BRANCH == libpcap-1.10
+  only_if: $CIRRUS_BRANCH != coverity_scan
   macos_instance:
     image: big-sur-xcode
   env:

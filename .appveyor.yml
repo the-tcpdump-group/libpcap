@@ -3,9 +3,8 @@ version: '{build}'
 clone_depth: 5
 
 branches:
-  only:
-    - master
-    - libpcap-1.10
+  except:
+    - coverity_scan
 
 matrix:
   fast_finish: true
