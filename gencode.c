@@ -48,6 +48,20 @@
 #include "pcap-dos.h"
 #endif
 
+#ifdef HAVE_NET_PFVAR_H
+/*
+ * In NetBSD <net/if.h> includes <net/dlt.h>, which is an older version of
+ * "pcap/dlt.h" with a lower value of DLT_MATCHING_MAX. Include the headers
+ * below before "pcap-int.h", which eventually includes "pcap/dlt.h", which
+ * redefines DLT_MATCHING_MAX from what this version of NetBSD has to what
+ * this version of libpcap has.
+ */
+#include <sys/socket.h>
+#include <net/if.h>
+#include <net/pfvar.h>
+#include <net/if_pflog.h>
+#endif /* HAVE_NET_PFVAR_H */
+
 #include "pcap-int.h"
 
 #include "extract.h"
@@ -71,13 +85,6 @@
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
-#endif
-
-#ifdef HAVE_NET_PFVAR_H
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/pfvar.h>
-#include <net/if_pflog.h>
 #endif
 
 #ifndef offsetof
