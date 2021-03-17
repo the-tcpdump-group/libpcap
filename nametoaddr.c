@@ -588,8 +588,8 @@ struct eproto {
  * warnings we might get from compilers about the lack of a
  * declaration.
  */
-PCAP_API struct eproto eproto_db[];
-PCAP_API_DEF struct eproto eproto_db[] = {
+PCAP_EXPORTED_DATA struct eproto eproto_db[];
+PCAP_EXPORTED_DATA_DEF struct eproto eproto_db[] = {
 	{ "aarp", ETHERTYPE_AARP },
 	{ "arp", ETHERTYPE_ARP },
 	{ "atalk", ETHERTYPE_ATALK },

@@ -31,18 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
  * Routines used for name-or-address-string-to-address resolution
  * that are *not* exported to code using libpcap.
  */
-int __pcap_atodn(const char *, bpf_u_int32 *);
-int __pcap_atoin(const char *, bpf_u_int32 *);
-int __pcap_nametodnaddr(const char *, u_short *);
-
-#ifdef __cplusplus
-}
-#endif
+PCAP_UNEXPORTED_C_FUNC int __pcap_atodn(const char *, bpf_u_int32 *);
+PCAP_UNEXPORTED_C_FUNC int __pcap_atoin(const char *, bpf_u_int32 *);
+PCAP_UNEXPORTED_C_FUNC int __pcap_nametodnaddr(const char *, u_short *);

@@ -49,10 +49,6 @@
  */
 #define PCAP_VERSION_STRING "libpcap version " PACKAGE_VERSION
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
  * If pcap_new_api is set, we disable pcap_lookupdev(), because:
  *
@@ -431,7 +427,7 @@ struct oneshot_userdata {
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
-int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
+PCAP_UNEXPORTED_C_FUNC int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
 #include <stdarg.h>
 
@@ -447,8 +443,8 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_getnonblock_fd(pcap_t *);
-int	pcap_setnonblock_fd(pcap_t *p, int);
+PCAP_UNEXPORTED_C_FUNC int	pcap_getnonblock_fd(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
 
 /*
@@ -462,7 +458,7 @@ int	pcap_setnonblock_fd(pcap_t *p, int);
  * "pcap_create_common()" allocates and fills in a pcap_t, for use
  * by pcap_create routines.
  */
-pcap_t	*pcap_create_interface(const char *, char *);
+PCAP_UNEXPORTED_C_FUNC pcap_t	*pcap_create_interface(const char *, char *);
 
 /*
  * This wrapper takes an error buffer pointer and a type to use for the
@@ -475,13 +471,13 @@ pcap_t	*pcap_create_interface(const char *, char *);
 	pcap_create_common(ebuf, \
 	    sizeof (struct { pcap_t __common; type __private; }), \
 	    offsetof (struct { pcap_t __common; type __private; }, __private))
-pcap_t	*pcap_create_common(char *, size_t, size_t);
-int	pcap_do_addexit(pcap_t *);
-void	pcap_add_to_pcaps_to_close(pcap_t *);
-void	pcap_remove_from_pcaps_to_close(pcap_t *);
-void	pcap_cleanup_live_common(pcap_t *);
-int	pcap_check_activated(pcap_t *);
-void	pcap_breakloop_common(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC pcap_t	*pcap_create_common(char *, size_t, size_t);
+PCAP_UNEXPORTED_C_FUNC int	pcap_do_addexit(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC void	pcap_add_to_pcaps_to_close(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC void	pcap_remove_from_pcaps_to_close(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC void	pcap_cleanup_live_common(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC int	pcap_check_activated(pcap_t *);
+PCAP_UNEXPORTED_C_FUNC void	pcap_breakloop_common(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".
@@ -507,23 +503,23 @@ void	pcap_breakloop_common(pcap_t *);
 struct pcap_if_list;
 typedef struct pcap_if_list pcap_if_list_t;
 typedef int (*get_if_flags_func)(const char *, bpf_u_int32 *, char *);
-int	pcap_platform_finddevs(pcap_if_list_t *, char *);
+PCAP_UNEXPORTED_C_FUNC int	pcap_platform_finddevs(pcap_if_list_t *, char *);
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
+PCAP_UNEXPORTED_C_FUNC int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *), get_if_flags_func);
 #endif
-pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
-	    get_if_flags_func, const char *, char *);
-pcap_if_t *find_dev(pcap_if_list_t *, const char *);
-pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32, const char *,
-	    char *);
-int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
+PCAP_UNEXPORTED_C_FUNC pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *,
+    bpf_u_int32, get_if_flags_func, const char *, char *);
+PCAP_UNEXPORTED_C_FUNC pcap_if_t *find_dev(pcap_if_list_t *, const char *);
+PCAP_UNEXPORTED_C_FUNC pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
+    const char *, char *);
+PCAP_UNEXPORTED_C_FUNC int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
 #ifndef _WIN32
-pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
-	    get_if_flags_func, char *);
-int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
+PCAP_UNEXPORTED_C_FUNC pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *,
+    bpf_u_int32, get_if_flags_func, char *);
+PCAP_UNEXPORTED_C_FUNC int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 	    get_if_flags_func,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
@@ -559,12 +555,13 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 	pcap_open_offline_common(ebuf, \
 	    sizeof (struct { pcap_t __common; type __private; }), \
 	    offsetof (struct { pcap_t __common; type __private; }, __private))
-pcap_t	*pcap_open_offline_common(char *ebuf, size_t total_size,
+PCAP_UNEXPORTED_C_FUNC pcap_t	*pcap_open_offline_common(char *ebuf, size_t total_size,
     size_t private_data);
-bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen);
-void	sf_cleanup(pcap_t *p);
+PCAP_UNEXPORTED_C_FUNC bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype,
+    bpf_u_int32 snaplen);
+PCAP_UNEXPORTED_C_FUNC void	sf_cleanup(pcap_t *p);
 #ifdef _WIN32
-FILE	*charset_fopen(const char *path, const char *mode);
+PCAP_UNEXPORTED_C_FUNC FILE	*charset_fopen(const char *path, const char *mode);
 #else
 /*
  * On other OSes, just use Boring Old fopen().
@@ -579,8 +576,9 @@ FILE	*charset_fopen(const char *path, const char *mode);
 #define pcap_code_handle_t	HMODULE
 #define pcap_funcptr_t		FARPROC
 
-pcap_code_handle_t	pcap_load_code(const char *);
-pcap_funcptr_t		pcap_find_function(pcap_code_handle_t, const char *);
+PCAP_UNEXPORTED_C_FUNC pcap_code_handle_t	pcap_load_code(const char *);
+PCAP_UNEXPORTED_C_FUNC pcap_funcptr_t	pcap_find_function(pcap_code_handle_t,
+    const char *);
 #endif
 
 /*
@@ -601,18 +599,19 @@ struct pcap_bpf_aux_data {
  * Filtering routine that takes the auxiliary data as an additional
  * argument.
  */
-u_int	pcap_filter_with_aux_data(const struct bpf_insn *,
+PCAP_UNEXPORTED_C_FUNC u_int	pcap_filter_with_aux_data(const struct bpf_insn *,
     const u_char *, u_int, u_int, const struct pcap_bpf_aux_data *);
 
 /*
  * Filtering routine that doesn't.
  */
-u_int	pcap_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+PCAP_UNEXPORTED_C_FUNC u_int	pcap_filter(const struct bpf_insn *, const u_char *,
+    u_int, u_int);
 
 /*
  * Routine to validate a BPF program.
  */
-int	pcap_validate_filter(const struct bpf_insn *, int);
+PCAP_UNEXPORTED_C_FUNC int	pcap_validate_filter(const struct bpf_insn *, int);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
@@ -621,28 +620,25 @@ int	pcap_validate_filter(const struct bpf_insn *, int);
  * "pcap_oneshot()" is the standard one-shot callback for "pcap_next()"
  * and "pcap_next_ex()".
  */
-void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
+PCAP_UNEXPORTED_C_FUNC void	pcap_oneshot(u_char *, const struct pcap_pkthdr *,
+    const u_char *);
 
-int	install_bpf_program(pcap_t *, struct bpf_program *);
+PCAP_UNEXPORTED_C_FUNC int	install_bpf_program(pcap_t *, struct bpf_program *);
 
-int	pcap_strcasecmp(const char *, const char *);
+PCAP_UNEXPORTED_C_FUNC int	pcap_strcasecmp(const char *, const char *);
 
 /*
  * Internal interfaces for pcap_createsrcstr and pcap_parsesrcstr with
  * the additional bit of information regarding SSL support (rpcap:// vs.
  * rpcaps://).
  */
-int	pcap_createsrcstr_ex(char *, int, const char *, const char *,
+PCAP_UNEXPORTED_C_FUNC int	pcap_createsrcstr_ex(char *, int, const char *, const char *,
     const char *, unsigned char, char *);
-int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
+PCAP_UNEXPORTED_C_FUNC int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
     char *, unsigned char *, char *);
 
 #ifdef YYDEBUG
 extern int pcap_debug;
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif

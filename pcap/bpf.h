@@ -81,10 +81,6 @@
 
 #include <pcap/funcattrs.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* BSD style release date */
 #define BPF_RELEASE 199606
 
@@ -269,24 +265,20 @@ struct bpf_insn {
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
 PCAP_AVAILABLE_0_4
-PCAP_API u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+PCAP_EXPORTED_C_FUNC u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 
 PCAP_AVAILABLE_0_6
-PCAP_API int	bpf_validate(const struct bpf_insn *f, int len);
+PCAP_EXPORTED_C_FUNC int	bpf_validate(const struct bpf_insn *f, int len);
 
 PCAP_AVAILABLE_0_4
-PCAP_API char	*bpf_image(const struct bpf_insn *, int);
+PCAP_EXPORTED_C_FUNC char	*bpf_image(const struct bpf_insn *, int);
 
 PCAP_AVAILABLE_0_6
-PCAP_API void	bpf_dump(const struct bpf_program *, int);
+PCAP_EXPORTED_C_FUNC void	bpf_dump(const struct bpf_program *, int);
 
 /*
  * Number of scratch memory words (for BPF_LD|BPF_MEM and BPF_ST).
  */
 #define BPF_MEMWORDS 16
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h) */

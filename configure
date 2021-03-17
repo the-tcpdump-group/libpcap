@@ -3895,7 +3895,8 @@ esac
 	    #
 	    # Try to have the compiler default to hiding symbols,
 	    # so that only symbols explicitly exported with
-	    # PCAP_API will be visible outside (shared) libraries.
+	    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
+	    # be visible outside (shared) libraries.
 	    #
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
@@ -3995,7 +3996,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		    #
 		    # Try to have the compiler default to hiding symbols,
 		    # so that only symbols explicitly exported with
-		    # PCAP_API will be visible outside (shared) libraries.
+		    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
+		    # be visible outside (shared) libraries.
 		    #
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
@@ -4157,7 +4159,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		    #
 		    # Try to have the compiler default to hiding symbols,
 		    # so that only symbols explicitly exported with
-		    # PCAP_API will be visible outside (shared) libraries.
+		    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
+		    # be visible outside (shared) libraries.
 		    #
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -xldscope=hidden option" >&5

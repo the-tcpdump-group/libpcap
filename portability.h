@@ -42,10 +42,6 @@
 
 #include "pcap/funcattrs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef HAVE_STRLCAT
   #define pcap_strlcat	strlcat
 #else
@@ -60,7 +56,7 @@ extern "C" {
     /*
      * Define it ourselves.
      */
-    extern size_t pcap_strlcat(char * restrict dst, const char * restrict src, size_t dstsize);
+    PCAP_UNEXPORTED_C_FUNC size_t pcap_strlcat(char * restrict dst, const char * restrict src, size_t dstsize);
   #endif
 #endif
 
@@ -78,7 +74,7 @@ extern "C" {
     /*
      * Define it ourselves.
      */
-    extern size_t pcap_strlcpy(char * restrict dst, const char * restrict src, size_t dstsize);
+    PCAP_UNEXPORTED_C_FUNC size_t pcap_strlcpy(char * restrict dst, const char * restrict src, size_t dstsize);
   #endif
 #endif
 
@@ -102,14 +98,14 @@ extern "C" {
 #ifdef HAVE_ASPRINTF
 #define pcap_asprintf asprintf
 #else
-extern int pcap_asprintf(char **, PCAP_FORMAT_STRING(const char *), ...)
+PCAP_UNEXPORTED_C_FUNC int pcap_asprintf(char **, PCAP_FORMAT_STRING(const char *), ...)
     PCAP_PRINTFLIKE(2, 3);
 #endif
 
 #ifdef HAVE_VASPRINTF
 #define pcap_vasprintf vasprintf
 #else
-extern int pcap_vasprintf(char **, const char *, va_list ap);
+PCAP_UNEXPORTED_C_FUNC int pcap_vasprintf(char **, const char *, va_list ap);
 #endif
 
 #ifdef HAVE_STRTOK_R
@@ -124,7 +120,7 @@ extern int pcap_vasprintf(char **, const char *, va_list ap);
     /*
      * Define it ourselves.
      */
-    extern char *pcap_strtok_r(char *, const char *, char **);
+    PCAP_UNEXPORTED_C_FUNC char *pcap_strtok_r(char *, const char *, char **);
   #endif
 #endif /* HAVE_STRTOK_R */
 
@@ -133,9 +129,5 @@ extern int pcap_vasprintf(char **, const char *, va_list ap);
     #define inline __inline
   #endif
 #endif /* _WIN32 */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

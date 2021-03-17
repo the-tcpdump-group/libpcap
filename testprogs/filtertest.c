@@ -67,8 +67,8 @@ The Regents of the University of California.  All rights reserved.\n";
  * to include them, and only intended for use by libpcap developers trying
  * to debug the optimizer for filter expressions).
  */
-PCAP_API void pcap_set_optimizer_debug(int);
-PCAP_API void pcap_set_print_dot_graph(int);
+PCAP_EXPORTED_C_FUNC void pcap_set_optimizer_debug(int);
+PCAP_EXPORTED_C_FUNC void pcap_set_print_dot_graph(int);
 #endif
 
 static char *program_name;
