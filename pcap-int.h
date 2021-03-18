@@ -40,8 +40,17 @@
 
 #include <pcap/pcap.h>
 
+#ifdef MSDOS
+  #include <fcntl.h>
+  #include <io.h>
+#endif
+
 #include "varattrs.h"
 #include "fmtutils.h"
+
+#include <stdarg.h>
+
+#include "portability.h"
 
 /*
  * Version string.
@@ -79,11 +88,6 @@ extern int pcap_new_api;
  * of the setting of this flag.
  */
 extern int pcap_utf_8_mode;
-
-#ifdef MSDOS
-  #include <fcntl.h>
-  #include <io.h>
-#endif
 
 /*
  * Swap byte ordering of unsigned long long timestamp on a big endian
@@ -432,10 +436,6 @@ struct oneshot_userdata {
 #endif
 
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
-
-#include <stdarg.h>
-
-#include "portability.h"
 
 /*
  * Does the packet count argument to a module's read routine say
