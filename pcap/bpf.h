@@ -81,6 +81,8 @@
 
 #include <pcap/funcattrs.h>
 
+#include <pcap/dlt.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -116,8 +118,6 @@ struct bpf_program {
 	u_int bf_len;
 	struct bpf_insn *bf_insns;
 };
-
-#include <pcap/dlt.h>
 
 /*
  * The instruction encodings.
