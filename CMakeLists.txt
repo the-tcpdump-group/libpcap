@@ -1987,8 +1987,8 @@ file(GLOB PROJECT_SOURCE_LIST_H
 
 #
 # Try to have the compiler default to hiding symbols, so that only
-# symbols explicitly exported with PCAP_EXPORTED_C_FUNC or
-# PCAP_EXPORTED_DATA will be visible outside (shared) libraries.
+# symbols explicitly exported with PCAP_API will be visible outside
+# (shared) libraries.
 #
 # Not necessary with MSVC, as that's the default.
 #

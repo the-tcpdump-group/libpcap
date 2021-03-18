@@ -106,8 +106,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #
 	    # Try to have the compiler default to hiding symbols,
 	    # so that only symbols explicitly exported with
-	    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
-	    # be visible outside (shared) libraries.
+	    # PCAP_API will be visible outside (shared) libraries.
 	    #
 	    AC_LBL_CHECK_COMPILER_OPT($1, -fvisibility=hidden)
     else
@@ -126,8 +125,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    # Try to have the compiler default to hiding symbols,
 		    # so that only symbols explicitly exported with
-		    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
-		    # be visible outside (shared) libraries.
+		    # PCAP_API will be visible outside (shared) libraries.
 		    #
 		    AC_LBL_CHECK_COMPILER_OPT($1, -fvisibility=hidden)
 		    ;;
@@ -208,8 +206,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    # Try to have the compiler default to hiding symbols,
 		    # so that only symbols explicitly exported with
-		    # PCAP_EXPORTED_C_FUNC or PCAP_EXPORTED_DATA will
-		    # be visible outside (shared) libraries.
+		    # PCAP_API will be visible outside (shared) libraries.
 		    #
 		    AC_LBL_CHECK_COMPILER_OPT($1, -xldscope=hidden)
 		    ;;

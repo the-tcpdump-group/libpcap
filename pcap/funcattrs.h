@@ -43,14 +43,13 @@
  */
 
 /*
- * PCAP_EXPORTED_DATA_DEF must be used when defining *data* exported from
- * libpcap.  It should not be used in data declarations in headers.
+ * PCAP_API_DEF must be used when defining *data* exported from
+ * libpcap.  It can be used when defining *functions* exported
+ * from libpcap, but it doesn't have to be used there.  It
+ * should not be used in declarations in headers.
  *
- * PCAP_EXPORTED_C_FUNC must be used when *declaring* functions exported from
- * libpcap; PCAP_API_DEF won't work on all platforms.
- *
- * PCAP_EXPORTED_DATA must be used when *declaring* data exported from
- * libpcap; PCAP_EXPORTED_DATA_DEF won't work on all platforms.
+ * PCAP_API must be used when *declaring* data or functions
+ * exported from libpcap; PCAP_API_DEF won't work on all platforms.
  */
 
 #if defined(_WIN32)
@@ -76,26 +75,26 @@
    *
    * So:
    *
-   *    if pcap_EXPORTS is defined, we define PCAP_EXPORTED as
+   *    if pcap_EXPORTS is defined, we define PCAP_API_DEF as
    *     __declspec(dllexport);
    *
-   *    if PCAP_DLL is defined, we define PCAP_EXPORTED as
+   *    if PCAP_DLL is defined, we define PCAP_API_DEF as
    *    __declspec(dllimport);
    *
-   *    otherwise, we define PCAP_EXPORTED as nothing.
+   *    otherwise, we define PCAP_API_DEF as nothing.
    */
   #if defined(pcap_EXPORTS)
     /*
      * We're compiling libpcap as a DLL, so we should export functions
      * in our API.
      */
-    #define PCAP_EXPORTED	__declspec(dllexport)
+    #define PCAP_API_DEF	__declspec(dllexport)
   #elif defined(PCAP_DLL)
     /*
      * We're using libpcap as a DLL, so the calls will be a little more
      * efficient if we explicitly import the functions.
      */
-    #define PCAP_EXPORTED	__declspec(dllimport)
+    #define PCAP_API_DEF	__declspec(dllimport)
   #else
     /*
      * Either we're building libpcap as a static library, or we're using
@@ -103,11 +102,11 @@
      * using it as a dynamic library, so neither import nor export the
      * functions explicitly.
      */
-    #define PCAP_EXPORTED
+    #define PCAP_API_DEF
   #endif
 #elif defined(MSDOS)
   /* XXX - does this need special treatment? */
-  #define PCAP_EXPORTED
+  #define PCAP_API_DEF
 #else /* UN*X */
   #ifdef pcap_EXPORTS
     /*
@@ -123,59 +122,29 @@
        * GCC 3.4 or later, or XL C 13.0 or later, so we have
        * __attribute__((visibility()).
        */
-      #define PCAP_EXPORTED	__attribute__((visibility("default")))
+      #define PCAP_API_DEF	__attribute__((visibility("default")))
     #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
       /*
        * Sun C 5.5 or later, so we have __global.
        * (Sun C 5.9 and later also have __attribute__((visibility()),
        * but there's no reason to prefer it with Sun C.)
        */
-      #define PCAP_EXPORTED	__global
+      #define PCAP_API_DEF	__global
     #else
       /*
        * We don't have anything to say.
        */
-      #define PCAP_EXPORTED
+      #define PCAP_API_DEF
     #endif
   #else
     /*
      * We're not building libpcap.
      */
-    #define PCAP_EXPORTED
+    #define PCAP_API_DEF
   #endif
 #endif /* _WIN32/MSDOS/UN*X */
 
-/*
- * If we're compiling C++ code, flag a function as having C linkage.
- */
-#ifdef __cplusplus
-#define PCAP_C_LINKAGE "C"
-#else
-#define PCAP_C_LINKAGE
-#endif
-
-/*
- * Declare a C function used internally in libpcap but *not* exported
- * from libpcap.
- */
-#define PCAP_UNEXPORTED_C_FUNC	extern PCAP_C_LINKAGE
-
-/*
- * Declare a C function exported from libpcap.
- */
-#define PCAP_EXPORTED_C_FUNC	PCAP_EXPORTED extern PCAP_C_LINKAGE
-
-/*
- * Declare a variable exported from libpcap.
- */
-#define PCAP_EXPORTED_DATA	PCAP_EXPORTED extern
-
-/*
- * Define a variable exported from libpcap.
- *
- * No definition macro is needed for functions exported from libpcap.
- */
-#define PCAP_EXPORTED_DATA_DEF	PCAP_EXPORTED
+#define PCAP_API	PCAP_API_DEF extern
 
 /*
  * Definitions to 1) indicate what version of libpcap first had a given

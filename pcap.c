@@ -318,15 +318,15 @@ pcap_init(unsigned int opts, char *errbuf)
 /*
  * String containing the library version.
  * Not explicitly exported via a header file - the right API to use
- * is pcap_lib_version() - but some programs referred to it, so we
+ * is pcap_lib_version() - but some programs included it, so we
  * provide it.
  *
  * We declare it here, right before defining it, to squelch any
  * warnings we might get from compilers about the lack of a
  * declaration.
  */
-PCAP_EXPORTED_DATA char pcap_version[];
-PCAP_EXPORTED_DATA_DEF char pcap_version[] = PACKAGE_VERSION;
+PCAP_API char pcap_version[];
+PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
 
 static void
 pcap_set_not_initialized_message(pcap_t *pcap)
@@ -4425,7 +4425,7 @@ pcap_open_dead(int linktype, int snaplen)
  * it's not declared in any header file, and won't be declared in any
  * header file provided by libpcap.
  */
-PCAP_EXPORTED_C_FUNC void pcap_set_parser_debug(int value);
+PCAP_API void pcap_set_parser_debug(int value);
 
 PCAP_API_DEF void
 pcap_set_parser_debug(int value)

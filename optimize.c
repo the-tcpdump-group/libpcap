@@ -62,7 +62,7 @@ static int pcap_optimizer_debug;
  * it's not declared in any header file, and won't be declared in any
  * header file provided by libpcap.
  */
-PCAP_EXPORTED_C_FUNC void pcap_set_optimizer_debug(int value);
+PCAP_API void pcap_set_optimizer_debug(int value);
 
 PCAP_API_DEF void
 pcap_set_optimizer_debug(int value)
@@ -87,7 +87,7 @@ static int pcap_print_dot_graph;
  * it's not declared in any header file, and won't be declared in any
  * header file provided by libpcap.
  */
-PCAP_EXPORTED_C_FUNC void pcap_set_print_dot_graph(int value);
+PCAP_API void pcap_set_print_dot_graph(int value);
 
 PCAP_API_DEF void
 pcap_set_print_dot_graph(int value)
