@@ -37,7 +37,5 @@ addons:
       - libibverbs-dev
 
 script:
-  - uname -a
-  - date
   - apt list --installed 'lib*-dev'
   - ./build_matrix.sh

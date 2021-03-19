@@ -3,7 +3,7 @@ env:
   CIRRUS_CLONE_DEPTH: 3
 
 freebsd_task:
-  name: FBSD+BM
+  name: freebsd-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   freebsd_instance:
     matrix:
@@ -27,7 +27,7 @@ freebsd_task:
     - ./build_matrix.sh
 
 linux_task:
-  name: LNX+BM
+  name: linux-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   container:
     image: ubuntu:20.04
@@ -45,13 +45,12 @@ linux_task:
     - ./build_matrix.sh
 
 macos_task:
-  name: MAC+BM
+  name: macos-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   macos_instance:
     image: big-sur-xcode
   env:
     MAKEFLAGS: '-j 12' # macOS VMs always run on 12 cores
-    MATRIX_CC: clang # GCC is a symlink to Clang in macOS
   script:
     - brew update >/dev/null
     - ./build_matrix.sh
