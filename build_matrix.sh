@@ -12,13 +12,19 @@ set -e
 # ANSI color escape sequences
 ANSI_MAGENTA="\\033[35;1m"
 ANSI_RESET="\\033[0m"
+uname -a
+date
 # Install directory prefix
-PREFIX=/tmp/local
+if [ -z "$PREFIX" ]; then
+    PREFIX=$(mktemp -d -t libpcap_build_matrix_XXXXXXXX)
+    echo "PREFIX set to '$PREFIX'"
+    export PREFIX
+fi
 COUNT=0
 
 travis_fold() {
-    local action="$1"
-    local name="$2"
+    local action=${1:?}
+    local name=${2:?}
     if [ "$TRAVIS" != true ]; then return; fi
     echo -ne "travis_fold:$action:$LABEL.script.$name\\r"
     sleep 1
@@ -34,8 +40,11 @@ echo_magenta() {
 touch .devel configure
 for CC in ${MATRIX_CC:-gcc clang}; do
     export CC
-    # Exclude gcc on OSX (it is just an alias for clang)
-    if [ "$CC" = gcc ] && [ "$TRAVIS_OS_NAME" = osx ]; then continue; fi
+    # Exclude gcc on macOS (it is just an alias for clang).
+    if [ "$CC" = gcc ] && [ "$(uname -s)" = Darwin ]; then
+        echo '(skipped)'
+        continue
+    fi
     for CMAKE in ${MATRIX_CMAKE:-no yes}; do
         export CMAKE
         for REMOTE in ${MATRIX_REMOTE:-no yes}; do
@@ -49,7 +58,7 @@ for CC in ${MATRIX_CC:-gcc clang}; do
             echo 'Cleaning...'
             travis_fold start cleaning
             if [ "$CMAKE" = yes ]; then rm -rf build; else make distclean; fi
-            rm -rf $PREFIX
+            rm -rf "$PREFIX"/*
             git status -suall
             # Cancel changes in configure
             git checkout configure
@@ -57,5 +66,6 @@ for CC in ${MATRIX_CC:-gcc clang}; do
         done
     done
 done
+rm -rf "$PREFIX"
 echo_magenta "Tested setup count: $COUNT"
 # vi: set tabstop=4 softtabstop=0 expandtab shiftwidth=4 smarttab autoindent :
