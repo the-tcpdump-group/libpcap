@@ -341,6 +341,10 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			/* Nonblocking mode, no data */
+			return 0;
+		}
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't receive packet");
 		return -1;
