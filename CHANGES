@@ -9,6 +9,7 @@ Monthday, Month DD, YYYY
       Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
       Fix Bison detection for minor version 0.
       Fix parallel build with FreeBSD make.
+      Get DLT_MATCHING_MAX right in gencode.c on NetBSD.
     Documentation:
       Refine Markdown in README.md.
       Improve the description of portrange in filters.
@@ -24,6 +25,7 @@ Monthday, Month DD, YYYY
           or later kernel (credit to Chaoyuan Peng for noting the
           sscanf vulnerabilities in the text-mode code that got me to
           realize that we didn't need this code any more)
+      Bluetooth: fix non-blocking mode.
     Windows:
       Add more information in "interface disappeared" error messages, in
         the hopes of trying to figure out the cause.
