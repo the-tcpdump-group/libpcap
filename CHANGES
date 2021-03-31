@@ -14,6 +14,7 @@ Monthday, Month DD, YYYY
       Fix Bison detection for minor version 0.
       Fix parallel build with FreeBSD make.
       Get DLT_MATCHING_MAX right in gencode.c on NetBSD.
+      Define timeradd() and timersub() if necessary.
     Documentation:
       Refine Markdown in README.md.
       Improve the description of portrange in filters.
