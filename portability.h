@@ -113,7 +113,7 @@ extern int pcap_vasprintf(char **, const char *, va_list ap);
 #endif
 
 /* For Solaris before 11. */
-#ifndef HAVE_TIMERADD
+#ifndef timeradd
 #define timeradd(a, b, result)                       \
   do {                                               \
     (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;    \
@@ -123,8 +123,8 @@ extern int pcap_vasprintf(char **, const char *, va_list ap);
       (result)->tv_usec -= 1000000;                  \
     }                                                \
   } while (0)
-#endif /* HAVE_TIMERADD */
-#ifndef HAVE_TIMERSUB
+#endif /* timeradd */
+#ifndef timersub
 #define timersub(a, b, result)                       \
   do {                                               \
     (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;    \
@@ -134,7 +134,7 @@ extern int pcap_vasprintf(char **, const char *, va_list ap);
       (result)->tv_usec += 1000000;                  \
     }                                                \
   } while (0)
-#endif /* HAVE_TIMERSUB */
+#endif /* timersub */
 
 #ifdef HAVE_STRTOK_R
   #define pcap_strtok_r	strtok_r
