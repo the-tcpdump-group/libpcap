@@ -511,6 +511,8 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	fi
 fi
 
+AC_CHECK_FUNCS(timeradd timersub)
+
 #
 # For various things that might use pthreads.
 #

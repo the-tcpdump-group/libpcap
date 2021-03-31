@@ -18,10 +18,7 @@
 
 #include "varattrs.h"
 #include "pcap/funcattrs.h"
-
-#ifdef _WIN32
 #include "portability.h"
-#endif
 
 int main(int argc _U_, char **argv _U_)
 {
