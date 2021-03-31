@@ -860,9 +860,6 @@ if(HAVE_ETHER_HOSTTON)
 endif()
 cmake_pop_check_state()
 
-check_function_exists(timeradd HAVE_TIMERADD)
-check_function_exists(timersub HAVE_TIMERSUB)
-
 #
 # Large file support on UN*X, a/k/a LFS.
 #

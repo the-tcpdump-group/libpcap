@@ -250,12 +250,6 @@
 /* define if you have the TurboCap API */
 #undef HAVE_TC_API
 
-/* Define to 1 if you have the `timeradd' function. */
-#undef HAVE_TIMERADD
-
-/* Define to 1 if you have the `timersub' function. */
-#undef HAVE_TIMERSUB
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
