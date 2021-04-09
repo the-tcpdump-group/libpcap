@@ -13,6 +13,12 @@ Monthday, Month DD, YYYY
       Refine Markdown in README.md.
       Improve the description of portrange in filters.
       README.linux.md isn't Markdown, rename it just README.linux.
+    pcapng:
+      Support reading version 1.2, which some writers produce, and which
+          is the same as 1.0 (some new block types were added, but
+          that's not sufficient reason to bump the minor version number,
+          as code that understands those new block types can handle them
+          in a 1.0 file)
     Linux:
       Drop support for text-mode USB captures, as we require a 2.6.27
           or later kernel (credit to Chaoyuan Peng for noting the
