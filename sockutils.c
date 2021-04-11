@@ -527,7 +527,7 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
 }
 
 /*
- * gai_errstring() has some problems:
+ * gai_strerror() has some problems:
  *
  * 1) on Windows, Microsoft explicitly says it's not thread-safe;
  * 2) on UN*X, the Single UNIX Specification doesn't say it *is*
