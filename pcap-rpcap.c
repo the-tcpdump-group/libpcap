@@ -1003,11 +1003,10 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = getaddrinfo(host, "0", &hints, &addrinfo);
+	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s",
-		    gai_strerror(retval));
 		*error = 1;
 		return NULL;
 	}
@@ -2992,10 +2991,10 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = getaddrinfo(host, "0", &hints, &addrinfo);
+	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
 		return -1;
 	}
 
