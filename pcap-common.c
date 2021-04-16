@@ -1196,7 +1196,18 @@
  */
 #define LINKTYPE_ETW		290
 
-#define LINKTYPE_MATCHING_MAX	290		/* highest value in the "matching" range */
+/*
+ * Hilscher Gesellschaft fuer Systemautomation mbH 
+ * netANALYZER NG hardware and software.
+ * 
+ * The specification for this footer can be found at:
+ * https://kb.hilscher.com/x/brDJBw
+ *
+ * Requested by Jan Adam <jadam@hilscher.com>
+ */
+#define LINKTYPE_NETANALYZER_NG	292
+
+#define LINKTYPE_MATCHING_MAX	292		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
