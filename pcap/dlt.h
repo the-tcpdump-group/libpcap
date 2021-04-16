@@ -1494,7 +1494,7 @@
  *
  * Requested by Jan Adam <jadam@hilscher.com>
  */
-#define DLT_NETANALYZER_NG	292
+#define DLT_NETANALYZER_NG	291
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1506,7 +1506,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	292	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	291	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
