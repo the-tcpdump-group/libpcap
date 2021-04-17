@@ -969,7 +969,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 
 	   Version 1.2 is written by some programs that write additional
 	   block types (which can be read by any code that handles them,
-	   regarless of whether the minor version if 0 or 2, so that's
+	   regardless of whether the minor version if 0 or 2, so that's
 	   not a reason to change the minor version number).
 
 	   XXX - the pcapng specification says that readers should
