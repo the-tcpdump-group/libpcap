@@ -1,7 +1,9 @@
 Monthday, Month DD, YYYY
   Summary for 1.10.1 libpcap release (so far!)
     Packet filtering:
-        Fix "type XXX subtype YYY" giving a parse error
+      Fix "type XXX subtype YYY" giving a parse error
+    Source code:
+      Add PCAP_AVAILABLE_1_11.
     Building and testing:
       Rename struct bpf_aux_data to avoid NetBSD compile errors
       Squelch some compiler warnings
@@ -11,6 +13,10 @@ Monthday, Month DD, YYYY
       Fix parallel build with FreeBSD make.
       Get DLT_MATCHING_MAX right in gencode.c on NetBSD.
       Define timeradd() and timersub() if necessary.
+      Fix Cygwin/MSYS target directories.
+      Fix symlinking with DESTDIR.
+      Fix generation of libpcap.pc with CMake when not building a shared
+          library. 
     Documentation:
       Refine Markdown in README.md.
       Improve the description of portrange in filters.
@@ -36,6 +42,9 @@ Monthday, Month DD, YYYY
       Report the Windows error status if PacketSendPacket() fails.
       Use %lu for ULONGs in error message formats.
       Don't treat the inability to find airpcap.dll as an error.
+    rpcap:
+      Clean up error checking and error messages for server address
+          lookup.
 
 Tuesday, December 29, 2020
   Summary for 1.10.0 libpcap release
