@@ -350,6 +350,17 @@ struct pcap {
  * BPF code generation flags.
  */
 #define BPF_SPECIAL_VLAN_HANDLING	0x00000001	/* special VLAN handling for Linux */
+/*
+ * Interface Error Codes
+ * It is likely that there are other devices which throw spurious errors, at which point
+ * this will need refactoring to efficiently check against a list, but for now we can just
+ * check this one value.
+ */
+#define NPF_SURFACE_MOBILE_NONPROMISC	0xe00000bb
+/* Attempting to set non-promiscuous mode on a noncompliant Microsoft Surface Pro
+ * Mobile Broadband Adapter returns an error that can safely be ignored, as it's
+ * always in non-promiscuous mode.
+ */
 
 /*
  * This is a timeval as stored in a savefile.
