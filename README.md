@@ -1,8 +1,5 @@
 # LIBPCAP 1.x.y by [The Tcpdump Group](https://www.tcpdump.org)
 
-[![Build Status](https://api.travis-ci.com/the-tcpdump-group/libpcap.svg?branch=master)](https://travis-ci.com/github/the-tcpdump-group/libpcap)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/the-tcpdump-group/libpcap?branch=master&svg=true)](https://ci.appveyor.com/project/guyharris/libpcap)
-
 **To report a security issue please send an e-mail to security@tcpdump.org.**
 
 To report bugs and other problems, contribute patches, request a
