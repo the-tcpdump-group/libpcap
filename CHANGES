@@ -33,6 +33,8 @@ Monthday, Month DD, YYYY
           sscanf vulnerabilities in the text-mode code that got me to
           realize that we didn't need this code any more)
       Bluetooth: fix non-blocking mode.
+      Don't assume that all compilers used to build for Linux support
+          the __atomic builtins
     Windows:
       Add more information in "interface disappeared" error messages, in
         the hopes of trying to figure out the cause.
@@ -42,6 +44,8 @@ Monthday, Month DD, YYYY
       Report the Windows error status if PacketSendPacket() fails.
       Use %lu for ULONGs in error message formats.
       Don't treat the inability to find airpcap.dll as an error.
+      Ignore spurious error reports by Microsoft Surface mobile
+          telephony modem driver
     rpcap:
       Clean up error checking and error messages for server address
           lookup.
