@@ -259,6 +259,12 @@
 /* Define to 1 if you have the `_wcserror_s' function. */
 #cmakedefine HAVE__WCSERROR_S 1
 
+/* define if __atomic_load_n is supported by the compiler */
+#cmakedefine HAVE___ATOMIC_LOAD_N 1
+
+/* define if __atomic_store_n is supported by the compiler */
+#cmakedefine HAVE___ATOMIC_STORE_N 1
+
 /* Define to 1 if you have the `PacketGetTimestampModes' function. */
 #cmakedefine HAVE_PACKET_GET_TIMESTAMP_MODES 1
 
