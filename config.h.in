@@ -262,6 +262,12 @@
 /* Define to 1 if you have the `_wcserror_s' function. */
 #undef HAVE__WCSERROR_S
 
+/* define if __atomic_load_n is supported by the compiler */
+#undef HAVE___ATOMIC_LOAD_N
+
+/* define if __atomic_store_n is supported by the compiler */
+#undef HAVE___ATOMIC_STORE_N
+
 /* IPv6 */
 #undef INET6
 

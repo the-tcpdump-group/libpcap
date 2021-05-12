@@ -662,6 +662,48 @@ AC_DEFUN(AC_LBL_C_INLINE,
     fi
     AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
 
+FFF
+
+#
+# Test whether we have __atomic_load_n() and __atomic_store_n().
+#
+# We use AC_TRY_LINK because AC_TRY_COMPILE will succeed, as the
+# compiler will just think that those functions are undefined,
+# and perhaps warn about that, but not fail to compile.
+#
+AC_DEFUN(AC_PCAP_C___ATOMICS,
+    [
+	AC_MSG_CHECKING(for __atomic_load_n)
+	AC_CACHE_VAL(ac_cv_have___atomic_load_n,
+	    AC_TRY_LINK([],
+		[
+		    int i = 17;
+		    int j;
+		    j = __atomic_load_n(&i, __ATOMIC_RELAXED);
+		],
+		ac_have___atomic_load_n=yes,
+		ac_have___atomic_load_n=no))
+	AC_MSG_RESULT($ac_have___atomic_load_n)
+	if test $ac_have___atomic_load_n = yes ; then
+	    AC_DEFINE(HAVE___ATOMIC_LOAD_N, 1,
+		[define if __atomic_load_n is supported by the compiler])
+	fi
+
+	AC_MSG_CHECKING(for __atomic_store_n)
+	AC_CACHE_VAL(ac_cv_have___atomic_store_n,
+	    AC_TRY_LINK([],
+		[
+		    int i;
+		    __atomic_store_n(&i, 17, __ATOMIC_RELAXED);
+		],
+		ac_have___atomic_store_n=yes,
+		ac_have___atomic_store_n=no))
+	AC_MSG_RESULT($ac_have___atomic_store_n)
+	if test $ac_have___atomic_store_n = yes ; then
+	    AC_DEFINE(HAVE___ATOMIC_STORE_N, 1,
+		[define if __atomic_store_n is supported by the compiler])
+	fi])
+
 dnl
 dnl If using gcc, make sure we have ANSI ioctl definitions
 dnl
