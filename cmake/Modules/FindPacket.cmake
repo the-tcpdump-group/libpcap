@@ -63,8 +63,26 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   # variable, CMAKE_C_LIBRARY_ARCHITECTURE, so that CMAKE_LIBRARY_ARCHITECTURE
   # inherits the correct value.
   #
-  set(CMAKE_C_LIBRARY_ARCHITECTURE "x64")
-  set(CMAKE_LIBRARY_ARCHITECTURE "x64")
+  set(archdetect_c_code "
+  #ifndef _M_ARM64
+  #error Not ARM64
+  #endif
+  int main() { return 0; }
+  ")
+
+  file(WRITE "${CMAKE_BINARY_DIR}/archdetect.c" "${archdetect_c_code}")
+  try_compile(
+	  IsArm64 
+	  "${CMAKE_BINARY_DIR}/archdetect"
+	  "${CMAKE_BINARY_DIR}/archdetect.c"
+	  )
+  if(IsArm64)
+	  set(CMAKE_C_LIBRARY_ARCHITECTURE "ARM64")
+	  set(CMAKE_LIBRARY_ARCHITECTURE "ARM64")
+  else()
+	  set(CMAKE_C_LIBRARY_ARCHITECTURE "x64")
+	  set(CMAKE_LIBRARY_ARCHITECTURE "x64")
+  endif()
 endif()
 
 # Find the header
