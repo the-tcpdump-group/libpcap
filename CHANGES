@@ -20,7 +20,9 @@ Monthday, Month DD, YYYY
       Fix Cygwin/MSYS target directories.
       Fix symlinking with DESTDIR.
       Fix generation of libpcap.pc with CMake when not building a shared
-          library. 
+          library.
+      Check for Arm64 as well as x86-64 when looking for packet.lib on
+          Windows.
     Documentation:
       Refine Markdown in README.md.
       Improve the description of portrange in filters.
