@@ -27,7 +27,7 @@ if(NOT dpdk_INCLUDE_DIRS)
       include
 )
   set(dpdk_INCLUDE_DIRS "${dpdk_config_INCLUDE_DIR}")
-  if(NOT dpdk_config_INCLUDE_DIR EQUAL dpdk_common_INCLUDE_DIR)
+  if(NOT dpdk_config_INCLUDE_DIR STREQUAL dpdk_common_INCLUDE_DIR)
     list(APPEND dpdk_INCLUDE_DIRS "${dpdk_common_INCLUDE_DIR}")
   endif()
 
