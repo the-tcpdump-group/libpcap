@@ -58,7 +58,7 @@ for CC in ${MATRIX_CC:-gcc clang}; do
             echo 'Cleaning...'
             travis_fold start cleaning
             if [ "$CMAKE" = yes ]; then rm -rf build; else make distclean; fi
-            rm -rf "$PREFIX"/*
+            rm -rf "${PREFIX:?}"/*
             git status -suall
             # Cancel changes in configure
             git checkout configure
