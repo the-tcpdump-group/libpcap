@@ -53,7 +53,7 @@ else
     cd build
     echo '$ cmake [...]'
     travis_fold start cmake
-    cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DENABLE_REMOTE="$REMOTE" ..
+    cmake -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
     travis_fold end cmake
 fi
 run_after_echo "make -s clean"
