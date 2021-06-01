@@ -829,3 +829,6 @@ depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	(cd rpcapd; $(MAKE) depend)
 	(cd testprogs; $(MAKE) depend)
+
+shellcheck:
+	shellcheck -f gcc build.sh build_matrix.sh
