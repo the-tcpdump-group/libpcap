@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <pcap/pcap.h>
 
@@ -67,6 +68,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     r = pcap_next_ex(pkts, &header, &pkt);
     while (r > 0) {
         //TODO pcap_offline_filter
+        assert(header->caplen <= header->len);
         fprintf(outfile, "packet length=%d/%d\n",header->caplen, header->len);
         r = pcap_next_ex(pkts, &header, &pkt);
     }
