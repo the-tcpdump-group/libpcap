@@ -1871,6 +1871,18 @@ if(NOT DISABLE_TC)
 endif()
 
 #
+# OpenVizsla
+#
+pkg_check_modules(OPENVIZSLA openvizsla)
+if(OPENVIZSLA_FOUND)
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-openvizsla.c)
+    include_directories(AFTER ${OPENVIZSLA_INCLUDE_DIRS})
+    link_directories(AFTER ${OPENVIZSLA_LIBRARY_DIRS})
+    set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENVIZSLA_LIBRARIES})
+    set(PCAP_SUPPORT_OPENVIZSLA TRUE)
+endif(OPENVIZSLA_FOUND)
+
+#
 # Remote capture support.
 #
 
@@ -2136,6 +2148,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
     GENERATED TRUE
     OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
 )
+
 
 #
 # Add grammar.c to the list of sources.

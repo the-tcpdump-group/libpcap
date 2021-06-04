@@ -623,6 +623,7 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+PCAP_SUPPORT_OPENVIZSLA
 PCAP_SUPPORT_RDMASNIFF
 PCAP_SUPPORT_DBUS
 PCAP_SUPPORT_BT
@@ -765,6 +766,7 @@ with_dpdk
 enable_bluetooth
 enable_dbus
 enable_rdma
+enable_openvizsla
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1411,6 +1413,8 @@ Optional Features:
   --enable-dbus           enable D-Bus capture support [default=yes, if
                           support available]
   --enable-rdma           enable RDMA capture support [default=yes, if support
+                          available]
+  --enable-openvizsla     enable OpenVizsla support [default=yes, if support
                           available]
 
 Optional Packages:
@@ -11904,6 +11908,47 @@ fi
 
 fi
 
+
+fi
+
+# Check whether --enable-openvizsla was given.
+if test "${enable_openvizsla+set}" = set; then :
+  enableval=$enable_openvizsla;
+else
+  enable_openvizsla=ifavailable
+fi
+
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want OpenVizsla support.
+	enable_openvizsla=no
+fi
+
+if test "x$enable_openvizsla" != "xno"; then
+	if test "x$PKGCONFIG" != "xno"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libopenvizsla" >&5
+$as_echo_n "checking for libopenvizsla... " >&6; }
+		if "$PKGCONFIG" openvizsla; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			OPENVIZSLA_CFLAGS=`"$PKGCONFIG" --cflags openvizsla`
+			OPENVIZSLA_LIBS=`"$PKGCONFIG" --libs openvizsla`
+			CFLAGS="$CFLAGS $OPENVIZSLA_CFLAGS"
+			LIBS="$LIBS $OPENVIZSLA_LIBS"
+			MODULE_C_SRC="$MODULE_C_SRC pcap-openvizsla.c"
+
+
+$as_echo "#define PCAP_SUPPORT_OPENVIZSLA 1" >>confdefs.h
+
+		else
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+			if test "x$enable_openvizsla" = "xyes"; then
+				as_fn_error $? "--enable-openvizsla was given, but the openvizsla package is not installed" "$LINENO" 5
+			fi
+		fi
+	fi
 
 fi
 

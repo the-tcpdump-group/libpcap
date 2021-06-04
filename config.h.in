@@ -325,6 +325,9 @@
 /* target host supports netmap */
 #undef PCAP_SUPPORT_NETMAP
 
+/* support OpenVizsla */
+#undef PCAP_SUPPORT_OPENVIZSLA
+
 /* target host supports RDMA sniffing */
 #undef PCAP_SUPPORT_RDMASNIFF
 
