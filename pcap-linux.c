@@ -3881,6 +3881,8 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 #define ISA_64_BIT	"s390x"
 #elif defined(__mips__)
 #define ISA_64_BIT	"mips64"
+#elif defined(__loongarch__)
+#define ISA_64_BIT     "loongarch64"
 #elif defined(__hppa__)
 #define ISA_64_BIT	"parisc64"
 #endif
