@@ -210,6 +210,8 @@ else()
     option(ENABLE_REMOTE "Enable remote capture" OFF)
 endif(WIN32)
 
+option(ENABLE_RPCAPD_DYNAMIC "Make rpcapd link to libpcap shared library rather than statically linking it" OFF)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
