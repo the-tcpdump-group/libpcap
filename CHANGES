@@ -1,5 +1,5 @@
-Monthday, Month DD, YYYY
-  Summary for 1.10.1 libpcap release (so far!)
+Wednesday, June 9, 2011:
+  Summary for 1.10.1 libpcap release:
     Packet filtering:
       Fix "type XXX subtype YYY" giving a parse error
     Source code:
