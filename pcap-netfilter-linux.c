@@ -33,6 +33,7 @@
 #endif
 
 #include "pcap-int.h"
+#include "diag-control.h"
 
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
@@ -343,7 +344,9 @@ netfilter_send_config_msg(const pcap_t *handle, uint16_t msg_type, int ack, u_in
 	static unsigned int seq_id;
 
 	if (!seq_id)
+DIAG_OFF_NARROWING
 		seq_id = time(NULL);
+DIAG_ON_NARROWING
 	++seq_id;
 
 	nlh->nlmsg_len = NLMSG_LENGTH(sizeof(struct nfgenmsg));
