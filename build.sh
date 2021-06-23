@@ -57,8 +57,8 @@ else
     travis_fold end cmake
 fi
 run_after_echo "make -s clean"
-run_after_echo "make -s"
-run_after_echo "make -s testprogs"
+run_after_echo "make -s -k CFLAGS=-Werror"
+run_after_echo "make -s -k CFLAGS=-Werror testprogs"
 echo '$ make install'
 travis_fold start make_install
 make install
