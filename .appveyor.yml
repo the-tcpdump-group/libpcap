@@ -105,12 +105,12 @@ build_script:
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%MINGW_ROOT%\mingw64\bin;%PATH%
   # Debugging stuff
   - if "%GENERATOR%"=="MinGW Makefiles" set
-  - if "%GENERATOR%"=="MinGW Makefiles" dir/s *Error*
   # Remove the path to Git, so that we don't pick up its sh.exe, as
   # that breaks MinGW builds - CMake checks for that and fails in the
   # configuration stage
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - if NOT DEFINED PLATFORM  cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" ..
   - if DEFINED PLATFORM cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
+  - if "%GENERATOR%"=="MinGW Makefiles" dir/s *Error*
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
