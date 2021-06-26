@@ -103,9 +103,6 @@ build_script:
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\MinGW\bin;=%
   # Add the specified MinGW path
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%MINGW_ROOT%\mingw64\bin;%PATH%
-  # Debugging stuff
-  - if "%GENERATOR%"=="MinGW Makefiles" set
-  - if "%GENERATOR%"=="MinGW Makefiles" type C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\ntddndis.h
   # Remove the path to Git, so that we don't pick up its sh.exe, as
   # that breaks MinGW builds - CMake checks for that and fails in the
   # configuration stage
