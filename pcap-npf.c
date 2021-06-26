@@ -1052,10 +1052,9 @@ pcap_activate_npf(pcap_t *p)
 	/*Set the linktype*/
 	switch (type.LinkType)
 	{
-	case NdisMediumWan:
-		p->linktype = DLT_EN10MB;
-		break;
-
+	/*
+	 * NDIS-defined medium types.
+	 */
 	case NdisMedium802_3:
 		p->linktype = DLT_EN10MB;
 		/*
@@ -1079,12 +1078,19 @@ pcap_activate_npf(pcap_t *p)
 		}
 		break;
 
+	case NdisMedium802_5:
+		/*
+		 * Token Ring.
+		 */
+		p->linktype = DLT_IEEE802;
+		break;
+
 	case NdisMediumFddi:
 		p->linktype = DLT_FDDI;
 		break;
 
-	case NdisMedium802_5:
-		p->linktype = DLT_IEEE802;
+	case NdisMediumWan:
+		p->linktype = DLT_EN10MB;
 		break;
 
 	case NdisMediumArcnetRaw:
@@ -1099,16 +1105,27 @@ pcap_activate_npf(pcap_t *p)
 		p->linktype = DLT_ATM_RFC1483;
 		break;
 
+	case NdisMediumWirelessWan:
+		p->linktype = DLT_RAW;
+		break;
+
+	case NdisMediumIP:
+		p->linktype = DLT_RAW;
+		break;
+
+	/*
+	 * Npcap-defined medium types.
+	 */
+	case NdisMediumNull:
+		p->linktype = DLT_NULL;
+		break;
+
 	case NdisMediumCHDLC:
 		p->linktype = DLT_CHDLC;
 		break;
 
 	case NdisMediumPPPSerial:
 		p->linktype = DLT_PPP_SERIAL;
-		break;
-
-	case NdisMediumNull:
-		p->linktype = DLT_NULL;
 		break;
 
 	case NdisMediumBare80211:
@@ -1121,14 +1138,6 @@ pcap_activate_npf(pcap_t *p)
 
 	case NdisMediumPpi:
 		p->linktype = DLT_PPI;
-		break;
-
-	case NdisMediumWirelessWan:
-		p->linktype = DLT_RAW;
-		break;
-
-	case NdisMediumIP:
-		p->linktype = DLT_RAW;
 		break;
 
 	default:
