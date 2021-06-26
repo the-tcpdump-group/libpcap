@@ -1142,6 +1142,7 @@ if(WIN32)
 "/* Old-school MinGW have these headers in a different place.
  */
 //#include <winsock2.h>
+#define __MINGW64_VERSION_MAJOR
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
   #include <ddk/ntddndis.h>
   #include <ddk/ndis.h>
