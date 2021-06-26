@@ -1127,6 +1127,10 @@ pcap_activate_npf(pcap_t *p)
 		p->linktype = DLT_RAW;
 		break;
 
+	case NdisMediumIP:
+		p->linktype = DLT_RAW;
+		break;
+
 	default:
 		/*
 		 * An unknown medium type is assumed to supply Ethernet
