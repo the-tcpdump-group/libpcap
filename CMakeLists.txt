@@ -1155,7 +1155,7 @@ if(WIN32)
 int
 main(void)
 {
-    return NdisMediumIP;
+    return NdisMediumMax;
 }
 "
                 HAVE_NDIS_MEDIUM_IP)
