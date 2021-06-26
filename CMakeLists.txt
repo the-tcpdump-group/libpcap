@@ -1130,32 +1130,6 @@ if(WIN32)
             # Set the capture type to NPF.
             #
             set(PCAP_TYPE npf)
-
-            #
-            # Check whether ntddndis.h defines NdisMediumIP.
-            # SDKs for older versions of Windows (Windows 7,
-            # Windows 8?) don't define it.
-            # It's an enum value, so this is the only way
-            # to test whether it's defined.
-            #
-            check_c_source_compiles(
-"/* Old-school MinGW have these headers in a different place.
- */
-#include <winsock2.h>
-#if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
-  #include <ddk/ntddndis.h>
-  #include <ddk/ndis.h>
-#else
-  #include <ntddndis.h>  /* MSVC/TDM-MinGW/MinGW64 */
-#endif
-
-int
-main(void)
-{
-    return NdisMediumIP;
-}
-"
-                HAVE_NDIS_MEDIUM_IP)
         else()
             #
             # We don't have any capture type we know about, so just use

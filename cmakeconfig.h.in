@@ -99,9 +99,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H 1
 
-/* Define to 1 if you have the `NdisMediumIP` enum value. */
-#cmakedefine HAVE_NDIS_MEDIUM_IP 1
-
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #cmakedefine HAVE_NETPACKET_PACKET_H 1
 
