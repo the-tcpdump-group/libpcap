@@ -151,6 +151,7 @@ endif(MSVC)
 # later, as it depends on C99 features introduced in VS 2015.
 #
 if(MINGW)
+message(STATUS "OK, this is MinGW")
     add_definitions(-D_WIN32_WINNT=0x0601)
 endif(MINGW)
 
