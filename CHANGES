@@ -1,3 +1,8 @@
+Monthday, Month DD, UUU
+  Summary for 1.10.2 libpcap release (so far!)
+    Windows:
+      Add support for NdisMediumIP
+
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
     Packet filtering:
