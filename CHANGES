@@ -1,4 +1,4 @@
-Monthday, Month DD, UUU
+Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
     Windows:
       Add support for NdisMediumIP
