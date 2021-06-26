@@ -1,14 +1,14 @@
-Monthday, Month DD, YYYY
+Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
     Add LINKTYPE_ETW/DLT_ETW.
 
-Monthday, Month DD, UUU
+Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
     Windows:
       Add support for NdisMediumIP
 
-Wednesday, June 9, 2021
-  Summary for 1.10.1 libpcap release
+Wednesday, June 9, 2021:
+  Summary for 1.10.1 libpcap release:
     Packet filtering:
       Fix "type XXX subtype YYY" giving a parse error
     Source code:
