@@ -142,14 +142,16 @@ endif(MSVC)
 #
 # If we're building with MinGW, we need to specify _WIN32_WINNT as
 # 0x0600 ("NT 6.0", a/k/a Vista/Windows Server 2008) in order to
-# get the full IPv6 API, including inet_ntop().
+# get the full IPv6 API, including inet_ntop(), and we need to
+# specify it as 0x0601 ("NT 6.1", a/k/a Windows 7) in order to
+# get NdisMediumIP.
 #
 # NOTE: pcap does *NOT* work with msvcrt.dll; it must link with
 # a newer version of the C library, i.e. Visual Studio 2015 or
 # later, as it depends on C99 features introduced in VS 2015.
 #
 if(MINGW)
-    add_definitions(-D_WIN32_WINNT=0x0600)
+    add_definitions(-D_WIN32_WINNT=0x0601)
 endif(MINGW)
 
 #
@@ -1141,8 +1143,10 @@ if(WIN32)
             check_c_source_compiles(
 "/* Old-school MinGW have these headers in a different place.
  */
-//#include <winsock2.h>
-#define __MINGW64_VERSION_MAJOR
+#if _WIN32_WINNT < 0x0600
+#define _WIN32_WINNT 0x0600
+#endif
+#include <winsock2.h>
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
   #include <ddk/ntddndis.h>
   #include <ddk/ndis.h>
