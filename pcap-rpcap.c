@@ -36,6 +36,7 @@
 #endif
 
 #include "ftmacros.h"
+#include "diag-control.h"
 
 #include <string.h>		/* for strlen(), ... */
 #include <stdlib.h>		/* for malloc(), free(), ... */
@@ -3351,7 +3352,9 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
+			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			DIAG_ON_FORMAT_TRUNCATION
 			return;
 		}
 
@@ -3386,7 +3389,9 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
+			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			DIAG_ON_FORMAT_TRUNCATION
 			return;
 		}
 
