@@ -121,6 +121,8 @@
     __pragma(warning(disable:4996))
   #define DIAG_ON_DEPRECATION \
     __pragma(warning(pop))
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
    * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -160,6 +162,8 @@
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(clang diagnostic pop)
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * This is GCC 4.6 or later, or a compiler claiming to be that.
@@ -188,6 +192,15 @@
     PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(GCC diagnostic pop)
+
+  /*
+   * Suppress format-truncation= warnings.
+   */
+  #define DIAG_OFF_FORMAT_TRUNCATION \
+    PCAP_DO_PRAGMA(GCC diagnostic push) \
+    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wformat-truncation=")
+  #define DIAG_ON_FORMAT_TRUNCATION \
+    PCAP_DO_PRAGMA(GCC diagnostic pop)
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
@@ -200,6 +213,8 @@
   #define DIAG_ON_NARROWING
   #define DIAG_OFF_DEPRECATION
   #define DIAG_ON_DEPRECATION
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #endif
 
 #ifdef YYBYACC

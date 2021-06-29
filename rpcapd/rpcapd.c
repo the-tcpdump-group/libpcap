@@ -35,6 +35,7 @@
 #endif
 
 #include "ftmacros.h"
+#include "diag-control.h"
 
 #include <errno.h>		// for the errno variable
 #include <string.h>		// for strtok, etc
@@ -1361,9 +1362,11 @@ main_active(void *ptr)
 		{
 			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
+			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error connecting to host %s, port %s, using protocol %s",
 					activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 					(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
+			DIAG_ON_FORMAT_TRUNCATION
 
 			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
