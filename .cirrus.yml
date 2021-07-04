@@ -22,7 +22,7 @@ freebsd_task:
     MATRIX_CC: clang gcc48 gcc10
   script:
     - pkg install -qy autoconf gcc48 gcc10
-    - pkg install -qy bash cmake git # for build_matrix.sh and build.sh
+    - pkg install -qy cmake git # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
 linux_task:
