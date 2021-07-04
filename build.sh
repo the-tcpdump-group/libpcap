@@ -1,9 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/sh -e
 
 # This script runs one build with setup environment variables: CC, CMAKE and
 # REMOTE (default: CC=gcc, CMAKE=no, REMOTE=no).
-
-set -e
 
 # CC: gcc or clang
 CC=${CC:-gcc}
@@ -22,16 +20,16 @@ if [ -z "$PREFIX" ]; then
 fi
 
 travis_fold() {
-    local action=${1:?}
-    local name=${2:?}
+    tf_action=${1:?}
+    tf_name=${2:?}
     if [ "$TRAVIS" != true ]; then return; fi
-    echo -ne "travis_fold:$action:$LABEL.script.$name\\r"
+    printf 'travis_fold:%s:%s.script.%s\r' "$tf_action" "$LABEL" "$tf_name"
     sleep 1
 }
 
 # Run a command after displaying it
 run_after_echo() {
-    echo -n '$ '
+    printf '$ '
     echo "$@"
     # shellcheck disable=SC2068
     $@
