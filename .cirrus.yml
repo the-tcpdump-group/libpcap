@@ -68,13 +68,10 @@ coverity_task:
     COVERITY_SCAN_TOKEN: ENCRYPTED[58bfbfcf624e5b7b85fb9df95dd0b3f9f93642824e6ae94616e4d345af4848580932a6ece02337fee112194b29ce6593]
     COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote
     COVERITY_SCAN_BUILD_COMMAND: make
-    COVERITY_SCAN_BRANCH_PATTERN: $CIRRUS_BRANCH
-    TRAVIS_BRANCH: $CIRRUS_BRANCH
-    TRAVIS_PULL_REQUEST: ${CIRRUS_BASE_BRANCH:+true}
   script:
     - apt-get -qy update
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
     - apt-get -qy install flex bison autoconf make gcc
     - apt-get -qy install git curl wget ruby rubygems ruby-json # for the coverity script
     - apt list --installed 'lib*-dev'
-    - ./.travis-coverity-scan-build.sh
+    - ./.ci-coverity-scan-build.sh
