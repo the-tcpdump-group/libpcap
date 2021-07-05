@@ -19,14 +19,6 @@ if [ -z "$PREFIX" ]; then
     DELETE_PREFIX=yes
 fi
 
-travis_fold() {
-    tf_action=${1:?}
-    tf_name=${2:?}
-    if [ "$TRAVIS" != true ]; then return; fi
-    printf 'travis_fold:%s:%s.script.%s\r' "$tf_action" "$LABEL" "$tf_name"
-    sleep 1
-}
-
 # Run a command after displaying it
 run_after_echo() {
     printf '$ '
@@ -35,13 +27,9 @@ run_after_echo() {
     $@
 }
 
-# LABEL is needed to build the travis fold labels
-LABEL="$CC.$CMAKE.$REMOTE"
 if [ "$CMAKE" = no ]; then
     echo '$ ./configure [...]'
-    travis_fold start configure
     ./configure --prefix="$PREFIX" --enable-remote="$REMOTE"
-    travis_fold end configure
 else
     # Remove the leftovers from any earlier in-source builds, so this
     # out-of-source build does not break because of that.
@@ -50,17 +38,13 @@ else
     [ ! -d build ] && mkdir build
     cd build
     echo '$ cmake [...]'
-    travis_fold start cmake
     cmake -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
-    travis_fold end cmake
 fi
 run_after_echo "make -s clean"
 run_after_echo "make -s"
 run_after_echo "make -s testprogs"
 echo '$ make install'
-travis_fold start make_install
 make install
-travis_fold end make_install
 if [ "$CMAKE" = no ]; then
     run_after_echo "testprogs/findalldevstest"
 else
@@ -72,20 +56,14 @@ if [ "$CMAKE" = no ]; then
         run_after_echo "make releasetar"
     fi
 fi
-if [ "$TRAVIS" = true ]; then
+if [ "$MATRIX_DEBUG" = true ]; then
     echo '$ cat Makefile [...]'
-    travis_fold start cat_makefile
     sed '/^# DO NOT DELETE THIS LINE -- mkdep uses it.$/q' < Makefile
-    travis_fold end cat_makefile
     echo '$ cat config.h'
-    travis_fold start cat_config_h
     cat config.h
-    travis_fold end cat_config_h
     if [ "$CMAKE" = no ]; then
         echo '$ cat config.log'
-        travis_fold start cat_config_log
         cat config.log
-        travis_fold end cat_config_log
     fi
 fi
 if [ "$DELETE_PREFIX" = yes ]; then
