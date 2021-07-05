@@ -17,14 +17,6 @@ if [ -z "$PREFIX" ]; then
 fi
 COUNT=0
 
-travis_fold() {
-    tf_action=${1:?}
-    tf_name=${2:?}
-    if [ "$TRAVIS" != true ]; then return; fi
-    printf 'travis_fold:%s:%s.script.%s\r' "$tf_action" "$LABEL" "$tf_name"
-    sleep 1
-}
-
 # Display text in magenta
 echo_magenta() {
     printf '\033[35;1m' # ANSI magenta
@@ -46,18 +38,14 @@ for CC in ${MATRIX_CC:-gcc clang}; do
             export REMOTE
             COUNT=$((COUNT+1))
             echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE ====="
-            # LABEL is needed to build the travis fold labels
-            LABEL="$CC.$CMAKE.$REMOTE"
             # Run one build with setup environment variables: CC, CMAKE and REMOTE
             ./build.sh
             echo 'Cleaning...'
-            travis_fold start cleaning
             if [ "$CMAKE" = yes ]; then rm -rf build; else make distclean; fi
             rm -rf "${PREFIX:?}"/*
             git status -suall
             # Cancel changes in configure
             git checkout configure
-            travis_fold end cleaning
         done
     done
 done
