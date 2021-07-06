@@ -136,7 +136,12 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   set(MANFILE_EXPAND rpcapd-config.manfile.in)
 
   if(NOT MSVC)
-    install(TARGETS rpcapd DESTINATION sbin)
+    # DLL and EXE need to be in same bin path in Win32 platform
+    if(MINGW)
+      install(TARGETS rpcapd DESTINATION ${CMAKE_INSTALL_BINDIR})
+    else(MINGW)
+      install(TARGETS rpcapd DESTINATION sbin)
+    endif(MINGW)
   else(NOT MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
       install(TARGETS rpcapd DESTINATION bin/amd64)

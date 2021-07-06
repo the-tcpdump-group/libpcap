@@ -33,6 +33,7 @@
  */
 
 #ifdef _WIN32
+#include <errno.h>
 #include <stdio.h>
 #include <errno.h>
 
