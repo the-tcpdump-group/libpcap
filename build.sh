@@ -41,8 +41,8 @@ else
     cmake -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
 fi
 run_after_echo "make -s clean"
-run_after_echo "make -s"
-run_after_echo "make -s testprogs"
+run_after_echo "make -s -k CFLAGS=-Werror"
+run_after_echo "make -s -k CFLAGS=-Werror testprogs"
 echo '$ make install'
 make install
 if [ "$CMAKE" = no ]; then
