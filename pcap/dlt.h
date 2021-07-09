@@ -1486,6 +1486,13 @@
 #define DLT_ETW			290
 
 /*
+ * Auerswald Logger Protocol
+ * description is provided on 
+ * https://github.com/Auerswald-GmbH/auerlog/blob/master/auerlog.txt
+ */
+#define DLT_AUERSWALD_LOG	291
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1495,7 +1502,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	290	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	291	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

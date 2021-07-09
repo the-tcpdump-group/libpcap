@@ -1196,7 +1196,15 @@
  */
 #define LINKTYPE_ETW		290
 
-#define LINKTYPE_MATCHING_MAX	290		/* highest value in the "matching" range */
+/*
+ * Auerswald Logger Protocol
+ * description is provided on 
+ * https://github.com/Auerswald-GmbH/auerlog/blob/master/auerlog.txt
+ * requested by Auerswald Developer Team <developer(at)auerswald.de> 
+ */
+#define LINKTYPE_AUERSWALD_LOG	291
+
+#define LINKTYPE_MATCHING_MAX	291		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
