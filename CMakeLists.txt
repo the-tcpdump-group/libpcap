@@ -1080,6 +1080,7 @@ set(PROJECT_SOURCE_LIST_C
     nametoaddr.c
     optimize.c
     pcap-common.c
+    pcap-options.c
     pcap.c
     savefile.c
     sf-pcapng.c
