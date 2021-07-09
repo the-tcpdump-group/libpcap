@@ -56,19 +56,6 @@
 #include "sf-pcap.h"
 
 /*
- * Setting O_BINARY on DOS/Windows is a bit tricky
- */
-#if defined(_WIN32)
-  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
-#elif defined(MSDOS)
-  #if defined(__HIGHC__)
-  #define SET_BINMODE(f)  setmode(f, O_BINARY)
-  #else
-  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
-  #endif
-#endif
-
-/*
  * Standard libpcap format.
  */
 #define TCPDUMP_MAGIC		0xa1b2c3d4
@@ -767,15 +754,11 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 
 #if defined(_WIN32) || defined(MSDOS)
 	/*
-	 * If we're writing to the standard output, put it in binary
-	 * mode, as savefiles are binary files.
+	 * If we're not writing to the standard output, turn of buffering.
 	 *
-	 * Otherwise, we turn off buffering.
 	 * XXX - why?  And why not on the standard output?
 	 */
-	if (f == stdout)
-		SET_BINMODE(f);
-	else
+	if (f != stdout)
 		setvbuf(f, NULL, _IONBF, 0);
 #endif
 	if (sf_write_header(p, f, linktype, p->snapshot) == -1) {
@@ -794,6 +777,7 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 pcap_dumper_t *
 pcap_dump_open(pcap_t *p, const char *fname)
 {
+	const pcap_ioplugin_t *plugin = pcap_ioplugin_init(getenv("PCAP_IOPLUGIN_WRITE"));
 	FILE *f;
 	int linktype;
 
@@ -821,23 +805,19 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		    "A null pointer was supplied as the file name");
 		return NULL;
 	}
-	if (fname[0] == '-' && fname[1] == '\0') {
-		f = stdout;
-		fname = "standard output";
-	} else {
-		/*
-		 * "b" is supported as of C90, so *all* UN*Xes should
-		 * support it, even though it does nothing.  It's
-		 * required on Windows, as the file is a binary file
-		 * and must be written in binary mode.
-		 */
-		f = charset_fopen(fname, "wb");
-		if (f == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "%s", fname);
-			return (NULL);
-		}
+
+        /* such as: stdio_open_write() in pcap-ioplugin.c */
+	if (plugin->open_write == NULL) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "No file writing function found");
+		return NULL;
 	}
+
+	f = plugin->open_write(fname, p->errbuf);
+	if (f == NULL) {
+		return NULL;
+	}
+
 	return (pcap_setup_dump(p, linktype, f, fname));
 }
 
