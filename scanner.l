@@ -344,6 +344,7 @@ mpls		return MPLS;
 pppoed		return PPPOED;
 pppoes		return PPPOES;
 geneve		return GENEVE;
+batadv		return BATADV;
 
 lane		return LANE;
 llc		return LLC;

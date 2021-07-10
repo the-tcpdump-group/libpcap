@@ -74,6 +74,8 @@
 #include "atmuni31.h"
 #include "sunatmpos.h"
 #include "ppp.h"
+#include "batadv_packet.h"
+#include "batadv_legacy_packet.h"
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
@@ -9499,6 +9501,168 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	cstate->is_geneve = 1;
 
 	return b1;
+}
+
+struct block *
+gen_batadv_check_version(compiler_state_t *cstate, struct block *b0, bpf_u_int32 version)
+{
+	struct block *b1;
+
+	if (version > UINT8_MAX)
+		bpf_error(cstate,
+			  "batman-adv compatibility version number %u unsupported",
+			  version);
+
+	b1 = gen_cmp(cstate, OR_LINKPL, 1, BPF_B, version);
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+struct block *
+gen_batadv_check_type(compiler_state_t *cstate, struct block *b0,
+		      bpf_u_int32 version, bpf_u_int32 type)
+{
+	struct block *b1;
+
+	switch (version) {
+	case 14:
+	case 15:
+		if (type > UINT8_MAX)
+			bpf_error(cstate,
+				  "batman-adv packet type %u unsupported for compatibility version %u",
+				  type, version);
+
+		b1 = gen_cmp(cstate, OR_LINKPL, 0, BPF_B, type);
+		gen_and(b0, b1);
+		b0 = b1;
+
+		break;
+	default:
+		bpf_error(cstate,
+			  "batman-adv compatibility version number %u unsupported",
+			  version);
+	}
+
+	return b0;
+}
+
+
+static void gen_batadv_push_offset(compiler_state_t *cstate, u_int offset)
+{
+	PUSH_LINKHDR(cstate, DLT_EN10MB, cstate->off_linkpl.is_variable,
+		     cstate->off_linkpl.constant_part + cstate->off_nl + offset,
+		     cstate->off_linkpl.reg);
+
+	cstate->off_linktype.constant_part += cstate->off_linkhdr.constant_part;
+	cstate->off_linkpl.constant_part += cstate->off_linkhdr.constant_part;
+
+	cstate->off_nl = 0;
+	cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+}
+
+static void
+gen_batadv_offsets_v14(compiler_state_t *cstate, bpf_u_int32 type)
+{
+	size_t offset;
+
+	switch (type) {
+	case BATADV_LEGACY_UNICAST:		/* 0x03 */
+		offset = sizeof(struct batadv_legacy_unicast_packet);
+		break;
+	case BATADV_LEGACY_BCAST:		/* 0x04 */
+		offset = sizeof(struct batadv_legacy_bcast_packet);
+		break;
+	case BATADV_LEGACY_UNICAST_FRAG:	/* 0x06 */
+		offset = sizeof(struct batadv_legacy_unicast_frag_packet);
+		break;
+	case BATADV_LEGACY_UNICAST_4ADDR:	/* 0x09 */
+		offset = sizeof(struct batadv_legacy_unicast_4addr_packet);
+		break;
+	case BATADV_LEGACY_CODED:		/* 0x0a */
+		offset = sizeof(struct batadv_legacy_coded_packet);
+		break;
+	default:
+		offset = 0;
+	}
+
+	if (offset)
+		gen_batadv_push_offset(cstate, (u_int)offset);
+}
+
+static void
+gen_batadv_offsets_v15(compiler_state_t *cstate, bpf_u_int32 type)
+{
+	size_t offset;
+
+	switch (type) {
+	case BATADV_BCAST:		/* 0x01 */
+		offset = sizeof(struct batadv_bcast_packet);
+		break;
+	case BATADV_CODED:		/* 0x02 */
+		offset = sizeof(struct batadv_coded_packet);
+		break;
+	case BATADV_UNICAST:		/* 0x40 */
+		offset = sizeof(struct batadv_unicast_packet);
+		break;
+	case BATADV_UNICAST_FRAG:	/* 0x41 */
+		offset = sizeof(struct batadv_frag_packet);
+		break;
+	case BATADV_UNICAST_4ADDR:	/* 0x42 */
+		offset = sizeof(struct batadv_unicast_4addr_packet);
+		break;
+	case BATADV_UNICAST_TVLV:
+		/* unsupported for now, needs variable offset to
+		 * take tvlv_len into account
+		 */
+		/* fall through */
+	default:
+		offset = 0;
+	}
+
+	if (offset)
+		gen_batadv_push_offset(cstate, (u_int)offset);
+}
+
+static void
+gen_batadv_offsets(compiler_state_t *cstate, bpf_u_int32 version, bpf_u_int32 type)
+{
+	switch (version) {
+	case 14:
+		gen_batadv_offsets_v14(cstate, type);
+		break;
+	case 15:
+		gen_batadv_offsets_v15(cstate, type);
+		break;
+	default:
+		break;
+	}
+}
+
+struct block *
+gen_batadv(compiler_state_t *cstate, bpf_u_int32 version, int has_version,
+	   bpf_u_int32 type, int has_type)
+{
+	struct block *b0;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	b0 = gen_linktype(cstate, ETHERTYPE_BATMAN);
+
+	if (has_version)
+		b0 = gen_batadv_check_version(cstate, b0, version);
+
+	if (has_type) {
+		b0 = gen_batadv_check_type(cstate, b0, version, type);
+		gen_batadv_offsets(cstate, version, type);
+	}
+
+	return b0;
 }
 
 /* Check that the encapsulated frame has a link layer header

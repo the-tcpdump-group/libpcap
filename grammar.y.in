@@ -347,6 +347,7 @@ DIAG_OFF_BISON_BYACC
 %type	<i>	mtp2type
 %type	<blk>	mtp3field
 %type	<blk>	mtp3fieldvalue mtp3value mtp3listvalue
+%type	<rblk>	pbatadv
 
 
 %token  DST SRC HOST GATEWAY
@@ -365,7 +366,7 @@ DIAG_OFF_BISON_BYACC
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
 %token	VLAN MPLS
-%token	PPPOED PPPOES GENEVE
+%token	PPPOED PPPOES GENEVE BATADV
 %token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP
 %token  STP
 %token  IPX
@@ -592,9 +593,40 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| PPPOES		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, 0, 0))); }
 	| GENEVE pnum		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, $2, 1))); }
 	| GENEVE		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, 0, 0))); }
+	| BATADV pbatadv	{ $$ = $2; }
 	| pfvar			{ $$ = $1; }
 	| pqual p80211		{ $$ = $2; }
 	| pllc			{ $$ = $1; }
+	;
+
+pbatadv:		{ CHECK_PTR_VAL(($$ = gen_batadv(cstate, 0, 0, 0, 0))); }
+	| pnum		{ CHECK_PTR_VAL(($$ = gen_batadv(cstate, $1, 1, 0, 0))); }
+	| pnum pnum	{ CHECK_PTR_VAL(($$ = gen_batadv(cstate, $1, 1, $2, 1))); }
+	| pnum ID
+		{
+			int type;
+			CHECK_INT_VAL($1);
+			CHECK_PTR_VAL($2);
+
+			switch ($1) {
+			case 14:
+				type = pcap_nametobatadvtype_v14($2);
+				break;
+			case 15:
+				type = pcap_nametobatadvtype_v15($2);
+				break;
+			default:
+				bpf_set_error(cstate, "batman-adv compatibility version number %u unsupported", $1);
+				YYABORT;
+			}
+
+			if (type == PROTO_UNDEF) {
+				bpf_set_error(cstate, "invalid batman-adv packet type value \"%s\"", $2);
+				YYABORT;
+			}
+
+			CHECK_PTR_VAL(($$ = gen_batadv(cstate, $1, 1, type, 1)));
+		}
 	;
 
 pfvar:	  PF_IFNAME ID		{ CHECK_PTR_VAL($2); CHECK_PTR_VAL(($$ = gen_pf_ifname(cstate, $2))); }

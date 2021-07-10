@@ -98,6 +98,7 @@ protos are:
 .BR arp ,
 .BR rarp ,
 .BR decnet ,
+.BR batadv ,
 .B tcp
 and
 .BR udp .
@@ -361,7 +362,7 @@ True if the packet is an IPv6 multicast packet.
 .IP  "\fBether proto \fIprotocol\fR"
 True if the packet is of ether type \fIprotocol\fR.
 \fIProtocol\fP can be a number or one of the names
-\fBaarp\fP, \fBarp\fP, \fBatalk\fP, \fBdecnet\fP, \fBip\fP, \fBip6\fP,
+\fBaarp\fP, \fBarp\fP, \fBatalk\fP, \fBbatadv\fP, \fBdecnet\fP, \fBip\fP, \fBip6\fP,
 \fBipx\fP, \fBiso\fP, \fBlat\fP, \fBloopback\fP, \fBmopdl\fP, \fBmoprc\fP, \fBnetbeui\fP,
 \fBrarp\fP, \fBsca\fP or \fBstp\fP.
 Note these identifiers (except \fBloopback\fP) are also keywords
@@ -415,7 +416,7 @@ the filter checks for the IPX etype in an Ethernet frame, the IPX
 DSAP in the LLC header, the 802.3-with-no-LLC-header encapsulation of
 IPX, and the IPX etype in a SNAP frame.
 .RE
-.IP "\fBip\fR, \fBip6\fR, \fBarp\fR, \fBrarp\fR, \fBatalk\fR, \fBaarp\fR, \fBdecnet\fR, \fBiso\fR, \fBstp\fR, \fBipx\fR, \fBnetbeui\fP"
+.IP "\fBip\fR, \fBip6\fR, \fBarp\fR, \fBrarp\fR, \fBatalk\fR, \fBaarp\fR, \fBdecnet\fR, \fBiso\fR, \fBstp\fR, \fBipx\fR, \fBnetbeui\fP, \fBbatadv\fP"
 Abbreviations for:
 .in +.5i
 .nf
@@ -752,6 +753,36 @@ For example:
 filters IPv4 protocol encapsulated in Geneve with VNI 0xb. This will
 match both IPv4 directly encapsulated in Geneve as well as IPv4 contained
 inside an Ethernet frame.
+.IP "\fBbatadv \fI[version] \fI[type]\fR"
+True if the packet is a B.A.T.M.A.N. Advanced packet (Ethernet type 0x4305).
+If the optional \fIversion\fR is specified, only true if the packet has the
+specified batman-adv compatibility \fIversion\fR. If the optional \fIversion\fR
+and \fItype\fR are specified, only true if the packet has both the specified
+batman-adv compatibility \fIversion\fR and batman-adv packet \fItype\fR.
+.IP
+\fIversion\fR may be a number from 0 to 255, though only compatibility version
+14 and 15 were actually deployed in the wild. Version 15 is the current version,
+14 is considered deprecated.
+.IP
+\fItype\fR is currently only defined for compatibility \fIversion\fR 14 and 15.
+\fItype\fR may be a number from 0 to 255 for compatibility \fIversion\fR 14 and 15.
+.IP
+The following packet \fItype\fR aliases are available for compat \fIversion\fR 14:
+\fBiv_ogm\fP, \fBicmp\fP, \fBunicast\fP, \fBbcast\fP, \fBvis\fP, \fBunicast-frag\fP,
+\fBtt_query\fP, \fBroam_adv\fP, \fBunicast_4addr\fP, \fPcoded\fP.
+.IP
+The following packet \fItype\fR aliases are available for compat \fIversion\fR 15:
+\fBiv_ogm\fP, \fBbcast\fP, \fBcoded\fP, \fBelp\fP, \fBogm2\fP, \fBunicast\fP,
+\fBunicast_frag\fP, \fBunicast_4addr\fP, \fBicmp\fP, \fPunicast_tvlv\fP.
+.IP
+Note that when the \fBbatadv\fR keyword is encountered in an expression and
+a batman-adv packet \fItype\fR is provided which specifies an encapsulating
+packet type then it changes the decoding offsets for the remainder of the
+expression on the assumption that the packet is a batman-adv packet. For compat
+\fIversion\fR 14 these are packet \fItype\fRs \fBunicast\fP, \fBbcast\fP,
+\fBunicast_frag\fP, \fBunicast_4addr\fP and \fBcoded\fP. For compat \fIversion\fR
+15 these are currently packet \fItype\fRs \fBbcast\fP, \fBcoded\fP, \fBunicast\fP,
+\fBunicast_frag\fP and \fBunicast_4addr\fP.
 .IP "\fBiso proto \fIprotocol\fR"
 True if the packet is an OSI packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names
