@@ -447,6 +447,7 @@ PCAP_API const char *pcap_tstamp_type_val_to_name(int);
 
 PCAP_AVAILABLE_1_2
 PCAP_API const char *pcap_tstamp_type_val_to_description(int);
+PCAP_API void	pcap_cook(pcap_t *);
 
 #ifdef __linux__
 PCAP_AVAILABLE_1_9

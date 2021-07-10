@@ -2704,6 +2704,11 @@ pcap_get_tstamp_precision(pcap_t *p)
         return (p->opt.tstamp_precision);
 }
 
+void pcap_cook(pcap_t *handle)
+{
+	handle->opt.cook = 1;
+}
+
 int
 pcap_activate(pcap_t *p)
 {

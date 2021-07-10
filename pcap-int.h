@@ -170,6 +170,7 @@ struct pcap_opt {
 	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
+	int	cook;
 
 	/*
 	 * Platform-dependent options.
