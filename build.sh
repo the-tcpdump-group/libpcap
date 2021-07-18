@@ -51,10 +51,7 @@ else
     run_after_echo "run/findalldevstest"
 fi
 if [ "$CMAKE" = no ]; then
-    system=$(uname -s)
-    if [ "$system" = Darwin ] || [ "$system" = Linux ]; then
-        run_after_echo "make releasetar"
-    fi
+    run_after_echo "make releasetar"
 fi
 if [ "$MATRIX_DEBUG" = true ]; then
     echo '$ cat Makefile [...]'
