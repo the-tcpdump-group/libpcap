@@ -252,7 +252,17 @@ EXTRA_DIST = \
 	Makefile.in \
 	Makefile-devel-adds \
 	README.md \
-	doc \
+	doc/DLT_ALLOCATE_HOWTO.md \
+	doc/README.Win32.md \
+	doc/README.aix \
+	doc/README.capture-module \
+	doc/README.dag \
+	doc/README.hpux \
+	doc/README.linux \
+	doc/README.macos \
+	doc/README.septel \
+	doc/README.sita \
+	doc/README.tru64 \
 	CONTRIBUTING.md \
 	TODO \
 	VERSION \
@@ -809,14 +819,14 @@ tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
 releasetar:
-	@autoreconf -f; \
-	name=$(PROG)-`cat VERSION` ; \
-	   mkdir $$name; \
-	   tar -c --exclude='*~' -f - $(COMMON_C_SRC) $(HDR) $(MAN1) \
+	@autoreconf -f && \
+	name=$(PROG)-`cat VERSION` && \
+	   mkdir $$name && \
+	   tar -c -f - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
 	      $(MANMISC) $(EXTRA_DIST) | \
-	      (cd $$name; tar xf -); \
-	   tar -c -z -f $$name.tar.gz $$name; \
+	      (cd $$name; tar xf -) && \
+	   tar -c -f - $$name | gzip >$$name.tar.gz && \
 	   rm -rf $$name
 
 rc1 rc2 rc3 rc4 rc5:

@@ -2852,7 +2852,7 @@ AC_CONFIG_HEADER(config.h)
 AC_OUTPUT_COMMANDS([if test -f .devel; then
 	echo timestamp > stamp-h
 	cat $srcdir/Makefile-devel-adds >> Makefile
-	make depend
+	make depend || exit 1
 fi])
 AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
