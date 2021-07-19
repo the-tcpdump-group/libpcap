@@ -1409,14 +1409,12 @@ max_snaplen_for_dlt(int dlt)
 static void
 swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 {
-	u_int caplen = hdr->caplen;
-	u_int length = hdr->len;
+	u_int caplen = min(hdr->len, hdr->caplen);
 	struct sll_header *shdr = (struct sll_header *)buf;
 	uint16_t protocol;
 	pcap_can_socketcan_hdr *chdr;
 
-	if (caplen < (u_int) sizeof(struct sll_header) ||
-	    length < (u_int) sizeof(struct sll_header)) {
+	if (caplen < (u_int) sizeof(struct sll_header)) {
 		/* Not enough data to have the protocol field */
 		return;
 	}
@@ -1428,13 +1426,21 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	/*
 	 * SocketCAN packet; fix up the packet's header.
 	 */
+	caplen -= sizeof(struct sll_header);
 	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll_header));
-	if (caplen < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id) ||
-	    length < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id)) {
+	if (caplen < sizeof(chdr->can_id)) {
 		/* Not enough data to have the CAN ID */
 		return;
 	}
 	chdr->can_id = SWAPLONG(chdr->can_id);
+	if (caplen < sizeof(chdr->can_id) + sizeof(chdr->payload_length) + sizeof(chdr->fd_flags)) {
+		/* Not enough data to have the CAN-FD flags */
+		return;
+	}
+	// We intentionally test on caplen (MTU) and NOT payload length
+	if (caplen > CAN_MTU || chdr->fd_flags) {
+		chdr->fd_flags |= CANFD_FDF;
+	}
 }
 
 /*

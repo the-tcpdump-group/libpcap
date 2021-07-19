@@ -41,6 +41,11 @@
 
 #include <pcap/pcap-inttypes.h>
 
+#define CAN_MTU     16
+#define CANFD_MTU   72
+
+#define CANFD_FDF   0x04 /* mark CAN FD for dual use of CAN format */
+
 /*
  * SocketCAN header, as per Documentation/networking/can.txt in the
  * Linux source.
@@ -48,7 +53,7 @@
 typedef struct {
 	uint32_t can_id;
 	uint8_t payload_length;
-	uint8_t pad;
+	uint8_t fd_flags;
 	uint8_t reserved1;
 	uint8_t reserved2;
 } pcap_can_socketcan_hdr;
