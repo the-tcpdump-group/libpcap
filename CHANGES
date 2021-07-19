@@ -1,6 +1,9 @@
 Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
     Add LINKTYPE_ETW/DLT_ETW.
+    Building and testing:
+      Handle some Autoconf/make errors better.
+      Fix "make releasetar" on OpenBSD and AIX.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
