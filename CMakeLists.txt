@@ -2635,6 +2635,11 @@ else(BUILD_SHARED_LIBS)
 endif(BUILD_SHARED_LIBS)
 
 if(WIN32 OR CYGWIN OR MSYS)
+    #
+    # XXX - according to the CMake documentation, WIN32 is set if
+    # the target is Windows; would there ever be a case where
+    # CYGWIN or MSYS are set but WIN32 *isn't* set?
+    #
     if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
         #
         # Install 64-bit code built with MSVC in the x64 subdirectories,
