@@ -44,6 +44,8 @@
 #define CAN_MTU     16
 #define CANFD_MTU   72
 
+#define CANFD_BRS   0x01 /* bit rate switch (second bitrate for payload data) */
+#define CANFD_ESI   0x02 /* error state indicator of the transmitting node */
 #define CANFD_FDF   0x04 /* mark CAN FD for dual use of CAN format */
 
 /*
