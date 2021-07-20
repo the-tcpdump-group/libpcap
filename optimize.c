@@ -32,7 +32,7 @@
 #include <memory.h>
 #include <setjmp.h>
 #include <string.h>
-
+#include <limits.h> /* for SIZE_MAX */
 #include <errno.h>
 
 #include "pcap-int.h"
