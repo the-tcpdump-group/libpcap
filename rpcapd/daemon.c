@@ -1703,8 +1703,18 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 	{
 		uint16 lname, ldescr;
 
+		// Note: the findalldevs_if entries are *not* neatly
+		// aligned on 4-byte boundaries, because they're
+		// preceded by strings that aren't padded to 4-byte
+		// boundaries, so we cannot just cast output buffer
+		// boundaries to struct rpcap_findalldevs_if pointers
+		// and store into them - we must fill in a structure and
+		// then copy the structure to the buffer, as not all
+		// systems support unaligned access (some, such as
+		// SPARC, crash; others, such as Arm, may just ignore
+		// the lower-order bits).
 		struct rpcap_findalldevs_if dev_if_tmp;
-		char*  dev_if_p = &sendbuf[sendbufidx];
+		char *dev_if_p = &sendbuf[sendbufidx];
 		
 		findalldevs_if = (struct rpcap_findalldevs_if *) &dev_if_tmp;
 
@@ -1751,7 +1761,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		}
 		findalldevs_if->naddr = htons(findalldevs_if->naddr);
 
-		memcpy( dev_if_p, &dev_if_tmp, sizeof( struct rpcap_findalldevs_if ) );
+		memcpy(dev_if_p, &dev_if_tmp, sizeof(struct rpcap_findalldevs_if));
 
 		if (sock_bufferize(d->name, lname, sendbuf, &sendbufidx,
 		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
@@ -2823,22 +2833,25 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 	if (sockaddrin == NULL) return;
 
 	// Warning: we support only AF_INET and AF_INET6
+	//
+	// Note: as noted above, the output structures are not
+	// neatly aligned on 4-byte boundaries, so we must fill
+	// in an aligned structure and then copy it to the output
+	// buffer with memcpy().
 	switch (sockaddrin->ss_family)
 	{
 	case AF_INET:
 		{
 		struct sockaddr_in *sockaddrin_ipv4;
-		struct rpcap_sockaddr_in *sockaddrout_ipv4;
+		struct rpcap_sockaddr_in sockaddrout_ipv4;
 
 		sockaddrin_ipv4 = (struct sockaddr_in *) sockaddrin;
-		struct rpcap_sockaddr_in tmp;
-		sockaddrout_ipv4 = &tmp;
 		
-		sockaddrout_ipv4->family = htons(RPCAP_AF_INET);
-		sockaddrout_ipv4->port = htons(sockaddrin_ipv4->sin_port);
-		memcpy(&sockaddrout_ipv4->addr, &sockaddrin_ipv4->sin_addr, sizeof(sockaddrout_ipv4->addr));
-		memset(sockaddrout_ipv4->zero, 0, sizeof(sockaddrout_ipv4->zero));
-		memcpy( sockaddrout, &tmp, sizeof( struct rpcap_sockaddr_in ) );
+		sockaddrout_ipv4.family = htons(RPCAP_AF_INET);
+		sockaddrout_ipv4.port = htons(sockaddrin_ipv4->sin_port);
+		memcpy(&sockaddrout_ipv4.addr, &sockaddrin_ipv4->sin_addr, sizeof(sockaddrout_ipv4.addr));
+		memset(sockaddrout_ipv4.zero, 0, sizeof(sockaddrout_ipv4.zero));
+		memcpy(sockaddrout, &sockaddrout_ipv4, sizeof(struct rpcap_sockaddr_in));
 		break;
 		}
 
@@ -2846,18 +2859,16 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 	case AF_INET6:
 		{
 		struct sockaddr_in6 *sockaddrin_ipv6;
-		struct rpcap_sockaddr_in6 *sockaddrout_ipv6;
+		struct rpcap_sockaddr_in6 sockaddrout_ipv6;
 
 		sockaddrin_ipv6 = (struct sockaddr_in6 *) sockaddrin;
-		struct rpcap_sockaddr_in6 tmp;
-		sockaddrout_ipv6 = &tmp;
 		
-		sockaddrout_ipv6->family = htons(RPCAP_AF_INET6);
-		sockaddrout_ipv6->port = htons(sockaddrin_ipv6->sin6_port);
-		sockaddrout_ipv6->flowinfo = htonl(sockaddrin_ipv6->sin6_flowinfo);
-		memcpy(&sockaddrout_ipv6->addr, &sockaddrin_ipv6->sin6_addr, sizeof(sockaddrout_ipv6->addr));
-		sockaddrout_ipv6->scope_id = htonl(sockaddrin_ipv6->sin6_scope_id);
-		memcpy( sockaddrout, &tmp, sizeof( struct rpcap_sockaddr_in6 ) );
+		sockaddrout_ipv6.family = htons(RPCAP_AF_INET6);
+		sockaddrout_ipv6.port = htons(sockaddrin_ipv6->sin6_port);
+		sockaddrout_ipv6.flowinfo = htonl(sockaddrin_ipv6->sin6_flowinfo);
+		memcpy(&sockaddrout_ipv6.addr, &sockaddrin_ipv6->sin6_addr, sizeof(sockaddrout_ipv6.addr));
+		sockaddrout_ipv6.scope_id = htonl(sockaddrin_ipv6->sin6_scope_id);
+		memcpy(sockaddrout, &sockaddrout_ipv6, sizeof(struct rpcap_sockaddr_in6));
 		break;
 		}
 #endif
