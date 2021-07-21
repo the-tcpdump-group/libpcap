@@ -39,7 +39,7 @@ linux_task:
     - apt-get -qy update
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
     - apt-get -qy install flex bison autoconf make clang gcc
-    - apt-get -qy install cmake git # for build_matrix.sh and build.sh
+    - apt-get -qy install cmake git bc # for build_matrix.sh and build.sh
     - apt list --installed 'lib*-dev'
     - ./build_matrix.sh
 
