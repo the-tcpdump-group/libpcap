@@ -3,7 +3,7 @@ Monthday, Month DD, YYYY:
     Add LINKTYPE_ETW/DLT_ETW.
     Building and testing:
       Handle some Autoconf/make errors better.
-      Fix "make releasetar" on OpenBSD and AIX.
+      Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9.
 
 Monthday, Month DD, YYYY:

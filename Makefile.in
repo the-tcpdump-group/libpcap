@@ -822,11 +822,11 @@ releasetar:
 	@autoreconf -f && \
 	name=$(PROG)-`cat VERSION` && \
 	   mkdir $$name && \
-	   tar -c -f - $(COMMON_C_SRC) $(HDR) $(MAN1) \
+	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
 	      $(MANMISC) $(EXTRA_DIST) | \
 	      (cd $$name; tar xf -) && \
-	   tar -c -f - $$name | gzip >$$name.tar.gz && \
+	   tar cf - $$name | gzip >$$name.tar.gz && \
 	   rm -rf $$name
 
 rc1 rc2 rc3 rc4 rc5:
