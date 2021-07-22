@@ -1060,7 +1060,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the data connection */
+	uint16 portdata = 0;			/* temp variable needed to keep the network port for the data connection */
 	uint32 plen;
 	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
@@ -1073,6 +1073,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	struct sockaddr_storage saddr;		/* temp, needed to retrieve the network data port chosen on the local machine */
 	socklen_t saddrlen;			/* temp, needed to retrieve the network data port chosen on the local machine */
 	int ai_family;				/* temp, keeps the address family used by the control connection */
+	struct sockaddr_in *sin4;
+	struct sockaddr_in6 *sin6;
 
 	/* RPCAP-related variables*/
 	struct rpcap_header header;			/* header of the RPCAP packet */
@@ -1171,11 +1173,22 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			goto error_nodiscard;
 		}
 
-		/* Get the local port the system picked up */
-		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, NULL,
-			0, portdata, sizeof(portdata), NI_NUMERICSERV))
-		{
-			sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+		switch (saddr.ss_family) {
+
+		case AF_INET:
+			sin4 = (struct sockaddr_in *)&saddr;
+			portdata = sin4->sin_port;
+			break;
+
+		case AF_INET6:
+			sin6 = (struct sockaddr_in6 *)&saddr;
+			portdata = sin6->sin6_port;
+			break;
+
+		default:
+			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "Local address has unknown address family %u",
+			    saddr.ss_family);
 			goto error_nodiscard;
 		}
 	}
@@ -1208,8 +1221,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	/* portdata on the openreq is meaningful only if we're in active mode */
 	if ((active) || (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
-		sscanf(portdata, "%d", (int *)&(startcapreq->portdata));	/* cast to avoid a compiler warning */
-		startcapreq->portdata = htons(startcapreq->portdata);
+		startcapreq->portdata = portdata;
 	}
 
 	startcapreq->snaplen = htonl(fp->snapshot);
@@ -1258,13 +1270,15 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	{
 		if (!active)
 		{
+			char portstring[PCAP_BUF_SIZE];
+
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
 			hints.ai_socktype = (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-			snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
+			snprintf(portstring, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
-			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
 			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
