@@ -882,11 +882,11 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
 }
 
 /*
- * \brief It copies the amount of data contained into 'buffer' into 'tempbuf'.
+ * \brief It copies the amount of data contained in 'data' into 'outbuf'.
  * and it checks for buffer overflows.
  *
- * This function basically copies 'size' bytes of data contained into 'buffer'
- * into 'tempbuf', starting at offset 'offset'. Before that, it checks that the
+ * This function basically copies 'size' bytes of data contained in 'data'
+ * into 'outbuf', starting at offset 'offset'. Before that, it checks that the
  * resulting buffer will not be larger	than 'totsize'. Finally, it updates
  * the 'offset' variable in order to point to the first empty location of the buffer.
  *
@@ -895,25 +895,24 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
  * 'offset' variable. This mode can be useful when the buffer already contains the
  * data (maybe because the producer writes directly into the target buffer), so
  * only the buffer overflow check has to be made.
- * In this case, both 'buffer' and 'tempbuf' can be NULL values.
+ * In this case, both 'data' and 'outbuf' can be NULL values.
  *
  * This function is useful in case the userland application does not know immediately
  * all the data it has to write into the socket. This function provides a way to create
  * the "stream" step by step, appending the new data to the old one. Then, when all the
  * data has been bufferized, the application can call the sock_send() function.
  *
- * \param buffer: a char pointer to a user-allocated buffer that keeps the data
- * that has to be copied.
+ * \param data: a void pointer to the data that has to be copied.
  *
  * \param size: number of bytes that have to be copied.
  *
- * \param tempbuf: user-allocated buffer (of size 'totsize') in which data
+ * \param outbuf: user-allocated buffer (of size 'totsize') into which data
  * has to be copied.
  *
- * \param offset: an index into 'tempbuf' which keeps the location of its first
+ * \param offset: an index into 'outbuf' which keeps the location of its first
  * empty location.
  *
- * \param totsize: total size of the buffer in which data is being copied.
+ * \param totsize: total size of the buffer into which data is being copied.
  *
  * \param checkonly: '1' if we do not want to copy data into the buffer and we
  * want just do a buffer ovreflow control, '0' if data has to be copied as well.
@@ -926,7 +925,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
  * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
  *
  * \return '0' if everything is fine, '-1' if some errors occurred. The error message
- * is returned in the 'errbuf' variable. When the function returns, 'tempbuf' will
+ * is returned in the 'errbuf' variable. When the function returns, 'outbuf' will
  * have the new string appended, and 'offset' will keep the length of that buffer.
  * In case of 'checkonly == 1', data is not copied, but 'offset' is updated in any case.
  *
@@ -936,7 +935,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
  * \warning In case of 'checkonly', be carefully to call this function *before* copying
  * the data into the buffer. Otherwise, the control about the buffer overflow is useless.
  */
-int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen)
+int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen)
 {
 	if ((*offset + size) > totsize)
 	{
@@ -946,7 +945,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 	}
 
 	if (!checkonly)
-		memcpy(tempbuf + (*offset), buffer, size);
+		memcpy(outbuf + (*offset), data, size);
 
 	(*offset) += size;
 
