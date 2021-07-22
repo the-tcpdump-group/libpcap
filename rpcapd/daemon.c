@@ -1602,7 +1602,6 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 	pcap_if_t *alldevs = NULL;		// pointer to the header of the interface chain
 	pcap_if_t *d;				// temp pointer needed to scan the interface chain
 	struct pcap_addr *address;		// pcap structure that keeps a network address of an interface
-	struct rpcap_findalldevs_if *findalldevs_if;// rpcap structure that packet all the data of an interface together
 	uint32 replylen;			// length of reply payload
 	uint16 nif = 0;				// counts the number of interface listed
 
@@ -1713,17 +1712,8 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		// systems support unaligned access (some, such as
 		// SPARC, crash; others, such as Arm, may just ignore
 		// the lower-order bits).
-		struct rpcap_findalldevs_if dev_if_tmp;
-		char *dev_if_p = &sendbuf[sendbufidx];
+		struct rpcap_findalldevs_if findalldevs_if;
 		
-		findalldevs_if = (struct rpcap_findalldevs_if *) &dev_if_tmp;
-
-		if (sock_bufferize(NULL, sizeof(struct rpcap_findalldevs_if), NULL,
-		    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
-			goto error;
-
-		memset(findalldevs_if, 0, sizeof(struct rpcap_findalldevs_if));
-
 		/*
 		 * We've already established that the string lengths
 		 * fit in 16 bits.
@@ -1737,10 +1727,11 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		else
 			lname = 0;
 
-		findalldevs_if->desclen = htons(ldescr);
-		findalldevs_if->namelen = htons(lname);
-		findalldevs_if->flags = htonl(d->flags);
+		findalldevs_if.desclen = htons(ldescr);
+		findalldevs_if.namelen = htons(lname);
+		findalldevs_if.flags = htonl(d->flags);
 
+		uint16_t naddrs = 0;
 		for (address = d->addresses; address != NULL; address = address->next)
 		{
 			/*
@@ -1752,16 +1743,20 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 #ifdef AF_INET6
 			case AF_INET6:
 #endif
-				findalldevs_if->naddr++;
+				naddrs++;
 				break;
 
 			default:
 				break;
 			}
 		}
-		findalldevs_if->naddr = htons(findalldevs_if->naddr);
+		findalldevs_if.naddr = htons(naddrs);
+		findalldevs_if.dummy = 0;
 
-		memcpy(dev_if_p, &dev_if_tmp, sizeof(struct rpcap_findalldevs_if));
+		if (sock_bufferize(&findalldevs_if, sizeof(struct rpcap_findalldevs_if), sendbuf,
+		    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
+			goto error;
 
 		if (sock_bufferize(d->name, lname, sendbuf, &sendbufidx,
 		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
