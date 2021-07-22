@@ -4,7 +4,7 @@ Monthday, Month DD, YYYY:
       Add support for NdisMediumIP
     Building and testing:
       Handle some Autoconf/make errors better.
-      Fix "make releasetar" on OpenBSD and AIX.
+      Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9.
 
 Wednesday, June 9, 2021:
