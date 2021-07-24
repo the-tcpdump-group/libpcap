@@ -2688,7 +2688,6 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 	struct slist *src;
 	u_int slen;
 	u_int off;
-	struct slist **offset = NULL;
 
 	if (p == 0 || isMarked(ic, p))
 		return (1);
@@ -2704,23 +2703,6 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 		/* inflate length by any extra jumps */
 
 	p->offset = (int)(dst - conv_state->fstart);
-
-	/* generate offset[] for convenience  */
-	if (slen) {
-		offset = (struct slist **)calloc(slen, sizeof(struct slist *));
-		if (!offset) {
-			conv_error(conv_state, "not enough core");
-			/*NOTREACHED*/
-		}
-	}
-	src = p->stmts;
-	for (off = 0; off < slen && src; off++) {
-#if 0
-		printf("off=%d src=%x\n", off, src);
-#endif
-		offset[off] = src;
-		src = src->next;
-	}
 
 	off = 0;
 	for (src = p->stmts; src; src = src->next) {
@@ -2744,8 +2726,9 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 			goto filled;
 
 	    {
-		u_int i;
+		u_int target_off;
 		int jt, jf;
+		struct slist *target;
 		const char ljerr[] = "%s for block-local relative jump: off=%d";
 
 #if 0
@@ -2754,45 +2737,42 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 #endif
 
 		if (!src->s.jt || !src->s.jf) {
-			free(offset);
 			conv_error(conv_state, ljerr, "no jmp destination", off);
 			/*NOTREACHED*/
 		}
 
-		jt = jf = 0;
-		for (i = 0; i < slen; i++) {
-			if (offset[i] == src->s.jt) {
+		jt = jf = target_off = 0;
+		for (target = p->stmts; target; target = target->next) {
+			if (target == src->s.jt) {
 				if (jt) {
-					free(offset);
 					conv_error(conv_state, ljerr, "multiple matches", off);
 					/*NOTREACHED*/
 				}
 
-				if (i - off - 1 >= 256) {
-					free(offset);
+				if (target_off - off - 1 >= 256) {
 					conv_error(conv_state, ljerr, "out-of-range jump", off);
 					/*NOTREACHED*/
 				}
-				dst->jt = (u_char)(i - off - 1);
+				dst->jt = (u_char)(target_off - off - 1);
 				jt++;
 			}
-			if (offset[i] == src->s.jf) {
+			if (target == src->s.jf) {
 				if (jf) {
-					free(offset);
 					conv_error(conv_state, ljerr, "multiple matches", off);
 					/*NOTREACHED*/
 				}
-				if (i - off - 1 >= 256) {
-					free(offset);
+				if (target_off - off - 1 >= 256) {
 					conv_error(conv_state, ljerr, "out-of-range jump", off);
 					/*NOTREACHED*/
 				}
-				dst->jf = (u_char)(i - off - 1);
+				dst->jf = (u_char)(target_off - off - 1);
 				jf++;
+			}
+			if (target->s.code != NOP) {
+				target_off++;
 			}
 		}
 		if (!jt || !jf) {
-			free(offset);
 			conv_error(conv_state, ljerr, "no destination found", off);
 			/*NOTREACHED*/
 		}
@@ -2801,8 +2781,6 @@ filled:
 		++dst;
 		++off;
 	}
-	if (offset)
-		free(offset);
 
 #ifdef BDEBUG
 	if (dst - conv_state->fstart < NBIDS)
