@@ -260,9 +260,41 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
 	#
 	save_ac_c_werror_flag="$ac_c_werror_flag"
 	ac_c_werror_flag=yes
+	#
+	# XXX - with autoconf 2.69, at least, the test program that this
+	# tries to compile is:
+	#
+	# int
+	# main ()
+	# {
+	#
+	#   ;
+	#   return 0;
+	# }
+	#
+	# Hopefully, neither the empty statement nor the old-style
+	# definition of main() will, with any command-line flag
+	# whatsoever with which we test, on any compiler we test,
+	# will produce any warnings whatsoever; if it does, the
+	# command-line flag with which we test will be treated as
+	# not being supported even if it is supported.
+	#
+	# Thanks, autoconf, for making it *so* difficult to generate
+	# an absolute minimum valid C-with-everything-prototyped
+	# program as a test program, such as
+	#
+	#	int main(void) { return 0; }.
+	#
+	# (with autoconf 2.69, at least, using AC_LANG_CONFTEST() with
+	# AC_LANG_SOURCE([<code>]) produces the same function boilerplate
+	# as AC_LANG_PROGRAM([],[<code>]), complete with the main()
+	# function wrapper, the extra semicolon, and the return 0;,
+	# raising the question of "why, then, do both AC_LANG_SOURCE()
+	# and AC_LANG_PROGRAM() exist?").
+	#
 	AC_TRY_COMPILE(
 	    [],
-	    [return 0],
+	    [],
 	    [
 		AC_MSG_RESULT([yes])
 		can_add_to_cflags=yes
