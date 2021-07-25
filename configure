@@ -3867,18 +3867,18 @@ esac
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
 $as_echo_n "checking whether the compiler supports the -fvisibility=hidden option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-fvisibility=hidden" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -fvisibility=hidden"
-	elif expr "x-fvisibility=hidden" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
-	elif expr "x-fvisibility=hidden" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
-	else
-	    CFLAGS="$CFLAGS -fvisibility=hidden"
-	fi
+	CFLAGS="$CFLAGS -fvisibility=hidden"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3944,6 +3944,7 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
     else
 	    V_INCLS="$V_INCLS -I/usr/local/include"
@@ -3967,18 +3968,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
 $as_echo_n "checking whether the compiler supports the -fvisibility=hidden option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-fvisibility=hidden" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -fvisibility=hidden"
-	elif expr "x-fvisibility=hidden" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
-	elif expr "x-fvisibility=hidden" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
-	else
-	    CFLAGS="$CFLAGS -fvisibility=hidden"
-	fi
+	CFLAGS="$CFLAGS -fvisibility=hidden"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4044,6 +4045,7 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 		    ;;
 
@@ -4129,18 +4131,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -xldscope=hidden option" >&5
 $as_echo_n "checking whether the compiler supports the -xldscope=hidden option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-xldscope=hidden" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -xldscope=hidden"
-	elif expr "x-xldscope=hidden" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -xldscope=hidden"
-	elif expr "x-xldscope=hidden" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -xldscope=hidden"
-	else
-	    CFLAGS="$CFLAGS -xldscope=hidden"
-	fi
+	CFLAGS="$CFLAGS -xldscope=hidden"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4206,6 +4208,7 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 		    ;;
 
@@ -9380,57 +9383,21 @@ rm -f os-proto.h
 	    #
 	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler fails when given an unknown warning option" >&5
-$as_echo_n "checking whether the compiler fails when given an unknown warning option... " >&6; }
-	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS -Wxyzzy-this-will-never-succeed-xyzzy"
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		#
-		# We're assuming this is clang, where
-		# -Werror=unknown-warning-option is the appropriate
-		# option to force the compiler to fail.
-		#
-		ac_lbl_unknown_warning_option_error="-Werror=unknown-warning-option"
-
-else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-	CFLAGS="$save_CFLAGS"
-
-
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -W option" >&5
 $as_echo_n "checking whether the compiler supports the -W option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-W" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -W"
-	elif expr "x-W" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -W"
-	elif expr "x-W" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -W"
-	else
-	    CFLAGS="$CFLAGS -W"
-	fi
+	CFLAGS="$CFLAGS -W"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9496,23 +9463,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wall option" >&5
 $as_echo_n "checking whether the compiler supports the -Wall option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wall" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wall"
-	elif expr "x-Wall" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wall"
-	elif expr "x-Wall" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wall"
-	else
-	    CFLAGS="$CFLAGS -Wall"
-	fi
+	CFLAGS="$CFLAGS -Wall"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9578,23 +9546,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wcomma option" >&5
 $as_echo_n "checking whether the compiler supports the -Wcomma option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wcomma" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wcomma"
-	elif expr "x-Wcomma" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wcomma"
-	elif expr "x-Wcomma" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wcomma"
-	else
-	    CFLAGS="$CFLAGS -Wcomma"
-	fi
+	CFLAGS="$CFLAGS -Wcomma"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9660,23 +9629,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wdocumentation option" >&5
 $as_echo_n "checking whether the compiler supports the -Wdocumentation option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wdocumentation" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wdocumentation"
-	elif expr "x-Wdocumentation" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wdocumentation"
-	elif expr "x-Wdocumentation" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wdocumentation"
-	else
-	    CFLAGS="$CFLAGS -Wdocumentation"
-	fi
+	CFLAGS="$CFLAGS -Wdocumentation"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9742,23 +9712,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wformat-nonliteral option" >&5
 $as_echo_n "checking whether the compiler supports the -Wformat-nonliteral option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wformat-nonliteral" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wformat-nonliteral"
-	elif expr "x-Wformat-nonliteral" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
-	elif expr "x-Wformat-nonliteral" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
-	else
-	    CFLAGS="$CFLAGS -Wformat-nonliteral"
-	fi
+	CFLAGS="$CFLAGS -Wformat-nonliteral"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9824,23 +9795,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-noreturn option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-noreturn option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wmissing-noreturn" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-noreturn"
-	elif expr "x-Wmissing-noreturn" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-noreturn"
-	elif expr "x-Wmissing-noreturn" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-noreturn"
-	else
-	    CFLAGS="$CFLAGS -Wmissing-noreturn"
-	fi
+	CFLAGS="$CFLAGS -Wmissing-noreturn"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9906,23 +9878,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-prototypes option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-prototypes option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wmissing-prototypes" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-prototypes"
-	elif expr "x-Wmissing-prototypes" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
-	elif expr "x-Wmissing-prototypes" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
-	else
-	    CFLAGS="$CFLAGS -Wmissing-prototypes"
-	fi
+	CFLAGS="$CFLAGS -Wmissing-prototypes"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9988,23 +9961,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-variable-declarations option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-variable-declarations option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wmissing-variable-declarations" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-variable-declarations"
-	elif expr "x-Wmissing-variable-declarations" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-variable-declarations"
-	elif expr "x-Wmissing-variable-declarations" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-variable-declarations"
-	else
-	    CFLAGS="$CFLAGS -Wmissing-variable-declarations"
-	fi
+	CFLAGS="$CFLAGS -Wmissing-variable-declarations"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10070,23 +10044,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wpointer-arith option" >&5
 $as_echo_n "checking whether the compiler supports the -Wpointer-arith option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wpointer-arith" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wpointer-arith"
-	elif expr "x-Wpointer-arith" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wpointer-arith"
-	elif expr "x-Wpointer-arith" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wpointer-arith"
-	else
-	    CFLAGS="$CFLAGS -Wpointer-arith"
-	fi
+	CFLAGS="$CFLAGS -Wpointer-arith"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10152,23 +10127,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wpointer-sign option" >&5
 $as_echo_n "checking whether the compiler supports the -Wpointer-sign option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wpointer-sign" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wpointer-sign"
-	elif expr "x-Wpointer-sign" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wpointer-sign"
-	elif expr "x-Wpointer-sign" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wpointer-sign"
-	else
-	    CFLAGS="$CFLAGS -Wpointer-sign"
-	fi
+	CFLAGS="$CFLAGS -Wpointer-sign"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10234,23 +10210,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshadow option" >&5
 $as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wshadow" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshadow"
-	elif expr "x-Wshadow" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshadow"
-	elif expr "x-Wshadow" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshadow"
-	else
-	    CFLAGS="$CFLAGS -Wshadow"
-	fi
+	CFLAGS="$CFLAGS -Wshadow"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10316,23 +10293,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wsign-compare option" >&5
 $as_echo_n "checking whether the compiler supports the -Wsign-compare option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wsign-compare" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wsign-compare"
-	elif expr "x-Wsign-compare" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
-	elif expr "x-Wsign-compare" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
-	else
-	    CFLAGS="$CFLAGS -Wsign-compare"
-	fi
+	CFLAGS="$CFLAGS -Wsign-compare"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10398,23 +10376,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wstrict-prototypes option" >&5
 $as_echo_n "checking whether the compiler supports the -Wstrict-prototypes option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wstrict-prototypes" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wstrict-prototypes"
-	elif expr "x-Wstrict-prototypes" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
-	elif expr "x-Wstrict-prototypes" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
-	else
-	    CFLAGS="$CFLAGS -Wstrict-prototypes"
-	fi
+	CFLAGS="$CFLAGS -Wstrict-prototypes"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10480,23 +10459,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wunused-parameter option" >&5
 $as_echo_n "checking whether the compiler supports the -Wunused-parameter option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wunused-parameter" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wunused-parameter"
-	elif expr "x-Wunused-parameter" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wunused-parameter"
-	elif expr "x-Wunused-parameter" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wunused-parameter"
-	else
-	    CFLAGS="$CFLAGS -Wunused-parameter"
-	fi
+	CFLAGS="$CFLAGS -Wunused-parameter"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10562,23 +10542,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wused-but-marked-unused option" >&5
 $as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wused-but-marked-unused" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wused-but-marked-unused"
-	elif expr "x-Wused-but-marked-unused" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
-	elif expr "x-Wused-but-marked-unused" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
-	else
-	    CFLAGS="$CFLAGS -Wused-but-marked-unused"
-	fi
+	CFLAGS="$CFLAGS -Wused-but-marked-unused"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10644,6 +10625,7 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 		    # Warns about safeguards added in case the enums are
 		    # extended
@@ -10676,18 +10658,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wunreachable-code option" >&5
 $as_echo_n "checking whether the compiler supports the -Wunreachable-code option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wunreachable-code" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wunreachable-code"
-	elif expr "x-Wunreachable-code" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wunreachable-code"
-	elif expr "x-Wunreachable-code" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wunreachable-code"
-	else
-	    CFLAGS="$CFLAGS -Wunreachable-code"
-	fi
+	CFLAGS="$CFLAGS -Wunreachable-code"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10760,23 +10742,24 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshorten-64-to-32 option" >&5
 $as_echo_n "checking whether the compiler supports the -Wshorten-64-to-32 option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wshorten-64-to-32" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshorten-64-to-32"
-	elif expr "x-Wshorten-64-to-32" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
-	elif expr "x-Wshorten-64-to-32" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
-	else
-	    CFLAGS="$CFLAGS -Wshorten-64-to-32"
-	fi
+	CFLAGS="$CFLAGS -Wshorten-64-to-32"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -10842,6 +10825,7 @@ $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	ac_c_werror_flag="$save_ac_c_werror_flag"
 
 	    fi
 

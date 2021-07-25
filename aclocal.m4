@@ -232,36 +232,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 ])
 
 dnl
-dnl Check whether, if you pass an unknown warning option to the
-dnl compiler, it fails or just prints a warning message and succeeds.
-dnl Set ac_lbl_unknown_warning_option_error to the appropriate flag
-dnl to force an error if it would otherwise just print a warning message
-dnl and succeed.
-dnl
-AC_DEFUN(AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR,
-    [
-	AC_MSG_CHECKING([whether the compiler fails when given an unknown warning option])
-	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS -Wxyzzy-this-will-never-succeed-xyzzy"
-	AC_TRY_COMPILE(
-	    [],
-	    [return 0],
-	    [
-		AC_MSG_RESULT([no])
-		#
-		# We're assuming this is clang, where
-		# -Werror=unknown-warning-option is the appropriate
-		# option to force the compiler to fail.
-		#
-		ac_lbl_unknown_warning_option_error="-Werror=unknown-warning-option"
-	    ],
-	    [
-		AC_MSG_RESULT([yes])
-	    ])
-	CFLAGS="$save_CFLAGS"
-    ])
-
-dnl
 dnl Check whether the compiler option specified as the second argument
 dnl is supported by the compiler and, if so, add it to the macro
 dnl specified as the first argument
@@ -278,18 +248,18 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
     [
 	AC_MSG_CHECKING([whether the compiler supports the $2 option])
 	save_CFLAGS="$CFLAGS"
-	if expr "x$2" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error $2"
-	elif expr "x$2" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror $2"
-	elif expr "x$2" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror $2"
-	else
-	    CFLAGS="$CFLAGS $2"
-	fi
+	CFLAGS="$CFLAGS $2"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
 	AC_TRY_COMPILE(
 	    [],
 	    [return 0],
@@ -332,6 +302,7 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
 		AC_MSG_RESULT([no])
 		CFLAGS="$save_CFLAGS"
 	    ])
+	ac_c_werror_flag="$save_ac_c_werror_flag"
     ])
 
 dnl
@@ -819,7 +790,6 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    # Skip all the warning option stuff on some compilers.
 	    #
 	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
-		    AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR()
 		    AC_LBL_CHECK_COMPILER_OPT($1, -W)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wcomma)
