@@ -1612,8 +1612,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				}
 			}
 			fclose(fh);
-			free(pathstr);
 		}
+		free(pathstr);
 	}
 
 #ifdef ETHTOOL_GLINK
