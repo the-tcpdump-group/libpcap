@@ -19,10 +19,10 @@ freebsd_task:
   env:
     IGNORE_OSVERSION: yes
     MAKEFLAGS: -j 4
-    MATRIX_CC: clang gcc48 gcc10
+    MATRIX_CC: clang gcc10
   script:
-    - pkg install -qy autoconf gcc48 gcc10
-    - pkg install -qy cmake git # for build_matrix.sh and build.sh
+    - pkg install -qy autoconf gcc10
+    - pkg install -qy cmake git-tiny # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
 linux_task:
