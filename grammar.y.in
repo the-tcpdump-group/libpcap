@@ -171,6 +171,8 @@ static const struct tok ieee80211_mgt_subtypes[] = {
 	{ 0, NULL }
 };
 static const struct tok ieee80211_ctl_subtypes[] = {
+	{ IEEE80211_FC0_SUBTYPE_BAR, "bar" },
+	{ IEEE80211_FC0_SUBTYPE_BA, "ba" },
 	{ IEEE80211_FC0_SUBTYPE_PS_POLL, "ps-poll" },
 	{ IEEE80211_FC0_SUBTYPE_RTS, "rts" },
 	{ IEEE80211_FC0_SUBTYPE_CTS, "cts" },
