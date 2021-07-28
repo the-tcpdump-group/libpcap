@@ -64,24 +64,95 @@ print_sysinfo() {
     date
 }
 
+# Try to make the current C compiler print its version information (usually
+# multi-line) to stdout.
+# shellcheck disable=SC2006
 print_cc_version() {
-    # shellcheck disable=SC2006
     case `basename "$CC"` in
-    gcc*|clang*)
+    gcc*|egcc*|clang*)
         # GCC and Clang recognize --version, print to stdout and exit with 0.
         "$CC" --version
         ;;
     xl*)
-        # XL C for AIX recognizes -qversion, prints to stdout and exits with 0,
-        # but on an unknown command-line flag displays its man page and waits.
-        "$CC" -qversion
+        # XL C 12.1 and 13.1 recognize "-qversion", print to stdout and exit
+        # with 0. XL C 12.1 on an unknown command-line flag displays its man
+        # page and waits.
+        # XL C 16.1 recognizes "-qversion" and "--version", prints to stdout
+        # and exits with 0. Community Edition also prints a banner to stderr.
+        "$CC" -qversion 2>/dev/null
         ;;
     sun*)
         # Sun compilers recognize -V, print to stderr and exit with an error.
         "$CC" -V 2>&1 || :
         ;;
+    cc)
+        case `uname -s` in
+        SunOS)
+            # Most likely Sun C.
+            "$CC" -V 2>&1 || :
+            ;;
+        Darwin)
+            # Most likely Clang.
+            "$CC" --version
+            ;;
+        Linux|FreeBSD|NetBSD|OpenBSD)
+            # Most likely Clang or GCC.
+            "$CC" --version
+            ;;
+        esac
+        ;;
     *)
         "$CC" --version || "$CC" -V || :
+        ;;
+    esac
+}
+
+# For the current C compiler try to print a short and uniform identification
+# string (such as "gcc-9.3.0") that is convenient to use in a case statement.
+# shellcheck disable=SC2006
+cc_id() {
+    cc_id_firstline=`print_cc_version | head -1`
+
+    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^.*clang version \([0-9\.]*\).*$/clang-\1/'`
+    if [ "$cc_id_firstline" != "$cc_id_guessed" ]; then
+        echo "$cc_id_guessed"
+        return
+    fi
+
+    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^IBM XL C.*, V\([0-9\.]*\).*$/xlc-\1/'`
+    if [ "$cc_id_firstline" != "$cc_id_guessed" ]; then
+        echo "$cc_id_guessed"
+        return
+    fi
+
+    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^.* Sun C \([0-9\.]*\) .*$/suncc-\1/'`
+    if [ "$cc_id_firstline" != "$cc_id_guessed" ]; then
+        echo "$cc_id_guessed"
+        return
+    fi
+
+    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^.* (.*) \([0-9\.]*\)$/gcc-\1/'`
+    if [ "$cc_id_firstline" != "$cc_id_guessed" ]; then
+        echo "$cc_id_guessed"
+        return
+    fi
+}
+
+# For the current C compiler try to print CFLAGS value that tells to treat
+# warnings as errors.
+# shellcheck disable=SC2006
+cc_werr_cflags() {
+    case `cc_id` in
+    gcc-*|clang-*)
+        echo '-Werror'
+        ;;
+    xlc-*)
+        # XL C 12.1 and 13.1 recognize "-qhalt=w". XL C 16.1 recognizes that
+        # and "-Werror".
+        echo '-qhalt=w'
+        ;;
+    suncc-*)
+        echo '-errwarn=%all'
         ;;
     esac
 }
