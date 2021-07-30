@@ -475,6 +475,12 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	va_end(ap);
 	longjmp(cstate->top_ctx, 1);
 	/*NOTREACHED*/
+#ifdef _AIX
+	/*
+	 * Same GCC workaround as in tcpdump.
+	 */
+	while (1);
+#endif /* _AIX */
 }
 
 static int init_linktype(compiler_state_t *, pcap_t *);

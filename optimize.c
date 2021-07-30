@@ -2421,6 +2421,12 @@ opt_error(opt_state_t *opt_state, const char *fmt, ...)
 	}
 	longjmp(opt_state->top_ctx, 1);
 	/* NOTREACHED */
+#ifdef _AIX
+	/*
+	 * Same GCC workaround as in tcpdump.
+	 */
+	while (1);
+#endif /* _AIX */
 }
 
 /*
@@ -2925,6 +2931,12 @@ conv_error(conv_state_t *conv_state, const char *fmt, ...)
 	va_end(ap);
 	longjmp(conv_state->top_ctx, 1);
 	/* NOTREACHED */
+#ifdef _AIX
+	/*
+	 * Same GCC workaround as in tcpdump.
+	 */
+	while (1);
+#endif /* _AIX */
 }
 
 /*
