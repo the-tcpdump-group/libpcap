@@ -6,6 +6,7 @@ Monthday, Month DD, YYYY:
       Handle some Autoconf/make errors better.
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9.
+      Address assorted compiler warnings.
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
