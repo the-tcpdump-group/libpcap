@@ -8600,7 +8600,13 @@ fi
 $as_echo "$tcpdump_cv_capable_lex" >&6; }
 if test $tcpdump_cv_capable_lex = insufficient ; then
 	as_fn_error $? "$LEX is insufficient to compile libpcap.
- libpcap requires Flex 2.5.31 or later, or a compatible version of lex." "$LINENO" 5
+ libpcap requires Flex 2.5.31 or later, or a compatible version of lex.
+ If a suitable version of Lex/Flex is available as a non-standard command
+ and/or not in the PATH, you can specify it using the LEX environment
+ variable. That said, on some systems the error can mean that Flex/Lex is
+ actually acceptable, but m4 is not. Likewise, if a suitable version of
+ m4 (such as GNU M4) is available but has not been detected, you can
+ specify it using the M4 environment variable." "$LINENO" 5
 fi
 
 #

@@ -1735,7 +1735,13 @@ AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
 	fi)
 if test $tcpdump_cv_capable_lex = insufficient ; then
 	AC_MSG_ERROR([$LEX is insufficient to compile libpcap.
- libpcap requires Flex 2.5.31 or later, or a compatible version of lex.])
+ libpcap requires Flex 2.5.31 or later, or a compatible version of lex.
+ If a suitable version of Lex/Flex is available as a non-standard command
+ and/or not in the PATH, you can specify it using the LEX environment
+ variable. That said, on some systems the error can mean that Flex/Lex is
+ actually acceptable, but m4 is not. Likewise, if a suitable version of
+ m4 (such as GNU M4) is available but has not been detected, you can
+ specify it using the M4 environment variable.])
 fi
 
 #
