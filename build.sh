@@ -22,6 +22,7 @@ print_cc_version
 # are not warning-free for one or another reason.  If you manage to fix one of
 # these cases, please remember to remove respective exemption below to help any
 # later warnings in the same matrix subset trigger an error.
+# shellcheck disable=SC2006,SC2221,SC2222
 case `cc_id`/`os_id` in
 gcc-*/Linux-*)
     # This warning is a bit odd.  It is steadily present in Cirrus CI, but not
