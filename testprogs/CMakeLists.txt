@@ -41,7 +41,10 @@ endif()
 
 add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
 
-if(NOT WIN32)
+# Same as in configure.ac.
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+   CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR
+   CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_test_executable(valgrindtest)
 endif()
 
