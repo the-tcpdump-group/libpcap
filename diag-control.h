@@ -195,12 +195,19 @@
 
   /*
    * Suppress format-truncation= warnings.
+   * GCC 7.1 had introduced this warning option. Earlier versions (at least
+   * one particular copy of GCC 4.6.4) treat the request as a warning.
    */
-  #define DIAG_OFF_FORMAT_TRUNCATION \
-    PCAP_DO_PRAGMA(GCC diagnostic push) \
-    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wformat-truncation=")
-  #define DIAG_ON_FORMAT_TRUNCATION \
-    PCAP_DO_PRAGMA(GCC diagnostic pop)
+  #if PCAP_IS_AT_LEAST_GNUC_VERSION(7,1)
+    #define DIAG_OFF_FORMAT_TRUNCATION \
+      PCAP_DO_PRAGMA(GCC diagnostic push) \
+      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wformat-truncation=")
+    #define DIAG_ON_FORMAT_TRUNCATION \
+      PCAP_DO_PRAGMA(GCC diagnostic pop)
+  #else
+   #define DIAG_OFF_FORMAT_TRUNCATION
+   #define DIAG_ON_FORMAT_TRUNCATION
+  #endif
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
