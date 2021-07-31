@@ -23,9 +23,8 @@ COUNT=0
 touch .devel configure
 for CC in $MATRIX_CC; do
     export CC
-    # Exclude gcc on macOS (it is just an alias for clang).
-    # shellcheck disable=SC2006
-    if [ "$CC" = gcc ] && [ "`uname -s`" = Darwin ]; then
+    discard_cc_cache
+    if gcc_is_clang_in_disguise; then
         echo '(skipped)'
         continue
     fi
@@ -35,7 +34,7 @@ for CC in $MATRIX_CC; do
             export REMOTE
             # shellcheck disable=SC2006
             COUNT=`increment $COUNT`
-            echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE ====="
+            echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE =====" >&2
             # Run one build with setup environment variables: CC, CMAKE and REMOTE
             run_after_echo ./build.sh
             echo 'Cleaning...'
@@ -48,5 +47,5 @@ for CC in $MATRIX_CC; do
     done
 done
 run_after_echo rm -rf "$PREFIX"
-echo_magenta "Tested setup count: $COUNT"
+echo_magenta "Tested setup count: $COUNT" >&2
 # vi: set tabstop=4 softtabstop=0 expandtab shiftwidth=4 smarttab autoindent :
