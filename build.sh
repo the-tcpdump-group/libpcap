@@ -49,15 +49,6 @@ clang-*/NetBSD-*)
     # 'long' to 'suseconds_t' (aka 'int') [-Wshorten-64-to-32]
     LIBPCAP_TAINTED=yes
     ;;
-clang-*/NetBSD-*)
-    # savefile.c:354:4: warning: code will never be executed
-    # [-Wunreachable-code]
-    LIBPCAP_TAINTED=yes
-    ;;
-clang-*/OpenBSD-*)
-    # Same as the above.
-    LIBPCAP_TAINTED=yes
-    ;;
 esac
 # shellcheck disable=SC2006
 [ "$LIBPCAP_TAINTED" != yes ] && CFLAGS=`cc_werr_cflags`

@@ -350,7 +350,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
-		if (stdin == NULL) {
+		if (fp == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "The standard input is not open");
 			return (NULL);
