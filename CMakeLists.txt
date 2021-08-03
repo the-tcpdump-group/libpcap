@@ -2060,7 +2060,7 @@ endif(NOT MSVC)
 #
 if(NOT "${EXTRA_CFLAGS}" STREQUAL "")
     foreach(_extra_cflag ${EXTRA_CFLAGS})
-        check_and_add_compiler_option(_extra_cflag)
+        check_and_add_compiler_option("${_extra_cflag}")
     endforeach(_extra_cflag)
     message(STATUS "Added extra compile options (${EXTRA_CFLAGS})")
 endif()
