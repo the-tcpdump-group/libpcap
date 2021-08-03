@@ -31,12 +31,13 @@ gcc-*/Linux-*)
     # make CFLAGS=-g -- does not reproduce
     # CFLAGS=-g make -- reproduces
     # make -- reproduces
-    # And even this way it does not make GCC exit with an error when it has
-    # reported the warning and has received the "-Werror" flag.
     #
     # pcap-linux.c:947:8: warning: ignoring return value of 'write', declared
     # with attribute warn_unused_result [-Wunused-result]
-    [ "$CMAKE" = no ] && LIBPCAP_TAINTED=yes
+    #
+    # And even this way it does not make GCC exit with an error when it has
+    # reported the warning and has received the "-Werror" flag. So let's keep
+    # this block no-op for now.
     ;;
 clang-*/NetBSD-*)
     # pcap-bpf.c:1044:18: warning: implicit conversion loses integer precision:
