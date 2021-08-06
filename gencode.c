@@ -77,6 +77,7 @@
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
+#include "diag-control.h"
 
 #include "grammar.h"
 #include "scanner.h"
@@ -476,10 +477,7 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	longjmp(cstate->top_ctx, 1);
 	/*NOTREACHED*/
 #ifdef _AIX
-	/*
-	 * Same GCC workaround as in tcpdump.
-	 */
-	while (1);
+	PCAP_UNREACHABLE
 #endif /* _AIX */
 }
 

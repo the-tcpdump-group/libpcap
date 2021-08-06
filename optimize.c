@@ -39,6 +39,7 @@
 
 #include "gencode.h"
 #include "optimize.h"
+#include "diag-control.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -2422,10 +2423,7 @@ opt_error(opt_state_t *opt_state, const char *fmt, ...)
 	longjmp(opt_state->top_ctx, 1);
 	/* NOTREACHED */
 #ifdef _AIX
-	/*
-	 * Same GCC workaround as in tcpdump.
-	 */
-	while (1);
+	PCAP_UNREACHABLE
 #endif /* _AIX */
 }
 
@@ -2932,10 +2930,7 @@ conv_error(conv_state_t *conv_state, const char *fmt, ...)
 	longjmp(conv_state->top_ctx, 1);
 	/* NOTREACHED */
 #ifdef _AIX
-	/*
-	 * Same GCC workaround as in tcpdump.
-	 */
-	while (1);
+	PCAP_UNREACHABLE
 #endif /* _AIX */
 }
 
