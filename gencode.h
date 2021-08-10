@@ -19,6 +19,9 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef gencode_h
+#define gencode_h
+
 #include "pcap/funcattrs.h"
 
 /*
@@ -400,3 +403,5 @@ int pcap_parse(void *, compiler_state_t *);
 /* XXX */
 #define JT(b)  ((b)->et.succ)
 #define JF(b)  ((b)->ef.succ)
+
+#endif /* gencode_h */
