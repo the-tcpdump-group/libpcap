@@ -50,6 +50,20 @@ clang-*/NetBSD-*)
     # 'long' to 'suseconds_t' (aka 'int') [-Wshorten-64-to-32]
     LIBPCAP_TAINTED=yes
     ;;
+clang-*/SunOS-5.11)
+    # pcap-bpf.c:1044:18: warning: implicit conversion loses integer precision:
+    #   'uint64_t' (aka 'unsigned long') to 'u_int' (aka 'unsigned int')
+    #   [-Wshorten-64-to-32]
+    # pcap-bpf.c:1045:18: warning: implicit conversion loses integer precision:
+    #   'uint64_t' (aka 'unsigned long') to 'u_int' (aka 'unsigned int')
+    #   [-Wshorten-64-to-32]
+    # pcap-bpf.c:1843:22: warning: implicit conversion loses integer precision:
+    #   'long' to 'int' [-Wshorten-64-to-32]
+    # fad-getad.c:266:52: warning: implicit conversion loses integer precision:
+    #   'uint64_t'(aka 'unsigned long') to 'bpf_u_int32' (aka 'unsigned int')
+    #   [-Wshorten-64-to-32]
+    [ "`uname -p`" = i386 ] && LIBPCAP_TAINTED=yes
+    ;;
 esac
 # shellcheck disable=SC2006
 [ "$LIBPCAP_TAINTED" != yes ] && CFLAGS=`cc_werr_cflags`

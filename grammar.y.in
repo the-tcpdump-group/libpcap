@@ -71,6 +71,13 @@
 #include <config.h>
 #endif
 
+/*
+ * grammar.h requires gencode.h and sometimes breaks in a polluted namespace
+ * (see ftmacros.h), so include it early.
+ */
+#include "gencode.h"
+#include "grammar.h"
+
 #include <stdlib.h>
 
 #ifndef _WIN32
@@ -92,8 +99,6 @@ struct rtentry;
 
 #include "pcap-int.h"
 
-#include "gencode.h"
-#include "grammar.h"
 #include "scanner.h"
 
 #ifdef HAVE_NET_PFVAR_H
