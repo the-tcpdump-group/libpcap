@@ -24,6 +24,13 @@
 #include <config.h>
 #endif
 
+/*
+ * grammar.h requires gencode.h and sometimes breaks in a polluted namespace
+ * (see ftmacros.h), so include it early.
+ */
+#include "gencode.h"
+#include "grammar.h"
+
 #include <pcap-types.h>
 #ifdef _WIN32
   #include <ws2tcpip.h>
@@ -69,7 +76,6 @@
 #include "ethertype.h"
 #include "nlpid.h"
 #include "llc.h"
-#include "gencode.h"
 #include "ieee80211.h"
 #include "atmuni31.h"
 #include "sunatmpos.h"
@@ -79,7 +85,6 @@
 #include "arcnet.h"
 #include "diag-control.h"
 
-#include "grammar.h"
 #include "scanner.h"
 
 #if defined(linux)

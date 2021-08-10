@@ -4,7 +4,7 @@ Monthday, Month DD, YYYY:
     Building and testing:
       Handle some Autoconf/make errors better.
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
-      Fix compiling on Solaris 9.
+      Fix compiling on Solaris 9/SPARC and 11/AMD64.
       Address assorted compiler warnings.
 
 Monthday, Month DD, YYYY:

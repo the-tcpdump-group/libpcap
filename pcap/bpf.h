@@ -80,7 +80,7 @@
 #define lib_pcap_bpf_h
 
 #include <pcap/funcattrs.h>
-
+#include <pcap-types.h> /* u_char, u_short and u_int */
 #include <pcap/dlt.h>
 
 #ifdef __cplusplus
