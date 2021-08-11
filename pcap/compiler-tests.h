@@ -144,14 +144,12 @@
  * __ibmxl__ is defined since at least XL C 13.1.1.
  */
 
-#if ! defined(__xlC__)
-  /*
-   * Either not XL C at all or 3.1.6 or later on Linux.
-   */
-  #if ! defined(__ibmxl__)
-    /* Not XL C */
-    #define PCAP_IS_AT_LEAST_XL_C_VERSION(major,minor) 0
-  #else
+#if ! defined(__xlC__) && ! defined(__ibmxl__)
+  /* Not XL C */
+  #define PCAP_IS_AT_LEAST_XL_C_VERSION(major,minor) 0
+#else
+  /* XL C */
+  #if defined(__ibmxl__)
     /*
      * Later Linux version of XL C; use __ibmxl_version__ to test
      * the version.
@@ -159,13 +157,13 @@
     #define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
 	(__ibmxl_version__ > (major) || \
 	 (__ibmxl_version__ == (major) && __ibmxl_release__ >= (minor)))
-  #endif /* ! __ibmxl__ */
-#else /* ! __xlC__ */
-  /*
-   * XL C with __xlC__ defined; use that to test the version.
-   */
-  #define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
+  #else /* __ibmxl__ */
+    /*
+     * __ibmxl__ not defined; use __xlC__ to test the version.
+     */
+    #define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
 	(__xlC__ >= (((major) << 8) | (minor)))
+  #endif /* ! __ibmxl__ */
 #endif
 
 /*
