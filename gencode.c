@@ -24,8 +24,6 @@
 #include <config.h>
 #endif
 
-#include "gencode.h"
-
 #include <pcap-types.h>
 #ifdef _WIN32
   #include <ws2tcpip.h>
@@ -71,6 +69,7 @@
 #include "ethertype.h"
 #include "nlpid.h"
 #include "llc.h"
+#include "gencode.h"
 #include "ieee80211.h"
 #include "atmuni31.h"
 #include "sunatmpos.h"
