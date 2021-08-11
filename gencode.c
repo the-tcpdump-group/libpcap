@@ -24,12 +24,7 @@
 #include <config.h>
 #endif
 
-/*
- * grammar.h requires gencode.h and sometimes breaks in a polluted namespace
- * (see ftmacros.h), so include it early.
- */
 #include "gencode.h"
-#include "grammar.h"
 
 #include <pcap-types.h>
 #ifdef _WIN32
