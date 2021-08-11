@@ -118,14 +118,14 @@
     #if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4) \
         || PCAP_IS_AT_LEAST_XL_C_VERSION(12,0)
       /*
-       * GCC 3.4 or later, or some compiler asserting compatibility with
-       * GCC 3.4 or later, or XL C 13.0 or later, so we have
+       * GCC 3.4 and later, or some compiler asserting compatibility with
+       * GCC 3.4 and later, or XL C 13.0 and later, so we have
        * __attribute__((visibility()).
        */
       #define PCAP_API_DEF	__attribute__((visibility("default")))
     #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
       /*
-       * Sun C 5.5 or later, so we have __global.
+       * Sun C 5.5 and later, so we have __global.
        * (Sun C 5.9 and later also have __attribute__((visibility()),
        * but there's no reason to prefer it with Sun C.)
        */
@@ -230,11 +230,11 @@
     || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1) \
     || PCAP_IS_AT_LEAST_HP_C_VERSION(6,10)
   /*
-   * Compiler with support for __attribute((noreturn)), or GCC 2.5 or
-   * later, or some compiler asserting compatibility with GCC 2.5 or
-   * later, or Solaris Studio 12 (Sun C 5.9) or later, or IBM XL C 10.1
-   * or later (do any earlier versions of XL C support this?), or HP aCC
-   * A.06.10 or later.
+   * Compiler with support for __attribute((noreturn)), or GCC 2.5 and
+   * later, or some compiler asserting compatibility with GCC 2.5 and
+   * later, or Solaris Studio 12 (Sun C 5.9) and later, or IBM XL C 10.1
+   * and later (do any earlier versions of XL C support this?), or HP aCC
+   * A.06.10 and later.
    */
   #define PCAP_NORETURN __attribute((noreturn))
   #define PCAP_NORETURN_DEF __attribute((noreturn))
@@ -260,8 +260,8 @@
     || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1) \
     || PCAP_IS_AT_LEAST_HP_C_VERSION(6,10)
   /*
-   * Compiler with support for it, or GCC 2.3 or later, or some compiler
-   * asserting compatibility with GCC 2.3 or later, or IBM XL C 10.1
+   * Compiler with support for it, or GCC 2.3 and later, or some compiler
+   * asserting compatibility with GCC 2.3 and later, or IBM XL C 10.1
    * and later (do any earlier versions of XL C support this?),
    * or HP aCC A.06.10 and later.
    */
@@ -284,7 +284,7 @@
     || PCAP_IS_AT_LEAST_SUNC_VERSION(5,13)
   /*
    * Compiler that supports __has_attribute and __attribute__((deprecated)),
-   * or GCC 4.5 or later, or Sun/Oracle C 12.4 (Sun C 5.13) or later.
+   * or GCC 4.5 and later, or Sun/Oracle C 12.4 (Sun C 5.13) and later.
    *
    * Those support __attribute__((deprecated(msg))) (we assume, perhaps
    * incorrectly, that anything that supports __has_attribute() is
@@ -302,7 +302,7 @@
 #elif defined(_MSC_VER) && !defined(BUILDING_PCAP)
   /*
    * MSVC, and we're not building libpcap itself; it's VS 2015
-   * or later, so we have the deprecated pragma.
+   * and later, so we have the deprecated pragma.
    *
    * If we *are* building libpcap, we don't want this, as it'll warn
    * us even if we *define* the function.
