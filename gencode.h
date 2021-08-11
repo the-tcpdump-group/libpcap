@@ -23,7 +23,7 @@
 #define gencode_h
 
 #include "pcap/funcattrs.h"
-#include "pcap/bpf.h" /* bpf_u_int32 */
+#include "pcap/bpf.h" /* bpf_u_int32 and BPF_MEMWORDS */
 
 /*
  * ATM support:
