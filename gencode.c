@@ -1731,7 +1731,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 			cstate->off_nl = OFFSET_NOT_SET;
 			cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
-			bpf_set_error(cstate, "unknown data link type %d", cstate->linktype);
+			bpf_set_error(cstate, "unknown data link type %d (min %d, max %d)",
+			    cstate->linktype, DLT_MATCHING_MIN, DLT_MATCHING_MAX);
 			return (-1);
 		}
 		break;
