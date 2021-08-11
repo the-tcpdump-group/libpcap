@@ -163,7 +163,7 @@
      */
     #define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
 	(__xlC__ >= (((major) << 8) | (minor)))
-  #endif /* ! __ibmxl__ */
+  #endif /* __ibmxl__ */
 #endif
 
 /*
