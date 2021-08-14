@@ -816,8 +816,8 @@ True if the packet is an ATM packet, for SunATM on Solaris, and is
 on a meta signaling circuit and is a Q.2931 Setup, Call Proceeding, Connect,
 Release, or Release Done message.
 .IP  "\fIexpr relop expr\fR"
-True if the relation holds, where \fIrelop\fR is one of >, <, >=, <=, =,
-!=, and \fIexpr\fR is an arithmetic expression composed of integer
+True if the relation holds, where \fIrelop\fR is one of >, <, >=, <=, =
+or ==, !=, and \fIexpr\fR is an arithmetic expression composed of integer
 constants (expressed in standard C syntax), the normal binary operators
 [+, -, *, /, %, &, |, ^, <<, >>], a length operator, and special packet data
 accessors.  Note that all comparisons are unsigned, so that, for example,
