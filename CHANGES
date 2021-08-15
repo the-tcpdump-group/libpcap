@@ -6,6 +6,8 @@ Monthday, Month DD, YYYY:
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9/SPARC and 11/AMD64.
       Address assorted compiler warnings.
+    Documentation:
+      Add README.solaris.md.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
