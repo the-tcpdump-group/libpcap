@@ -12,7 +12,7 @@ libpcap to support the 'ACN' WAN/LAN router product from SITA
 This might also work on non-Linux Unix-compatible platforms, but that
 has not been tested.
 
-See also the libpcap INSTALL.txt file for further libpcap configuration
+See also the libpcap INSTALL.md file for further libpcap configuration
 options.
 
 These additions/extensions have been made to PCAP to allow it to
