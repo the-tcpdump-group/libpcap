@@ -64,6 +64,15 @@ clang-*/SunOS-5.11)
     #   [-Wshorten-64-to-32]
     [ "`uname -p`" = i386 ] && LIBPCAP_TAINTED=yes
     ;;
+suncc-5.1[45]/SunOS-5.11)
+    # "scanner.l", line 257: warning: statement not reached
+    # (186 warnings for scanner.l)
+    #
+    # "./filtertest.c", line 259: warning: statement not reached
+    # "./filtertest.c", line 276: warning: statement not reached
+    # "./filtertest.c", line 281: warning: statement not reached
+    LIBPCAP_TAINTED=yes
+    ;;
 esac
 # shellcheck disable=SC2006
 [ "$LIBPCAP_TAINTED" != yes ] && CFLAGS=`cc_werr_cflags`

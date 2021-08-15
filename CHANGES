@@ -7,6 +7,8 @@ Monthday, Month DD, YYYY:
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9/SPARC and 11/AMD64.
       Address assorted compiler warnings.
+    Documentation:
+      Add README.solaris.md.
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:

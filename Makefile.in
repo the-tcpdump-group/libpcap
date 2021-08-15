@@ -262,6 +262,7 @@ EXTRA_DIST = \
 	doc/README.macos \
 	doc/README.septel \
 	doc/README.sita \
+	doc/README.solaris.md \
 	doc/README.tru64 \
 	CONTRIBUTING.md \
 	TODO \
