@@ -6,6 +6,7 @@
 : "${CMAKE:=no}"
 : "${REMOTE:=no}"
 : "${LIBPCAP_TAINTED:=no}"
+: "${MAKE_BIN:=make}"
 
 . ./build_common.sh
 # Install directory prefix
@@ -94,19 +95,19 @@ else
     run_after_echo cmake ${CFLAGS:+-DEXTRA_CFLAGS="$CFLAGS"} \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
 fi
-run_after_echo make -s clean
+run_after_echo "$MAKE_BIN" -s clean
 if [ "$CMAKE" = no ]; then
-    run_after_echo make -s ${CFLAGS:+CFLAGS="$CFLAGS"}
-    run_after_echo make -s testprogs ${CFLAGS:+CFLAGS="$CFLAGS"}
+    run_after_echo "$MAKE_BIN" -s ${CFLAGS:+CFLAGS="$CFLAGS"}
+    run_after_echo "$MAKE_BIN" -s testprogs ${CFLAGS:+CFLAGS="$CFLAGS"}
 else
     # The "-s" flag is a no-op and CFLAGS is set using -DEXTRA_CFLAGS above.
-    run_after_echo make
-    run_after_echo make testprogs
+    run_after_echo "$MAKE_BIN"
+    run_after_echo "$MAKE_BIN" testprogs
 fi
-run_after_echo make install
+run_after_echo "$MAKE_BIN" install
 if [ "$CMAKE" = no ]; then
     run_after_echo testprogs/findalldevstest
-    run_after_echo make releasetar
+    run_after_echo "$MAKE_BIN" releasetar
 else
     run_after_echo run/findalldevstest
 fi
