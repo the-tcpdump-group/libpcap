@@ -51,17 +51,22 @@ clang-*/NetBSD-*)
     LIBPCAP_TAINTED=yes
     ;;
 clang-*/SunOS-5.11)
+    # (Solaris 11 and OpenIndiana)
     # pcap-bpf.c:1044:18: warning: implicit conversion loses integer precision:
     #   'uint64_t' (aka 'unsigned long') to 'u_int' (aka 'unsigned int')
     #   [-Wshorten-64-to-32]
     # pcap-bpf.c:1045:18: warning: implicit conversion loses integer precision:
     #   'uint64_t' (aka 'unsigned long') to 'u_int' (aka 'unsigned int')
     #   [-Wshorten-64-to-32]
-    # pcap-bpf.c:1843:22: warning: implicit conversion loses integer precision:
-    #   'long' to 'int' [-Wshorten-64-to-32]
     # fad-getad.c:266:52: warning: implicit conversion loses integer precision:
     #   'uint64_t'(aka 'unsigned long') to 'bpf_u_int32' (aka 'unsigned int')
     #   [-Wshorten-64-to-32]
+    # (Solaris 11)
+    # pcap-bpf.c:1843:22: warning: implicit conversion loses integer precision:
+    #   'long' to 'int' [-Wshorten-64-to-32]
+    # (OpenIndiana)
+    # rpcapd.c:393:18: warning: this function declaration is not a prototype
+    #   [-Wstrict-prototypes]
     [ "`uname -p`" = i386 ] && LIBPCAP_TAINTED=yes
     ;;
 suncc-5.1[45]/SunOS-5.11)

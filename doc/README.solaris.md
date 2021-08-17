@@ -1,7 +1,28 @@
-# Compiling libpcap on Solaris
+# Compiling libpcap on Solaris and related OSes
 
 * Autoconf works everywhere.
 * Neither Solaris lex nor Solaris yacc are suitable.
+* Neither OpenIndiana lex nor OpenIndiana yacc are suitable.
+* Solaris m4 and OpenIndiana m4 are suitable.
+
+## OpenIndiana 2021.04/AMD64
+
+* flex 2.6.4 and GNU Bison 3.7.6 work.
+* CMake 3.21.1 works.
+* GCC 7.5.0 and GCC 10.3.0 work, Clang 9.0.1 works.
+
+For reference, the tests were done using a system installed from
+`OI-hipster-text-20210430.iso` plus the following packages:
+```shell
+xargs -L1 pkg install <<ENDOFTEXT
+developer/build/autoconf
+developer/parser/bison
+developer/lexer/flex
+developer/build/cmake
+developer/gcc-10
+developer/clang-90
+ENDOFTEXT
+```
 
 ## Solaris 11/SPARC
 
