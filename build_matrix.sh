@@ -12,6 +12,9 @@
 # not warning-free because of the OS, the compiler or whatever other factor
 # that the scripts can detect both in and out of CI.
 : "${LIBPCAP_TAINTED:=no}"
+# Some OSes have native make without parallel jobs support and sometimes have
+# GNU Make available as "gmake".
+: "${MAKE_BIN:=make}"
 # It calls the build.sh script which runs one build with setup environment
 # variables: CC, CMAKE and REMOTE.
 
@@ -45,7 +48,7 @@ for CC in $MATRIX_CC; do
             # Run one build with setup environment variables: CC, CMAKE and REMOTE
             run_after_echo ./build.sh
             echo 'Cleaning...'
-            if [ "$CMAKE" = yes ]; then rm -rf build; else make distclean; fi
+            if [ "$CMAKE" = yes ]; then rm -rf build; else "$MAKE_BIN" distclean; fi
             purge_directory "$PREFIX"
             run_after_echo git status -suall
             # Cancel changes in configure
