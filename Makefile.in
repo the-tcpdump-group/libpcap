@@ -627,8 +627,12 @@ install: install-shared install-archive libpcap.pc pcap-config @INSTALL_RPCAPD@
 	rm -f pcap_datalink_val_to_description_or_dlt.3pcap && \
 	$(LN_S) pcap_datalink_val_to_name.3pcap \
 		 pcap_datalink_val_to_description_or_dlt.3pcap && \
+	rm -f pcap_dump_close1.3pcap && \
+	$(LN_S) pcap_dump_close.3pcap pcap_dump_close1.3pcap && \
 	rm -f pcap_dump_fopen.3pcap && \
 	$(LN_S) pcap_dump_open.3pcap pcap_dump_fopen.3pcap && \
+	rm -f pcap_dump1.3pcap && \
+	$(LN_S) pcap_dump.3pcap pcap_dump1.3pcap && \
 	rm -f pcap_freealldevs.3pcap && \
 	$(LN_S) pcap_findalldevs.3pcap pcap_freealldevs.3pcap && \
 	rm -f pcap_perror.3pcap && \

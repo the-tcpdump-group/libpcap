@@ -8,6 +8,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Finalize moving of bpf_filter.c. (GH #1166)
       Address a few compiler warnings on Haiku.
       struct pcap: Update buffer type from "void *" to "u_char *".
+      Add pcap_dump1 and pcap_dump_close1 functions that propagates
+      write errors to the caller.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
