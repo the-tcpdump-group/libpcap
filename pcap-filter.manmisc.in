@@ -630,6 +630,8 @@ then valid \fIwlan_subtype\fRs are:
 .IP
 If the specified \fIwlan_type\fR is \fBctl\fP,
 then valid \fIwlan_subtype\fRs are:
+\fBbar\fP,
+\fBba\fP,
 \fBps-poll\fP,
 \fBrts\fP,
 \fBcts\fP,

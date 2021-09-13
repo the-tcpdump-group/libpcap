@@ -62,6 +62,8 @@
 #define	IEEE80211_FC0_SUBTYPE_AUTH		0xb0
 #define	IEEE80211_FC0_SUBTYPE_DEAUTH		0xc0
 /* for TYPE_CTL */
+#define	IEEE80211_FC0_SUBTYPE_BAR		0x80
+#define	IEEE80211_FC0_SUBTYPE_BA		0x90
 #define	IEEE80211_FC0_SUBTYPE_PS_POLL		0xa0
 #define	IEEE80211_FC0_SUBTYPE_RTS		0xb0
 #define	IEEE80211_FC0_SUBTYPE_CTS		0xc0
@@ -124,7 +126,7 @@
 	"reserved#2",		"reserved#3",		\
 	"reserved#3",		"reserved#5",		\
 	"reserved#6",		"reserved#7",		\
-	"reserved#8",		"reserved#9",		\
+	"bar",			"ba",			\
 	"ps-poll",		"rts",			\
 	"cts",			"ack",			\
 	"cf-end",		"cf-end-ack"		\
