@@ -1123,6 +1123,7 @@ static inline int
 linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 {
 	struct pcap_linux	*handlep = handle->priv;
+	uint16_t                 protocol;
 
 	if (sll->sll_pkttype == PACKET_OUTGOING) {
 		/*
@@ -1144,9 +1145,14 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 * easily distinguish packets looped back by the CAN
 		 * layer than those received by the CAN layer, so we
 		 * eliminate this packet instead.
+		 *
+		 * The sll_protocol field is big-endian.  Convert
+		 * it to host endian before comparing with the
+		 * LINUX_SLL_P_ values.
 		 */
-		if ((sll->sll_protocol == LINUX_SLL_P_CAN ||
-		     sll->sll_protocol == LINUX_SLL_P_CANFD) &&
+		protocol = ntohs(sll->sll_protocol);
+		if ((protocol == LINUX_SLL_P_CAN ||
+		     protocol == LINUX_SLL_P_CANFD) &&
 		     handle->direction != PCAP_D_OUT)
 			return 0;
 
