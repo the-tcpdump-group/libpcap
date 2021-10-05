@@ -2684,6 +2684,7 @@ setup_mmapped(pcap_t *handle, int *status)
 	ret = prepare_tpacket_socket(handle);
 	if (ret == -1) {
 		free(handlep->oneshot_buffer);
+		handlep->oneshot_buffer = NULL;
 		*status = PCAP_ERROR;
 		return ret;
 	}
@@ -2694,6 +2695,7 @@ setup_mmapped(pcap_t *handle, int *status)
 		 * fail.  create_ring() has set *status.
 		 */
 		free(handlep->oneshot_buffer);
+		handlep->oneshot_buffer = NULL;
 		return -1;
 	}
 
