@@ -100,6 +100,7 @@
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
+#include "pcap/can_socketcan.h"
 
 #include "diag-control.h"
 
@@ -1123,7 +1124,6 @@ static inline int
 linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 {
 	struct pcap_linux	*handlep = handle->priv;
-	uint16_t                 protocol;
 
 	if (sll->sll_pkttype == PACKET_OUTGOING) {
 		/*
@@ -1146,13 +1146,11 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 * layer than those received by the CAN layer, so we
 		 * eliminate this packet instead.
 		 *
-		 * The sll_protocol field is big-endian.  Convert
-		 * it to host endian before comparing with the
-		 * LINUX_SLL_P_ values.
+		 * We check whether this is a CAN or CAN FD frame
+		 * by checking whether the device's hardware type
+		 * is ARPHRD_CAN.
 		 */
-		protocol = ntohs(sll->sll_protocol);
-		if ((protocol == LINUX_SLL_P_CAN ||
-		     protocol == LINUX_SLL_P_CANFD) &&
+		if (sll->sll_hatype == ARPHRD_CAN &&
 		     handle->direction != PCAP_D_OUT)
 			return 0;
 
@@ -1888,14 +1886,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 #define ARPHRD_CAN 280
 #endif
 	case ARPHRD_CAN:
-		/*
-		 * Map this to DLT_LINUX_SLL; that way, CAN frames will
-		 * have ETH_P_CAN/LINUX_SLL_P_CAN as the protocol and
-		 * CAN FD frames will have ETH_P_CANFD/LINUX_SLL_P_CANFD
-		 * as the protocol, so they can be distinguished by the
-		 * protocol in the SLL header.
-		 */
-		handle->linktype = DLT_LINUX_SLL;
+		handle->linktype = DLT_CAN_SOCKETCAN;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
@@ -3780,6 +3771,7 @@ static int pcap_handle_packet_mmap(
 	unsigned char *bp;
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
+	pcap_can_socketcan_hdr *canhdr;
 	unsigned int snaplen = tp_snaplen;
 	struct utsname utsname;
 
@@ -3897,6 +3889,36 @@ static int pcap_handle_packet_mmap(
 			hdrp->sll_protocol = sll->sll_protocol;
 
 			snaplen += sizeof(struct sll_header);
+		}
+	} else {
+		/*
+		 * If this is a packet from a CAN device, so that
+		 * sll->sll_hatype is ARPHRD_CAN, then, as we're
+		 * not capturing in cooked mode, its link-layer
+		 * type is DLT_CAN_SOCKETCAN.  Fix up the header
+		 * provided by the code below us to match what
+		 * DLT_CAN_SOCKETCAN is expected to provide.
+		 */
+		if (sll->sll_hatype == ARPHRD_CAN) {
+			/*
+			 * DLT_CAN_SOCKETCAN is specified as having the
+			 * CAN ID and flags in network byte order, but
+			 * capturing on a CAN device provides it in host
+			 * byte order.  Convert it to network byte order.
+			 */
+			canhdr = (pcap_can_socketcan_hdr *)bp;
+			canhdr->can_id = htonl(canhdr->can_id);
+
+			/*
+			 * In addition, set the CANFD_FDF flag if
+			 * the protocol is LINUX_SLL_P_CANFD, as
+			 * the protocol field itself isn't in
+			 * the packet to indicate that it's a
+			 * CAN FD packet.
+			 */
+			uint16_t protocol = ntohs(sll->sll_protocol);
+			if (protocol == LINUX_SLL_P_CANFD)
+				canhdr->fd_flags |= CANFD_FDF;
 		}
 	}
 
