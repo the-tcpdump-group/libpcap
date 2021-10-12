@@ -3917,8 +3917,40 @@ static int pcap_handle_packet_mmap(
 			 * CAN FD packet.
 			 */
 			uint16_t protocol = ntohs(sll->sll_protocol);
-			if (protocol == LINUX_SLL_P_CANFD)
+			if (protocol == LINUX_SLL_P_CANFD) {
 				canhdr->fd_flags |= CANFD_FDF;
+
+				/*
+				 * Zero out all the unknown bits in
+				 * fd_flags and clear the reserved
+				 * fields, so that a program reading
+				 * this can assume that CANFD_FDF
+				 * is set because we set it, not
+				 * because some uninitialized crap
+				 * was provided in the fd_flags
+				 * field.
+				 *
+				 * (At least some LINKTYPE_CAN_SOCKETCAN
+				 * files attached to Wireshark bugs
+				 * had uninitialized junk there, so it
+				 * does happen.)
+				 *
+				 * Update this if Linux adds more flag
+				 * bits to the fd_flags field or uses
+				 * either of the reserved fields for
+				 * FD frames.
+				 */
+				canhdr->fd_flags &= ~(CANFD_FDF|CANFD_ESI|CANFD_BRS);
+				canhdr->reserved1 = 0;
+				canhdr->reserved2 = 0;
+			} else {
+				/*
+				 * Clear CANFD_FDF if it's set (probably
+				 * again meaning that that field is
+				 * uninitialized junk).
+				 */
+				canhdr->fd_flags &= ~CANFD_FDF;
+			}
 		}
 	}
 
