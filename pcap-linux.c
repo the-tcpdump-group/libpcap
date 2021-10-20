@@ -3936,41 +3936,20 @@ static int pcap_handle_packet_mmap(
 				 * does happen.)
 				 *
 				 * Update this if Linux adds more flag
-				 * bits to the fd_flags field, uses the
-				 * len8_dlc field for CAN FD frames, or
-				 * uses the reserved frame for CAN FD
-				 * frames.
+				 * bits to the fd_flags field or uses
+				 * either of the reserved fields for
+				 * FD frames.
 				 */
 				canhdr->fd_flags &= ~(CANFD_FDF|CANFD_ESI|CANFD_BRS);
-				canhdr->len8_dlc = 0;
-				canhdr->reserved = 0;
+				canhdr->reserved1 = 0;
+				canhdr->reserved2 = 0;
 			} else {
 				/*
-				 * The FD flags field is CAN FD-only,
-				 * so it should be zero.
-				 *
-				 * If it's not zero, or the reserved
-				 * field is not zero, or the len8_dlc
-				 * field does not have a value between
-				 * 8 and 15, assume the header was not
-				 * initialized past the payload_length
-				 * field, and zero out the len8_dlc field.
-				 *
-				 * Then zero out the fd_flags and reserved
-				 * fields.
-				 *
-				 * Update this if Linux uses the fd_flags
-				 * field or the reserved field, or puts
-				 * values not between 8 and 15 in the
-				 * len8_dlc field, for classic CAN frames.
+				 * Clear CANFD_FDF if it's set (probably
+				 * again meaning that that field is
+				 * uninitialized junk).
 				 */
-				if (canhdr->fd_flags != 0 ||
-				    canhdr->reserved != 0 ||
-				    (canhdr->len8_dlc < 8 ||
-				     canhdr->len8_dlc > 15))
-					canhdr->len8_dlc = 0;
-				canhdr->fd_flags = 0;
-				canhdr->reserved = 0;
+				canhdr->fd_flags &= ~CANFD_FDF;
 			}
 		}
 	}
