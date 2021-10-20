@@ -48,9 +48,9 @@
 typedef struct {
 	uint32_t can_id;
 	uint8_t payload_length;
-	uint8_t fd_flags;	/* not used for classic CAN; flags for CAN FD */
-	uint8_t len8_dlc;	/* Data Length Code for classic CAN; not used for CAN FD */
-	uint8_t reserved;
+	uint8_t fd_flags;
+	uint8_t reserved1;
+	uint8_t reserved2;
 } pcap_can_socketcan_hdr;
 
 /* Bits in the fd_flags field */
