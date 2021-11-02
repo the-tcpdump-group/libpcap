@@ -643,12 +643,26 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		status = p->next_packet_op(p, &h, &data);
-		if (status) {
-			if (status == 1)
-				return (0);
+		if (status < 0) {
+			/*
+			 * Error.  Pass it back to the caller.
+			 */
 			return (status);
 		}
+		if (status == 0) {
+			/*
+			 * EOF.  Return the number of packets we've
+			 * processed in the loop; if we haven't
+			 * processed any, we return 0, which indicates
+			 * that we're at the end of the file.
+			 */
+			return (n);
+		}
 
+		/*
+		 * OK, we've read a packet; run it through the filter
+		 * and, if it passes, process it.
+		 */
 		if ((fcode = p->fcode.bf_insns) == NULL ||
 		    pcap_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
