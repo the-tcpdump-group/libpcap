@@ -434,7 +434,7 @@ grow_buffer(pcap_t *p, u_int bufsize)
 
 /*
  * Read and return the next packet from the savefile.  Return the header
- * in hdr and a pointer to the contents in data.  Return 0 on success, 1
+ * in hdr and a pointer to the contents in data.  Return 1 on success, 0
  * if there were no more packets, and -1 on an error.
  */
 static int
@@ -467,7 +467,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				return (-1);
 			}
 			/* EOF */
-			return (1);
+			return (0);
 		}
 	}
 
@@ -709,7 +709,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	if (p->swapped)
 		swap_pseudo_headers(p->linktype, hdr, *data);
 
-	return (0);
+	return (1);
 }
 
 static int

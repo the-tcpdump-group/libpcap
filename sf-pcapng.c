@@ -1094,7 +1094,7 @@ pcap_ng_cleanup(pcap_t *p)
 
 /*
  * Read and return the next packet from the savefile.  Return the header
- * in hdr and a pointer to the contents in data.  Return 0 on success, 1
+ * in hdr and a pointer to the contents in data.  Return 1 on success, 0
  * if there were no more packets, and -1 on an error.
  */
 static int
@@ -1123,7 +1123,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 */
 		status = read_block(fp, p, &cursor, p->errbuf);
 		if (status == 0)
-			return (1);	/* EOF */
+			return (0);	/* EOF */
 		if (status == -1)
 			return (-1);	/* error */
 		switch (cursor.block_type) {
@@ -1514,5 +1514,5 @@ found:
 	if (p->swapped)
 		swap_pseudo_headers(p->linktype, hdr, *data);
 
-	return (0);
+	return (1);
 }
