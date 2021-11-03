@@ -663,7 +663,8 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if ((fcode = p->fcode.bf_insns) == NULL ||
 		    pcap_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
-			if (++n >= cnt && cnt > 0)
+			n++;	/* count the packet */
+			if (!PACKET_COUNT_IS_UNLIMITED(cnt) && n >= cnt)
 				break;
 		}
 	}
