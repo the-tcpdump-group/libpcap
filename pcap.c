@@ -622,7 +622,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		 * Return codes for pcap_offline_read() are:
 		 *   -  0: EOF
 		 *   - -1: error
-		 *   - >1: OK
+		 *   - >0: OK (can only be 1 since we pass in 1)
 		 * The first one ('0') conflicts with the return code of
 		 * 0 from pcap_read() meaning "no packets arrived before
 		 * the timeout expired", so we map it to -2 so you can
@@ -641,7 +641,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 *   -  0: timeout
 	 *   - -1: error
 	 *   - -2: loop was broken out of with pcap_breakloop()
-	 *   - >1: OK
+	 *   - >0: OK (can only be 1 since we pass in 1)
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
