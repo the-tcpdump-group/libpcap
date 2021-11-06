@@ -1577,6 +1577,29 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			error = GetLastError();
 			if (error != ERROR_MORE_DATA) {
 				/*
+				 * No, did it fail with ERROR_INVALID_FUNCTION?
+				 */
+				if (error == ERROR_INVALID_FUNCTION) {
+					/*
+					 * This is probably due to
+					 * the driver with which Packet.dll
+					 * communicates being older, or
+					 * being a WinPcap driver, so
+					 * that it doesn't support
+					 * BIOCGTIMESTAMPMODES.
+					 *
+					 * Tell the user to try uninstalling
+					 * Npcap - and WinPcap if installed -
+					 * and re-installing it, to flush
+					 * out all older drivers.
+					 */
+					snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.org");
+					pcap_close(p);
+					return (NULL);
+				}
+
+				/*
 				 * No, some other error.  Fail.
 				 */
 				pcap_fmt_errmsg_for_win32_err(ebuf,
