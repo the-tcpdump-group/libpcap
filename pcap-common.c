@@ -1209,7 +1209,11 @@
 
 /*
  * Serial NCP (Network Co-Processor) protocol for Zigbee stack ZBOSS
- * by DSR, https://dsr-iot.com/downloads
+ * by DSR.
+ * ZBOSS NCP protocol description: https://cloud.dsr-corporation.com/index.php/s/3isHzaNTTgtJebn
+ * Header in pcap file: https://cloud.dsr-corporation.com/index.php/s/fiqSDorAAAZrsYB
+ *
+ * Requested by Eugene Exarevsky <eugene.exarevsky@dsr-corporation.com>
  */
 #define LINKTYPE_ZBOSS_NCP	292
 
