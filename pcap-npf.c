@@ -1616,6 +1616,18 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			return (NULL);
 		}
 
+		/* If the driver reports no modes supported *and*
+		 * ERROR_MORE_DATA, something is seriously wrong.
+		 * We *could* ignore the error and continue without supporting
+		 * settable timestamp modes, but that would hide a bug.
+		 */
+		if (num_ts_modes == 0) {
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "PacketGetTimestampModes() reports 0 modes supported.");
+				pcap_close(p);
+				return (NULL);
+		}
+
 		/*
 		 * Yes, so we now know how many types to fetch.
 		 *
@@ -1647,70 +1659,67 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			pcap_close(p);
 			return (NULL);
 		}
-		if (num_ts_modes != 0) {
-			u_int num_ts_types;
 
-			/*
-			 * Allocate a buffer big enough for
-			 * PCAP_TSTAMP_HOST (default) plus
-			 * the explicitly specified modes.
-			 */
-			p->tstamp_type_list = malloc((1 + modes[0]) * sizeof(u_int));
-			if (p->tstamp_type_list == NULL) {
-				pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
-				free(modes);
-				pcap_close(p);
-				return (NULL);
-			}
-			num_ts_types = 0;
-			p->tstamp_type_list[num_ts_types] =
-			    PCAP_TSTAMP_HOST;
-			num_ts_types++;
-			for (ULONG i = 0; i < modes[0]; i++) {
-				switch (modes[i + 1]) {
-
-				case TIMESTAMPMODE_SINGLE_SYNCHRONIZATION:
-					/*
-					 * Better than low-res,
-					 * but *not* synchronized
-					 * with the OS clock.
-					 */
-					p->tstamp_type_list[num_ts_types] =
-					    PCAP_TSTAMP_HOST_HIPREC_UNSYNCED;
-					num_ts_types++;
-					break;
-
-				case TIMESTAMPMODE_QUERYSYSTEMTIME:
-					/*
-					 * Low-res, but synchronized
-					 * with the OS clock.
-					 */
-					p->tstamp_type_list[num_ts_types] =
-					    PCAP_TSTAMP_HOST_LOWPREC;
-					num_ts_types++;
-					break;
-
-				case TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE:
-					/*
-					 * High-res, and synchronized
-					 * with the OS clock.
-					 */
-					p->tstamp_type_list[num_ts_types] =
-					    PCAP_TSTAMP_HOST_HIPREC;
-					num_ts_types++;
-					break;
-
-				default:
-					/*
-					 * Unknown, so we can't
-					 * report it.
-					 */
-					break;
-				}
-			}
-			p->tstamp_type_count = num_ts_types;
+		/*
+		 * Allocate a buffer big enough for
+		 * PCAP_TSTAMP_HOST (default) plus
+		 * the explicitly specified modes.
+		 */
+		p->tstamp_type_list = malloc((1 + num_ts_modes) * sizeof(u_int));
+		if (p->tstamp_type_list == NULL) {
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
 			free(modes);
+			pcap_close(p);
+			return (NULL);
 		}
+		u_int num_ts_types = 0;
+		p->tstamp_type_list[num_ts_types] =
+		    PCAP_TSTAMP_HOST;
+		num_ts_types++;
+		for (ULONG i = 0; i < num_ts_modes; i++) {
+			switch (modes[i + 1]) {
+
+			case TIMESTAMPMODE_SINGLE_SYNCHRONIZATION:
+				/*
+				 * Better than low-res,
+				 * but *not* synchronized
+				 * with the OS clock.
+				 */
+				p->tstamp_type_list[num_ts_types] =
+				    PCAP_TSTAMP_HOST_HIPREC_UNSYNCED;
+				num_ts_types++;
+				break;
+
+			case TIMESTAMPMODE_QUERYSYSTEMTIME:
+				/*
+				 * Low-res, but synchronized
+				 * with the OS clock.
+				 */
+				p->tstamp_type_list[num_ts_types] =
+				    PCAP_TSTAMP_HOST_LOWPREC;
+				num_ts_types++;
+				break;
+
+			case TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE:
+				/*
+				 * High-res, and synchronized
+				 * with the OS clock.
+				 */
+				p->tstamp_type_list[num_ts_types] =
+				    PCAP_TSTAMP_HOST_HIPREC;
+				num_ts_types++;
+				break;
+
+			default:
+				/*
+				 * Unknown, so we can't
+				 * report it.
+				 */
+				break;
+			}
+		}
+		p->tstamp_type_count = num_ts_types;
+		free(modes);
 	}
 	PacketCloseAdapter(adapter);
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
