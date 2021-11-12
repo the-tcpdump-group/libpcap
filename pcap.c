@@ -4003,6 +4003,10 @@ pcap_breakloop_common(pcap_t *p)
 void
 pcap_cleanup_live_common(pcap_t *p)
 {
+	if (p->opt.device != NULL) {
+		free(p->opt.device);
+		p->opt.device = NULL;
+	}
 	if (p->buffer != NULL) {
 		free(p->buffer);
 		p->buffer = NULL;
@@ -4081,8 +4085,6 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 void
 pcap_close(pcap_t *p)
 {
-	if (p->opt.device != NULL)
-		free(p->opt.device);
 	p->cleanup_op(p);
 	free(p);
 }
