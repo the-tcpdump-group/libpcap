@@ -1542,171 +1542,186 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	 */
 	device_copy = strdup(device);
 	adapter = PacketOpenAdapter(device_copy);
+	error = GetLastError();
 	free(device_copy);
-	if (adapter != NULL)
+	if (adapter == NULL)
 	{
+		/* If we can't open the device now, we won't be able to later, either. */
+		pcap_fmt_errmsg_for_win32_err(ebuf, PCAP_ERRBUF_SIZE,
+		    error, "Error opening adapter");
+		pcap_close(p);
+		return (NULL);
+	}
+	/*
+	 * Get the total number of time stamp modes.
+	 *
+	 * The buffer for PacketGetTimestampModes() is
+	 * a sequence of 1 or more ULONGs.  What's
+	 * passed to PacketGetTimestampModes() should have
+	 * the total number of ULONGs in the first ULONG;
+	 * what's returned *from* PacketGetTimestampModes()
+	 * has the total number of time stamp modes in
+	 * the first ULONG.
+	 *
+	 * Yes, that means if there are N time stamp
+	 * modes, the first ULONG should be set to N+1
+	 * on input, and will be set to N on output.
+	 *
+	 * We first make a call to PacketGetTimestampModes()
+	 * with a pointer to a single ULONG set to 1; the
+	 * call should fail with ERROR_MORE_DATA (unless
+	 * there are *no* modes, but that should never
+	 * happen), and that ULONG should be set to the
+	 * number of modes.
+	 */
+	num_ts_modes = 1;
+	ret = PacketGetTimestampModes(adapter, &num_ts_modes);
+	if (!ret) {
 		/*
-		 * Get the total number of time stamp modes.
-		 *
-		 * The buffer for PacketGetTimestampModes() is
-		 * a sequence of 1 or more ULONGs.  What's
-		 * passed to PacketGetTimestampModes() should have
-		 * the total number of ULONGs in the first ULONG;
-		 * what's returned *from* PacketGetTimestampModes()
-		 * has the total number of time stamp modes in
-		 * the first ULONG.
-		 *
-		 * Yes, that means if there are N time stamp
-		 * modes, the first ULONG should be set to N+1
-		 * on input, and will be set to N on output.
-		 *
-		 * We first make a call to PacketGetTimestampModes()
-		 * with a pointer to a single ULONG set to 1; the
-		 * call should fail with ERROR_MORE_DATA (unless
-		 * there are *no* modes, but that should never
-		 * happen), and that ULONG should be set to the
-		 * number of modes.
+		 * OK, it failed.  Did it fail with
+		 * ERROR_MORE_DATA?
 		 */
-		num_ts_modes = 1;
-		ret = PacketGetTimestampModes(adapter, &num_ts_modes);
-		if (!ret) {
+		error = GetLastError();
+		if (error != ERROR_MORE_DATA) {
 			/*
-			 * OK, it failed.  Did it fail with
-			 * ERROR_MORE_DATA?
+			 * No, did it fail with ERROR_INVALID_FUNCTION?
 			 */
-			error = GetLastError();
-			if (error != ERROR_MORE_DATA) {
+			if (error == ERROR_INVALID_FUNCTION) {
 				/*
-				 * No, did it fail with ERROR_INVALID_FUNCTION?
+				 * This is probably due to
+				 * the driver with which Packet.dll
+				 * communicates being older, or
+				 * being a WinPcap driver, so
+				 * that it doesn't support
+				 * BIOCGTIMESTAMPMODES.
+				 *
+				 * Tell the user to try uninstalling
+				 * Npcap - and WinPcap if installed -
+				 * and re-installing it, to flush
+				 * out all older drivers.
 				 */
-				if (error == ERROR_INVALID_FUNCTION) {
-					/*
-					 * This is probably due to
-					 * the driver with which Packet.dll
-					 * communicates being older, or
-					 * being a WinPcap driver, so
-					 * that it doesn't support
-					 * BIOCGTIMESTAMPMODES.
-					 *
-					 * Tell the user to try uninstalling
-					 * Npcap - and WinPcap if installed -
-					 * and re-installing it, to flush
-					 * out all older drivers.
-					 */
-					snprintf(ebuf, PCAP_ERRBUF_SIZE,
-					    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.org");
-					pcap_close(p);
-					return (NULL);
-				}
-
-				/*
-				 * No, some other error.  Fail.
-				 */
-				pcap_fmt_errmsg_for_win32_err(ebuf,
-				    PCAP_ERRBUF_SIZE, GetLastError(),
-				    "Error calling PacketGetTimestampModes");
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.org");
 				pcap_close(p);
 				return (NULL);
 			}
 
 			/*
-			 * Yes, so we now know how many types to fetch.
-			 *
-		    	 * The buffer needs to have one ULONG for the
-		    	 * count and num_ts_modes ULONGs for the
-		    	 * num_ts_modes time stamp types.
-		    	 */
-			modes = (ULONG *)malloc((1 + num_ts_modes) * sizeof(ULONG));
-			if (modes == NULL) {
-				/* Out of memory. */
-				/* XXX SET ebuf */
-				pcap_close(p);
-				return (NULL);
-			}
-			modes[0] = 1 + num_ts_modes;
-			if (!PacketGetTimestampModes(adapter, modes)) {
-				pcap_fmt_errmsg_for_win32_err(ebuf,
-				    PCAP_ERRBUF_SIZE, GetLastError(),
-				    "Error calling PacketGetTimestampModes");
-				free(modes);
-				pcap_close(p);
-				return (NULL);
-			}
-			if (modes[0] != num_ts_modes) {
+			 * No, some other error.  Fail.
+			 */
+			pcap_fmt_errmsg_for_win32_err(ebuf,
+			    PCAP_ERRBUF_SIZE, error,
+			    "Error calling PacketGetTimestampModes");
+			pcap_close(p);
+			return (NULL);
+		}
+
+		/* If the driver reports no modes supported *and*
+		 * ERROR_MORE_DATA, something is seriously wrong.
+		 * We *could* ignore the error and continue without supporting
+		 * settable timestamp modes, but that would hide a bug.
+		 */
+		if (num_ts_modes == 0) {
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				    "First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
-				    num_ts_modes, modes[0]);
-				free(modes);
+				    "PacketGetTimestampModes() reports 0 modes supported.");
 				pcap_close(p);
 				return (NULL);
-			}
-			if (num_ts_modes != 0) {
-				u_int num_ts_types;
+		}
 
+		/*
+		 * Yes, so we now know how many types to fetch.
+		 *
+		 * The buffer needs to have one ULONG for the
+		 * count and num_ts_modes ULONGs for the
+		 * num_ts_modes time stamp types.
+		 */
+		modes = (ULONG *)malloc((1 + num_ts_modes) * sizeof(ULONG));
+		if (modes == NULL) {
+			/* Out of memory. */
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			pcap_close(p);
+			return (NULL);
+		}
+		modes[0] = 1 + num_ts_modes;
+		if (!PacketGetTimestampModes(adapter, modes)) {
+			pcap_fmt_errmsg_for_win32_err(ebuf,
+			    PCAP_ERRBUF_SIZE, GetLastError(),
+			    "Error calling PacketGetTimestampModes");
+			free(modes);
+			pcap_close(p);
+			return (NULL);
+		}
+		if (modes[0] != num_ts_modes) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
+			    num_ts_modes, modes[0]);
+			free(modes);
+			pcap_close(p);
+			return (NULL);
+		}
+
+		/*
+		 * Allocate a buffer big enough for
+		 * PCAP_TSTAMP_HOST (default) plus
+		 * the explicitly specified modes.
+		 */
+		p->tstamp_type_list = malloc((1 + num_ts_modes) * sizeof(u_int));
+		if (p->tstamp_type_list == NULL) {
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			free(modes);
+			pcap_close(p);
+			return (NULL);
+		}
+		u_int num_ts_types = 0;
+		p->tstamp_type_list[num_ts_types] =
+		    PCAP_TSTAMP_HOST;
+		num_ts_types++;
+		for (ULONG i = 0; i < num_ts_modes; i++) {
+			switch (modes[i + 1]) {
+
+			case TIMESTAMPMODE_SINGLE_SYNCHRONIZATION:
 				/*
-				 * Allocate a buffer big enough for
-				 * PCAP_TSTAMP_HOST (default) plus
-				 * the explicitly specified modes.
+				 * Better than low-res,
+				 * but *not* synchronized
+				 * with the OS clock.
 				 */
-				p->tstamp_type_list = malloc((1 + modes[0]) * sizeof(u_int));
-				if (p->tstamp_type_list == NULL) {
-					/* XXX SET ebuf */
-					free(modes);
-					pcap_close(p);
-					return (NULL);
-				}
-				num_ts_types = 0;
 				p->tstamp_type_list[num_ts_types] =
-				    PCAP_TSTAMP_HOST;
+				    PCAP_TSTAMP_HOST_HIPREC_UNSYNCED;
 				num_ts_types++;
-				for (ULONG i = 0; i < modes[0]; i++) {
-					switch (modes[i + 1]) {
+				break;
 
-					case TIMESTAMPMODE_SINGLE_SYNCHRONIZATION:
-						/*
-						 * Better than low-res,
-						 * but *not* synchronized
-						 * with the OS clock.
-						 */
-						p->tstamp_type_list[num_ts_types] =
-						    PCAP_TSTAMP_HOST_HIPREC_UNSYNCED;
-						num_ts_types++;
-						break;
+			case TIMESTAMPMODE_QUERYSYSTEMTIME:
+				/*
+				 * Low-res, but synchronized
+				 * with the OS clock.
+				 */
+				p->tstamp_type_list[num_ts_types] =
+				    PCAP_TSTAMP_HOST_LOWPREC;
+				num_ts_types++;
+				break;
 
-					case TIMESTAMPMODE_QUERYSYSTEMTIME:
-						/*
-						 * Low-res, but synchronized
-						 * with the OS clock.
-						 */
-						p->tstamp_type_list[num_ts_types] =
-						    PCAP_TSTAMP_HOST_LOWPREC;
-						num_ts_types++;
-						break;
+			case TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE:
+				/*
+				 * High-res, and synchronized
+				 * with the OS clock.
+				 */
+				p->tstamp_type_list[num_ts_types] =
+				    PCAP_TSTAMP_HOST_HIPREC;
+				num_ts_types++;
+				break;
 
-					case TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE:
-						/*
-						 * High-res, and synchronized
-						 * with the OS clock.
-						 */
-						p->tstamp_type_list[num_ts_types] =
-						    PCAP_TSTAMP_HOST_HIPREC;
-						num_ts_types++;
-						break;
-
-					default:
-						/*
-						 * Unknown, so we can't
-						 * report it.
-						 */
-						break;
-					}
-				}
-				p->tstamp_type_count = num_ts_types;
-				free(modes);
+			default:
+				/*
+				 * Unknown, so we can't
+				 * report it.
+				 */
+				break;
 			}
 		}
-		PacketCloseAdapter(adapter);
+		p->tstamp_type_count = num_ts_types;
+		free(modes);
 	}
+	PacketCloseAdapter(adapter);
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
 	return (p);
