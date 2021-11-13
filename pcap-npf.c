@@ -1622,10 +1622,10 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		 * settable timestamp modes, but that would hide a bug.
 		 */
 		if (num_ts_modes == 0) {
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				    "PacketGetTimestampModes() reports 0 modes supported.");
-				pcap_close(p);
-				return (NULL);
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "PacketGetTimestampModes() reports 0 modes supported.");
+			pcap_close(p);
+			return (NULL);
 		}
 
 		/*
