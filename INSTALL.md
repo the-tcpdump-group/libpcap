@@ -300,7 +300,6 @@ FILES
 	msdos/*		    - drivers for MS-DOS capture support
 	nametoaddr.c	    - hostname to address routines
 	nlpid.h		    - OSI network layer protocol identifier definitions
-	net		    - symlink to bpf/net
 	optimize.c	    - BPF optimization routines
 	pcap/bluetooth.h    - public definition of DLT_BLUETOOTH_HCI_H4_WITH_PHDR header
 	pcap/bpf.h	    - BPF definitions
