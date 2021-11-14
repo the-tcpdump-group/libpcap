@@ -339,8 +339,8 @@ FILES
 	pcap.c		    - pcap utility routines
 	pcap.h		    - header for backwards compatibility
 	pcap_*.3pcap	    - manual entries for library functions
-	pcap-filter.4	    - manual entry for filter syntax
-	pcap-linktype.4	    - manual entry for link-layer header types
+	pcap-filter.manmisc.in   - manual entry for filter syntax
+	pcap-linktype.manmisc.in - manual entry for link-layer header types
 	ppp.h		    - Point to Point Protocol definitions
 	savefile.c	    - offline support
 	scanner.l	    - filter string scanner
