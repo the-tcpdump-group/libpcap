@@ -286,8 +286,8 @@ FILES
 	fad-getad.c	    - pcap_findalldevs() for systems with getifaddrs()
 	fad-gifc.c	    - pcap_findalldevs() for systems with only SIOCGIFLIST
 	fad-glifc.c	    - pcap_findalldevs() for systems with SIOCGLIFCONF
-	filtertest.c	    - test program for BPF compiler
-	findalldevstest.c   - test program for pcap_findalldevs()
+	testprogs/filtertest.c      - test program for BPF compiler
+	testprogs/findalldevstest.c - test program for pcap_findalldevs()
 	gencode.c	    - BPF code generation routines
 	gencode.h	    - BPF code generation definitions
 	grammar.y	    - filter string grammar
