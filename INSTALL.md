@@ -334,7 +334,6 @@ FILES
 	pcap-sita.c	    - SITA device capture support
 	pcap-sita.h	    - SITA device capture support
 	pcap-sita.html	    - SITA device capture documentation
-	pcap-stdinc.h	    - includes and #defines for compiling on Win32 systems
 	pcap-snit.c	    - SunOS 4.x STREAMS-based Network Interface Tap support
 	pcap-snoop.c	    - IRIX Snoop network monitoring support
 	pcap-usb-linux.c    - USB capture support for Linux
