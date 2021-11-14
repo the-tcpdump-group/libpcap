@@ -323,11 +323,9 @@ FILES
 	pcap-linux.c	    - Linux packet socket support
 	pcap-namedb.h	    - header for backwards compatibility
 	pcap-nit.c	    - SunOS Network Interface Tap support
-	pcap-nit.h	    - SunOS Network Interface Tap definitions
 	pcap-npf.c	    - Npcap capture support
 	pcap-null.c	    - dummy monitor support (allows offline use of libpcap)
 	pcap-pf.c	    - Ultrix and Digital/Tru64 UNIX Packet Filter support
-	pcap-pf.h	    - Ultrix and Digital/Tru64 UNIX Packet Filter definitions
 	pcap-septel.c       - Intel/Septel device capture support
 	pcap-septel.h       - Intel/Septel device capture support
 	pcap-sita.c	    - SITA device capture support
