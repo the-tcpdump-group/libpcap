@@ -1,7 +1,7 @@
-To build libpcap, run "./configure" (a shell script). The configure
+To build libpcap, run `./configure` (a shell script). The configure
 script will determine your system attributes and generate an
-appropriate Makefile from Makefile.in. Next run "make". If everything
-goes well you can su to root and run "make install". However, you need
+appropriate `Makefile` from `Makefile.in`. Next run `make`. If everything
+goes well, you can `su` to root and run `make install`. However, you need
 not install libpcap if you just want to build tcpdump; just make sure
 the tcpdump and libpcap directory trees have the same parent
 directory.
@@ -16,10 +16,10 @@ does support packet capture but libpcap does not support that
 particular type. (If you have HP-UX, see below.) If your system uses a
 packet capture not supported by libpcap, please send us patches; don't
 forget to include an autoconf fragment suitable for use in
-configure.ac.
+`configure.ac`.
 
 It is possible to override the default packet capture type, although
-the circumstance where this works are limited. For example if you have
+the circumstances where this works are limited. For example, if you have
 installed bpf under SunOS 4 and wish to build a snit libpcap:
 
     ./configure --with-pcap=snit
@@ -27,25 +27,25 @@ installed bpf under SunOS 4 and wish to build a snit libpcap:
 Another example is to force a supported packet capture type in the case
 where the configure scripts fails to detect it.
 
-You will need an ANSI C compiler to build libpcap. The configure script
-will abort if your compiler is not ANSI compliant. If this happens, use
-the generally available GNU C compiler (GCC).
+You will need a C99 compiler to build libpcap. The configure script
+will abort if your compiler is not C99 compliant. If this happens, use
+the generally available GNU C compiler (GCC) or Clang.
 
 You will need either Flex 2.5.31 or later, or a version of Lex
 compatible with it (if any exist), to build libpcap.  The configure
 script will abort if there isn't any such program.  If you have an older
 version of Flex, or don't have a compatible version of Lex, the current
-version of flex is available at flex.sourceforge.net.
+version of Flex is available [here](https://github.com/westes/flex).
 
 You will need either Bison, Berkeley YACC, or a version of YACC
 compatible with them (if any exist), to build libpcap.  The configure
 script will abort if there isn't any such program.  If you don't have
-any such program, the current version of Bison can be found at
-https://ftp.gnu.org/gnu/bison/ and the current version of Berkeley YACC
-can be found at https://invisible-island.net/byacc/.
+any such program, the current version of Bison can be found
+[here](https://ftp.gnu.org/gnu/bison/) and the current version of Berkeley YACC
+can be found [here](https://invisible-island.net/byacc/).
 
 Sometimes the stock C compiler does not interact well with Flex and
-Bison. The list of problems includes undefined references for alloca.
+Bison. The list of problems includes undefined references for alloca(3).
 You can get around this by installing GCC.
 
 If you use Solaris, there is a bug with bufmod(7) that is fixed in
@@ -55,18 +55,18 @@ packet instead of the end.  The work around is to not set a snapshot
 length but this results in performance problems since the entire packet
 is copied to user space. If you must run an older version of Solaris,
 there is a patch available from Sun; ask for bugid 1149065. After
-installing the patch, use "setenv BUFMOD_FIXED" to enable use of
+installing the patch, use `setenv BUFMOD_FIXED` to enable use of
 bufmod(7). However, we recommend you run a more current release of
 Solaris.
 
 If you use the SPARCompiler, you must be careful to not use the
-/usr/ucb/cc interface. If you do, you will get bogus warnings and
-perhaps errors. Either make sure your path has /opt/SUNWspro/bin
-before /usr/ucb or else:
+`/usr/ucb/cc` interface. If you do, you will get bogus warnings and
+perhaps errors. Either make sure your path has `/opt/SUNWspro/bin`
+before `/usr/ucb` or else:
 
     setenv CC /opt/SUNWspro/bin/cc
 
-before running configure. (You might have to do a "make distclean"
+before running configure. (You might have to do a `make distclean`
 if you already ran configure once).
 
 If you are trying to do packet capture with a FORE ATM card, you may or
@@ -79,7 +79,7 @@ If you get an error like:
     tcpdump: recv_ack: bind error 0x???
 
 when using DLPI, look for the DL_ERROR_ACK error return values, usually
-in /usr/include/sys/dlpi.h, and find the corresponding value.
+in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 
 Under {DEC OSF/1, Digital UNIX, Tru64 UNIX}, packet capture must be
 enabled before it can be used.  For instructions on how to enable packet
@@ -99,7 +99,7 @@ instructions on how to enable packet filter support, see:
 	ftp://ftp.digital.com/pub/Digital/dec-faq/ultrix
 
 If you use HP-UX, you must have at least version 9 and either the
-version of cc that supports ANSI C (cc -Aa) or else use the GNU C
+version of cc that supports ANSI C (`cc -Aa`) or else use the GNU C
 compiler. You must also buy the optional streams package. If you don't
 have:
 
@@ -113,10 +113,10 @@ need to install the "9.X LAN and DLPI drivers cumulative" patch
 The DLPI streams package is standard starting with HP-UX 10.
 
 The HP implementation of DLPI is a little bit eccentric. Unlike
-Solaris, you must attach /dev/dlpi instead of the specific /dev/*
+Solaris, you must attach `/dev/dlpi` instead of the specific `/dev/*`
 network pseudo device entry in order to capture packets. The PPA is
 based on the ifnet "index" number. Under HP-UX 9, it is necessary to
-read /dev/kmem and the kernel symbol file (/hp-ux). Under HP-UX 10,
+read `/dev/kmem` and the kernel symbol file (`/hp-ux`). Under HP-UX 10,
 DLPI can provide information for determining the PPA. It does not seem
 to be possible to trace the loopback interface. Unlike other DLPI
 implementations, PHYS implies MULTI and SAP and you get an error if you
@@ -137,10 +137,10 @@ doing
 
 	echo 'lanc_outbound_promisc_flag/W 1' | adb -w /stand/vmunix /dev/mem
 
-You would have to arrange that this happen on reboots; the right way to
+You would have to arrange that this happens on reboots; the right way to
 do that would probably be to put it into an executable script file
-"/sbin/init.d/outbound_promisc" and making
-"/sbin/rc2.d/S350outbound_promisc" a symbolic link to that script.
+`/sbin/init.d/outbound_promisc` and making
+`/sbin/rc2.d/S350outbound_promisc` a symbolic link to that script.
 
 Finally, testing shows that there can't be more than one simultaneous
 DLPI user per network interface.
@@ -168,17 +168,17 @@ If you are having trouble but aren't using a version that came from
 tcpdump.org, please try that before submitting a bug report!
 
 On Linux, libpcap will not work if the kernel does not have the packet
-socket option enabled; see the README.linux file for information about
+socket option enabled; see the `README.linux` file for information about
 this.
 
 If you use AIX, you may not be able to build libpcap from this release.
 We do not have an AIX system in house so it's impossible for us to test
 AIX patches submitted to us.  We are told that you must link against
-/lib/pse.exp, that you must use AIX cc or a GNU C compiler newer than
-2.7.2, and that you may need to run strload before running a libpcap
+`/lib/pse.exp`, that you must use AIX cc or a GNU C compiler newer than
+2.7.2, and that you may need to run `strload` before running a libpcap
 application.
 
-Read the README.aix file for information on installing libpcap and
+Read the `README.aix` file for information on installing libpcap and
 configuring your system to be able to support libpcap.
 
 If you use NeXTSTEP, you will not be able to build libpcap from this
@@ -187,12 +187,13 @@ release.
 If you use SINIX, you should be able to build libpcap from this
 release. It is known to compile and run on SINIX-Y/N 5.42 with the C-DS
 V1.0 or V1.1 compiler. But note that in some releases of SINIX, yacc
-emits incorrect code; if grammar.y fails to compile, change every
+emits incorrect code; if `grammar.y` fails to compile, change every
 occurrence of:
 
 	#ifdef YYDEBUG
 
 to:
+
 	#if YYDEBUG
 
 Another workaround is to use flex and bison.
@@ -204,9 +205,8 @@ does not compile on SCO OpenServer 5.  Although SCO apparently supports
 DLPI to some extent, the DLPI in OpenServer 5 is very non-standard, and
 it appears that completely new code would need to be written to capture
 network traffic.  SCO do not appear to provide tcpdump binaries for
-OpenServer 5 or OpenServer 6 as part of SCO Skunkware:
-
-  http://www.sco.com/skunkware/
+OpenServer 5 or OpenServer 6 as part of
+[SCO Skunkware](http://www.sco.com/skunkware/).
 
 If you use UnixWare, you might be able to build libpcap from this
 release, or you might not.  We do not have a machine running UnixWare,
@@ -219,11 +219,8 @@ build without changes on UnixWare 7.
 If linking tcpdump fails with "Undefined: _alloca" when using bison on
 a Sun4, your version of Bison is broken. In any case version 1.16 or
 higher is recommended (1.14 is known to cause problems 1.16 is known to
-work). Either pick up a current version from:
-
-  https://ftp.gnu.org/gnu/bison/
-
-or hack around it by inserting the lines:
+work). Either pick up a current version from
+[here](https://ftp.gnu.org/gnu/bison/) or hack around it by inserting the lines:
 
 	#ifdef __GNUC__
 	#define alloca __builtin_alloca
@@ -236,7 +233,7 @@ or hack around it by inserting the lines:
 	#endif
 
 right after the (100 line!) GNU license comment in bison.simple, remove
-grammar.[co] and fire up make again.
+`grammar.[co]` and fire up `make` again.
 
 If you use SunOS 4, your kernel must support streams NIT. If you run a
 libpcap program and it dies with:
