@@ -1036,7 +1036,7 @@ icmp6[icmp6type] != icmp6-echo and icmp6[icmp6type] != icmp6-echoreply
 .SH "SEE ALSO"
 .BR pcap (3PCAP)
 .SH BUGS
-To report a security issue please send an e-mail to security@tcpdump.org.
+To report a security issue please send an e-mail to \%security@tcpdump.org.
 .LP
 To report bugs and other problems, contribute patches, request a
 feature, provide generic feedback etc please see the file
