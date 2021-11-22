@@ -280,3 +280,12 @@ pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
 	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
 		get_if_flags);
 }
+
+/*
+ * Libpcap version string.
+ */
+extern "C" const char *
+pcap_lib_version(void)
+{
+	return (PCAP_VERSION_STRING);
+}
