@@ -160,6 +160,17 @@ pcap_activate_haiku(pcap_t *handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+		handle->snapshot = MAXIMUM_SNAPLEN;
+
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
