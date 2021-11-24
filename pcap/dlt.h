@@ -1497,6 +1497,16 @@
 #define DLT_NETANALYZER_NG	291
 
 /*
+ * Serial NCP (Network Co-Processor) protocol for Zigbee stack ZBOSS
+ * by DSR.
+ * ZBOSS NCP protocol description: https://cloud.dsr-corporation.com/index.php/s/3isHzaNTTgtJebn
+ * Header in pcap file: https://cloud.dsr-corporation.com/index.php/s/fiqSDorAAAZrsYB
+ *
+ * Requested by Eugene Exarevsky <eugene.exarevsky@dsr-corporation.com>
+ */
+#define DLT_ZBOSS_NCP		292
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1506,7 +1516,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	291	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	292	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
