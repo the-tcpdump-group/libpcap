@@ -623,7 +623,7 @@ void main_startup(void)
 			SOCKET sock;
 			struct listen_sock *sock_info;
 
-			if ((sock = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			if ((sock = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 			{
 				switch (tempaddrinfo->ai_family)
 				{
@@ -1358,7 +1358,7 @@ main_active(void *ptr)
 	{
 		int activeclose;
 
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 		{
 			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 

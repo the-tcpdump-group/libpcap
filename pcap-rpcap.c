@@ -1193,7 +1193,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			goto error_nodiscard;
 
 		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
-			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE,
+			fp->sock_open_timeout)) == INVALID_SOCKET)
 			goto error_nodiscard;
 
 		/* addrinfo is no longer used */
@@ -1316,7 +1317,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
-			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE,
+								fp->sock_open_timeout)) == INVALID_SOCKET)
 				goto error;
 
 			/* addrinfo is no longer used */
@@ -2268,7 +2270,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 		}
 
 		if ((*sockctrlp = sock_open(addrinfo, SOCKOPEN_CLIENT, 0,
-		    errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		    errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 		{
 			freeaddrinfo(addrinfo);
 			return -1;
@@ -2875,7 +2877,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	}
 
 
-	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 	{
 		freeaddrinfo(addrinfo);
 		return (SOCKET)-2;
