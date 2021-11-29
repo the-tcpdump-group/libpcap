@@ -19,12 +19,8 @@ forget to include an autoconf fragment suitable for use in
 `configure.ac`.
 
 It is possible to override the default packet capture type, although
-the circumstances where this works are limited. For example, if you have
-installed bpf under SunOS 4 and wish to build a snit libpcap:
-
-    ./configure --with-pcap=snit
-
-Another example is to force a supported packet capture type in the case
+the circumstances where this works are limited.  One possible reason to
+do that would be to force a supported packet capture type in the case
 where the configure scripts fails to detect it.
 
 You will need a C99 compiler to build libpcap. The configure script
@@ -48,17 +44,6 @@ Sometimes the stock C compiler does not interact well with Flex and
 Bison. The list of problems includes undefined references for alloca(3).
 You can get around this by installing GCC.
 
-If you use Solaris, there is a bug with bufmod(7) that is fixed in
-Solaris 2.3.2 (aka SunOS 5.3.2). Setting a snapshot length with the
-broken bufmod(7) results in data be truncated from the FRONT of the
-packet instead of the end.  The work around is to not set a snapshot
-length but this results in performance problems since the entire packet
-is copied to user space. If you must run an older version of Solaris,
-there is a patch available from Sun; ask for bugid 1149065. After
-installing the patch, use `setenv BUFMOD_FIXED` to enable use of
-bufmod(7). However, we recommend you run a more current release of
-Solaris.
-
 If you use the SPARCompiler, you must be careful to not use the
 `/usr/ucb/cc` interface. If you do, you will get bogus warnings and
 perhaps errors. Either make sure your path has `/opt/SUNWspro/bin`
@@ -68,6 +53,9 @@ before `/usr/ucb` or else:
 
 before running configure. (You might have to do a `make distclean`
 if you already ran configure once).
+
+See [this file](doc/README.solaris.md) for more up to date
+Solaris-related information.
 
 If you are trying to do packet capture with a FORE ATM card, you may or
 may not be able to. They usually only release their driver in object
@@ -81,25 +69,8 @@ If you get an error like:
 when using DLPI, look for the DL_ERROR_ACK error return values, usually
 in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 
-Under {DEC OSF/1, Digital UNIX, Tru64 UNIX}, packet capture must be
-enabled before it can be used.  For instructions on how to enable packet
-filter support, see:
-
-	ftp://ftp.digital.com/pub/Digital/dec-faq/Digital-UNIX
-
-Look for the "How do I configure the Berkeley Packet Filter and capture
-tcpdump traces?" item.
-
-Once you enable packet filter support, your OSF system will support bpf
-natively.
-
-Under Ultrix, packet capture must be enabled before it can be used. For
-instructions on how to enable packet filter support, see:
-
-	ftp://ftp.digital.com/pub/Digital/dec-faq/ultrix
-
 If you use HP-UX, you must have at least version 9 and either the
-version of cc that supports ANSI C (`cc -Aa`) or else use the GNU C
+version of cc that supports C99 (`cc -AC99`) or else use the GNU C
 compiler. You must also buy the optional streams package. If you don't
 have:
 
@@ -145,103 +116,15 @@ do that would probably be to put it into an executable script file
 Finally, testing shows that there can't be more than one simultaneous
 DLPI user per network interface.
 
-If you use Linux, this version of libpcap is known to compile and run
-under Red Hat 4.0 with the 2.0.25 kernel.  It may work with earlier 2.X
-versions but is guaranteed not to work with 1.X kernels.  Running more
-than one libpcap program at a time, on a system with a 2.0.X kernel, can
-cause problems since promiscuous mode is implemented by twiddling the
-interface flags from the libpcap application; the packet capture
-mechanism in the 2.2 and later kernels doesn't have this problem.  Also,
-packet timestamps aren't very good.  This appears to be due to haphazard
-handling of the timestamp in the kernel.
-
-Note well: there is rumoured to be a version of tcpdump floating around
-called 3.0.3 that includes libpcap and is supposed to support Linux.
-You should be advised that neither the Network Research Group at LBNL
-nor the Tcpdump Group ever generated a release with this version number.
-The LBNL Network Research Group notes with interest that a standard
-cracker trick to get people to install trojans is to distribute bogus
-packages that have a version number higher than the current release.
-They also noted with annoyance that 90% of the Linux related bug reports
-they got are due to changes made to unofficial versions of their page.
-If you are having trouble but aren't using a version that came from
-tcpdump.org, please try that before submitting a bug report!
+See [this file](doc/README.hpux) for more information specific to HP-UX.
 
 On Linux, libpcap will not work if the kernel does not have the packet
 socket option enabled; see the `README.linux` file for information about
 this.
 
-If you use AIX, you may not be able to build libpcap from this release.
-We do not have an AIX system in house so it's impossible for us to test
-AIX patches submitted to us.  We are told that you must link against
-`/lib/pse.exp`, that you must use AIX cc or a GNU C compiler newer than
-2.7.2, and that you may need to run `strload` before running a libpcap
-application.
-
 Read the `README.aix` file for information on installing libpcap and
 configuring your system to be able to support libpcap.
 
-If you use NeXTSTEP, you will not be able to build libpcap from this
-release.
-
-If you use SINIX, you should be able to build libpcap from this
-release. It is known to compile and run on SINIX-Y/N 5.42 with the C-DS
-V1.0 or V1.1 compiler. But note that in some releases of SINIX, yacc
-emits incorrect code; if `grammar.y` fails to compile, change every
-occurrence of:
-
-	#ifdef YYDEBUG
-
-to:
-
-	#if YYDEBUG
-
-Another workaround is to use flex and bison.
-
-If you use SCO, you might have trouble building libpcap from this
-release. We do not have a machine running SCO and have not had reports
-of anyone successfully building on it; the current release of libpcap
-does not compile on SCO OpenServer 5.  Although SCO apparently supports
-DLPI to some extent, the DLPI in OpenServer 5 is very non-standard, and
-it appears that completely new code would need to be written to capture
-network traffic.  SCO do not appear to provide tcpdump binaries for
-OpenServer 5 or OpenServer 6 as part of
-[SCO Skunkware](http://www.sco.com/skunkware/).
-
-If you use UnixWare, you might be able to build libpcap from this
-release, or you might not.  We do not have a machine running UnixWare,
-so we have not tested it; however, SCO provide packages for libpcap
-0.6.2 and tcpdump 3.7.1 in the UnixWare 7/Open UNIX 8 part of SCO
-Skunkware, and the source package for libpcap 0.6.2 is not changed from
-the libpcap 0.6.2 source release, so this release of libpcap might also
-build without changes on UnixWare 7.
-
-If linking tcpdump fails with "Undefined: _alloca" when using bison on
-a Sun4, your version of Bison is broken. In any case version 1.16 or
-higher is recommended (1.14 is known to cause problems 1.16 is known to
-work). Either pick up a current version from
-[here](https://ftp.gnu.org/gnu/bison/) or hack around it by inserting the lines:
-
-	#ifdef __GNUC__
-	#define alloca __builtin_alloca
-	#else
-	#ifdef sparc
-	#include <alloca.h>
-	#else
-	char *alloca ();
-	#endif
-	#endif
-
-right after the (100 line!) GNU license comment in bison.simple, remove
-`grammar.[co]` and fire up `make` again.
-
-If you use SunOS 4, your kernel must support streams NIT. If you run a
-libpcap program and it dies with:
-
-    /dev/nit: No such device
-
-You must add streams NIT support to your kernel configuration, run
-config and boot the new kernel.
 
 FILES
 -----
@@ -262,7 +145,6 @@ FILES
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 	doc/README.sita	    - notes on using libpcap to capture on SITA devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
-	doc/README.tru64    - notes on using libpcap on Digital/Tru64 UNIX
 	doc/README.Win32.md - notes on using libpcap on Win32 systems (with Npcap)
 	VERSION		    - version of this release
 	aclocal.m4	    - autoconf macros
