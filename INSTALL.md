@@ -1,3 +1,4 @@
+# libpcap installation notes
 To build libpcap, run `./configure` (a shell script). The configure
 script will determine your system attributes and generate an
 appropriate `Makefile` from `Makefile.in`. Next run `make`. If everything
@@ -44,6 +45,12 @@ Sometimes the stock C compiler does not interact well with Flex and
 Bison. The list of problems includes undefined references for alloca(3).
 You can get around this by installing GCC.
 
+## Linux specifics
+On Linux, libpcap will not work if the kernel does not have the packet
+socket option enabled; see [this file](doc/README.linux) for more
+information.
+
+## Solaris specifics
 If you use the SPARCompiler, you must be careful to not use the
 `/usr/ucb/cc` interface. If you do, you will get bogus warnings and
 perhaps errors. Either make sure your path has `/opt/SUNWspro/bin`
@@ -52,25 +59,14 @@ before `/usr/ucb` or else:
     setenv CC /opt/SUNWspro/bin/cc
 
 before running configure. (You might have to do a `make distclean`
-if you already ran configure once).
+if you already ran `configure` once).
 
 See [this file](doc/README.solaris.md) for more up to date
 Solaris-related information.
 
-If you are trying to do packet capture with a FORE ATM card, you may or
-may not be able to. They usually only release their driver in object
-code so unless their driver supports packet capture, there's not much
-libpcap can do.
-
-If you get an error like:
-
-    tcpdump: recv_ack: bind error 0x???
-
-when using DLPI, look for the DL_ERROR_ACK error return values, usually
-in `/usr/include/sys/dlpi.h`, and find the corresponding value.
-
+## HP-UX specifics
 If you use HP-UX, you must have at least version 9 and either the
-version of cc that supports C99 (`cc -AC99`) or else use the GNU C
+version of `cc` that supports C99 (`cc -AC99`) or else use the GNU C
 compiler. You must also buy the optional streams package. If you don't
 have:
 
@@ -118,16 +114,24 @@ DLPI user per network interface.
 
 See [this file](doc/README.hpux) for more information specific to HP-UX.
 
-On Linux, libpcap will not work if the kernel does not have the packet
-socket option enabled; see the `README.linux` file for information about
-this.
-
-Read the `README.aix` file for information on installing libpcap and
+## AIX specifics
+See [this file](doc/README.aix) for information on installing libpcap and
 configuring your system to be able to support libpcap.
 
+## other specifics
+If you are trying to do packet capture with a FORE ATM card, you may or
+may not be able to. They usually only release their driver in object
+code so unless their driver supports packet capture, there's not much
+libpcap can do.
 
-FILES
------
+If you get an error like:
+
+    tcpdump: recv_ack: bind error 0x???
+
+when using DLPI, look for the DL_ERROR_ACK error return values, usually
+in `/usr/include/sys/dlpi.h`, and find the corresponding value.
+
+## Description of files
 	CHANGES		    - description of differences between releases
 	ChmodBPF/*	    - macOS startup item to set ownership and permissions on /dev/bpf*
 	CMakeLists.txt	    - CMake file
