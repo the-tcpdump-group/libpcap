@@ -72,7 +72,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
   file(WRITE "${CMAKE_BINARY_DIR}/archdetect.c" "${archdetect_c_code}")
   try_compile(
-	  IsArm64 
+	  IsArm64
 	  "${CMAKE_BINARY_DIR}/archdetect"
 	  "${CMAKE_BINARY_DIR}/archdetect.c"
 	  )
