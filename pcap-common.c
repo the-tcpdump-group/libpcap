@@ -1197,9 +1197,9 @@
 #define LINKTYPE_ETW		290
 
 /*
- * Hilscher Gesellschaft fuer Systemautomation mbH 
+ * Hilscher Gesellschaft fuer Systemautomation mbH
  * netANALYZER NG hardware and software.
- * 
+ *
  * The specification for this footer can be found at:
  * https://kb.hilscher.com/x/brDJBw
  *

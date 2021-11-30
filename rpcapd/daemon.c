@@ -1713,7 +1713,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		// SPARC, crash; others, such as Arm, may just ignore
 		// the lower-order bits).
 		struct rpcap_findalldevs_if findalldevs_if;
-		
+
 		/*
 		 * We've already established that the string lengths
 		 * fit in 16 bits.
@@ -2841,7 +2841,7 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 		struct rpcap_sockaddr_in sockaddrout_ipv4;
 
 		sockaddrin_ipv4 = (struct sockaddr_in *) sockaddrin;
-		
+
 		sockaddrout_ipv4.family = htons(RPCAP_AF_INET);
 		sockaddrout_ipv4.port = htons(sockaddrin_ipv4->sin_port);
 		memcpy(&sockaddrout_ipv4.addr, &sockaddrin_ipv4->sin_addr, sizeof(sockaddrout_ipv4.addr));
@@ -2857,7 +2857,7 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 		struct rpcap_sockaddr_in6 sockaddrout_ipv6;
 
 		sockaddrin_ipv6 = (struct sockaddr_in6 *) sockaddrin;
-		
+
 		sockaddrout_ipv6.family = htons(RPCAP_AF_INET6);
 		sockaddrout_ipv6.port = htons(sockaddrin_ipv6->sin6_port);
 		sockaddrout_ipv6.flowinfo = htonl(sockaddrin_ipv6->sin6_flowinfo);

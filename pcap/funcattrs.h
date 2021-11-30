@@ -190,7 +190,7 @@
 #define PCAP_AVAILABLE_1_8	PCAP_AVAILABLE_MACOS(10.13) /* only Windows adds routines to the API; XXX - what version first had it? */
 #define PCAP_AVAILABLE_1_9	PCAP_AVAILABLE_MACOS(10.13)
 #define PCAP_AVAILABLE_1_10	/* not in macOS yet */
-#define PCAP_AVAILABLE_1_11	/* not released yet, so not in macOS yet */ 
+#define PCAP_AVAILABLE_1_11	/* not released yet, so not in macOS yet */
 #else /* __APPLE__ */
 #define PCAP_AVAILABLE_0_4
 #define PCAP_AVAILABLE_0_5
