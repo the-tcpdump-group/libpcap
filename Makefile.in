@@ -94,7 +94,7 @@ MODULE_C_SRC =		@MODULE_C_SRC@
 REMOTE_C_SRC =		@REMOTE_C_SRC@
 COMMON_C_SRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
 		fmtutils.c \
-		savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
+		pcap-ioplugin.c savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
 		bpf_image.c bpf_filter.c bpf_dump.c
 GENERATED_C_SRC = scanner.c grammar.c
 LIBOBJS = @LIBOBJS@
@@ -341,6 +341,7 @@ EXTRA_DIST = \
 	pcap-enet.c \
 	pcap-haiku.cpp \
 	pcap-int.h \
+	pcap-ioplugin.c \
 	pcap-libdlpi.c \
 	pcap-linux.c \
 	pcap-namedb.h \

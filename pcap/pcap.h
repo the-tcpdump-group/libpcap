@@ -1212,6 +1212,23 @@ PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf);
 PCAP_AVAILABLE_1_9
 PCAP_API void	pcap_remoteact_cleanup(void);
 
+/*
+ * I/O Plugin Support
+ */
+
+typedef FILE* (*pcap_ioplugin_open_read_fn)(const char *fname, char *errbuf);
+typedef FILE* (*pcap_ioplugin_open_write_fn)(const char *fname, char *errbuf);
+
+typedef struct pcap_ioplugin {
+	pcap_ioplugin_open_read_fn		open_read;
+	pcap_ioplugin_open_write_fn		open_write;
+} pcap_ioplugin_t;
+
+typedef const pcap_ioplugin_t* (*pcap_ioplugin_init_fn)(void);
+
+PCAP_API void pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie);
+PCAP_API void pcap_ioplugin_unregister_fp_cookie(const void *cookie);
+
 #ifdef __cplusplus
 }
 #endif

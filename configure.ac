@@ -1136,6 +1136,17 @@ if test "$enable_ipv6" != "no"; then
 	AC_DEFINE(INET6,1,[IPv6])
 fi
 
+AC_ARG_ENABLE(ioplugin,
+AC_HELP_STRING([--enable-ioplugin],[build support for loading I/O plugins that can do compression, etc. @<:@default=no@:>@]),
+    [],
+    [enable_ioplugin=no])
+if test "$enable_ioplugin" != "yes"; then
+	#
+	# Turn on pluggable I/O modules
+	#
+	AC_DEFINE(HAVE_IOPLUGIN,1,[ioplugin])
+fi
+
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
@@ -2850,6 +2861,11 @@ if test "x$enable_rdma" != "xno"; then
 	])
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
+
+dnl check for dynamic gzip support
+AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_HEADERS(dlfcn.h)
+AC_CHECK_FUNCS(dlopen)
 
 AC_PROG_INSTALL
 

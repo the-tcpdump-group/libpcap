@@ -209,6 +209,7 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
     <ClCompile Include="..\..\pcap-rpcap.c" />
     <ClCompile Include="..\..\pcap-win32.c" />
     <ClCompile Include="..\..\pcap.c" />
+    <ClCompile Include="..\..\pcap-ioplugin.c" />
     <ClCompile Include="..\..\savefile.c" />
     <ClCompile Include="..\..\scanner.c" />
     <ClCompile Include="..\..\sf-pcapng.c" />

@@ -121,6 +121,22 @@ extern int pcap_utf_8_mode;
                       ((ull & 0x00000000000000ffULL) << 56)
 
 /*
+ * Setting O_BINARY on DOS/Windows is a bit tricky
+ */
+#if defined(_WIN32)
+  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
+#elif defined(MSDOS)
+  #if defined(__HIGHC__)
+  #define SET_BINMODE(f)  setmode(f, O_BINARY)
+  #else
+  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
+  #endif
+#else
+  #define SET_BINMODE(f)  do {} while(0)
+#endif
+
+
+/*
  * Maximum snapshot length.
  *
  * Somewhat arbitrary, but chosen to be:
@@ -658,6 +674,11 @@ int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
 #ifdef YYDEBUG
 extern int pcap_debug;
 #endif
+
+/*
+ * Internal interfaces for I/O plugins
+ */
+const pcap_ioplugin_t* pcap_ioplugin_init(const char *name);
 
 #ifdef __cplusplus
 }
