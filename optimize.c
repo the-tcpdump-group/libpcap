@@ -2899,7 +2899,6 @@ icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
 	    if (fp == NULL) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc");
-		free(fp);
 		return NULL;
 	    }
 	    memset((char *)fp, 0, sizeof(*fp) * n);
