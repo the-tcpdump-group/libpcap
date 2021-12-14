@@ -1507,6 +1507,14 @@
 #define DLT_ZBOSS_NCP		292
 
 /*
+ * Realtek Ethernet DSA tag
+ */
+#define DLT_DSA_TAG_RTL4_9	293
+#define DLT_DSA_TAG_RTL4_A	294
+#define DLT_DSA_TAG_RTL8_4	295
+
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1516,7 +1524,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	292	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	295	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

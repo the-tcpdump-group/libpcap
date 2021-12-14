@@ -1217,7 +1217,14 @@
  */
 #define LINKTYPE_ZBOSS_NCP	292
 
-#define LINKTYPE_MATCHING_MAX	292		/* highest value in the "matching" range */
+/*
+ * Realtek (Ethertype) Distributed Switch Architecture proprietary tagging format.
+ */
+#define LINKTYPE_DSA_TAG_RTL4_9	293
+#define LINKTYPE_DSA_TAG_RTL4_A	294
+#define LINKTYPE_DSA_TAG_RTL8_4	295
+
+#define LINKTYPE_MATCHING_MAX	295		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

@@ -3318,6 +3318,9 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_2_0, "USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(ATSC_ALP, "ATSC Link-Layer Protocol packets"),
 	DLT_CHOICE(ETW, "Event Tracing for Windows messages"),
+	DLT_CHOICE(DSA_TAG_RTL4_9, "Realtek EDSA 4 bytes version 0x9"),
+	DLT_CHOICE(DSA_TAG_RTL4_A, "Realtek EDSA 4 bytes version 0xA"),
+	DLT_CHOICE(DSA_TAG_RTL8_4, "Realtek EDSA 8 bytes version 0x04"),
 	DLT_CHOICE_SENTINEL
 };
 
