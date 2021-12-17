@@ -45,10 +45,8 @@ can be found at
 
 	https://www.tcpdump.org/linktypes.html
 
-If none of those would work for your device, please read
-doc/DLT_ALLOCATE_HOWTO.md and the introductory paragraphs on the Web
-page mentioned above, and then send a request for the new link-layer
-header type to tcpdump-workers@lists.tcpdump.org.
+If none of those would work for your device, please follow the guidelines
+on the same page to request a new link-layer header type.
 
 Once you have a link-layer header type value or values that you can use,
 you can add new module.
