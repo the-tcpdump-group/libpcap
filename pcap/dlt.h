@@ -105,6 +105,64 @@
 #endif
 
 /*
+ * NetBSD uses 15 for HIPPI.
+ * 
+ * From a quick look at sys/net/if_hippi.h and sys/net/if_hippisubr.c
+ * in an older version of NetBSD , the header appears to be:
+ *
+ * 	a 1-byte ULP field (ULP-id)?
+ *
+ *	a 1-byte flags field;
+ *
+ *	a 2-byte "offsets" field;
+ *
+ *	a 4-byte "D2 length" field (D2_Size?);
+ *
+ *	a 4-byte "destination switch" field (or a 1-byte field
+ *	containing the Forwarding Class, Double_Wide, and Message_Type
+ *	sub fields, followed by a 3-byte Destination_Switch_Address
+ *	field?, HIPPI-LE 3.4-style?);
+ *
+ *	a 4-byte "source switch" field (or a 1-byte field containing the
+ *	Destination_Address_type and Source_Address_Type fields, followed
+ *	by a 3-byte Source_Switch_Address field, HIPPI-LE 3.4-style?);
+ *
+ *	a 2-byte reserved field;
+ *
+ *	a 6-byte destination address field;
+ *
+ *	a 2-byte "local admin" field;
+ *
+ *	a 6-byte source address field;
+ *
+ * followed by an 802.2 LLC header.
+ *
+ * This looks somewhat like something derived from the HIPPI-FP 4.4
+ * Header_Area, followed an HIPPI-FP 4.4 D1_Area containing a D1 data set
+ * with the header in HIPPI-LE 3.4 (ANSI X3.218-1993), followed by an
+ * HIPPI-FP 4.4 D2_Area (with no Offset) containing the 802.2 LLC header
+ * and payload?  Or does the "offsets" field contain the D2_Offset,
+ * with that many bytes of offset before the payload?
+ *
+ * See http://wotug.org/parallel/standards/hippi/ for an archive of
+ * HIPPI specifications.
+ *
+ * HIPPI is long-gone, and the source files found in an older version
+ * of NetBSD don't appear to be in the main CVS branch, so we may never
+ * see a capture with this link-layer type.
+ */
+#if defined(__NetBSD__)
+#define DLT_HIPPI	15	/* HIPPI */
+#endif
+
+/*
+ * NetBSD uses 16 for DLT_HDLC; see below.
+ * BSD/OS uses it for PPP; see above.
+ * As far as I know, no other OS uses it for anything; don't use it
+ * for anything else.
+ */
+
+/*
  * 17 was used for DLT_PFLOG in OpenBSD; it no longer is.
  *
  * It was DLT_LANE8023 in SuSE 6.3, so we defined LINKTYPE_PFLOG
@@ -219,7 +277,8 @@
  * that the AF_ type in the link-layer header is in network byte order.
  *
  * DLT_LOOP is 12 in OpenBSD, but that's DLT_RAW in other OSes, so
- * we don't use 12 for it in OSes other than OpenBSD.
+ * we don't use 12 for it in OSes other than OpenBSD; instead, we
+ * use the same value as LINKTYPE_LOOP.
  */
 #ifdef __OpenBSD__
 #define DLT_LOOP	12
@@ -230,7 +289,7 @@
 /*
  * Encapsulated packets for IPsec; DLT_ENC is 13 in OpenBSD, but that's
  * DLT_SLIP_BSDOS in NetBSD, so we don't use 13 for it in OSes other
- * than OpenBSD.
+ * than OpenBSD; instead, we use the same value as LINKTYPE_ENC.
  */
 #ifdef __OpenBSD__
 #define DLT_ENC		13
@@ -239,11 +298,21 @@
 #endif
 
 /*
- * Values between 110 and 112 are reserved for use in capture file headers
+ * Values 110 and 111 are reserved for use in capture file headers
  * as link-layer types corresponding to DLT_ types that might differ
  * between platforms; don't use those values for new DLT_ types
  * other than the corresponding DLT_ types.
  */
+
+/*
+ * NetBSD uses 16 for (Cisco) "HDLC framing".  For other platforms,
+ * we define it to have the same value as LINKTYPE_NETBSD_HDLC.
+ */
+#if defined(__NetBSD__)
+#define DLT_HDLC	16	/* Cisco HDLC */
+#else
+#define DLT_HDLC	112
+#endif
 
 /*
  * Linux cooked sockets.
