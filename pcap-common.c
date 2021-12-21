@@ -168,11 +168,20 @@
 #define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 
 /*
- * These three types are reserved for future use.
+ * These two types are reserved for future use.
  */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
-#define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
+
+/*
+ * Used for NetBSD DLT_HDLC; from looking at the one driver in NetBSD
+ * that uses it, it's Cisco HDLC, so it's the same as DLT_C_HDLC/
+ * LINKTYPE_C_HDLC, but we define a separate value to avoid some
+ * compatibility issues with programs on NetBSD.
+ *
+ * All code should treat LINKTYPE_NETBSD_HDLC and LINKTYPE_C_HDLC the same.
+ */
+#define LINKTYPE_NETBSD_HDLC	112		/* NetBSD HDLC framing */
 
 #define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
@@ -1264,6 +1273,7 @@ static struct linktype_map {
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
 	{ DLT_PPP_BSDOS,	LINKTYPE_PPP_BSDOS },
+	{ DLT_HDLC,		LINKTYPE_NETBSD_HDLC },
 
 	/* BSD/OS Cisco HDLC */
 	{ DLT_C_HDLC,		LINKTYPE_C_HDLC },

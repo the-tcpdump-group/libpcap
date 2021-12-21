@@ -1268,6 +1268,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_PPP:
 	case DLT_PPP_PPPD:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
+	case DLT_HDLC:			/* NetBSD (Cisco) HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		cstate->off_linktype.constant_part = 2;	/* skip HDLC-like framing */
 		cstate->off_linkpl.constant_part = 4;	/* skip HDLC-like framing and protocol field */
@@ -3170,6 +3171,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*NOTREACHED*/
 
 	case DLT_C_HDLC:
+	case DLT_HDLC:
 		switch (ll_proto) {
 
 		case LLCSAP_ISONS:
@@ -6554,6 +6556,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 			/*NOTREACHED*/
 
 		case DLT_C_HDLC:
+		case DLT_HDLC:
 			/*
 			 * Cisco uses an Ethertype lookalike - for OSI,
 			 * it's 0xfefe.
@@ -9099,6 +9102,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
             switch (cstate->linktype) {
 
             case DLT_C_HDLC: /* fall through */
+            case DLT_HDLC:
             case DLT_EN10MB:
             case DLT_NETANALYZER:
             case DLT_NETANALYZER_TRANSPARENT:
