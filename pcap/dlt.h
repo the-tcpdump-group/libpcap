@@ -147,6 +147,9 @@
  * See http://wotug.org/parallel/standards/hippi/ for an archive of
  * HIPPI specifications.
  *
+ * RFC 2067 imposes some additional restrictions.  It says that the
+ * Offset is always zero
+ *
  * HIPPI is long-gone, and the source files found in an older version
  * of NetBSD don't appear to be in the main CVS branch, so we may never
  * see a capture with this link-layer type.
