@@ -823,8 +823,12 @@ releasetar:
 	   mkdir $$name && \
 	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
+	      $(MANMISC) $(EXTRA_DIST) >/dev/null && \
+	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
+	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
 	      $(MANMISC) $(EXTRA_DIST) | \
 	      (cd $$name; tar xf -) && \
+	   tar cf - $$name >/dev/null && \
 	   tar cf - $$name | gzip >$$name.tar.gz && \
 	   rm -rf $$name
 
