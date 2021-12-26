@@ -419,10 +419,7 @@ EXTRA_DIST = \
 	testprogs/valgrindtest.c \
 	testprogs/visopts.py \
 	testprogs/writecaptest.c \
-	tests/shb-option-too-long.pcapng \
-	Win32/Prj/wpcap.sln \
-	Win32/Prj/wpcap.vcxproj \
-	Win32/Prj/wpcap.vcxproj.filters
+	tests/shb-option-too-long.pcapng
 
 all: libpcap.a shared $(BUILD_RPCAPD) libpcap.pc pcap-config
 

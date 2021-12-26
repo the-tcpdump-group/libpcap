@@ -227,4 +227,3 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	savefile.c	    - offline support
 	scanner.l	    - filter string scanner
 	sunatmpos.h	    - definitions for SunATM capturing
-	Win32		    - headers and routines for building on Win32 systems
