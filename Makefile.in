@@ -254,7 +254,6 @@ EXTRA_DIST = \
 	README.md \
 	doc/README.Win32.md \
 	doc/README.aix \
-	doc/README.capture-module \
 	doc/README.dag \
 	doc/README.hpux \
 	doc/README.linux \
