@@ -651,9 +651,9 @@ int	pcap_strcasecmp(const char *, const char *);
  * rpcaps://).
  */
 int	pcap_createsrcstr_ex(char *, int, const char *, const char *,
-    const char *, unsigned char, char *);
+    const char *, const char *, unsigned char, char *);
 int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
-    char *, unsigned char *, char *);
+    char *, char *, unsigned char *, char *);
 
 #ifdef YYDEBUG
 extern int pcap_debug;

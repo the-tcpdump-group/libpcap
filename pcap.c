@@ -2063,8 +2063,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 }
 
 int
-pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
-    const char *name, unsigned char uses_ssl, char *errbuf)
+pcap_createsrcstr_ex(char *source, int type, const char *userinfo, const char *host,
+    const char *port, const char *name, unsigned char uses_ssl, char *errbuf)
 {
 	switch (type) {
 
@@ -2084,6 +2084,11 @@ pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
 		    (uses_ssl ? "rpcaps://" : PCAP_SRC_IF_STRING),
 		    PCAP_BUF_SIZE);
 		if (host != NULL && *host != '\0') {
+			if (userinfo != NULL && *userinfo != '\0') {
+				pcap_strlcat(source, userinfo, PCAP_BUF_SIZE);
+				pcap_strlcat(source, "@", PCAP_BUF_SIZE);
+			}
+
 			if (strchr(host, ':') != NULL) {
 				/*
 				 * The host name contains a colon, so it's
@@ -2133,16 +2138,18 @@ int
 pcap_createsrcstr(char *source, int type, const char *host, const char *port,
     const char *name, char *errbuf)
 {
-	return (pcap_createsrcstr_ex(source, type, host, port, name, 0, errbuf));
+	return (pcap_createsrcstr_ex(source, type, NULL, host, port, name, 0, errbuf));
 }
 
 int
-pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
-    char *name, unsigned char *uses_ssl, char *errbuf)
+pcap_parsesrcstr_ex(const char *source, int *type, char *userinfo, char *host,
+    char *port, char *name, unsigned char *uses_ssl, char *errbuf)
 {
 	char *scheme, *tmpuserinfo, *tmphost, *tmpport, *tmppath;
 
 	/* Initialization stuff */
+	if (userinfo)
+		*userinfo = '\0';
 	if (host)
 		*host = '\0';
 	if (port)
@@ -2191,13 +2198,10 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 		 * pcap_parse_source() has already handled the case of
 		 * rpcap[s]://device
 		 */
-		if (host && tmphost) {
-			if (tmpuserinfo)
-				snprintf(host, PCAP_BUF_SIZE, "%s@%s",
-				    tmpuserinfo, tmphost);
-			else
-				pcap_strlcpy(host, tmphost, PCAP_BUF_SIZE);
-		}
+		if (userinfo && tmpuserinfo)
+			pcap_strlcpy(userinfo, tmpuserinfo, PCAP_BUF_SIZE);
+		if (host && tmphost)
+			pcap_strlcpy(host, tmphost, PCAP_BUF_SIZE);
 		if (port && tmpport)
 			pcap_strlcpy(port, tmpport, PCAP_BUF_SIZE);
 		if (name && tmppath)
@@ -2248,7 +2252,7 @@ int
 pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
     char *name, char *errbuf)
 {
-	return (pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf));
+	return (pcap_parsesrcstr_ex(source, type, NULL, host, port, name, NULL, errbuf));
 }
 #endif
 

@@ -2140,6 +2140,79 @@ novers:
 	return -1;
 }
 
+/* non-alphanumeric unreserved characters plus sub-delims (RFC3986) */
+static const char userinfo_allowed_symbols[] = "-._~!&'()*+,;=";
+
+/*
+ * This function is a thin wrapper around rpcap_doauth which will use an auth
+ * struct created from a username and password parsed out of the userinfo
+ * portion of a URI.
+ */
+static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const char *userinfo, char *errbuf)
+{
+	struct pcap_rmtauth auth;
+	const char *ptr;
+	char *buf, username[256], password[256];
+
+	auth.type = RPCAP_RMTAUTH_PWD;
+	auth.username = username;
+	auth.password = password;
+	buf = username;
+
+	username[0] = password[0] = '\0';
+
+	if ((ptr = userinfo) != NULL)
+	{
+		for (int pos = -1; (buf[++pos] = *ptr) != '\0'; ++ptr)
+		{
+			/* handle %xx encoded characters */
+			if (*ptr == '%')
+			{
+				/* the pedantic thing to do here would be throwing an error on
+				 * a sequence like `%hi', however a lot of common tools just accept
+				 * such malarkey, so... probably it will be fine? */
+				if (sscanf(ptr, "%%%02hhx", (unsigned char *)(buf+pos)) == 1)
+					ptr += 2;
+				/* other implemntations aside, rejecting null bytes seems prudent */
+				if (buf[pos] == '\0')
+				{
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape `%%00` in userinfo");
+					return -1;
+				}
+			}
+			else if (*ptr == ':' && buf == username)
+			{
+				/* terminate username string and switch to password string */
+				buf[pos] = '\0';
+				buf = password;
+				pos = -1;
+			}
+			/* constrain to characters allowed by RFC3986 */
+			else if (*ptr >= 'A' && *ptr <= 'Z')
+				continue;
+			else if (*ptr >= 'a' && *ptr <= 'z')
+				continue;
+			else if (*ptr >= '0' && *ptr <= '9')
+				continue;
+			else if (*ptr < ' ' || *ptr > '~')
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `\\%o` in userinfo", *ptr);
+				return -1;
+			}
+			else if (strchr(userinfo_allowed_symbols, *ptr) == NULL)
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `%c` in userinfo", *ptr);
+				return -1;
+			}
+		}
+
+		return rpcap_doauth(sockctrl, ssl, ver, &auth, errbuf);
+	}
+
+	return rpcap_doauth(sockctrl, ssl, ver, NULL, errbuf);
+}
+
+
 /* We don't currently support non-blocking mode. */
 static int
 pcap_getnonblock_rpcap(pcap_t *p)
@@ -2164,15 +2237,18 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
     char *iface, char *errbuf)
 {
 	int type;
+	int auth_result;
+	char userinfo[512];			/* 256 characters each for username and password */
 	struct activehosts *activeconn;		/* active connection, if there is one */
 	int error;				/* 1 if rpcap_remoteact_getsock got an error */
+	userinfo[0] = '\0';
 
 	/*
 	 * Determine the type of the source (NULL, file, local, remote).
 	 * You must have a valid source string even if we're in active mode,
 	 * because otherwise the call to the following function will fail.
 	 */
-	if (pcap_parsesrcstr_ex(source, &type, host, port, iface, uses_sslp,
+	if (pcap_parsesrcstr_ex(source, &type, userinfo, host, port, iface, uses_sslp,
 	    errbuf) == -1)
 		return -1;
 
@@ -2277,8 +2353,18 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
-		if (rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
-		    errbuf) == -1)
+		if (auth == NULL && *userinfo != '\0')
+		{
+			auth_result = rpcap_doauth_userinfo(*sockctrlp, *sslp, protocol_versionp,
+			    userinfo, errbuf);
+		}
+		else
+		{
+			auth_result = rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
+			    errbuf);
+		}
+
+		if (auth_result == -1)
 		{
 #ifdef HAVE_OPENSSL
 			if (*sslp)
@@ -2622,7 +2708,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			/* Create the new device identifier */
 			if (pcap_createsrcstr_ex(tmpstring2, PCAP_SRC_IFREMOTE,
-			    host, port, tmpstring, uses_ssl, errbuf) == -1)
+			    NULL, host, port, tmpstring, uses_ssl, errbuf) == -1)
 				goto error;
 
 			dev->name = strdup(tmpstring2);
