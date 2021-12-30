@@ -2140,6 +2140,37 @@ novers:
 	return -1;
 }
 
+/*
+ * This function is a thin wrapper around rpcap_doauth which will use an auth
+ * struct created from a username and password parsed out of the userinfo
+ * portion of a URI.
+ */
+static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const char *userinfo, char *errbuf)
+{
+	struct pcap_rmtauth auth;
+	char *passp, username[256], password[256];
+	auth.type = RPCAP_RMTAUTH_PWD;
+	auth.username = username;
+	auth.password = password;
+
+	if (userinfo)
+	{
+		passp = strchr(userinfo, ':');
+		if (passp)
+		{
+			long unsigned int len = passp - userinfo + 1;
+			if (len > (sizeof(username) - 1)) len = sizeof(username) - 1;
+			pcap_strlcpy(username, userinfo, len);
+			pcap_strlcpy(password, passp + 1, sizeof(password) - 1);
+		}
+
+		return rpcap_doauth(sockctrl, ssl, ver, &auth, errbuf);
+	}
+
+	return rpcap_doauth(sockctrl, ssl, ver, NULL, errbuf);
+}
+
+
 /* We don't currently support non-blocking mode. */
 static int
 pcap_getnonblock_rpcap(pcap_t *p)
@@ -2164,6 +2195,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
     char *iface, char *errbuf)
 {
 	int type;
+	int auth_result;
 	struct activehosts *activeconn;		/* active connection, if there is one */
 	int error;				/* 1 if rpcap_remoteact_getsock got an error */
 
@@ -2172,7 +2204,8 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 	 * You must have a valid source string even if we're in active mode,
 	 * because otherwise the call to the following function will fail.
 	 */
-	if (pcap_parsesrcstr_ex(source, &type, host, port, iface, uses_sslp,
+	char userinfo[PCAP_BUF_SIZE];
+	if (pcap_parsesrcstr_ex(source, &type, userinfo, host, port, iface, uses_sslp,
 	    errbuf) == -1)
 		return -1;
 
@@ -2277,8 +2310,18 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
-		if (rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
-		    errbuf) == -1)
+		if (auth == NULL && userinfo != NULL)
+		{
+			auth_result = rpcap_doauth_userinfo(*sockctrlp, *sslp, protocol_versionp,
+			    userinfo, errbuf);
+		}
+		else
+		{
+			auth_result = rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
+			    errbuf);
+		}
+
+		if (auth_result == -1)
 		{
 #ifdef HAVE_OPENSSL
 			if (*sslp)
@@ -2622,7 +2665,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			/* Create the new device identifier */
 			if (pcap_createsrcstr_ex(tmpstring2, PCAP_SRC_IFREMOTE,
-			    host, port, tmpstring, uses_ssl, errbuf) == -1)
+			    NULL, host, port, tmpstring, uses_ssl, errbuf) == -1)
 				goto error;
 
 			dev->name = strdup(tmpstring2);
