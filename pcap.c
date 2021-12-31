@@ -2084,6 +2084,11 @@ pcap_createsrcstr_ex(char *source, int type, const char *userinfo, const char *h
 		    (uses_ssl ? "rpcaps://" : PCAP_SRC_IF_STRING),
 		    PCAP_BUF_SIZE);
 		if (host != NULL && *host != '\0') {
+			if (userinfo != NULL && *userinfo != '\0') {
+				pcap_strlcat(source, userinfo, PCAP_BUF_SIZE);
+				pcap_strlcat(source, "@", PCAP_BUF_SIZE);
+			}
+
 			if (strchr(host, ':') != NULL) {
 				/*
 				 * The host name contains a colon, so it's
