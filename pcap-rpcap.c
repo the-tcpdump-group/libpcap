@@ -2158,7 +2158,7 @@ static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const ch
 		passp = strchr(userinfo, ':');
 		if (passp)
 		{
-			long unsigned int len = passp - userinfo + 1;
+			long unsigned int len = (long unsigned int)(passp - userinfo + 1);
 			if (len > (sizeof(username) - 1)) len = sizeof(username) - 1;
 			pcap_strlcpy(username, userinfo, len);
 			pcap_strlcpy(password, passp + 1, sizeof(password) - 1);
