@@ -2196,15 +2196,16 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 {
 	int type;
 	int auth_result;
+	char userinfo[512];			/* 256 characters each for username and password */
 	struct activehosts *activeconn;		/* active connection, if there is one */
 	int error;				/* 1 if rpcap_remoteact_getsock got an error */
+	userinfo[0] = '\0';
 
 	/*
 	 * Determine the type of the source (NULL, file, local, remote).
 	 * You must have a valid source string even if we're in active mode,
 	 * because otherwise the call to the following function will fail.
 	 */
-	char userinfo[PCAP_BUF_SIZE];
 	if (pcap_parsesrcstr_ex(source, &type, userinfo, host, port, iface, uses_sslp,
 	    errbuf) == -1)
 		return -1;
@@ -2310,7 +2311,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
-		if (auth == NULL && userinfo != NULL)
+		if (auth == NULL && *userinfo != '\0')
 		{
 			auth_result = rpcap_doauth_userinfo(*sockctrlp, *sslp, protocol_versionp,
 			    userinfo, errbuf);
