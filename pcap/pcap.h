@@ -878,7 +878,7 @@ PCAP_API const char *pcap_lib_version(void);
 /*
  * The formats allowed by pcap_open() are the following:
  * - file://path_and_filename [opens a local file]
- * - rpcap://devicename [opens the selected device devices available on the local host, without using the RPCAP protocol]
+ * - rpcap://devicename [opens the selected device available on the local host, without using the RPCAP protocol]
  * - rpcap://host/devicename [opens the selected device available on a remote host]
  * - rpcap://host:port/devicename [opens the selected device available on a remote host, using a non-standard port for RPCAP]
  * - adaptername [to open a local adapter; kept for compatibility, but it is strongly discouraged]
