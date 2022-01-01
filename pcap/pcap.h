@@ -876,18 +876,21 @@ PCAP_API const char *pcap_lib_version(void);
 #define PCAP_SRC_IFREMOTE	4	/* interface on a remote host, using RPCAP */
 
 /*
- * The formats allowed by pcap_open() are the following:
+ * The formats allowed by pcap_open() are the following (optional parts in []):
  * - file://path_and_filename [opens a local file]
  * - rpcap://devicename [opens the selected device available on the local host, without using the RPCAP protocol]
- * - rpcap://host/devicename [opens the selected device available on a remote host]
- * - rpcap://host:port/devicename [opens the selected device available on a remote host, using a non-standard port for RPCAP]
+ * - rpcap://[username:password@]host[:port]/devicename [opens the selected device available on a remote host]
+ *   - username and password, if present, will be used to authenticate to the remote host
+ *   - port, if present, will specify a port for RPCAP rather than using the default
  * - adaptername [to open a local adapter; kept for compatibility, but it is strongly discouraged]
  * - (NULL) [to open the first local adapter; kept for compatibility, but it is strongly discouraged]
  *
- * The formats allowed by the pcap_findalldevs_ex() are the following:
+ * The formats allowed by the pcap_findalldevs_ex() are the following (optional parts in []):
  * - file://folder/ [lists all the files in the given folder]
  * - rpcap:// [lists all local adapters]
- * - rpcap://host:port/ [lists the devices available on a remote host]
+ * - rpcap://[username:password@]host[:port]/ [lists the devices available on a remote host]
+ *   - username and password, if present, will be used to authenticate to the remote host
+ *   - port, if present, will specify a port for RPCAP rather than using the default
  *
  * In all the above, "rpcaps://" can be substituted for "rpcap://" to enable
  * SSL (if it has been compiled in).
@@ -904,6 +907,7 @@ PCAP_API const char *pcap_lib_version(void);
  * Here you find some allowed examples:
  * - rpcap://host.foo.bar/devicename [everything literal, no port number]
  * - rpcap://host.foo.bar:1234/devicename [everything literal, with port number]
+ * - rpcap://root:hunter2@host.foo.bar/devicename [everything literal, with username/password]
  * - rpcap://10.11.12.13/devicename [IPv4 numeric, no port number]
  * - rpcap://10.11.12.13:1234/devicename [IPv4 numeric, with port number]
  * - rpcap://[10.11.12.13]:1234/devicename [IPv4 numeric with IPv6 format, with port number]
