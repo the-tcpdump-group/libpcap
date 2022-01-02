@@ -894,13 +894,19 @@ call
 .BR pcap_dump_open (3PCAP)
 open a
 .B pcap_dumper_t
-for a ``savefile``, given a pathname
+for a ``savefile``, given a pathname, replacing any existing data
+.TP
+.BR pcap_dump_open_append (3PCAP)
+open a
+.B pcap_dumper_t
+for a ``savefile``, given a pathname, appending to the existing data
 .TP
 .BR pcap_dump_fopen (3PCAP)
 open a
 .B pcap_dumper_t
 for a ``savefile``, given a
-.B "FILE\ *"
+.BR "FILE\ *" ,
+assuming an empty file
 .TP
 .BR pcap_dump_close (3PCAP)
 close a
