@@ -784,17 +784,17 @@ get the state of non-blocking mode for a
 attempt to get a descriptor for a
 .B pcap_t
 that can be used in calls such as
-.BR select (2)
+.BR select ()
 and
-.BR poll (2)
+.BR poll ()
 .TP
 .BR pcap_get_required_select_timeout (3PCAP)
 attempt to get a timeout required for using a
 .B pcap_t
 in calls such as
-.BR select (2)
+.BR select ()
 and
-.BR poll (2)
+.BR poll ()
 .RE
 .SS Filters
 In order to cause only certain packets to be returned when reading
