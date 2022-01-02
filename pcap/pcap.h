@@ -681,7 +681,7 @@ PCAP_API FILE	*pcap_file(pcap_t *);
  */
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_fileno(pcap_t *)
-PCAP_DEPRECATED(pcap_fileno, "use 'pcap_handle'");
+PCAP_DEPRECATED(pcap_fileno, "request a 'pcap_handle' that returns a HANDLE if you need it");
 #else /* _WIN32 */
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_fileno(pcap_t *);
