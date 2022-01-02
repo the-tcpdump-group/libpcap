@@ -123,7 +123,7 @@
   #define DIAG_OFF_PTR_TO_INT \
     __pragma(warning(push)) \
     __pragma(warning(disable:4311))
-  #define DIAG_ON_PTR_TOINT \
+  #define DIAG_ON_PTR_TO_INT \
     __pragma(warning(pop))
 
   /*
