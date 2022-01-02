@@ -114,19 +114,6 @@
     __pragma(warning(pop))
 
   /*
-   * Suppress pointer-to-integer conversion warnins.
-   * (This should never be done, but we have an API
-   * that's a documented WinPcap API, so we're stuck
-   * with supporting it, even though nobody should
-   * use it.)
-   */
-  #define DIAG_OFF_PTR_TO_INT \
-    __pragma(warning(push)) \
-    __pragma(warning(disable:4311))
-  #define DIAG_ON_PTR_TO_INT \
-    __pragma(warning(pop))
-
-  /*
    * Suppress deprecation warnings.
    */
   #define DIAG_OFF_DEPRECATION \
@@ -163,21 +150,8 @@
   #define DIAG_OFF_NARROWING \
     PCAP_DO_PRAGMA(clang diagnostic push) \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32")
-  #define DIAG_ON_NARROWING \
-    PCAP_DO_PRAGMA(clang diagnostic pop)
 
-  /*
-   * Suppress pointer-to-integer conversion warnins.
-   * (This should never be done, but we have an API
-   * that's a documented WinPcap API, so we're stuck
-   * with supporting it, even though nobody should
-   * use it.  And, yes, somebody might compile for
-   * Windows using a Clang-based compiler.)
-   */
-  #define DIAG_OFF_PTR_TO_INT \
-    PCAP_DO_PRAGMA(clang diagnostic push) \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wpointer-to-int-cast")
-  #define DIAG_ON_PTR_TO_INT \
+  #define DIAG_ON_NARROWING \
     PCAP_DO_PRAGMA(clang diagnostic pop)
 
   /*
@@ -209,20 +183,6 @@
    */
   #define DIAG_OFF_NARROWING
   #define DIAG_ON_NARROWING
-
-  /*
-   * Suppress pointer-to-integer conversion warnins.
-   * (This should never be done, but we have an API
-   * that's a documented WinPcap API, so we're stuck
-   * with supporting it, even though nobody should
-   * use it.  And, yes, somebody might compile for
-   * Windows using GCC.)
-   */
-  #define DIAG_OFF_PTR_TO_INT \
-    PCAP_DO_PRAGMA(GCC diagnostic push) \
-    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wpointer-to-int-cast")
-  #define DIAG_ON_PTR_TO_INT \
-    PCAP_DO_PRAGMA(GCC diagnostic pop)
 
   /*
    * Suppress deprecation warnings.
@@ -258,8 +218,6 @@
   #define DIAG_ON_FLEX
   #define DIAG_OFF_NARROWING
   #define DIAG_ON_NARROWING
-  #define DIAG_OFF_PTR_TO_INT
-  #define DIAG_ON_PTR_TO_INT
   #define DIAG_OFF_DEPRECATION
   #define DIAG_ON_DEPRECATION
   #define DIAG_OFF_FORMAT_TRUNCATION
