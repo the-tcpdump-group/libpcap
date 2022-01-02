@@ -3483,9 +3483,9 @@ pcap_fileno(pcap_t *p)
 		 * routine (and be prepared for it to return
 		 * INVALID_HANDLE_VALUE).
 		 */
-DIAG_OFF_NARROWING
+DIAG_OFF_PTR_TO_INT
 		return ((int)(intptr_t)p->handle);
-DIAG_ON_NARROWING
+DIAG_ON_PTR_TO_INT
 	} else
 		return (PCAP_ERROR);
 }
