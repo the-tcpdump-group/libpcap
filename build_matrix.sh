@@ -22,7 +22,6 @@
 print_sysinfo
 # Install directory prefix
 if [ -z "$PREFIX" ]; then
-    # shellcheck disable=SC2006
     PREFIX=`mktempdir libpcap_build_matrix`
     echo "PREFIX set to '$PREFIX'"
     export PREFIX
@@ -42,7 +41,6 @@ for CC in $MATRIX_CC; do
         export CMAKE
         for REMOTE in $MATRIX_REMOTE; do
             export REMOTE
-            # shellcheck disable=SC2006
             COUNT=`increment $COUNT`
             echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE =====" >&2
             # Run one build with setup environment variables: CC, CMAKE and REMOTE

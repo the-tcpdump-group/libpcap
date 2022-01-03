@@ -11,7 +11,6 @@
 . ./build_common.sh
 # Install directory prefix
 if [ -z "$PREFIX" ]; then
-    # shellcheck disable=SC2006
     PREFIX=`mktempdir libpcap_build`
     echo "PREFIX set to '$PREFIX'"
     DELETE_PREFIX=yes
@@ -23,7 +22,7 @@ print_cc_version
 # are not warning-free for one or another reason.  If you manage to fix one of
 # these cases, please remember to remove respective exemption below to help any
 # later warnings in the same matrix subset trigger an error.
-# shellcheck disable=SC2006,SC2221,SC2222
+# shellcheck disable=SC2221,SC2222
 case `cc_id`/`os_id` in
 gcc-*/Linux-*)
     # This warning is a bit odd.  It is steadily present in Cirrus CI, but not
@@ -80,7 +79,6 @@ suncc-5.1[45]/SunOS-5.11)
     LIBPCAP_TAINTED=yes
     ;;
 esac
-# shellcheck disable=SC2006
 [ "$LIBPCAP_TAINTED" != yes ] && CFLAGS=`cc_werr_cflags`
 
 if [ "$CMAKE" = no ]; then
