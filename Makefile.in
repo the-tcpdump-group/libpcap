@@ -840,4 +840,4 @@ depend:	$(GENERATED_C_SRC) $(GENHDR)
 	(cd testprogs; $(MAKE) depend)
 
 shellcheck:
-	shellcheck -f gcc build.sh build_matrix.sh build_common.sh
+	shellcheck -f gcc -e SC2006 build.sh build_matrix.sh build_common.sh
