@@ -8,6 +8,7 @@ Monthday, Month DD, YYYY:
       Address assorted compiler warnings.
     Documentation:
       Add README.solaris.md.
+      Add SCTP to pcap-filter(7).
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)

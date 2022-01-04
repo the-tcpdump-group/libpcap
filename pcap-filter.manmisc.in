@@ -18,14 +18,14 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "6 February 2021"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "4 January 2022"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
 .ad
 .SH DESCRIPTION
 .LP
-.BR pcap_compile ()
+.BR pcap_compile (3PCAP)
 is used to compile a string into a filter program.
 The resulting filter program can then be applied to
 some stream of packets to determine which packets will be supplied to
@@ -88,7 +88,7 @@ qualifiers are only valid for IEEE 802.11 Wireless LAN link layers.
 .I proto
 qualifiers restrict the match to a particular protocol.
 Possible
-protos are:
+protocols are:
 .BR ether ,
 .BR fddi ,
 .BR tr ,
@@ -98,18 +98,19 @@ protos are:
 .BR arp ,
 .BR rarp ,
 .BR decnet ,
+.BR sctp ,
 .B tcp
 and
 .BR udp .
 E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
 `\fBudp portrange\fP 7000-7009', `\fBwlan addr2\fP 0:2:3:4:5:6'.
-If there is
-no proto qualifier, all protocols consistent with the type are
-assumed.
-E.g., `\fBsrc\fP foo' means `\fB(ip or arp or rarp) src\fP foo'
-(except the latter is not legal syntax), `\fBnet\fP bar' means `\fB(ip or
-arp or rarp) net\fP bar' and `\fBport\fP 53' means `\fB(tcp or udp)
-port\fP 53'.
+If there is no
+.I proto
+qualifier, all protocols consistent with the type are assumed.
+E.g., `\fBsrc\fP foo' means `\fB(ip or arp or rarp) src\fP foo',
+`\fBnet\fP bar' means `\fB(ip or arp or rarp) net\fP bar' and
+`\fBport\fP 53' means `\fB(tcp or udp or sctp) port\fP 53'
+(note that these examples use invalid syntax to illustrate the principle).
 .LP
 [\fBfddi\fP is actually an alias for \fBether\fP; the parser treats them
 identically as meaning ``the data link level used on the specified
@@ -228,7 +229,7 @@ True if the IPv4/v6 address matches \fInet\fR with a netmask \fIlen\fR
 bits wide.
 May be qualified with \fBsrc\fR or \fBdst\fR.
 .IP "\fBdst port \fIport\fR"
-True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
+True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
 destination port value of \fIport\fP.
 The \fIport\fP can be a number or a name used in /etc/services (see
 .BR tcp (4P)
@@ -245,7 +246,7 @@ True if the packet has a source port value of \fIport\fP.
 .IP "\fBport \fIport\fR"
 True if either the source or destination port of the packet is \fIport\fP.
 .IP "\fBdst portrange \fIport1-port2\fR"
-True if the packet is IPv4 TCP, IPv4 UDP, IPv6 TCP or IPv6 UDP and has a
+True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
 destination port value between \fIport1\fP and \fIport2\fP (both inclusive).
 .I port1
 and
@@ -262,7 +263,7 @@ True if either the source or destination port of the packet is between
 \fIport1\fP and \fIport2\fP (both inclusive).
 .IP
 Any of the above port or port range expressions can be prepended with
-the keywords, \fBtcp\fP or \fBudp\fP, as in:
+the keywords, \fBtcp\fP, \fBudp\fP or \fBsctp\fP, as in:
 .in +.5i
 .nf
 \fBtcp src port \fIport\fR
@@ -291,9 +292,9 @@ True if the packet is an IPv4 packet (see
 of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names
 \fBicmp\fP, \fBicmp6\fP, \fBigmp\fP, \fBigrp\fP, \fBpim\fP, \fBah\fP,
-\fBesp\fP, \fBvrrp\fP, \fBudp\fP, or \fBtcp\fP.
-Note that the identifiers \fBtcp\fP, \fBudp\fP, and \fBicmp\fP are also
-keywords and must be escaped via backslash (\\).
+\fBesp\fP, \fBvrrp\fP, \fBsctp\fP, \fBudp\fP, or \fBtcp\fP.
+Note that the identifiers \fBtcp\fP, \fBudp\fP, \fBsctp\fP and \fBicmp\fP
+are also keywords and must be escaped via backslash (\\).
 Note that this primitive does not chase the protocol header chain.
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
@@ -302,11 +303,11 @@ Note that this primitive does not chase the protocol header chain.
 True if the packet is an IPv4 or IPv6 packet of protocol type
 \fIprotocol\fP.  Note that this primitive does not chase the protocol
 header chain.
-.IP  "\fBtcp\fR, \fBudp\fR, \fBicmp\fR"
+.IP  "\fBtcp\fR, \fBudp\fR, \fBicmp\fR, \fBsctp\fR"
 Abbreviations for:
 .in +.5i
 .nf
-\fBproto \\\fIprotocol\fR\fB
+\fBproto \\\fIprotocol\fR
 .fi
 .in -.5i
 where \fIprotocol\fR is one of the above protocols.
@@ -838,7 +839,7 @@ To access data inside the packet, use the following syntax:
 .fi
 .in -.5i
 \fIProto\fR is one of \fBether, fddi, tr, wlan, ppp, slip, link,
-ip, arp, rarp, tcp, udp, icmp, ip6\fR or \fBradio\fR, and
+ip, arp, rarp, tcp, udp, sctp, icmp, ip6\fR or \fBradio\fR, and
 indicates the protocol layer for the index operation.
 (\fBether, fddi, wlan, tr, ppp, slip\fR and \fBlink\fR all refer to the
 link layer. \fBradio\fR refers to the "radio header" added to some
