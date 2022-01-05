@@ -1240,8 +1240,12 @@
  */
 #define LINKTYPE_AUERSWALD_LOG	296
 
-#define LINKTYPE_MATCHING_MAX	296		/* highest value in the "matching" range */
+/*
+ * Silicon Labs Debug Channel. 
+ */
+#define LINKTYPE_SILABS_DEBUG_CHANNEL 297
 
+#define LINKTYPE_MATCHING_MAX	297		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

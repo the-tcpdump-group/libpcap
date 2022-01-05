@@ -3330,6 +3330,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_2_0_LOW_SPEED, "Low-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_FULL_SPEED, "Full-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_HIGH_SPEED, "High-Speed USB 2.0 as transmitted over the cable"),
+	DLT_CHOICE(SILABS_DEBUG_CHANNEL, "Silicon Labs Debug Channel"),
 	DLT_CHOICE_SENTINEL
 };
 

@@ -1597,6 +1597,19 @@
 #define DLT_AUERSWALD_LOG	296
 
 /*
+ * Silicon Labs Debug Channel protocol, for communication between Silabs debug adapters and PC.
+ * This carries packet data for any mesh networking protocols (Zigbee, Bluetooth, Matter, Wi-Fi, etc)
+ * depending on what application you run on the hardware. It can also carry other payloads, not
+ * mesh-network related.
+ * 
+ * Specification can be found at:
+ *   https://github.com/SiliconLabs/java_packet_trace_library/blob/master/doc/debug-channel.md
+ *
+ * Requested by Timotej Ecimovic <timotej.ecimovic@silabs.com>
+ */
+#define DLT_SILABS_DEBUG_CHANNEL 297
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1606,7 +1619,6 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-
-#define DLT_MATCHING_MAX	296	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	297	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
