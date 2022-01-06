@@ -445,6 +445,31 @@ pcap_setuserbuffer_npf(pcap_t *p, int size)
 	return (0);
 }
 
+#ifdef HAVE_NPCAP_PACKET_API
+/*
+ * Kernel dump mode isn't supported in Npcap; calls to PacketSetDumpName(),
+ * PacketSetDumpLimits(), and PacketIsDumpEnded() will get compile-time
+ * deprecation warnings.
+ *
+ * Avoid calling them; just return errors indicating that kernel dump
+ * mode isn't supported in Npcap.
+ */
+static int
+pcap_live_dump_npf(pcap_t *p, char *filename _U_, int maxsize _U_,
+    int maxpacks _U_)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Npcap doesn't support kernel dump mode");
+	return (-1);
+}
+static int
+pcap_live_dump_ended_npf(pcap_t *p, int sync)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Npcap doesn't support kernel dump mode");
+	return (-1);
+}
+#else /* HAVE_NPCAP_PACKET_API */
 static int
 pcap_live_dump_npf(pcap_t *p, char *filename, int maxsize, int maxpacks)
 {
@@ -485,6 +510,7 @@ pcap_live_dump_ended_npf(pcap_t *p, int sync)
 
 	return (PacketIsDumpEnded(pw->adapter, (BOOLEAN)sync));
 }
+#endif /* HAVE_NPCAP_PACKET_API */
 
 #ifdef HAVE_AIRPCAP_API
 static PAirpcapHandle
