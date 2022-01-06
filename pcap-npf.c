@@ -1633,7 +1633,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 					 * out all older drivers.
 					 */
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
-					    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.org");
+					    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.com");
 					break;
 				}
 
