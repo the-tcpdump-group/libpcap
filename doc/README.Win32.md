@@ -28,7 +28,7 @@ Windows Vista, which is the earliest version supported by Npcap.
 
 Npcap and its SDK can be downloaded from its home page:
 
-  https://npcap.org
+  https://npcap.com
 
 The SDK is a ZIP archive; create a folder on your C: drive, e.g.
 C:\npcap-sdk, and put the contents of the ZIP archive into that folder.
