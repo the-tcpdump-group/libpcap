@@ -2140,6 +2140,9 @@ novers:
 	return -1;
 }
 
+/* non-alphanumeric unreserved characters plus sub-delims (RFC3986) */
+static const char userinfo_allowed_symbols[] = "-._~!&'()*+,;=";
+
 /*
  * This function is a thin wrapper around rpcap_doauth which will use an auth
  * struct created from a username and password parsed out of the userinfo
@@ -2148,21 +2151,59 @@ novers:
 static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const char *userinfo, char *errbuf)
 {
 	struct pcap_rmtauth auth;
-	char *passp, username[256], password[256];
+	const char *ptr;
+	char *buf, username[256], password[256];
+
 	auth.type = RPCAP_RMTAUTH_PWD;
 	auth.username = username;
 	auth.password = password;
+	buf = username;
 
-	if (userinfo)
+	username[0] = password[0] = '\0';
+
+	if ((ptr = userinfo) != NULL)
 	{
-		passp = strchr(userinfo, ':');
-		if (passp)
+		for (int pos = -1; (buf[++pos] = *ptr) != '\0'; ++ptr)
 		{
-			long unsigned int len = (long unsigned int)(passp - userinfo + 1);
-			if (len > (sizeof(username) - 1)) len = sizeof(username) - 1;
-			pcap_strlcpy(username, userinfo, len);
-			/* TODO: handle percent escapes? */
-			pcap_strlcpy(password, passp + 1, sizeof(password) - 1);
+			/* handle %xx encoded characters */
+			if (*ptr == '%')
+			{
+				/* the pedantic thing to do here would be throwing an error on
+				 * a sequence like `%hi', however a lot of common tools just accept
+				 * such malarkey, so... probably it will be fine? */
+				if (sscanf(ptr, "%%%02hhx", (unsigned char *)(buf+pos)) == 1)
+					ptr += 2;
+				/* other implemntations aside, rejecting null bytes seems prudent */
+				if (buf[pos] == '\0')
+				{
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape `%%00` in userinfo");
+					return -1;
+				}
+			}
+			else if (*ptr == ':' && buf == username)
+			{
+				/* terminate username string and switch to password string */
+				buf[pos] = '\0';
+				buf = password;
+				pos = -1;
+			}
+			/* constrain to characters allowed by RFC3986 */
+			else if (*ptr >= 'A' && *ptr <= 'Z')
+				continue;
+			else if (*ptr >= 'a' && *ptr <= 'z')
+				continue;
+			else if (*ptr >= '0' && *ptr <= '9')
+				continue;
+			else if (*ptr < ' ' || *ptr > '~')
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `\\%o` in userinfo", *ptr);
+				return -1;
+			}
+			else if (strchr(userinfo_allowed_symbols, *ptr) == NULL)
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `%c` in userinfo", *ptr);
+				return -1;
+			}
 		}
 
 		return rpcap_doauth(sockctrl, ssl, ver, &auth, errbuf);
