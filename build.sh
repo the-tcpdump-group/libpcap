@@ -103,11 +103,13 @@ else
     run_after_echo "$MAKE_BIN" testprogs
 fi
 run_after_echo "$MAKE_BIN" install
+# VALGRIND_CMD is meant either to collapse or to expand.
+# shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
-    run_after_echo testprogs/findalldevstest
+    run_after_echo $VALGRIND_CMD testprogs/findalldevstest
     run_after_echo "$MAKE_BIN" releasetar
 else
-    run_after_echo run/findalldevstest
+    run_after_echo $VALGRIND_CMD run/findalldevstest
 fi
 handle_matrix_debug
 if [ "$DELETE_PREFIX" = yes ]; then

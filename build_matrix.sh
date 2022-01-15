@@ -28,6 +28,10 @@ if [ -z "$PREFIX" ]; then
 fi
 COUNT=0
 export LIBPCAP_TAINTED
+if command -v valgrind >/dev/null 2>&1; then
+    VALGRIND_CMD="valgrind --error-exitcode=1"
+    export VALGRIND_CMD
+fi
 
 touch .devel configure
 for CC in $MATRIX_CC; do
