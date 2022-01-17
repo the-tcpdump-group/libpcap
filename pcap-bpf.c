@@ -26,6 +26,7 @@
 #include <sys/param.h>			/* optionally get BSD define */
 #include <sys/socket.h>
 #include <time.h>
+#include <sys/kern/time.h>
 /*
  * <net/bpf.h> defines ioctls, but doesn't include <sys/ioccom.h>.
  *

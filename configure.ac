@@ -64,6 +64,7 @@ dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
+#include <net/if_pflog.h>
 #include <sys/socket.h>
 #include <net/if.h>])
 if test "$ac_cv_header_net_pfvar_h" = yes; then
@@ -962,6 +963,7 @@ bpf)
 		#endif
 		#include <net/bpf.h>
 	    ])
+	    LIBS="$LIBS -lrt"
 	;;
 
 pf)
