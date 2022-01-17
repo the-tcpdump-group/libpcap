@@ -572,7 +572,7 @@ AC_CHECK_HEADER(pthread.h,
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
 AC_ARG_ENABLE(protochain,
-AC_HELP_STRING([--disable-protochain],[disable \"protochain\" insn]))
+AS_HELP_STRING([--disable-protochain],[disable \"protochain\" insn]))
 case "x$enable_protochain" in
 xyes)	enable_protochain=enabled	;;
 xno)	enable_protochain=disabled	;;
@@ -592,7 +592,7 @@ AC_MSG_RESULT(${enable_protochain})
 VALGRINDTEST_SRC=
 
 AC_ARG_WITH(pcap,
-AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
+AS_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
 else
@@ -860,7 +860,7 @@ linux)
 	# let's drop support for older versions of libnl, too.
 	#
 	AC_ARG_WITH(libnl,
-	AC_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
+	AS_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
 		with_libnl=$withval,with_libnl=if_available)
 
 	if test x$with_libnl != xno ; then
@@ -1125,7 +1125,7 @@ AC_CHECK_TYPES(socklen_t,,,
     ])
 
 AC_ARG_ENABLE(ipv6,
-AC_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
+AS_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
     [],
     [enable_ipv6=yes])
 if test "$enable_ipv6" != "no"; then
@@ -1138,7 +1138,7 @@ fi
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
-AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1171,7 +1171,7 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in 
 ])
 
 AC_ARG_WITH([dag-includes],
-AC_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not DIR/include]),
+AS_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not DIR/include]),
 [
 	# User wants DAG support and has specified a header directory, so use the provided value.
 	want_dag=yes
@@ -1179,7 +1179,7 @@ AC_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not 
 ],[])
 
 AC_ARG_WITH([dag-libraries],
-AC_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not DIR/lib]),
+AS_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not DIR/lib]),
 [
 	# User wants DAG support and has specified a library directory, so use the provided value.
 	want_dag=yes
@@ -1274,7 +1274,7 @@ if test "$want_dag" != no; then
 fi
 
 AC_ARG_WITH(septel,
-AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1351,7 +1351,7 @@ fi
 
 # Check for Myricom SNF support.
 AC_ARG_WITH([snf],
-AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1384,7 +1384,7 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in
 ])
 
 AC_ARG_WITH([snf-includes],
-AC_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not DIR/include]),
+AS_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not DIR/include]),
 [
 	# User wants SNF with specific header directory
 	want_snf=yes
@@ -1392,7 +1392,7 @@ AC_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not
 ],[])
 
 AC_ARG_WITH([snf-libraries],
-AC_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if not DIR/lib]),
+AS_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if not DIR/lib]),
 [
 	# User wants SNF with specific lib directory
 	want_snf=yes
@@ -1464,7 +1464,7 @@ fi
 
 # Check for Riverbed TurboCap support.
 AC_ARG_WITH([turbocap],
-AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1701,7 +1701,7 @@ esac
 
 AC_MSG_CHECKING(whether to build optimizer debugging code)
 AC_ARG_ENABLE(optimizer-dbg,
-AC_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
+AS_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
 if test "$enable_optimizer_dbg" = "yes"; then
 	AC_DEFINE(BDEBUG,1,[Enable optimizer debugging])
 fi
@@ -1709,7 +1709,7 @@ AC_MSG_RESULT(${enable_optimizer_dbg-no})
 
 AC_MSG_CHECKING(whether to build parser debugging code)
 AC_ARG_ENABLE(yydebug,
-AC_HELP_STRING([--enable-yydebug],[build parser debugging code]))
+AS_HELP_STRING([--enable-yydebug],[build parser debugging code]))
 if test "$enable_yydebug" = "yes"; then
 	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
 fi
@@ -1882,7 +1882,7 @@ darwin*)
 	DYEXT="dylib"
 	V_CCOPT="$V_CCOPT -fno-common"
 	AC_ARG_ENABLE(universal,
-	AC_HELP_STRING([--disable-universal],[don't build universal on macOS]))
+	AS_HELP_STRING([--disable-universal],[don't build universal on macOS]))
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
@@ -2189,7 +2189,7 @@ solaris*)
 esac
 
 AC_ARG_ENABLE(shared,
-AC_HELP_STRING([--enable-shared],[build shared libraries @<:@default=yes, if support available@:>@]))
+AS_HELP_STRING([--enable-shared],[build shared libraries @<:@default=yes, if support available@:>@]))
 test "x$enable_shared" = "xno" && DYEXT="none"
 
 AC_PROG_RANLIB
@@ -2271,7 +2271,7 @@ AC_SUBST(EXTRA_NETWORK_LIBS)
 # Various Linux-specific mechanisms.
 #
 AC_ARG_ENABLE([usb],
-[AC_HELP_STRING([--enable-usb],[enable Linux usbmon USB capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-usb],[enable Linux usbmon USB capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_usb=yes])
 
@@ -2364,7 +2364,7 @@ AC_SUBST(PCAP_SUPPORT_LINUX_USBMON)
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 
 AC_ARG_ENABLE([netmap],
-[AC_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
     [],
     [enable_netmap=yes])
 
@@ -2395,7 +2395,7 @@ fi
 
 # Check for DPDK support.
 AC_ARG_WITH([dpdk],
-AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -2633,7 +2633,7 @@ fi
 AC_SUBST(PCAP_SUPPORT_DPDK)
 
 AC_ARG_ENABLE([bluetooth],
-[AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
     [],
     [enable_bluetooth=ifsupportavailable])
 
@@ -2716,7 +2716,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 fi
 
 AC_ARG_ENABLE([dbus],
-[AC_HELP_STRING([--enable-dbus],[enable D-Bus capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-dbus],[enable D-Bus capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_dbus=ifavailable])
 
@@ -2803,7 +2803,7 @@ if test "x$enable_dbus" != "xno"; then
 fi
 
 AC_ARG_ENABLE([rdma],
-[AC_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_rdma=ifavailable])
 
