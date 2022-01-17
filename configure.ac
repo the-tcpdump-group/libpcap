@@ -674,6 +674,7 @@ else
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 	AC_CHECK_HEADERS(config/HaikuConfig.h)
+	AC_CHECK_HEADERS(hurd.h)
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
@@ -735,6 +736,11 @@ else
 		# Haiku.
 		#
 		V_PCAP=haiku
+	elif test "$ac_cv_header_hurd_h" = yes; then
+		#
+		# Hurd.
+		#
+		V_PCAP=hurd
 	else
 		#
 		# Nothing we support.
@@ -1055,6 +1061,11 @@ snoop)
 	# Capture module
 	#
  	PLATFORM_C_SRC="pcap-snoop.c"
+	;;
+
+hurd)
+ 	PLATFORM_C_SRC="pcap-hurd.c"
+	LIBS="$LIBS -lrt"
 	;;
 
 dag)
