@@ -788,7 +788,7 @@ pcap_ether_hostton(const char *name)
 	char namebuf[1024];
 
 	/*
-	 * In AIX 7.1 and 7.2: int ether_ntohost(char *, struct ether_addr *);
+	 * In AIX 7.1 and 7.2: int ether_hostton(char *, struct ether_addr *);
 	 */
 	pcap_strlcpy(namebuf, name, sizeof(namebuf));
 	ap = NULL;
