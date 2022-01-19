@@ -18,7 +18,7 @@ freebsd_task:
     MAKEFLAGS: -j 4
     MATRIX_CC: clang gcc10
   script:
-    - pkg install -qy autoconf gcc10 valgrind
+    - pkg install -qy autoconf gcc11
     - pkg install -qy cmake git-tiny # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
