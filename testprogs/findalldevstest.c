@@ -183,11 +183,6 @@ int main(int argc _U_, char **argv _U_)
   }
 
   pcap_freealldevs(alldevs);
-//
-// XXX - temporary hack to see if this squelches Valgrind warnings
-// on Illumos about leaks from stdio.
-//
-fclose(stdout);
   exit(exit_status);
 }
 
