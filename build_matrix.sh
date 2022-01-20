@@ -29,7 +29,7 @@ fi
 COUNT=0
 export LIBPCAP_TAINTED
 if command -v valgrind >/dev/null 2>&1; then
-    VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1"
+    VALGRIND_CMD="valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1"
     export VALGRIND_CMD
 fi
 
