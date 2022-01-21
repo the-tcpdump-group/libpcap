@@ -3531,9 +3531,9 @@ pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int
 		return 0;
 
 #if defined(TCP_KEEPCNT) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
-	if (setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) < 0 ||
-	    setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0 ||
-	    setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0)
+	if (setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0)
 	{
 		sock_geterror("setsockopt(): ", p->errbuf, PCAP_ERRBUF_SIZE);
 		return -1;
