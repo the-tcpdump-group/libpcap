@@ -3541,7 +3541,7 @@ pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int
 #else
 	if (keepcnt || keepidle || keepintvl)
 	{
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "TCP_KEEPCNT, TCP_KEEPIDLE or TCP_KEEPINTVL not supported on this platform");
 		return -1;
 	}
