@@ -136,6 +136,13 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		bp = (unsigned char *)handle->buffer;
 	} else
 		bp = handle->bp;
+
+	/*
+	 * Loop through each message.
+	 *
+	 * This assumes that a single buffer of message will have
+	 * <= INT_MAX packets, so the message count doesn't overflow.
+	 */
 	ep = bp + len;
 	while (bp < ep) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;

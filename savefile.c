@@ -621,6 +621,21 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int n = 0;
 	u_char *data;
 
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
+
 	for (;;) {
 		struct pcap_pkthdr h;
 		int status;
@@ -664,7 +679,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		    pcap_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
 			n++;	/* count the packet */
-			if (!PACKET_COUNT_IS_UNLIMITED(cnt) && n >= cnt)
+			if (n >= cnt)
 				break;
 		}
 	}

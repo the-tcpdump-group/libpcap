@@ -1177,6 +1177,9 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	/*
 	 * Loop through each packet.
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
 	 */
 #ifdef BIOCSTSTAMP
 #define bhp ((struct bpf_xhdr *)bp)

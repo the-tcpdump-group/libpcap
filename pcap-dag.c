@@ -391,7 +391,12 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	}
 
-	/* Process the packets. */
+	/*
+	 * Process the packets.
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
+	 */
 	while (pd->dag_mem_top - pd->dag_mem_bottom >= dag_record_size) {
 
 		unsigned short packet_len = 0;
