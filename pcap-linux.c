@@ -4064,9 +4064,22 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 	}
 
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(max_packets))
+		max_packets = INT_MAX;
+
+	while (pkts < max_packets) {
 		/*
 		 * Get the current ring buffer frame, and break if
 		 * it's still owned by the kernel.
@@ -4159,9 +4172,22 @@ again:
 		return pkts;
 	}
 
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(max_packets))
+		max_packets = INT_MAX;
+
+	while (pkts < max_packets) {
 		int packets_to_read;
 
 		if (handlep->current_packet == NULL) {
@@ -4174,12 +4200,12 @@ again:
 		}
 		packets_to_read = handlep->packets_left;
 
-		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) &&
-		    packets_to_read > (max_packets - pkts)) {
+		if (packets_to_read > (max_packets - pkts)) {
 			/*
-			 * We've been given a maximum number of packets
-			 * to process, and there are more packets in
-			 * this buffer than that.  Only process enough
+			 * There are more packets in the buffer than
+			 * the number of packets we have left to
+			 * process to get up to the maximum number
+			 * of packets to process.  Only process enough
 			 * of them to get us up to that maximum.
 			 */
 			packets_to_read = max_packets - pkts;

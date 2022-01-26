@@ -139,6 +139,9 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	/*
 	 * loop through each snapshot in the chunk
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
 	 */
 	n = 0;
 	ep = bp + cc;

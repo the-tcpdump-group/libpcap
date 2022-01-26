@@ -36,6 +36,7 @@
 #endif
 
 #include <errno.h>
+#include <limits.h> /* for INT_MAX */
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <Packet32.h>
 #include <pcap-int.h>
@@ -633,6 +634,9 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	/*
 	 * Loop through each packet.
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
 	 */
 #define bhp ((struct bpf_hdr *)bp)
 	n = 0;
@@ -791,6 +795,21 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		header = (dag_record_t*)p->bp;
 
 	endofbuf = (char*)header + cc;
+
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
 
 	/*
 	 * Cycle through the packets

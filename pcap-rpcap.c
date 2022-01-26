@@ -42,6 +42,7 @@
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
+#include <limits.h>		/* for INT_MAX */
 #include "sockutils.h"
 #include "pcap-int.h"
 #include "rpcap-protocol.h"
@@ -644,6 +645,21 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 				return -1;
 		}
 	}
+
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
 
 	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt))
 	{
