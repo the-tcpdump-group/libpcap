@@ -767,13 +767,40 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 
 	for (;;) {
 		int i, ret;
-		int limit = max_packets - packets;
-		if (limit <= 0)
-			limit = VEC_SIZE;
-		if (limit > VEC_SIZE)
-			limit = VEC_SIZE;
+		int limit;
 
-		/* try to fetch as many events as possible*/
+		if (PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+			/*
+			 * There's no limit on the number of packets
+			 * to process, so try to fetch VEC_SIZE packets.
+			 */
+			limit = VEC_SIZE;
+		} else {
+			/*
+			 * Try to fetch as many packets as we have left
+			 * to process, or VEC_SIZE packets, whichever
+			 * is less.
+			 *
+			 * At this point, max_packets > 0 (otherwise,
+			 * PACKET_COUNT_IS_UNLIMITED(max_packets)
+			 * would be true) and max_packets > packets
+			 * (packet starts out as 0, and the test
+			 * at the bottom of the loop exits if
+			 * max_packets <= packets), so limit is
+			 * guaranteed to be > 0.
+			 */
+			limit = max_packets - packets;
+			if (limit > VEC_SIZE)
+				limit = VEC_SIZE;
+		}
+
+		/*
+		 * Try to fetch as many events as possible, up to
+		 * the limit, and flush the events we've processed
+		 * earlier (nflush) - MON_IOCX_MFETCH does both
+		 * (presumably to reduce the number of system
+		 * calls in loops like this).
+		 */
 		fetch.offvec = vec;
 		fetch.nfetch = limit;
 		fetch.nflush = nflush;
@@ -800,6 +827,20 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 		/* keep track of processed events, we will flush them later */
 		nflush = fetch.nfetch;
 		for (i=0; i<fetch.nfetch; ++i) {
+			/*
+			 * XXX - we can't check break_loop here, as
+			 * we read the indices of packets into a
+			 * local variable, so if we're later called
+			 * to fetch more packets, those packets will
+			 * not be seen - and won't be flushed, either.
+			 *
+			 * Instead, we would have to keep the array
+			 * of indices in our private data, along
+			 * with the count of packets to flush - or
+			 * would have to flush the already-processed
+			 * packets if we break out of the loop here.
+			 */
+
 			/* discard filler */
 			hdr = (pcap_usb_header_mmapped*) &handlep->mmapbuf[vec[i]];
 			if (hdr->event_type == '@')
@@ -859,8 +900,12 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			}
 		}
 
-		/* with max_packets specifying "unlimited" we stop after the first chunk*/
-		if (PACKET_COUNT_IS_UNLIMITED(max_packets) || (packets == max_packets))
+		/*
+		 * If max_packets specifiesg "unlimited", we stop after
+		 * the first chunk.
+		 */
+		if (PACKET_COUNT_IS_UNLIMITED(max_packets) ||
+		    (packets >= max_packets))
 			break;
 	}
 
