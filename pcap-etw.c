@@ -315,7 +315,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	handle->stats_op = pcap_stats_etw;
 	handle->read_op = pcap_read_op_etw;
 	handle->snapshot = MAXIMUM_SNAPLEN;
-	handle->linktype = DLT_ETW;
+	handle->linktype = DLT_USER0;
 
 	pcap_etw_t* etw = (pcap_etw_t*)handle->priv;
 	pcap_etw_list_init(&etw->events);
