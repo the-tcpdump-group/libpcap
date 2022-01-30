@@ -149,6 +149,7 @@ HDR = $(PUBHDR) \
 	pcap-int.h \
 	pcap-rpcap.h \
 	pcap-types.h \
+	pflog.h \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \

@@ -63,27 +63,6 @@ dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
-AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>])
-if test "$ac_cv_header_net_pfvar_h" = yes; then
-	#
-	# Check for various PF actions.
-	#
-	AC_MSG_CHECKING(whether net/pfvar.h defines PF_NAT through PF_NORDR)
-	AC_TRY_COMPILE(
-	    [#include <sys/types.h>
-	    #include <sys/socket.h>
-	    #include <net/if.h>
-	    #include <net/pfvar.h>],
-	    [return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;],
-	    [
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_PF_NAT_THROUGH_PF_NORDR, 1,
-		    [define if net/pfvar.h defines PF_NAT through PF_NORDR])
-	    ],
-	    AC_MSG_RESULT(no))
-fi
 
 case "$host_os" in
 haiku*)

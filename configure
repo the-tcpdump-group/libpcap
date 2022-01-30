@@ -5285,55 +5285,6 @@ fi
 
 done
 
-for ac_header in net/pfvar.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "net/pfvar.h" "ac_cv_header_net_pfvar_h" "#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-"
-if test "x$ac_cv_header_net_pfvar_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_NET_PFVAR_H 1
-_ACEOF
-
-fi
-
-done
-
-if test "$ac_cv_header_net_pfvar_h" = yes; then
-	#
-	# Check for various PF actions.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether net/pfvar.h defines PF_NAT through PF_NORDR" >&5
-$as_echo_n "checking whether net/pfvar.h defines PF_NAT through PF_NORDR... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/types.h>
-	    #include <sys/socket.h>
-	    #include <net/if.h>
-	    #include <net/pfvar.h>
-int
-main ()
-{
-return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_PF_NAT_THROUGH_PF_NORDR 1" >>confdefs.h
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
 
 case "$host_os" in
 haiku*)
