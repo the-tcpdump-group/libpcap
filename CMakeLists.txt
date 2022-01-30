@@ -382,25 +382,6 @@ if(NOT WIN32)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 
     check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
-    check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
-    if(HAVE_NET_PFVAR_H)
-        #
-        # Check for various PF actions.
-        #
-        check_c_source_compiles(
-"#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/pfvar.h>
-
-int
-main(void)
-{
-    return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
-}
-"
-            HAVE_PF_NAT_THROUGH_PF_NORDR)
-    endif(HAVE_NET_PFVAR_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 endif(NOT WIN32)
 
