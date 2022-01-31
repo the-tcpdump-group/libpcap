@@ -2367,7 +2367,7 @@ gen_load_pflog_llprefixlen(compiler_state_t *cstate)
 		s2->s.k = 3;
 		sappend(s1, s2);
 		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
-		s2->s.k = 0xfffffffe;
+		s2->s.k = 0xfffffffc;
 		sappend(s1, s2);
 		 
 		/*
