@@ -34,6 +34,8 @@
 #include "pcap/nflog.h"
 #include "pcap/can_socketcan.h"
 
+#include "pflog.h"
+
 #include "pcap-common.h"
 
 /*
@@ -1429,11 +1431,75 @@ max_snaplen_for_dlt(int dlt)
 }
 
 /*
+ * Most versions of the DLT_PFLOG pseudo-header have UID and PID fields
+ * that are saved in host byte order.
+ *
+ * When reading a DLT_PFLOG packet, we need to convert those fields from
+ * the byte order of the host that wrote the file to this host's byte
+ * order.
+ */
+static void
+swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	u_int pfloghdr_length;
+	struct pfloghdr *pflhdr = (struct pfloghdr *)buf;
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+		/* Not enough data to have the uid field */
+		return;
+	}
+
+	pfloghdr_length = pflhdr->length;
+
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+		/* Header doesn't include uid field */
+		return;
+	}
+	pflhdr->uid = SWAPLONG(pflhdr->uid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+		/* Not enough data to have the pid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+		/* Header doesn't include pid field */
+		return;
+	}
+	pflhdr->pid = SWAPLONG(pflhdr->pid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+		/* Not enough data to have the rule_uid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+		/* Header doesn't include rule_uid field */
+		return;
+	}
+	pflhdr->rule_uid = SWAPLONG(pflhdr->rule_uid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+		/* Not enough data to have the rule_pid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+		/* Header doesn't include rule_pid field */
+		return;
+	}
+	pflhdr->rule_pid = SWAPLONG(pflhdr->rule_pid);
+}
+
+/*
  * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN or
  * LINUX_SLL_P_CANFD have SocketCAN headers in front of the payload,
  * with the CAN ID being in host byte order.
  *
- * When reading a DLT_LINUX_SLL capture file, we need to check for those
+ * When reading a DLT_LINUX_SLL packet, we need to check for those
  * packets and convert the CAN ID from the byte order of the host that
  * wrote the file to this host's byte order.
  */
@@ -1473,9 +1539,9 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
  * byte order when capturing (it's supplied directly from a
  * memory-mapped buffer shared by the kernel).
  *
- * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED capture file,
- * we need to convert it from the byte order of the host that wrote
- * the file to this host's byte order.
+ * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED packet, we
+ * need to convert it from the byte order of the host that wrote the
+ * file to this host's byte order.
  */
 static void
 swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
@@ -1623,9 +1689,9 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
  * byte order but the values are either big-endian or are a raw byte
  * sequence that's the same regardless of the host's byte order.
  *
- * When reading a DLT_NFLOG capture file, we need to convert the type
- * and length values from the byte order of the host that wrote the
- * file to the byte order of this host.
+ * When reading a DLT_NFLOG packet, we need to convert the type and
+ * length values from the byte order of the host that wrote the file
+ * to the byte order of this host.
  */
 static void
 swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
@@ -1692,6 +1758,10 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 	 * byte order, as necessary.
 	 */
 	switch (linktype) {
+
+	case DLT_PFLOG:
+		swap_pflog_header(hdr, data);
+		break;
 
 	case DLT_LINUX_SLL:
 		swap_linux_sll_header(hdr, data);
