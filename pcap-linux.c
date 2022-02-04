@@ -4410,7 +4410,18 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 			 * the filter for a reason other than "this kernel
 			 * isn't configured to support socket filters.
 			 */
-			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
+			if (errno == ENOMEM) {
+				/*
+				 * Either a kernel memory allocation
+				 * failure occurred, or there's too
+				 * much "other/option memory" allocated
+				 * for this socket.  Suggest that they
+				 * increase the "other/option memory"
+				 * limit.
+				 */
+				fprintf(stderr,
+				    "Warning: Couldn't allocate kernel memory for filter: try increasing net.core.optmem_max with sysctl\n");
+			} else if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
 				fprintf(stderr,
 				    "Warning: Kernel filter failed: %s\n",
 					pcap_strerror(errno));
