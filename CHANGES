@@ -292,7 +292,6 @@ Sunday, July 22, 2018
     Boost the TPACKET_V3 timeout to the maximum if a timeout of 0 was
         specified
     Five CVE-2019-15161, CVE-2019-15162, CVE-2019-15163, CVE-2019-15164, CVE-2019-15165
-    Fixes for CVE-2018-16301, errors in pcapng reading.
     PCAPNG reader applies some sanity checks before doing malloc().
 
 Sunday, June 24, 2018, by mcr@sandelman.ca
