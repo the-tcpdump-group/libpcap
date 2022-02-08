@@ -123,7 +123,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			}
-			if (errno == ENOBUFS)
+			if (len == -1 && errno == ENOBUFS)
 				handlep->packets_nobufs++;
 		} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
 
