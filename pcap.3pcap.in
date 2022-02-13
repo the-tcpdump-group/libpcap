@@ -272,7 +272,7 @@ On some platforms, the time stamp given to packets on live captures can
 come from different sources that can have different resolutions or that
 can have different relationships to the time values for the current time
 supplied by routines on the native operating system.  See
-.BR pcap-tstamp (@MAN_MISC_INFO@)
+.BR \%pcap-tstamp (@MAN_MISC_INFO@)
 for a list of time stamp types.
 .IP
 The time stamp type is set with
@@ -804,7 +804,7 @@ copying ``uninteresting'' packets from the kernel to user mode.
 .PP
 A filter can be specified as a text string; the syntax and semantics of
 the string are as described by
-.BR pcap-filter (@MAN_MISC_INFO@).
+.BR \%pcap-filter (@MAN_MISC_INFO@).
 A filter string is compiled into a program in a pseudo-machine-language
 by
 .BR pcap_compile ()
@@ -1033,7 +1033,7 @@ script or some other configuration script to check whether the libpcap
 .BR autoconf (1),
 .BR tcpdump (1),
 .BR tcpslice (1),
-.BR pcap-filter (@MAN_MISC_INFO@),
+.BR \%pcap-filter (@MAN_MISC_INFO@),
 .BR pfconfig (8),
 .BR usermod (@MAN_ADMIN_COMMANDS@)
 .SH AUTHORS
