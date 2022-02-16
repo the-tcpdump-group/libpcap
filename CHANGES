@@ -23,6 +23,7 @@ Monthday, Month DD, YYYY:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
         another incorporate-remote-capture project. (issue #1120)
+      Add API to customize the keepalives parameters of a rpcap control socket
     Documentation:
       Document a standard format for writing out BPF filter programs.
     Building and testing:
