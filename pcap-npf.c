@@ -1556,30 +1556,22 @@ pcap_can_set_rfmon_npf(pcap_t *p)
 	return (PacketIsMonitorModeSupported(p->opt.device) == 1);
 }
 
-pcap_t *
-pcap_create_interface(const char *device _U_, char *ebuf)
-{
-	pcap_t *p;
+/*
+ * Get a list of time stamp types.
+ */
 #ifdef HAVE_PACKET_GET_TIMESTAMP_MODES
+static int
+get_ts_types(const char *device, pcap_t *p, char *ebuf)
+{
 	char *device_copy = NULL;
 	ADAPTER *adapter = NULL;
 	ULONG num_ts_modes;
 	BOOL ret;
 	DWORD error = ERROR_SUCCESS;
 	ULONG *modes = NULL;
-#endif
+	int status = 0;
 
-	p = PCAP_CREATE_COMMON(ebuf, struct pcap_win);
-	if (p == NULL)
-		return (NULL);
-
-	p->activate_op = pcap_activate_npf;
-	p->can_set_rfmon_op = pcap_can_set_rfmon_npf;
-
-#ifdef HAVE_PACKET_GET_TIMESTAMP_MODES
 	do {
-		/* Must fill out ebuf to signal an error at end of do/while */
-		ebuf[0] = '\0';
 		/*
 		 * First, find out how many time stamp modes we have.
 		 * To do that, we have to open the adapter.
@@ -1591,6 +1583,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		device_copy = strdup(device);
 		if (device_copy == NULL) {
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			status = -1;
 			break;
 		}
 
@@ -1601,8 +1594,10 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			/* If we can't open the device now, we won't be able to later, either. */
 			pcap_fmt_errmsg_for_win32_err(ebuf, PCAP_ERRBUF_SIZE,
 			    error, "Error opening adapter");
+			status = -1;
 			break;
 		}
+
 		/*
 		 * Get the total number of time stamp modes.
 		 *
@@ -1653,6 +1648,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 					 */
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
 					    "PacketGetTimestampModes() failed with ERROR_INVALID_FUNCTION; try uninstalling Npcap, and WinPcap if installed, and re-installing it from npcap.com");
+					status = -1;
 					break;
 				}
 
@@ -1662,6 +1658,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 				pcap_fmt_errmsg_for_win32_err(ebuf,
 				    PCAP_ERRBUF_SIZE, error,
 				    "Error calling PacketGetTimestampModes");
+				status = -1;
 				break;
 			}
 		}
@@ -1678,6 +1675,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		if (num_ts_modes == 0) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "PacketGetTimestampModes() reports 0 modes supported.");
+			status = -1;
 			break;
 		}
 
@@ -1692,6 +1690,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		if (modes == NULL) {
 			/* Out of memory. */
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			status = -1;
 			break;
 		}
 		modes[0] = 1 + num_ts_modes;
@@ -1699,12 +1698,14 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 			pcap_fmt_errmsg_for_win32_err(ebuf,
 			    PCAP_ERRBUF_SIZE, GetLastError(),
 			    "Error calling PacketGetTimestampModes");
+			status = -1;
 			break;
 		}
 		if (modes[0] != num_ts_modes) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
 			    num_ts_modes, modes[0]);
+			status = -1;
 			break;
 		}
 
@@ -1716,6 +1717,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		p->tstamp_type_list = malloc((1 + num_ts_modes) * sizeof(u_int));
 		if (p->tstamp_type_list == NULL) {
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			status = -1;
 			break;
 		}
 		u_int num_ts_types = 0;
@@ -1778,18 +1780,35 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		PacketCloseAdapter(adapter);
 	}
 
-	/* Error condition signaled by ebuf containing an error message */
-	if (ebuf[0] != '\0') {
-		/* Undo any changes. Must not use pcap_close()
-		 * since none of the ops have been set. */
-		if (p->tstamp_type_list != NULL) {
-			free(p->tstamp_type_list);
-		}
-		free(p);
-		p = NULL;
-	}
+	return status;
+}
+#else /* HAVE_PACKET_GET_TIMESTAMP_MODES */
+static int
+get_ts_types(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
+{
+	/*
+	 * Nothing to fetch, so it always "succeeds".
+	 */
+	return 0;
+}
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
+pcap_t *
+pcap_create_interface(const char *device _U_, char *ebuf)
+{
+	pcap_t *p;
+
+	p = PCAP_CREATE_COMMON(ebuf, struct pcap_win);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_npf;
+	p->can_set_rfmon_op = pcap_can_set_rfmon_npf;
+
+	if (get_ts_types(device, p, ebuf) == -1) {
+		pcap_close(p);
+		return (NULL);
+	}
 	return (p);
 }
 
