@@ -4776,10 +4776,10 @@ iface_set_all_ts_types(pcap_t *handle, char *ebuf)
 	return 0;
 }
 
-#ifdef ETHTOOL_GET_TS_INFO
 /*
- * Get a list of time stamping capabilities.
+ * Get a list of time stamp types.
  */
+#ifdef ETHTOOL_GET_TS_INFO
 static int
 iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 {
