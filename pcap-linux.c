@@ -319,7 +319,7 @@ static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 static int 	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
-static int	iface_get_ts_info(const char *device, pcap_t *handle,
+static int	iface_get_ts_types(const char *device, pcap_t *handle,
     char *ebuf);
 static int	iface_get_offload(pcap_t *handle);
 
@@ -350,7 +350,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_get_ts_info(device, handle, ebuf) == -1) {
+	if (iface_get_ts_types(device, handle, ebuf) == -1) {
 		pcap_close(handle);
 		return NULL;
 	}
@@ -4781,7 +4781,7 @@ iface_set_all_ts_types(pcap_t *handle, char *ebuf)
  * Get a list of time stamping capabilities.
  */
 static int
-iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 {
 	int fd;
 	struct ifreq ifr;
@@ -4868,6 +4868,8 @@ iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 		 * report HWTSTAMP_FILTER_ALL but map it to only
 		 * time stamping a few PTP packets.  See
 		 * http://marc.info/?l=linux-netdev&m=146318183529571&w=2
+		 *
+		 * Maybe that got fixed later.
 		 */
 		handle->tstamp_type_list = NULL;
 		return 0;
@@ -4899,7 +4901,7 @@ iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 {
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -4924,7 +4926,7 @@ iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 #endif /* ETHTOOL_GET_TS_INFO */
 #else  /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 static int
-iface_get_ts_info(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
+iface_get_ts_types(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
 {
 	/*
 	 * Nothing to fetch, so it always "succeeds".
