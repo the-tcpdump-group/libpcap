@@ -1509,6 +1509,40 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 }
 
 /*
+ * The same applies for DLT_LINUX_SLL2.
+ */
+static void
+swap_linux_sll2_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	struct sll2_header *shdr = (struct sll2_header *)buf;
+	uint16_t protocol;
+	pcap_can_socketcan_hdr *chdr;
+
+	if (caplen < (u_int) sizeof(struct sll2_header) ||
+	    length < (u_int) sizeof(struct sll2_header)) {
+		/* Not enough data to have the protocol field */
+		return;
+	}
+
+	protocol = EXTRACT_BE_U_2(&shdr->sll2_protocol);
+	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
+		return;
+
+	/*
+	 * SocketCAN packet; fix up the packet's header.
+	 */
+	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll2_header));
+	if (caplen < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id) ||
+	    length < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id)) {
+		/* Not enough data to have the CAN ID */
+		return;
+	}
+	chdr->can_id = SWAPLONG(chdr->can_id);
+}
+
+/*
  * The DLT_USB_LINUX and DLT_USB_LINUX_MMAPPED headers are in host
  * byte order when capturing (it's supplied directly from a
  * memory-mapped buffer shared by the kernel).
@@ -1739,6 +1773,10 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 
 	case DLT_LINUX_SLL:
 		swap_linux_sll_header(hdr, data);
+		break;
+
+	case DLT_LINUX_SLL2:
+		swap_linux_sll2_header(hdr, data);
 		break;
 
 	case DLT_USB_LINUX:
