@@ -319,10 +319,8 @@ static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 static int 	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
-#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
-static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
+static int	iface_get_ts_info(const char *device, pcap_t *handle,
     char *ebuf);
-#endif
 static int	iface_get_offload(pcap_t *handle);
 
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
@@ -349,15 +347,13 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
 
-#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_ethtool_get_ts_info(device, handle, ebuf) == -1) {
+	if (iface_get_ts_info(device, handle, ebuf) == -1) {
 		pcap_close(handle);
 		return NULL;
 	}
-#endif
 
 	/*
 	 * We claim that we support microsecond and nanosecond time
@@ -4785,7 +4781,7 @@ iface_set_all_ts_types(pcap_t *handle, char *ebuf)
  * Get a list of time stamping capabilities.
  */
 static int
-iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 {
 	int fd;
 	struct ifreq ifr;
@@ -4903,7 +4899,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 {
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -4926,7 +4922,15 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
-
+#else  /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
+static int
+iface_get_ts_info(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
+{
+	/*
+	 * Nothing to fetch, so it always "succeeds".
+	 */
+	return 0;
+}
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
 /*
