@@ -1891,7 +1891,7 @@ darwin*)
 			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64"
 			;;
 
-		darwin8.[[456]]|darwin.[[456]].*)
+		darwin8.[[456]]|darwin8.[[456]].*)
 			#
 			# Tiger, subsequent to Intel support but prior
 			# to x86-64 support.  Build libraries and
