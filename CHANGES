@@ -1,15 +1,94 @@
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
+    Source code:
+      Use __builtin_unreachable() in PCAP_UNREACHABLE.
+      Use AS_HELP_STRING macro instead of AC_HELP_STRING in the
+        configure scripts, to avoid deprecation warnings.
+    Savefiles:
+      Fix pcap_dispatch() to return number of packets processed, rather
+        than 0, even at EOF.
+      If we get an error writing the packet header, don't write the
+        packet data.
+      Put PFLOG UID and PID values in the header into host byte order
+        when reading a LINKTYPE_PFLOG file.
+      Put CAN ID field in CAN pseudo-headers for LINUX_SLL2, as we do
+        for LINUX_SLL. 
+    Capture:
+      Never process more than INT_MAX packets in a pcap_dispatch() call,
+        to avoid integer overflow (issue #1087).
+    Packet filtering:
+      Get PFLOG header length from the length value in the header.
+      Support all the direction, reason, and action types supported by
+        all systems that sypport PFLOG.
+      Don't require PFLOG support on the target machine in order to
+        support PFLOG filtering (also fixes issue #1076).
+    Linux:
+      Fix memory leak in capture device open (pull request #1038).
+      Fix detection of CAN/CAN FD packets in direction check (issue
+        #1051).
+      Fix double-free crashes on errors such as running on a kernel with
+        CONFIG_PACKET_MMAP not configured (issue #1054).
+      Use DLT_CAN_SOCKETCAN for CANbus interfaces (issue #1052; includes
+        changes from pull request #1035).
+      Make sure the CANFD_FDF can be relied on to indicate whether a
+        CANbus packet is a CAN frame or a CAN FD frame
+      Improve error message for "out of memory" errors for kernel
+        filters (see issue #1089).
+    NetBSD:
+      Fix handling of LINKTYPE_HDLC/DLT_HDLC.
+    rpcap:
+      Fix unaligned accesses in rpcapd (pull request #1037).
+      Fix code to process port number.
+      Clean up findalldevs code in rpcapd.
+      Clean up bufferizing code.
     Windows:
-      Add support for NdisMediumIP
+      Add support for NdisMediumIP (pull request #1027).
+      Don't require applications using pcap to be built with VS 2015 or
+        later.
+      Use the correct string for the DLL VersionInfo.
+      Correctly handle ERROR_INVALID_FUNCTION from
+        PacketGetTimestampModes() (indicate that WinPcap or an older
+        version of Npcap is probably installed).
+      Fix use-after-free in some cases when a pcap_t is closed.
+      Make sure an error is returned by pcap_create_interface() if
+        PacketOpenAdapter() fails.
+      Return an error if the driver reports 0 timestamp modes supported.
+      Close the ADAPTER handle for some errors in
+        pcap_create_interface().
+      Get rid of old umaintained VS project files.
+      Fix deprecation warning for pcap_handle().
+      Npcap is now at npcap.com, not npcap.org.
+    Haiku:
+      Implement pcap_lib_version(), as now required.
+      Handle negative or too-large snaplen values.
     Building and testing:
       Handle some Autoconf/make errors better.
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9/SPARC and 11/AMD64.
       Address assorted compiler warnings.
+      Fix cross-building on Linux for Windows with mingw32 for Win64
+        (pull request #1031).
+      Properly set installation directory on Windows when not compiling
+        with MSVC.
+      Fix configure script checks for compiler flags.
+      Give more details if check for usable (F)Lex fails.
+      Fix compiling with GCC 4.6.4.
+      Don't use add_compile_options() with CMake, as we currently don't
+        require 2.8.12, where it first appeared.
+      Don't provide -L/usr/lib for pkg-config --libs in pkg-config.
+      Fix error message for inadequate Bison/Berkeley YACC.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
+      Note that = and == are the same operator in filters (issue #1044).
+      Update INSTALL.md.
+      Update and clean up CONTRIBUTING.md.
+      Trim documentation of support for now-dead UN*Xe and older
+        versions of other UN*Xes.
+      Move the "how to allocate a LINKTYPE_/DLT_ value" documentation to
+        the web site.
+      Clean up man pages.
+      Move README.capture-module to the web site.
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
