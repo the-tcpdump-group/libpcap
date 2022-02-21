@@ -1,6 +1,8 @@
 Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
     Add LINKTYPE_ETW/DLT_ETW.
+    Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG
+    Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
