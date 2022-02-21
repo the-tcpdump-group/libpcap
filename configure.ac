@@ -1957,22 +1957,18 @@ darwin*)
 			V_PROG_LDFLAGS_FAT="-arch x86_64 -arch i386"
 			;;
 
-		darwin*)
+		darwin1[[1-8]]*)
 			#
-			# Post-Snow Leopard.  Build libraries for x86-64
-			# and 32-bit x86, with x86-64 first, and build
-			# executables only for x86-64.  (That's what
-			# Apple does.)  This requires no special flags
-			# for programs.
-			# XXX - update if and when Apple drops support
-			# for 32-bit x86 code and if and when Apple adds
-			# ARM-based Macs.  (You're on your own for iOS
-			# etc.)
+			# Post-Snow Leopard, pre-Catalina.  Build
+			# libraries for x86-64 and 32-bit x86, with
+			# x86-64 first, and build executables only for
+			# x86-64.  (That's what Apple does.)  This
+			# requires no special flags for programs.
 			#
-			# XXX - check whether we *can* build for
-			# i386 and, if not, suggest that the user
-			# install the /usr/include headers if they
-			# want to build fat.
+			# We check whether we *can* build for i386 and,
+			# if not, suggest that the user install the
+			# /usr/include headers if they want to build
+			# fat.
 			#
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
 			save_CFLAGS="$CFLAGS"
@@ -2023,6 +2019,68 @@ darwin*)
 				esac
 			    ])
 			CFLAGS="$save_CFLAGS"
+			;;
+
+		darwin19*)
+			#
+			# Catalina.  Build libraries and executables
+			# only for x86-64.  (That's what Apple does;
+			# 32-bit x86 binaries are not supported on
+			# Catalina.)
+			#
+			V_LIB_CCOPT_FAT="-arch x86_64"
+			V_LIB_LDFLAGS_FAT="-arch x86_64"
+			V_PROG_CCOPT_FAT="-arch x86_64"
+			V_PROG_LDFLAGS_FAT="-arch x86_64"
+			;;
+
+		darwin*)
+			#
+			# Post-Catalina.  Build libraries and
+			# executables for x86-64 and ARM64.
+			# (That's what Apple does, except they
+			# build for arm64e, which may include
+			# some of the pointer-checking extensions.)
+			#
+			# If we're building with libssl, make sure
+			# we can build fat with it (i.e., that it
+			# was built fat); if we can't, don't set
+			# the target architectures, and just
+			# build for the host we're on.
+			#
+			# Otherwise, just add both of them.
+			#
+			if test "$HAVE_OPENSSL" = yes; then
+				AC_MSG_CHECKING(whether building fat with libssl is supported)
+				save_CFLAGS="$CFLAGS"
+				save_LDFLAGS="$LDFLAGS"
+				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
+				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
+				AC_TRY_LINK(
+				    [
+					#include <openssl/ssl.h>
+				    ],
+				    [
+					SSL_library_init();
+					return 0;
+				    ],
+				    [
+					AC_MSG_RESULT(yes)
+					V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
+					V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+					V_PROG_CCOPT_FAT="-arch x86_64 -arch arm64"
+					V_PROG_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+				    ],
+				    [AC_MSG_RESULT(no)]
+				)
+				CFLAGS="$save_CFLAGS"
+				LDFLAGS="$save_LDFLAGS"
+			else
+				V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
+				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+				V_PROG_CCOPT_FAT="-arch x86_64 -arch arm64"
+				V_PROG_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+			fi
 			;;
 		esac
 	fi

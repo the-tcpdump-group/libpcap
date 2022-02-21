@@ -2441,13 +2441,10 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # captures.)
         #
         set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386;ppc")
-    else()
+    elseif(SYSTEM_VERSION_MAJOR GREATER 10 AND SYSTEM_VERSION_MAJOR LESS 19)
         #
-        # Post-Snow Leopard.  Build for x86-64 and 32-bit x86,
-        # with x86-64 first.  (That's what Apple does)
-        # XXX - update if and when Apple drops support
-        # for 32-bit x86 code and if and when Apple adds
-        # ARM-based Macs.  (You're on your own for iOS etc.)
+        # Post-Snow Leopard, pre-Catalina.  Build for x86-64
+        # and 32-bit x86, with x86-64 first.  (That's what Apple does)
         #
         # First, check whether we're building with OpenSSL.
         # If so, don't bother trying to build fat.
@@ -2489,6 +2486,61 @@ main(void)
                   message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
               endif()
           endif()
+        endif()
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 19)
+        #
+        # Catalina.  Build libraries and executables
+        # only for x86-64.  (That's what Apple does;
+        # 32-bit x86 binaries are not supported on
+        # Catalina.)
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+    else()
+        #
+        # Post-Catalina.  Build libraries and
+        # executables for x86-64 and ARM64.
+        # (That's what Apple does, except they
+        # build for arm64e, which may include
+        # some of the pointer-checking extensions.)
+        #
+        # If we're building with libssl, make sure
+        # we can build fat with it (i.e., that it
+        # was built fat); if we can't, don't set
+        # the target architectures, and just
+        # build for the host we're on.
+        #
+        # Otherwise, just add both of them.
+        #
+        if(HAVE_OPENSSL)
+          cmake_push_check_state()
+          set(CMAKE_REQUIRED_FLAGS "-arch x86_64 -arch arm64")
+          set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
+          set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_LIBRARIES})
+          #
+          # We must test whether this compiles and links, so
+          # check_symbol_exists() isn't sufficient.
+          #
+          # SSL_library_init() may be a macro that's #defined
+          # to be the real function to call, so we have to
+          # include <openssl/ssl.h>, and check_function_exists()
+          # isn't sufficient.
+          #
+          check_c_source_compiles(
+"#include <openssl/ssl.h>
+int
+main(void)
+{
+    SSL_library_init();
+    return 0;
+}
+"
+              FAT_SSL_BUILDS_SUPPORTED)
+          cmake_pop_check_state()
+          if(FAT_SSL_BUILDS_SUPPORTED)
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
+          endif()
+        else()
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
         endif()
     endif()
     if(BUILD_SHARED_LIBS)
