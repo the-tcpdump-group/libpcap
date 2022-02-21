@@ -1520,10 +1520,11 @@ dnl It's off by default, as that increases the attack surface of
 dnl libpcap, exposing it to malicious servers.
 dnl
 AC_MSG_CHECKING([whether to enable remote packet capture])
-AC_ARG_ENABLE(remote,
-[  --enable-remote         enable remote packet capture @<:@default=no@:>@
-  --disable-remote        disable remote packet capture],,
-   enableval=no)
+AC_ARG_ENABLE([remote],
+   [AS_HELP_STRING([--enable-remote],
+     [enable remote packet capture @<:@default=no@:>@])],
+   [],
+   [enableval=no])
 case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
 	AC_WARN([Remote packet capture may expose libpcap-based applications])
