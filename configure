@@ -1396,7 +1396,6 @@ Optional Features:
   --disable-protochain    disable \"protochain\" insn
   --enable-ipv6           build IPv6-capable version [default=yes]
   --enable-remote         enable remote packet capture [default=no]
-  --disable-remote        disable remote packet capture
   --enable-optimizer-dbg  build optimizer debugging code
   --enable-yydebug        build parser debugging code
   --disable-universal     don't build universal on macOS
