@@ -161,6 +161,15 @@
  * provided by Apple, so each release can come with a version compiled
  * to use the APIs present in that release.)
  *
+ * The non-macOS versioning is based on
+ *
+ *    https://en.wikipedia.org/wiki/Darwin_(operating_system)#Release_history
+ *
+ * If there are any corrections, please submit it upstream to the
+ * libpcap maintainers, preferably as a pull request on
+ *
+ *    https://github.com/the-tcpdump-group/libpcap
+ *
  * We don't define it ourselves because, if you're building and
  * installing libpcap on macOS yourself, the APIs will be available
  * no matter what OS version you're installing it on.
@@ -172,23 +181,30 @@
  * I've never seen earlier releases.
  */
 #ifdef __APPLE__
-#define PCAP_AVAILABLE_MACOS(v)	/* define to say "first appears in v" */
-#define PCAP_AVAILABLE_0_4	PCAP_AVAILABLE_MACOS(10.0) /* Did any version of Mac OS X ship with this? */
-#define PCAP_AVAILABLE_0_5	PCAP_AVAILABLE_MACOS(10.0) /* Did any version of Mac OS X ship with this? */
-#define PCAP_AVAILABLE_0_6	PCAP_AVAILABLE_MACOS(10.1)
-#define PCAP_AVAILABLE_0_7	PCAP_AVAILABLE_MACOS(10.4)
-#define PCAP_AVAILABLE_0_8	PCAP_AVAILABLE_MACOS(10.4)
-#define PCAP_AVAILABLE_0_9	PCAP_AVAILABLE_MACOS(10.5)
-#define PCAP_AVAILABLE_1_0	PCAP_AVAILABLE_MACOS(10.6)
+#include <Availability.h>
+/*
+ * When building as part of macOS, define this as __API_AVAILABLE(__VA_ARGS__).
+ *
+ * XXX - if there's some #define to indicate that this is being built
+ * as part of the macOS build process, we could make that Just Work.
+ */
+#define PCAP_AVAILABLE(...)
+#define PCAP_AVAILABLE_0_4	PCAP_AVAILABLE(macos(10.0)) /* Did any version of Mac OS X ship with this? */
+#define PCAP_AVAILABLE_0_5	PCAP_AVAILABLE(macos(10.0)) /* Did any version of Mac OS X ship with this? */
+#define PCAP_AVAILABLE_0_6	PCAP_AVAILABLE(macos(10.1))
+#define PCAP_AVAILABLE_0_7	PCAP_AVAILABLE(macos(10.4))
+#define PCAP_AVAILABLE_0_8	PCAP_AVAILABLE(macos(10.4))
+#define PCAP_AVAILABLE_0_9	PCAP_AVAILABLE(macos(10.5), ios(1.0))
+#define PCAP_AVAILABLE_1_0	PCAP_AVAILABLE(macos(10.6), ios(4.0))
 /* #define PCAP_AVAILABLE_1_1	no routines added to the API */
-#define PCAP_AVAILABLE_1_2	PCAP_AVAILABLE_MACOS(10.9)
+#define PCAP_AVAILABLE_1_2	PCAP_AVAILABLE(macos(10.9), ios(6.0))
 /* #define PCAP_AVAILABLE_1_3	no routines added to the API */
 /* #define PCAP_AVAILABLE_1_4	no routines added to the API */
-#define PCAP_AVAILABLE_1_5	PCAP_AVAILABLE_MACOS(10.10)
+#define PCAP_AVAILABLE_1_5	PCAP_AVAILABLE(macos(10.10), ios(7.0), watchos(1.0))
 /* #define PCAP_AVAILABLE_1_6	no routines added to the API */
-#define PCAP_AVAILABLE_1_7	PCAP_AVAILABLE_MACOS(10.12)
-#define PCAP_AVAILABLE_1_8	PCAP_AVAILABLE_MACOS(10.13) /* only Windows adds routines to the API; XXX - what version first had it? */
-#define PCAP_AVAILABLE_1_9	PCAP_AVAILABLE_MACOS(10.13)
+#define PCAP_AVAILABLE_1_7	PCAP_AVAILABLE(macos(10.12), ios(10.0), tvos(10.0), watchos(3.0))
+#define PCAP_AVAILABLE_1_8	PCAP_AVAILABLE(macos(10.13), ios(11.0), tvos(11.0), watchos(4.0)) /* only Windows adds routines to the API; XXX - what version first had it? */
+#define PCAP_AVAILABLE_1_9	PCAP_AVAILABLE(macos(10.13), ios(11.0), tvos(11.0), watchos(4.0))
 #define PCAP_AVAILABLE_1_10	/* not in macOS yet */
 #define PCAP_AVAILABLE_1_11	/* not released yet, so not in macOS yet */
 #else /* __APPLE__ */
