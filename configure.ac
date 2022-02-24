@@ -711,6 +711,11 @@ AC_MSG_RESULT($V_PCAP)
 AC_SUBST(VALGRINDTEST_SRC)
 
 #
+# Do we have pkg-config?
+#
+PKG_PROG_PKG_CONFIG
+
+#
 # Handle each capture type.
 #
 case "$V_PCAP" in
