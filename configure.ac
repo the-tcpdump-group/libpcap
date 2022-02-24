@@ -716,6 +716,19 @@ AC_SUBST(VALGRINDTEST_SRC)
 PKG_PROG_PKG_CONFIG
 
 #
+# Do we have the brew command from Homebrew?
+# If so, use it to determine the directory under which Homebrew
+# appears to hide pkg-config files.
+#
+# No, we can't just assume it's under /usr/local; Homebrew have
+# conveniently chosen to put it under /opt/homebrew on ARM.
+#
+AC_PATH_PROG([BREW], [brew])
+if test -n "$BREW"; then
+	brewprefix=`$BREW --prefix`
+fi
+
+#
 # Handle each capture type.
 #
 case "$V_PCAP" in
@@ -1571,58 +1584,60 @@ yes)	AC_MSG_RESULT(yes)
 	# Optionally, we may want to support SSL.
 	# Check for OpenSSL/libressl.
 	#
-	# First, try looking for it as a regular system library.
+	# First, try looking for it with pkg-config, if we have it.
+	#
+	# Homebrew's pkg-config does not, by default, look for
+	# pkg-config files for packages it has installed.
+	# Furthermore, at least for OpenSSL, they appear to be
+	# dumped in package-specific directories whose paths are
+	# not only package-specific but package-version-specific.
+	#
+	# So the only way to find openssl is to look in Homebrew's
+	# Cellar directory for openssl.pc and then add the directory
+	# containing it to PKG_CONFIG_PATH.
+	#
+	# The Cellar directory would be under the top-level install
+	# Homebrew directory.
+	#
+	# That's the nice thing about Homebrew - it makes things easier!
+	# Thanks!
+	#
+	save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	if test "x$brewprefix" != "x"; then
+		openssl_pc=`find "$brewprefix/Cellar" -name "openssl.pc" -print`
+		if test "x$openssl_pc" != "x"; then
+			openssl_pkgconfig_dir=`dirname "$openssl_pc"`
+			PKG_CONFIG_PATH="$openssl_pkgconfig_dir:$PKG_CONFIG_PATH"
+		fi
+	fi
+	PKG_CHECK_MODULES(OPENSSL, openssl,
+	    [
+		#
+		# We found OpenSSL/libressl.
+		#
+		HAVE_OPENSSL=yes
+	    ])
+	PKG_CONFIG_PATH="$save_PKG_CONFIG_PATH"
+
+	#
+	# If we still haven't found it, try looking for it as a regular
+	# system library.
+	#
 	# Make sure we can find SSL_library_init() using the
 	# standard headers, just in case we're running a version
 	# of macOS that ships with the OpenSSL library but not
 	# the OpenSSL headers, and have also installed another
 	# version of OpenSSL with headers.
 	#
-	save_LIBS="$LIBS"
-	LIBS="-lssl -lcrypto"
-	AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
-	AC_TRY_LINK(
-	    [
-#include <openssl/ssl.h>
-	    ],
-	    [
-SSL_library_init();
-return 0;
-	    ],
-	    [
-		AC_MSG_RESULT(yes)
-		HAVE_OPENSSL=yes
-		OPENSSL_LIBS="-lssl -lcrypto"
-	    ],
-	    AC_MSG_RESULT(no))
-	LIBS="$save_LIBS"
-
-	#
-	# If we didn't find it, check for it with pkg-config.
+	# XXX - in the "macOS ships the library but not the headers,
+	# but we have a third-party version installed with the headers"
+	# case, will pkg-config handle that, so that we don't need to
+	# do the extra SSL_library_init() check?
 	#
 	if test "x$HAVE_OPENSSL" != "xyes"; then
-		PKG_CHECK_MODULES(OPENSSL, openssl,
-		    [
-			#
-			# We found OpenSSL/libressl.
-			#
-			HAVE_OPENSSL=yes
-		    ])
-	fi
-
-	#
-	# If we didn't find it, check for it under /usr/local/opt/openssl;
-	# that's where Homebrew puts it on macOS.  Feel free to add other
-	# -L directories as necessary; the "system library" check should
-	# also handle "add-on library under /usr/local", so that shouldn't
-	# be necessary here.
-	#
-	if test "x$HAVE_OPENSSL" != "xyes"; then
-		save_CFLAGS="$CFLAGS"
 		save_LIBS="$LIBS"
-		CFLAGS="$CFLAGS -L/usr/local/opt/openssl/include"
-		LIBS="$LIBS -L/usr/local/opt/openssl/lib -lssl -lcrypto"
-		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local/opt that we can use)
+		LIBS="-lssl -lcrypto"
+		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
 		AC_TRY_LINK(
 		    [
 #include <openssl/ssl.h>
@@ -1634,11 +1649,9 @@ return 0;
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
-			OPENSSL_CFLAGS="-I/usr/local/opt/openssl/include"
-			OPENSSL_LIBS="-L/usr/local/opt/openssl/lib -lssl -lcrypto"
+			OPENSSL_LIBS="-lssl -lcrypto"
 		    ],
 		    AC_MSG_RESULT(no))
-		CFLAGS="$save_CFLAGS"
 		LIBS="$save_LIBS"
 	fi
 
