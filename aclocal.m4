@@ -1159,26 +1159,29 @@ AC_ARG_VAR([$1][_LIBS], [linker flags for $2, overriding pkg-config])dnl
 
 pkg_failed=no
 AC_MSG_CHECKING([for $2 with pkg-config])
+PKG_CHECK_EXISTS($2,
+    [
+	AC_MSG_RESULT(found)
+	_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
+	_PKG_CONFIG([$1][_LIBS], [libs], [$2])
 
-_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
-_PKG_CONFIG([$1][_LIBS], [libs], [$2])
-
-m4_define([_PKG_TEXT], [Alternatively, you may set the environment variables $1[]_CFLAGS
+	m4_define([_PKG_TEXT], [
+Alternatively, you may set the environment variables $1[]_CFLAGS
 and $1[]_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details.])
 
-if test $pkg_failed = yes; then
-   	AC_MSG_RESULT([no])
-        _PKG_SHORT_ERRORS_SUPPORTED
-        if test $_pkg_short_errors_supported = yes; then
-	        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
-        else
-	        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
+	if test $pkg_failed = yes; then
+	   	AC_MSG_RESULT([no])
+        	_PKG_SHORT_ERRORS_SUPPORTED
+	        if test $_pkg_short_errors_supported = yes; then
+		        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
+	        else
+		        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
 
-	m4_default([$4], [AC_MSG_ERROR(
+		m4_default([$4], [AC_MSG_ERROR(
 [Package requirements ($2) were not met:
 
 $$1_PKG_ERRORS
@@ -1188,14 +1191,18 @@ installed software in a non-standard prefix.
 
 _PKG_TEXT])[]dnl
         ])
-elif test $pkg_failed = untried; then
-     	AC_MSG_RESULT([no (pkg-config not found)])
-else
-	$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
-	$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
-        AC_MSG_RESULT([yes])
-	$3
-fi[]dnl
+	elif test $pkg_failed = untried; then
+	     	AC_MSG_RESULT([no (pkg-config not found)])
+	else
+		$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
+		$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
+	        AC_MSG_RESULT([yes])
+		$3
+	fi[]dnl
+    ],
+    [
+	AC_MSG_RESULT(not found)
+    ])
 ])dnl PKG_CHECK_MODULES
 
 
