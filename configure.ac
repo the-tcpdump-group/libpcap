@@ -711,11 +711,6 @@ AC_MSG_RESULT($V_PCAP)
 AC_SUBST(VALGRINDTEST_SRC)
 
 #
-# Do we have pkg-config?
-#
-AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
-
-#
 # Handle each capture type.
 #
 case "$V_PCAP" in
@@ -843,24 +838,16 @@ linux)
 		with_libnl=$withval,with_libnl=if_available)
 
 	if test x$with_libnl != xno ; then
-		if test "x$PKGCONFIG" != "xno"; then
-			#
-			# We have pkg-config; see if we have libnl-genl-3.0
-			# as a package.
-			#
-			AC_MSG_CHECKING([for libnl-genl-3.0 with pkg-config])
-			if "$PKGCONFIG" libnl-genl-3.0; then
-				AC_MSG_RESULT([found])
-				pkg_config_found_libnl=yes
-				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
-				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
-				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
-				LIBS="${libnl_genl_libs} $LIBS"
-				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			else
-				AC_MSG_RESULT([not found])
-			fi
-		fi
+		#
+		# Check for libnl-genl-3.0 with pkg-config.
+		#
+		PKG_CHECK_MODULES(LIBNL, libnl-genl-3.0,
+		    [
+			pkg_config_found_libnl=yes
+			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
+			LIBS="$LIBNL_LIBS $LIBS"
+			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+		    ])
 
 		if test x$pkg_config_found_libnl != xyes; then
 			#
@@ -1609,21 +1596,13 @@ return 0;
 	# If we didn't find it, check for it with pkg-config.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes"; then
-		if test "x$PKGCONFIG" != "xno"; then
+		PKG_CHECK_MODULES(OPENSSL, openssl,
+		    [
 			#
-			# We have pkg-config; see if we have OpenSSL/
-			# libressl installed as a package.
+			# We found OpenSSL/libressl.
 			#
-			AC_MSG_CHECKING([for OpenSSL/libressl with pkg-config])
-			if "$PKGCONFIG" openssl; then
-				AC_MSG_RESULT([found])
-				HAVE_OPENSSL=yes
-				OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
-				OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
-			else
-				AC_MSG_RESULT([not found])
-			fi
-		fi
+			HAVE_OPENSSL=yes
+		    ])
 	fi
 
 	#
@@ -2467,23 +2446,10 @@ AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 ])
 
 if test "$want_dpdk" != no; then
-	if test "x$PKGCONFIG" != "xno"
-	then
-		#
-		# We have pkg-config; see if we have DPDK installed
-		# as a package.
-		#
-		AC_MSG_CHECKING([for DPDK with pkg-config])
-		if "$PKGCONFIG" libdpdk
-		then
-			AC_MSG_RESULT([found])
-			found_dpdk_with_pkg_config=yes
-			DPDK_CFLAGS=`"$PKGCONFIG" --cflags libdpdk`
-			DPDK_LDFLAGS=`"$PKGCONFIG" --libs libdpdk`
-		else
-			AC_MSG_RESULT([not found])
-		fi
-	fi
+	PKG_CHECK_MODULES(DPDK, libdpdk,
+	    [
+		found_dpdk_with_pkg_config=yes
+	    ])
 
 	#
 	# If we didn't find it with pkg-config, try checking for
@@ -2797,46 +2763,41 @@ if test "x$enable_dbus" != "xno"; then
 fi
 
 if test "x$enable_dbus" != "xno"; then
-	if test "x$PKGCONFIG" != "xno"; then
-		AC_MSG_CHECKING([for D-Bus])
-		if "$PKGCONFIG" dbus-1; then
+	PKG_CHECK_MODULES(DBUS, dbus-1,
+	    [
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$CFLAGS $DBUS_CFLAGS"
+		LIBS="$LIBS $DBUS_LIBS"
+		AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
+		AC_TRY_LINK(
+		    [#include <string.h>
+
+		     #include <time.h>
+		     #include <sys/time.h>
+
+		     #include <dbus/dbus.h>],
+		    [return dbus_connection_read_write(NULL, 0);],
+		    [
 			AC_MSG_RESULT([yes])
-			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
-			save_CFLAGS="$CFLAGS"
-			save_LIBS="$LIBS"
-			CFLAGS="$CFLAGS $DBUS_CFLAGS"
-			LIBS="$LIBS $DBUS_LIBS"
-			AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
-			AC_TRY_LINK(
-			    [#include <string.h>
-
-			     #include <time.h>
-			     #include <sys/time.h>
-
-			     #include <dbus/dbus.h>],
-			    [return dbus_connection_read_write(NULL, 0);],
-			    [
-				AC_MSG_RESULT([yes])
-				AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
-				MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
-				V_INCLS="$V_INCLS $DBUS_CFLAGS"
-			    ],
-			    [
-				AC_MSG_RESULT([no])
-				if test "x$enable_dbus" = "xyes"; then
-				    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
-				fi
-				LIBS="$save_LIBS"
-			     ])
-			CFLAGS="$save_CFLAGS"
-		else
+			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
+			MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
+			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+		    ],
+		    [
 			AC_MSG_RESULT([no])
 			if test "x$enable_dbus" = "xyes"; then
-				AC_MSG_ERROR([--enable-dbus was given, but the dbus-1 package is not installed])
+			    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
 			fi
+			LIBS="$save_LIBS"
+		     ])
+		CFLAGS="$save_CFLAGS"
+	    ],
+	    [
+		if test "x$enable_dbus" = "xyes"; then
+			AC_MSG_ERROR([--enable-dbus was given, but the dbus-1 package is not installed])
 		fi
-	fi
+	    ])
 	AC_SUBST(PCAP_SUPPORT_DBUS)
 fi
 
