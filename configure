@@ -7071,8 +7071,16 @@ fi
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libnl-genl-3.0 with pkg-config" >&5
 $as_echo_n "checking for libnl-genl-3.0 with pkg-config... " >&6; }
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-genl-3.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnl-genl-3.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
 
-if test -n "$LIBNL_CFLAGS"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+	if test -n "$LIBNL_CFLAGS"; then
     pkg_cv_LIBNL_CFLAGS="$LIBNL_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -7089,7 +7097,7 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$LIBNL_LIBS"; then
+	if test -n "$LIBNL_LIBS"; then
     pkg_cv_LIBNL_LIBS="$LIBNL_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -7109,8 +7117,8 @@ fi
 
 
 
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	if test $pkg_failed = yes; then
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -7118,31 +7126,32 @@ if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
 else
         _pkg_short_errors_supported=no
 fi
-        if test $_pkg_short_errors_supported = yes; then
-	        LIBNL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnl-genl-3.0" 2>&1`
-        else
-	        LIBNL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnl-genl-3.0" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$LIBNL_PKG_ERRORS" >&5
+	        if test $_pkg_short_errors_supported = yes; then
+		        LIBNL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnl-genl-3.0" 2>&1`
+	        else
+		        LIBNL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnl-genl-3.0" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$LIBNL_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libnl-genl-3.0) were not met:
+		as_fn_error $? "Package requirements (libnl-genl-3.0) were not met:
 
 $LIBNL_PKG_ERRORS
 
 Consider adjusting the PKG_CONFIG_PATH environment variable if you
 installed software in a non-standard prefix.
 
+
 Alternatively, you may set the environment variables LIBNL_CFLAGS
 and LIBNL_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
+	elif test $pkg_failed = untried; then
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
 $as_echo "no (pkg-config not found)" >&6; }
-else
-	LIBNL_CFLAGS=$pkg_cv_LIBNL_CFLAGS
-	LIBNL_LIBS=$pkg_cv_LIBNL_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	else
+		LIBNL_CFLAGS=$pkg_cv_LIBNL_CFLAGS
+		LIBNL_LIBS=$pkg_cv_LIBNL_LIBS
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 			pkg_config_found_libnl=yes
@@ -7152,7 +7161,14 @@ $as_echo "yes" >&6; }
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
 
+	fi
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+
 fi
+
 
 		if test x$pkg_config_found_libnl != xyes; then
 			#
@@ -8438,8 +8454,16 @@ rm -f core conftest.err conftest.$ac_objext \
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for openssl with pkg-config" >&5
 $as_echo_n "checking for openssl with pkg-config... " >&6; }
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"openssl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "openssl") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
 
-if test -n "$OPENSSL_CFLAGS"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+	if test -n "$OPENSSL_CFLAGS"; then
     pkg_cv_OPENSSL_CFLAGS="$OPENSSL_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -8456,7 +8480,7 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$OPENSSL_LIBS"; then
+	if test -n "$OPENSSL_LIBS"; then
     pkg_cv_OPENSSL_LIBS="$OPENSSL_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -8476,8 +8500,8 @@ fi
 
 
 
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	if test $pkg_failed = yes; then
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -8485,31 +8509,32 @@ if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
 else
         _pkg_short_errors_supported=no
 fi
-        if test $_pkg_short_errors_supported = yes; then
-	        OPENSSL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "openssl" 2>&1`
-        else
-	        OPENSSL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "openssl" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$OPENSSL_PKG_ERRORS" >&5
+	        if test $_pkg_short_errors_supported = yes; then
+		        OPENSSL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "openssl" 2>&1`
+	        else
+		        OPENSSL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "openssl" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$OPENSSL_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (openssl) were not met:
+		as_fn_error $? "Package requirements (openssl) were not met:
 
 $OPENSSL_PKG_ERRORS
 
 Consider adjusting the PKG_CONFIG_PATH environment variable if you
 installed software in a non-standard prefix.
 
+
 Alternatively, you may set the environment variables OPENSSL_CFLAGS
 and OPENSSL_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
+	elif test $pkg_failed = untried; then
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
 $as_echo "no (pkg-config not found)" >&6; }
-else
-	OPENSSL_CFLAGS=$pkg_cv_OPENSSL_CFLAGS
-	OPENSSL_LIBS=$pkg_cv_OPENSSL_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	else
+		OPENSSL_CFLAGS=$pkg_cv_OPENSSL_CFLAGS
+		OPENSSL_LIBS=$pkg_cv_OPENSSL_LIBS
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 			#
@@ -8517,7 +8542,14 @@ $as_echo "yes" >&6; }
 			#
 			HAVE_OPENSSL=yes
 
+	fi
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+
 fi
+
 	fi
 
 	#
@@ -11751,8 +11783,16 @@ if test "$want_dpdk" != no; then
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libdpdk with pkg-config" >&5
 $as_echo_n "checking for libdpdk with pkg-config... " >&6; }
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libdpdk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libdpdk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
 
-if test -n "$DPDK_CFLAGS"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+	if test -n "$DPDK_CFLAGS"; then
     pkg_cv_DPDK_CFLAGS="$DPDK_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -11769,7 +11809,7 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$DPDK_LIBS"; then
+	if test -n "$DPDK_LIBS"; then
     pkg_cv_DPDK_LIBS="$DPDK_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -11789,8 +11829,8 @@ fi
 
 
 
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	if test $pkg_failed = yes; then
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -11798,36 +11838,44 @@ if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
 else
         _pkg_short_errors_supported=no
 fi
-        if test $_pkg_short_errors_supported = yes; then
-	        DPDK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libdpdk" 2>&1`
-        else
-	        DPDK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libdpdk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$DPDK_PKG_ERRORS" >&5
+	        if test $_pkg_short_errors_supported = yes; then
+		        DPDK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libdpdk" 2>&1`
+	        else
+		        DPDK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libdpdk" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$DPDK_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libdpdk) were not met:
+		as_fn_error $? "Package requirements (libdpdk) were not met:
 
 $DPDK_PKG_ERRORS
 
 Consider adjusting the PKG_CONFIG_PATH environment variable if you
 installed software in a non-standard prefix.
 
+
 Alternatively, you may set the environment variables DPDK_CFLAGS
 and DPDK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
+	elif test $pkg_failed = untried; then
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
 $as_echo "no (pkg-config not found)" >&6; }
-else
-	DPDK_CFLAGS=$pkg_cv_DPDK_CFLAGS
-	DPDK_LIBS=$pkg_cv_DPDK_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	else
+		DPDK_CFLAGS=$pkg_cv_DPDK_CFLAGS
+		DPDK_LIBS=$pkg_cv_DPDK_LIBS
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 		found_dpdk_with_pkg_config=yes
 
+	fi
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+
 fi
+
 
 	#
 	# If we didn't find it with pkg-config, try checking for
@@ -12227,8 +12275,16 @@ if test "x$enable_dbus" != "xno"; then
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dbus-1 with pkg-config" >&5
 $as_echo_n "checking for dbus-1 with pkg-config... " >&6; }
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"dbus-1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
 
-if test -n "$DBUS_CFLAGS"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+	if test -n "$DBUS_CFLAGS"; then
     pkg_cv_DBUS_CFLAGS="$DBUS_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -12245,7 +12301,7 @@ fi
  else
     pkg_failed=untried
 fi
-if test -n "$DBUS_LIBS"; then
+	if test -n "$DBUS_LIBS"; then
     pkg_cv_DBUS_LIBS="$DBUS_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
@@ -12265,8 +12321,8 @@ fi
 
 
 
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	if test $pkg_failed = yes; then
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -12274,26 +12330,26 @@ if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
 else
         _pkg_short_errors_supported=no
 fi
-        if test $_pkg_short_errors_supported = yes; then
-	        DBUS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "dbus-1" 2>&1`
-        else
-	        DBUS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "dbus-1" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$DBUS_PKG_ERRORS" >&5
+	        if test $_pkg_short_errors_supported = yes; then
+		        DBUS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "dbus-1" 2>&1`
+	        else
+		        DBUS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "dbus-1" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$DBUS_PKG_ERRORS" >&5
 
 
 		if test "x$enable_dbus" = "xyes"; then
 			as_fn_error $? "--enable-dbus was given, but the dbus-1 package is not installed" "$LINENO" 5
 		fi
 
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
+	elif test $pkg_failed = untried; then
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
 $as_echo "no (pkg-config not found)" >&6; }
-else
-	DBUS_CFLAGS=$pkg_cv_DBUS_CFLAGS
-	DBUS_LIBS=$pkg_cv_DBUS_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	else
+		DBUS_CFLAGS=$pkg_cv_DBUS_CFLAGS
+		DBUS_LIBS=$pkg_cv_DBUS_LIBS
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 		save_CFLAGS="$CFLAGS"
@@ -12342,7 +12398,14 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 		CFLAGS="$save_CFLAGS"
 
+	fi
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+
 fi
+
 
 fi
 
