@@ -647,8 +647,6 @@ AC_DEFUN(AC_LBL_C_INLINE,
     fi
     AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
 
-FFF
-
 #
 # Test whether we have __atomic_load_n() and __atomic_store_n().
 #
