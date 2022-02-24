@@ -7078,8 +7078,10 @@ if test -n "$PKG_CONFIG" && \
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
 	if test -n "$LIBNL_CFLAGS"; then
     pkg_cv_LIBNL_CFLAGS="$LIBNL_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
@@ -7118,8 +7120,11 @@ fi
 
 
 	if test $pkg_failed = yes; then
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+		#
+		# That failed - report an error.
+		#
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+$as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -7146,13 +7151,19 @@ Alternatively, you may set the environment variables LIBNL_CFLAGS
 and LIBNL_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 	elif test $pkg_failed = untried; then
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
-$as_echo "no (pkg-config not found)" >&6; }
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+$as_echo "not found (pkg-config not found)" >&6; }
 	else
+		#
+		# We found the package.
+		#
 		LIBNL_CFLAGS=$pkg_cv_LIBNL_CFLAGS
 		LIBNL_LIBS=$pkg_cv_LIBNL_LIBS
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
 
 			pkg_config_found_libnl=yes
 			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
@@ -7164,6 +7175,9 @@ $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 	fi
 else
 
+	#
+	# The package isn't present.
+	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
 
@@ -8461,8 +8475,10 @@ if test -n "$PKG_CONFIG" && \
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
 	if test -n "$OPENSSL_CFLAGS"; then
     pkg_cv_OPENSSL_CFLAGS="$OPENSSL_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
@@ -8501,8 +8517,11 @@ fi
 
 
 	if test $pkg_failed = yes; then
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+		#
+		# That failed - report an error.
+		#
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+$as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -8529,13 +8548,19 @@ Alternatively, you may set the environment variables OPENSSL_CFLAGS
 and OPENSSL_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 	elif test $pkg_failed = untried; then
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
-$as_echo "no (pkg-config not found)" >&6; }
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+$as_echo "not found (pkg-config not found)" >&6; }
 	else
+		#
+		# We found the package.
+		#
 		OPENSSL_CFLAGS=$pkg_cv_OPENSSL_CFLAGS
 		OPENSSL_LIBS=$pkg_cv_OPENSSL_LIBS
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
 
 			#
 			# We found OpenSSL/libressl.
@@ -8545,6 +8570,9 @@ $as_echo "yes" >&6; }
 	fi
 else
 
+	#
+	# The package isn't present.
+	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
 
@@ -11790,8 +11818,10 @@ if test -n "$PKG_CONFIG" && \
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
 	if test -n "$DPDK_CFLAGS"; then
     pkg_cv_DPDK_CFLAGS="$DPDK_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
@@ -11830,8 +11860,11 @@ fi
 
 
 	if test $pkg_failed = yes; then
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+		#
+		# That failed - report an error.
+		#
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+$as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -11858,19 +11891,28 @@ Alternatively, you may set the environment variables DPDK_CFLAGS
 and DPDK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 	elif test $pkg_failed = untried; then
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
-$as_echo "no (pkg-config not found)" >&6; }
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+$as_echo "not found (pkg-config not found)" >&6; }
 	else
+		#
+		# We found the package.
+		#
 		DPDK_CFLAGS=$pkg_cv_DPDK_CFLAGS
 		DPDK_LIBS=$pkg_cv_DPDK_LIBS
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
 
 		found_dpdk_with_pkg_config=yes
 
 	fi
 else
 
+	#
+	# The package isn't present.
+	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
 
@@ -12282,8 +12324,10 @@ if test -n "$PKG_CONFIG" && \
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
 	if test -n "$DBUS_CFLAGS"; then
     pkg_cv_DBUS_CFLAGS="$DBUS_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
@@ -12322,8 +12366,11 @@ fi
 
 
 	if test $pkg_failed = yes; then
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+		#
+		# That failed - report an error.
+		#
+	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+$as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -12344,13 +12391,19 @@ fi
 		fi
 
 	elif test $pkg_failed = untried; then
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no (pkg-config not found)" >&5
-$as_echo "no (pkg-config not found)" >&6; }
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+$as_echo "not found (pkg-config not found)" >&6; }
 	else
+		#
+		# We found the package.
+		#
 		DBUS_CFLAGS=$pkg_cv_DBUS_CFLAGS
 		DBUS_LIBS=$pkg_cv_DBUS_LIBS
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
 
 		save_CFLAGS="$CFLAGS"
 		save_LIBS="$LIBS"
@@ -12401,6 +12454,9 @@ rm -f core conftest.err conftest.$ac_objext \
 	fi
 else
 
+	#
+	# The package isn't present.
+	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
 
