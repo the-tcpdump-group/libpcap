@@ -1161,7 +1161,10 @@ pkg_failed=no
 AC_MSG_CHECKING([for $2 with pkg-config])
 PKG_CHECK_EXISTS($2,
     [
-	AC_MSG_RESULT(found)
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
 	_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
 	_PKG_CONFIG([$1][_LIBS], [libs], [$2])
 
@@ -1171,7 +1174,10 @@ and $1[]_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details.])
 
 	if test $pkg_failed = yes; then
-	   	AC_MSG_RESULT([no])
+		#
+		# That failed - report an error.
+		#
+	   	AC_MSG_RESULT([error])
         	_PKG_SHORT_ERRORS_SUPPORTED
 	        if test $_pkg_short_errors_supported = yes; then
 		        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
@@ -1192,16 +1198,25 @@ installed software in a non-standard prefix.
 _PKG_TEXT])[]dnl
         ])
 	elif test $pkg_failed = untried; then
-	     	AC_MSG_RESULT([no (pkg-config not found)])
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	AC_MSG_RESULT([not found (pkg-config not found)])
 	else
+		#
+		# We found the package.
+		#
 		$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
 		$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
-	        AC_MSG_RESULT([yes])
+	        AC_MSG_RESULT([found])
 		$3
 	fi[]dnl
     ],
     [
-	AC_MSG_RESULT(not found)
+	#
+	# The package isn't present.
+	#
+	AC_MSG_RESULT([not found])
     ])
 ])dnl PKG_CHECK_MODULES
 
