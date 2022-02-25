@@ -717,16 +717,8 @@ PKG_PROG_PKG_CONFIG
 
 #
 # Do we have the brew command from Homebrew?
-# If so, use it to determine the directory under which Homebrew
-# appears to hide pkg-config files.
-#
-# No, we can't just assume it's under /usr/local; Homebrew have
-# conveniently chosen to put it under /opt/homebrew on ARM.
 #
 AC_PATH_PROG([BREW], [brew])
-if test -n "$BREW"; then
-	brewprefix=`$BREW --prefix`
-fi
 
 #
 # Handle each capture type.
@@ -1592,23 +1584,19 @@ yes)	AC_MSG_RESULT(yes)
 	# dumped in package-specific directories whose paths are
 	# not only package-specific but package-version-specific.
 	#
-	# So the only way to find openssl is to look in Homebrew's
-	# Cellar directory for openssl.pc and then add the directory
-	# containing it to PKG_CONFIG_PATH.
-	#
-	# The Cellar directory would be under the top-level install
-	# Homebrew directory.
+	# So the only way to find openssl is to get the value of
+	# PKG_CONFIG_PATH from "brew --env openssl" and add that
+	# to PKG_CONFIG_PATH.  (No, we can't just assume it's under
+	# /usr/local; Homebrew have conveniently chosen to put it
+	# under /opt/homebrew on ARM.)
 	#
 	# That's the nice thing about Homebrew - it makes things easier!
 	# Thanks!
 	#
 	save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-	if test "x$brewprefix" != "x"; then
-		openssl_pc=`find "$brewprefix/Cellar" -name "openssl.pc" -print`
-		if test "x$openssl_pc" != "x"; then
-			openssl_pkgconfig_dir=`dirname "$openssl_pc"`
-			PKG_CONFIG_PATH="$openssl_pkgconfig_dir:$PKG_CONFIG_PATH"
-		fi
+	if test -n "$BREW"; then
+		openssl_pkgconfig_dir=`$BREW --env --plain openssl | sed -n 's/PKG_CONFIG_PATH: //p'`
+		PKG_CONFIG_PATH="$openssl_pkgconfig_dir:$PKG_CONFIG_PATH"
 	fi
 	PKG_CHECK_MODULES(OPENSSL, openssl,
 	    [
@@ -1620,23 +1608,89 @@ yes)	AC_MSG_RESULT(yes)
 	PKG_CONFIG_PATH="$save_PKG_CONFIG_PATH"
 
 	#
-	# If we still haven't found it, try looking for it as a regular
-	# system library.
+	# If it wasn't found, and we have Homebrew installed, see
+	# if it's in Homebrew.
 	#
-	# Make sure we can find SSL_library_init() using the
-	# standard headers, just in case we're running a version
-	# of macOS that ships with the OpenSSL library but not
-	# the OpenSSL headers, and have also installed another
-	# version of OpenSSL with headers.
+	if test "x$HAVE_OPENSSL" != "xyes" -a -n "$BREW"; then
+		AC_MSG_CHECKING(for openssl in Homebrew)
+		#
+		# The brew man page lies when it speaks of
+		# $BREW --prefix --installed <formula>
+		# outputting nothing.  In Homebrew 3.3.16,
+		# it produces output regardless of whether
+		# the formula is installed or not, so we
+		# send the standard output and error to
+		# the bit bucket.
+		#
+		if $BREW --prefix --installed openssl >/dev/null 2>&1; then
+			#
+			# Yes.  Get the include directory and library
+			# directory.  (No, we can't just assume it's
+			# under /usr/local; Homebrew have conveniently
+			# chosen to put it under /opt/homebrew on ARM.)
+			#
+			AC_MSG_RESULT(yes)
+			HAVE_OPENSSL=yes
+			openssl_path=`$BREW --prefix openssl`
+			OPENSSL_CFLAGS="-I$openssl_path/include"
+			OPENSSL_LIBS="-L$openssl_path/lib -lssl -lcrypto"
+		else
+			AC_MSG_RESULT(no)
+		fi
+	fi
+
 	#
-	# XXX - in the "macOS ships the library but not the headers,
-	# but we have a third-party version installed with the headers"
-	# case, will pkg-config handle that, so that we don't need to
-	# do the extra SSL_library_init() check?
+	# If it wasn't found, and /usr/local/include and /usr/local/lib
+	# exist, check if it's in /usr/local.  (We check whether they
+	# exist because, if they don't exist, the compiler will warn
+	# about that and then ignore the argument, so they test
+	# using just the system header files and libraries.)
+	#
+	# We include the standard include file to 1) make sure that
+	# it's installed (if it's just a shared library for the
+	# benefit of existing programs, that's not useful) and 2)
+	# because SSL_library_init() is a library routine in some
+	# versions and a #defined wrapper around OPENSSL_init_ssl()
+	# in others.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes" -a -d "/usr/local/include" -a -d "/usr/local/lib"; then
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$CFLAGS -I/usr/local/include"
+		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
+		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local that we can use)
+		AC_TRY_LINK(
+		    [
+#include <openssl/ssl.h>
+		    ],
+		    [
+SSL_library_init();
+return 0;
+		    ],
+		    [
+			AC_MSG_RESULT(yes)
+			HAVE_OPENSSL=yes
+			OPENSSL_CFLAGS="-I/usr/local/include"
+			OPENSSL_LIBS="-L/usr/local/lib -lssl -lcrypto"
+		    ],
+		    AC_MSG_RESULT(no))
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+	fi
+
+	#
+	# If it wasn't found, check if it's a system library.
+	#
+	# We include the standard include file to 1) make sure that
+	# it's installed (if it's just a shared library for the
+	# benefit of existing programs, that's not useful) and 2)
+	# because SSL_library_init() is a library routine in some
+	# versions and a #defined wrapper around OPENSSL_init_ssl()
+	# in others.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes"; then
 		save_LIBS="$LIBS"
-		LIBS="-lssl -lcrypto"
+		LIBS="$LIBS -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
 		AC_TRY_LINK(
 		    [
