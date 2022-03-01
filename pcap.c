@@ -3369,7 +3369,7 @@ pcap_datalink_val_to_description_or_dlt(int dlt)
         if (description != NULL) {
                 return description;
         } else {
-                (void)snprintf(unkbuf, sizeof(unkbuf), "DLT %u", dlt);
+                (void)snprintf(unkbuf, sizeof(unkbuf), "DLT %d", dlt);
                 return unkbuf;
         }
 }
