@@ -2347,7 +2347,7 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 	if (bf_prog.bf_len > RPCAP_BPF_MAXINSNS)
 	{
 		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
-		    "Filter program is larger than the maximum size of %u instructions",
+		    "Filter program is larger than the maximum size of %d instructions",
 		    RPCAP_BPF_MAXINSNS);
 		return -2;
 	}
