@@ -622,7 +622,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				 * the read finished.
 				 */
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %u captured bytes, only got %zu",
+				    "truncated dump file; tried to read %d captured bytes, only got %zu",
 				    p->snapshot, amt_read);
 			}
 			return (-1);
