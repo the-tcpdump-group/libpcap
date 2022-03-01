@@ -159,8 +159,8 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		}
 
 		if (wc.status != IBV_WC_SUCCESS) {
-			fprintf(stderr, "failed WC wr_id %lld status %d/%s\n",
-				(unsigned long long) wc.wr_id,
+			fprintf(stderr, "failed WC wr_id %" PRIu64 " status %d/%s\n",
+				wc.wr_id,
 				wc.status, ibv_wc_status_str(wc.status));
 			continue;
 		}
