@@ -106,7 +106,7 @@
 
 /*
  * NetBSD uses 15 for HIPPI.
- * 
+ *
  * From a quick look at sys/net/if_hippi.h and sys/net/if_hippisubr.c
  * in an older version of NetBSD , the header appears to be:
  *

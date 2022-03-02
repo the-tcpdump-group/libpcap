@@ -12,7 +12,7 @@ Monthday, Month DD, YYYY:
       Put PFLOG UID and PID values in the header into host byte order
         when reading a LINKTYPE_PFLOG file.
       Put CAN ID field in CAN pseudo-headers for LINUX_SLL2, as we do
-        for LINUX_SLL. 
+        for LINUX_SLL.
     Capture:
       Never process more than INT_MAX packets in a pcap_dispatch() call,
         to avoid integer overflow (issue #1087).
