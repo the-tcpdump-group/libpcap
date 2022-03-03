@@ -1812,7 +1812,7 @@ if(NOT DISABLE_SNF)
 endif()
 
 # Check for Riverbed AirPcap support.
-if(NOT DISABLE_AIRPCAP)
+if(NOT DISABLE_AirPcap)
     #
     # Try to find the AirPcap header file and library.
     #
@@ -1821,14 +1821,14 @@ if(NOT DISABLE_AIRPCAP)
     #
     # Did we succeed?
     #
-    if(AIRPCAP_FOUND)
+    if(AirPcap_FOUND)
         #
         # Yes.
         #
-        include_directories(AFTER ${AIRPCAP_INCLUDE_DIRS})
+        include_directories(AFTER ${AirPcap_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-airpcap.c)
         set(HAVE_AIRPCAP_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AIRPCAP_LIBRARIES})
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AirPcap_LIBRARIES})
     endif()
 endif()
 
