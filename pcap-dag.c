@@ -213,7 +213,7 @@ static int dag_get_datalink(pcap_t *p);
 static int dag_setnonblock(pcap_t *p, int nonblock);
 
 static void
-delete_pcap_dag(pcap_t *p)
+delete_pcap_dag(const pcap_t *p)
 {
 	pcap_dag_node_t *curr = NULL, *prev = NULL;
 
@@ -299,7 +299,7 @@ new_pcap_dag(pcap_t *p)
 }
 
 static unsigned int
-dag_erf_ext_header_count(uint8_t * erf, size_t len)
+dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 {
 	uint32_t hdr_num = 0;
 	uint8_t  hdr_type;
