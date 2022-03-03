@@ -950,7 +950,7 @@ static int dag_activate(pcap_t* p)
 		 * Did the user request that they not be stripped?
 		 */
 		if ((s = getenv("ERF_DONT_STRIP_FCS")) != NULL) {
-			/* Yes.  Note the number of bytes that will be
+			/* Yes.  Note the number of 16-bit words that will be
 			   supplied. */
 			p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
 
