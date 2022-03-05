@@ -262,11 +262,12 @@ struct pcap_file_header {
  *    there are LINKTYPE_IPV4/DLT_IPV4 and LINKTYPE_IPV6/DLT_IPV6
  *    values if "these are IPv{4,6} and only IPv{4,6} packets"
  *    types are needed.)
+ *
+ *    Or we might be able to use it for other purposes.
  */
 #define LT_LINKTYPE(x)			((x) & 0x0000FFFF)
 #define LT_LINKTYPE_EXT(x)		((x) & 0xFFFF0000)
-#define LT_CLASS(x)			(((x) & 0x3FFF0000) >> 16)
-#define LT_CLASS_LINKTYPE		0x0000
+#define LT_RESERVED1(x)			((x) & 0x03FF0000)
 #define LT_FCS_LENGTH_PRESENT(x)	((x) & 0x04000000)
 #define LT_FCS_LENGTH(x)		(((x) & 0xF0000000) >> 28)
 #define LT_FCS_DATALINK_EXT(x)		((((x) & 0xF) << 28) | 0x04000000)
