@@ -225,24 +225,12 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 	/*
-	 * Check the "class" field of the "linktype" field in the header.
+	 * Check the main reserved field.
 	 */
-	switch (LT_CLASS(hdr.linktype)) {
-
-	case LT_CLASS_LINKTYPE:
-		/*
-		 * The type field of "linktype" is a LINKTYPE_ value;
-		 * that's normal, and we support it.
-		 */
-		break;
-
-	default:
-		/*
-		 * Unknown class.
-		 */
+	if (LT_RESERVED1(hdr.linktype) != 0) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			 "unsupported savefile linktype class type %u",
-			 LT_CLASS(hdr.linktype));
+			 "savefile linktype reserved field not zero (0x%08x)",
+			 LT_RESERVED1(hdr.linktype));
 		*err = 1;
 		return NULL;
 	}
