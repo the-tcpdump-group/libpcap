@@ -96,18 +96,6 @@
  */
 #define NSEC_TCPDUMP_MAGIC	0xa1b23c4d
 
-/*
- * Mechanism for storing information about a capture in the upper
- * 6 bits of a linktype value in a capture file.
- *
- * LT_LINKTYPE_EXT(x) extracts the additional information.
- *
- * The rest of the bits are for a value describing the link-layer
- * value.  LT_LINKTYPE(x) extracts that value.
- */
-#define LT_LINKTYPE(x)		((x) & 0x03FFFFFF)
-#define LT_LINKTYPE_EXT(x)	((x) & 0xFC000000)
-
 static int pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **datap);
 
 #ifdef _WIN32
@@ -232,6 +220,29 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			 "unsupported pcap savefile version %u.%u",
 			 hdr.version_major, hdr.version_minor);
+		*err = 1;
+		return NULL;
+	}
+
+	/*
+	 * Check the "class" field of the "linktype" field in the header.
+	 */
+	switch (LT_CLASS(hdr.linktype)) {
+
+	case LT_CLASS_LINKTYPE:
+		/*
+		 * The type field of "linktype" is a LINKTYPE_ value;
+		 * that's normal, and we support it.
+		 */
+		break;
+
+	default:
+		/*
+		 * Unknown class.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			 "unsupported savefile linktype class type %u",
+			 LT_CLASS(hdr.linktype));
 		*err = 1;
 		return NULL;
 	}

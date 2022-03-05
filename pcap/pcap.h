@@ -215,11 +215,58 @@ struct pcap_file_header {
 };
 
 /*
- * Macros for the value returned by pcap_datalink_ext().
+ * Subfields of the field containing the link-layer header type.
  *
- * If LT_FCS_LENGTH_PRESENT(x) is true, the LT_FCS_LENGTH(x) macro
- * gives the FCS length of packets in the capture.
+ * Link-layer header types are assigned for both pcap and
+ * pcapng, and the same value must work with both.  In pcapng,
+ * the link-layer header type field in an Interface Description
+ * Block is 16 bits, so only the bottommost 16 bits of the
+ * link-layer header type in a pcap file can be used for the
+ * header type value.
+ *
+ * In libpcap, the upper 16 bits, from the top down, are divided into:
+ *
+ *    A 4-bit "FCS length" field, to allow the FCS length to
+ *    be specified, just as it can be specified in the if_fcslen
+ *    field of the pcapng IDB.  The field is in units of 16 bits,
+ *    i.e. 1 means 16 bits of FCS, 2 means 32 bits of FCS, etc..
+ *
+ *    A reserved bit, which must be zero.
+ *
+ *    An "FCS length present" flag; if 0, the "FCS length" field
+ *    should be ignored, and if 1, the "FCS length" field should
+ *    be used.
+ *
+ *    10 reserved bits, which must be zero.  They were originally
+ *    intended to be used as a "class" field, allowing additional
+ *    classes of link-layer types to be defined, with a class value
+ *    of 0 indicating that the link-layer type is a LINKTYPE_ value.
+ *    A value of 0x224 was, at one point, used by NetBSD to define
+ *    "raw" packet types, with the lower 16 bits containing a
+ *    NetBSD AF_ value; see
+ *
+ *        https://marc.info/?l=tcpdump-workers&m=98296750229149&w=2
+ *
+ *    It's unknown whether those were ever used in capture files,
+ *    or if the intent was just to use it as a link-layer type
+ *    for BPF programs; NetBSD's libpcap used to support them in
+ *    the BPF code generator, but it no longer does so.  If it
+ *    was ever used in capture files, or if classes other than
+ *    "LINKTYPE_ value" are ever useful in capture files, we could
+ *    re-enable this, and use the reserved 16 bits following the
+ *    link-layer type in pcapng files to hold the class information
+ *    there.  (Note, BTW, that LINKTYPE_RAW/DLT_RAW is now being
+ *    interpreted by libpcap, tcpdump, and Wireshark as "raw IP",
+ *    including both IPv4 and IPv6, with the version number in the
+ *    header being checked to see which it is, not just "raw IPv4";
+ *    there are LINKTYPE_IPV4/DLT_IPV4 and LINKTYPE_IPV6/DLT_IPV6
+ *    values if "these are IPv{4,6} and only IPv{4,6} packets"
+ *    types are needed.)
  */
+#define LT_LINKTYPE(x)			((x) & 0x0000FFFF)
+#define LT_LINKTYPE_EXT(x)		((x) & 0xFFFF0000)
+#define LT_CLASS(x)			(((x) & 0x3FFF0000) >> 16)
+#define LT_CLASS_LINKTYPE		0x0000
 #define LT_FCS_LENGTH_PRESENT(x)	((x) & 0x04000000)
 #define LT_FCS_LENGTH(x)		(((x) & 0xF0000000) >> 28)
 #define LT_FCS_DATALINK_EXT(x)		((((x) & 0xF) << 28) | 0x04000000)
