@@ -1065,10 +1065,11 @@ PCAP_API const char *pcap_lib_version(void);
  * authentication is successful (and the user has the right to open network
  * devices) the RPCAP connection will continue; otherwise it will be dropped.
  *
- * *******NOTE********: the username and password are sent over the network
- * to the capture server *IN CLEAR TEXT*.  Don't use this on a network
- * that you don't completely control!  (And be *really* careful in your
- * definition of "completely"!)
+ * *******NOTE********: unless TLS is being used, the username and password
+ * are sent over the network to the capture server *IN CLEAR TEXT*.  Don't
+ * use this, without TLS (i.e., with rpcap:// rather than rpcaps://) on
+ * a network that you don't completely control!  (And be *really* careful
+ * in your definition of "completely"!)
  */
 #define RPCAP_RMTAUTH_PWD 1
 
