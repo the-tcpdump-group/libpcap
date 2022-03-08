@@ -44,6 +44,7 @@ esac
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_LBL_C_INLINE
+AC_PCAP_C___ATOMICS
 
 #
 # Try to arrange for large file support.
@@ -62,27 +63,6 @@ dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
-AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>])
-if test "$ac_cv_header_net_pfvar_h" = yes; then
-	#
-	# Check for various PF actions.
-	#
-	AC_MSG_CHECKING(whether net/pfvar.h defines PF_NAT through PF_NORDR)
-	AC_TRY_COMPILE(
-	    [#include <sys/types.h>
-	    #include <sys/socket.h>
-	    #include <net/if.h>
-	    #include <net/pfvar.h>],
-	    [return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;],
-	    [
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_PF_NAT_THROUGH_PF_NORDR, 1,
-		    [define if net/pfvar.h defines PF_NAT through PF_NORDR])
-	    ],
-	    AC_MSG_RESULT(no))
-fi
 
 case "$host_os" in
 haiku*)
@@ -571,7 +551,7 @@ AC_CHECK_HEADER(pthread.h,
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
 AC_ARG_ENABLE(protochain,
-AC_HELP_STRING([--disable-protochain],[disable \"protochain\" insn]))
+AS_HELP_STRING([--disable-protochain],[disable \"protochain\" insn]))
 case "x$enable_protochain" in
 xyes)	enable_protochain=enabled	;;
 xno)	enable_protochain=disabled	;;
@@ -591,7 +571,7 @@ AC_MSG_RESULT(${enable_protochain})
 VALGRINDTEST_SRC=
 
 AC_ARG_WITH(pcap,
-AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
+AS_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
 else
@@ -733,7 +713,12 @@ AC_SUBST(VALGRINDTEST_SRC)
 #
 # Do we have pkg-config?
 #
-AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
+PKG_PROG_PKG_CONFIG
+
+#
+# Do we have the brew command from Homebrew?
+#
+AC_PATH_PROG([BREW], [brew])
 
 #
 # Handle each capture type.
@@ -859,28 +844,20 @@ linux)
 	# let's drop support for older versions of libnl, too.
 	#
 	AC_ARG_WITH(libnl,
-	AC_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
+	AS_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
 		with_libnl=$withval,with_libnl=if_available)
 
 	if test x$with_libnl != xno ; then
-		if test "x$PKGCONFIG" != "xno"; then
-			#
-			# We have pkg-config; see if we have libnl-genl-3.0
-			# as a package.
-			#
-			AC_MSG_CHECKING([for libnl-genl-3.0 with pkg-config])
-			if "$PKGCONFIG" libnl-genl-3.0; then
-				AC_MSG_RESULT([found])
-				pkg_config_found_libnl=yes
-				libnl_genl_cflags=`"$PKGCONFIG" --cflags libnl-genl-3.0`
-				V_INCLS="$V_INCLS ${libnl_genl_cflags}"
-				libnl_genl_libs=`"$PKGCONFIG" --libs libnl-genl-3.0`
-				LIBS="${libnl_genl_libs} $LIBS"
-				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			else
-				AC_MSG_RESULT([not found])
-			fi
-		fi
+		#
+		# Check for libnl-genl-3.0 with pkg-config.
+		#
+		PKG_CHECK_MODULES(LIBNL, libnl-genl-3.0,
+		    [
+			pkg_config_found_libnl=yes
+			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
+			LIBS="$LIBNL_LIBS $LIBS"
+			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+		    ])
 
 		if test x$pkg_config_found_libnl != xyes; then
 			#
@@ -1124,7 +1101,7 @@ AC_CHECK_TYPES(socklen_t,,,
     ])
 
 AC_ARG_ENABLE(ipv6,
-AC_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
+AS_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
     [],
     [enable_ipv6=yes])
 if test "$enable_ipv6" != "no"; then
@@ -1137,7 +1114,7 @@ fi
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
-AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1170,7 +1147,7 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in 
 ])
 
 AC_ARG_WITH([dag-includes],
-AC_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not DIR/include]),
+AS_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not DIR/include]),
 [
 	# User wants DAG support and has specified a header directory, so use the provided value.
 	want_dag=yes
@@ -1178,7 +1155,7 @@ AC_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not 
 ],[])
 
 AC_ARG_WITH([dag-libraries],
-AC_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not DIR/lib]),
+AS_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not DIR/lib]),
 [
 	# User wants DAG support and has specified a library directory, so use the provided value.
 	want_dag=yes
@@ -1273,7 +1250,7 @@ if test "$want_dag" != no; then
 fi
 
 AC_ARG_WITH(septel,
-AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1350,7 +1327,7 @@ fi
 
 # Check for Myricom SNF support.
 AC_ARG_WITH([snf],
-AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1383,7 +1360,7 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in
 ])
 
 AC_ARG_WITH([snf-includes],
-AC_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not DIR/include]),
+AS_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not DIR/include]),
 [
 	# User wants SNF with specific header directory
 	want_snf=yes
@@ -1391,7 +1368,7 @@ AC_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not
 ],[])
 
 AC_ARG_WITH([snf-libraries],
-AC_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if not DIR/lib]),
+AS_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if not DIR/lib]),
 [
 	# User wants SNF with specific lib directory
 	want_snf=yes
@@ -1463,7 +1440,7 @@ fi
 
 # Check for Riverbed TurboCap support.
 AC_ARG_WITH([turbocap],
-AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1540,10 +1517,11 @@ dnl It's off by default, as that increases the attack surface of
 dnl libpcap, exposing it to malicious servers.
 dnl
 AC_MSG_CHECKING([whether to enable remote packet capture])
-AC_ARG_ENABLE(remote,
-[  --enable-remote         enable remote packet capture @<:@default=no@:>@
-  --disable-remote        disable remote packet capture],,
-   enableval=no)
+AC_ARG_ENABLE([remote],
+   [AS_HELP_STRING([--enable-remote],
+     [enable remote packet capture @<:@default=no@:>@])],
+   [],
+   [enableval=no])
 case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
 	AC_WARN([Remote packet capture may expose libpcap-based applications])
@@ -1598,66 +1576,89 @@ yes)	AC_MSG_RESULT(yes)
 	# Optionally, we may want to support SSL.
 	# Check for OpenSSL/libressl.
 	#
-	# First, try looking for it as a regular system library.
-	# Make sure we can find SSL_library_init() using the
-	# standard headers, just in case we're running a version
-	# of macOS that ships with the OpenSSL library but not
-	# the OpenSSL headers, and have also installed another
-	# version of OpenSSL with headers.
+	# First, try looking for it with pkg-config, if we have it.
 	#
-	save_LIBS="$LIBS"
-	LIBS="-lssl -lcrypto"
-	AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
-	AC_TRY_LINK(
+	# Homebrew's pkg-config does not, by default, look for
+	# pkg-config files for packages it has installed.
+	# Furthermore, at least for OpenSSL, they appear to be
+	# dumped in package-specific directories whose paths are
+	# not only package-specific but package-version-specific.
+	#
+	# So the only way to find openssl is to get the value of
+	# PKG_CONFIG_PATH from "brew --env openssl" and add that
+	# to PKG_CONFIG_PATH.  (No, we can't just assume it's under
+	# /usr/local; Homebrew have conveniently chosen to put it
+	# under /opt/homebrew on ARM.)
+	#
+	# That's the nice thing about Homebrew - it makes things easier!
+	# Thanks!
+	#
+	save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	if test -n "$BREW"; then
+		openssl_pkgconfig_dir=`$BREW --env --plain openssl | sed -n 's/PKG_CONFIG_PATH: //p'`
+		PKG_CONFIG_PATH="$openssl_pkgconfig_dir:$PKG_CONFIG_PATH"
+	fi
+	PKG_CHECK_MODULES(OPENSSL, openssl,
 	    [
-#include <openssl/ssl.h>
-	    ],
-	    [
-SSL_library_init();
-return 0;
-	    ],
-	    [
-		AC_MSG_RESULT(yes)
+		#
+		# We found OpenSSL/libressl.
+		#
 		HAVE_OPENSSL=yes
-		OPENSSL_LIBS="-lssl -lcrypto"
-	    ],
-	    AC_MSG_RESULT(no))
-	LIBS="$save_LIBS"
+	    ])
+	PKG_CONFIG_PATH="$save_PKG_CONFIG_PATH"
 
 	#
-	# If we didn't find it, check for it with pkg-config.
+	# If it wasn't found, and we have Homebrew installed, see
+	# if it's in Homebrew.
 	#
-	if test "x$HAVE_OPENSSL" != "xyes"; then
-		if test "x$PKGCONFIG" != "xno"; then
+	if test "x$HAVE_OPENSSL" != "xyes" -a -n "$BREW"; then
+		AC_MSG_CHECKING(for openssl in Homebrew)
+		#
+		# The brew man page lies when it speaks of
+		# $BREW --prefix --installed <formula>
+		# outputting nothing.  In Homebrew 3.3.16,
+		# it produces output regardless of whether
+		# the formula is installed or not, so we
+		# send the standard output and error to
+		# the bit bucket.
+		#
+		if $BREW --prefix --installed openssl >/dev/null 2>&1; then
 			#
-			# We have pkg-config; see if we have OpenSSL/
-			# libressl installed as a package.
+			# Yes.  Get the include directory and library
+			# directory.  (No, we can't just assume it's
+			# under /usr/local; Homebrew have conveniently
+			# chosen to put it under /opt/homebrew on ARM.)
 			#
-			AC_MSG_CHECKING([for OpenSSL/libressl with pkg-config])
-			if "$PKGCONFIG" openssl; then
-				AC_MSG_RESULT([found])
-				HAVE_OPENSSL=yes
-				OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
-				OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
-			else
-				AC_MSG_RESULT([not found])
-			fi
+			AC_MSG_RESULT(yes)
+			HAVE_OPENSSL=yes
+			openssl_path=`$BREW --prefix openssl`
+			OPENSSL_CFLAGS="-I$openssl_path/include"
+			OPENSSL_LIBS="-L$openssl_path/lib -lssl -lcrypto"
+		else
+			AC_MSG_RESULT(no)
 		fi
 	fi
 
 	#
-	# If we didn't find it, check for it under /usr/local/opt/openssl;
-	# that's where Homebrew puts it on macOS.  Feel free to add other
-	# -L directories as necessary; the "system library" check should
-	# also handle "add-on library under /usr/local", so that shouldn't
-	# be necessary here.
+	# If it wasn't found, and /usr/local/include and /usr/local/lib
+	# exist, check if it's in /usr/local.  (We check whether they
+	# exist because, if they don't exist, the compiler will warn
+	# about that and then ignore the argument, so they test
+	# using just the system header files and libraries.)
 	#
-	if test "x$HAVE_OPENSSL" != "xyes"; then
+	# We include the standard include file to 1) make sure that
+	# it's installed (if it's just a shared library for the
+	# benefit of existing programs, that's not useful) and 2)
+	# because SSL_library_init() is a library routine in some
+	# versions and a #defined wrapper around OPENSSL_init_ssl()
+	# in others.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes" -a -d "/usr/local/include" -a -d "/usr/local/lib"; then
 		save_CFLAGS="$CFLAGS"
 		save_LIBS="$LIBS"
-		CFLAGS="$CFLAGS -L/usr/local/opt/openssl/include"
-		LIBS="$LIBS -L/usr/local/opt/openssl/lib -lssl -lcrypto"
-		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local/opt that we can use)
+		CFLAGS="$CFLAGS -I/usr/local/include"
+		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
+		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local that we can use)
 		AC_TRY_LINK(
 		    [
 #include <openssl/ssl.h>
@@ -1669,11 +1670,42 @@ return 0;
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
-			OPENSSL_CFLAGS="-I/usr/local/opt/openssl/include"
-			OPENSSL_LIBS="-L/usr/local/opt/openssl/lib -lssl -lcrypto"
+			OPENSSL_CFLAGS="-I/usr/local/include"
+			OPENSSL_LIBS="-L/usr/local/lib -lssl -lcrypto"
 		    ],
 		    AC_MSG_RESULT(no))
 		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+	fi
+
+	#
+	# If it wasn't found, check if it's a system library.
+	#
+	# We include the standard include file to 1) make sure that
+	# it's installed (if it's just a shared library for the
+	# benefit of existing programs, that's not useful) and 2)
+	# because SSL_library_init() is a library routine in some
+	# versions and a #defined wrapper around OPENSSL_init_ssl()
+	# in others.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		save_LIBS="$LIBS"
+		LIBS="$LIBS -lssl -lcrypto"
+		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
+		AC_TRY_LINK(
+		    [
+#include <openssl/ssl.h>
+		    ],
+		    [
+SSL_library_init();
+return 0;
+		    ],
+		    [
+			AC_MSG_RESULT(yes)
+			HAVE_OPENSSL=yes
+			OPENSSL_LIBS="-lssl -lcrypto"
+		    ],
+		    AC_MSG_RESULT(no))
 		LIBS="$save_LIBS"
 	fi
 
@@ -1700,7 +1732,7 @@ esac
 
 AC_MSG_CHECKING(whether to build optimizer debugging code)
 AC_ARG_ENABLE(optimizer-dbg,
-AC_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
+AS_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
 if test "$enable_optimizer_dbg" = "yes"; then
 	AC_DEFINE(BDEBUG,1,[Enable optimizer debugging])
 fi
@@ -1708,7 +1740,7 @@ AC_MSG_RESULT(${enable_optimizer_dbg-no})
 
 AC_MSG_CHECKING(whether to build parser debugging code)
 AC_ARG_ENABLE(yydebug,
-AC_HELP_STRING([--enable-yydebug],[build parser debugging code]))
+AS_HELP_STRING([--enable-yydebug],[build parser debugging code]))
 if test "$enable_yydebug" = "yes"; then
 	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
 fi
@@ -1734,32 +1766,79 @@ AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
 	fi)
 if test $tcpdump_cv_capable_lex = insufficient ; then
 	AC_MSG_ERROR([$LEX is insufficient to compile libpcap.
- libpcap requires Flex 2.5.31 or later, or a compatible version of lex.])
+ libpcap requires Flex 2.5.31 or later, or a compatible version of lex.
+ If a suitable version of Lex/Flex is available as a non-standard command
+ and/or not in the PATH, you can specify it using the LEX environment
+ variable. That said, on some systems the error can mean that Flex/Lex is
+ actually acceptable, but m4 is not. Likewise, if a suitable version of
+ m4 (such as GNU M4) is available but has not been detected, you can
+ specify it using the M4 environment variable.])
 fi
 
 #
 # Look for yacc/bison/byacc.
+# If it's Bison, we do not want -y, as 1) we will be using -o to cause
+# the output for XXX.y to be written to XXX.c and 2) we don't want
+# it to issue warnings about stuff not supported by POSIX YACC - we
+# want to use that stuff, and don't care whether plain YACC supports
+# it or not, we require either Bison or Berkeley YACC.
 #
-AC_PROG_YACC
-
-case "$YACC" in
-
-*yacc)
+BISON_BYACC=""
+#
+# Look for Bison.
+#
+AC_CHECK_PROGS(BISON_BYACC, bison)
+if test x"$BISON_BYACC" != x; then
 	#
-	# Make sure this is Berkeley YACC, not AT&T YACC; the latter
-	# doesn't support reentrant parsers.  Run it with "-V";
-	# that succeeds and reports the version number with
-	# Berkeley YACC, but will (probably) fail with various
-	# vendor flavors of AT&T YACC.
+	# We found Bison.
 	#
-	AC_CACHE_CHECK([for capable yacc], tcpdump_cv_capable_yacc,
-	    if $YACC -V >/dev/null 2>&1; then
-		tcpdump_cv_capable_yacc=yes
-	    else
-		tcpdump_cv_capable_yacc=insufficient
-	    fi)
-	if test $tcpdump_cv_capable_yacc = insufficient ; then
-	    AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
+	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
+	# "%pure-parser".
+	#
+	bison_major_version=`$BISON_BYACC -V | sed -n 's/.* \(@<:@1-9@:>@@<:@0-9@:>@*\)\.@<:@0-9@:>@@<:@0-9.@:>@*/\1/p'`
+	bison_minor_version=`$BISON_BYACC -V | sed -n 's/.* @<:@1-9@:>@@<:@0-9@:>@*\.\(@<:@0-9@:>@+\).*/\1/p'`
+	if test "$bison_major_version" -lt 2 -o \
+	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
+	then
+		REENTRANT_PARSER="%pure-parser"
+	else
+		REENTRANT_PARSER="%define api.pure"
+	fi
+else
+	#
+	# We didn't find Bison; check for Berkeley YACC, under the
+	# names byacc and yacc.
+	#
+	AC_CHECK_PROGS(BISON_BYACC, byacc yacc)
+	if test x"$BISON_BYACC" != x; then
+		#
+		# Make sure this is Berkeley YACC, not AT&T YACC;
+		# the latter doesn't support reentrant parsers.
+		# Run it with "-V"; that succeeds and reports the
+		# version number with Berkeley YACC, but will
+		# (probably) fail with various vendor flavors
+		# of AT&T YACC.
+		#
+		# Hopefully this also eliminates any versions
+		# of Berkeley YACC that don't support reentrant
+		# parsers, if there are any.
+		#
+		AC_CACHE_CHECK([for capable yacc], tcpdump_cv_capable_yacc,
+		    if $BISON_BYACC -V >/dev/null 2>&1; then
+			tcpdump_cv_capable_yacc=yes
+		    else
+			tcpdump_cv_capable_yacc=insufficient
+		    fi)
+		if test $tcpdump_cv_capable_yacc = insufficient ; then
+		    AC_MSG_ERROR([$BISON_BYACC is insufficient to compile libpcap.
+ libpcap requires Bison, a newer version of Berkeley YACC with support
+ for reentrant parsers, or another YACC compatible with them.])
+		fi
+	else
+		#
+		# OK, we found neither byacc nor yacc.
+		#
+		AC_MSG_ERROR([Neither bison, byacc, nor yacc was found.
  libpcap requires Bison, a newer version of Berkeley YACC with support
  for reentrant parsers, or another YACC compatible with them.])
 	fi
@@ -1769,24 +1848,8 @@ case "$YACC" in
 	# "%pure-parser".
 	#
 	REENTRANT_PARSER="%pure-parser"
-	;;
-
-*)
-	#
-	# Bison prior to 2.4(.1) doesn't support "%define api.pure", so use
-	# "%pure-parser".
-	#
-	bison_major_version=`$YACC -V | sed -n 's/.* \(@<:@1-9@:>@@<:@0-9@:>@*\)\.@<:@1-9@:>@@<:@0-9.@:>@*/\1/p'`
-	bison_minor_version=`$YACC -V | sed -n 's/.* @<:@1-9@:>@@<:@0-9@:>@*\.\(@<:@1-9@:>@@<:@0-9@:>@*\).*/\1/p'`
-	if test "$bison_major_version" -lt 2 -o \
-	    \( "$bison_major_version" -eq 2 -a "$bison_major_version" -lt 4 \)
-	then
-		REENTRANT_PARSER="%pure-parser"
-	else
-		REENTRANT_PARSER="%define api.pure"
-	fi
-	;;
-esac
+fi
+AC_SUBST(BISON_BYACC)
 AC_SUBST(REENTRANT_PARSER)
 
 #
@@ -1850,7 +1913,7 @@ darwin*)
 	DYEXT="dylib"
 	V_CCOPT="$V_CCOPT -fno-common"
 	AC_ARG_ENABLE(universal,
-	AC_HELP_STRING([--disable-universal],[don't build universal on macOS]))
+	AS_HELP_STRING([--disable-universal],[don't build universal on macOS]))
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
@@ -1880,7 +1943,7 @@ darwin*)
 			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64"
 			;;
 
-		darwin8.[[456]]|darwin.[[456]].*)
+		darwin8.[[456]]|darwin8.[[456]].*)
 			#
 			# Tiger, subsequent to Intel support but prior
 			# to x86-64 support.  Build libraries and
@@ -1945,22 +2008,18 @@ darwin*)
 			V_PROG_LDFLAGS_FAT="-arch x86_64 -arch i386"
 			;;
 
-		darwin*)
+		darwin1[[1-8]]*)
 			#
-			# Post-Snow Leopard.  Build libraries for x86-64
-			# and 32-bit x86, with x86-64 first, and build
-			# executables only for x86-64.  (That's what
-			# Apple does.)  This requires no special flags
-			# for programs.
-			# XXX - update if and when Apple drops support
-			# for 32-bit x86 code and if and when Apple adds
-			# ARM-based Macs.  (You're on your own for iOS
-			# etc.)
+			# Post-Snow Leopard, pre-Catalina.  Build
+			# libraries for x86-64 and 32-bit x86, with
+			# x86-64 first, and build executables only for
+			# x86-64.  (That's what Apple does.)  This
+			# requires no special flags for programs.
 			#
-			# XXX - check whether we *can* build for
-			# i386 and, if not, suggest that the user
-			# install the /usr/include headers if they
-			# want to build fat.
+			# We check whether we *can* build for i386 and,
+			# if not, suggest that the user install the
+			# /usr/include headers if they want to build
+			# fat.
 			#
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
 			save_CFLAGS="$CFLAGS"
@@ -2011,6 +2070,68 @@ darwin*)
 				esac
 			    ])
 			CFLAGS="$save_CFLAGS"
+			;;
+
+		darwin19*)
+			#
+			# Catalina.  Build libraries and executables
+			# only for x86-64.  (That's what Apple does;
+			# 32-bit x86 binaries are not supported on
+			# Catalina.)
+			#
+			V_LIB_CCOPT_FAT="-arch x86_64"
+			V_LIB_LDFLAGS_FAT="-arch x86_64"
+			V_PROG_CCOPT_FAT="-arch x86_64"
+			V_PROG_LDFLAGS_FAT="-arch x86_64"
+			;;
+
+		darwin*)
+			#
+			# Post-Catalina.  Build libraries and
+			# executables for x86-64 and ARM64.
+			# (That's what Apple does, except they
+			# build for arm64e, which may include
+			# some of the pointer-checking extensions.)
+			#
+			# If we're building with libssl, make sure
+			# we can build fat with it (i.e., that it
+			# was built fat); if we can't, don't set
+			# the target architectures, and just
+			# build for the host we're on.
+			#
+			# Otherwise, just add both of them.
+			#
+			if test "$HAVE_OPENSSL" = yes; then
+				AC_MSG_CHECKING(whether building fat with libssl is supported)
+				save_CFLAGS="$CFLAGS"
+				save_LDFLAGS="$LDFLAGS"
+				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
+				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
+				AC_TRY_LINK(
+				    [
+					#include <openssl/ssl.h>
+				    ],
+				    [
+					SSL_library_init();
+					return 0;
+				    ],
+				    [
+					AC_MSG_RESULT(yes)
+					V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
+					V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+					V_PROG_CCOPT_FAT="-arch x86_64 -arch arm64"
+					V_PROG_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+				    ],
+				    [AC_MSG_RESULT(no)]
+				)
+				CFLAGS="$save_CFLAGS"
+				LDFLAGS="$save_LDFLAGS"
+			else
+				V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
+				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+				V_PROG_CCOPT_FAT="-arch x86_64 -arch arm64"
+				V_PROG_LDFLAGS_FAT="-arch x86_64 -arch arm64"
+			fi
 			;;
 		esac
 	fi
@@ -2157,7 +2278,7 @@ solaris*)
 esac
 
 AC_ARG_ENABLE(shared,
-AC_HELP_STRING([--enable-shared],[build shared libraries @<:@default=yes, if support available@:>@]))
+AS_HELP_STRING([--enable-shared],[build shared libraries @<:@default=yes, if support available@:>@]))
 test "x$enable_shared" = "xno" && DYEXT="none"
 
 AC_PROG_RANLIB
@@ -2239,7 +2360,7 @@ AC_SUBST(EXTRA_NETWORK_LIBS)
 # Various Linux-specific mechanisms.
 #
 AC_ARG_ENABLE([usb],
-[AC_HELP_STRING([--enable-usb],[enable Linux usbmon USB capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-usb],[enable Linux usbmon USB capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_usb=yes])
 
@@ -2332,7 +2453,7 @@ AC_SUBST(PCAP_SUPPORT_LINUX_USBMON)
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 
 AC_ARG_ENABLE([netmap],
-[AC_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
     [],
     [enable_netmap=yes])
 
@@ -2363,7 +2484,7 @@ fi
 
 # Check for DPDK support.
 AC_ARG_WITH([dpdk],
-AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -2397,23 +2518,10 @@ AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 ])
 
 if test "$want_dpdk" != no; then
-	if test "x$PKGCONFIG" != "xno"
-	then
-		#
-		# We have pkg-config; see if we have DPDK installed
-		# as a package.
-		#
-		AC_MSG_CHECKING([for DPDK with pkg-config])
-		if "$PKGCONFIG" libdpdk
-		then
-			AC_MSG_RESULT([found])
-			found_dpdk_with_pkg_config=yes
-			DPDK_CFLAGS=`"$PKGCONFIG" --cflags libdpdk`
-			DPDK_LDFLAGS=`"$PKGCONFIG" --libs libdpdk`
-		else
-			AC_MSG_RESULT([not found])
-		fi
-	fi
+	PKG_CHECK_MODULES(DPDK, libdpdk,
+	    [
+		found_dpdk_with_pkg_config=yes
+	    ])
 
 	#
 	# If we didn't find it with pkg-config, try checking for
@@ -2601,7 +2709,7 @@ fi
 AC_SUBST(PCAP_SUPPORT_DPDK)
 
 AC_ARG_ENABLE([bluetooth],
-[AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
     [],
     [enable_bluetooth=ifsupportavailable])
 
@@ -2684,7 +2792,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 fi
 
 AC_ARG_ENABLE([dbus],
-[AC_HELP_STRING([--enable-dbus],[enable D-Bus capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-dbus],[enable D-Bus capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_dbus=ifavailable])
 
@@ -2727,51 +2835,46 @@ if test "x$enable_dbus" != "xno"; then
 fi
 
 if test "x$enable_dbus" != "xno"; then
-	if test "x$PKGCONFIG" != "xno"; then
-		AC_MSG_CHECKING([for D-Bus])
-		if "$PKGCONFIG" dbus-1; then
+	PKG_CHECK_MODULES(DBUS, dbus-1,
+	    [
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$CFLAGS $DBUS_CFLAGS"
+		LIBS="$LIBS $DBUS_LIBS"
+		AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
+		AC_TRY_LINK(
+		    [#include <string.h>
+
+		     #include <time.h>
+		     #include <sys/time.h>
+
+		     #include <dbus/dbus.h>],
+		    [return dbus_connection_read_write(NULL, 0);],
+		    [
 			AC_MSG_RESULT([yes])
-			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
-			save_CFLAGS="$CFLAGS"
-			save_LIBS="$LIBS"
-			CFLAGS="$CFLAGS $DBUS_CFLAGS"
-			LIBS="$LIBS $DBUS_LIBS"
-			AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
-			AC_TRY_LINK(
-			    [#include <string.h>
-
-			     #include <time.h>
-			     #include <sys/time.h>
-
-			     #include <dbus/dbus.h>],
-			    [return dbus_connection_read_write(NULL, 0);],
-			    [
-				AC_MSG_RESULT([yes])
-				AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
-				MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
-				V_INCLS="$V_INCLS $DBUS_CFLAGS"
-			    ],
-			    [
-				AC_MSG_RESULT([no])
-				if test "x$enable_dbus" = "xyes"; then
-				    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
-				fi
-				LIBS="$save_LIBS"
-			     ])
-			CFLAGS="$save_CFLAGS"
-		else
+			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
+			MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
+			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+		    ],
+		    [
 			AC_MSG_RESULT([no])
 			if test "x$enable_dbus" = "xyes"; then
-				AC_MSG_ERROR([--enable-dbus was given, but the dbus-1 package is not installed])
+			    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
 			fi
+			LIBS="$save_LIBS"
+		     ])
+		CFLAGS="$save_CFLAGS"
+	    ],
+	    [
+		if test "x$enable_dbus" = "xyes"; then
+			AC_MSG_ERROR([--enable-dbus was given, but the dbus-1 package is not installed])
 		fi
-	fi
+	    ])
 	AC_SUBST(PCAP_SUPPORT_DBUS)
 fi
 
 AC_ARG_ENABLE([rdma],
-[AC_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
+[AS_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_rdma=ifavailable])
 
@@ -2826,7 +2929,7 @@ AC_CONFIG_HEADER(config.h)
 AC_OUTPUT_COMMANDS([if test -f .devel; then
 	echo timestamp > stamp-h
 	cat $srcdir/Makefile-devel-adds >> Makefile
-	make depend
+	make depend || exit 1
 fi])
 AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap

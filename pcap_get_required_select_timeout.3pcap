@@ -135,10 +135,11 @@ releases,
 .BR epoll_wait (),
 and
 .BR kevent ()
-cannot be used on any capture source for which
+could not be used for devices that don't provide a selectable file
+descriptor (in other words, on any capture source for that
 .BR pcap_get_selectable_fd ()
 returns
-.BR \-1 .
+.BR \-1 ).
 .PP
 In libpcap release 1.10.0 and later, the timeout value can change from
 call to call, so

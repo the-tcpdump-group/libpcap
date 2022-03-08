@@ -141,15 +141,17 @@ endif(MSVC)
 
 #
 # If we're building with MinGW, we need to specify _WIN32_WINNT as
-# 0x0600 ("NT 6.0", a/k/a Vista/Windows Server 2008) in order to
-# get the full IPv6 API, including inet_ntop().
+# 0x0600 ("NT 6.0", a/k/a Vista/Windows Server 2008) or higher
+# in order to get the full IPv6 API, including inet_ntop(), and we
+# need to specify it as 0x0601 ("NT 6.1", a/k/a Windows 7) or higher
+# in order to get NdisMediumIP.
 #
 # NOTE: pcap does *NOT* work with msvcrt.dll; it must link with
 # a newer version of the C library, i.e. Visual Studio 2015 or
 # later, as it depends on C99 features introduced in VS 2015.
 #
 if(MINGW)
-    add_definitions(-D_WIN32_WINNT=0x0600)
+    add_definitions(-D_WIN32_WINNT=0x0601)
 endif(MINGW)
 
 #
@@ -304,22 +306,22 @@ if(WIN32)
     endif(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Common)
 
     find_package(Packet)
-    if(PACKET_FOUND)
+    if(Packet_FOUND)
         set(HAVE_PACKET32 TRUE)
-        include_directories(${PACKET_INCLUDE_DIRS})
+        include_directories(${Packet_INCLUDE_DIRS})
         #
         # Check whether we have the NPcap PacketIsLoopbackAdapter()
         # function.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARIES})
+        set(CMAKE_REQUIRED_LIBRARIES ${Packet_LIBRARIES})
         check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
         check_function_exists(PacketGetTimestampModes HAVE_PACKET_GET_TIMESTAMP_MODES)
         cmake_pop_check_state()
-    endif(PACKET_FOUND)
+    endif(Packet_FOUND)
 
     message(STATUS "checking for Npcap's version.h")
-    check_symbol_exists(WINPCAP_PRODUCT_NAME "../../version.h" HAVE_VERSION_H)
+    check_symbol_exists(WINPCAP_PRODUCT_NAME "${CMAKE_SOURCE_DIR}/../../version.h" HAVE_VERSION_H)
     if(HAVE_VERSION_H)
         message(STATUS "HAVE version.h")
     else(HAVE_VERSION_H)
@@ -380,30 +382,47 @@ if(NOT WIN32)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 
     check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
-    check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
-    if(HAVE_NET_PFVAR_H)
-        #
-        # Check for various PF actions.
-        #
-        check_c_source_compiles(
-"#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/pfvar.h>
-
-int
-main(void)
-{
-    return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
-}
-"
-            HAVE_PF_NAT_THROUGH_PF_NORDR)
-    endif(HAVE_NET_PFVAR_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 endif(NOT WIN32)
 
 #
 # Functions.
+#
+# First, check for the __atomic_load_n() and __atomic_store_n()
+# builtins.
+#
+# We can't use check_function_exists(), as it tries to declare
+# the function, and attempting to declare a compiler builtin
+# can produce an error.
+#
+# We don't use check_symbol_exists(), as it expects a header
+# file to be specified to declare the function, but there isn't
+# such a header file.
+#
+# So we use check_c_source_compiles().
+#
+check_c_source_compiles(
+"int
+main(void)
+{
+	int i = 17;
+	return __atomic_load_n(&i, __ATOMIC_RELAXED);
+}
+"
+            HAVE___ATOMIC_LOAD_N)
+check_c_source_compiles(
+"int
+main(void)
+{
+	int i;
+	__atomic_store_n(&i, 17, __ATOMIC_RELAXED);
+	return 0;
+}
+"
+            HAVE___ATOMIC_STORE_N)
+
+#
+# Now check for various system functions.
 #
 check_function_exists(strerror HAVE_STRERROR)
 check_function_exists(strerror_r HAVE_STRERROR_R)
@@ -1235,7 +1254,7 @@ if(WIN32)
         #
         # Link with packet.dll before Winsock2.
         #
-        set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARIES} ${PCAP_LINK_LIBRARIES})
+        set(PCAP_LINK_LIBRARIES ${Packet_LIBRARIES} ${PCAP_LINK_LIBRARIES})
     elseif(PCAP_TYPE STREQUAL "null")
     else()
         message(FATAL_ERROR "${PCAP_TYPE} is not a valid pcap type")
@@ -1794,7 +1813,7 @@ if(NOT DISABLE_SNF)
 endif()
 
 # Check for Riverbed AirPcap support.
-if(NOT DISABLE_AIRPCAP)
+if(NOT DISABLE_AirPcap)
     #
     # Try to find the AirPcap header file and library.
     #
@@ -1803,14 +1822,14 @@ if(NOT DISABLE_AIRPCAP)
     #
     # Did we succeed?
     #
-    if(AIRPCAP_FOUND)
+    if(AirPcap_FOUND)
         #
         # Yes.
         #
-        include_directories(AFTER ${AIRPCAP_INCLUDE_DIRS})
+        include_directories(AFTER ${AirPcap_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-airpcap.c)
         set(HAVE_AIRPCAP_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AIRPCAP_LIBRARIES})
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AirPcap_LIBRARIES})
     endif()
 endif()
 
@@ -2016,6 +2035,19 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 #
+# Extra compiler options for the build matrix scripts to request -Werror or
+# its equivalent if required.  The CMake variable name cannot be CFLAGS
+# because that is already used for a different purpose in CMake.  Example
+# usage: cmake -DEXTRA_CFLAGS='-Wall -Wextra -Werror' ...
+#
+if(NOT "${EXTRA_CFLAGS}" STREQUAL "")
+    foreach(_extra_cflag ${EXTRA_CFLAGS})
+        check_and_add_compiler_option("${_extra_cflag}")
+    endforeach(_extra_cflag)
+    message(STATUS "Added extra compile options (${EXTRA_CFLAGS})")
+endif()
+
+#
 # Flex/Lex and YACC/Berkeley YACC/Bison.
 # From a mail message to the CMake mailing list by Andy Cedilnik of
 # Kitware.
@@ -2073,7 +2105,7 @@ else()
     # "%pure-parser".
     #
     execute_process(COMMAND ${YACC_EXECUTABLE} -V OUTPUT_VARIABLE bison_full_version)
-    string(REGEX MATCH "[1-9][0-9]*[.][1-9][0-9]*" bison_major_minor ${bison_full_version})
+    string(REGEX MATCH "[1-9][0-9]*[.][0-9]+" bison_major_minor ${bison_full_version})
     if (bison_major_minor VERSION_LESS "2.4")
         set(REENTRANT_PARSER "%pure-parser")
     else()
@@ -2085,17 +2117,11 @@ message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
 # Create custom command for the scanner.
-# Find out whether it's Bison or not by looking at the last component
-# of the path (without a .exe extension, if this is Windows).
 #
-get_filename_component(YACC_NAME ${YACC_EXECUTABLE} NAME_WE)
-if("${YACC_NAME}" STREQUAL "bison" OR "${YACC_NAME}" STREQUAL "win_bison")
-    set(YACC_COMPATIBILITY_FLAG "-y")
-endif()
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/grammar.c ${CMAKE_CURRENT_BINARY_DIR}/grammar.h
     SOURCE ${pcap_BINARY_DIR}/grammar.y
-    COMMAND ${YACC_EXECUTABLE} ${YACC_COMPATIBILITY_FLAG} -p pcap_ -o ${CMAKE_CURRENT_BINARY_DIR}/grammar.c -d ${pcap_BINARY_DIR}/grammar.y
+    COMMAND ${YACC_EXECUTABLE} -p pcap_ -o ${CMAKE_CURRENT_BINARY_DIR}/grammar.c -d ${pcap_BINARY_DIR}/grammar.y
     DEPENDS ${pcap_BINARY_DIR}/grammar.y
 )
 
@@ -2416,13 +2442,10 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # captures.)
         #
         set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386;ppc")
-    else()
+    elseif(SYSTEM_VERSION_MAJOR GREATER 10 AND SYSTEM_VERSION_MAJOR LESS 19)
         #
-        # Post-Snow Leopard.  Build for x86-64 and 32-bit x86,
-        # with x86-64 first.  (That's what Apple does)
-        # XXX - update if and when Apple drops support
-        # for 32-bit x86 code and if and when Apple adds
-        # ARM-based Macs.  (You're on your own for iOS etc.)
+        # Post-Snow Leopard, pre-Catalina.  Build for x86-64
+        # and 32-bit x86, with x86-64 first.  (That's what Apple does)
         #
         # First, check whether we're building with OpenSSL.
         # If so, don't bother trying to build fat.
@@ -2464,6 +2487,61 @@ main(void)
                   message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
               endif()
           endif()
+        endif()
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 19)
+        #
+        # Catalina.  Build libraries and executables
+        # only for x86-64.  (That's what Apple does;
+        # 32-bit x86 binaries are not supported on
+        # Catalina.)
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+    else()
+        #
+        # Post-Catalina.  Build libraries and
+        # executables for x86-64 and ARM64.
+        # (That's what Apple does, except they
+        # build for arm64e, which may include
+        # some of the pointer-checking extensions.)
+        #
+        # If we're building with libssl, make sure
+        # we can build fat with it (i.e., that it
+        # was built fat); if we can't, don't set
+        # the target architectures, and just
+        # build for the host we're on.
+        #
+        # Otherwise, just add both of them.
+        #
+        if(HAVE_OPENSSL)
+          cmake_push_check_state()
+          set(CMAKE_REQUIRED_FLAGS "-arch x86_64 -arch arm64")
+          set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
+          set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_LIBRARIES})
+          #
+          # We must test whether this compiles and links, so
+          # check_symbol_exists() isn't sufficient.
+          #
+          # SSL_library_init() may be a macro that's #defined
+          # to be the real function to call, so we have to
+          # include <openssl/ssl.h>, and check_function_exists()
+          # isn't sufficient.
+          #
+          check_c_source_compiles(
+"#include <openssl/ssl.h>
+int
+main(void)
+{
+    SSL_library_init();
+    return 0;
+}
+"
+              FAT_SSL_BUILDS_SUPPORTED)
+          cmake_pop_check_state()
+          if(FAT_SSL_BUILDS_SUPPORTED)
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
+          endif()
+        else()
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
         endif()
     endif()
     if(BUILD_SHARED_LIBS)
@@ -2511,14 +2589,14 @@ function(install_manpage_symlink SOURCE TARGET MANDIR)
     endif(MINGW)
 
     install(CODE
-        "message(STATUS \"Symlinking: ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+        "message(STATUS \"Symlinking: \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
          execute_process(
             COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"remove\" \"${TARGET}\"
-            WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
+            WORKING_DIRECTORY \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}
           )
          execute_process(
             COMMAND ${LINK_COMMAND}
-            WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
+            WORKING_DIRECTORY \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}
             RESULT_VARIABLE EXIT_STATUS
           )
           if(NOT EXIT_STATUS EQUAL 0)
@@ -2597,17 +2675,24 @@ set(MANMISC_EXPAND
     pcap-tstamp.manmisc.in
 )
 
-if(NOT BUILD_SHARED_LIBS)
-    unset(LIBRARY_NAME)
-endif(NOT BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LIBS)
+    set(LIBRARIES_TO_INSTALL "${LIBRARY_NAME}" "${LIBRARY_NAME_STATIC}")
+else(BUILD_SHARED_LIBS)
+    set(LIBRARIES_TO_INSTALL "${LIBRARY_NAME_STATIC}")
+endif(BUILD_SHARED_LIBS)
 
-if(WIN32)
+if(WIN32 OR CYGWIN OR MSYS)
+    #
+    # XXX - according to the CMake documentation, WIN32 is set if
+    # the target is Windows; would there ever be a case where
+    # CYGWIN or MSYS are set but WIN32 *isn't* set?
+    #
     if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
         #
         # Install 64-bit code built with MSVC in the x64 subdirectories,
         # as that's where it expects it to be.
         #
-        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
+        install(TARGETS ${LIBRARIES_TO_INSTALL}
                 RUNTIME DESTINATION bin/x64
                 LIBRARY DESTINATION lib/x64
                 ARCHIVE DESTINATION lib/x64)
@@ -2625,22 +2710,22 @@ if(WIN32)
         # in the top-level directories, as those are where they
         # expect it to be.
         #
-        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
+        install(TARGETS ${LIBRARIES_TO_INSTALL}
                 RUNTIME DESTINATION bin
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib)
-        if(NOT MINGW)
+        if(MSVC)
             install(FILES $<TARGET_FILE_DIR:${LIBRARY_NAME_STATIC}>/${LIBRARY_NAME_STATIC}.pdb
                     DESTINATION bin OPTIONAL)
             if(BUILD_SHARED_LIBS)
                 install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
                         DESTINATION bin OPTIONAL)
             endif(BUILD_SHARED_LIBS)
-        endif(NOT MINGW)
+        endif(MSVC)
     endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-else(WIN32)
-    install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC} DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
-endif(WIN32)
+else(WIN32 OR CYGWIN OR MSYS)
+    install(TARGETS ${LIBRARIES_TO_INSTALL} DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
+endif(WIN32 OR CYGWIN OR MSYS)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
@@ -2650,7 +2735,6 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap-namedb.h DESTINATION include)
 # On UN*X, and on Windows when not using MSVC, generate libpcap.pc and
 # pcap-config and process man pages and arrange that they be installed.
 if(NOT MSVC)
-    set(PACKAGE_NAME ${LIBRARY_NAME})
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")

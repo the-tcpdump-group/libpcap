@@ -59,25 +59,19 @@
 #include "ieee80211.h"
 #include "atmuni31.h"
 #include "sunatmpos.h"
+#include "pflog.h"
 #include "ppp.h"
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
+#include "diag-control.h"
 
-#include "grammar.h"
 #include "scanner.h"
 
 #if defined(linux)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
-#endif
-
-#ifdef HAVE_NET_PFVAR_H
-#include <sys/socket.h>
-#include <net/if.h>
-#include <net/pfvar.h>
-#include <net/if_pflog.h>
 #endif
 
 #ifndef offsetof
@@ -468,6 +462,9 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	va_end(ap);
 	longjmp(cstate->top_ctx, 1);
 	/*NOTREACHED*/
+#ifdef _AIX
+	PCAP_UNREACHABLE
+#endif /* _AIX */
 }
 
 static int init_linktype(compiler_state_t *, pcap_t *);
@@ -514,6 +511,7 @@ static inline struct block *gen_false(compiler_state_t *);
 static struct block *gen_ether_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_ipnet_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_linux_sll_linktype(compiler_state_t *, bpf_u_int32);
+static struct slist *gen_load_pflog_llprefixlen(compiler_state_t *);
 static struct slist *gen_load_prism_llprefixlen(compiler_state_t *);
 static struct slist *gen_load_avs_llprefixlen(compiler_state_t *);
 static struct slist *gen_load_radiotap_llprefixlen(compiler_state_t *);
@@ -1258,6 +1256,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_PPP:
 	case DLT_PPP_PPPD:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
+	case DLT_HDLC:			/* NetBSD (Cisco) HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		cstate->off_linktype.constant_part = 2;	/* skip HDLC-like framing */
 		cstate->off_linkpl.constant_part = 4;	/* skip HDLC-like framing and protocol field */
@@ -1506,14 +1505,13 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;	/* XXX - what does it do with 802.3 packets? */
 		break;
 
-#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = PFLOG_HDRLEN;
+		cstate->off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
+		cstate->off_linkpl.is_variable = 1;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
-#endif
 
         case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
@@ -1715,7 +1713,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 			cstate->off_nl = OFFSET_NOT_SET;
 			cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
-			bpf_set_error(cstate, "unknown data link type %d", cstate->linktype);
+			bpf_set_error(cstate, "unknown data link type %d (min %d, max %d)",
+			    cstate->linktype, DLT_MATCHING_MIN, DLT_MATCHING_MAX);
 			return (-1);
 		}
 		break;
@@ -2337,6 +2336,59 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	}
 }
 
+/*
+ * Load a value relative to the beginning of the link-layer header after the
+ * pflog header.
+ */
+static struct slist *
+gen_load_pflog_llprefixlen(compiler_state_t *cstate)
+{
+	struct slist *s1, *s2;
+
+	/*
+	 * Generate code to load the length of the pflog header into
+	 * the register assigned to hold that length, if one has been
+	 * assigned.  (If one hasn't been assigned, no code we've
+	 * generated uses that prefix, so we don't need to generate any
+	 * code to load it.)
+	 */
+	if (cstate->off_linkpl.reg != -1) {
+		/*
+		 * The length is in the first byte of the header.
+		 */
+		s1 = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+		s1->s.k = 0;
+
+		/*
+		 * Round it up to a multiple of 4.
+		 * Add 3, and clear the lower 2 bits.
+		 */
+		s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+		s2->s.k = 3;
+		sappend(s1, s2);
+		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
+		s2->s.k = 0xfffffffc;
+		sappend(s1, s2);
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.
+		 */
+		s2 = new_stmt(cstate, BPF_ST);
+		s2->s.k = cstate->off_linkpl.reg;
+		sappend(s1, s2);
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		return (s1);
+	} else
+		return (NULL);
+}
+
 static struct slist *
 gen_load_prism_llprefixlen(compiler_state_t *cstate)
 {
@@ -2924,6 +2976,10 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	case DLT_PPI:
 		s = gen_load_802_11_header_len(cstate, s, b->stmts);
 		break;
+
+	case DLT_PFLOG:
+		s = gen_load_pflog_llprefixlen(cstate);
+		break;
 	}
 
 	/*
@@ -3159,6 +3215,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*NOTREACHED*/
 
 	case DLT_C_HDLC:
+	case DLT_HDLC:
 		switch (ll_proto) {
 
 		case LLCSAP_ISONS:
@@ -3388,7 +3445,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			return gen_false(cstate);
 		}
 
-#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		/*
 		 * af field is host byte order in contrast to the rest of
@@ -3403,7 +3459,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		else
 			return gen_false(cstate);
 		/*NOTREACHED*/
-#endif /* HAVE_NET_PFVAR_H */
 
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
@@ -6080,7 +6135,18 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	if (cstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
 
-	cstate->no_optimize = 1; /* this code is not compatible with optimizer yet */
+	/*
+	 * To quote a comment in optimize.c:
+	 *
+	 * "These data structures are used in a Cocke and Shwarz style
+	 * value numbering scheme.  Since the flowgraph is acyclic,
+	 * exit values can be propagated from a node's predecessors
+	 * provided it is uniquely defined."
+	 *
+	 * "Acyclic" means "no backward branches", which means "no
+	 * loops", so we have to turn the optimizer off.
+	 */
+	cstate->no_optimize = 1;
 
 	/*
 	 * s[0] is a dummy entry to protect other BPF insn from damage
@@ -6532,6 +6598,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 			/*NOTREACHED*/
 
 		case DLT_C_HDLC:
+		case DLT_HDLC:
 			/*
 			 * Cisco uses an Ethertype lookalike - for OSI,
 			 * it's 0xfefe.
@@ -8282,12 +8349,10 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		}
 		break;
 
-#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, dir), BPF_B,
 		    ((dir == 0) ? PF_IN : PF_OUT));
 		break;
-#endif
 
 	case DLT_PPP_PPPD:
 		if (dir) {
@@ -8378,7 +8443,6 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	return (b0);
 }
 
-#ifdef HAVE_NET_PFVAR_H
 /* PF firewall log matched interface */
 struct block *
 gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
@@ -8529,91 +8593,6 @@ gen_pf_action(compiler_state_t *cstate, int action)
 	    (bpf_u_int32)action);
 	return (b0);
 }
-#else /* !HAVE_NET_PFVAR_H */
-struct block *
-gen_pf_ifname(compiler_state_t *cstate, const char *ifname _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled without pf support");
-	/*NOTREACHED*/
-}
-
-struct block *
-gen_pf_ruleset(compiler_state_t *cstate, char *ruleset _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
-	/*NOTREACHED*/
-}
-
-struct block *
-gen_pf_rnr(compiler_state_t *cstate, int rnr _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
-	/*NOTREACHED*/
-}
-
-struct block *
-gen_pf_srnr(compiler_state_t *cstate, int srnr _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
-	/*NOTREACHED*/
-}
-
-struct block *
-gen_pf_reason(compiler_state_t *cstate, int reason _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
-	/*NOTREACHED*/
-}
-
-struct block *
-gen_pf_action(compiler_state_t *cstate, int action _U_)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
-	/*NOTREACHED*/
-}
-#endif /* HAVE_NET_PFVAR_H */
 
 /* IEEE 802.11 wireless header */
 struct block *
@@ -9077,6 +9056,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
             switch (cstate->linktype) {
 
             case DLT_C_HDLC: /* fall through */
+            case DLT_HDLC:
             case DLT_EN10MB:
             case DLT_NETANALYZER:
             case DLT_NETANALYZER_TRANSPARENT:

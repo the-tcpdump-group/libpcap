@@ -622,7 +622,9 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		 * Return codes for pcap_offline_read() are:
 		 *   -  0: EOF
 		 *   - -1: error
-		 *   - >1: OK
+		 *   - >0: OK - result is number of packets read, so
+		 *         it will be 1 in this case, as we've passed
+		 *         a maximum packet count of 1
 		 * The first one ('0') conflicts with the return code of
 		 * 0 from pcap_read() meaning "no packets arrived before
 		 * the timeout expired", so we map it to -2 so you can
@@ -641,7 +643,9 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 *   -  0: timeout
 	 *   - -1: error
 	 *   - -2: loop was broken out of with pcap_breakloop()
-	 *   - >1: OK
+	 *   - >0: OK, result is number of packets captured, so
+	 *         it will be 1 in this case, as we've passed
+	 *         a maximum packet count of 1
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
@@ -2059,8 +2063,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 }
 
 int
-pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
-    const char *name, unsigned char uses_ssl, char *errbuf)
+pcap_createsrcstr_ex(char *source, int type, const char *userinfo, const char *host,
+    const char *port, const char *name, unsigned char uses_ssl, char *errbuf)
 {
 	switch (type) {
 
@@ -2080,6 +2084,11 @@ pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
 		    (uses_ssl ? "rpcaps://" : PCAP_SRC_IF_STRING),
 		    PCAP_BUF_SIZE);
 		if (host != NULL && *host != '\0') {
+			if (userinfo != NULL && *userinfo != '\0') {
+				pcap_strlcat(source, userinfo, PCAP_BUF_SIZE);
+				pcap_strlcat(source, "@", PCAP_BUF_SIZE);
+			}
+
 			if (strchr(host, ':') != NULL) {
 				/*
 				 * The host name contains a colon, so it's
@@ -2129,16 +2138,18 @@ int
 pcap_createsrcstr(char *source, int type, const char *host, const char *port,
     const char *name, char *errbuf)
 {
-	return (pcap_createsrcstr_ex(source, type, host, port, name, 0, errbuf));
+	return (pcap_createsrcstr_ex(source, type, NULL, host, port, name, 0, errbuf));
 }
 
 int
-pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
-    char *name, unsigned char *uses_ssl, char *errbuf)
+pcap_parsesrcstr_ex(const char *source, int *type, char *userinfo, char *host,
+    char *port, char *name, unsigned char *uses_ssl, char *errbuf)
 {
 	char *scheme, *tmpuserinfo, *tmphost, *tmpport, *tmppath;
 
 	/* Initialization stuff */
+	if (userinfo)
+		*userinfo = '\0';
 	if (host)
 		*host = '\0';
 	if (port)
@@ -2187,13 +2198,10 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 		 * pcap_parse_source() has already handled the case of
 		 * rpcap[s]://device
 		 */
-		if (host && tmphost) {
-			if (tmpuserinfo)
-				snprintf(host, PCAP_BUF_SIZE, "%s@%s",
-				    tmpuserinfo, tmphost);
-			else
-				pcap_strlcpy(host, tmphost, PCAP_BUF_SIZE);
-		}
+		if (userinfo && tmpuserinfo)
+			pcap_strlcpy(userinfo, tmpuserinfo, PCAP_BUF_SIZE);
+		if (host && tmphost)
+			pcap_strlcpy(host, tmphost, PCAP_BUF_SIZE);
 		if (port && tmpport)
 			pcap_strlcpy(port, tmpport, PCAP_BUF_SIZE);
 		if (name && tmppath)
@@ -2244,7 +2252,7 @@ int
 pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
     char *name, char *errbuf)
 {
-	return (pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf));
+	return (pcap_parsesrcstr_ex(source, type, NULL, host, port, name, NULL, errbuf));
 }
 #endif
 
@@ -2849,15 +2857,27 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 		goto fail;
 	return (p);
 fail:
-	if (status == PCAP_ERROR)
+	if (status == PCAP_ERROR) {
+		/*
+		 * Another buffer is a bit cumbersome, but it avoids -Wformat-truncation.
+		 */
+		char trimbuf[PCAP_ERRBUF_SIZE - 5]; /* 2 bytes shorter */
+
+		pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %.*s", device,
-		    PCAP_ERRBUF_SIZE - 3, p->errbuf);
-	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
+		    PCAP_ERRBUF_SIZE - 3, trimbuf);
+	} else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED ||
-	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
+	    status == PCAP_ERROR_PROMISC_PERM_DENIED) {
+		/*
+		 * Idem.
+		 */
+		char trimbuf[PCAP_ERRBUF_SIZE - 8]; /* 2 bytes shorter */
+
+		pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%.*s)", device,
-		    pcap_statustostr(status), PCAP_ERRBUF_SIZE - 6, p->errbuf);
-	else
+		    pcap_statustostr(status), PCAP_ERRBUF_SIZE - 6, trimbuf);
+	} else
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", device,
 		    pcap_statustostr(status));
 	pcap_close(p);
@@ -3301,6 +3321,9 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(Z_WAVE_SERIAL, "Z-Wave serial frames between host and chip"),
 	DLT_CHOICE(USB_2_0, "USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(ATSC_ALP, "ATSC Link-Layer Protocol packets"),
+	DLT_CHOICE(ETW, "Event Tracing for Windows messages"),
+	DLT_CHOICE(NETANALYZER_NG, "Hilscher netANALYZER NG pseudo-footer"),
+	DLT_CHOICE(ZBOSS_NCP, "ZBOSS NCP protocol with pseudo-header"),
 	DLT_CHOICE_SENTINEL
 };
 
@@ -3350,7 +3373,7 @@ pcap_datalink_val_to_description_or_dlt(int dlt)
         if (description != NULL) {
                 return description;
         } else {
-                (void)snprintf(unkbuf, sizeof(unkbuf), "DLT %u", dlt);
+                (void)snprintf(unkbuf, sizeof(unkbuf), "DLT %d", dlt);
                 return unkbuf;
         }
 }
@@ -3461,14 +3484,14 @@ pcap_fileno(pcap_t *p)
 		/*
 		 * This is a bogus and now-deprecated API; we
 		 * squelch the narrowing warning for the cast
-		 * from HANDLE to DWORD.  If Windows programmmers
+		 * from HANDLE to intptr_t.  If Windows programmmers
 		 * need to get at the HANDLE for a pcap_t, *if*
 		 * there is one, they should request such a
 		 * routine (and be prepared for it to return
 		 * INVALID_HANDLE_VALUE).
 		 */
 DIAG_OFF_NARROWING
-		return ((int)(DWORD)p->handle);
+		return ((int)(intptr_t)p->handle);
 DIAG_ON_NARROWING
 	} else
 		return (PCAP_ERROR);
@@ -3986,6 +4009,10 @@ pcap_breakloop_common(pcap_t *p)
 void
 pcap_cleanup_live_common(pcap_t *p)
 {
+	if (p->opt.device != NULL) {
+		free(p->opt.device);
+		p->opt.device = NULL;
+	}
 	if (p->buffer != NULL) {
 		free(p->buffer);
 		p->buffer = NULL;
@@ -4064,8 +4091,6 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 void
 pcap_close(pcap_t *p)
 {
-	if (p->opt.device != NULL)
-		free(p->opt.device);
 	p->cleanup_op(p);
 	free(p);
 }
@@ -4080,8 +4105,18 @@ pcap_close(pcap_t *p)
 // C:\Windows\System32) to the relative path of the DLL, so that the DLL
 // is always loaded from an absolute path (it's no longer possible to
 // load modules from the application folder).
-// This solves the DLL Hijacking issue discovered in August 2010
-// http://blog.metasploit.com/2010/08/exploiting-dll-hijacking-flaws.html
+// This solves the DLL Hijacking issue discovered in August 2010:
+//
+// https://blog.rapid7.com/2010/08/23/exploiting-dll-hijacking-flaws/
+// https://blog.rapid7.com/2010/08/23/application-dll-load-hijacking/
+// (the purported Rapid7 blog post link in the first of those two links
+// is broken; the second of those links works.)
+//
+// If any links there are broken from all the content shuffling Rapid&
+// did, see archived versions of the posts at their original homes, at
+//
+// https://web.archive.org/web/20110122175058/http://blog.metasploit.com/2010/08/exploiting-dll-hijacking-flaws.html
+// https://web.archive.org/web/20100828112111/http://blog.rapid7.com/?p=5325
 //
 pcap_code_handle_t
 pcap_load_code(const char *name)

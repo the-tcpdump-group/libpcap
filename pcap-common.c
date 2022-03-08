@@ -34,6 +34,8 @@
 #include "pcap/nflog.h"
 #include "pcap/can_socketcan.h"
 
+#include "pflog.h"
+
 #include "pcap-common.h"
 
 /*
@@ -168,11 +170,20 @@
 #define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 
 /*
- * These three types are reserved for future use.
+ * These two types are reserved for future use.
  */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
-#define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
+
+/*
+ * Used for NetBSD DLT_HDLC; from looking at the one driver in NetBSD
+ * that uses it, it's Cisco HDLC, so it's the same as DLT_C_HDLC/
+ * LINKTYPE_C_HDLC, but we define a separate value to avoid some
+ * compatibility issues with programs on NetBSD.
+ *
+ * All code should treat LINKTYPE_NETBSD_HDLC and LINKTYPE_C_HDLC the same.
+ */
+#define LINKTYPE_NETBSD_HDLC	112		/* NetBSD HDLC framing */
 
 #define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
@@ -1191,7 +1202,33 @@
  */
 #define LINKTYPE_ATSC_ALP	289
 
-#define LINKTYPE_MATCHING_MAX	289		/* highest value in the "matching" range */
+/*
+ * Event Tracing for Windows messages.
+ */
+#define LINKTYPE_ETW		290
+
+/*
+ * Hilscher Gesellschaft fuer Systemautomation mbH
+ * netANALYZER NG hardware and software.
+ *
+ * The specification for this footer can be found at:
+ * https://kb.hilscher.com/x/brDJBw
+ *
+ * Requested by Jan Adam <jadam@hilscher.com>
+ */
+#define LINKTYPE_NETANALYZER_NG	291
+
+/*
+ * Serial NCP (Network Co-Processor) protocol for Zigbee stack ZBOSS
+ * by DSR.
+ * ZBOSS NCP protocol description: https://cloud.dsr-corporation.com/index.php/s/3isHzaNTTgtJebn
+ * Header in pcap file: https://cloud.dsr-corporation.com/index.php/s/fiqSDorAAAZrsYB
+ *
+ * Requested by Eugene Exarevsky <eugene.exarevsky@dsr-corporation.com>
+ */
+#define LINKTYPE_ZBOSS_NCP	292
+
+#define LINKTYPE_MATCHING_MAX	292		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
@@ -1238,6 +1275,7 @@ static struct linktype_map {
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
 	{ DLT_PPP_BSDOS,	LINKTYPE_PPP_BSDOS },
+	{ DLT_HDLC,		LINKTYPE_NETBSD_HDLC },
 
 	/* BSD/OS Cisco HDLC */
 	{ DLT_C_HDLC,		LINKTYPE_C_HDLC },
@@ -1393,11 +1431,75 @@ max_snaplen_for_dlt(int dlt)
 }
 
 /*
+ * Most versions of the DLT_PFLOG pseudo-header have UID and PID fields
+ * that are saved in host byte order.
+ *
+ * When reading a DLT_PFLOG packet, we need to convert those fields from
+ * the byte order of the host that wrote the file to this host's byte
+ * order.
+ */
+static void
+swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	u_int pfloghdr_length;
+	struct pfloghdr *pflhdr = (struct pfloghdr *)buf;
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+		/* Not enough data to have the uid field */
+		return;
+	}
+
+	pfloghdr_length = pflhdr->length;
+
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+		/* Header doesn't include uid field */
+		return;
+	}
+	pflhdr->uid = SWAPLONG(pflhdr->uid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+		/* Not enough data to have the pid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+		/* Header doesn't include pid field */
+		return;
+	}
+	pflhdr->pid = SWAPLONG(pflhdr->pid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+		/* Not enough data to have the rule_uid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+		/* Header doesn't include rule_uid field */
+		return;
+	}
+	pflhdr->rule_uid = SWAPLONG(pflhdr->rule_uid);
+
+	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid) ||
+	    length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+		/* Not enough data to have the rule_pid field */
+		return;
+	}
+	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+		/* Header doesn't include rule_pid field */
+		return;
+	}
+	pflhdr->rule_pid = SWAPLONG(pflhdr->rule_pid);
+}
+
+/*
  * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN or
  * LINUX_SLL_P_CANFD have SocketCAN headers in front of the payload,
  * with the CAN ID being in host byte order.
  *
- * When reading a DLT_LINUX_SLL capture file, we need to check for those
+ * When reading a DLT_LINUX_SLL packet, we need to check for those
  * packets and convert the CAN ID from the byte order of the host that
  * wrote the file to this host's byte order.
  */
@@ -1433,13 +1535,47 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 }
 
 /*
+ * The same applies for DLT_LINUX_SLL2.
+ */
+static void
+swap_linux_sll2_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	struct sll2_header *shdr = (struct sll2_header *)buf;
+	uint16_t protocol;
+	pcap_can_socketcan_hdr *chdr;
+
+	if (caplen < (u_int) sizeof(struct sll2_header) ||
+	    length < (u_int) sizeof(struct sll2_header)) {
+		/* Not enough data to have the protocol field */
+		return;
+	}
+
+	protocol = EXTRACT_BE_U_2(&shdr->sll2_protocol);
+	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
+		return;
+
+	/*
+	 * SocketCAN packet; fix up the packet's header.
+	 */
+	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll2_header));
+	if (caplen < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id) ||
+	    length < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id)) {
+		/* Not enough data to have the CAN ID */
+		return;
+	}
+	chdr->can_id = SWAPLONG(chdr->can_id);
+}
+
+/*
  * The DLT_USB_LINUX and DLT_USB_LINUX_MMAPPED headers are in host
  * byte order when capturing (it's supplied directly from a
  * memory-mapped buffer shared by the kernel).
  *
- * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED capture file,
- * we need to convert it from the byte order of the host that wrote
- * the file to this host's byte order.
+ * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED packet, we
+ * need to convert it from the byte order of the host that wrote the
+ * file to this host's byte order.
  */
 static void
 swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
@@ -1587,9 +1723,9 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
  * byte order but the values are either big-endian or are a raw byte
  * sequence that's the same regardless of the host's byte order.
  *
- * When reading a DLT_NFLOG capture file, we need to convert the type
- * and length values from the byte order of the host that wrote the
- * file to the byte order of this host.
+ * When reading a DLT_NFLOG packet, we need to convert the type and
+ * length values from the byte order of the host that wrote the file
+ * to the byte order of this host.
  */
 static void
 swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
@@ -1657,8 +1793,16 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 	 */
 	switch (linktype) {
 
+	case DLT_PFLOG:
+		swap_pflog_header(hdr, data);
+		break;
+
 	case DLT_LINUX_SLL:
 		swap_linux_sll_header(hdr, data);
+		break;
+
+	case DLT_LINUX_SLL2:
+		swap_linux_sll2_header(hdr, data);
 		break;
 
 	case DLT_USB_LINUX:

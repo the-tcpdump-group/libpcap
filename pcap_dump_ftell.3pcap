@@ -54,5 +54,11 @@ but that fit in a
 are supported, this will return the file offset without truncation.
 .B PCAP_ERROR
 is returned on error.
+.SH BACKWARD COMPATIBILITY
+The function
+.BR pcap_dump_ftell64 ()
+became available in libpcap release 1.9.0.  In previous releases, there
+was no mechanism to obtain a file offset that is too large to fit in a
+.BR long .
 .SH SEE ALSO
 .BR pcap (3PCAP)

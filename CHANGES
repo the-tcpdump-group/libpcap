@@ -1,3 +1,314 @@
+Monthday, Month DD, YYYY:
+  Summary for 1.11.0 libpcap release (so far!)
+    Link-layer types:
+      Add LINKTYPE_ETW/DLT_ETW.
+      Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
+        #1008).
+      Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP.
+    Packet filtering:
+      Add support for Block Ack Req and Block Ack frame types (pull
+        request #1039).
+
+Monthday, Month DD, YYYY:
+  Summary for 1.10.2 libpcap release (so far!)
+    Source code:
+      Use __builtin_unreachable() in PCAP_UNREACHABLE.
+      Use AS_HELP_STRING macro instead of AC_HELP_STRING in the
+        configure scripts, to avoid deprecation warnings.
+    Savefiles:
+      Fix pcap_dispatch() to return number of packets processed, rather
+        than 0, even at EOF.
+      If we get an error writing the packet header, don't write the
+        packet data.
+      Put PFLOG UID and PID values in the header into host byte order
+        when reading a LINKTYPE_PFLOG file.
+      Put CAN ID field in CAN pseudo-headers for LINUX_SLL2, as we do
+        for LINUX_SLL.
+    Capture:
+      Never process more than INT_MAX packets in a pcap_dispatch() call,
+        to avoid integer overflow (issue #1087).
+    Packet filtering:
+      Get PFLOG header length from the length value in the header.
+      Support all the direction, reason, and action types supported by
+        all systems that sypport PFLOG.
+      Don't require PFLOG support on the target machine in order to
+        support PFLOG filtering (also fixes issue #1076).
+    Linux:
+      Fix memory leak in capture device open (pull request #1038).
+      Fix detection of CAN/CAN FD packets in direction check (issue
+        #1051).
+      Fix double-free crashes on errors such as running on a kernel with
+        CONFIG_PACKET_MMAP not configured (issue #1054).
+      Use DLT_CAN_SOCKETCAN for CANbus interfaces (issue #1052; includes
+        changes from pull request #1035).
+      Make sure the CANFD_FDF can be relied on to indicate whether a
+        CANbus packet is a CAN frame or a CAN FD frame
+      Improve error message for "out of memory" errors for kernel
+        filters (see issue #1089).
+    NetBSD:
+      Fix handling of LINKTYPE_HDLC/DLT_HDLC.
+    rpcap:
+      Fix unaligned accesses in rpcapd (pull request #1037).
+      Fix code to process port number.
+      Clean up findalldevs code in rpcapd.
+      Clean up bufferizing code.
+    Windows:
+      Add support for NdisMediumIP (pull request #1027).
+      Don't require applications using pcap to be built with VS 2015 or
+        later.
+      Use the correct string for the DLL VersionInfo.
+      Correctly handle ERROR_INVALID_FUNCTION from
+        PacketGetTimestampModes() (indicate that WinPcap or an older
+        version of Npcap is probably installed).
+      Fix use-after-free in some cases when a pcap_t is closed.
+      Make sure an error is returned by pcap_create_interface() if
+        PacketOpenAdapter() fails.
+      Return an error if the driver reports 0 timestamp modes supported.
+      Close the ADAPTER handle for some errors in
+        pcap_create_interface().
+      Get rid of old umaintained VS project files.
+      Fix deprecation warning for pcap_handle().
+      Npcap is now at npcap.com, not npcap.org.
+    Haiku:
+      Implement pcap_lib_version(), as now required.
+      Handle negative or too-large snaplen values.
+    Building and testing:
+      Handle some Autoconf/make errors better.
+      Fix "make releasetar" on AIX, OpenBSD and Solaris.
+      Fix compiling on Solaris 9/SPARC and 11/AMD64.
+      Address assorted compiler warnings.
+      Fix cross-building on Linux for Windows with mingw32 for Win64
+        (pull request #1031).
+      Properly set installation directory on Windows when not compiling
+        with MSVC.
+      Fix configure script checks for compiler flags.
+      Give more details if check for usable (F)Lex fails.
+      Fix compiling with GCC 4.6.4.
+      Don't use add_compile_options() with CMake, as we currently don't
+        require 2.8.12, where it first appeared.
+      Don't provide -L/usr/lib for pkg-config --libs in pkg-config.
+      Fix error message for inadequate Bison/Berkeley YACC.
+    Documentation:
+      Add README.solaris.md.
+      Add SCTP to pcap-filter(7).
+      Note that = and == are the same operator in filters (issue #1044).
+      Update INSTALL.md.
+      Update and clean up CONTRIBUTING.md.
+      Trim documentation of support for now-dead UN*Xe and older
+        versions of other UN*Xes.
+      Move the "how to allocate a LINKTYPE_/DLT_ value" documentation to
+        the web site.
+      Clean up man pages.
+      Move README.capture-module to the web site.
+
+Wednesday, June 9, 2021:
+  Summary for 1.10.1 libpcap release:
+    Packet filtering:
+      Fix "type XXX subtype YYY" giving a parse error
+    Source code:
+      Add PCAP_AVAILABLE_1_11.
+    Building and testing:
+      Rename struct bpf_aux_data to avoid NetBSD compile errors
+      Squelch some compiler warnings
+      Squelch some Bison warnings
+      Fix cross-builds with older kernels lacking BPF_MOD and BPF_XOR
+      Fix Bison detection for minor version 0.
+      Fix parallel build with FreeBSD make.
+      Get DLT_MATCHING_MAX right in gencode.c on NetBSD.
+      Define timeradd() and timersub() if necessary.
+      Fix Cygwin/MSYS target directories.
+      Fix symlinking with DESTDIR.
+      Fix generation of libpcap.pc with CMake when not building a shared
+          library.
+      Check for Arm64 as well as x86-64 when looking for packet.lib on
+          Windows.
+    Documentation:
+      Refine Markdown in README.md.
+      Improve the description of portrange in filters.
+      README.linux.md isn't Markdown, rename it just README.linux.
+    pcapng:
+      Support reading version 1.2, which some writers produce, and which
+          is the same as 1.0 (some new block types were added, but
+          that's not sufficient reason to bump the minor version number,
+          as code that understands those new block types can handle them
+          in a 1.0 file)
+    Linux:
+      Drop support for text-mode USB captures, as we require a 2.6.27
+          or later kernel (credit to Chaoyuan Peng for noting the
+          sscanf vulnerabilities in the text-mode code that got me to
+          realize that we didn't need this code any more)
+      Bluetooth: fix non-blocking mode.
+      Don't assume that all compilers used to build for Linux support
+          the __atomic builtins
+    Windows:
+      Add more information in "interface disappeared" error messages, in
+        the hopes of trying to figure out the cause.
+      Treat ERROR_DEVICE_REMOVED as "device was removed".
+      Indicate in the error message which "device was removed" error
+          occurred.
+      Report the Windows error status if PacketSendPacket() fails.
+      Use %lu for ULONGs in error message formats.
+      Don't treat the inability to find airpcap.dll as an error.
+      Ignore spurious error reports by Microsoft Surface mobile
+          telephony modem driver
+    rpcap:
+      Clean up error checking and error messages for server address
+          lookup.
+
+Tuesday, December 29, 2020
+  Summary for 1.10.0 libpcap release
+    Add support for capturing on DPDK devices
+    Label most APIs by the first release in which they're available
+    Fix some memory leaks, including in pcap_compile()
+    Add pcap_datalink_val_to_description_or_dlt()
+    Handle the pcap private data in a fashion that makes fewer
+       assumptions about memory layouts (might fix GitHub issue #940
+       on ARM)
+    Fix some thread safety issues
+    pcap_findalldevs(): don't sort interfaces by unit number
+    Always return a list of supported time-stamp types, even if only
+        host time stamps are supported
+    Increase the maximum snaplen for LINKTYPE_USBPCAP/DLT_USBPCAP
+    Report the DLT description in error messages
+    Add pcap_init() for first-time initialization and global option
+        setting; it's not required, but may be used
+    Remove (unused) SITA support
+    Capture file reading:
+        Correctly handle pcapng captures with more than one IDB with a
+            snspshot length greater than the supported maximum
+    Capture file writing:
+        Create the file in pcap_dump_open_append() if it doesn't exist
+    Packet filtering:
+        Fix "unknown ether proto 'aarp'"
+        Add a new filter "ifindex" for DLT_LINUX_SLL2 files on all
+            platforms and live Linux captures
+        Add a hack to the optimizer to try to catch certain optimizer
+            loops (should prevent GitHub issue #112)
+        Show special Linux BPF offsets symbolically in bpf_image() and
+            bpf_dump()
+        Added support for ICMPv6 types 1-4 as tokens with names
+        Remove undocumented and rather old "ether proto" protocols
+        Catch invalid IPv4 addresses in filters
+        Don't assume ARM supports unaligned accesses
+    Security and other issues found by analysis:
+        Fix various security issues reported by Charles Smith at Tangible
+            Security
+        Fix various security issues reported by Include Security
+        Fix some issues found by cppcheck.
+        Add some overflow checks in the optimizer
+    rpcap:
+        Support rpcap-over-TLS
+        Redo protocol version negotiation to avoid problems with old
+            servers (it still works with servers using the old negotiation,
+            as well as servers not supporting negotiation)
+        Error handling cleanups
+        Add some new authentication libpcap error codes for specific
+            errors
+        Fix some inetd issues in rpcapd
+        Fix rpcapd core dumps with invalid configuration file
+        On UN*X, don't have rpcapd tell the client why authentication
+            failed, so a brute-force attacker can't distinguish between
+            "unknown user name" and "known user name, wrong password"
+        Allow rpcapd to rebind more rapidly (GitHub issue #765)
+    Documentation:
+        Improve man pages, including adding backward compatibility notes
+    Building and testing:
+        Require, and assume, some level of C99 support in the C compiler
+        Require Visual Studio 2015 or later if using Visual Studio
+        Fix configure script issues, including with libnl on Linux
+        Fix CMake issues
+        Squelch complaints from Bison about "%define api.pure" being
+            deprecated
+        Fix compilation of pcap-tc.c
+    Linux:
+        Require PF_PACKET support, and kernel 2.6.27 or later
+        Handle systems without AF_INET or AF_UNIX socket support
+        Get rid of Wireless Extensions for turning monitor mode on
+        Proper memory sync for PACKET_MMAP (may prevent GitHub issue
+            #898)
+        Drop support for libnl 1 and 2.
+        Return error on interface going away, but not if it just went
+            down but is still present
+        Set socket protocol only after packet ring configured,
+            reducing bogus packet drop reports
+        Get ifdrop stats from sysfs.
+        When adjusting BPF programs, do not subtract the
+            SLL[2]_HDR_LEN if the location is negative (special metadata
+            offset), to preserve references to metadata; see
+            https://github.com/the-tcpdump-group/tcpdump/issues/480#issuecomment-486827278
+        Report a warning for unknown ARPHRD types
+        Have pcap_breakloop() forcibly break out of a sleeping
+            capture loop
+        Add support for DSA data link types
+        For raw USB bus capture, use the snapshot length to set the
+            buffer size, and set the len field to reflect the length
+            in the URB (GitHub issue #808)
+        With a timeout of zero, wait indefinitely
+        Clean up support for some non-GNU libc C libraries
+        Add DLT_LINUX_SLL2 for cooked-mode captures
+        Probe CONFIGURATION descriptor of connected USB devices
+        Treat EPERM on ethtool ioctls as meaning "not supported", as
+            permissions checks are done before checking whether the
+            ioctl is supported at all
+    macOS:
+        Cope with getting EPWROFF from SIOCGIFMEDIA
+        Treat EPERM on SIOCGIFMEDIA as meaning "not supported", as
+            permissions checks are done before checking whether the
+            ioctl is supported at all
+        Treat ENXIO when reading packets as meaning "the interface
+            was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    FreeBSD:
+        Treat ENXIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    NetBSD:
+        Treat ENXIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    OpenBSD:
+        Treat EIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    DragonFly BSD:
+        Treat ENXIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    Solaris:
+        Treat ENXIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    AIX:
+        Fix loading of BPF kernel extension
+        Treat ENXIO as meaning "the interface was removed"
+        Report "the interface disappeared", not "the interface went
+            down", if the interface was removed during a capture
+    Windows:
+        Make the snapshot length work even if pcap_setfilter()
+            isn't called
+        Fix compilation on Cygwin/MSYS
+        Add pcap_handle(), and deprecate pcap_fileno()
+        Report PCAP_ERROR_NO_SUCH_DEVICE for a non-existent device
+        Return an appropriate error message for device removed or
+            device unusable due to a suspend/resume
+        Report a warning for unknown NdisMedium types
+        Have pcap_breakloop() forcibly break out of a sleeping
+            capture loop
+        Clean up building DLL
+        Handle CRT mismatch for pcap_dump_fopen()
+        Map NdisMediumWirelessWan to DLT_RAW
+        Add AirPcap support in a module, rather than using
+            WinPcap/Npcap's support for it
+        Report the system error for PacketSetHwFilter() failures
+        Add support for getting and setting packet time stamp types
+            with Npcap
+        Have pcap_init() allow selecting whether the API should use
+            local code page strings or UTF-8 strings (including error
+            messages)
+    Haiku:
+        Add capture support
+
 Sunday, July 22, 2018
   Summary for 1.9.1 libpcap release
     Mention pcap_get_required_select_timeout() in the main pcap man page
@@ -67,7 +378,6 @@ Sunday, July 22, 2018
     Boost the TPACKET_V3 timeout to the maximum if a timeout of 0 was
         specified
     Five CVE-2019-15161, CVE-2019-15162, CVE-2019-15163, CVE-2019-15164, CVE-2019-15165
-    Fixes for CVE-2018-16301, errors in pcapng reading.
     PCAPNG reader applies some sanity checks before doing malloc().
 
 Sunday, June 24, 2018, by mcr@sandelman.ca

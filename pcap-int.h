@@ -40,8 +40,35 @@
 
 #include <pcap/pcap.h>
 
+#ifdef MSDOS
+  #include <fcntl.h>
+  #include <io.h>
+#endif
+
 #include "varattrs.h"
 #include "fmtutils.h"
+
+#include <stdarg.h>
+
+#include "portability.h"
+
+/*
+ * If we're compiling with Visual Studio, make sure we have at least
+ * VS 2015 or later, so we have sufficient C99 support.
+ *
+ * XXX - verify that we have at least C99 support on UN*Xes?
+ *
+ * What about MinGW or various DOS toolchains?  We're currently assuming
+ * sufficient C99 support there.
+ */
+#if defined(_MSC_VER)
+  /*
+   * Compiler is MSVC.  Make sure we have VS 2015 or later.
+   */
+  #if _MSC_VER < 1900
+    #error "Building libpcap requires VS 2015 or later"
+  #endif
+#endif
 
 /*
  * Version string.
@@ -79,11 +106,6 @@ extern int pcap_new_api;
  * of the setting of this flag.
  */
 extern int pcap_utf_8_mode;
-
-#ifdef MSDOS
-  #include <fcntl.h>
-  #include <io.h>
-#endif
 
 /*
  * Swap byte ordering of unsigned long long timestamp on a big endian
@@ -433,10 +455,6 @@ struct oneshot_userdata {
 
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
-#include <stdarg.h>
-
-#include "portability.h"
-
 /*
  * Does the packet count argument to a module's read routine say
  * "supply packets until you run out of packets"?
@@ -592,7 +610,7 @@ pcap_funcptr_t		pcap_find_function(pcap_code_handle_t, const char *);
  * Linux kernel when the kernel rejects the filter (requiring us to
  * run it in userland).  It contains VLAN tag information.
  */
-struct bpf_aux_data {
+struct pcap_bpf_aux_data {
 	u_short vlan_tag_present;
 	u_short vlan_tag;
 };
@@ -602,7 +620,7 @@ struct bpf_aux_data {
  * argument.
  */
 u_int	pcap_filter_with_aux_data(const struct bpf_insn *,
-    const u_char *, u_int, u_int, const struct bpf_aux_data *);
+    const u_char *, u_int, u_int, const struct pcap_bpf_aux_data *);
 
 /*
  * Filtering routine that doesn't.
@@ -633,9 +651,9 @@ int	pcap_strcasecmp(const char *, const char *);
  * rpcaps://).
  */
 int	pcap_createsrcstr_ex(char *, int, const char *, const char *,
-    const char *, unsigned char, char *);
+    const char *, const char *, unsigned char, char *);
 int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
-    char *, unsigned char *, char *);
+    char *, char *, unsigned char *, char *);
 
 #ifdef YYDEBUG
 extern int pcap_debug;

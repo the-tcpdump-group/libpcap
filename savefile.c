@@ -350,7 +350,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
-		if (stdin == NULL) {
+		if (fp == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "The standard input is not open");
 			return (NULL);
@@ -618,12 +618,27 @@ int
 pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct bpf_insn *fcode;
-	int status = 0;
 	int n = 0;
 	u_char *data;
 
-	while (status == 0) {
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
+
+	for (;;) {
 		struct pcap_pkthdr h;
+		int status;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -643,16 +658,28 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		status = p->next_packet_op(p, &h, &data);
-		if (status) {
-			if (status == 1)
-				return (0);
+		if (status < 0) {
+			/*
+			 * Error.  Pass it back to the caller.
+			 */
 			return (status);
 		}
+		if (status == 0) {
+			/*
+			 * EOF.  Nothing more to process;
+			 */
+			break;
+		}
 
+		/*
+		 * OK, we've read a packet; run it through the filter
+		 * and, if it passes, process it.
+		 */
 		if ((fcode = p->fcode.bf_insns) == NULL ||
 		    pcap_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
-			if (++n >= cnt && cnt > 0)
+			n++;	/* count the packet */
+			if (n >= cnt)
 				break;
 		}
 	}

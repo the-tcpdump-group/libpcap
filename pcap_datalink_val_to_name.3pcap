@@ -63,5 +63,14 @@ If the type value does not correspond to a known
 .B DLT_
 value, the string "DLT n" is returned, where n is the value of
 the dlt argument.
+.SH BACKWARD COMPATIBILITY
+The
+.BR pcap_datalink_val_to_description_or_dlt ()
+function first became available in libpcap release 1.10.0.  In previous
+releases,
+.BR pcap_datalink_val_to_description ()
+would have to be called and, if it returned
+.BR NULL ,
+a default string would have to be constructed.
 .SH SEE ALSO
 .BR pcap (3PCAP)

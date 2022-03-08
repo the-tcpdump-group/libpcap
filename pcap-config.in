@@ -41,6 +41,13 @@ do
 	esac
 	shift
 done
+#
+# If libdir isn't /usr/lib, add it to the link-time linker path.
+#
+if [ "$libdir" != "/usr/lib" ]
+then
+	LPATH=-L$libdir
+fi
 if [ "$V_RPATH_OPT" != "" ]
 then
 	#
@@ -59,16 +66,16 @@ then
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir -L$libdir -lpcap $LIBS"
+		echo "-I$includedir $LPATH -lpcap $LIBS"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
-		echo "-I$includedir -L$libdir $LIBS"
+		echo "-I$includedir $LPATH $LIBS"
 	elif [ "$show_cflags" = 1 ]
 	then
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L$libdir -lpcap $LIBS"
+		echo "$LPATH -lpcap $LIBS"
 	elif [ "$show_additional_libs" = 1 ]
 	then
 		echo "$LIBS"
@@ -80,7 +87,7 @@ else
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir -L$libdir $RPATH -l$PACKAGE_NAME"
+		echo "-I$includedir $LPATH $RPATH -l$PACKAGE_NAME"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
 		echo "-I$includedir"
@@ -89,6 +96,6 @@ else
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L$libdir $RPATH -l$PACKAGE_NAME"
+		echo "$LPATH $RPATH -l$PACKAGE_NAME"
 	fi
 fi

@@ -121,6 +121,8 @@
     __pragma(warning(disable:4996))
   #define DIAG_ON_DEPRECATION \
     __pragma(warning(pop))
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
    * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -160,6 +162,8 @@
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(clang diagnostic pop)
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * This is GCC 4.6 or later, or a compiler claiming to be that.
@@ -188,6 +192,22 @@
     PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(GCC diagnostic pop)
+
+  /*
+   * Suppress format-truncation= warnings.
+   * GCC 7.1 had introduced this warning option. Earlier versions (at least
+   * one particular copy of GCC 4.6.4) treat the request as a warning.
+   */
+  #if PCAP_IS_AT_LEAST_GNUC_VERSION(7,1)
+    #define DIAG_OFF_FORMAT_TRUNCATION \
+      PCAP_DO_PRAGMA(GCC diagnostic push) \
+      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wformat-truncation=")
+    #define DIAG_ON_FORMAT_TRUNCATION \
+      PCAP_DO_PRAGMA(GCC diagnostic pop)
+  #else
+   #define DIAG_OFF_FORMAT_TRUNCATION
+   #define DIAG_ON_FORMAT_TRUNCATION
+  #endif
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
@@ -200,6 +220,8 @@
   #define DIAG_ON_NARROWING
   #define DIAG_OFF_DEPRECATION
   #define DIAG_ON_DEPRECATION
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
 #endif
 
 #ifdef YYBYACC
@@ -269,7 +291,7 @@
       __pragma(warning(disable:4127)) \
       __pragma(warning(disable:4242)) \
       __pragma(warning(disable:4244)) \
-      __pragma(warning(disable:4702)) 
+      __pragma(warning(disable:4702))
   #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -292,6 +314,22 @@
      */
     #define DIAG_OFF_BISON_BYACC
   #endif
+#endif
+
+/*
+ * GCC needs this on AIX for longjmp().
+ */
+#if PCAP_IS_AT_LEAST_GNUC_VERSION(5,1)
+  /*
+   * Beware that the effect of this builtin is more than just squelching the
+   * warning! GCC trusts it enough for the process to segfault if the control
+   * flow reaches the builtin (an infinite empty loop in the same context would
+   * squelch the warning and ruin the process too, albeit in a different way).
+   * So please remember to use this very carefully.
+   */
+  #define PCAP_UNREACHABLE __builtin_unreachable();
+#else
+  #define PCAP_UNREACHABLE
 #endif
 
 #endif /* _diag_control_h */

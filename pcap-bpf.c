@@ -1177,6 +1177,9 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	/*
 	 * Loop through each packet.
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
 	 */
 #ifdef BIOCSTSTAMP
 #define bhp ((struct bpf_xhdr *)bp)
@@ -2968,7 +2971,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 }
 #else
 static int
-get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
+get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
 {
 	/*
 	 * Nothing we can do other than mark loopback devices as "the

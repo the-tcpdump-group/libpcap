@@ -112,6 +112,30 @@ extern int pcap_asprintf(char **, PCAP_FORMAT_STRING(const char *), ...)
 extern int pcap_vasprintf(char **, const char *, va_list ap);
 #endif
 
+/* For Solaris before 11. */
+#ifndef timeradd
+#define timeradd(a, b, result)                       \
+  do {                                               \
+    (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;    \
+    (result)->tv_usec = (a)->tv_usec + (b)->tv_usec; \
+    if ((result)->tv_usec >= 1000000) {              \
+      ++(result)->tv_sec;                            \
+      (result)->tv_usec -= 1000000;                  \
+    }                                                \
+  } while (0)
+#endif /* timeradd */
+#ifndef timersub
+#define timersub(a, b, result)                       \
+  do {                                               \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;    \
+    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec; \
+    if ((result)->tv_usec < 0) {                     \
+      --(result)->tv_sec;                            \
+      (result)->tv_usec += 1000000;                  \
+    }                                                \
+  } while (0)
+#endif /* timersub */
+
 #ifdef HAVE_STRTOK_R
   #define pcap_strtok_r	strtok_r
 #else

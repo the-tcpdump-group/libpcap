@@ -101,7 +101,8 @@ struct section_header_block {
 
 /*
  * Current version number.  If major_version isn't PCAP_NG_VERSION_MAJOR,
- * that means that this code can't read the file.
+ * or if minor_version isn't PCAP_NG_VERSION_MINOR or 2, that means that
+ * this code can't read the file.
  */
 #define PCAP_NG_VERSION_MAJOR	1
 #define PCAP_NG_VERSION_MINOR	0
@@ -962,9 +963,23 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		 * XXX - we don't care about the section length.
 		 */
 	}
-	/* currently only SHB version 1.0 is supported */
+	/* Currently only SHB versions 1.0 and 1.2 are supported;
+	   version 1.2 is treated as being the same as version 1.0.
+	   See the current version of the pcapng specification.
+
+	   Version 1.2 is written by some programs that write additional
+	   block types (which can be read by any code that handles them,
+	   regardless of whether the minor version if 0 or 2, so that's
+	   not a reason to change the minor version number).
+
+	   XXX - the pcapng specification says that readers should
+	   just ignore sections with an unsupported version number;
+	   presumably they can also report an error if they skip
+	   all the way to the end of the file without finding
+	   any versions that they support. */
 	if (! (shbp->major_version == PCAP_NG_VERSION_MAJOR &&
-	       shbp->minor_version == PCAP_NG_VERSION_MINOR)) {
+	       (shbp->minor_version == PCAP_NG_VERSION_MINOR ||
+	        shbp->minor_version == 2))) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unsupported pcapng savefile version %u.%u",
 		    shbp->major_version, shbp->minor_version);
@@ -1079,7 +1094,7 @@ pcap_ng_cleanup(pcap_t *p)
 
 /*
  * Read and return the next packet from the savefile.  Return the header
- * in hdr and a pointer to the contents in data.  Return 0 on success, 1
+ * in hdr and a pointer to the contents in data.  Return 1 on success, 0
  * if there were no more packets, and -1 on an error.
  */
 static int
@@ -1108,7 +1123,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 */
 		status = read_block(fp, p, &cursor, p->errbuf);
 		if (status == 0)
-			return (1);	/* EOF */
+			return (0);	/* EOF */
 		if (status == -1)
 			return (-1);	/* error */
 		switch (cursor.block_type) {
@@ -1499,5 +1514,5 @@ found:
 	if (p->swapped)
 		swap_pseudo_headers(p->linktype, hdr, *data);
 
-	return (0);
+	return (1);
 }

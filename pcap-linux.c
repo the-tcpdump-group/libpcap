@@ -100,6 +100,7 @@
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
+#include "pcap/can_socketcan.h"
 
 #include "diag-control.h"
 
@@ -116,6 +117,19 @@
 #ifdef TPACKET3_HDRLEN
 # define HAVE_TPACKET3
 #endif /* TPACKET3_HDRLEN */
+
+/*
+ * Not all compilers that are used to compile code to run on Linux have
+ * these builtins.  For example, older versions of GCC don't, and at
+ * least some people are doing cross-builds for MIPS with older versions
+ * of GCC.
+ */
+#ifndef HAVE___ATOMIC_LOAD_N
+#define __atomic_load_n(ptr, memory_model)		(*(ptr))
+#endif
+#ifndef HAVE___ATOMIC_STORE_N
+#define __atomic_store_n(ptr, val, memory_model)	*(ptr) = (val)
+#endif
 
 #define packet_mmap_acquire(pkt) \
 	(__atomic_load_n(&pkt->tp_status, __ATOMIC_ACQUIRE) != TP_STATUS_KERNEL)
@@ -305,10 +319,8 @@ static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 static int 	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
-#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
-static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
+static int	iface_get_ts_types(const char *device, pcap_t *handle,
     char *ebuf);
-#endif
 static int	iface_get_offload(pcap_t *handle);
 
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
@@ -335,15 +347,13 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
 
-#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_ethtool_get_ts_info(device, handle, ebuf) == -1) {
+	if (iface_get_ts_types(device, handle, ebuf) == -1) {
 		pcap_close(handle);
 		return NULL;
 	}
-#endif
 
 	/*
 	 * We claim that we support microsecond and nanosecond time
@@ -1131,9 +1141,12 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 * easily distinguish packets looped back by the CAN
 		 * layer than those received by the CAN layer, so we
 		 * eliminate this packet instead.
+		 *
+		 * We check whether this is a CAN or CAN FD frame
+		 * by checking whether the device's hardware type
+		 * is ARPHRD_CAN.
 		 */
-		if ((sll->sll_protocol == LINUX_SLL_P_CAN ||
-		     sll->sll_protocol == LINUX_SLL_P_CANFD) &&
+		if (sll->sll_hatype == ARPHRD_CAN &&
 		     handle->direction != PCAP_D_OUT)
 			return 0;
 
@@ -1599,8 +1612,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				}
 			}
 			fclose(fh);
-			free(pathstr);
 		}
+		free(pathstr);
 	}
 
 #ifdef ETHTOOL_GLINK
@@ -1869,14 +1882,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 #define ARPHRD_CAN 280
 #endif
 	case ARPHRD_CAN:
-		/*
-		 * Map this to DLT_LINUX_SLL; that way, CAN frames will
-		 * have ETH_P_CAN/LINUX_SLL_P_CAN as the protocol and
-		 * CAN FD frames will have ETH_P_CANFD/LINUX_SLL_P_CANFD
-		 * as the protocol, so they can be distinguished by the
-		 * protocol in the SLL header.
-		 */
-		handle->linktype = DLT_LINUX_SLL;
+		handle->linktype = DLT_CAN_SOCKETCAN;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
@@ -2665,6 +2671,7 @@ setup_mmapped(pcap_t *handle, int *status)
 	ret = prepare_tpacket_socket(handle);
 	if (ret == -1) {
 		free(handlep->oneshot_buffer);
+		handlep->oneshot_buffer = NULL;
 		*status = PCAP_ERROR;
 		return ret;
 	}
@@ -2675,6 +2682,7 @@ setup_mmapped(pcap_t *handle, int *status)
 		 * fail.  create_ring() has set *status.
 		 */
 		free(handlep->oneshot_buffer);
+		handlep->oneshot_buffer = NULL;
 		return -1;
 	}
 
@@ -3759,6 +3767,7 @@ static int pcap_handle_packet_mmap(
 	unsigned char *bp;
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
+	pcap_can_socketcan_hdr *canhdr;
 	unsigned int snaplen = tp_snaplen;
 	struct utsname utsname;
 
@@ -3877,10 +3886,72 @@ static int pcap_handle_packet_mmap(
 
 			snaplen += sizeof(struct sll_header);
 		}
+	} else {
+		/*
+		 * If this is a packet from a CAN device, so that
+		 * sll->sll_hatype is ARPHRD_CAN, then, as we're
+		 * not capturing in cooked mode, its link-layer
+		 * type is DLT_CAN_SOCKETCAN.  Fix up the header
+		 * provided by the code below us to match what
+		 * DLT_CAN_SOCKETCAN is expected to provide.
+		 */
+		if (sll->sll_hatype == ARPHRD_CAN) {
+			/*
+			 * DLT_CAN_SOCKETCAN is specified as having the
+			 * CAN ID and flags in network byte order, but
+			 * capturing on a CAN device provides it in host
+			 * byte order.  Convert it to network byte order.
+			 */
+			canhdr = (pcap_can_socketcan_hdr *)bp;
+			canhdr->can_id = htonl(canhdr->can_id);
+
+			/*
+			 * In addition, set the CANFD_FDF flag if
+			 * the protocol is LINUX_SLL_P_CANFD, as
+			 * the protocol field itself isn't in
+			 * the packet to indicate that it's a
+			 * CAN FD packet.
+			 */
+			uint16_t protocol = ntohs(sll->sll_protocol);
+			if (protocol == LINUX_SLL_P_CANFD) {
+				canhdr->fd_flags |= CANFD_FDF;
+
+				/*
+				 * Zero out all the unknown bits in
+				 * fd_flags and clear the reserved
+				 * fields, so that a program reading
+				 * this can assume that CANFD_FDF
+				 * is set because we set it, not
+				 * because some uninitialized crap
+				 * was provided in the fd_flags
+				 * field.
+				 *
+				 * (At least some LINKTYPE_CAN_SOCKETCAN
+				 * files attached to Wireshark bugs
+				 * had uninitialized junk there, so it
+				 * does happen.)
+				 *
+				 * Update this if Linux adds more flag
+				 * bits to the fd_flags field or uses
+				 * either of the reserved fields for
+				 * FD frames.
+				 */
+				canhdr->fd_flags &= ~(CANFD_FDF|CANFD_ESI|CANFD_BRS);
+				canhdr->reserved1 = 0;
+				canhdr->reserved2 = 0;
+			} else {
+				/*
+				 * Clear CANFD_FDF if it's set (probably
+				 * again meaning that that field is
+				 * uninitialized junk).
+				 */
+				canhdr->fd_flags &= ~CANFD_FDF;
+			}
+		}
 	}
 
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		struct bpf_aux_data aux_data;
+		struct pcap_bpf_aux_data aux_data;
 
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
@@ -3989,9 +4060,22 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 	}
 
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(max_packets))
+		max_packets = INT_MAX;
+
+	while (pkts < max_packets) {
 		/*
 		 * Get the current ring buffer frame, and break if
 		 * it's still owned by the kernel.
@@ -4084,9 +4168,22 @@ again:
 		return pkts;
 	}
 
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(max_packets))
+		max_packets = INT_MAX;
+
+	while (pkts < max_packets) {
 		int packets_to_read;
 
 		if (handlep->current_packet == NULL) {
@@ -4099,12 +4196,12 @@ again:
 		}
 		packets_to_read = handlep->packets_left;
 
-		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) &&
-		    packets_to_read > (max_packets - pkts)) {
+		if (packets_to_read > (max_packets - pkts)) {
 			/*
-			 * We've been given a maximum number of packets
-			 * to process, and there are more packets in
-			 * this buffer than that.  Only process enough
+			 * There are more packets in the buffer than
+			 * the number of packets we have left to
+			 * process to get up to the maximum number
+			 * of packets to process.  Only process enough
 			 * of them to get us up to that maximum.
 			 */
 			packets_to_read = max_packets - pkts;
@@ -4309,7 +4406,18 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 			 * the filter for a reason other than "this kernel
 			 * isn't configured to support socket filters.
 			 */
-			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
+			if (errno == ENOMEM) {
+				/*
+				 * Either a kernel memory allocation
+				 * failure occurred, or there's too
+				 * much "other/option memory" allocated
+				 * for this socket.  Suggest that they
+				 * increase the "other/option memory"
+				 * limit.
+				 */
+				fprintf(stderr,
+				    "Warning: Couldn't allocate kernel memory for filter: try increasing net.core.optmem_max with sysctl\n");
+			} else if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
 				fprintf(stderr,
 				    "Warning: Kernel filter failed: %s\n",
 					pcap_strerror(errno));
@@ -4668,12 +4776,12 @@ iface_set_all_ts_types(pcap_t *handle, char *ebuf)
 	return 0;
 }
 
-#ifdef ETHTOOL_GET_TS_INFO
 /*
- * Get a list of time stamping capabilities.
+ * Get a list of time stamp types.
  */
+#ifdef ETHTOOL_GET_TS_INFO
 static int
-iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 {
 	int fd;
 	struct ifreq ifr;
@@ -4760,6 +4868,8 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 		 * report HWTSTAMP_FILTER_ALL but map it to only
 		 * time stamping a few PTP packets.  See
 		 * http://marc.info/?l=linux-netdev&m=146318183529571&w=2
+		 *
+		 * Maybe that got fixed later.
 		 */
 		handle->tstamp_type_list = NULL;
 		return 0;
@@ -4791,7 +4901,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
+iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 {
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -4814,7 +4924,15 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
-
+#else  /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
+static int
+iface_get_ts_types(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
+{
+	/*
+	 * Nothing to fetch, so it always "succeeds".
+	 */
+	return 0;
+}
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
 /*

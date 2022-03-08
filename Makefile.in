@@ -79,7 +79,7 @@ INSTALL_DATA = @INSTALL_DATA@
 RANLIB = @RANLIB@
 
 LEX = @LEX@
-YACC = @YACC@
+BISON_BYACC = @BISON_BYACC@
 
 # Explicitly define compilation rule since SunOS 4's make doesn't like gcc.
 # Also, gcc does not remove the .o before forking 'as', which can be a
@@ -149,6 +149,7 @@ HDR = $(PUBHDR) \
 	pcap-int.h \
 	pcap-rpcap.h \
 	pcap-types.h \
+	pflog.h \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \
@@ -252,7 +253,15 @@ EXTRA_DIST = \
 	Makefile.in \
 	Makefile-devel-adds \
 	README.md \
-	doc \
+	doc/README.Win32.md \
+	doc/README.aix \
+	doc/README.dag \
+	doc/README.hpux \
+	doc/README.linux \
+	doc/README.macos \
+	doc/README.septel \
+	doc/README.sita \
+	doc/README.solaris.md \
 	CONTRIBUTING.md \
 	TODO \
 	VERSION \
@@ -410,10 +419,7 @@ EXTRA_DIST = \
 	testprogs/valgrindtest.c \
 	testprogs/visopts.py \
 	testprogs/writecaptest.c \
-	tests/shb-option-too-long.pcapng \
-	Win32/Prj/wpcap.sln \
-	Win32/Prj/wpcap.vcxproj \
-	Win32/Prj/wpcap.vcxproj.filters
+	tests/shb-option-too-long.pcapng
 
 all: libpcap.a shared $(BUILD_RPCAPD) libpcap.pc pcap-config
 
@@ -530,7 +536,7 @@ grammar.y: $(srcdir)/grammar.y.in ./config.status
 	mv $@.tmp $@
 
 grammar.c: grammar.y
-	$(YACC) -p pcap_ -o grammar.c -d $<
+	$(BISON_BYACC) -p pcap_ -o grammar.c -d $<
 grammar.h: grammar.c
 ## Recover from the removal of $@
 	@if test -f $@; then :; else \
@@ -591,13 +597,13 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 # Remote pcap daemon.
 #
 build-rpcapd: libpcap.a
-	cd rpcapd; $(MAKE)
+	(cd rpcapd; $(MAKE))
 
 #
 # Test programs - not built by default, and not installed.
 #
 testprogs: FORCE
-	cd testprogs; $(MAKE)
+	(cd testprogs; $(MAKE))
 
 FORCE:
 
@@ -729,7 +735,7 @@ install-archive-shareda:
 	#
 
 install-rpcapd:
-	cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) install
+	(cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) install)
 
 uninstall: uninstall-shared uninstall-rpcapd
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
@@ -786,12 +792,12 @@ uninstall-shared-shareda:
 uninstall-shared-none:
 
 uninstall-rpcapd:
-	cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) uninstall
+	(cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) uninstall)
 
 clean:
 	rm -f $(CLEANFILES)
-	cd rpcapd; $(MAKE) clean
-	cd testprogs; $(MAKE) clean
+	(cd rpcapd; $(MAKE) clean)
+	(cd testprogs; $(MAKE) clean)
 
 distclean: clean
 	rm -f Makefile grammar.y config.cache config.log config.status \
@@ -799,8 +805,8 @@ distclean: clean
 	    pcap-config stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
-	cd rpcapd; $(MAKE) distclean
-	cd testprogs; $(MAKE) distclean
+	(cd rpcapd; $(MAKE) distclean)
+	(cd testprogs; $(MAKE) distclean)
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
@@ -809,23 +815,30 @@ tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
 releasetar:
-	@autoreconf -f; \
-	name=$(PROG)-`cat VERSION` ; \
-	   mkdir $$name; \
-	   tar -c --exclude='*~' -f - $(COMMON_C_SRC) $(HDR) $(MAN1) \
+	@autoreconf -f && \
+	name=$(PROG)-`cat VERSION` && \
+	   mkdir $$name && \
+	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
+	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
+	      $(MANMISC) $(EXTRA_DIST) >/dev/null && \
+	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
 	      $(MANMISC) $(EXTRA_DIST) | \
-	      (cd $$name; tar xf -); \
-	   tar -c -z -f $$name.tar.gz $$name; \
+	      (cd $$name; tar xf -) && \
+	   tar cf - $$name >/dev/null && \
+	   tar cf - $$name | gzip >$$name.tar.gz && \
 	   rm -rf $$name
 
 rc1 rc2 rc3 rc4 rc5:
 	@VER=`cat $(srcdir)/VERSION`; \
 	sed -i "s/$$VER/$${VER}$@/" VERSION ; \
 	make releasetar; \
-	git checkout VERSION
+	git checkout VERSION configure
 
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
-	cd rpcapd; $(MAKE) depend
-	cd testprogs; $(MAKE) depend
+	(cd rpcapd; $(MAKE) depend)
+	(cd testprogs; $(MAKE) depend)
+
+shellcheck:
+	shellcheck -f gcc -e SC2006 build.sh build_matrix.sh build_common.sh

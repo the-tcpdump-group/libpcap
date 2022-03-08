@@ -98,6 +98,14 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		goto done;
 	}
 
+	/*
+	 * Zero the complete header, which is larger than dev_num because of tail
+	 * padding, to silence Valgrind, which overshoots validating that dev_num
+	 * has been set.
+	 * https://github.com/the-tcpdump-group/libpcap/issues/1083
+	 * https://bugs.kde.org/show_bug.cgi?id=448464
+	 */
+	memset(dev_list, 0, sizeof(*dev_list));
 	dev_list->dev_num = HCI_MAX_DEV;
 
 	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0)
@@ -341,6 +349,10 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			/* Nonblocking mode, no data */
+			return 0;
+		}
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't receive packet");
 		return -1;

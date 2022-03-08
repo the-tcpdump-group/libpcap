@@ -36,11 +36,13 @@
 #endif
 
 #include "ftmacros.h"
+#include "diag-control.h"
 
 #include <string.h>		/* for strlen(), ... */
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
+#include <limits.h>		/* for INT_MAX */
 #include "sockutils.h"
 #include "pcap-int.h"
 #include "rpcap-protocol.h"
@@ -644,6 +646,21 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 		}
 	}
 
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
+
 	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt))
 	{
 		/*
@@ -1003,11 +1020,10 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = getaddrinfo(host, "0", &hints, &addrinfo);
+	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s",
-		    gai_strerror(retval));
 		*error = 1;
 		return NULL;
 	}
@@ -1060,7 +1076,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the data connection */
+	uint16 portdata = 0;			/* temp variable needed to keep the network port for the data connection */
 	uint32 plen;
 	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
@@ -1073,6 +1089,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	struct sockaddr_storage saddr;		/* temp, needed to retrieve the network data port chosen on the local machine */
 	socklen_t saddrlen;			/* temp, needed to retrieve the network data port chosen on the local machine */
 	int ai_family;				/* temp, keeps the address family used by the control connection */
+	struct sockaddr_in *sin4;
+	struct sockaddr_in6 *sin6;
 
 	/* RPCAP-related variables*/
 	struct rpcap_header header;			/* header of the RPCAP packet */
@@ -1086,7 +1104,9 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	uint32 server_sockbufsize;
 
 	// Take the opportunity to clear pr->data_ssl before any goto error,
-	// as it seems pr->priv is not zeroed after its malloced.
+	// as it seems p->priv is not zeroed after its malloced.
+	// XXX - it now should be, as it's allocated by pcap_alloc_pcap_t(),
+	// which does a calloc().
 	pr->data_ssl = NULL;
 
 	/*
@@ -1171,11 +1191,22 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			goto error_nodiscard;
 		}
 
-		/* Get the local port the system picked up */
-		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, NULL,
-			0, portdata, sizeof(portdata), NI_NUMERICSERV))
-		{
-			sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+		switch (saddr.ss_family) {
+
+		case AF_INET:
+			sin4 = (struct sockaddr_in *)&saddr;
+			portdata = sin4->sin_port;
+			break;
+
+		case AF_INET6:
+			sin6 = (struct sockaddr_in6 *)&saddr;
+			portdata = sin6->sin6_port;
+			break;
+
+		default:
+			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "Local address has unknown address family %u",
+			    saddr.ss_family);
 			goto error_nodiscard;
 		}
 	}
@@ -1208,8 +1239,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	/* portdata on the openreq is meaningful only if we're in active mode */
 	if ((active) || (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
-		sscanf(portdata, "%d", (int *)&(startcapreq->portdata));	/* cast to avoid a compiler warning */
-		startcapreq->portdata = htons(startcapreq->portdata);
+		startcapreq->portdata = portdata;
 	}
 
 	startcapreq->snaplen = htonl(fp->snapshot);
@@ -1258,13 +1288,15 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	{
 		if (!active)
 		{
+			char portstring[PCAP_BUF_SIZE];
+
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
 			hints.ai_socktype = (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-			snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
+			snprintf(portstring, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
-			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
 			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
@@ -2110,6 +2142,79 @@ novers:
 	return -1;
 }
 
+/* non-alphanumeric unreserved characters plus sub-delims (RFC3986) */
+static const char userinfo_allowed_symbols[] = "-._~!&'()*+,;=";
+
+/*
+ * This function is a thin wrapper around rpcap_doauth which will use an auth
+ * struct created from a username and password parsed out of the userinfo
+ * portion of a URI.
+ */
+static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const char *userinfo, char *errbuf)
+{
+	struct pcap_rmtauth auth;
+	const char *ptr;
+	char *buf, username[256], password[256];
+
+	auth.type = RPCAP_RMTAUTH_PWD;
+	auth.username = username;
+	auth.password = password;
+	buf = username;
+
+	username[0] = password[0] = '\0';
+
+	if ((ptr = userinfo) != NULL)
+	{
+		for (int pos = -1; (buf[++pos] = *ptr) != '\0'; ++ptr)
+		{
+			/* handle %xx encoded characters */
+			if (*ptr == '%')
+			{
+				/* the pedantic thing to do here would be throwing an error on
+				 * a sequence like `%hi', however a lot of common tools just accept
+				 * such malarkey, so... probably it will be fine? */
+				if (sscanf(ptr, "%%%02hhx", (unsigned char *)(buf+pos)) == 1)
+					ptr += 2;
+				/* other implementations aside, rejecting null bytes seems prudent */
+				if (buf[pos] == '\0')
+				{
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape `%%00` in userinfo");
+					return -1;
+				}
+			}
+			else if (*ptr == ':' && buf == username)
+			{
+				/* terminate username string and switch to password string */
+				buf[pos] = '\0';
+				buf = password;
+				pos = -1;
+			}
+			/* constrain to characters allowed by RFC3986 */
+			else if (*ptr >= 'A' && *ptr <= 'Z')
+				continue;
+			else if (*ptr >= 'a' && *ptr <= 'z')
+				continue;
+			else if (*ptr >= '0' && *ptr <= '9')
+				continue;
+			else if (*ptr < ' ' || *ptr > '~')
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `\\%o` in userinfo", *ptr);
+				return -1;
+			}
+			else if (strchr(userinfo_allowed_symbols, *ptr) == NULL)
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `%c` in userinfo", *ptr);
+				return -1;
+			}
+		}
+
+		return rpcap_doauth(sockctrl, ssl, ver, &auth, errbuf);
+	}
+
+	return rpcap_doauth(sockctrl, ssl, ver, NULL, errbuf);
+}
+
+
 /* We don't currently support non-blocking mode. */
 static int
 pcap_getnonblock_rpcap(pcap_t *p)
@@ -2134,15 +2239,18 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
     char *iface, char *errbuf)
 {
 	int type;
+	int auth_result;
+	char userinfo[512];			/* 256 characters each for username and password */
 	struct activehosts *activeconn;		/* active connection, if there is one */
 	int error;				/* 1 if rpcap_remoteact_getsock got an error */
+	userinfo[0] = '\0';
 
 	/*
 	 * Determine the type of the source (NULL, file, local, remote).
 	 * You must have a valid source string even if we're in active mode,
 	 * because otherwise the call to the following function will fail.
 	 */
-	if (pcap_parsesrcstr_ex(source, &type, host, port, iface, uses_sslp,
+	if (pcap_parsesrcstr_ex(source, &type, userinfo, host, port, iface, uses_sslp,
 	    errbuf) == -1)
 		return -1;
 
@@ -2247,8 +2355,18 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
-		if (rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
-		    errbuf) == -1)
+		if (auth == NULL && *userinfo != '\0')
+		{
+			auth_result = rpcap_doauth_userinfo(*sockctrlp, *sslp, protocol_versionp,
+			    userinfo, errbuf);
+		}
+		else
+		{
+			auth_result = rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
+			    errbuf);
+		}
+
+		if (auth_result == -1)
 		{
 #ifdef HAVE_OPENSSL
 			if (*sslp)
@@ -2592,7 +2710,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			/* Create the new device identifier */
 			if (pcap_createsrcstr_ex(tmpstring2, PCAP_SRC_IFREMOTE,
-			    host, port, tmpstring, uses_ssl, errbuf) == -1)
+			    NULL, host, port, tmpstring, uses_ssl, errbuf) == -1)
 				goto error;
 
 			dev->name = strdup(tmpstring2);
@@ -2992,10 +3110,10 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = getaddrinfo(host, "0", &hints, &addrinfo);
+	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
 		return -1;
 	}
 
@@ -3352,7 +3470,9 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
+			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			DIAG_ON_FORMAT_TRUNCATION
 			return;
 		}
 
@@ -3387,7 +3507,9 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
+			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			DIAG_ON_FORMAT_TRUNCATION
 			return;
 		}
 

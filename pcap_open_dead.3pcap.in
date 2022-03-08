@@ -74,6 +74,12 @@ seconds and microseconds, and
 should be specified if the packets to be written have time stamps in
 seconds and nanoseconds.  Its value does not affect
 .BR pcap_compile (3PCAP).
+.SH BACKWARD COMPATIBILITY
+The
+.BR pcap_open_dead_with_tstamp_precision ()
+function became available in libpcap release 1.5.1.  In previous
+releases, there was no mechanism to open a savefile for writing with
+time stamps given in seconds and nanoseconds.
 .SH SEE ALSO
 .BR pcap (3PCAP),
 .BR \%pcap-linktype (@MAN_MISC_INFO@)

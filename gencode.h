@@ -19,7 +19,11 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef gencode_h
+#define gencode_h
+
 #include "pcap/funcattrs.h"
+#include "pcap/bpf.h" /* bpf_u_int32 and BPF_MEMWORDS */
 
 /*
  * ATM support:
@@ -400,3 +404,5 @@ int pcap_parse(void *, compiler_state_t *);
 /* XXX */
 #define JT(b)  ((b)->et.succ)
 #define JF(b)  ((b)->ef.succ)
+
+#endif /* gencode_h */

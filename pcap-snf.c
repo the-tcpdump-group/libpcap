@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h> /* for INT_MAX */
 
 #ifndef _WIN32
 #include <netinet/in.h>
@@ -139,9 +140,24 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	if (!p)
 		return -1;
 
+	/*
+	 * This can conceivably process more than INT_MAX packets,
+	 * which would overflow the packet count, causing it either
+	 * to look like a negative number, and thus cause us to
+	 * return a value that looks like an error, or overflow
+	 * back into positive territory, and thus cause us to
+	 * return a too-low count.
+	 *
+	 * Therefore, if the packet count is unlimited, we clip
+	 * it at INT_MAX; this routine is not expected to
+	 * process packets indefinitely, so that's not an issue.
+	 */
+	if (PACKET_COUNT_IS_UNLIMITED(cnt))
+		cnt = INT_MAX;
+
 	n = 0;
 	timeout = ps->snf_timeout;
-	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt)) {
+	while (n < cnt) {
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 */

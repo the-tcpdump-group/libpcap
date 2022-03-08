@@ -213,7 +213,7 @@ static int dag_get_datalink(pcap_t *p);
 static int dag_setnonblock(pcap_t *p, int nonblock);
 
 static void
-delete_pcap_dag(pcap_t *p)
+delete_pcap_dag(const pcap_t *p)
 {
 	pcap_dag_node_t *curr = NULL, *prev = NULL;
 
@@ -299,7 +299,7 @@ new_pcap_dag(pcap_t *p)
 }
 
 static unsigned int
-dag_erf_ext_header_count(uint8_t * erf, size_t len)
+dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 {
 	uint32_t hdr_num = 0;
 	uint8_t  hdr_type;
@@ -391,7 +391,12 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	}
 
-	/* Process the packets. */
+	/*
+	 * Process the packets.
+	 *
+	 * This assumes that a single buffer of packets will have
+	 * <= INT_MAX packets, so the packet count doesn't overflow.
+	 */
 	while (pd->dag_mem_top - pd->dag_mem_bottom >= dag_record_size) {
 
 		unsigned short packet_len = 0;
@@ -945,7 +950,7 @@ static int dag_activate(pcap_t* p)
 		 * Did the user request that they not be stripped?
 		 */
 		if ((s = getenv("ERF_DONT_STRIP_FCS")) != NULL) {
-			/* Yes.  Note the number of bytes that will be
+			/* Yes.  Note the number of 16-bit words that will be
 			   supplied. */
 			p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
 

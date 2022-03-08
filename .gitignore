@@ -1,3 +1,4 @@
+.DS_Store
 Makefile
 *~
 *.o
@@ -22,6 +23,7 @@ valgrindtest
 reactivatetest
 grammar.c
 grammar.h
+grammar.y
 libpcap.a
 libpcap.*.dylib
 libpcap.pc

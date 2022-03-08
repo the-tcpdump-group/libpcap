@@ -160,6 +160,17 @@ pcap_activate_haiku(pcap_t *handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+		handle->snapshot = MAXIMUM_SNAPLEN;
+
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -279,4 +290,13 @@ pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
 {
 	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
 		get_if_flags);
+}
+
+/*
+ * Libpcap version string.
+ */
+extern "C" const char *
+pcap_lib_version(void)
+{
+	return (PCAP_VERSION_STRING);
 }

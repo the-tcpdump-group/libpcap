@@ -232,36 +232,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 ])
 
 dnl
-dnl Check whether, if you pass an unknown warning option to the
-dnl compiler, it fails or just prints a warning message and succeeds.
-dnl Set ac_lbl_unknown_warning_option_error to the appropriate flag
-dnl to force an error if it would otherwise just print a warning message
-dnl and succeed.
-dnl
-AC_DEFUN(AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR,
-    [
-	AC_MSG_CHECKING([whether the compiler fails when given an unknown warning option])
-	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS -Wxyzzy-this-will-never-succeed-xyzzy"
-	AC_TRY_COMPILE(
-	    [],
-	    [return 0],
-	    [
-		AC_MSG_RESULT([no])
-		#
-		# We're assuming this is clang, where
-		# -Werror=unknown-warning-option is the appropriate
-		# option to force the compiler to fail.
-		#
-		ac_lbl_unknown_warning_option_error="-Werror=unknown-warning-option"
-	    ],
-	    [
-		AC_MSG_RESULT([yes])
-	    ])
-	CFLAGS="$save_CFLAGS"
-    ])
-
-dnl
 dnl Check whether the compiler option specified as the second argument
 dnl is supported by the compiler and, if so, add it to the macro
 dnl specified as the first argument
@@ -278,21 +248,35 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
     [
 	AC_MSG_CHECKING([whether the compiler supports the $2 option])
 	save_CFLAGS="$CFLAGS"
-	if expr "x$2" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error $2"
-	elif expr "x$2" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror $2"
-	elif expr "x$2" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror $2"
-	else
-	    CFLAGS="$CFLAGS $2"
-	fi
-	AC_TRY_COMPILE(
-	    [],
-	    [return 0],
+	CFLAGS="$CFLAGS $2"
+	#
+	# XXX - yes, this depends on the way AC_LANG_WERROR works,
+	# but no mechanism is provided to turn AC_LANG_WERROR on
+	# *and then turn it back off*, so that we *only* do it when
+	# testing compiler options - 15 years after somebody asked
+	# for it:
+	#
+	#     https://autoconf.gnu.narkive.com/gTAVmfKD/how-to-cancel-flags-set-by-ac-lang-werror
+	#
+	save_ac_c_werror_flag="$ac_c_werror_flag"
+	ac_c_werror_flag=yes
+	#
+	# We use AC_LANG_SOURCE() so that we can control the complete
+	# content of the program being compiled.  We do not, for example,
+	# want the default "int main()" that AC_LANG_PROGRAM() generates,
+	# as it will generate a warning with -Wold-style-definition, meaning
+	# that we would treat it as not working, as the test will fail if
+	# *any* error output, including a warning due to the flag we're
+	# testing, is generated; see
+	#
+	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
+	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
+	#
+	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# but we only require 2.64 or newer for now.
+	#
+	AC_COMPILE_IFELSE(
+	    [AC_LANG_SOURCE([[int main(void) { return 0; }]])],
 	    [
 		AC_MSG_RESULT([yes])
 		can_add_to_cflags=yes
@@ -332,6 +316,7 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
 		AC_MSG_RESULT([no])
 		CFLAGS="$save_CFLAGS"
 	    ])
+	ac_c_werror_flag="$save_ac_c_werror_flag"
     ])
 
 dnl
@@ -662,6 +647,46 @@ AC_DEFUN(AC_LBL_C_INLINE,
     fi
     AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
 
+#
+# Test whether we have __atomic_load_n() and __atomic_store_n().
+#
+# We use AC_TRY_LINK because AC_TRY_COMPILE will succeed, as the
+# compiler will just think that those functions are undefined,
+# and perhaps warn about that, but not fail to compile.
+#
+AC_DEFUN(AC_PCAP_C___ATOMICS,
+    [
+	AC_MSG_CHECKING(for __atomic_load_n)
+	AC_CACHE_VAL(ac_cv_have___atomic_load_n,
+	    AC_TRY_LINK([],
+		[
+		    int i = 17;
+		    int j;
+		    j = __atomic_load_n(&i, __ATOMIC_RELAXED);
+		],
+		ac_have___atomic_load_n=yes,
+		ac_have___atomic_load_n=no))
+	AC_MSG_RESULT($ac_have___atomic_load_n)
+	if test $ac_have___atomic_load_n = yes ; then
+	    AC_DEFINE(HAVE___ATOMIC_LOAD_N, 1,
+		[define if __atomic_load_n is supported by the compiler])
+	fi
+
+	AC_MSG_CHECKING(for __atomic_store_n)
+	AC_CACHE_VAL(ac_cv_have___atomic_store_n,
+	    AC_TRY_LINK([],
+		[
+		    int i;
+		    __atomic_store_n(&i, 17, __ATOMIC_RELAXED);
+		],
+		ac_have___atomic_store_n=yes,
+		ac_have___atomic_store_n=no))
+	AC_MSG_RESULT($ac_have___atomic_store_n)
+	if test $ac_have___atomic_store_n = yes ; then
+	    AC_DEFINE(HAVE___ATOMIC_STORE_N, 1,
+		[define if __atomic_store_n is supported by the compiler])
+	fi])
+
 dnl
 dnl If using gcc, make sure we have ANSI ioctl definitions
 dnl
@@ -777,7 +802,6 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    # Skip all the warning option stuff on some compilers.
 	    #
 	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
-		    AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR()
 		    AC_LBL_CHECK_COMPILER_OPT($1, -W)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wcomma)
@@ -1076,13 +1100,8 @@ dnl Since: 0.18
 dnl
 dnl Check to see whether a particular set of modules exists. Similar to
 dnl PKG_CHECK_MODULES(), but does not set variables or print errors.
-dnl
-dnl Please remember that m4 expands AC_REQUIRE([PKG_PROG_PKG_CONFIG])
-dnl only at the first occurrence in configure.ac, so if the first place
-dnl it's called might be skipped (such as if it is within an "if", you
-dnl have to call PKG_CHECK_EXISTS manually
 AC_DEFUN([PKG_CHECK_EXISTS],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+[
 if test -n "$PKG_CONFIG" && \
     AC_RUN_LOG([$PKG_CONFIG --exists --print-errors "$1"]); then
   m4_default([$2], [:])
@@ -1111,7 +1130,7 @@ dnl _PKG_SHORT_ERRORS_SUPPORTED
 dnl ---------------------------
 dnl Internal check to see if pkg-config supports short errors.
 AC_DEFUN([_PKG_SHORT_ERRORS_SUPPORTED],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])
+[
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
 else
@@ -1124,37 +1143,42 @@ dnl PKG_CHECK_MODULES(VARIABLE-PREFIX, MODULES, [ACTION-IF-FOUND],
 dnl   [ACTION-IF-NOT-FOUND])
 dnl --------------------------------------------------------------
 dnl Since: 0.4.0
-dnl
-dnl Note that if there is a possibility the first call to
-dnl PKG_CHECK_MODULES might not happen, you should be sure to include an
-dnl explicit call to PKG_PROG_PKG_CONFIG in your configure.ac
 AC_DEFUN([PKG_CHECK_MODULES],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
-AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $1, overriding pkg-config])dnl
-AC_ARG_VAR([$1][_LIBS], [linker flags for $1, overriding pkg-config])dnl
+[
+AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $2, overriding pkg-config])dnl
+AC_ARG_VAR([$1][_LIBS], [linker flags for $2, overriding pkg-config])dnl
 
 pkg_failed=no
-AC_MSG_CHECKING([for $1])
+AC_MSG_CHECKING([for $2 with pkg-config])
+PKG_CHECK_EXISTS($2,
+    [
+	#
+	# The package was found, so try to get its C flags and
+	# libraries.
+	#
+	_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
+	_PKG_CONFIG([$1][_LIBS], [libs], [$2])
 
-_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
-_PKG_CONFIG([$1][_LIBS], [libs], [$2])
-
-m4_define([_PKG_TEXT], [Alternatively, you may set the environment variables $1[]_CFLAGS
+	m4_define([_PKG_TEXT], [
+Alternatively, you may set the environment variables $1[]_CFLAGS
 and $1[]_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details.])
 
-if test $pkg_failed = yes; then
-   	AC_MSG_RESULT([no])
-        _PKG_SHORT_ERRORS_SUPPORTED
-        if test $_pkg_short_errors_supported = yes; then
-	        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
-        else
-	        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
+	if test $pkg_failed = yes; then
+		#
+		# That failed - report an error.
+		#
+	   	AC_MSG_RESULT([error])
+        	_PKG_SHORT_ERRORS_SUPPORTED
+	        if test $_pkg_short_errors_supported = yes; then
+		        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
+	        else
+		        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
+	        fi
+		# Put the nasty error message in config.log where it belongs
+		echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
 
-	m4_default([$4], [AC_MSG_ERROR(
+		m4_default([$4], [AC_MSG_ERROR(
 [Package requirements ($2) were not met:
 
 $$1_PKG_ERRORS
@@ -1164,23 +1188,27 @@ installed software in a non-standard prefix.
 
 _PKG_TEXT])[]dnl
         ])
-elif test $pkg_failed = untried; then
-     	AC_MSG_RESULT([no])
-	m4_default([$4], [AC_MSG_FAILURE(
-[The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
-
-_PKG_TEXT
-
-To get pkg-config, see <https://pkg-config.freedesktop.org/>.])[]dnl
-        ])
-else
-	$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
-	$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
-        AC_MSG_RESULT([yes])
-	$3
-fi[]dnl
+	elif test $pkg_failed = untried; then
+		#
+		# We don't have pkg-config, so it didn't work.
+		#
+	     	AC_MSG_RESULT([not found (pkg-config not found)])
+	else
+		#
+		# We found the package.
+		#
+		$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
+		$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
+	        AC_MSG_RESULT([found])
+		$3
+	fi[]dnl
+    ],
+    [
+	#
+	# The package isn't present.
+	#
+	AC_MSG_RESULT([not found])
+    ])
 ])dnl PKG_CHECK_MODULES
 
 
@@ -1192,13 +1220,8 @@ dnl
 dnl Checks for existence of MODULES and gathers its build flags with
 dnl static libraries enabled. Sets VARIABLE-PREFIX_CFLAGS from --cflags
 dnl and VARIABLE-PREFIX_LIBS from --libs.
-dnl
-dnl Note that if there is a possibility the first call to
-dnl PKG_CHECK_MODULES_STATIC might not happen, you should be sure to
-dnl include an explicit call to PKG_PROG_PKG_CONFIG in your
-dnl configure.ac.
 AC_DEFUN([PKG_CHECK_MODULES_STATIC],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+[
 _save_PKG_CONFIG=$PKG_CONFIG
 PKG_CONFIG="$PKG_CONFIG --static"
 PKG_CHECK_MODULES($@)
@@ -1257,7 +1280,7 @@ dnl Since: 0.28
 dnl
 dnl Retrieves the value of the pkg-config variable for the given module.
 AC_DEFUN([PKG_CHECK_VAR],
-[AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+[
 AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])dnl
 
 _PKG_CONFIG([$1], [variable="][$3]["], [$2])
@@ -1265,4 +1288,3 @@ AS_VAR_COPY([$1], [pkg_cv_][$1])
 
 AS_VAR_IF([$1], [""], [$5], [$4])dnl
 ])dnl PKG_CHECK_VAR
-
