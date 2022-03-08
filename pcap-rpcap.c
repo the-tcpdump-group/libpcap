@@ -1104,7 +1104,9 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	uint32 server_sockbufsize;
 
 	// Take the opportunity to clear pr->data_ssl before any goto error,
-	// as it seems pr->priv is not zeroed after its malloced.
+	// as it seems p->priv is not zeroed after its malloced.
+	// XXX - it now should be, as it's allocated by pcap_alloc_pcap_t(),
+	// which does a calloc().
 	pr->data_ssl = NULL;
 
 	/*
