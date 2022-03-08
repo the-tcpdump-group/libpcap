@@ -2175,7 +2175,7 @@ static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const ch
 				 * such malarkey, so... probably it will be fine? */
 				if (sscanf(ptr, "%%%02hhx", (unsigned char *)(buf+pos)) == 1)
 					ptr += 2;
-				/* other implemntations aside, rejecting null bytes seems prudent */
+				/* other implementations aside, rejecting null bytes seems prudent */
 				if (buf[pos] == '\0')
 				{
 					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape `%%00` in userinfo");
