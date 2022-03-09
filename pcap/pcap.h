@@ -1271,16 +1271,25 @@ enum pcap_option_name {  /* never renumber this */
 		       PON_IO_WRITE_PLUGIN  = 3,  /* char * */
 };
 typedef struct pcap_options pcap_options;
+PCAP_AVAILABLE_1_11
 PCAP_API pcap_options *pcap_alloc_option(void);
+
+PCAP_AVAILABLE_1_11
 PCAP_API void pcap_free_option(pcap_options *po);
+
+PCAP_AVAILABLE_1_11
 PCAP_API int pcap_set_option_string(pcap_options *po,
 				    enum pcap_option_name pon, const char *value);
+
+PCAP_AVAILABLE_1_11
 PCAP_API int pcap_set_option_int(pcap_options *po,
 				 enum pcap_option_name pon, const int value);
+
+PCAP_AVAILABLE_1_11
 PCAP_API const char *pcap_get_option_string(pcap_options *po, enum pcap_option_name pon);
+
+PCAP_AVAILABLE_1_11
 PCAP_API int pcap_get_option_int(pcap_options *po, enum pcap_option_name pon);
-
-
 
 #ifdef __cplusplus
 }
