@@ -1591,10 +1591,46 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 		if (adapter == NULL)
 		{
 			error = GetLastError();
-			/* If we can't open the device now, we won't be able to later, either. */
-			pcap_fmt_errmsg_for_win32_err(ebuf, PCAP_ERRBUF_SIZE,
-			    error, "Error opening adapter");
-			status = -1;
+			/*
+			 * If we can't open the device now, we won't be
+			 * able to later, either.
+			 *
+			 * If the error is something that indicates
+			 * that the device doesn't exist, or that they
+			 * don't have permission to open the device - or
+			 * perhaps that they don't have permission to get
+			 * a list of devices, if PacketOpenAdapter() does
+			 * that - the user will find that out when they try
+			 * to activate the device; just return an empty
+			 * list of time stamp types.
+			 *
+			 * Treating either of those as errors will, for
+			 * example, cause "tcpdump -i <number>" to fail,
+			 * because it first tries to pass the interface
+			 * name to pcap_create() and pcap_activate(),
+			 * in order to handle OSes where interfaces can
+			 * have names that are just numbers (stand up
+			 * and say hello, Linux!), and, if pcap_activate()
+			 * fails with a "no such device" error, checks
+			 * whether the interface name is a valid number
+			 * and, if so, tries to use it as an index in
+			 * the list of interfaces.
+			 *
+			 * That means pcap_create() must succeed even
+			 * for interfaces that don't exist, with the
+			 * failure occurring at pcap_activate() time.
+			 */
+			if (error == ERROR_BAD_UNIT ||
+			    error == ERROR_ACCESS_DENIED) {
+				p->tstamp_type_count = 0;
+				p->tstamp_type_list = NULL;
+				status = 0;
+			} else {
+				pcap_fmt_errmsg_for_win32_err(ebuf,
+				    PCAP_ERRBUF_SIZE, error,
+				    "Error opening adapter");
+				status = -1;
+			}
 			break;
 		}
 
