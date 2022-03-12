@@ -795,12 +795,16 @@ static int dag_activate(pcap_t* p)
 		 */
 		if (errno == ENOENT)
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
-		else if (errno == EPERM || errno == EACCES)
+		else if (errno == EPERM || errno == EACCES) {
 			ret = PCAP_ERROR_PERM_DENIED;
-		else
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to open %s failed with %s - additional privileges may be required",
+			    device, (errno == EPERM) ? "EPERM" : "EACCES");
+		} else {
 			ret = PCAP_ERROR;
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_config_init %s", device);
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "dag_config_init %s", device);
+		}
 		goto fail;
 	}
 

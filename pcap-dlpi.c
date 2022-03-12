@@ -146,7 +146,7 @@ static int dl_dohpuxbind(int, char *);
 static int dlpromiscon(pcap_t *, bpf_u_int32);
 static int dlbindreq(int, bpf_u_int32, char *);
 static int dlbindack(int, char *, char *, int *);
-static int dlokack(int, const char *, char *, char *);
+static int dlokack(int, const char *, char *, char *, int *);
 static int dlinforeq(int, char *);
 static int dlinfoack(int, char *, char *);
 
@@ -383,12 +383,16 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 */
 	cp = "/dev/dlpi";
 	if ((fd = open(cp, O_RDWR)) < 0) {
-		if (errno == EPERM || errno == EACCES)
+		if (errno == EPERM || errno == EACCES) {
 			status = PCAP_ERROR_PERM_DENIED;
-		else
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to open %s failed with %s - root privilege may be required",
+			    cp, (errno == EPERM) ? "EPERM" : "EACCES");
+		} else {
 			status = PCAP_ERROR;
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "%s", cp);
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "Attempt to open %s failed", cp);
+		}
 		return (status);
 	}
 
@@ -432,12 +436,18 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	/* Try device without unit number */
 	if ((fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
-			if (errno == EPERM || errno == EACCES)
+			if (errno == EPERM || errno == EACCES) {
 				status = PCAP_ERROR_PERM_DENIED;
-			else
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "Attempt to open %s failed with %s - root privilege may be required",
+				    dname,
+				    (errno == EPERM) ? "EPERM" : "EACCES");
+			} else {
 				status = PCAP_ERROR;
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "%s", dname);
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Attempt to open %s failed", dname);
+			}
 			return (status);
 		}
 
@@ -472,12 +482,19 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", name);
 			} else {
-				if (errno == EPERM || errno == EACCES)
+				if (errno == EPERM || errno == EACCES) {
 					status = PCAP_ERROR_PERM_DENIED;
-				else
+					snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					    "Attempt to open %s failed with %s - root privilege may be required",
+					    dname2,
+					    (errno == EPERM) ? "EPERM" : "EACCES");
+				} else {
 					status = PCAP_ERROR;
-				pcap_fmt_errmsg_for_errno(errbuf,
-				    PCAP_ERRBUF_SIZE, errno, "%s", dname2);
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "Attempt to open %s failed",
+					    dname2);
+				}
 			}
 			return (status);
 		}
@@ -915,7 +932,7 @@ dl_doattach(int fd, int ppa, char *ebuf)
 	if (send_request(fd, (char *)&req, sizeof(req), "attach", ebuf) < 0)
 		return (PCAP_ERROR);
 
-	err = dlokack(fd, "attach", (char *)buf, ebuf);
+	err = dlokack(fd, "attach", (char *)buf, ebuf, NULL);
 	if (err < 0)
 		return (err);
 	return (0);
@@ -980,6 +997,7 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 	dl_promiscon_req_t req;
 	bpf_u_int32 buf[MAXDLBUF];
 	int err;
+	int uerror;
 
 	req.dl_primitive = DL_PROMISCON_REQ;
 	req.dl_level = level;
@@ -987,9 +1005,16 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 	    p->errbuf) < 0)
 		return (PCAP_ERROR);
 	err = dlokack(p->fd, "promiscon" STRINGIFY(level), (char *)buf,
-	    p->errbuf);
-	if (err < 0)
+	    p->errbuf, &uerror);
+	if (err < 0) {
+		if (err == PCAP_ERROR_PERM_DENIED) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to set promiscuous mode failed with %s - root privilege may be required",
+			    (uerror == EPERM) ? "EPERM" : "EACCES");
+			err = PCAP_ERROR_PROMISC_PERM_DENIED;
+		}
 		return (err);
+	}
 	return (0);
 }
 
@@ -1452,10 +1477,10 @@ dlbindack(int fd, char *bufp, char *ebuf, int *uerror)
 }
 
 static int
-dlokack(int fd, const char *what, char *bufp, char *ebuf)
+dlokack(int fd, const char *what, char *bufp, char *ebuf, int *uerror)
 {
 
-	return (recv_ack(fd, DL_OK_ACK_SIZE, what, bufp, ebuf, NULL));
+	return (recv_ack(fd, DL_OK_ACK_SIZE, what, bufp, ebuf, uerror));
 }
 
 
@@ -1490,7 +1515,7 @@ dlpassive(int fd, char *ebuf)
 	req.dl_primitive = DL_PASSIVE_REQ;
 
 	if (send_request(fd, (char *)&req, sizeof(req), "dlpassive", ebuf) == 0)
-	    (void) dlokack(fd, "dlpassive", (char *)buf, ebuf);
+	    (void) dlokack(fd, "dlpassive", (char *)buf, ebuf, NULL);
 }
 #endif
 

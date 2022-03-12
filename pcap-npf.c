@@ -1069,7 +1069,12 @@ pcap_activate_npf(pcap_t *p)
 			/*
 			 * There is, but we don't have permission to
 			 * use it.
+			 *
+			 * XXX - we currently get ERROR_BAD_UNIT if the
+			 * user says "no" to the UAC prompt.
 			 */
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "The helper program for \"Admin-only Mode\" must be allowed to make changes to your device");
 			return (PCAP_ERROR_PERM_DENIED);
 
 		default:

@@ -2305,6 +2305,8 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 			 * socket.
 			 */
 			status = PCAP_ERROR_PERM_DENIED;
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to create packet socket failed - CAP_NET_RAW may be required");
 		} else {
 			/*
 			 * Other error.
@@ -3113,6 +3115,9 @@ create_ring(pcap_t *handle, int *status)
 		pcap_strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 		ifr.ifr_data = (void *)&hwconfig;
 
+		/*
+		 * This may require CAP_NET_ADMIN.
+		 */
 		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
 			switch (errno) {
 
@@ -3125,6 +3130,8 @@ create_ring(pcap_t *handle, int *status)
 				 * try requesting hardware time stamps.
 				 */
 				*status = PCAP_ERROR_PERM_DENIED;
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				    "Attempt to set hardware timestamp failed - CAP_NET_ADMIN may be required");
 				return -1;
 
 			case EOPNOTSUPP:

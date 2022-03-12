@@ -539,6 +539,9 @@ usb_activate(pcap_t* handle)
 			/*
 			 * We didn't have permission to open it.
 			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to open %s failed with EACCES - root privileges may be required",
+			    full_path);
 			return PCAP_ERROR_PERM_DENIED;
 
 		default:
