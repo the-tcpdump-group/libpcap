@@ -70,6 +70,8 @@
 #include <linux/usbdevice_fs.h>
 #endif /* HAVE_LINUX_USBDEVICE_FS_H */
 
+#include "diag-control.h"
+
 #define USB_IFACE "usbmon"
 #define USB_LINE_LEN 4096
 
