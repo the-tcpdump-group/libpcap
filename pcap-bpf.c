@@ -503,12 +503,17 @@ bpf_open(char *errbuf)
 	    ((errno != EACCES && errno != ENOENT) ||
 	     (fd = open(cloning_device, O_RDONLY)) == -1)) {
 		if (errno != ENOENT) {
-			if (errno == EACCES)
+			if (errno == EACCES) {
 				fd = PCAP_ERROR_PERM_DENIED;
-			else
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "Attempt to open %s failed - root privileges may be required",
+				    cloning_device);
+			} else {
 				fd = PCAP_ERROR;
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "(cannot open device) %s", cloning_device);
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "(cannot open device) %s", cloning_device);
+			}
 			return (fd);
 		}
 		no_cloning_bpf = 1;
@@ -577,8 +582,9 @@ bpf_open(char *errbuf)
 			 * if any.
 			 */
 			fd = PCAP_ERROR_PERM_DENIED;
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "(cannot open BPF device) %s", device);
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Attempt to open %s failed - root privileges may be required",
+			    device);
 			break;
 
 		default:
