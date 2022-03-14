@@ -73,6 +73,9 @@
 #include "diag-control.h"
 
 #define USB_IFACE "usbmon"
+
+#define USBMON_DEV_PREFIX "usbmon"
+#define USBMON_DEV_PREFIX_LEN	(sizeof USBMON_DEV_PREFIX - 1)
 #define USB_LINE_LEN 4096
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -175,9 +178,6 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 int
 usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
-	char usb_mon_dir[PATH_MAX];
-	char *usb_mon_prefix;
-	size_t usb_mon_prefix_len;
 	struct dirent* data;
 	int ret = 0;
 	DIR* dir;
@@ -186,26 +186,10 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 
 	/*
 	 * We require 2.6.27 or later kernels, so we have binary-mode support.
-	 * What do the device names look like?
-	 * Split LINUX_USB_MON_DEV into a directory that we'll
-	 * scan and a file name prefix that we'll check for.
+	 * The devices are of the form /dev/usbmon{N}.
+	 * Open /dev and scan it.
 	 */
-	pcap_strlcpy(usb_mon_dir, LINUX_USB_MON_DEV, sizeof usb_mon_dir);
-	usb_mon_prefix = strrchr(usb_mon_dir, '/');
-	if (usb_mon_prefix == NULL) {
-		/*
-		 * This "shouldn't happen".  Just give up if it
-		 * does.
-		 */
-		return 0;
-	}
-	*usb_mon_prefix++ = '\0';
-	usb_mon_prefix_len = strlen(usb_mon_prefix);
-
-	/*
-	 * Open the directory and scan it.
-	 */
-	dir = opendir(usb_mon_dir);
+	dir = opendir("/dev");
 	if (dir != NULL) {
 		while ((ret == 0) && ((data = readdir(dir)) != 0)) {
 			name = data->d_name;
@@ -213,13 +197,14 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 			/*
 			 * Is this a usbmon device?
 			 */
-			if (strncmp(name, usb_mon_prefix, usb_mon_prefix_len) != 0)
+			if (strncmp(name, USBMON_DEV_PREFIX,
+			    USBMON_DEV_PREFIX_LEN) != 0)
 				continue;	/* no */
 
 			/*
 			 * What's the device number?
 			 */
-			if (sscanf(&name[usb_mon_prefix_len], "%d", &n) == 0)
+			if (sscanf(&name[USBMON_DEV_PREFIX_LEN], "%d", &n) == 0)
 				continue;	/* failed */
 
 			ret = usb_dev_add(devlistp, n, err_str);
@@ -514,7 +499,8 @@ usb_activate(pcap_t* handle)
 	 * We require 2.6.27 or later kernels, so we have binary-mode support.
 	 * Try to open the binary interface.
 	 */
-	snprintf(full_path, USB_LINE_LEN, LINUX_USB_MON_DEV"%d", handlep->bus_index);
+	snprintf(full_path, USB_LINE_LEN, "/dev/"USBMON_DEV_PREFIX"%d",
+	    handlep->bus_index);
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd < 0)
 	{
