@@ -2377,12 +2377,17 @@ if test "xxx_only" != yes; then
       AC_DEFINE(PCAP_SUPPORT_LINUX_USBMON, 1, [target host supports Linux usbmon for USB sniffing])
       MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
       AC_MSG_RESULT(yes)
-      ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
-      if test $? -ne 0 ; then
-        ac_usb_dev_name="usbmon"
-      fi
-      AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
-      AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
+      #
+      # Note: if the directory for special files is *EVER* somewhere
+      # other than the UN*X standard of /dev (which will break any
+      # software that looks for /dev/null or /dev/tty, for example,
+      # so doing that is *REALLY* not a good idea), please provide
+      # some mechanism to determine that directory at *run time*,
+      # rather than *configure time*, so that it works when doinga
+      # a cross-build, and that works with *multiple* distributions,
+      # with our without udev, and with multiple versions of udev,
+      # with udevinfo or udevadm or any other mechanism to get the
+      # special files directory.
       #
       # Do we have a version of <linux/compiler.h> available?
       # If so, we might need it for <linux/usbdevice_fs.h>.

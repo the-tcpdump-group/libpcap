@@ -1497,7 +1497,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     if(NOT DISABLE_LINUX_USBMON)
         set(PCAP_SUPPORT_LINUX_USBMON TRUE)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-usb-linux.c)
-        set(LINUX_USB_MON_DEV /dev/usbmon)
         #
         # Do we have a version of <linux/compiler.h> available?
         # If so, we might need it for <linux/usbdevice_fs.h>.
