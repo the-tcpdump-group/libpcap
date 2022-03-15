@@ -366,8 +366,12 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * chop off the unit number, so "dname" is just a device type name.
 	 */
 	cp = split_dname(dname, &unit, errbuf);
-	if (cp == NULL)
+	if (cp == NULL) {
+		/*
+		 * split_dname() has filled in the error message.
+		 */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 	*cp = '\0';
 
 	/*
@@ -423,8 +427,12 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * type name.
 	 */
 	cp = split_dname(dname, ppa, errbuf);
-	if (cp == NULL)
+	if (cp == NULL) {
+		/*
+		 * split_dname() has filled in the error message.
+		 */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
 
 	/*
 	 * Make a copy of the device pathname, and then remove the unit
@@ -1221,6 +1229,9 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			break;
 
 		default:
+			/*
+			 * Neither EPERM nor EACCES.
+			 */
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: %s", what,
 			    dlstrerror(errmsgbuf, sizeof (errmsgbuf), dlp->error_ack.dl_errno));

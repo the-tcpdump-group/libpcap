@@ -793,9 +793,14 @@ static int dag_activate(pcap_t* p)
 		/*
 		 * XXX - does this reliably set errno?
 		 */
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
+			/*
+			 * There's nothing more to say, so clear
+			 * the error mesage.
+			 */
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
-		else if (errno == EPERM || errno == EACCES) {
+			p->errbuf[0] = '\0';
+		} else if (errno == EPERM || errno == EACCES) {
 			ret = PCAP_ERROR_PERM_DENIED;
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Attempt to open %s failed with %s - additional privileges may be required",

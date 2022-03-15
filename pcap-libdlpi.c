@@ -108,9 +108,14 @@ pcap_activate_libdlpi(pcap_t *p)
 	 */
 	retv = dlpi_open(p->opt.device, &dh, DLPI_RAW|DLPI_PASSIVE);
 	if (retv != DLPI_SUCCESS) {
-		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK)
+		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK) {
+			/*
+			 * There's nothing more to say, so clear the
+			 * error message.
+			 */
 			status = PCAP_ERROR_NO_SUCH_DEVICE;
-		else if (retv == DL_SYSERR &&
+			p->errbuf[0] = '\0';
+		} else if (retv == DL_SYSERR &&
 		    (errno == EPERM || errno == EACCES)) {
 			status = PCAP_ERROR_PERM_DENIED;
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,

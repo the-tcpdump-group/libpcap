@@ -977,6 +977,11 @@ pcap_activate_linux(pcap_t *handle)
 	 * we'll be copying it, that won't fit.
 	 */
 	if (strlen(device) >= sizeof(ifr.ifr_name)) {
+		/*
+		 * There's nothing more to say, so clear the error
+		 * message.
+		 */
+		handle->errbuf[0] = '\0';
 		status = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto fail;
 	}
@@ -4567,12 +4572,18 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 			 */
 			return PCAP_ERROR_IFACE_NOT_UP;
 		}
-		if (errno == ENODEV)
+		if (errno == ENODEV) {
+			/*
+			 * There's nothing more to say, so clear the
+			 * error message.
+			 */
+			ebuf[0] = '\0';
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
-		else
+		} else {
 			ret = PCAP_ERROR;
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "bind");
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "bind");
+		}
 		return ret;
 	}
 
@@ -5205,12 +5216,17 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 		if (errno == ENODEV) {
 			/*
 			 * No such device.
+			 *
+			 * There's nothing more to say, so clear
+			 * the error message.
 			 */
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
-		} else
+			ebuf[0] = '\0';
+		} else {
 			ret = PCAP_ERROR;
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "SIOCGIFHWADDR");
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "SIOCGIFHWADDR");
+		}
 		return ret;
 	}
 

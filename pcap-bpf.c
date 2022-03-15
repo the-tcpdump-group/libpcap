@@ -661,7 +661,11 @@ bpf_bind(int fd, const char *name, char *errbuf)
 		case ENXIO:
 			/*
 			 * There's no such device.
+			 *
+			 * There's nothing more to say, so clear out the
+			 * error message.
 			 */
+			errbuf[0] = '\0';
 			return (PCAP_ERROR_NO_SUCH_DEVICE);
 
 		case ENETDOWN:
@@ -3052,7 +3056,11 @@ monitor_mode(pcap_t *p, int set)
 		case ENXIO:
 			/*
 			 * There's no such device.
+			 *
+			 * There's nothing more to say, so clear the
+			 * error message.
 			 */
+			p->errbuf[0] = '\0';
 			close(sock);
 			return (PCAP_ERROR_NO_SUCH_DEVICE);
 
