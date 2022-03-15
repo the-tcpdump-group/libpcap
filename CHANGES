@@ -13,6 +13,7 @@ Monthday, Month DD, YYYY:
         try pkg-config first
       If we have pkg-config and Homebrew, try to set pkg-config up to
         find Homebrew packages
+      Fix some formatting string issues found by cppcheck
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
