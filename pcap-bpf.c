@@ -2200,7 +2200,7 @@ pcap_activate_bpf(pcap_t *p)
 				 *
 				 * Otherwise, fail.
 				 */
-				if (errno != BPF_BIND_BUFFER_TOO_BIG) {
+				if (status != BPF_BIND_BUFFER_TOO_BIG) {
 					/*
 					 * Special checks on macOS to deal
 					 * with the way monitor mode was
