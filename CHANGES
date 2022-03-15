@@ -4,6 +4,11 @@ Monthday, Month DD, YYYY:
       Use __builtin_unreachable() in PCAP_UNREACHABLE.
       Use AS_HELP_STRING macro instead of AC_HELP_STRING in the
         configure scripts, to avoid deprecation warnings.
+      Change availability tags in pcap.h to make it easier to
+        arrange for it to be used in Darwin releases
+      Update configure-time universal build checks for macOS
+      Update config.guess and config.sub
+      Use AS_HELP_STRING for --enable-remote
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
