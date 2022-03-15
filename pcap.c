@@ -2855,7 +2855,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 fail:
 	if (status == PCAP_ERROR) {
 		/*
-		 * Another buffer is a bit cumbersome, but it avoids -Wformat-truncation.
+		 * Another buffer is a bit cumbersome, but it avoids
+		 * -Wformat-truncation.
 		 */
 		char trimbuf[PCAP_ERRBUF_SIZE - 5]; /* 2 bytes shorter */
 
@@ -2866,16 +2867,27 @@ fail:
 	    status == PCAP_ERROR_PERM_DENIED ||
 	    status == PCAP_ERROR_PROMISC_PERM_DENIED) {
 		/*
-		 * Idem.
+		 * Only show the additional message if it's not
+		 * empty.
 		 */
-		char trimbuf[PCAP_ERRBUF_SIZE - 8]; /* 2 bytes shorter */
+		if (p->errbuf[0] != '\0') {
+			/*
+			 * Idem.
+			 */
+			char trimbuf[PCAP_ERRBUF_SIZE - 8]; /* 2 bytes shorter */
 
-		pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%.*s)", device,
-		    pcap_statustostr(status), PCAP_ERRBUF_SIZE - 6, trimbuf);
-	} else
+			pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%.*s)",
+			    device, pcap_statustostr(status),
+			    PCAP_ERRBUF_SIZE - 6, trimbuf);
+		} else {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
+			    device, pcap_statustostr(status));
+		}
+	} else {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", device,
 		    pcap_statustostr(status));
+	}
 	pcap_close(p);
 	return (NULL);
 }
