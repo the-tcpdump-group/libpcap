@@ -9,6 +9,10 @@ Monthday, Month DD, YYYY:
       Update configure-time universal build checks for macOS
       Update config.guess and config.sub
       Use AS_HELP_STRING for --enable-remote
+      If we look for an SSL library with pkg-config in configure script,
+        try pkg-config first
+      If we have pkg-config and Homebrew, try to set pkg-config up to
+        find Homebrew packages
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
