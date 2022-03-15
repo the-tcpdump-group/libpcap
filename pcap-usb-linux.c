@@ -520,7 +520,12 @@ usb_activate(pcap_t* handle)
 			 * doesn't exist (no "scan all buses"
 			 * device if the bus index is 0, no
 			 * such bus if the bus index isn't 0).
+			 *
+			 * For now, don't provide an error message;
+			 * if we can determine what the particular
+			 * problem is, we should report that.
 			 */
+			handle->errbuf[0] = '\0';
 			return PCAP_ERROR_NO_SUCH_DEVICE;
 
 		case EACCES:

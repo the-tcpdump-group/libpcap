@@ -1062,7 +1062,10 @@ pcap_activate_npf(pcap_t *p)
 		case ERROR_BAD_UNIT:
 			/*
 			 * There's no such device.
+			 * There's nothing to add, so clear the error
+			 * message.
 			 */
+			p->errbuf[0] = '\0';
 			return (PCAP_ERROR_NO_SUCH_DEVICE);
 
 		case ERROR_ACCESS_DENIED:
