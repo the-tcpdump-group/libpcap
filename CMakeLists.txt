@@ -1811,7 +1811,7 @@ if(NOT DISABLE_SNF)
 endif()
 
 # Check for Riverbed AirPcap support.
-if(NOT DISABLE_AirPcap)
+if(NOT DISABLE_AIRPCAP)
     #
     # Try to find the AirPcap header file and library.
     #
