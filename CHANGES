@@ -45,6 +45,7 @@ Monthday, Month DD, YYYY:
     Capture:
       Never process more than INT_MAX packets in a pcap_dispatch() call,
         to avoid integer overflow (issue #1087).
+      Improve error messages for "permission denied" errors.
     Packet filtering:
       Get PFLOG header length from the length value in the header.
       Support all the direction, reason, and action types supported by
@@ -87,6 +88,9 @@ Monthday, Month DD, YYYY:
       Get rid of old umaintained VS project files.
       Fix deprecation warning for pcap_handle().
       Npcap is now at npcap.com, not npcap.org.
+      Make sure "no such device" and "no permission to open device"
+        errors show up in pcap_activate(), not pcap_create() (fixes,
+        among other things, tcpdump -i <interface-number>).
     Haiku:
       Implement pcap_lib_version(), as now required.
       Handle negative or too-large snaplen values.
