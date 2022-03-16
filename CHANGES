@@ -11,6 +11,8 @@ Monthday, Month DD, YYYY:
     Savefiles:
       Reject pcap files where one of the reserved fields in the
         "link-layer type plus other stuff" is non-zero.
+    rpcap:
+      Support user names and passwords in rpcap:// and rpcaps:// URLs.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
