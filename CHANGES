@@ -6,14 +6,15 @@ Monthday, Month DD, YYYY:
         configure scripts, to avoid deprecation warnings.
       Change availability tags in pcap.h to make it easier to
         arrange for it to be used in Darwin releases
+      Use AS_HELP_STRING for --enable-remote
+      Fix some formatting string issues found by cppcheck
+    Building and testing:
       Update configure-time universal build checks for macOS
       Update config.guess and config.sub
-      Use AS_HELP_STRING for --enable-remote
       If we look for an SSL library with pkg-config in configure script,
         try pkg-config first
       If we have pkg-config and Homebrew, try to set pkg-config up to
         find Homebrew packages
-      Fix some formatting string issues found by cppcheck
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
