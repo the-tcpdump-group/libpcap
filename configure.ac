@@ -2601,7 +2601,7 @@ if test "$want_dpdk" != no; then
 	save_LIBS="$LIBS"
 	save_LDFLAGS="$LDFLAGS"
 	CFLAGS="$CFLAGS $DPDK_CFLAGS"
-	LIBS="$LIBS $DPDK_LDFLAGS"
+	LIBS="$LIBS $DPDK_LIBS"
 	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 
 	AC_MSG_CHECKING(whether we can compile the DPDK support)
@@ -2649,7 +2649,7 @@ AC_INCLUDES_DEFAULT
 
 	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
-		LIBS="$LIBS $DPDK_LDFLAGS"
+		LIBS="$LIBS $DPDK_LIBS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 		V_INCLS="$V_INCLS $DPDK_CFLAGS"
 		AC_DEFINE(PCAP_SUPPORT_DPDK, 1, [target host supports DPDK])
