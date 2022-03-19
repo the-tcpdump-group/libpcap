@@ -3672,7 +3672,7 @@ pcap_statustostr(int errnum)
 		return ("That operation is supported only in monitor mode");
 
 	case PCAP_ERROR_PERM_DENIED:
-		return ("You don't have permission to capture on that device");
+		return ("You don't have permission to perform this capture on that device");
 
 	case PCAP_ERROR_IFACE_NOT_UP:
 		return ("That device is not up");
