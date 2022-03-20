@@ -796,7 +796,7 @@ static int dag_activate(pcap_t* p)
 		if (errno == ENOENT) {
 			/*
 			 * There's nothing more to say, so clear
-			 * the error mesage.
+			 * the error message.
 			 */
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			p->errbuf[0] = '\0';
