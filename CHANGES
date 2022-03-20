@@ -26,13 +26,6 @@ Monthday, Month DD, YYYY:
       Fix some formatting string issues found by cppcheck.
       Squelch some CMake warnings.
       Various small code and comment cleanups.
-    Building and testing:
-      Update configure-time universal build checks for macOS.
-      Update config.guess and config.sub.
-      If we look for an SSL library with pkg-config in configure script,
-        try pkg-config first.
-      If we have pkg-config and Homebrew, try to set pkg-config up to
-        find Homebrew packages.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -101,6 +94,12 @@ Monthday, Month DD, YYYY:
       Implement pcap_lib_version(), as now required.
       Handle negative or too-large snaplen values.
     Building and testing:
+      Update configure-time universal build checks for macOS.
+      Update config.guess and config.sub.
+      If we look for an SSL library with pkg-config in configure script,
+        try pkg-config first.
+      If we have pkg-config and Homebrew, try to set pkg-config up to
+        find Homebrew packages.
       Handle some Autoconf/make errors better.
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Fix compiling on Solaris 9/SPARC and 11/AMD64.
