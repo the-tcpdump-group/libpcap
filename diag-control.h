@@ -86,7 +86,51 @@
 /*
  * Suppress Flex, narrowing, and deprecation warnings.
  */
-#if defined(_MSC_VER)
+#if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+  /*
+   * This is Clang 2.8 or later; we can use "clang diagnostic
+   * ignored -Wxxx" and "clang diagnostic push/pop".
+   *
+   * Suppress -Wdocumentation warnings; GCC doesn't support -Wdocumentation,
+   * at least according to the GCC 7.3 documentation.  Apparently, Flex
+   * generates code that upsets at least some versions of Clang's
+   * -Wdocumentation.
+   *
+   * (This could be clang-cl, which defines _MSC_VER, so test this
+   * before testing _MSC_VER.)
+   */
+  #define DIAG_OFF_FLEX \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
+  #define DIAG_ON_FLEX \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * Suppress the only narrowing warnings you get from Clang.
+   */
+  #define DIAG_OFF_NARROWING \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32")
+
+  #define DIAG_ON_NARROWING \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * Suppress deprecation warnings.
+   */
+  #define DIAG_OFF_DEPRECATION \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
+  #define DIAG_ON_DEPRECATION \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
+  #define DIAG_OFF_FORMAT_TRUNCATION
+  #define DIAG_ON_FORMAT_TRUNCATION
+#elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
    * and __pragma(warning(push/pop)).
@@ -121,47 +165,6 @@
     __pragma(warning(disable:4996))
   #define DIAG_ON_DEPRECATION \
     __pragma(warning(pop))
-  #define DIAG_OFF_FORMAT_TRUNCATION
-  #define DIAG_ON_FORMAT_TRUNCATION
-#elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
-  /*
-   * This is Clang 2.8 or later; we can use "clang diagnostic
-   * ignored -Wxxx" and "clang diagnostic push/pop".
-   *
-   * Suppress -Wdocumentation warnings; GCC doesn't support -Wdocumentation,
-   * at least according to the GCC 7.3 documentation.  Apparently, Flex
-   * generates code that upsets at least some versions of Clang's
-   * -Wdocumentation.
-   */
-  #define DIAG_OFF_FLEX \
-    PCAP_DO_PRAGMA(clang diagnostic push) \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation") \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32") \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn") \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter") \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
-  #define DIAG_ON_FLEX \
-    PCAP_DO_PRAGMA(clang diagnostic pop)
-
-  /*
-   * Suppress the only narrowing warnings you get from Clang.
-   */
-  #define DIAG_OFF_NARROWING \
-    PCAP_DO_PRAGMA(clang diagnostic push) \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32")
-
-  #define DIAG_ON_NARROWING \
-    PCAP_DO_PRAGMA(clang diagnostic pop)
-
-  /*
-   * Suppress deprecation warnings.
-   */
-  #define DIAG_OFF_DEPRECATION \
-    PCAP_DO_PRAGMA(clang diagnostic push) \
-    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
-  #define DIAG_ON_DEPRECATION \
-    PCAP_DO_PRAGMA(clang diagnostic pop)
   #define DIAG_OFF_FORMAT_TRUNCATION
   #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
@@ -241,21 +244,21 @@
    * In addition, the generated code may have functions with unreachable
    * code, so suppress warnings about those.
    */
-  #if defined(_MSC_VER)
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+    /*
+     * This is Clang 2.8 or later (including clang-cl, so test this
+     * before _MSC_VER); we can use "clang diagnostic ignored -Wxxx".
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow") \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
+  #elif defined(_MSC_VER)
     /*
      * This is Microsoft Visual Studio; we can use
      * __pragma(warning(disable:XXXX)).
      */
     #define DIAG_OFF_BISON_BYACC \
       __pragma(warning(disable:4702))
-  #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
-    /*
-     * This is Clang 2.8 or later; we can use "clang diagnostic
-     * ignored -Wxxx".
-     */
-    #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow") \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
      * This is GCC 4.6 or later, or a compiler claiming to be that.
@@ -279,7 +282,14 @@
    * The generated code may have functions with unreachable code and
    * switches with only a default case, so suppress warnings about those.
    */
-  #if defined(_MSC_VER)
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+    /*
+     * This is Clang 2.8 or later (including clang-cl, so test this
+     * before _MSC_VER); we can use "clang diagnostic ignored -Wxxx".
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
+  #elif defined(_MSC_VER)
     /*
      * This is Microsoft Visual Studio; we can use
      * __pragma(warning(disable:XXXX)).
@@ -292,13 +302,6 @@
       __pragma(warning(disable:4242)) \
       __pragma(warning(disable:4244)) \
       __pragma(warning(disable:4702))
-  #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
-    /*
-     * This is Clang 2.8 or later; we can use "clang diagnostic
-     * ignored -Wxxx".
-     */
-    #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
      * This is GCC 4.6 or later, or a compiler claiming to be that.
