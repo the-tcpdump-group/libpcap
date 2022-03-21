@@ -10,6 +10,7 @@ Monthday, Month DD, YYYY:
       Fix some formatting string issues found by cppcheck.
       Squelch some CMake warnings.
       Various small code and comment cleanups.
+      Fix diag-control.h to handle compiling with clang-cl.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
