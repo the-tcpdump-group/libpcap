@@ -1587,21 +1587,16 @@ if(NOT DISABLE_DPDK)
     find_package(dpdk)
     if(dpdk_FOUND)
         #
-        # We include rte_bus.h, and older versions of DPDK didn't have
-        # it, so check for it.
-        #
-        # Also, we call rte_eth_dev_count_avail(), and older versions
-        # of DPDK didn't have it, so check for it.
+        # We call rte_eth_dev_count_avail(), and older versions of DPDK
+        # didn't have it, so check for it.
         #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_INCLUDES ${dpdk_INCLUDE_DIRS})
-        check_include_file(rte_bus.h HAVE_RTE_BUS_H)
         set(CMAKE_REQUIRED_LIBRARIES ${dpdk_LIBRARIES})
         check_function_exists(rte_eth_dev_count_avail HAVE_RTE_ETH_DEV_COUNT_AVAIL)
         cmake_pop_check_state()
-        if(HAVE_RTE_BUS_H AND HAVE_RTE_ETH_DEV_COUNT_AVAIL)
+        if(HAVE_RTE_ETH_DEV_COUNT_AVAIL)
             set(DPDK_C_FLAGS "-march=native")
-            set(DPDK_LIB dpdk rt m numa dl)
             set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})
             include_directories(AFTER ${dpdk_INCLUDE_DIRS})
             link_directories(AFTER ${dpdk_LIBRARIES})
@@ -1621,6 +1616,11 @@ if(NOT DISABLE_DPDK)
             check_type_size("struct rte_ether_addr" STRUCT_RTE_ETHER_ADDR)
             cmake_pop_check_state()
         endif()
+    else()
+      message(WARNING,
+"We couldn't find DPDK with pkg-config.  If you want DPDK support,
+make sure that pkg-config is installed, that DPDK 18.02.2 or later is
+installed, and that DPDK provides a .pc file.")
     endif()
 endif()
 
