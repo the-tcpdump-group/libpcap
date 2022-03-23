@@ -2523,131 +2523,58 @@ AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 ])
 
 if test "$want_dpdk" != no; then
+	#
+	# The user didn't explicitly say they don't want DPDK,
+	# so see if we have it.
+	#
+	# We only try to find it using pkg-config; DPDK is *SO*
+	# complicated - DPDK 19.02, for example, has about 117(!)
+	# libraries, and the precise set of libraries required has
+	# changed ver time  - so attempting to guess which libraries
+	# you need, and hardcoding that in an attempt to find the
+	# libraries without DPDK, rather than relying on DPDK to
+	# tell you, with a .pc file, what libraries are needed,
+	# is *EXTREELY* fragile and has caused some bug reports,
+	# so we're just not going to do it.
+	#
+	# If that causes a problem, the only thing we will do is
+	# accept an alternative way of finding the appropriate
+	# library set for the installed version of DPDK that is
+	# as robust as pkg-config (i.e., it had better work as well
+	# as pkg-config with *ALL* versions of DPDK that provide a
+	# libdpdk.pc file).
+	#
 	PKG_CHECK_MODULES(DPDK, libdpdk,
 	    [
-		found_dpdk_with_pkg_config=yes
+		found_dpdk=yes
 	    ])
 
 	#
-	# If we didn't find it with pkg-config, try checking for
-	# it manually.
+	# Did we find DPDK?
 	#
-	if test "x$found_dpdk_with_pkg_config" != "xyes"
-	then
-		if test -z "$dpdk_dir"; then
-			#
-			# The user didn't specify a directory containing
-			# the DPDK headers and libraries.  If we find
-			# a /usr/local/include/dpdk directory, assume
-			# it's /usr/local, otherwise assume it's /usr.
-			#
-			if test -d "/usr/local/include/dpdk"; then
-				dpdk_dir="/usr/local"
-			else
-				dpdk_dir="/usr"
-			fi
-		fi
+	if test "$found_dpdk" = yes; then
 		#
-		# The convention appears to be that 1) there's a "dpdk"
-		# subdirectory of the include directory, containing DPDK
-		# headers (at least in the installation on Ubuntu with
-		# the system DPDK packages) and 2) includes of DPDK
-		# headers don't use "dpdk/{header}" (at least from the
-		# way the DPDK documentation is written).
+		# Found it.
 		#
-		# So we add "/dpdk" to the include directory, and always
-		# add that to the list of include directories to search.
+		# We call rte_eth_dev_count_avail(), and older versions
+		# of DPDK didn't have it, so check for it.
 		#
-		dpdk_inc_dir="$dpdk_dir/include/dpdk"
-		dpdk_inc_flags="-I$dpdk_inc_dir"
-		dpdk_lib_dir="$dpdk_dir/lib"
-		#
-		# Handle multiarch systems.
-		#
-		# Step 1: run the C compiler with the -dumpmachine option;
-		# if it succeeds, the output would be the multiarch directory
-		# name if your system has multiarch directories.
-		#
-		multiarch_dir=`$CC -dumpmachine 2>/dev/null`
-		if test ! -z "$multiarch_dir"
-		then
-			#
-			# OK, we have a multiarch directory.
-			#
-			# Now deal with includes.  On Ubuntu 20.04, for
-			# example, we have /usr/include/dpdk *and*
-			# /usr/include/$multiarch_dir/dpdk, and must
-			# search both.
-			#
-			if test -d "$dpdk_dir/include/$multiarch_dir/dpdk"
-			then
-				dpdk_inc_flags="-I$dpdk_dir/include/$multiarch_dir/dpdk $dpdk_inc_flags"
-			fi
-
-			#
-			# Now deal with libraries.
-			#
-			if test -d "$dpdk_lib_dir/$multiarch_dir"
-			then
-				dpdk_lib_dir="$dpdk_lib_dir/$multiarch_dir"
-			fi
-		fi
-		DPDK_MACHINE_CFLAGS="-march=native"
-		DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS $dpdk_inc_flags"
-		DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
-	fi
-
-	save_CFLAGS="$CFLAGS"
-	save_LIBS="$LIBS"
-	save_LDFLAGS="$LDFLAGS"
-	CFLAGS="$CFLAGS $DPDK_CFLAGS"
-	LIBS="$LIBS $DPDK_LIBS"
-	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
-
-	AC_MSG_CHECKING(whether we can compile the DPDK support)
-	AC_CACHE_VAL(ac_cv_dpdk_can_compile,
-	AC_TRY_COMPILE([
-AC_INCLUDES_DEFAULT
-#include <rte_common.h>],
-	    [],
-	    ac_cv_dpdk_can_compile=yes,
-	    ac_cv_dpdk_can_compile=no))
-	AC_MSG_RESULT($ac_cv_dpdk_can_compile)
-
-	#
-	# We include rte_bus.h, and older versions of DPDK
-	# didn't have it, so check for it.
-	#
-	if test "$ac_cv_dpdk_can_compile" = yes; then
-		#
-		# This runs the preprocessor, so make sure it
-		# looks in the DPDK directories.  Instead of
-		# including dpdk/XXX.h, we include just XXX.h
-		# and assume DPDK_CFLAGS is the directory
-		# containing the DPDK headers (that's how
-		# pkg-config sets it, at least on Ubuntu),
-		# so just looking under /usr/include won't
-		# find it.
-		#
-		save_CPPFLAGS="$CPPFLAGS"
-		CPPFLAGS="$CPPFLAGS $DPDK_CFLAGS"
-		AC_CHECK_HEADER(rte_bus.h)
-		CPPFLAGS="$save_CPPFLAGS"
-	fi
-
-	#
-	# We call rte_eth_dev_count_avail(), and older versions
-	# of DPDK didn't have it, so check for it.
-	#
-	if test "$ac_cv_header_rte_bus_h" = yes; then
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		save_LDFLAGS="$LDFLAGS"
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LIBS"
+		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 		AC_CHECK_FUNC(rte_eth_dev_count_avail)
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+		LDFLAGS="$save_LDFLAGS"
 	fi
-
-	CFLAGS="$save_CFLAGS"
-	LIBS="$save_LIBS"
-	LDFLAGS="$save_LDFLAGS"
 
 	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
+		#
+		# We found a usable DPDK.  Build with it.
+		#
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LIBS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
@@ -2668,46 +2595,88 @@ AC_INCLUDES_DEFAULT
 			#include <rte_ether.h>
 		    ])
 	else
-		if test "$V_PCAP" = dpdk; then
-			# User requested DPDK-only capture support, but
-			# we couldn't the DPDK API support at all, or we
-			# found it but it wasn't a sufficiently recent
-			# version.
-			if test "$ac_cv_dpdk_can_compile" != yes; then
+		#
+		# We didn't find a usable DPDK.
+		# If we required it (with --with-dpdk or --with-pcap=dpdk),
+		# fail with an appropriate message telling the user what
+		# the problem was, otherwise note the problem with a
+		# warning.
+		#
+		if test "$found_dpdk" != yes; then
+			#
+			# Not found with pkg-config.  Note that we
+			# require that DPDK must be findable with
+			# pkg-config.
+			#
+			if test "$V_PCAP" = dpdk; then
 				#
-				# Couldn't even find the headers.
+				# User requested DPDK-only capture support.
 				#
-				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
-			else
-				#
-				# Found the headers, but we couldn't find
-				# rte_bus.h or rte_eth_dev_count_avail(),
-				# we don't have a sufficiently recent
-				# version of DPDK.
-				#
-				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later; install a newer version of DPDK, or don't request DPDK support])
+				AC_MSG_ERROR(
+[DPDK support requested with --with-pcap=dpdk, but
+we couldn't find DPDK with pkg-config.  Make sure that pkg-config is
+installed, that DPDK 18.02.2 or later is installed, and that DPDK
+provides a .pc file.])
 			fi
-		fi
 
-		if test "$want_dpdk" = yes; then
-			# User requested DPDK-only capture support, but
-			# we couldn't the DPDK API support at all, or we
-			# found it but it wasn't a sufficiently recent
-			# version.
-			if test "$ac_cv_dpdk_can_compile" != yes; then
+			if test "$want_dpdk" = yes; then
 				#
-				# Couldn't even find the headers.
+				# User requested that libpcap include
+				# DPDK capture support.
 				#
-				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
-			else
-				#
-				# Found the headers, but we couldn't find
-				# rte_bus.h or rte_eth_dev_count_avail(),
-				# we don't have a sufficiently recent
-				# version of DPDK.
-				#
-				AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but we require DPDK 18.x or later: install a newer version of DPDK, or don't request DPDK support])
+				AC_MSG_ERROR(
+[DPDK support requested with --with-dpdk, but we
+couldn't find DPDK with pkg-config.  Make sure that pkg-config
+is installed, that DPDK 18.02.2 or later is installed, and that
+DPDK provides .pc file.])
 			fi
+
+			#
+			# User didn't indicate whether they wanted DPDK
+			# or not; just warn why we didn't find it.
+			#
+			AC_MSG_WARN(
+[We couldn't find DPDK with pkg-config.  If
+you want DPDK support, make sure that pkg-config is installed,
+that DPDK 18.02.2 or later is installed, and that DPDK provides a
+.pc file.])
+		elif test "$ac_cv_func_rte_eth_dev_count_avail" != yes; then
+			#
+			# Found with pkg-config, but we couldn't compile
+			# a program that calls rte_eth_dev_count(); we
+			# probably have the developer package installed,
+			# but don't have a sufficiently recent version
+			# of DPDK.  Note that we need a sufficiently
+			# recent version of DPDK.
+			#
+			if test "$V_PCAP" = dpdk; then
+				#
+				# User requested DPDK-only capture support.
+				#
+				AC_MSG_ERROR(
+[DPDK support requested with --with-pcap=dpdk, but we
+can't compile libpcap with DPDK.  Make sure that DPDK 18.02.2 or later
+is installed.])
+			fi
+
+			if test "$want_dpdk" = yes; then
+				#
+				# User requested that libpcap include
+				# DPDK capture support.
+				#
+				AC_MSG_ERROR(
+[DPDK support requested with --with-dpdk, but
+we can't compile libpcap with DPDK.  Make sure that DPDK 18.02.2
+or later is DPDK is installed.])
+			fi
+
+			#
+			# User didn't indicate whether they wanted DPDK
+			# or not; just warn why we didn't find it.
+			#
+			AC_MSG_WARN(
+[DPDK was found, but we can't compile libpcap with it.
+Make sure that DPDK 18.02.2 or later is installed.])
 		fi
 	fi
 fi
