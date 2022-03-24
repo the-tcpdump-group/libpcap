@@ -1238,6 +1238,9 @@ else()
             # Nothing we support.
             #
             set(PCAP_TYPE null)
+            message(WARNING
+"cannot determine packet capture interface
+(see the INSTALL.md file for more info)")
         endif()
     endif()
 endif(WIN32)
