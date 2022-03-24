@@ -1,16 +1,58 @@
 # libpcap installation notes
-To build libpcap, run `./configure` (a shell script). The configure
-script will determine your system attributes and generate an
-appropriate `Makefile` from `Makefile.in`. Next run `make`. If everything
-goes well, you can `su` to root and run `make install`. However, you need
-not install libpcap if you just want to build tcpdump; just make sure
-the tcpdump and libpcap directory trees have the same parent
-directory.
+Libpcap can be built either with the configure script and `make`, or
+with CMake and any build system supported by CMake.
+
+To build libpcap with the configure script and `make`:
+
+* Run `./configure` (a shell script).  The configure script will
+determine your system attributes and generate an appropriate `Makefile`
+from `Makefile.in`.  The configure script has a number of options to
+control the configuration of libpcap; `./configure --help`` will show
+them.
+
+* Next, run `make`.  If everything goes well, you can
+`su` to root and run `make install`.  However, you need not install
+libpcap if you just want to build tcpdump; just make sure the tcpdump
+and libpcap directory trees have the same parent directory.
+
+To build libpcap with CMake and the build system of your choice, from
+the command line:
+
+* Create a build directory into which CMake will put the build files it
+generates; CMake does not work as well with builds done in the source
+code directory as does the configure script.  The build directory may be
+created as a subdirectory of the source directory or as a directory
+outside the source directory.
+
+* Change to the build directory and run CMake with the path from the
+build directory to the source directory as an argument.  The `-G` flag
+can be used to select the CMake "generator" appropriate for the build
+system you're using; various `-D` flags can be used to control the
+configuration of libpcap.
+
+* Run the build tool.  If everything goes well, you can `su` to root and
+run the build tool with the `install` target.  Building tcpdump from a
+libpcap in a build directory is not supported.
+
+An `uninstall` target is supported with both `./configure` and CMake.
+
+***DO NOT*** run the build as root; there is no need to do so, running
+anything as root that doesn't need to be run as root increases the risk
+of damaging your system, and running the build as root will put files in
+the build directory that are owned by root and that probably cannot be
+overwritten, removed, or replaced except by root, which could cause
+permission errors in subsequent builds.
 
 If configure says:
 
     configure: warning: cannot determine packet capture interface
-    configure: warning: (see INSTALL for more info)
+    configure: warning: (see INSTALL.md file for more info)
+
+or CMake says:
+
+    cannot determine packet capture interface
+
+    (see the INSTALL.md file for more info)
 
 then your system either does not support packet capture or your system
 does support packet capture but libpcap does not support that
@@ -19,10 +61,12 @@ packet capture not supported by libpcap, please send us patches; don't
 forget to include an autoconf fragment suitable for use in
 `configure.ac`.
 
-It is possible to override the default packet capture type, although
-the circumstances where this works are limited.  One possible reason to
-do that would be to force a supported packet capture type in the case
-where the configure scripts fails to detect it.
+It is possible to override the default packet capture type with the
+`--with-pcap`` option to `./configure` or the `-DPCAP_TYPE` option to
+CMake, although the circumstances where this works are limited.  One
+possible reason to do that would be to force a supported packet capture
+type in the case where the configure or CMake scripts fails to detect
+it.
 
 You will need a C99 compiler to build libpcap. The configure script
 will abort if your compiler is not C99 compliant. If this happens, use
@@ -30,16 +74,20 @@ the generally available GNU C compiler (GCC) or Clang.
 
 You will need either Flex 2.5.31 or later, or a version of Lex
 compatible with it (if any exist), to build libpcap.  The configure
-script will abort if there isn't any such program.  If you have an older
-version of Flex, or don't have a compatible version of Lex, the current
-version of Flex is available [here](https://github.com/westes/flex).
+script will abort if there isn't any such program; CMake fails if Flex
+or Lex cannot be found, but doesn't ensure that it's compatible with
+Flex 2.5.31 or later.  If you have an older version of Flex, or don't
+have a compatible version of Lex, the current version of Flex is
+available [here](https://github.com/westes/flex).
 
 You will need either Bison, Berkeley YACC, or a version of YACC
 compatible with them (if any exist), to build libpcap.  The configure
-script will abort if there isn't any such program.  If you don't have
-any such program, the current version of Bison can be found
-[here](https://ftp.gnu.org/gnu/bison/) and the current version of Berkeley YACC
-can be found [here](https://invisible-island.net/byacc/).
+script will abort if there isn't any such program; CMake fails if Bison
+or some form of YACC cannot be found, but doesn't ensure that it's
+compatible with Bison or Berkeley YACC.  If you don't have any such
+program, the current version of Bison can be found
+[here](https://ftp.gnu.org/gnu/bison/) and the current version of
+Berkeley YACC can be found [here](https://invisible-island.net/byacc/).
 
 Sometimes the stock C compiler does not interact well with Flex and
 Bison. The list of problems includes undefined references for alloca(3).
