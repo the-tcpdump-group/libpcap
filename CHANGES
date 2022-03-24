@@ -122,7 +122,7 @@ Monthday, Month DD, YYYY:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
       Note that = and == are the same operator in filters (issue #1044).
-      Update INSTALL.md.
+      Update INSTALL.md and README.md.
       Update and clean up CONTRIBUTING.md.
       Trim documentation of support for now-dead UN*Xe and older
         versions of other UN*Xes.
