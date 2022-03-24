@@ -101,6 +101,7 @@ Monthday, Month DD, YYYY:
       Don't provide -L/usr/lib for pkg-config --libs in pkg-config.
       Fix error message for inadequate Bison/Berkeley YACC.
       Only use pkg-config when checking for DPDK.
+      Have CMake warn if no capture mechanism can be found.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
