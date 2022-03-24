@@ -6687,8 +6687,8 @@ done
 		V_PCAP=null
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot determine packet capture interface" >&5
 $as_echo "$as_me: WARNING: cannot determine packet capture interface" >&2;}
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (see the INSTALL doc for more info)" >&5
-$as_echo "$as_me: WARNING: (see the INSTALL doc for more info)" >&2;}
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (see the INSTALL.md file for more info)" >&5
+$as_echo "$as_me: WARNING: (see the INSTALL.md file for more info)" >&2;}
 	fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking packet capture type" >&5

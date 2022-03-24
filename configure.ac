@@ -703,7 +703,7 @@ else
 		#
 		V_PCAP=null
 		AC_MSG_WARN(cannot determine packet capture interface)
-		AC_MSG_WARN((see the INSTALL doc for more info))
+		AC_MSG_WARN((see the INSTALL.md file for more info))
 	fi
 fi
 AC_MSG_CHECKING(packet capture type)
