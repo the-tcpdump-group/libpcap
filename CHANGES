@@ -100,6 +100,7 @@ Monthday, Month DD, YYYY:
         require 2.8.12, where it first appeared.
       Don't provide -L/usr/lib for pkg-config --libs in pkg-config.
       Fix error message for inadequate Bison/Berkeley YACC.
+      Only use pkg-config when checking for DPDK.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
