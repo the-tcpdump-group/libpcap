@@ -11940,7 +11940,7 @@ if test "$want_dpdk" != no; then
 	# you need, and hardcoding that in an attempt to find the
 	# libraries without DPDK, rather than relying on DPDK to
 	# tell you, with a .pc file, what libraries are needed,
-	# is *EXTREELY* fragile and has caused some bug reports,
+	# is *EXTREMELY* fragile and has caused some bug reports,
 	# so we're just not going to do it.
 	#
 	# If that causes a problem, the only thing we will do is
@@ -11950,6 +11950,14 @@ if test "$want_dpdk" != no; then
 	# as pkg-config with *ALL* versions of DPDK that provide a
 	# libdpdk.pc file).
 	#
+	# If --with-dpdk={path} was specified, add {path}/pkgconfig
+	# to PKG_CONFIG_PATH, so we look for the .pc file there,
+	# first.
+	#
+	save_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	if test -n "$dpdk_dir"; then
+		PKG_CONFIG_PATH="$dpdk_dir:$PKG_CONFIG_PATH"
+	fi
 
 
 pkg_failed=no
@@ -12065,6 +12073,7 @@ $as_echo "not found" >&6; }
 
 fi
 
+	PKG_CONFIG_PATH="$save_PKG_CONFIG_PATH"
 
 	#
 	# Did we find DPDK?
