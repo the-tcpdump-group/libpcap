@@ -11924,7 +11924,7 @@ if test "$want_dpdk" != no; then
 	# We only try to find it using pkg-config; DPDK is *SO*
 	# complicated - DPDK 19.02, for example, has about 117(!)
 	# libraries, and the precise set of libraries required has
-	# changed ver time  - so attempting to guess which libraries
+	# changed over time  - so attempting to guess which libraries
 	# you need, and hardcoding that in an attempt to find the
 	# libraries without DPDK, rather than relying on DPDK to
 	# tell you, with a .pc file, what libraries are needed,
