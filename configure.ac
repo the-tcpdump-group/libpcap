@@ -2877,7 +2877,6 @@ if test "x$enable_rdma" != "xno"; then
 		    ]
 		)
 	fi
-
 	if test "x$found_usable_libibverbs" = "xyes"
 	then
 		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
