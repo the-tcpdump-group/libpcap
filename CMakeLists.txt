@@ -1713,17 +1713,27 @@ endif(NOT DISABLE_DBUS)
 
 # Check for RDMA sniffing support
 if(NOT DISABLE_RDMA)
-    check_library_exists(ibverbs ibv_get_device_list "" LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
-    if(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+    pkg_check_modules(LIBIBVERBS libibverbs)
+    if(NOT LIBIBVERBS_FOUND)
+        #
+        # pkg-config didn't find it; try to look for it ourselves
+        #
+        check_library_exists(ibverbs ibv_get_device_list "" LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+        if(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+            set(LIBIBVERBS_FOUND TRUE)
+            set(LIBIBVERBS_LIBRARIES ibverbs)
+        endif()
+    endif()
+    if(LIBIBVERBS_FOUND)
         check_include_file(infiniband/verbs.h HAVE_INFINIBAND_VERBS_H)
         if(HAVE_INFINIBAND_VERBS_H)
             check_symbol_exists(ibv_create_flow infiniband/verbs.h PCAP_SUPPORT_RDMASNIFF)
             if(PCAP_SUPPORT_RDMASNIFF)
                 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-rdmasniff.c)
-                set(PCAP_LINK_LIBRARIES ibverbs ${PCAP_LINK_LIBRARIES})
+                set(PCAP_LINK_LIBRARIES ${LIBIBVERBS_LIBRARIES} ${PCAP_LINK_LIBRARIES})
             endif(PCAP_SUPPORT_RDMASNIFF)
         endif(HAVE_INFINIBAND_VERBS_H)
-    endif(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+    endif(LIBIBVERBS_FOUND)
 endif(NOT DISABLE_RDMA)
 
 #

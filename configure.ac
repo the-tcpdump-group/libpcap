@@ -2530,7 +2530,7 @@ if test "$want_dpdk" != no; then
 	# We only try to find it using pkg-config; DPDK is *SO*
 	# complicated - DPDK 19.02, for example, has about 117(!)
 	# libraries, and the precise set of libraries required has
-	# changed over time  - so attempting to guess which libraries
+	# changed over time - so attempting to guess which libraries
 	# you need, and hardcoding that in an attempt to find the
 	# libraries without DPDK, rather than relying on DPDK to
 	# tell you, with a .pc file, what libraries are needed,
@@ -2868,7 +2868,26 @@ if test "xxx_only" = yes; then
 fi
 
 if test "x$enable_rdma" != "xno"; then
-	AC_CHECK_LIB(ibverbs, ibv_get_device_list, [
+	PKG_CHECK_MODULES(LIBIBVERBS, libibverbs,
+	    [
+		found_libibverbs=yes
+	    ])
+
+	if test "x$found_libibverbs" != "xyes"; then
+		AC_CHECK_LIB(ibverbs, ibv_get_device_list,
+		    [
+			found_libibverbs=yes
+			LIBIBVERBS_CFLAGS=""
+			LIBIBVERBS_LIBS="-libverbs"
+		    ]
+		)
+	fi
+
+	if test "x$found_libibverbs" = "xyes"; then
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$LIBIBVERBS_CFLAGS"
+		LIBS="$LIBIBVERBS_LIBS"
 		AC_CHECK_HEADER(infiniband/verbs.h, [
 			#
 			# ibv_create_flow may be defined as a static inline
@@ -2892,16 +2911,24 @@ if test "x$enable_rdma" != "xno"; then
 				],
 				[
 					AC_MSG_RESULT([yes])
-					AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
-					MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
-					LIBS="-libverbs $LIBS"
+					found_usable_libibverbs=yes
 				],
 				[
 					AC_MSG_RESULT([no])
 				]
 			)
 		])
-	])
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+	fi
+
+	if test "x$found_usable_libibverbs" = "xyes"
+	then
+		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
+		MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
+		CFLAGS="$LIBIBVERBS_CFLAGS $CFLAGS"
+		LIBS="$LIBIBVERBS_LIBS $LIBS"
+	fi
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
 
