@@ -2868,6 +2868,11 @@ if test "xxx_only" = yes; then
 fi
 
 if test "x$enable_rdma" != "xno"; then
+	PKG_CHECK_MODULES(LIBIBVERBS, libibverbs,
+	    [
+		found_libibverbs=yes
+	    ])
+
 	if test "x$found_libibverbs" != "xyes"; then
 		AC_CHECK_LIB(ibverbs, ibv_get_device_list,
 		    [
@@ -2877,6 +2882,7 @@ if test "x$enable_rdma" != "xno"; then
 		    ]
 		)
 	fi
+
 	if test "x$found_usable_libibverbs" = "xyes"
 	then
 		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
