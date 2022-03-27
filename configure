@@ -624,8 +624,6 @@ INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
 PCAP_SUPPORT_RDMASNIFF
-LIBIBVERBS_LIBS
-LIBIBVERBS_CFLAGS
 PCAP_SUPPORT_DBUS
 DBUS_LIBS
 DBUS_CFLAGS
@@ -802,9 +800,7 @@ OPENSSL_LIBS
 DPDK_CFLAGS
 DPDK_LIBS
 DBUS_CFLAGS
-DBUS_LIBS
-LIBIBVERBS_CFLAGS
-LIBIBVERBS_LIBS'
+DBUS_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1504,10 +1500,6 @@ Some influential environment variables:
   DPDK_LIBS   linker flags for libdpdk, overriding pkg-config
   DBUS_CFLAGS C compiler flags for dbus-1, overriding pkg-config
   DBUS_LIBS   linker flags for dbus-1, overriding pkg-config
-  LIBIBVERBS_CFLAGS
-              C compiler flags for libibverbs, overriding pkg-config
-  LIBIBVERBS_LIBS
-              linker flags for libibverbs, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -12572,122 +12564,6 @@ if test "xxx_only" = yes; then
 fi
 
 if test "x$enable_rdma" != "xno"; then
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libibverbs with pkg-config" >&5
-$as_echo_n "checking for libibverbs with pkg-config... " >&6; }
-
-if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libibverbs\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libibverbs") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-
-	#
-	# The package was found, so try to get its C flags and
-	# libraries.
-	#
-	if test -n "$LIBIBVERBS_CFLAGS"; then
-    pkg_cv_LIBIBVERBS_CFLAGS="$LIBIBVERBS_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-
-if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libibverbs\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libibverbs") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBIBVERBS_CFLAGS=`$PKG_CONFIG --cflags "libibverbs" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-	if test -n "$LIBIBVERBS_LIBS"; then
-    pkg_cv_LIBIBVERBS_LIBS="$LIBIBVERBS_LIBS"
- elif test -n "$PKG_CONFIG"; then
-
-if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libibverbs\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libibverbs") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBIBVERBS_LIBS=`$PKG_CONFIG --libs "libibverbs" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-	if test $pkg_failed = yes; then
-		#
-		# That failed - report an error.
-		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
-$as_echo "error" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-	        if test $_pkg_short_errors_supported = yes; then
-		        LIBIBVERBS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libibverbs" 2>&1`
-	        else
-		        LIBIBVERBS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libibverbs" 2>&1`
-	        fi
-		# Put the nasty error message in config.log where it belongs
-		echo "$LIBIBVERBS_PKG_ERRORS" >&5
-
-		as_fn_error $? "Package requirements (libibverbs) were not met:
-
-$LIBIBVERBS_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-
-Alternatively, you may set the environment variables LIBIBVERBS_CFLAGS
-and LIBIBVERBS_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
-	elif test $pkg_failed = untried; then
-		#
-		# We don't have pkg-config, so it didn't work.
-		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
-$as_echo "not found (pkg-config not found)" >&6; }
-	else
-		#
-		# We found the package.
-		#
-		LIBIBVERBS_CFLAGS=$pkg_cv_LIBIBVERBS_CFLAGS
-		LIBIBVERBS_LIBS=$pkg_cv_LIBIBVERBS_LIBS
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-
-		found_libibverbs=yes
-
-	fi
-else
-
-	#
-	# The package isn't present.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-
-fi
-
-
 	if test "x$found_libibverbs" != "xyes"; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ibv_get_device_list in -libverbs" >&5
 $as_echo_n "checking for ibv_get_device_list in -libverbs... " >&6; }
@@ -12739,8 +12615,8 @@ fi
 	if test "x$found_libibverbs" = "xyes"; then
 		save_CFLAGS="$CFLAGS"
 		save_LIBS="$LIBS"
-		CFLAGS="$CFLAGS $LIBIBVERBS_CFLAGS"
-		LIBS="$LIBS $LIBIBVERBS_LIBS"
+		CFLAGS="$LIBIBVERBS_CFLAGS"
+		LIBS="$LIBIBVERBS_LIBS"
 		ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
 if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
 
