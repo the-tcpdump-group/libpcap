@@ -2878,45 +2878,6 @@ if test "x$enable_rdma" != "xno"; then
 		)
 	fi
 
-	if test "x$found_libibverbs" = "xyes"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		CFLAGS="$LIBIBVERBS_CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS"
-		AC_CHECK_HEADER(infiniband/verbs.h, [
-			#
-			# ibv_create_flow may be defined as a static inline
-			# function in infiniband/verbs.h, so we can't
-			# use AC_CHECK_LIB.
-			#
-			# Too bad autoconf has no AC_SYMBOL_EXISTS()
-			# macro that works like CMake's check_symbol_exists()
-			# function, to check do a compile check like
-			# this (they do a clever trick to avoid having
-			# to know the function's signature).
-			#
-			AC_MSG_CHECKING(whether libibverbs defines ibv_create_flow)
-			AC_TRY_LINK(
-				[
-					#include <infiniband/verbs.h>
-				],
-				[
-					(void) ibv_create_flow((struct ibv_qp *) NULL,
-							       (struct ibv_flow_attr *) NULL);
-				],
-				[
-					AC_MSG_RESULT([yes])
-					found_usable_libibverbs=yes
-				],
-				[
-					AC_MSG_RESULT([no])
-				]
-			)
-		])
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
-	fi
-
 	if test "x$found_usable_libibverbs" = "xyes"
 	then
 		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
