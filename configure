@@ -12729,6 +12729,15 @@ fi
 		save_LIBS="$LIBS"
 		CFLAGS="$LIBIBVERBS_CFLAGS"
 		LIBS="$LIBIBVERBS_LIBS"
+		ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
+if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Testing 1 2 3..." >&5
+$as_echo "$as_me: WARNING: Testing 1 2 3..." >&2;}
+
+fi
+
+
 		CFLAGS="$save_CFLAGS"
 		LIBS="$save_LIBS"
 	fi
