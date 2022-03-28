@@ -2884,7 +2884,8 @@ if test "x$enable_rdma" != "xno"; then
 	fi
 
 	if test "x$found_libibverbs" = "xyes"; then
-		AC_MSG_WARN([Testing 1 2 3...])
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
 	fi
 
 	if test "x$found_usable_libibverbs" = "xyes"
