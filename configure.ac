@@ -2890,6 +2890,7 @@ if test "x$enable_rdma" != "xno"; then
 		LIBS="$LIBIBVERBS_LIBS"
 		CFLAGS="$save_CFLAGS"
 		LIBS="$save_LIBS"
+
 	fi
 
 	if test "x$found_usable_libibverbs" = "xyes"
