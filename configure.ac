@@ -2888,6 +2888,9 @@ if test "x$enable_rdma" != "xno"; then
 		save_LIBS="$LIBS"
 		CFLAGS="$LIBIBVERBS_CFLAGS"
 		LIBS="$LIBIBVERBS_LIBS"
+		AC_CHECK_HEADER(infiniband/verbs.h, [
+			AC_MSG_WARN([Testing 1 2 3...])
+		])
 		CFLAGS="$save_CFLAGS"
 		LIBS="$save_LIBS"
 	fi
