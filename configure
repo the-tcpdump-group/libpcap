@@ -12744,8 +12744,50 @@ fi
 		ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
 if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
 
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Testing 1 2 3..." >&5
-$as_echo "$as_me: WARNING: Testing 1 2 3..." >&2;}
+			#
+			# ibv_create_flow may be defined as a static inline
+			# function in infiniband/verbs.h, so we can't
+			# use AC_CHECK_LIB.
+			#
+			# Too bad autoconf has no AC_SYMBOL_EXISTS()
+			# macro that works like CMake's check_symbol_exists()
+			# function, to check do a compile check like
+			# this (they do a clever trick to avoid having
+			# to know the function's signature).
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether libibverbs defines ibv_create_flow" >&5
+$as_echo_n "checking whether libibverbs defines ibv_create_flow... " >&6; }
+			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+					#include <infiniband/verbs.h>
+
+int
+main ()
+{
+
+					(void) ibv_create_flow((struct ibv_qp *) NULL,
+							       (struct ibv_flow_attr *) NULL);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+					found_usable_libibverbs=yes
+
+else
+
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
 
