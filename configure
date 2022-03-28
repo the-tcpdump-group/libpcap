@@ -12725,13 +12725,8 @@ fi
 	fi
 
 	if test "x$found_libibverbs" = "xyes"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		CFLAGS="$LIBIBVERBS_CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS"
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
-
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Testing 1 2 3..." >&5
+$as_echo "$as_me: WARNING: Testing 1 2 3..." >&2;}
 	fi
 
 	if test "x$found_usable_libibverbs" = "xyes"
