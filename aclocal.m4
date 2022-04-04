@@ -982,19 +982,23 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    LIBS="-lsocket -lnsl $LIBS"
 	],
 	[
-		AC_CHECK_LIB(network, getaddrinfo,
-		[
-		    #
-		    # OK, we found it in libnetwork on Haiku.
-		    #
-		    LIBS="-lnetwork $LIBS"
-		],
-		[
-		    #
-		    # We didn't find it.
-		    #
-		    AC_MSG_ERROR([getaddrinfo is required, but wasn't found])
-		])
+	    #
+	    # Not found in libsocket; test for it in libnetwork, which
+	    # is where it is in Haiku.
+	    #
+	    AC_CHECK_LIB(network, getaddrinfo,
+	    [
+		#
+		# OK, we found it in libnetwork.
+		#
+		LIBS="-lnetwork $LIBS"
+	    ],
+	    [
+		#
+		# We didn't find it.
+		#
+		AC_MSG_ERROR([getaddrinfo is required, but wasn't found])
+	    ])
 	], -lnsl)
 
 	#
