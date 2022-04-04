@@ -5697,7 +5697,11 @@ if test "x$ac_cv_lib_socket_getaddrinfo" = xyes; then :
 
 else
 
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lnetwork" >&5
+	    #
+	    # Not found in libsocket; test for it in libnetwork, which
+	    # is where it is in Haiku.
+	    #
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lnetwork" >&5
 $as_echo_n "checking for getaddrinfo in -lnetwork... " >&6; }
 if ${ac_cv_lib_network_getaddrinfo+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5735,17 +5739,17 @@ fi
 $as_echo "$ac_cv_lib_network_getaddrinfo" >&6; }
 if test "x$ac_cv_lib_network_getaddrinfo" = xyes; then :
 
-		    #
-		    # OK, we found it in libnetwork on Haiku.
-		    #
-		    LIBS="-lnetwork $LIBS"
+		#
+		# OK, we found it in libnetwork.
+		#
+		LIBS="-lnetwork $LIBS"
 
 else
 
-		    #
-		    # We didn't find it.
-		    #
-		    as_fn_error $? "getaddrinfo is required, but wasn't found" "$LINENO" 5
+		#
+		# We didn't find it.
+		#
+		as_fn_error $? "getaddrinfo is required, but wasn't found" "$LINENO" 5
 
 fi
 
