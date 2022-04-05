@@ -63,7 +63,6 @@ LDFLAGS = @LDFLAGS@ ${CROSSFLAGS}
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
-EXTRA_NETWORK_LIBS=@EXTRA_NETWORK_LIBS@
 
 # Standard CFLAGS for building test programs
 FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
@@ -111,17 +110,17 @@ can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c ../libpcap.a
 
 filtertest: $(srcdir)/filtertest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c \
-	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	    ../libpcap.a $(LIBS)
 
 findalldevstest: $(srcdir)/findalldevstest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest \
 	    $(srcdir)/findalldevstest.c \
-	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	    ../libpcap.a $(LIBS)
 
 findalldevstest-perf: $(srcdir)/findalldevstest-perf.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest-perf \
 	    $(srcdir)/findalldevstest-perf.c \
-	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	    ../libpcap.a $(LIBS)
 
 opentest: $(srcdir)/opentest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c \
