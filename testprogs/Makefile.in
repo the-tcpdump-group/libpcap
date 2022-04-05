@@ -101,37 +101,52 @@ CLEANFILES = $(OBJ) $(TESTS)
 all: $(TESTS)
 
 capturetest: $(srcdir)/capturetest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/capturetest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/capturetest.c \
+	    ../libpcap.a $(LIBS) 
 
 can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o can_set_rfmon_test $(srcdir)/can_set_rfmon_test.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o can_set_rfmon_test \
+	    $(srcdir)/can_set_rfmon_test.c \
+	    ../libpcap.a $(LIBS)
 
 filtertest: $(srcdir)/filtertest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c \
+	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 findalldevstest: $(srcdir)/findalldevstest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/findalldevstest.c ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest \
+	    $(srcdir)/findalldevstest.c \
+	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 findalldevstest-perf: $(srcdir)/findalldevstest-perf.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest-perf $(srcdir)/findalldevstest-perf.c ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest-perf \
+	    $(srcdir)/findalldevstest-perf.c \
+	    ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 opentest: $(srcdir)/opentest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c \
+	    ../libpcap.a $(LIBS)
 
 reactivatetest: $(srcdir)/reactivatetest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o reactivatetest $(srcdir)/reactivatetest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o reactivatetest \
+	    $(srcdir)/reactivatetest.c ../libpcap.a $(LIBS)
 
 selpolltest: $(srcdir)/selpolltest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/selpolltest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/selpolltest.c \
+	    ../libpcap.a $(LIBS)
 
 threadsignaltest: $(srcdir)/threadsignaltest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o threadsignaltest $(srcdir)/threadsignaltest.c ../libpcap.a $(LIBS) $(PTHREAD_LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o threadsignaltest \
+	    $(srcdir)/threadsignaltest.c \
+	    ../libpcap.a $(LIBS) $(PTHREAD_LIBS)
 
 valgrindtest: $(srcdir)/valgrindtest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/valgrindtest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/valgrindtest.c \
+	    ../libpcap.a $(LIBS)
 
 writecaptest: $(srcdir)/writecaptest.c ../libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o writecaptest $(srcdir)/writecaptest.c ../libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o writecaptest $(srcdir)/writecaptest.c \
+	    ../libpcap.a $(LIBS)
 
 clean:
 	rm -f $(CLEANFILES)
