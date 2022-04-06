@@ -45,29 +45,64 @@ find_package_handle_standard_args(dpdk DEFAULT_MSG
   dpdk_LIBRARIES)
 
 if(dpdk_FOUND)
-  if(NOT TARGET dpdk::cflags)
-     if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64|x86_64|AMD64")
-      set(rte_cflags "-march=core2")
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
-      set(rte_cflags "-march=armv7-a")
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64")
-      set(rte_cflags "-march=armv8-a+crc")
+  #
+  # This depends on CMake support for "imported targets",
+  # which are not supported until CMake 3.19.
+  #
+  # Ubuntu 20.04 provides CMake 3.16.3, so we are *NOT*
+  # going to require CMake 3.19.  If you want to use
+  # Shiny New Features(TM), wait until all the OSes on
+  # which a build might conceivably be done, and that
+  # provide CMake, provide 3.19 or later.
+  #
+  # Just don't do this stuff on earlier versions.  If that
+  # breaks something, figure out a way to do it *without*
+  # "imported targets", and either do this that way, or,
+  # at least, do it that way on older versions of CMake.
+  #
+  # (One good thing about autotools is that only the builders
+  # of a package, and people doing configure-script development,
+  # have to care about the autoconf etc. version; you don't
+  # even need to have autotools installed in order to be able
+  # to run an autotools-generated configure script, you just
+  # need an environment UN*Xy enough, and modern enough, to
+  # run the stuff in the script.
+  #
+  # This is *NOT* the case for CMake; not only do you need
+  # CMake in order to build a package using CMake, you need
+  # a version recent enough to run the stuff the package's
+  # CMake files use.
+  #
+  # Please keep this in mind when changing any CMake files,
+  # and keep in mind what versions of CMake come with, for
+  # example, commonly-used versions of commonly-used
+  # Linux distributiions.)
+  #
+  if(NOT CMAKE_VERSION VERSION_LESS 3.19)
+    if(NOT TARGET dpdk::cflags)
+       if(CMAKE_SYSTEM_PROCESSOR MATCHES "amd64|x86_64|AMD64")
+        set(rte_cflags "-march=core2")
+      elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
+        set(rte_cflags "-march=armv7-a")
+      elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64")
+        set(rte_cflags "-march=armv8-a+crc")
+      endif()
+      add_library(dpdk::cflags INTERFACE IMPORTED)
+      if (rte_cflags)
+        set_target_properties(dpdk::cflags PROPERTIES
+          INTERFACE_COMPILE_OPTIONS "${rte_cflags}")
+      endif()
     endif()
-    add_library(dpdk::cflags INTERFACE IMPORTED)
-    if (rte_cflags)
-      set_target_properties(dpdk::cflags PROPERTIES
-        INTERFACE_COMPILE_OPTIONS "${rte_cflags}")
-    endif()
-  endif()
 
-  if(NOT TARGET dpdk::dpdk)
-    add_library(dpdk::dpdk INTERFACE IMPORTED)
-    find_package(Threads QUIET)
-    list(APPEND dpdk_LIBRARIES
-      Threads::Threads
-      dpdk::cflags)
-    set_target_properties(dpdk::dpdk PROPERTIES
-      INTERFACE_LINK_LIBRARIES "${dpdk_LIBRARIES}"
-      INTERFACE_INCLUDE_DIRECTORIES "${dpdk_INCLUDE_DIRS}")
+    if(NOT TARGET dpdk::dpdk)
+      add_library(dpdk::dpdk INTERFACE IMPORTED)
+      find_package(Threads QUIET)
+      list(APPEND dpdk_LIBRARIES
+        Threads::Threads
+        dpdk::cflags)
+      set_target_properties(dpdk::dpdk PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${dpdk_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${dpdk_INCLUDE_DIRS}")
+    endif()
   endif()
 endif()
