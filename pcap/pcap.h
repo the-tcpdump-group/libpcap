@@ -499,6 +499,7 @@ PCAP_API const char *pcap_tstamp_type_val_to_description(int);
 #ifdef __linux__
 PCAP_AVAILABLE_1_9
 PCAP_API int	pcap_set_protocol_linux(pcap_t *, int);
+PCAP_API int	pcap_set_fanout_linux(pcap_t *, int, uint16_t, uint16_t);
 #endif
 
 /*
