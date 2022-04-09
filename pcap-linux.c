@@ -945,6 +945,39 @@ static void pcap_breakloop_linux(pcap_t *handle)
 }
 
 /*
+ * Set the offset at which to insert VLAN tags.
+ * That should be the offset of the type field.
+ */
+static void
+set_vlan_offset(pcap_t *handle)
+{
+	struct pcap_linux *handlep = handle->priv;
+
+	switch (handle->linktype) {
+
+	case DLT_EN10MB:
+		/*
+		 * The type field is after the destination and source
+		 * MAC address.
+		 */
+		handlep->vlan_offset = 2 * ETH_ALEN;
+		break;
+
+	case DLT_LINUX_SLL:
+		/*
+		 * The type field is in the last 2 bytes of the
+		 * DLT_LINUX_SLL header.
+		 */
+		handlep->vlan_offset = SLL_HDR_LEN - 2;
+		break;
+
+	default:
+		handlep->vlan_offset = -1; /* unknown */
+		break;
+	}
+}
+
+/*
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
  *  information of course). If you pass 1 as promisc the interface
@@ -1113,6 +1146,13 @@ static int
 pcap_set_datalink_linux(pcap_t *handle, int dlt)
 {
 	handle->linktype = dlt;
+
+	/*
+	 * Update the offset at which to insert VLAN tags for the
+	 * new link-layer type.
+	 */
+	set_vlan_offset(handle);
+
 	return 0;
 }
 
@@ -2584,30 +2624,8 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 
 	/*
 	 * Set the offset at which to insert VLAN tags.
-	 * That should be the offset of the type field.
 	 */
-	switch (handle->linktype) {
-
-	case DLT_EN10MB:
-		/*
-		 * The type field is after the destination and source
-		 * MAC address.
-		 */
-		handlep->vlan_offset = 2 * ETH_ALEN;
-		break;
-
-	case DLT_LINUX_SLL:
-		/*
-		 * The type field is in the last 2 bytes of the
-		 * DLT_LINUX_SLL header.
-		 */
-		handlep->vlan_offset = SLL_HDR_LEN - 2;
-		break;
-
-	default:
-		handlep->vlan_offset = -1; /* unknown */
-		break;
-	}
+	set_vlan_offset(handle);
 
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		int nsec_tstamps = 1;
