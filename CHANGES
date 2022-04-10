@@ -60,6 +60,8 @@ Monthday, Month DD, YYYY:
       Improve error message for "out of memory" errors for kernel
         filters (see issue #1089).
       Fix pcap_findalldevs() to find usbmon devices.
+      Fix handling of VLAN tagged packets if the link-layer type is
+        changed from DLT_LINUX_SLL to DLT_LINUX_SLL2 (see issue #1105).
     BPF capture (*BSD, macOS, AIX, Solaris 11):
       Fix case where a device open might fail, rather than falling back
         to a smaller buffer size, when the initial buffer size is too
@@ -117,7 +119,10 @@ Monthday, Month DD, YYYY:
       Don't provide -L/usr/lib for pkg-config --libs in pkg-config.
       Fix error message for inadequate Bison/Berkeley YACC.
       Only use pkg-config when checking for DPDK.
+      Use pkg-config first when checking for libibverbs.
       Have CMake warn if no capture mechanism can be found.
+      Don't do stuff requiring 3.19 or later on earlier CMakes.
+      Cleanup various leftover cruft in the configure script.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
