@@ -2319,9 +2319,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 	const char		*device = handle->opt.device;
 	int			status = 0;
 	int			sock_fd, arptype;
-#ifdef HAVE_PACKET_AUXDATA
 	int			val;
-#endif
 	int			err = 0;
 	struct packet_mreq	mr;
 #if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
@@ -2592,9 +2590,15 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		}
 	}
 
-	/* Enable auxiliary data if supported and reserve room for
-	 * reconstructing VLAN headers. */
-#ifdef HAVE_PACKET_AUXDATA
+	/*
+	 * Enable auxiliary data and reserve room for reconstructing
+	 * VLAN headers.
+	 *
+	 * XXX - is enabling auxiliary data necessary, now that we
+	 * only support memory-mapped capture?  The kernel's memory-mapped
+	 * capture code doesn't seem to check whether auxiliary data
+	 * is enabled, it seems to provide it whether it is or not.
+	 */
 	val = 1;
 	if (setsockopt(sock_fd, SOL_PACKET, PACKET_AUXDATA, &val,
 		       sizeof(val)) == -1 && errno != ENOPROTOOPT) {
@@ -2604,7 +2608,6 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		return PCAP_ERROR;
 	}
 	handle->offset += VLAN_TAG_LEN;
-#endif /* HAVE_PACKET_AUXDATA */
 
 	/*
 	 * If we're in cooked mode, make the snapshot length
