@@ -46,6 +46,7 @@ Monthday, Month DD, YYYY:
       Fix pcap_findalldevs() to find usbmon devices.
       Fix handling of VLAN tagged packets if the link-layer type is
         changed from DLT_LINUX_SLL to DLT_LINUX_SLL2 (see issue #1105).
+      Always turn on PACKET_AUXDATA (see issue #1105).
     BPF capture (*BSD, macOS, AIX, Solaris 11):
       Fix case where a device open might fail, rather than falling back
         to a smaller buffer size, when the initial buffer size is too
