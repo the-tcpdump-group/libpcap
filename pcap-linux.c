@@ -2891,22 +2891,22 @@ create_ring(pcap_t *handle, int *status)
 	tp_reserve = VLAN_TAG_LEN;
 
 	/*
-	 * If we're using DLT_LINUX_SLL2, reserve space for a
-	 * DLT_LINUX_SLL2 header.
+	 * If we're capturing in cooked mode, reserve space for
+	 * a DLT_LINUX_SLL2 header; we don't know yet whether
+	 * we'll be using DLT_LINUX_SLL or DLT_LINUX_SLL2, as
+	 * that can be changed on an open device, so we reserve
+	 * space for the larger of the two.
 	 *
 	 * XXX - we assume that the kernel is still adding
-	 * 16 bytes of extra space; that happens to
-	 * correspond to SLL_HDR_LEN (whether intentionally
-	 * or not - the kernel code has a raw "16" in
-	 * the expression), so we subtract SLL_HDR_LEN
-	 * from SLL2_HDR_LEN to get the additional space
-	 * needed.  That also means we don't bother reserving
-	 * any additional space if we're using DLT_LINUX_SLL.
+	 * 16 bytes of extra space, so we subtract 16 from
+	 * SLL2_HDR_LEN to get the additional space needed.
+	 * (Are they doing that for DLT_LINUX_SLL, the link-
+	 * layer header for which is 16 bytes?)
 	 *
-	 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
+	 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - 16)?
 	 */
-	if (handle->linktype == DLT_LINUX_SLL2)
-		tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
+	if (handlep->cooked)
+		tp_reserve += SLL2_HDR_LEN - 16;
 
 	/*
 	 * Try to request that amount of reserve space.
