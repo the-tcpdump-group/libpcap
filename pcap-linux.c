@@ -2269,44 +2269,23 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 	}
 }
 
-#ifdef PACKET_RESERVE
 static void
-set_dlt_list_cooked(pcap_t *handle, int sock_fd)
+set_dlt_list_cooked(pcap_t *handle)
 {
-	socklen_t		len;
-	unsigned int		tp_reserve;
+	/*
+	 * Support both DLT_LINUX_SLL and DLT_LINUX_SLL2.
+	 */
+	handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 
 	/*
-	 * If we can't do PACKET_RESERVE, we can't reserve extra space
-	 * for a DLL_LINUX_SLL2 header, so we can't support DLT_LINUX_SLL2.
+	 * If that failed, just leave the list empty.
 	 */
-	len = sizeof(tp_reserve);
-	if (getsockopt(sock_fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve,
-	    &len) == 0) {
-		/*
-		 * Yes, we can do DLL_LINUX_SLL2.
-		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-		/*
-		 * If that fails, just leave the list empty.
-		 */
-		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_LINUX_SLL;
-			handle->dlt_list[1] = DLT_LINUX_SLL2;
-			handle->dlt_count = 2;
-		}
+	if (handle->dlt_list != NULL) {
+		handle->dlt_list[0] = DLT_LINUX_SLL;
+		handle->dlt_list[1] = DLT_LINUX_SLL2;
+		handle->dlt_count = 2;
 	}
 }
-#else/* PACKET_RESERVE */
-/*
- * The build environment doesn't define PACKET_RESERVE, so we can't reserve
- * extra space for a DLL_LINUX_SLL2 header, so we can't support DLT_LINUX_SLL2.
- */
-static void
-set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
-{
-}
-#endif /* PACKET_RESERVE */
 
 /*
  * Try to set up a PF_PACKET socket.
@@ -2477,7 +2456,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 				free(handle->dlt_list);
 				handle->dlt_list = NULL;
 				handle->dlt_count = 0;
-				set_dlt_list_cooked(handle, sock_fd);
+				set_dlt_list_cooked(handle);
 			}
 
 			if (handle->linktype == -1) {
@@ -2543,7 +2522,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		handle->linktype = DLT_LINUX_SLL;
 		handle->dlt_list = NULL;
 		handle->dlt_count = 0;
-		set_dlt_list_cooked(handle, sock_fd);
+		set_dlt_list_cooked(handle);
 
 		/*
 		 * We're not bound to a device.
@@ -2932,20 +2911,10 @@ create_ring(pcap_t *handle, int *status)
 	/*
 	 * Try to request that amount of reserve space.
 	 * This must be done before creating the ring buffer.
-	 * If PACKET_RESERVE is supported, creating the ring
-	 * buffer should be, although if creating the ring
-	 * buffer fails, the PACKET_RESERVE call has no effect,
-	 * so falling back on read-from-the-socket capturing
-	 * won't be affected.
 	 */
 	len = sizeof(tp_reserve);
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
 	    &tp_reserve, len) < 0) {
-		/*
-		 * We treat ENOPROTOOPT as an error, as we
-		 * already determined that we support
-		 * TPACKET_V2 and later; see above.
-		 */
 		pcap_fmt_errmsg_for_errno(handle->errbuf,
 		    PCAP_ERRBUF_SIZE, errno,
 		    "setsockopt (PACKET_RESERVE)");
