@@ -223,7 +223,7 @@ static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
-static int activate_pf_packet(pcap_t *, int);
+static int setup_socket(pcap_t *, int);
 static int setup_mmapped(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_inject_linux(pcap_t *, const void *, int);
@@ -1070,7 +1070,7 @@ pcap_activate_linux(pcap_t *handle)
 	 * If the "any" device is specified, try to open a SOCK_DGRAM.
 	 * Otherwise, open a SOCK_RAW.
 	 */
-	ret = activate_pf_packet(handle, is_any_device);
+	ret = setup_socket(handle, is_any_device);
 	if (ret < 0) {
 		/*
 		 * Fatal error; the return value is the error code,
@@ -1860,7 +1860,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 * XXX - are there any other sorts of "fake Ethernet" that
 		 * have ARPHRD_ETHER but that shouldn't offer DLT_DOCSIS as
 		 * a Cisco CMTS won't put traffic onto it or get traffic
-		 * bridged onto it?  ISDN is handled in "activate_pf_packet()",
+		 * bridged onto it?  ISDN is handled in "setup_socket()",
 		 * as we fall back on cooked mode there, and we use
 		 * is_wifi() to check for 802.11 devices; are there any
 		 * others?
@@ -2209,7 +2209,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		/* We need to save packet direction for IrDA decoding,
 		 * so let's use "Linux-cooked" mode. Jean II
 		 *
-		 * XXX - this is handled in activate_pf_packet(). */
+		 * XXX - this is handled in setup_socket(). */
 		/* handlep->cooked = 1; */
 		break;
 
@@ -2251,7 +2251,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 * pick up the netlink protocol type such as NETLINK_ROUTE,
 		 * NETLINK_GENERIC, NETLINK_FIB_LOOKUP, etc.
 		 *
-		 * XXX - this is handled in activate_pf_packet().
+		 * XXX - this is handled in setup_socket().
 		 */
 		/* handlep->cooked = 1; */
 		break;
@@ -2292,7 +2292,7 @@ set_dlt_list_cooked(pcap_t *handle)
  * Returns 0 on success and a PCAP_ERROR_ value on failure.
  */
 static int
-activate_pf_packet(pcap_t *handle, int is_any_device)
+setup_socket(pcap_t *handle, int is_any_device)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
