@@ -259,7 +259,7 @@ pcap_init(unsigned int opts, char *errbuf)
 			if (pcap_utf_8_mode) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Multiple pcap_init calls with different character encodings");
-				return (-1);
+				return (PCAP_ERROR);
 			}
 		}
 		break;
@@ -270,7 +270,7 @@ pcap_init(unsigned int opts, char *errbuf)
 			if (!pcap_utf_8_mode) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Multiple pcap_init calls with different character encodings");
-				return (-1);
+				return (PCAP_ERROR);
 			}
 		}
 		pcap_utf_8_mode = 1;
@@ -278,7 +278,7 @@ pcap_init(unsigned int opts, char *errbuf)
 
 	default:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unknown options specified");
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	/*
@@ -303,7 +303,7 @@ pcap_init(unsigned int opts, char *errbuf)
 	 */
 	if (internal_wsockinit(errbuf) == -1) {
 		/* Failed. */
-		return (-1);
+		return (PCAP_ERROR);
 	}
 #endif
 
