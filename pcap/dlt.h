@@ -1570,6 +1570,8 @@
 
 /*
  * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ * Deprecated in favor of speed specific DLTs: DLT_USB_2_0_LOW_SPEED,
+ * DLT_USB_2_0_FULL_SPEED and DLT_USB_2_0_HIGH_SPEED.
  */
 #define DLT_USB_2_0		288
 
@@ -1601,6 +1603,13 @@
 #define DLT_ZBOSS_NCP		292
 
 /*
+ * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ */
+#define DLT_USB_2_0_LOW_SPEED	293
+#define DLT_USB_2_0_FULL_SPEED	294
+#define DLT_USB_2_0_HIGH_SPEED	295
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1610,6 +1619,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	292	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	295	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */

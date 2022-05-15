@@ -1199,6 +1199,8 @@
 
 /*
  * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ * Deprecated in favor of speed specific LINKTYPEs: LINKTYPE_USB_2_0_LOW_SPEED,
+ * LINKTYPE_USB_2_0_FULL_SPEED and LINKTYPE_USB_2_0_HIGH_SPEED.
  */
 #define LINKTYPE_USB_2_0	288
 
@@ -1229,7 +1231,14 @@
  */
 #define LINKTYPE_ZBOSS_NCP	292
 
-#define LINKTYPE_HIGH_MATCHING_MAX	292		/* highest value in the "matching" range */
+/*
+ * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ */
+#define LINKTYPE_USB_2_0_LOW_SPEED	293
+#define LINKTYPE_USB_2_0_FULL_SPEED	294
+#define LINKTYPE_USB_2_0_HIGH_SPEED	295
+
+#define LINKTYPE_HIGH_MATCHING_MAX	295		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
