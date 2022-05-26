@@ -842,7 +842,10 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		handlep->device = NULL;
 	}
 
-	close(handlep->poll_breakloop_fd);
+	if (handlep->poll_breakloop_fd != -1) {
+		close(handlep->poll_breakloop_fd);
+		handlep->poll_breakloop_fd = -1;
+	}
 	pcap_cleanup_live_common(handle);
 }
 
@@ -941,7 +944,8 @@ static void pcap_breakloop_linux(pcap_t *handle)
 
 	uint64_t value = 1;
 	/* XXX - what if this fails? */
-	(void)write(handlep->poll_breakloop_fd, &value, sizeof(value));
+	if (handlep->poll_breakloop_fd != -1)
+		(void)write(handlep->poll_breakloop_fd, &value, sizeof(value));
 }
 
 /*
@@ -3375,7 +3379,23 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 			 */
 			handlep->timeout = ~handlep->timeout;
 		}
+		if (handlep->poll_breakloop_fd != -1) {
+			/* Close the eventfd; we do not need it in nonblock mode. */
+			close(handlep->poll_breakloop_fd);
+			handlep->poll_breakloop_fd = -1;
+		}
 	} else {
+		if (handlep->poll_breakloop_fd == -1) {
+			/* If we did not have an eventfd, open one now that we are blocking. */
+			if ( ( handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK) ) == -1 ) {
+				int save_errno = errno;
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+						"Could not open eventfd: %s",
+						strerror(errno));
+				errno = save_errno;
+				return -1;
+			}
+		}
 		if (handlep->timeout < 0) {
 			handlep->timeout = ~handlep->timeout;
 		}
@@ -3419,10 +3439,24 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 	struct ifreq ifr;
 	int ret;
 	struct pollfd pollinfo[2];
+	int numpollinfo;
 	pollinfo[0].fd = handle->fd;
 	pollinfo[0].events = POLLIN;
-	pollinfo[1].fd = handlep->poll_breakloop_fd;
-	pollinfo[1].events = POLLIN;
+	if ( handlep->poll_breakloop_fd == -1 ) {
+		numpollinfo = 1;
+		pollinfo[1].revents = 0;
+		/*
+		 * We set pollinfo[1].revents to zero, even though
+		 * numpollinfo = 1 meaning that poll() doesn't see
+		 * pollinfo[1], so that we do not have to add a
+		 * conditional of numpollinfo > 1 below when we
+		 * test pollinfo[1].revents.
+		 */
+	} else {
+		pollinfo[1].fd = handlep->poll_breakloop_fd;
+		pollinfo[1].events = POLLIN;
+		numpollinfo = 2;
+	}
 
 	/*
 	 * Keep polling until we either get some packets to read, see
@@ -3487,7 +3521,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			if (timeout != 0)
 				timeout = 1;
 		}
-		ret = poll(pollinfo, 2, timeout);
+		ret = poll(pollinfo, numpollinfo, timeout);
 		if (ret < 0) {
 			/*
 			 * Error.  If it's not EINTR, report it.
