@@ -39,6 +39,7 @@
 
 #include "pcap-int.h"
 #include "pcap-usb-linux.h"
+#include "pcap-usb-linux-common.h"
 #include "pcap/usb.h"
 
 #include "extract.h"
@@ -756,6 +757,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 	struct mon_bin_mfetch fetch;
 	int32_t vec[VEC_SIZE];
 	struct pcap_pkthdr pkth;
+	u_char *bp;
 	pcap_usb_header_mmapped* hdr;
 	int nflush = 0;
 	int packets = 0;
@@ -839,8 +841,13 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			 * packets if we break out of the loop here.
 			 */
 
+			/* Get a pointer to this packet's buffer */
+			bp = &handlep->mmapbuf[vec[i]];
+
+			/* That begins with a metadata header */
+			hdr = (pcap_usb_header_mmapped*) bp;
+
 			/* discard filler */
-			hdr = (pcap_usb_header_mmapped*) &handlep->mmapbuf[vec[i]];
 			if (hdr->event_type == '@')
 				continue;
 
@@ -868,24 +875,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (hdr->data_len < clen)
 				clen = hdr->data_len;
 			pkth.caplen = sizeof(pcap_usb_header_mmapped) + clen;
-			if (hdr->data_flag) {
-				/*
-				 * No data; just base the on-the-wire length
-				 * on hdr->data_len (so that it's >= the
-				 * captured length).
-				 */
-				pkth.len = sizeof(pcap_usb_header_mmapped) +
-				    hdr->data_len;
-			} else {
-				/*
-				 * We got data; base the on-the-wire length
-				 * on hdr->urb_len, so that it includes
-				 * data discarded by the USB monitor device
-				 * due to its buffer being too small.
-				 */
-				pkth.len = sizeof(pcap_usb_header_mmapped) +
-				    (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len;
-			}
+			set_linux_usb_mmapped_length(&pkth, bp);
 			pkth.ts.tv_sec = (time_t)hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 

@@ -1063,6 +1063,7 @@ set(PROJECT_SOURCE_LIST_C
     optimize.c
     pcap-common.c
     pcap-options.c
+    pcap-usb-linux-common.c
     pcap.c
     savefile.c
     sf-pcapng.c
