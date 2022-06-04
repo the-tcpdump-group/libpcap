@@ -709,6 +709,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	if (p->swapped)
 		swap_pseudo_headers(p->linktype, hdr, *data);
 
+	fixup_pcap_pkthdr(p->linktype, hdr, *data);
+
 	return (1);
 }
 

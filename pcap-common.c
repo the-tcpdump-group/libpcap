@@ -36,6 +36,8 @@
 
 #include "pflog.h"
 
+#include "pcap-usb-linux-common.h"
+
 #include "pcap-common.h"
 
 /*
@@ -1790,5 +1792,21 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 	case DLT_NFLOG:
 		swap_nflog_header(hdr, data);
 		break;
+	}
+}
+
+void
+fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, u_char *data)
+{
+	if (linktype == DLT_USB_LINUX_MMAPPED) {
+		/*
+		 * In older versions of libpcap, in memory-mapped captures,
+		 * the "on-the-bus length" for isochronous transfers was
+		 * miscalculated; it needed to be calculated based on the
+		 * offsets and lengths in the descriptors, not on the raw
+		 * URB length, but it wasn't.  Recalculate it from the
+		 * packet data.
+		 */
+		set_linux_usb_mmapped_length(hdr, data);
 	}
 }

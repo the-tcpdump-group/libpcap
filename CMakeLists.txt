@@ -1062,6 +1062,7 @@ set(PROJECT_SOURCE_LIST_C
     nametoaddr.c
     optimize.c
     pcap-common.c
+    pcap-usb-linux-common.c
     pcap.c
     savefile.c
     sf-pcapng.c
