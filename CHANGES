@@ -31,6 +31,7 @@ Monthday, Month DD, YYYY:
         all systems that support PFLOG.
       Don't require PFLOG support on the target machine in order to
         support PFLOG filtering (also fixes issue #1076).
+      Expand abbreviations into "proto X" properly.
     Linux:
       Fix memory leak in capture device open (pull request #1038).
       Fix detection of CAN/CAN FD packets in direction check (issue

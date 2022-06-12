@@ -5357,21 +5357,15 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	switch (proto) {
 
 	case Q_SCTP:
-		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_SCTP, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 	case Q_TCP:
-		b1 = gen_proto(cstate, IPPROTO_TCP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_TCP, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 	case Q_UDP:
-		b1 = gen_proto(cstate, IPPROTO_UDP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_UDP, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 	case Q_ICMP:
@@ -5398,9 +5392,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_PIM:
-		b1 = gen_proto(cstate, IPPROTO_PIM, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_PIM, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 #ifndef IPPROTO_VRRP
@@ -5477,18 +5469,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #define IPPROTO_AH	51
 #endif
 	case Q_AH:
-		b1 = gen_proto(cstate, IPPROTO_AH, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_AH, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_AH, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 #ifndef IPPROTO_ESP
 #define IPPROTO_ESP	50
 #endif
 	case Q_ESP:
-		b1 = gen_proto(cstate, IPPROTO_ESP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_ESP, Q_IPV6, Q_DEFAULT);
-		gen_or(b0, b1);
+		b1 = gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT, Q_DEFAULT);
 		break;
 
 	case Q_ISO:
