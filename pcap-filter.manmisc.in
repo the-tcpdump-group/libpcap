@@ -298,7 +298,7 @@ for example:
 .BR ah ,
 .BR esp ,
 .B eigrp
-(only in Linux, FreeBSD and NetBSD),
+(only in Linux, FreeBSD, NetBSD, DragonFly BSD, and macOS),
 .BR icmp ,
 .BR igmp ,
 .B igrp
