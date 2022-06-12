@@ -120,6 +120,7 @@ Monthday, Month DD, YYYY:
         the web site.
       Clean up man pages.
       Move README.capture-module to the web site.
+      Improve some protocol details in pcap-filter(7).
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
