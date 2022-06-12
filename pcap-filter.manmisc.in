@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "4 January 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "12 June 2022"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -290,20 +290,53 @@ This is equivalent to:
 True if the packet is an IPv4 packet (see
 .BR ip (4P))
 of protocol type \fIprotocol\fP.
-\fIProtocol\fP can be a number or one of the names
-\fBicmp\fP, \fBicmp6\fP, \fBigmp\fP, \fBigrp\fP, \fBpim\fP, \fBah\fP,
-\fBesp\fP, \fBvrrp\fP, \fBsctp\fP, \fBudp\fP, or \fBtcp\fP.
-Note that the identifiers \fBtcp\fP, \fBudp\fP, \fBsctp\fP and \fBicmp\fP
+\fIProtocol\fP can be a number or one of the names recognized by
+.BR getprotobyname (3)
+(as in e.g. `\fBgetent\fR(1) protocols'), typically from an entry in
+.IR \%/etc/protocols ,
+for example:
+.BR ah ,
+.BR esp ,
+.B eigrp
+(only in Linux, FreeBSD and NetBSD),
+.BR icmp ,
+.BR igmp ,
+.B igrp
+(only in OpenBSD),
+.BR pim ,
+.BR sctp ,
+.BR tcp ,
+.B udp
+or
+.BR vrrp .
+Note that most of these example identifiers
 are also keywords and must be escaped via backslash (\\).
 Note that this primitive does not chase the protocol header chain.
+.IP "\fBicmp\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip proto\fR 1
+.fi
+.in -.5i
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
+Note that the IPv6 variant of ICMP uses a different protocol number, named
+.B \%ipv6-icmp
+in Linux, FreeBSD, NetBSD, OpenBSD, illumos and Solaris.
 Note that this primitive does not chase the protocol header chain.
+.IP "\fBicmp6\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip6 proto\fR 58
+.fi
+.in -.5i
 .IP "\fBproto \fIprotocol\fR"
 True if the packet is an IPv4 or IPv6 packet of protocol type
 \fIprotocol\fP.  Note that this primitive does not chase the protocol
 header chain.
-.IP  "\fBtcp\fR, \fBudp\fR, \fBicmp\fR, \fBsctp\fR"
+.IP  "\fBah\fR, \fBesp\fR, \fBpim\fR, \fBsctp\fR, \fBtcp\fR, \fBudp\fR"
 Abbreviations for:
 .in +.5i
 .nf
@@ -838,10 +871,37 @@ To access data inside the packet, use the following syntax:
 \fIproto\fB [ \fIexpr\fB : \fIsize\fB ]\fR
 .fi
 .in -.5i
-\fIProto\fR is one of \fBether, fddi, tr, wlan, ppp, slip, link,
-ip, arp, rarp, tcp, udp, sctp, icmp, ip6\fR or \fBradio\fR, and
+.I Proto
+is one of
+.BR arp ,
+.BR ether ,
+.BR fddi ,
+.BR icmp ,
+.BR icmp6 ,
+.BR ip ,
+.BR ip6 ,
+.BR link ,
+.BR ppp ,
+.BR radio ,
+.BR rarp ,
+.BR sctp ,
+.BR slip ,
+.BR tcp ,
+.BR tr ,
+.B udp
+or
+.BR wlan ,
+and
 indicates the protocol layer for the index operation.
-(\fBether, fddi, wlan, tr, ppp, slip\fR and \fBlink\fR all refer to the
+.RB ( ether ,
+.BR fddi ,
+.BR link ,
+.BR ppp ,
+.BR slip ,
+.B tr
+and
+.BR wlan
+all refer to the
 link layer. \fBradio\fR refers to the "radio header" added to some
 802.11 captures.)
 Note that \fBtcp\fR, \fBudp\fR and other upper-layer protocol types only
