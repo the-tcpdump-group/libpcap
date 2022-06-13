@@ -323,7 +323,7 @@ Abbreviation for:
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 Note that the IPv6 variant of ICMP uses a different protocol number, named
 .B \%ipv6-icmp
-in Linux, FreeBSD, NetBSD, OpenBSD, illumos and Solaris.
+in AIX, FreeBSD, illumos, Linux, macOS, NetBSD, OpenBSD, Solaris and Windows.
 Note that this primitive does not chase the protocol header chain.
 .IP "\fBicmp6\fR"
 Abbreviation for:
