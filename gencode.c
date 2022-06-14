@@ -731,7 +731,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (!p->activated) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 #ifdef _WIN32
@@ -779,7 +779,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (cstate.snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
-		rc = -1;
+		rc = PCAP_ERROR;
 		goto quit;
 	}
 
@@ -795,7 +795,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	pcap_set_extra(&cstate, scanner);
 
 	if (init_linktype(&cstate, p) == -1) {
-		rc = -1;
+		rc = PCAP_ERROR;
 		goto quit;
 	}
 	if (pcap_parse(scanner, &cstate) != 0) {
@@ -805,7 +805,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 #endif
 		if (cstate.e != NULL)
 			free(cstate.e);
-		rc = -1;
+		rc = PCAP_ERROR;
 		goto quit;
 	}
 
@@ -814,7 +814,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		 * Catch errors reported by gen_retblk().
 		 */
 		if (setjmp(cstate.top_ctx)) {
-			rc = -1;
+			rc = PCAP_ERROR;
 			goto quit;
 		}
 		cstate.ic.root = gen_retblk(&cstate, cstate.snaplen);
@@ -823,14 +823,14 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (optimize && !cstate.no_optimize) {
 		if (bpf_optimize(&cstate.ic, p->errbuf) == -1) {
 			/* Failure */
-			rc = -1;
+			rc = PCAP_ERROR;
 			goto quit;
 		}
 		if (cstate.ic.root == NULL ||
 		    (cstate.ic.root->s.code == (BPF_RET|BPF_K) && cstate.ic.root->s.k == 0)) {
 			(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "expression rejects all packets");
-			rc = -1;
+			rc = PCAP_ERROR;
 			goto quit;
 		}
 	}
@@ -838,7 +838,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	    cstate.ic.root, &len, p->errbuf);
 	if (program->bf_insns == NULL) {
 		/* Failure */
-		rc = -1;
+		rc = PCAP_ERROR;
 		goto quit;
 	}
 	program->bf_len = len;
@@ -876,7 +876,7 @@ pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 
 	p = pcap_open_dead(linktype_arg, snaplen_arg);
 	if (p == NULL)
-		return (-1);
+		return (PCAP_ERROR);
 	ret = pcap_compile(p, program, buf, optimize, mask);
 	pcap_close(p);
 	return (ret);
