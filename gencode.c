@@ -6071,14 +6071,6 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 	return v;
 }
 
-#if 0
-struct stmt *
-gen_joinsp(struct stmt **s, int n)
-{
-	return NULL;
-}
-#endif
-
 static struct block *
 gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
