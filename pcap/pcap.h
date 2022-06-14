@@ -663,7 +663,8 @@ PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 
 PCAP_AVAILABLE_0_5
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
-	    const char *, int, bpf_u_int32);
+	    const char *, int, bpf_u_int32)
+PCAP_DEPRECATED(pcap_compile_nopcap, "use pcap_open_dead(), pcap_compile() and pcap_close()");
 
 /* XXX - this took two arguments in 0.4 and 0.5 */
 PCAP_AVAILABLE_0_6
