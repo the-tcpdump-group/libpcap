@@ -1,4 +1,3 @@
-/*#define CHASE_CHAIN*/
 /*
  * Copyright (c) 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998
  *	The Regents of the University of California.  All rights reserved.
@@ -6411,9 +6410,7 @@ static struct block *
 gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 {
 	struct block *b0, *b1;
-#ifndef CHASE_CHAIN
 	struct block *b2;
-#endif
 
 	if (dir != Q_DEFAULT)
 		bpf_error(cstate, "direction applied to 'proto'");
@@ -6445,11 +6442,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		 * So we always check for ETHERTYPE_IP.
 		 */
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-#ifndef CHASE_CHAIN
 		b1 = gen_cmp(cstate, OR_LINKPL, 9, BPF_B, v);
-#else
-		b1 = gen_protochain(cstate, v, Q_IP);
-#endif
 		gen_and(b0, b1);
 		return b1;
 
@@ -6511,7 +6504,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-#ifndef CHASE_CHAIN
 		/*
 		 * Also check for a fragment header before the final
 		 * header.
@@ -6521,9 +6513,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		gen_and(b2, b1);
 		b2 = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, v);
 		gen_or(b2, b1);
-#else
-		b1 = gen_protochain(cstate, v, Q_IPV6);
-#endif
 		gen_and(b0, b1);
 		return b1;
 
