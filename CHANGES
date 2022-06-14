@@ -109,6 +109,7 @@ Monthday, Month DD, YYYY:
       Have CMake warn if no capture mechanism can be found.
       Don't do stuff requiring 3.19 or later on earlier CMakes.
       Cleanup various leftover cruft in the configure script.
+      Fix building without protochain support. (GH #852)
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).

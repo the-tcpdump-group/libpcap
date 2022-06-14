@@ -563,7 +563,9 @@ static struct block *gen_portrangeop6(compiler_state_t *, u_int, u_int,
     bpf_u_int32, int);
 static struct block *gen_portrange6(compiler_state_t *, u_int, u_int, int, int);
 static int lookup_proto(compiler_state_t *, const char *, int);
+#if !defined(NO_PROTOCHAIN)
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
+#endif /* !defined(NO_PROTOCHAIN) */
 static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int, int);
 static struct slist *xfer_to_x(compiler_state_t *, struct arth *);
 static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
@@ -6069,12 +6071,10 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 	return v;
 }
 
+#if !defined(NO_PROTOCHAIN)
 static struct block *
 gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
-#ifdef NO_PROTOCHAIN
-	return gen_proto(cstate, v, proto);
-#else
 	struct block *b0, *b;
 	struct slist *s[100];
 	int fix2, fix3, fix4, fix5;
@@ -6368,8 +6368,8 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	gen_and(b0, b);
 	return b;
-#endif
 }
+#endif /* !defined(NO_PROTOCHAIN) */
 
 static struct block *
 gen_check_802_11_data_frame(compiler_state_t *cstate)
@@ -6952,12 +6952,14 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		else
 			bpf_error(cstate, "unknown protocol: %s", name);
 
+#if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
 		real_proto = lookup_proto(cstate, name, proto);
 		if (real_proto >= 0)
 			return gen_protochain(cstate, real_proto, proto);
 		else
 			bpf_error(cstate, "unknown protocol: %s", name);
+#endif /* !defined(NO_PROTOCHAIN) */
 
 	case Q_UNDEF:
 		syntax(cstate);
@@ -7130,8 +7132,10 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_PROTO:
 		return gen_proto(cstate, v, proto, dir);
 
+#if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
 		return gen_protochain(cstate, v, proto);
+#endif
 
 	case Q_UNDEF:
 		syntax(cstate);
