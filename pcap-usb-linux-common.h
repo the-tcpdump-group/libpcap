@@ -22,5 +22,5 @@
  * deal with Linux USB captures.
  */
 
-extern void set_linux_usb_mmapped_length(struct pcap_pkthdr *pkth,
+extern void fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth,
     const u_char *bp);

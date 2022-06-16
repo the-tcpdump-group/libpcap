@@ -1796,17 +1796,33 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 }
 
 void
-fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, u_char *data)
+fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
 {
+	const pcap_usb_header_mmapped *usb_hdr;
+
+	usb_hdr = (const pcap_usb_header_mmapped *) data;
 	if (linktype == DLT_USB_LINUX_MMAPPED) {
 		/*
 		 * In older versions of libpcap, in memory-mapped captures,
-		 * the "on-the-bus length" for isochronous transfers was
-		 * miscalculated; it needed to be calculated based on the
-		 * offsets and lengths in the descriptors, not on the raw
-		 * URB length, but it wasn't.  Recalculate it from the
-		 * packet data.
+		 * the "on-the-bus length" for completion events for
+		 * incoming isochronous transfers was miscalculated; it
+		 * needed to be calculated based on the* offsets and lengths
+		 * in the descriptors, not on the raw URB length, but it
+		 * wasn't.
+		 *
+		 * If this packet contains transferred data (yes, data_flag
+		 * is 0 if we *do* have data), and the total on-the-network
+		 * length is equal to the value calculated from the raw URB
+		 * length, then it might be one of those tranfers.
 		 */
-		set_linux_usb_mmapped_length(hdr, data);
+		if (!usb_hdr->data_flag &&
+		    hdr->len == sizeof(pcap_usb_header_mmapped) +
+		      (usb_hdr->ndesc * sizeof (usb_isodesc)) + usb_hdr->urb_len) {
+			/*
+			 * It might leed fixing; fix it if it's a completion
+			 * event for an incoming isochronous transfer.
+			 */
+			fix_linux_usb_mmapped_length(hdr, data);
+		}
 	}
 }

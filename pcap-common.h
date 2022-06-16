@@ -51,6 +51,6 @@ extern void swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr,
     u_char *data);
 
 extern void fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr,
-    u_char *data);
+    const u_char *data);
 
 extern u_int max_snaplen_for_dlt(int dlt);
