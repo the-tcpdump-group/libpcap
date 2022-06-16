@@ -875,7 +875,31 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (hdr->data_len < clen)
 				clen = hdr->data_len;
 			pkth.caplen = sizeof(pcap_usb_header_mmapped) + clen;
-			set_linux_usb_mmapped_length(&pkth, bp);
+			if (hdr->data_flag) {
+				/*
+				 * No data; just base the on-the-wire length
+				 * on hdr->data_len (so that it's >= the
+				 * captured length).
+				 */
+				pkth.len = sizeof(pcap_usb_header_mmapped) +
+				    hdr->data_len;
+			} else {
+				/*
+				 * We got data; base the on-the-wire length
+				 * on hdr->urb_len, so that it includes
+				 * data discarded by the USB monitor device
+				 * due to its buffer being too small.
+				 */
+				pkth.len = sizeof(pcap_usb_header_mmapped) +
+				    (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len;
+
+				/*
+				 * Now clean it up if it's a completion
+				 * event for an incoming isochronous
+				 * transfer.
+				 */
+				fix_linux_usb_mmapped_length(&pkth, bp);
+			}
 			pkth.ts.tv_sec = (time_t)hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 
