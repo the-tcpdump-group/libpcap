@@ -2,8 +2,14 @@
 
 * Autoconf works everywhere.
 * Neither Solaris lex nor Solaris yacc are suitable.
-* Neither OpenIndiana lex nor OpenIndiana yacc are suitable.
-* Solaris m4 and OpenIndiana m4 are suitable.
+* Neither illumos lex nor illumos yacc are suitable.
+* Solaris m4 and illumos m4 are suitable.
+
+## OmniOS r151042/AMD64
+
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake 3.23.1 works.
+* GCC 11.2.0 and Clang 14.0.3 work.
 
 ## OpenIndiana 2021.04/AMD64
 
