@@ -321,6 +321,7 @@ Abbreviation for:
 .in -.5i
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
+(See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
 Note that the IPv6 variant of ICMP uses a different protocol number, named
 .B \%ipv6-icmp
 in AIX, FreeBSD, illumos, Linux, macOS, NetBSD, OpenBSD, Solaris and Windows.
@@ -334,7 +335,8 @@ Abbreviation for:
 .in -.5i
 .IP "\fBproto \fIprotocol\fR"
 True if the packet is an IPv4 or IPv6 packet of protocol type
-\fIprotocol\fP.  Note that this primitive does not chase the protocol
+\fIprotocol\fP.  (See `\fBip proto\fP' above for the meaning of
+\fIprotocol\fP.)  Note that this primitive does not chase the protocol
 header chain.
 .IP  "\fBah\fR, \fBesp\fR, \fBpim\fR, \fBsctp\fR, \fBtcp\fR, \fBudp\fR"
 Abbreviations for:
@@ -348,6 +350,7 @@ where \fIprotocol\fR is one of the above protocols.
 True if the packet is IPv6 packet,
 and contains protocol header with type \fIprotocol\fR
 in its protocol header chain.
+(See `\fBip proto\fP' above for the meaning of \fIprotocol\fP.)
 For example,
 .in +.5i
 .nf
@@ -364,9 +367,11 @@ filter engines in the kernel, so this can be somewhat slow, and may
 cause more packets to be dropped.
 .IP "\fBip protochain \fIprotocol\fR"
 Equivalent to \fBip6 protochain \fIprotocol\fR, but this is for IPv4.
+(See `\fBip proto\fP' above for the meaning of \fIprotocol\fP.)
 .IP "\fBprotochain \fIprotocol\fR"
 True if the packet is an IPv4 or IPv6 packet of protocol type
-\fIprotocol\fP.  Note that this primitive chases the protocol
+\fIprotocol\fP.  (See `\fBip proto\fP' above for the meaning of
+\fIprotocol\fP.)  Note that this primitive chases the protocol
 header chain.
 .IP "\fBether broadcast\fR"
 True if the packet is an Ethernet broadcast packet.
