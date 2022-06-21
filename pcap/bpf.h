@@ -79,13 +79,6 @@
 #if !defined(_NET_BPF_H_) && !defined(_NET_BPF_H_INCLUDED) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
-/* u_char, u_short and u_int */
-#if defined(_WIN32)
-  #include <winsock2.h>
-#elif defined(HAVE_SYS_TYPES_H)
-  #include <sys/types.h>
-#endif
-
 #include <pcap/funcattrs.h>
 #include <pcap/dlt.h>
 
