@@ -12893,7 +12893,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_commands="$ac_config_commands default-1"
 
-ac_config_files="$ac_config_files Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile testprogs/Makefile"
+ac_config_files="$ac_config_files Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc cbpf-savefile.manfile pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile testprogs/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -13601,6 +13601,7 @@ do
     "pcap-filter.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-filter.manmisc" ;;
     "pcap-linktype.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-linktype.manmisc" ;;
     "pcap-tstamp.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-tstamp.manmisc" ;;
+    "cbpf-savefile.manfile") CONFIG_FILES="$CONFIG_FILES cbpf-savefile.manfile" ;;
     "pcap-savefile.manfile") CONFIG_FILES="$CONFIG_FILES pcap-savefile.manfile" ;;
     "pcap.3pcap") CONFIG_FILES="$CONFIG_FILES pcap.3pcap" ;;
     "pcap_compile.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_compile.3pcap" ;;

@@ -235,6 +235,7 @@ MAN3PCAP_NOEXPAND = \
 MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
 
 MANFILE = \
+	cbpf-savefile.manfile.in \
 	pcap-savefile.manfile.in
 
 MANMISC = \

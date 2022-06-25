@@ -36,6 +36,7 @@ os-proto.h
 pcap-config
 pcap-filter.manmisc
 pcap-linktype.manmisc
+cbpf-savefile.manfile
 pcap-savefile.manfile
 pcap-tstamp.manmisc
 pcap.3pcap

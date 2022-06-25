@@ -2682,7 +2682,10 @@ set(MAN3PCAP_NOEXPAND
     pcap_tstamp_type_name_to_val.3pcap
     pcap_tstamp_type_val_to_name.3pcap
 )
-set(MANFILE_EXPAND pcap-savefile.manfile.in)
+set(MANFILE_EXPAND
+    cbpf-savefile.manfile.in
+    pcap-savefile.manfile.in
+)
 set(MANMISC_EXPAND
     pcap-filter.manmisc.in
     pcap-linktype.manmisc.in
