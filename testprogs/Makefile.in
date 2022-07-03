@@ -101,7 +101,7 @@ all: $(TESTS)
 
 capturetest: $(srcdir)/capturetest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/capturetest.c \
-	    ../libpcap.a $(LIBS) 
+	    ../libpcap.a $(LIBS)
 
 can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o can_set_rfmon_test \
