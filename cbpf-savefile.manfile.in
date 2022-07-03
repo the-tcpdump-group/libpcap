@@ -11,9 +11,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "30 June 2022"
+.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "3 July 2022"
 .SH NAME
-cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 4)
+cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 5)
 .SH DESCRIPTION
 This man page discusses a file format for cBPF, which is the "classic" (and
 for a long time the only) Berkeley Packet Filter.  It does
@@ -22,7 +22,7 @@ apply to the newer eBPF variety of BPF.
 .LP
 The main purpose of this file format is to store BPF bytecode, most commonly
 compiled from a BPF filter expression (see
-.BR pcap-filter (7)
+.BR \%pcap-filter (7)
 for the filter syntax description) using libpcap.  Besides that, the format
 allows to encode some information about the context in which the compilation
 was done.  This meta-data can make it easier to reproduce the compilation
@@ -95,10 +95,14 @@ part of the header up to and including MinorVer identical.
 .fi
 
 MOD, XOR, COP and CPX: if set to 1, in this BPF dialect BPF_MOD, BPF_XOR,
-BPF_COP and BPF_COPX respectively are valid instructions.  BPF_MOD and BPF_XOR
-are implemented in the OS kernel of FreeBSD, illumos, Linux, NetBSD and
-Solaris >= 11.4, but not AIX or OpenBSD.  BPF_COP and BPF_COPX are implemented
-in NetBSD kernel.
+BPF_COP and BPF_COPX respectively are valid instructions.  For the current
+list of OSes that support BPF_MOD and BPF_XOR in the kernel see the
+.B %
+and
+.B ^
+binary operators in
+.BR \%pcap-filter (7).
+BPF_COP and BPF_COPX are implemented in NetBSD kernel.
 .LP
 Note that the fact an instruction is valid in a BPF dialect does not always
 mean the compiled bytecode in the savefile contains the instruction.  In other
