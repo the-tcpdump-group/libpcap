@@ -1813,7 +1813,7 @@ fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
 		 * If this packet contains transferred data (yes, data_flag
 		 * is 0 if we *do* have data), and the total on-the-network
 		 * length is equal to the value calculated from the raw URB
-		 * length, then it might be one of those tranfers.
+		 * length, then it might be one of those transfers.
 		 */
 		if (!usb_hdr->data_flag &&
 		    hdr->len == sizeof(pcap_usb_header_mmapped) +
