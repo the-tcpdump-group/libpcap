@@ -3921,7 +3921,7 @@ $as_echo_n "checking whether the compiler supports the -fvisibility=hidden optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -4030,7 +4030,7 @@ $as_echo_n "checking whether the compiler supports the -fvisibility=hidden optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -4201,7 +4201,7 @@ $as_echo_n "checking whether the compiler supports the -xldscope=hidden option..
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -9899,7 +9899,7 @@ $as_echo_n "checking whether the compiler supports the -W option... " >&6; }
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -9990,7 +9990,7 @@ $as_echo_n "checking whether the compiler supports the -Wall option... " >&6; }
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10081,7 +10081,7 @@ $as_echo_n "checking whether the compiler supports the -Wcomma option... " >&6; 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10172,7 +10172,7 @@ $as_echo_n "checking whether the compiler supports the -Wdocumentation option...
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10263,7 +10263,7 @@ $as_echo_n "checking whether the compiler supports the -Wformat-nonliteral optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10354,7 +10354,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-noreturn option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10445,7 +10445,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-prototypes opti
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10536,7 +10536,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-variable-declar
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10627,7 +10627,7 @@ $as_echo_n "checking whether the compiler supports the -Wpointer-arith option...
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10718,7 +10718,7 @@ $as_echo_n "checking whether the compiler supports the -Wpointer-sign option... 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10809,7 +10809,7 @@ $as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6;
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10900,7 +10900,7 @@ $as_echo_n "checking whether the compiler supports the -Wsign-compare option... 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10991,7 +10991,7 @@ $as_echo_n "checking whether the compiler supports the -Wstrict-prototypes optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -11082,7 +11082,7 @@ $as_echo_n "checking whether the compiler supports the -Wunused-parameter option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -11173,7 +11173,7 @@ $as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -11291,7 +11291,7 @@ $as_echo_n "checking whether the compiler supports the -Wunreachable-code option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -11389,7 +11389,7 @@ $as_echo_n "checking whether the compiler supports the -Wshorten-64-to-32 option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
-	# This may, as per those two messages, be fixed in autoonf 2.70,
+	# This may, as per those two messages, be fixed in autoconf 2.70,
 	# but we only require 2.64 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
