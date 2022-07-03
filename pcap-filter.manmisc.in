@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "12 June 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "3 July 2022"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -854,19 +854,46 @@ Connect Ack, Release, or Release Done message.
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 on a meta signaling circuit and is a Q.2931 Setup, Call Proceeding, Connect,
 Release, or Release Done message.
-.IP  "\fIexpr relop expr\fR"
-True if the relation holds, where \fIrelop\fR is one of >, <, >=, <=, =
-or ==, !=, and \fIexpr\fR is an arithmetic expression composed of integer
-constants (expressed in standard C syntax), the normal binary operators
-[+, -, *, /, %, &, |, ^, <<, >>], a length operator, and special packet data
+.IP  "\fIexpr1 relop expr2\fR"
+True if the relation holds.  \fIRelop\fR is one of
+.RB { > ,
+.BR < ,
+.BR >= ,
+.BR <= ,
+.B =
+or
+.BR == ,
+.BR != }.
+Each of \fIexpr1\fR and \fIexpr2\fR is an arithmetic expression composed of
+integer constants (expressed in standard C syntax), the normal binary operators
+.RB { + ,
+.BR - ,
+.BR * ,
+.BR / ,
+.BR % ,
+.BR & ,
+.BR | ,
+.BR ^ ,
+.BR << ,
+.BR >> },
+a length operator, and special packet data
 accessors.  Note that all comparisons are unsigned, so that, for example,
 0x80000000 and 0xffffffff are > 0.
 .IP
-The % and ^ operators are currently only supported for filtering in the
-kernel on Linux with 3.7 and later kernels; on all other systems, if
+The
+.B %
+and
+.B ^
+operators are currently only supported for filtering in the kernel on
+particular operating systems (for example: FreeBSD, Linux with 3.7 and later
+kernels, NetBSD); on all other systems (for example: AIX, illumos, Solaris,
+OpenBSD), if
 those operators are used, filtering will be done in user mode, which
 will increase the overhead of capturing packets and may cause more
 packets to be dropped.
+.IP
+The length operator, indicated by the keyword \fBlen\fP, gives the
+length of the packet.
 .IP
 To access data inside the packet, use the following syntax:
 .in +.5i
@@ -913,8 +940,6 @@ The byte offset, relative to the indicated protocol layer, is
 given by \fIexpr\fR.
 \fISize\fR is optional and indicates the number of bytes in the
 field of interest; it can be either one, two, or four, and defaults to one.
-The length operator, indicated by the keyword \fBlen\fP, gives the
-length of the packet.
 
 For example, `\fBether[\fP0\fB] &\fP 1 \fB!=\fP 0' catches all multicast traffic.
 The expression `\fBip[\fP0\fB] &\fP 0xf \fB!=\fP 5'
