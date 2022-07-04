@@ -492,7 +492,7 @@ static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 if
 		u->iface = iface;					/* stick this entry at the head of the list */
 	} else {
 		iface_ptr = u->iface;
-		while (iface_ptr->next) {			/* othewise scan the list */
+		while (iface_ptr->next) {			/* otherwise scan the list */
 			iface_ptr = iface_ptr->next;	/* till we're at the last entry */
 		}
 		iface_ptr->next = iface;			/* then tack this entry on the end of the list */

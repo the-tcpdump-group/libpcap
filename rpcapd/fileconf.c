@@ -386,7 +386,7 @@ void fileconf_read(void)
 
 				//
 				// Append this to the host list.
-				// Save the curren end-of-string for the
+				// Save the current end-of-string for the
 				// host list, in case the new host doesn't
 				// fit, so that we can discard the partially-
 				// copied host name.

@@ -720,7 +720,7 @@ periodically for packets; in that case,
 will return a pointer to a
 .B struct timeval
 whose value can be used as a timeout in those routines.  When the
-routine returns, an attmept should be made to read packets from the
+routine returns, an attempt should be made to read packets from the
 device.  If
 .BR pcap_get_required_select_timeout ()
 returns

@@ -93,7 +93,7 @@
  *
  * On Windows, send() and recv() return an int.
  *
- *   Wth MSVC, there *is* no ssize_t.
+ *   With MSVC, there *is* no ssize_t.
  *
  *   With MinGW, there is an ssize_t type; it is either an int (32 bit)
  *   or a long long (64 bit).

@@ -109,7 +109,7 @@ The Regents of the University of California.  All rights reserved.\n";
  * also include <pcap.h> to open the device in the first place, and that
  * means that we may get collisions between their definitions of
  * BPF_STMT and BPF_JUMP - and do, in fact, get them on Linux (the
- * definitons may be semantically the same, but that's not sufficient to
+ * definitions may be semantically the same, but that's not sufficient to
  * avoid the warnings, as the preprocessor doesn't know that u_short is
  * just unsigned short).
  *

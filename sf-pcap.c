@@ -579,7 +579,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 * userland.
 		 *
 		 * However, perhaps some versions of libpcap failed to
-		 * set the snapshot length currectly in the file header
+		 * set the snapshot length correctly in the file header
 		 * or the per-packet header, or perhaps this is a
 		 * corrupted safefile or a savefile built/modified by a
 		 * fuzz tester, so we check anyway.  We grow the buffer

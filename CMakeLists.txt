@@ -2210,7 +2210,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "IRIX" OR CMAKE_SYSTEM_NAME STREQUAL "IRIX64")
     set(MAN_MISC_INFO 5)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
     #
-    # DEC OSF/1, a/k/a Digial UNIX, a/k/a Tru64 UNIX.
+    # DEC OSF/1, a/k/a Digital UNIX, a/k/a Tru64 UNIX.
     # Use Tru64 UNIX conventions for man pages; they're the same as the
     # System V conventions except that they use section 8 for
     # administrative commands and daemons.
