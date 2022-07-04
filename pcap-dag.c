@@ -736,7 +736,7 @@ dag_inject(pcap_t *p, const void *buf _U_, int size _U_)
  *  API polling parameters.
  *
  *  snaplen is now also ignored, until we get per-stream slen support. Set
- *  slen with approprite DAG tool BEFORE pcap_activate().
+ *  slen with appropriate DAG tool BEFORE pcap_activate().
  *
  *  See also pcap(3).
  */

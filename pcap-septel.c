@@ -93,7 +93,7 @@ loop:
       h = GCT_grab(id);
 
       m = (MSG*)h;
-      /* a couter is added here to avoid an infinite loop
+      /* a counter is added here to avoid an infinite loop
        * that will cause our capture program GUI to freeze while waiting
        * for a packet*/
       counter++ ;

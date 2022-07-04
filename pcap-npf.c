@@ -912,7 +912,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		/* Fill the header for the user suppplied callback function */
+		/* Fill the header for the user supplied callback function */
 		pcap_header.caplen = caplen;
 		pcap_header.len = packet_len;
 

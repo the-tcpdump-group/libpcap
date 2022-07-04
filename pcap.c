@@ -4111,7 +4111,7 @@ pcap_close(pcap_t *p)
 }
 
 /*
- * Helpers for safely loding code at run time.
+ * Helpers for safely loading code at run time.
  * Currently Windows-only.
  */
 #ifdef _WIN32

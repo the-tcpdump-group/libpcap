@@ -5,7 +5,7 @@ This program parses the output from pcap_compile() to visualize the CFG after
 each optimize phase.
 
 Usage guide:
-1. Enable optimizier debugging code when configure libpcap,
+1. Enable optimizer debugging code when configure libpcap,
    and build libpcap & the test programs
        ./configure --enable-optimizer-dbg
        make

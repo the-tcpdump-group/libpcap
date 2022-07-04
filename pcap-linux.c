@@ -1485,7 +1485,7 @@ get_if_ioctl_socket(void)
 	 * capture on them, "why do no interfaces show up?" - when the
 	 * real problem is a permissions problem.  Error reports of that
 	 * type require a lot more back-and-forth to debug, as evidenced
-	 * by many Wireshark bugs/mailing list questions/Q&A questoins.)
+	 * by many Wireshark bugs/mailing list questions/Q&A questions.)
 	 *
 	 * So:
 	 *
