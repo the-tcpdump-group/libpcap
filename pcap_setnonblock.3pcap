@@ -64,7 +64,7 @@ immediately rather than blocking waiting for packets to arrive.
 .BR pcap_loop (3PCAP)
 will loop forever, consuming CPU time when no packets are currently
 available;
-.BR pacp_dispatch ()
+.BR pcap_dispatch ()
 should be used instead.
 .BR pcap_next (3PCAP)
 will return
