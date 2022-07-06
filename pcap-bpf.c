@@ -479,7 +479,7 @@ bpf_open(char *errbuf)
 	int fd = -1;
 	static const char cloning_device[] = "/dev/bpf";
 	int n = 0;
-	char device[sizeof "/dev/bpf0000000000"];
+	char device[sizeof "/dev/bpf00000000000"];
 	static int no_cloning_bpf = 0;
 
 #ifdef _AIX
