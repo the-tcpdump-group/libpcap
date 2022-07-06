@@ -37,7 +37,7 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
-project(pcap C)
+project(pcap)
 
 include(CheckCCompilerFlag)
 
