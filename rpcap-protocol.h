@@ -132,10 +132,12 @@
  * XXX - use the C99 types?  Microsoft's newer versions of Visual Studio
  * support them.
  */
+#ifndef __HAIKU__
 typedef unsigned char uint8;	/* 8-bit unsigned integer */
 typedef unsigned short uint16;	/* 16-bit unsigned integer */
 typedef unsigned int uint32;	/* 32-bit unsigned integer */
 typedef int int32;		/* 32-bit signed integer */
+#endif
 
 /* Common header for all the RPCAP messages */
 struct rpcap_header
