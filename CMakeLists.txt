@@ -580,6 +580,15 @@ else(WIN32)
             set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
         endif(LIBSTR_HAS_PUTMSG)
     endif(NOT STDLIBS_HAVE_PUTMSG)
+
+    # Haiku has getpass in libbsd
+    check_function_exists(getpass STDLIBS_HAVE_GETPASS)
+    if(NOT STDLIBS_HAVE_GETPASS)
+        check_library_exists(bsd getpass "" LIBBSD_HAS_GETPASS)
+        if(LIBBSD_HAS_GETPASS)
+            set(PCAP_LINK_LIBRARIES bsd ${PCAP_LINK_LIBRARIES})
+        endif(LIBBSD_HAS_GETPASS)
+    endif(NOT STDLIBS_HAVE_GETPASS)
 endif(WIN32)
 
 #

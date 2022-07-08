@@ -70,6 +70,10 @@ haiku*)
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
 	#
 	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	#
+	# Haiku has getpass in libbsd.
+	#
+	AC_CHECK_LIB(bsd, getpass)
 	;;
 esac
 
