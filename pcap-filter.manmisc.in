@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "3 July 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "8 July 2022"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -862,10 +862,13 @@ True if the relation holds.  \fIRelop\fR is one of
 .BR < ,
 .BR >= ,
 .BR <= ,
-.B =
-or
+.BR = ,
 .BR == ,
-.BR != }.
+.BR != }
+(where
+.B =
+means the same as
+.BR == ).
 Each of \fIexpr1\fR and \fIexpr2\fR is an arithmetic expression composed of
 integer constants (expressed in standard C syntax), the normal binary operators
 .RB { + ,
@@ -906,21 +909,32 @@ To access data inside the packet, use the following syntax:
 .I Proto
 is one of
 .BR arp ,
+.BR atalk ,
+.BR carp ,
+.BR decnet ,
 .BR ether ,
 .BR fddi ,
 .BR icmp ,
 .BR icmp6 ,
+.BR igmp ,
+.BR igrp ,
 .BR ip ,
 .BR ip6 ,
+.BR lat ,
 .BR link ,
+.BR mopdl ,
+.BR moprc ,
+.BR pim ,
 .BR ppp ,
 .BR radio ,
 .BR rarp ,
+.BR sca ,
 .BR sctp ,
 .BR slip ,
 .BR tcp ,
 .BR tr ,
-.B udp
+.BR udp ,
+.B vrrp
 or
 .BR wlan ,
 and
