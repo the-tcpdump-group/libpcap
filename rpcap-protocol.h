@@ -124,7 +124,7 @@
  * version ranges (if more than one version of the protocol has the same
  * layout) that we support.
  *
- * We use the C99 intN_t and uintN_t types to indicat fields that are
+ * We use the C99 intN_t and uintN_t types to indicate fields that are
  * exactly N bits long on the network.  Do not use types that might
  * differ in their lengths.
  *

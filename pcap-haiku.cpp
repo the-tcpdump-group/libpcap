@@ -80,7 +80,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets, pcap_handler callback,
 		return -1;
 	}
 
-	int32 captureLength = bytesReceived;
+	int32_t captureLength = bytesReceived;
 	if (captureLength > handle->snapshot)
 		captureLength = handle->snapshot;
 
