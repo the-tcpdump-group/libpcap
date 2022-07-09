@@ -38,6 +38,7 @@
 #include <string.h>		/* for strlen(), ... */
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
+#include <stdint.h>		/* for intN_t and uintN_t types */
 #include <errno.h>		/* for the errno variable */
 #include "sockutils.h"
 #include "portability.h"
