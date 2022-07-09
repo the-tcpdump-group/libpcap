@@ -69,7 +69,7 @@
  * Exported function prototypes                          *
  *                                                       *
  *********************************************************/
-void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
+void rpcap_createhdr(struct rpcap_header *header, uint8_t type, uint16_t value, uint32_t length);
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 
 #endif

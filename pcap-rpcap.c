@@ -94,7 +94,7 @@ struct activehosts
 	struct sockaddr_storage host;
 	SOCKET sockctrl;
 	SSL *ssl;
-	uint8 protocol_version;
+	uint8_t protocol_version;
 	struct activehosts *next;
 };
 
@@ -128,8 +128,8 @@ struct pcap_rpcap {
 	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
 	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
 
-	uint8 protocol_version;		/* negotiated protocol version */
-	uint8 uses_ssl;				/* User asked for rpcaps scheme */
+	uint8_t protocol_version;	/* negotiated protocol version */
+	uint8_t uses_ssl;		/* User asked for rpcaps scheme */
 
 	unsigned int TotNetDrops;	/* keeps the number of packets that have been dropped by the network */
 
@@ -170,12 +170,12 @@ static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *fp);
 static int pcap_startcapture_remote(pcap_t *fp);
 static int rpcap_recv_msg_header(SOCKET sock, SSL *, struct rpcap_header *header, char *errbuf);
-static int rpcap_check_msg_ver(SOCKET sock, SSL *, uint8 expected_ver, struct rpcap_header *header, char *errbuf);
-static int rpcap_check_msg_type(SOCKET sock, SSL *, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf);
-static int rpcap_process_msg_header(SOCKET sock, SSL *, uint8 ver, uint8 request_type, struct rpcap_header *header, char *errbuf);
-static int rpcap_recv(SOCKET sock, SSL *, void *buffer, size_t toread, uint32 *plen, char *errbuf);
-static void rpcap_msg_err(SOCKET sockctrl, SSL *, uint32 plen, char *remote_errbuf);
-static int rpcap_discard(SOCKET sock, SSL *, uint32 len, char *errbuf);
+static int rpcap_check_msg_ver(SOCKET sock, SSL *, uint8_t expected_ver, struct rpcap_header *header, char *errbuf);
+static int rpcap_check_msg_type(SOCKET sock, SSL *, uint8_t request_type, struct rpcap_header *header, uint16_t *errcode, char *errbuf);
+static int rpcap_process_msg_header(SOCKET sock, SSL *, uint8_t ver, uint8_t request_type, struct rpcap_header *header, char *errbuf);
+static int rpcap_recv(SOCKET sock, SSL *, void *buffer, size_t toread, uint32_t *plen, char *errbuf);
+static void rpcap_msg_err(SOCKET sockctrl, SSL *, uint32_t plen, char *remote_errbuf);
+static int rpcap_discard(SOCKET sock, SSL *, uint32_t len, char *errbuf);
 static int rpcap_read_packet_msg(struct pcap_rpcap const *, pcap_t *p, size_t size);
 
 /****************************************************
@@ -388,7 +388,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet, from the message */
 	u_char *net_pkt_data;			/* packet data from the message */
-	uint32 plen;
+	uint32_t plen;
 	int retval = 0;				/* generic return value */
 	int msglen;
 
@@ -903,7 +903,7 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
-	uint32 plen;				/* data remaining in the message */
+	uint32_t plen;				/* data remaining in the message */
 
 #ifdef _WIN32
 	if (mode != PCAP_STATS_STANDARD && mode != PCAP_STATS_EX)
@@ -1076,8 +1076,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	uint16 portdata = 0;			/* temp variable needed to keep the network port for the data connection */
-	uint32 plen;
+	uint16_t portdata = 0;			/* temp variable needed to keep the network port for the data connection */
+	uint32_t plen;
 	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
 	char host[INET6_ADDRSTRLEN + 1];	/* numeric name of the other host */
@@ -1101,7 +1101,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	int res;
 	socklen_t itemp;
 	int sockbufsize = 0;
-	uint32 server_sockbufsize;
+	uint32_t server_sockbufsize;
 
 	// Take the opportunity to clear pr->data_ssl before any goto error,
 	// as it seems p->priv is not zeroed after its malloced.
@@ -1561,7 +1561,7 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 		return -1;
 
 	filter->filtertype = htons(RPCAP_UPDATEFILTER_BPF);
-	filter->nitems = htonl((int32)prog->bf_len);
+	filter->nitems = htonl((int32_t)prog->bf_len);
 
 	if (sock_bufferize(NULL, prog->bf_len * sizeof(struct rpcap_filterbpf_insn),
 		NULL, sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
@@ -1884,8 +1884,8 @@ static int pcap_setsampling_remote(pcap_t *fp)
 
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
-	sampling_pars->method = (uint8)fp->rmt_samp.method;
-	sampling_pars->value = (uint16)htonl(fp->rmt_samp.value);
+	sampling_pars->method = (uint8_t)fp->rmt_samp.method;
+	sampling_pars->value = (uint16_t)htonl(fp->rmt_samp.value);
 
 	if (sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, sendbuf, sendbufidx, fp->errbuf,
 	    PCAP_ERRBUF_SIZE) < 0)
@@ -1943,18 +1943,18 @@ static int pcap_setsampling_remote(pcap_t *fp)
  * \return '0' if everything is fine, '-1' for an error.  For errors,
  * an error message string is returned in the 'errbuf' variable.
  */
-static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
+static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8_t *ver, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	uint16 length;				/* length of the payload of this message */
+	uint16_t length;			/* length of the payload of this message */
 	struct rpcap_auth *rpauth;
-	uint16 auth_type;
+	uint16_t auth_type;
 	struct rpcap_header header;
 	size_t str_length;
-	uint32 plen;
+	uint32_t plen;
 	struct rpcap_authreply authreply;	/* authentication reply message */
-	uint8 ourvers;
+	uint8_t ourvers;
 
 	if (auth)
 	{
@@ -1974,7 +1974,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 					snprintf(errbuf, PCAP_ERRBUF_SIZE, "User name is too long (> 65535 bytes)");
 					return -1;
 				}
-				length += (uint16)str_length;
+				length += (uint16_t)str_length;
 			}
 			if (auth->password)
 			{
@@ -1984,7 +1984,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Password is too long (> 65535 bytes)");
 					return -1;
 				}
-				length += (uint16)str_length;
+				length += (uint16_t)str_length;
 			}
 			break;
 
@@ -1993,7 +1993,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			return -1;
 		}
 
-		auth_type = (uint16)auth->type;
+		auth_type = (uint16_t)auth->type;
 	}
 	else
 	{
@@ -2021,7 +2021,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 	if (auth_type == RPCAP_RMTAUTH_PWD)
 	{
 		if (auth->username)
-			rpauth->slen1 = (uint16)strlen(auth->username);
+			rpauth->slen1 = (uint16_t)strlen(auth->username);
 		else
 			rpauth->slen1 = 0;
 
@@ -2030,7 +2030,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			return -1;
 
 		if (auth->password)
-			rpauth->slen2 = (uint16)strlen(auth->password);
+			rpauth->slen2 = (uint16_t)strlen(auth->password);
 		else
 			rpauth->slen2 = 0;
 
@@ -2150,7 +2150,7 @@ static const char userinfo_allowed_symbols[] = "-._~!&'()*+,;=";
  * struct created from a username and password parsed out of the userinfo
  * portion of a URI.
  */
-static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8 *ver, const char *userinfo, char *errbuf)
+static int rpcap_doauth_userinfo(SOCKET sockctrl, SSL *ssl, uint8_t *ver, const char *userinfo, char *errbuf)
 {
 	struct pcap_rmtauth auth;
 	const char *ptr;
@@ -2234,8 +2234,8 @@ pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
 
 static int
 rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
-    int *activep, SOCKET *sockctrlp, uint8 *uses_sslp, SSL **sslp,
-    int rmt_flags, uint8 *protocol_versionp, char *host, char *port,
+    int *activep, SOCKET *sockctrlp, uint8_t *uses_sslp, SSL **sslp,
+    int rmt_flags, uint8_t *protocol_versionp, char *host, char *port,
     char *iface, char *errbuf)
 {
 	int type;
@@ -2431,9 +2431,9 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
 	SOCKET sockctrl;
 	SSL *ssl = NULL;
-	uint8 protocol_version;			/* negotiated protocol version */
+	uint8_t protocol_version;		/* negotiated protocol version */
 	int active;
-	uint32 plen;
+	uint32_t plen;
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 
@@ -2497,7 +2497,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		goto error_nodiscard;
 
 	rpcap_createhdr((struct rpcap_header *) sendbuf, protocol_version,
-	    RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
+	    RPCAP_MSG_OPEN_REQ, 0, (uint32_t) strlen(iface));
 
 	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
@@ -2597,15 +2597,15 @@ freeaddr(struct pcap_addr *addr)
 int
 pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
-	uint8 protocol_version;		/* protocol version */
+	uint8_t protocol_version;	/* protocol version */
 	SOCKET sockctrl;		/* socket descriptor of the control connection */
 	SSL *ssl = NULL;		/* optional SSL handler for sockctrl */
-	uint32 plen;
+	uint32_t plen;
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
 	int i, j;		/* temp variables */
 	int nif;		/* Number of interfaces listed */
 	int active;			/* 'true' if we the other end-party is in active mode */
-	uint8 uses_ssl;
+	uint8_t uses_ssl;
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE];
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
 	pcap_if_t *lastdev;	/* Last device in the pcap_if_t list */
@@ -2910,7 +2910,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	socklen_t fromlen;				/* keeps the length of the sockaddr_storage variable */
 	SOCKET sockctrl;				/* keeps the main socket identifier */
 	SSL *ssl = NULL;				/* Optional SSL handler for sockctrl */
-	uint8 protocol_version;			/* negotiated protocol version */
+	uint8_t protocol_version;		/* negotiated protocol version */
 	struct activehosts *temp, *prev;	/* temp var needed to scan he host list chain */
 
 	*connectinghost = 0;		/* just in case */
@@ -3299,7 +3299,7 @@ static int rpcap_recv_msg_header(SOCKET sock, SSL *ssl, struct rpcap_header *hea
  * Make sure the protocol version of a received message is what we were
  * expecting.
  */
-static int rpcap_check_msg_ver(SOCKET sock, SSL *ssl, uint8 expected_ver, struct rpcap_header *header, char *errbuf)
+static int rpcap_check_msg_ver(SOCKET sock, SSL *ssl, uint8_t expected_ver, struct rpcap_header *header, char *errbuf)
 {
 	/*
 	 * Did the server specify the version we negotiated?
@@ -3330,7 +3330,7 @@ static int rpcap_check_msg_ver(SOCKET sock, SSL *ssl, uint8 expected_ver, struct
  * Check the message type of a received message, which should either be
  * the expected message type or RPCAP_MSG_ERROR.
  */
-static int rpcap_check_msg_type(SOCKET sock, SSL *ssl, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf)
+static int rpcap_check_msg_type(SOCKET sock, SSL *ssl, uint8_t request_type, struct rpcap_header *header, uint16_t *errcode, char *errbuf)
 {
 	const char *request_type_string;
 	const char *msg_type_string;
@@ -3400,9 +3400,9 @@ static int rpcap_check_msg_type(SOCKET sock, SSL *ssl, uint8 request_type, struc
 /*
  * Receive and process the header of a message.
  */
-static int rpcap_process_msg_header(SOCKET sock, SSL *ssl, uint8 expected_ver, uint8 request_type, struct rpcap_header *header, char *errbuf)
+static int rpcap_process_msg_header(SOCKET sock, SSL *ssl, uint8_t expected_ver, uint8_t request_type, struct rpcap_header *header, char *errbuf)
 {
-	uint16 errcode;
+	uint16_t errcode;
 
 	if (rpcap_recv_msg_header(sock, ssl, header, errbuf) == -1)
 	{
@@ -3432,7 +3432,7 @@ static int rpcap_process_msg_header(SOCKET sock, SSL *ssl, uint8 expected_ver, u
  * Returns 0 on success, logs a message and returns -1 on a network
  * error.
  */
-static int rpcap_recv(SOCKET sock, SSL *ssl, void *buffer, size_t toread, uint32 *plen, char *errbuf)
+static int rpcap_recv(SOCKET sock, SSL *ssl, void *buffer, size_t toread, uint32_t *plen, char *errbuf)
 {
 	int nread;
 
@@ -3455,7 +3455,7 @@ static int rpcap_recv(SOCKET sock, SSL *ssl, void *buffer, size_t toread, uint32
 /*
  * This handles the RPCAP_MSG_ERROR message.
  */
-static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_errbuf)
+static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32_t plen, char *remote_errbuf)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -3526,7 +3526,7 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
  * Returns 0 on success, logs a message and returns -1 on a network
  * error.
  */
-static int rpcap_discard(SOCKET sock, SSL *ssl, uint32 len, char *errbuf)
+static int rpcap_discard(SOCKET sock, SSL *ssl, uint32_t len, char *errbuf)
 {
 	if (len != 0)
 	{

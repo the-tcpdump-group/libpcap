@@ -80,13 +80,13 @@
  * error message is returned in the 'errbuf' variable.
  */
 int
-rpcap_senderror(SOCKET sock, SSL *ssl, uint8 ver, unsigned short errcode, const char *error, char *errbuf)
+rpcap_senderror(SOCKET sock, SSL *ssl, uint8_t ver, unsigned short errcode, const char *error, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	uint16 length;
+	uint16_t length;
 
-	length = (uint16)strlen(error);
+	length = (uint16_t)strlen(error);
 
 	if (length > PCAP_ERRBUF_SIZE)
 		length = PCAP_ERRBUF_SIZE;
@@ -134,7 +134,7 @@ rpcap_senderror(SOCKET sock, SSL *ssl, uint8 ver, unsigned short errcode, const 
  * variable.
  */
 void
-rpcap_createhdr(struct rpcap_header *header, uint8 ver, uint8 type, uint16 value, uint32 length)
+rpcap_createhdr(struct rpcap_header *header, uint8_t ver, uint8_t type, uint16_t value, uint32_t length)
 {
 	memset(header, 0, sizeof(struct rpcap_header));
 
@@ -182,7 +182,7 @@ static const char *replies[] =
 #define NUM_REPLY_TYPES	(sizeof replies / sizeof replies[0])
 
 const char *
-rpcap_msg_type_string(uint8 type)
+rpcap_msg_type_string(uint8_t type)
 {
 	if (type & RPCAP_MSG_IS_REPLY) {
 		type &= ~RPCAP_MSG_IS_REPLY;
