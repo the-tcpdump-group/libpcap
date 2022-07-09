@@ -113,8 +113,11 @@ else
     # Remove the leftovers from any earlier in-source builds, so this
     # out-of-source build does not break because of that.
     # https://gitlab.kitware.com/cmake/community/-/wikis/FAQ#what-is-an-out-of-source-build
-    run_after_echo rm -rf CMakeFiles/ CMakeCache.txt
-    [ ! -d build ] && run_after_echo mkdir build
+    # (The contents of build/ remaining after an earlier unsuccessful attempt
+    # can fail subsequent build attempts too, sometimes in non-obvious ways,
+    # so remove that directory as well.)
+    run_after_echo rm -rf CMakeFiles/ CMakeCache.txt build/
+    run_after_echo mkdir build
     run_after_echo cd build
     run_after_echo cmake ${CFLAGS:+-DEXTRA_CFLAGS="$CFLAGS"} \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
