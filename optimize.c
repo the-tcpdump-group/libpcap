@@ -2099,7 +2099,7 @@ opt_blks(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 		 * versions of the machine code, eventually returning
 		 * to the first version.  (We're really not doing a
 		 * full loop detection, we're just testing for two
-		 * passes in a row where where we do nothing but
+		 * passes in a row where we do nothing but
 		 * move branches.)
 		 */
 		return;
