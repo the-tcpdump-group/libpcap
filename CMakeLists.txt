@@ -2084,6 +2084,23 @@ if(LEX_EXECUTABLE STREQUAL "LEX_EXECUTABLE-NOTFOUND")
 endif()
 message(STATUS "Lexical analyzer generator: ${LEX_EXECUTABLE}")
 
+#
+# Make sure {f}lex supports the -P, --header-file, and --nounput flags
+# and supports processing our scanner.l.
+#
+execute_process(COMMAND ${LEX_EXECUTABLE} -P pcap_ --header-file=/dev/null --nounput -t ${pcap_SOURCE_DIR}/scanner.l
+    OUTPUT_QUIET RESULT_VARIABLE EXIT_STATUS)
+if(NOT EXIT_STATUS EQUAL 0)
+    message(FATAL_ERROR "${LEX_EXECUTABLE} is insufficient to compile libpcap.
+libpcap requires Flex 2.5.31 or later, or a compatible version of lex.
+If a suitable version of Lex/Flex is available as a non-standard command
+and/or not in the PATH, you can specify it using the LEX environment
+variable. That said, on some systems the error can mean that Flex/Lex is
+actually acceptable, but m4 is not. Likewise, if a suitable version of
+m4 (such as GNU M4) is available but has not been detected, you can
+specify it using the M4 environment variable.")
+endif()
+
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/scanner.c ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
     SOURCE ${pcap_SOURCE_DIR}/scanner.l
