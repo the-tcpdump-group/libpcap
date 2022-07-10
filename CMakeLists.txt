@@ -2118,6 +2118,25 @@ endif()
 
 if(YACC_EXECUTABLE MATCHES "byacc" OR YACC_EXECUTABLE MATCHES "yacc")
     #
+    # Make sure this is Berkeley YACC, not AT&T YACC;
+    # the latter doesn't support reentrant parsers.
+    # Run it with "-V"; that succeeds and reports the
+    # version number with Berkeley YACC, but will
+    # (probably) fail with various vendor flavors
+    # of AT&T YACC.
+    #
+    # Hopefully this also eliminates any versions
+    # of Berkeley YACC that don't support reentrant
+    # parsers, if there are any.
+    #
+    execute_process(COMMAND ${YACC_EXECUTABLE} -V OUTPUT_QUIET
+        RESULT_VARIABLE EXIT_STATUS)
+    if(NOT EXIT_STATUS EQUAL 0)
+        message(FATAL_ERROR "${YACC_EXECUTABLE} is insufficient to compile libpcap.
+libpcap requires Bison, a newer version of Berkeley YACC with support
+for reentrant parsers, or another YACC compatible with them.")
+    endif()
+    #
     # Berkeley YACC doesn't support "%define api.pure", so use
     # "%pure-parser".
     #
