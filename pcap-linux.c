@@ -3944,7 +3944,7 @@ static int pcap_handle_packet_mmap(
 			} else {
 				/*
 				 * Clear CANFD_FDF if it's set (probably
-				 * again meaning that that field is
+				 * again meaning that this field is
 				 * uninitialized junk).
 				 */
 				canhdr->fd_flags &= ~CANFD_FDF;
