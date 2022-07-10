@@ -2088,7 +2088,12 @@ message(STATUS "Lexical analyzer generator: ${LEX_EXECUTABLE}")
 # Make sure {f}lex supports the -P, --header-file, and --nounput flags
 # and supports processing our scanner.l.
 #
-execute_process(COMMAND ${LEX_EXECUTABLE} -P pcap_ --header-file=/dev/null --nounput -t ${pcap_SOURCE_DIR}/scanner.l
+if(WIN32)
+    set(NULL_DEVICE "NUL:")
+else()
+    set(NULL_DEVICE "/dev/null")
+endif()
+execute_process(COMMAND ${LEX_EXECUTABLE} -P pcap_ --header-file=${NULL_DEVICE} --nounput -t ${pcap_SOURCE_DIR}/scanner.l
     OUTPUT_QUIET RESULT_VARIABLE EXIT_STATUS)
 if(NOT EXIT_STATUS EQUAL 0)
     message(FATAL_ERROR "${LEX_EXECUTABLE} is insufficient to compile libpcap.
