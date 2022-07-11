@@ -32,12 +32,46 @@ AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
 	AC_MSG_ERROR([The C compiler does not support C99])
 fi
+
+#
+# Get the size of a void *, to determine whether this is a 32-bit
+# or 64-bit build.
+#
+AC_CHECK_SIZEOF([void *])
+ac_lbl_c_sizeof_void_p="$ac_cv_sizeof_void_p"
+
+#
+# We only need a C++ compiler for Haiku; all code except for its
+# pcap module is in C.
+#
 case "$host_os" in
 haiku*)
-	#
-	# Haiku's platform file is in C++.
-	#
 	AC_PROG_CXX
+
+	#
+	# Make sure C and C++ have the same pointer sizes with the flags
+	# they're given; if they don't, it means that the compilers for the
+	# languages will, with those flags, not produce code that can be
+	# linked together.
+	#
+	# We have to use different data types, because the results of
+	# a test are cached, so if we test for the size of a given type
+	# in C, the subsequent test in C++ will use the cached variable.
+	# We trick autoconf by testing the size of a "void *" in C and a
+	# "const void *" in C++.
+	#
+	AC_LANG_PUSH([C++])
+	AC_CHECK_SIZEOF([const void *])
+	ac_lbl_cxx_sizeof_void_p="$ac_cv_sizeof_const_void_p"
+	AC_LANG_POP([C++])
+	if test "$ac_lbl_cxx_sizeof_void_p" -eq 0; then
+		AC_MSG_ERROR([No C++ compiler was found])
+	fi
+	if test "$ac_lbl_c_sizeof_void_p" -ne "$ac_lbl_cxx_sizeof_void_p"; then
+		AC_MSG_ERROR([C compiler $CC produces code with $ac_lbl_c_sizeof_void_p-byte pointers
+while C++ compiler $CXX produces code with $ac_lbl_cxx_sizeof_void_p-byte pointers.  This prevents
+code in those languages from being combined.])
+	fi
 	;;
 esac
 
