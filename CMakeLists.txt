@@ -37,7 +37,68 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
-project(pcap)
+#
+# We only need a C++ compiler for Haiku; all code except for its
+# pcap module is in C.
+#
+# We do that by specifying just C in the project() call and, after
+# that finishes, checking for Haiku and, if we're building for
+# Haiku, use enable_language() to check for C++.  This means that
+# we don't require a C++ compiler on platforms other than Haiku.
+#
+# CMAKE_SYSTEM_NAME is set by project(), so we can't do this by
+# testing CMAKE_SYSTEM_NAME and then passing different language
+# lists to project() based on the system.
+#
+project(pcap C)
+if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    enable_language(CXX)
+
+    #
+    # OK, this is a royal pain.
+    #
+    # CMake will try to determine the sizes of some data types, including
+    # void *, early in the process of configuration; apparently, it's done
+    # as part of processing the project() command.
+    #
+    # At least as of CMake 2.8.6, it does so by checking the size of
+    # "void *" in C, setting CMAKE_C_SIZEOF_DATA_PTR based on that,
+    # setting CMAKE_SIZEOF_VOID_P to that, and then checking the size
+    # of "void *" in C++, setting CMAKE_CXX_SIZEOF_DATA_PTR based on
+    # that, and then setting CMAKE_SIZEOF_VOID_P to *that*.
+    #
+    # The compile tests include whatever C flags may have been provided
+    # to CMake in the CFLAGS and CXXFLAGS environment variables.
+    #
+    # If you set an architecture flag such as -m32 or -m64 in CFLAGS
+    # but *not* in CXXFLAGS, the size for C++ will win, and hilarity
+    # will ensue.
+    #
+    # Or if, at least on Solaris, you have a newer version of GCC
+    # installed, but *not* a newer version of G++, and you have Oracle
+    # Studio installed, it will find GCC, which will default to building
+    # 64-bit, and Oracle Studio's C++ compiler, which will default to
+    # building 32-bit, the size for C++ will win, and, again, hilarity
+    # will ensue.
+    #
+    # So we make sure both languages have the same pointer sizes with
+    # the flags they're given; if they don't, it means that the
+    # compilers for the languages will, with those flags, not produce
+    # code that can be linked together.
+    #
+    # This is unlikely to happen on Haiku, but it *has* happened on
+    # Solaris; we do this for future-proofing, in case we ever need
+    # C++ on a platform where that can happen.
+    #
+    if(NOT ${CMAKE_C_SIZEOF_DATA_PTR} EQUAL ${CMAKE_CXX_SIZEOF_DATA_PTR})
+         message(FATAL_ERROR
+"C compiler ${CMAKE_C_COMPILER} produces code with \
+${CMAKE_C_SIZEOF_DATA_PTR}-byte pointers while C++ compiler \
+${CMAKE_CXX_COMPILER} produces code with \
+${CMAKE_CXX_SIZEOF_DATA_PTR}-byte pointers. \
+This prevents code in these languages from being combined.")
+    endif()
+endif()
 
 include(CheckCCompilerFlag)
 

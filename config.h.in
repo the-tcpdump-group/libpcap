@@ -322,6 +322,12 @@
 /* target host supports RDMA sniffing */
 #undef PCAP_SUPPORT_RDMASNIFF
 
+/* The size of `const void *', as computed by sizeof. */
+#undef SIZEOF_CONST_VOID_P
+
+/* The size of `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
