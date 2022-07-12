@@ -41,13 +41,11 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 	const pcap_usb_header_mmapped *hdr;
 	u_int bytes_left;
 
+	/*
+	 * All callers of this routine must ensure that pkth->caplen is
+	 * >= sizeof (pcap_usb_header_mmapped).
+	 */
 	bytes_left = pkth->caplen;
-	if (bytes_left < sizeof (pcap_usb_header_mmapped)) {
-		/*
-		 * We don't have the full metadata header, so give up.
-		 */
-		return;
-	}
 	bytes_left -= sizeof (pcap_usb_header_mmapped);
 
 	hdr = (const pcap_usb_header_mmapped *) bp;
