@@ -47,12 +47,11 @@ prepare_request(struct ifreq& request, const char* name)
 
 
 static int
-pcap_read_haiku(pcap_t* handle, int maxPackets, pcap_handler callback,
+pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	u_char* userdata)
 {
 	// Receive a single packet
 
-	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
 	u_char* buffer = (u_char*)handle->buffer + handle->offset;
 	struct sockaddr_dl from;
 	ssize_t bytesReceived;
@@ -269,7 +268,7 @@ pcap_create_interface(const char *device, char *errorBuffer)
 }
 
 static int
-can_be_bound(const char *name)
+can_be_bound(const char *name _U_)
 {
 	return 1;
 }
