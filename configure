@@ -7439,6 +7439,64 @@ fi
 
 
 
+
+#
+# Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
+# looking at *you*!), there are separate include files for 32-bit and
+# 64-bit builds (I guess using "unsigned long long" as a 64-bit integer
+# type on a 64-bit build is like crossing the beams or soething), and
+# there are two separate .pc files, so if we're doing a 32-bit build we
+# should make sure we look in /usr/lib/pkgconfig for .pc files and if
+# we're doing a 64-bit build we should make sure we look in
+# /usr/lib/amd64/pkgconfig for .pc files.
+#
+case "$host_os" in
+
+solaris*)
+	if test "$ac_cv_sizeof_void_p" -eq 8; then
+		#
+		# 64-bit build.  If the path is empty, set it to
+                # /usr/lib/amd64/pkgconfig; otherwise, if
+                # /usr/lib/pkgconfig appears in the path, prepend
+		# /usr/lib/amd64/pkgconfig to it; otherwise, put
+		# /usr/lib/amd64/pkgconfig at the end.
+		#
+		if test -z "$PKG_CONFIG_PATH"; then
+			#
+			# Not set, or empty.  Set it to
+			# /usr/lib/amd64/pkgconfig.
+			#
+			PKG_CONFIG_PATH=/usr/lib/amd64/pkgconfig
+		elif test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/pkgconfig`; then
+			#
+			# It contains /usr/lib/pkgconfig.  Prepend
+			# /usr/lib/amd64/pkgconfig to /usr/lib/pkgconfig.
+			#
+			PKG_CONFIG_PATH=`echo "$PKG_CONFIG_PATH" | sed "s;/usr/lib/pkgconfig;/usr/lib/amd64/pkgconfig:/usr/lib/pkgconfig;"`
+		else
+			#
+			# Not empty, but doesn't contain /usr/lib/pkgconfig.
+			# Append /usr/lib/amd64/pkgconfig to it.
+			#
+			PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib/amd64/pkgconfig"
+		fi
+		export PKG_CONFIG_PATH
+	elif test "$ac_cv_sizeof_void_p" -eq 4; then
+		#
+		# 32-bit build.  If /usr/amd64/lib/pkgconfig appears
+		# in the path, prepend /usr/lib/pkgconfig to it.
+		#
+		if test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/amd64/pkgconfig`; then
+			#
+			# It contains /usr/lib/amd64/pkgconfig.  Prepend
+			# /usr/lib/pkgconfig to /usr/lib/amd64/pkgconfig.
+			#
+			PKG_CONFIG_PATH=`echo "$PKG_CONFIG_PATH" | sed "s;/usr/lib/amd64/pkgconfig;/usr/lib/pkgconfig:/usr/lib/amd64/pkgconfig;"`
+			export PKG_CONFIG_PATH
+		fi
+	fi
+esac
+
 #
 # Handle each capture type.
 #
