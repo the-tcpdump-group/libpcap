@@ -241,6 +241,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error when listing files: does folder '%s' exist?", path);
 			DIAG_ON_FORMAT_TRUNCATION
+			closedir(unixdir);
 			return -1;
 		}
 #endif
@@ -273,6 +274,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					    PCAP_ERRBUF_SIZE, errno,
 					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
+#ifdef _WIN32
+					FindClose(filehandle);
+#else
+					closedir(unixdir);
+#endif
 					return -1;
 				}
 
@@ -302,6 +308,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				if (pcap_createsrcstr(tmpstring, PCAP_SRC_FILE, NULL, NULL, filename, errbuf) == -1)
 				{
 					pcap_freealldevs(*alldevs);
+#ifdef _WIN32
+					FindClose(filehandle);
+#else
+					closedir(unixdir);
+#endif
 					return -1;
 				}
 
@@ -312,6 +323,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					    PCAP_ERRBUF_SIZE, errno,
 					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
+#ifdef _WIN32
+					FindClose(filehandle);
+#else
+					closedir(unixdir);
+#endif
 					return -1;
 				}
 
@@ -326,6 +342,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					    PCAP_ERRBUF_SIZE, errno,
 					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
+#ifdef _WIN32
+					FindClose(filehandle);
+#else
+					closedir(unixdir);
+#endif
 					return -1;
 				}
 
@@ -339,9 +360,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 #endif
 
 
-#ifdef _WIN32
 		/* Close the search handle. */
+#ifdef _WIN32
 		FindClose(filehandle);
+#else
+		closedir(unixdir);
 #endif
 
 		return 0;
