@@ -37,7 +37,7 @@
 
 #include "pcap/compiler-tests.h"
 
-#ifndef _MSC_VER
+#if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8) || PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * Clang and GCC both support this way of putting pragmas into #defines.
    * We don't use it unless we have a compiler that supports it; the
