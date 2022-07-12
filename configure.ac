@@ -786,7 +786,7 @@ solaris*)
 			# /usr/lib/amd64/pkgconfig.
 			#
 			PKG_CONFIG_PATH=/usr/lib/amd64/pkgconfig
-		elif test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/pkgconfig`; then
+		elif test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/pkgconfig"`; then
 			#
 			# It contains /usr/lib/pkgconfig.  Prepend
 			# /usr/lib/amd64/pkgconfig to /usr/lib/pkgconfig.
