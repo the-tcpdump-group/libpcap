@@ -805,7 +805,7 @@ solaris*)
 		# 32-bit build.  If /usr/amd64/lib/pkgconfig appears
 		# in the path, prepend /usr/lib/pkgconfig to it.
 		#
-		if test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/amd64/pkgconfig`; then
+		if test ! -z `echo "$PKG_CONFIG_PATH" | grep "/usr/lib/amd64/pkgconfig"`; then
 			#
 			# It contains /usr/lib/amd64/pkgconfig.  Prepend
 			# /usr/lib/pkgconfig to /usr/lib/amd64/pkgconfig.
