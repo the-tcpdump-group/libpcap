@@ -478,8 +478,8 @@ bpf_open(char *errbuf)
 {
 	int fd = -1;
 	static const char cloning_device[] = "/dev/bpf";
-	int n = 0;
-	char device[sizeof "/dev/bpf00000000000"];
+	u_int n = 0;
+	char device[sizeof "/dev/bpf0000000000"];
 	static int no_cloning_bpf = 0;
 
 #ifdef _AIX
@@ -526,7 +526,7 @@ bpf_open(char *errbuf)
 		 * that isn't in use.
 		 */
 		do {
-			(void)snprintf(device, sizeof(device), "/dev/bpf%d", n++);
+			(void)snprintf(device, sizeof(device), "/dev/bpf%u", n++);
 			/*
 			 * Initially try a read/write open (to allow the inject
 			 * method to work).  If that fails due to permission
