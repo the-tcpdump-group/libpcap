@@ -239,7 +239,7 @@ If a name is used, both the port
 number and protocol are checked.
 If a number or ambiguous name is used,
 only the port number is checked (e.g., `\fBdst port\fR 513' will print both
-tcp/login traffic and udp/who traffic, and `\fBport domain\fR' will print
+tcp/login traffic and udp/who traffic, and `\fBport\fR domain' will print
 both tcp/domain and udp/domain traffic).
 .IP "\fBsrc port \fIport\fR"
 True if the packet has a source port value of \fIport\fP.
