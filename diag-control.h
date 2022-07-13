@@ -40,9 +40,9 @@
 #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8) || PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * Clang and GCC both support this way of putting pragmas into #defines.
-   * We don't use it unless we have a compiler that supports it; the
-   * warning-suppressing pragmas differ between Clang and GCC, so we test
-   * for both of those separately.
+   * We use it only if we have a compiler that supports it; see below
+   * for the code that uses it and the #defines that control whether
+   * that code is used.
    */
   #define PCAP_DO_PRAGMA(x) _Pragma (#x)
 #endif
