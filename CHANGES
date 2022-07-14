@@ -13,8 +13,6 @@ Monthday, Month DD, YYYY:
         "link-layer type plus other stuff" is non-zero.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
-    Building and testing:
-      Fix building without protochain support. (GH #852)
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
@@ -127,6 +125,7 @@ Monthday, Month DD, YYYY:
       Have CMake warn if no capture mechanism can be found.
       Don't do stuff requiring 3.19 or later on earlier CMakes.
       Cleanup various leftover cruft in the configure script.
+      Fix building without protochain support. (GH #852)
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
