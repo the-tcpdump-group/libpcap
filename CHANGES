@@ -24,9 +24,7 @@ Monthday, Month DD, YYYY:
         arrange for it to be used in Darwin releases.
       Use AS_HELP_STRING for --enable-remote.
       Fix some formatting string issues found by cppcheck.
-      Squelch some CMake warnings.
       Various small code and comment cleanups.
-      Fix diag-control.h to handle compiling with clang-cl.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -124,6 +122,9 @@ Monthday, Month DD, YYYY:
       Use pkg-config first when checking for libibverbs.
       Have CMake warn if no capture mechanism can be found.
       Don't do stuff requiring 3.19 or later on earlier CMakes.
+      Squelch some CMake warnings.
+      Fix diag-control.h to handle compiling with clang-cl (issue
+        #1101).
       Cleanup various leftover cruft in the configure script.
       Fix building without protochain support. (GH #852)
     Documentation:
