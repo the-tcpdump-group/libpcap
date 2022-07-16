@@ -9,6 +9,9 @@ Monthday, Month DD, YYYY:
       Use AS_HELP_STRING for --enable-remote.
       Fix some formatting string issues found by cppcheck.
       Various small code and comment cleanups.
+      Use PCAP_ERROR (defined as -1) rather than explicit -1 for
+        functions the documentation says return PCAP_ERROR.
+      Remove unused code from the filter compiler.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -18,6 +21,8 @@ Monthday, Month DD, YYYY:
         when reading a LINKTYPE_PFLOG file.
       Put CAN ID field in CAN pseudo-headers for LINUX_SLL2, as we do
         for LINUX_SLL.
+      Fix inorrectly-computed "real" length for isochronous USB
+        transfers when reading savefiles.
     Capture:
       Never process more than INT_MAX packets in a pcap_dispatch() call,
         to avoid integer overflow (issue #1087).
@@ -46,10 +51,15 @@ Monthday, Month DD, YYYY:
       Fix handling of VLAN tagged packets if the link-layer type is
         changed from DLT_LINUX_SLL to DLT_LINUX_SLL2 (see issue #1105).
       Always turn on PACKET_AUXDATA (see issue #1105).
+      Make sure there's reserved space for a DLT_LINUX_SLL2 header
+        when capturing.
+      Correctly compute the "real" length for isochronous USB transfers.
     BPF capture (*BSD, macOS, AIX, Solaris 11):
       Fix case where a device open might fail, rather than falling back
         to a smaller buffer size, when the initial buffer size is too
         big.
+      Use an unsigned device number to iterate over BPF devices, to
+        squelch a compiler warning.
     NetBSD:
       Fix handling of LINKTYPE_HDLC/DLT_HDLC.
     rpcap:
@@ -57,6 +67,8 @@ Monthday, Month DD, YYYY:
       Fix code to process port number.
       Clean up findalldevs code in rpcapd.
       Clean up bufferizing code.
+      Fix a file descriptor/handle leak in pcap_findalldevs_ex()
+        (Coverity CID 1507240).
     Windows:
       Add support for NdisMediumIP (pull request #1027).
       Don't require applications using pcap to be built with VS 2015 or
@@ -80,6 +92,7 @@ Monthday, Month DD, YYYY:
     Haiku:
       Implement pcap_lib_version(), as now required.
       Handle negative or too-large snaplen values.
+      Fix various build issues and warnings.
     Building and testing:
       Update configure-time universal build checks for macOS.
       Update config.guess and config.sub.
@@ -107,10 +120,19 @@ Monthday, Month DD, YYYY:
       Have CMake warn if no capture mechanism can be found.
       Don't do stuff requiring 3.19 or later on earlier CMakes.
       Squelch some CMake warnings.
-      Fix diag-control.h to handle compiling with clang-cl (issue
-        #1101).
+      Fix diag-control.h to handle compiling with clang-cl (issues
+        #1101 and #1115).
       Cleanup various leftover cruft in the configure script.
       Fix building without protochain support. (GH #852)
+      Check for a usable YACC (or Bison) and {F}lex in CMake, as we do
+        in autotools.
+      Only check for a C++ compiler on Haiku, as that's the only
+        platform with C++ code, and make sure they generate code for
+        the same instruction set bit-width (both 32-bit or both 64-bit)
+        (issue #1112).
+      On Solaris, check the target bit-width and set PKG_CONFIG_PATH
+        appropriately, to handle the mess that is the D-Bus library
+        package (issue #1112).
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
@@ -124,6 +146,8 @@ Monthday, Month DD, YYYY:
       Clean up man pages.
       Move README.capture-module to the web site.
       Improve some protocol details in pcap-filter(7).
+      Refine "relop" notes in pcap-filter(7).
+      In pcap-filter(7) "domain" is an id.
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
