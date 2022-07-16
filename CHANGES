@@ -1,18 +1,27 @@
 Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
+    Source code:
+      Use C99 fixed-width integer types, rather than self-defiined
+        fixed-width integer types, in rpcap code.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
         #1008).
       Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP.
+      Add LINKTYPE_USB_2_0_LOW_SPEED/DLT_USB_2_0_LOW_SPEED,
+        LINKTYPE_USB_2_0_FULL_SPEED/DLT_USB_2_0_FULL_SPEED,
+        LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
+      Deprecate pcap_compile_nopcap().
     Savefiles:
       Reject pcap files where one of the reserved fields in the
         "link-layer type plus other stuff" is non-zero.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
+    Documentation:
+      Document a standard format for writing out BPF filter programs.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
