@@ -168,7 +168,7 @@ Any of the above host expressions can be prepended with the keywords,
 which is equivalent to:
 .in +.5i
 .nf
-\fBether proto \\ip and host \fIhost\fR
+\fBether proto \\\fRip \fBand host \fIhost\fR
 .fi
 .in -.5i
 If \fIhost\fR is a name with multiple IPv4 addresses, each address will
