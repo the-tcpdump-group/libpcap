@@ -11,14 +11,14 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "3 July 2022"
+.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "17 July 2022"
 .SH NAME
-cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 5)
+cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 6)
 .SH DESCRIPTION
 This man page discusses a file format for cBPF, which is the "classic" (and
 for a long time the only) Berkeley Packet Filter.  It does
 .B NOT
-apply to the newer eBPF variety of BPF.
+apply to the newer "extended" variety of BPF (eBPF).
 .LP
 The main purpose of this file format is to store BPF bytecode, most commonly
 compiled from a BPF filter expression (see
@@ -133,13 +133,15 @@ or the value(s) returned by
 .BR pcap_datalink (3PCAP)
 and
 .BR pcap_list_datalinks (3PCAP).
-By convention link-layer header type values are limited to 16 bits.
+Although these functions take and return link-layer header type values via the
+.I int
+C type, by convention only the low 16 bits are in use.
 
 .SS InstructionCount
 This is the last field of the fixed header in major version 1, it contains the
 number of bytecode instructions following the header.  By convention, valid
-BPF bytecode must consist of at least one instruction, so in a valid savefile
-this field value is at least 1.
+BPF bytecode always ends with a "ret" instruction, so in a valid savefile this
+field value is at least 1.
 
 .PP
 The file format thus far minimizes the overhead for software that uses the BPF
@@ -182,7 +184,7 @@ once.  Length value does not include Type and Length.  Code points for Type
 and the associated Length constraints are defined below.
 
 .SS EOF TLV
-Allows to mark the end of TLV space (hence of the file) explicitly to make it
+Allows to mark the end of TLV space (hence of the savefile) explicitly to make it
 clear that the file is not truncated.  If this TLV is present in the TLV
 space, it may appear the last only.
 .LP
