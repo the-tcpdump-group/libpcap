@@ -33,6 +33,7 @@ ENDOFTEXT
 ## Solaris 11/AMD64
 
 * flex 2.6.4 and GNU Bison 3.7.3 work.
+* CMake 3.21.0 works.
 * Clang 11.0 works, GCC 11.2 works.
 
 For reference, the tests were done using Oracle Solaris 11.4.42.111.0.
