@@ -171,7 +171,7 @@ which is equivalent to:
 \fBether proto \\\fRip \fBand host \fIhostnameaddr\fR
 .fi
 .in -.5i
-If \fIhostnameaddr\fR is a name with multiple IPv4 addresses, each address will
+If \fIhostnameaddr\fR is a name with multiple IPv4/v6 addresses, each address will
 be checked for a match.
 .IP "\fBether dst \fIehost\fP"
 True if the Ethernet destination address is \fIehost\fP.
