@@ -245,22 +245,22 @@ both tcp/domain and udp/domain traffic).
 True if the packet has a source port value of \fIportnamenum\fP.
 .IP "\fBport \fIportnamenum\fR"
 True if either the source or destination port of the packet is \fIportnamenum\fP.
-.IP "\fBdst portrange \fIport1-port2\fR"
+.IP "\fBdst portrange \fIportnamenum1-portnamenum2\fR"
 True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
-destination port value between \fIport1\fP and \fIport2\fP (both inclusive).
-.I port1
+destination port value between \fIportnamenum1\fP and \fIportnamenum2\fP (both inclusive).
+.I portnamenum1
 and
-.I port2
+.I portnamenum2
 are interpreted in the same fashion as the
-.I port
+.I portnamenum
 parameter for
 .BR port .
-.IP "\fBsrc portrange \fIport1-port2\fR"
-True if the packet has a source port value between \fIport1\fP and
-\fIport2\fP (both inclusive).
-.IP "\fBportrange \fIport1-port2\fR"
+.IP "\fBsrc portrange \fIportnamenum1-portnamenum2\fR"
+True if the packet has a source port value between \fIportnamenum1\fP and
+\fIportnamenum2\fP (both inclusive).
+.IP "\fBportrange \fIportnamenum1-portnamenum2\fR"
 True if either the source or destination port of the packet is between
-\fIport1\fP and \fIport2\fP (both inclusive).
+\fIportnamenum1\fP and \fIportnamenum2\fP (both inclusive).
 .IP
 Any of the above port or port range expressions can be prepended with
 the keywords, \fBtcp\fP, \fBudp\fP or \fBsctp\fP, as in:
