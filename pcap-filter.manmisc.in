@@ -173,17 +173,17 @@ which is equivalent to:
 .in -.5i
 If \fIhostnameaddr\fR is a name with multiple IPv4/v6 addresses, each address will
 be checked for a match.
-.IP "\fBether dst \fIehost\fP"
-True if the Ethernet destination address is \fIehost\fP.
-\fIEhost\fP
+.IP "\fBether dst \fIethernameaddr\fP"
+True if the Ethernet destination address is \fIethernameaddr\fP.
+\fIethernameaddr\fP
 may be either a name from /etc/ethers or a numerical MAC address of the
 form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
 "xxxx.xxxx.xxxx", "xxxxxxxxxxxx", or various mixes of ':', '.', and '-',
 where each "x" is a hex digit (0-9, a-f, or A-F).
-.IP "\fBether src \fIehost\fP"
-True if the Ethernet source address is \fIehost\fP.
-.IP "\fBether host \fIehost\fP"
-True if either the Ethernet source or destination address is \fIehost\fP.
+.IP "\fBether src \fIethernameaddr\fP"
+True if the Ethernet source address is \fIethernameaddr\fP.
+.IP "\fBether host \fIethernameaddr\fP"
+True if either the Ethernet source or destination address is \fIethernameaddr\fP.
 .IP "\fBgateway\fP \fIhost\fP"
 True if the packet used \fIhost\fP as a gateway.
 I.e., the Ethernet
@@ -196,10 +196,10 @@ host-name-to-Ethernet-address resolution mechanism (/etc/ethers, etc.).
 (An equivalent expression is
 .in +.5i
 .nf
-\fBether host \fIehost \fBand not host \fIhostnameaddr\fR
+\fBether host \fIethernameaddr \fBand not host \fIhostnameaddr\fR
 .fi
 .in -.5i
-which can be used with either names or numbers for \fIhostnameaddr / ehost\fP.)
+which can be used with either names or numbers for \fIhostnameaddr / ethernameaddr\fP.)
 This syntax does not work in IPv6-enabled configuration at this moment.
 .IP "\fBdst net \fInetnameaddr\fR"
 True if the IPv4/v6 destination address of the packet has a network
