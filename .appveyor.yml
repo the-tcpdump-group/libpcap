@@ -23,20 +23,6 @@ install:
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "MinGW Makefiles"
-      SDK: WpdPack
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-      MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "MinGW Makefiles"
-      SDK: npcap-sdk-1.12
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-      MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015"
-      SDK: WpdPack
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
@@ -88,6 +74,31 @@ environment:
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: x64
+      SDK: npcap-sdk-1.12
+      AIRPCAP: -DDISABLE_AIRPCAP=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 167 2022"
+      PLATFORM: Win32
+      SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: Win32
+      SDK: npcap-sdk-1.12
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: npcap-sdk-1.12
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
       SDK: npcap-sdk-1.12
       AIRPCAP: -DDISABLE_AIRPCAP=NO
