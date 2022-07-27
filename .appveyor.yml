@@ -82,31 +82,6 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk-1.12
       AIRPCAP: -DDISABLE_AIRPCAP=NO
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      GENERATOR: "Visual Studio 17 2022"
-      PLATFORM: Win32
-      SDK: WpdPack
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      GENERATOR: "Visual Studio 17 2022"
-      PLATFORM: x64
-      SDK: WpdPack
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      GENERATOR: "Visual Studio 17 2022"
-      PLATFORM: Win32
-      SDK: npcap-sdk-1.12
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      GENERATOR: "Visual Studio 17 2022"
-      PLATFORM: x64
-      SDK: npcap-sdk-1.12
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      GENERATOR: "Visual Studio 17 2022"
-      PLATFORM: x64
-      SDK: npcap-sdk-1.12
-      AIRPCAP: -DDISABLE_AIRPCAP=NO
 
 build_script:
   #
