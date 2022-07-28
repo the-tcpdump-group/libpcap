@@ -60,7 +60,7 @@ windows_task:
   windows_container:
     image: cirrusci/windowsservercore:2019
   script:
-    - set
+    - cl/?
 
 coverity_task:
   name: Coverity Scan
