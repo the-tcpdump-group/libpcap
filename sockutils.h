@@ -136,7 +136,7 @@ int sock_recv(SOCKET sock, SSL *, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen);
 int sock_recv_dgram(SOCKET sock, SSL *, void *buffer, size_t size,
     char *errbuf, int errbuflen);
-SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen);
+SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen, unsigned int timeout_sec);
 int sock_close(SOCKET sock, char *errbuf, int errbuflen);
 
 int sock_send(SOCKET sock, SSL *, const char *buffer, size_t size,

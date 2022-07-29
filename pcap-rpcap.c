@@ -416,7 +416,12 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 		/*
 		 * 'fp->rmt_sockdata' has always to be set before calling the select(),
 		 * since it is cleared by the select()
+		 *
+		 * While not strictly necessary, it's best to include the control socket.
+		 * It allows us to check for a connection drop as the data socket may use UDP
+		 * and as such, is without any mean to report back any error to the client.
 		 */
+		FD_SET(pr->rmt_sockctrl, &rfds);
 		FD_SET(pr->rmt_sockdata, &rfds);
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -439,8 +444,22 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 		}
 	}
 
+	/*
+	 * In the rpcap protocol, once the capture starts, the control socket isn't
+	 * used anymore until the capture ends.
+	 * However, it's the only way to check for connection errors
+	 * as the data socket may uses UDP.
+	 */
+	if (FD_ISSET(pr->rmt_sockctrl, &rfds)) {
+		uint8 byte;
+		const int nread = sock_recv(pr->rmt_sockctrl, pr->ctrl_ssl, &byte, sizeof(byte),
+		    SOCK_MSG_PEEK | SOCK_EOF_IS_ERROR, p->errbuf, PCAP_ERRBUF_SIZE);
+		if (nread == -1)
+			return -1;
+	}
+
 	/* There is no data waiting, so return '0' */
-	if (retval == 0)
+	if (!FD_ISSET(pr->rmt_sockdata, &rfds))
 		return 0;
 
 	/*
@@ -1176,7 +1195,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			goto error_nodiscard;
 
 		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
-			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE,
+			fp->sock_open_timeout)) == INVALID_SOCKET)
 			goto error_nodiscard;
 
 		/* addrinfo is no longer used */
@@ -1299,7 +1319,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
-			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE,
+								fp->sock_open_timeout)) == INVALID_SOCKET)
 				goto error;
 
 			/* addrinfo is no longer used */
@@ -2327,7 +2348,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 		}
 
 		if ((*sockctrlp = sock_open(addrinfo, SOCKOPEN_CLIENT, 0,
-		    errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		    errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 		{
 			freeaddrinfo(addrinfo);
 			return -1;
@@ -2944,7 +2965,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	}
 
 
-	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE, 0)) == INVALID_SOCKET)
 	{
 		freeaddrinfo(addrinfo);
 		return (SOCKET)-2;

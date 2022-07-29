@@ -362,6 +362,8 @@ struct pcap {
 	get_airpcap_handle_op_t get_airpcap_handle_op;
 #endif
 	cleanup_op_t cleanup_op;
+
+	unsigned int sock_open_timeout;
 };
 
 /*

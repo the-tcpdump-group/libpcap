@@ -312,7 +312,7 @@ static int sock_ismcastaddr(const struct sockaddr *saddr)
  * if everything is fine, INVALID_SOCKET if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
-SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen)
+SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen, unsigned int timeout_sec)
 {
 	SOCKET sock;
 #if defined(SO_NOSIGPIPE) || defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY)
@@ -422,6 +422,26 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	}
 	else	/* we're the client */
 	{
+		/* Customize some timeouts to avoid minutes of waiting for nothing.
+		 * Keep the defaults if unset. */
+		if (timeout_sec != 0) {
+			struct timeval timeout = { 0 };
+			timeout.tv_sec = timeout_sec;
+			if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+			{
+				sock_geterror("socket(): ", errbuf, errbuflen);
+				closesocket(sock);
+				return INVALID_SOCKET;
+			}
+			/* needed for the first syn */
+			if (setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+			{
+				sock_geterror("socket(): ", errbuf, errbuflen);
+				closesocket(sock);
+				return INVALID_SOCKET;
+			}
+		}
+
 		struct addrinfo *tempaddrinfo;
 		char *errbufptr;
 		size_t bufspaceleft;
