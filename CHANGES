@@ -22,6 +22,8 @@ Monthday, Month DD, YYYY:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
     Documentation:
       Document a standard format for writing out BPF filter programs.
+    Building and testing:
+      Remove awk code from mkdep.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
