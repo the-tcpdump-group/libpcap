@@ -2085,8 +2085,8 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	{
 		hints.ai_flags = AI_PASSIVE;
 
-		// Let's the server socket pick up a free network port for us
-		if (sock_initaddress(NULL, "0", &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+		// Make the server socket pick up a free network port for us
+		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
 		if ((session->sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)

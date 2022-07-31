@@ -1020,7 +1020,7 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	retval = sock_initaddress(host, NULL, &hints, &addrinfo, errbuf,
 	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
@@ -1172,7 +1172,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		hints.ai_flags = AI_PASSIVE;	/* Data connection is opened by the server toward the client */
 
 		/* Let's the server pick up a free network port for us */
-		if (sock_initaddress(NULL, "0", &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error_nodiscard;
 
 		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
@@ -3110,7 +3110,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = sock_initaddress(host, "0", &hints, &addrinfo, errbuf,
+	retval = sock_initaddress(host, NULL, &hints, &addrinfo, errbuf,
 	    PCAP_ERRBUF_SIZE);
 	if (retval != 0)
 	{
