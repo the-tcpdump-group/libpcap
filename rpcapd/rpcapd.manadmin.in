@@ -48,7 +48,6 @@ rpcapd
 .B \-l
 .I host_list
 ]
-.br
 .ti +8
 [
 .B \-a
@@ -62,7 +61,6 @@ rpcapd
 ] [
 .B \-i
 ]
-.br
 .ti +8
 [
 .B \-D
@@ -77,7 +75,6 @@ rpcapd
 [
 .B \-S
 ]
-.br
 .ti +8
 [
 .B \-K
