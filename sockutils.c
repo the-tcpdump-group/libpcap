@@ -734,8 +734,44 @@ int sock_initaddress(const char *host, const char *port,
 	{
 		if (errbuf)
 		{
-			get_gai_errstring(errbuf, errbuflen, "", retval,
-			    host, port);
+			if (host != NULL && port != NULL) {
+				/*
+				 * Try with just a host, to distinguish
+				 * between "host is bad" and "port is
+				 * bad".
+				 */
+				int try_retval;
+
+				try_retval = getaddrinfo(host, NULL, hints,
+				    addrinfo);
+				if (try_retval == 0) {
+					/*
+					 * Worked with just the host,
+					 * so assume the problem is
+					 * with the port.
+					 *
+					 * Free up the addres info first.
+					 */
+					freeaddrinfo(*addrinfo);
+					get_gai_errstring(errbuf, errbuflen,
+					    "", retval, NULL, port);
+				} else {
+					/*
+					 * Didn't work with just the host,
+					 * so assume the problem is
+					 * with the host.
+					 */
+					get_gai_errstring(errbuf, errbuflen,
+					    "", retval, host, NULL);
+				}
+			} else {
+				/*
+				 * Either the host or port was null, so
+				 * there's nothing to determine.
+				 */
+				get_gai_errstring(errbuf, errbuflen, "",
+				    retval, host, port);
+			}
 		}
 		return -1;
 	}
