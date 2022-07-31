@@ -548,13 +548,13 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 	char hostport[PCAP_ERRBUF_SIZE];
 
 	if (hostname != NULL && portname != NULL)
-		snprintf(hostport, PCAP_ERRBUF_SIZE, "%s:%s",
+		snprintf(hostport, PCAP_ERRBUF_SIZE, "host and port %s:%s",
 		    hostname, portname);
 	else if (hostname != NULL)
-		snprintf(hostport, PCAP_ERRBUF_SIZE, "%s",
+		snprintf(hostport, PCAP_ERRBUF_SIZE, "host %s",
 		    hostname);
 	else if (portname != NULL)
-		snprintf(hostport, PCAP_ERRBUF_SIZE, ":%s",
+		snprintf(hostport, PCAP_ERRBUF_SIZE, "port %s",
 		    portname);
 	else
 		snprintf(hostport, PCAP_ERRBUF_SIZE, "<no host or port!>");
@@ -618,7 +618,7 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 
 		case EAI_NONAME:
 			snprintf(errbuf, errbuflen,
-			    "%sThe host name %s couldn't be resolved",
+			    "%sThe %s couldn't be resolved",
 			    prefix, hostport);
 			break;
 
@@ -720,7 +720,16 @@ int sock_initaddress(const char *host, const char *port,
 {
 	int retval;
 
-	retval = getaddrinfo(host, port, hints, addrinfo);
+	/*
+	 * We allow both the host and port to be null, but getaddrinfo()
+	 * is not guaranteed to do so; to handle that, if port is null,
+	 * we provide "0" as the port number.
+	 *
+	 * This results in better error messages from get_gai_errstring(),
+	 * as those messages won't talk about a problem with the port if
+	 * no port was specified.
+	 */
+	retval = getaddrinfo(host, port == NULL ? "0" : port, hints, addrinfo);
 	if (retval != 0)
 	{
 		if (errbuf)
