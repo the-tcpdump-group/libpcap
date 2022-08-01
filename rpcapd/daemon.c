@@ -1882,7 +1882,7 @@ daemon_msg_open_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	// This is a fake open, since we do that only to get the needed parameters, then we close the device again
 	if ((fp = pcap_open_live(source,
 			1500 /* fake snaplen */,
-			0 /* no promis */,
+			0 /* no promisc */,
 			1000 /* fake timeout */,
 			errmsgbuf)) == NULL)
 		goto error;
