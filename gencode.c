@@ -41,6 +41,7 @@
 #include <memory.h>
 #include <setjmp.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #ifdef MSDOS
 #include "pcap-dos.h"
