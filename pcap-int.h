@@ -485,7 +485,7 @@ pcap_t	*pcap_create_interface(const char *, char *);
 /*
  * This wrapper takes an error buffer pointer and a type to use for the
  * private data, and calls pcap_create_common(), passing it the error
- * buffer pointer, the size fo the private data type, in bytes, and the
+ * buffer pointer, the size for the private data type, in bytes, and the
  * offset of the private data from the beginning of the structure, in
  * bytes.
  */
@@ -569,7 +569,7 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 /*
  * This wrapper takes an error buffer pointer and a type to use for the
  * private data, and calls pcap_create_common(), passing it the error
- * buffer pointer, the size fo the private data type, in bytes, and the
+ * buffer pointer, the size for the private data type, in bytes, and the
  * offset of the private data from the beginning of the structure, in
  * bytes.
  */

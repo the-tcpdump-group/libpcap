@@ -71,7 +71,7 @@
 
 /*
  * Some software that uses libpcap/WinPcap/Npcap defines _MSC_VER before
- * includeing pcap.h if it's not defined - and it defines it to 1500.
+ * including pcap.h if it's not defined - and it defines it to 1500.
  * (I'm looking at *you*, lwIP!)
  *
  * Attempt to detect this, and undefine _MSC_VER so that we can *reliably*

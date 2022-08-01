@@ -50,7 +50,7 @@ sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK
 You shall learn how to bind nic with DPDK-compatible driver by $RTE_SDK/usertools/dpdk-devbind.py, such as igb_uio.
 And enable hugepages by dpdk-setup.sh
 
-Then launch the l2fwd with dynamic dirver support. For example:
+Then launch the l2fwd with dynamic driver support. For example:
 $RTE_SDK/examples/l2fwd/$RTE_TARGET/l2fwd -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so -- -p 0x1
 
 3. Compile libpcap with dpdk options.
