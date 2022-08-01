@@ -723,7 +723,7 @@
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Every frame contains a 32bit A429 label.
  * More documentation on Arinc 429 can be found at
- * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
+ * https://web.archive.org/web/20040616233302/https://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
  */
 #define DLT_A429                184
 
