@@ -1204,14 +1204,14 @@ static void ndis_close (struct device *dev)
 
 static int ndis_open (struct device *dev)
 {
-  int promis = (dev->flags & IFF_PROMISC);
+  int promisc = (dev->flags & IFF_PROMISC);
 
 #ifdef USE_NDIS2
-  if (!NdisInit(promis))
+  if (!NdisInit(promisc))
      return (0);
   return (1);
 #else
-  ARGSUSED (promis);
+  ARGSUSED (promisc);
   return (0);
 #endif
 }
