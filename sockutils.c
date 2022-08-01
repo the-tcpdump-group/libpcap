@@ -750,7 +750,7 @@ int sock_initaddress(const char *host, const char *port,
 					 * so assume the problem is
 					 * with the port.
 					 *
-					 * Free up the addres info first.
+					 * Free up the address info first.
 					 */
 					freeaddrinfo(*addrinfo);
 					get_gai_errstring(errbuf, errbuflen,

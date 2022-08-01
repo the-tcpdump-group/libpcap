@@ -195,7 +195,7 @@ Here's the "hack_ip_stack" script:
 -----------------------------------Cut Here-------------------------------------
 #!/sbin/sh
 #
-# nettune:  hack kernel parms for safety
+# nettune:  hack kernel params for safety
 
 OKAY=0
 ERROR=-1

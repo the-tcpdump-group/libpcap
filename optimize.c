@@ -2610,7 +2610,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	}
 
 	/*
-	 * Make sure the total memory required for both of them dosn't
+	 * Make sure the total memory required for both of them doesn't
 	 * overflow.
 	 */
 	if (block_memsize > SIZE_MAX - edge_memsize) {

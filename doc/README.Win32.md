@@ -101,7 +101,7 @@ include built-in support for CMake-based projects:
 
 For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
 installed; for Visual Studio 2019, make sure "C++ CMake tools for
-Windows" is intalled.
+Windows" is installed.
 
 ### winflexbison ###
 

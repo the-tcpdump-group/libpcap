@@ -62,7 +62,7 @@ void pcap_free_option(pcap_options *po)
         }
 }
 
-/* Return 0 on success, -1 on failure invalid option, -2 on type mis-match */
+/* Return 0 on success, -1 on failure invalid option, -2 on type mismatch */
 int pcap_set_option_string(pcap_options *po,
                            enum   pcap_option_name pon,
                            const char *value)
@@ -86,7 +86,7 @@ int pcap_set_option_string(pcap_options *po,
         return 0;
 }
 
-/* Return 0 on success, -1 on failure invalid option, -2 on type mis-match */
+/* Return 0 on success, -1 on failure invalid option, -2 on type mismatch */
 int pcap_set_option_int(pcap_options *po,
                         enum   pcap_option_name pon,
                         const int value)

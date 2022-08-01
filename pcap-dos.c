@@ -569,7 +569,7 @@ int pcap_lookupnet (const char *device, bpf_u_int32 *localnet,
 /*
  * Get a list of all interfaces that are present and that we probe okay.
  * Returns -1 on error, 0 otherwise.
- * The list may be NULL epty if no interfaces were up and could be opened.
+ * The list may be NULL empty if no interfaces were up and could be opened.
  */
 int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
 {
