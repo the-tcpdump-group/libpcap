@@ -449,7 +449,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		if (getpeername(pars.sockctrl, (struct sockaddr *)&from,
 		    &fromlen) == -1)
 		{
-			sock_geterror("getpeername()", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+			    "getpeername() failed");
 			if (rpcap_senderror(pars.sockctrl, pars.ssl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 			goto end;
@@ -523,7 +524,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			retval = select((int)pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
-				sock_geterror("select() failed", errmsgbuf, PCAP_ERRBUF_SIZE);
+				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+				    "select() failed");
 				if (rpcap_senderror(pars.sockctrl, pars.ssl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
@@ -763,7 +765,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 #endif
 			if (retval == -1)
 			{
-				sock_geterror("select() failed", errmsgbuf, PCAP_ERRBUF_SIZE);
+				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+				    "select() failed");
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    0, PCAP_ERR_NETW,
 				    errmsgbuf, errbuf) == -1)
@@ -2054,7 +2057,8 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	saddrlen = sizeof(struct sockaddr_storage);
 	if (getpeername(pars->sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
-		sock_geterror("getpeername()", errmsgbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+		    "getpeername() failed");
 		goto error;
 	}
 
@@ -2071,14 +2075,15 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, peerhost,
 				sizeof(peerhost), NULL, 0, NI_NUMERICHOST))
 		{
-			sock_geterror("getnameinfo()", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+			    "getnameinfo() failed");
 			goto error;
 		}
 
 		if (sock_initaddress(peerhost, portdata, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((session->sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		if ((session->sockdata = sock_open(peerhost, addrinfo, SOCKOPEN_CLIENT, 0, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 	}
 	else		// Data connection is opened by the client toward the server
@@ -2089,14 +2094,15 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((session->sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		if ((session->sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 
 		// get the complete sockaddr structure used in the data connection
 		saddrlen = sizeof(struct sockaddr_storage);
 		if (getsockname(session->sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getsockname()", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+			    "getsockname() failed");
 			goto error;
 		}
 
@@ -2104,7 +2110,8 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, NULL,
 				0, portdata, sizeof(portdata), NI_NUMERICSERV))
 		{
-			sock_geterror("getnameinfo()", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+			    "getnameinfo() failed");
 			goto error;
 		}
 	}
@@ -2172,7 +2179,8 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 
 		if (socktemp == INVALID_SOCKET)
 		{
-			sock_geterror("accept()", errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
+			   "accept() failed");
 			rpcapd_log(LOGPRIO_ERROR, "Accept of data connection failed: %s",
 			    errbuf);
 			goto error;
