@@ -434,7 +434,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 				return 0;
 			}
 #endif
-			sock_geterror("select()", p->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "select() failed");
 			return -1;
 		}
 	}
@@ -1140,7 +1141,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	saddrlen = sizeof(struct sockaddr_storage);
 	if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
-		sock_geterror("getsockname()", fp->errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "getsockname() failed");
 		goto error_nodiscard;
 	}
 	ai_family = ((struct sockaddr_storage *) &saddr)->ss_family;
@@ -1149,7 +1151,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	if (getnameinfo((struct sockaddr *) &saddr, saddrlen, host,
 		sizeof(host), NULL, 0, NI_NUMERICHOST))
 	{
-		sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "getnameinfo() failed");
 		goto error_nodiscard;
 	}
 
@@ -1175,7 +1178,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error_nodiscard;
 
-		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
+		if ((sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER,
 			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error_nodiscard;
 
@@ -1187,7 +1190,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		saddrlen = sizeof(struct sockaddr_storage);
 		if (getsockname(sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getsockname()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getsockname() failed");
 			goto error_nodiscard;
 		}
 
@@ -1299,7 +1303,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
-			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			if ((sockdata = sock_open(host, addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 				goto error;
 
 			/* addrinfo is no longer used */
@@ -1317,7 +1321,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 			if (socktemp == INVALID_SOCKET)
 			{
-				sock_geterror("accept()", fp->errbuf, PCAP_ERRBUF_SIZE);
+				sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+				    "accept() failed");
 				goto error;
 			}
 
@@ -1351,7 +1356,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	res = getsockopt(sockdata, SOL_SOCKET, SO_RCVBUF, (char *)&sockbufsize, &itemp);
 	if (res == -1)
 	{
-		sock_geterror("pcap_startcapture_remote(): getsockopt() failed", fp->errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "pcap_startcapture_remote(): getsockopt() failed");
 		goto error;
 	}
 
@@ -1730,14 +1736,16 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		saddrlen = sizeof(struct sockaddr_storage);
 		if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getpeername()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getpeername() failed");
 			return -1;
 		}
 
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, peeraddress,
 			sizeof(peeraddress), peerctrlport, sizeof(peerctrlport), NI_NUMERICHOST | NI_NUMERICSERV))
 		{
-			sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getnameinfo() failed");
 			return -1;
 		}
 
@@ -1745,7 +1753,8 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		/* Get the name/port of the current host */
 		if (getsockname(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getsockname()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getsockname() failed");
 			return -1;
 		}
 
@@ -1753,21 +1762,24 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, myaddress,
 			sizeof(myaddress), myctrlport, sizeof(myctrlport), NI_NUMERICHOST | NI_NUMERICSERV))
 		{
-			sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getnameinfo() failed");
 			return -1;
 		}
 
 		/* Let's now check the data port */
 		if (getsockname(pr->rmt_sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getsockname()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getsockname() failed");
 			return -1;
 		}
 
 		/* Get the local port the system picked up */
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, NULL, 0, mydataport, sizeof(mydataport), NI_NUMERICSERV))
 		{
-			sock_geterror("getnameinfo()", fp->errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "getnameinfo() failed");
 			return -1;
 		}
 
@@ -2326,7 +2338,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 				return -1;
 		}
 
-		if ((*sockctrlp = sock_open(addrinfo, SOCKOPEN_CLIENT, 0,
+		if ((*sockctrlp = sock_open(host, addrinfo, SOCKOPEN_CLIENT, 0,
 		    errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 		{
 			freeaddrinfo(addrinfo);
@@ -2944,7 +2956,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	}
 
 
-	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+	if ((sockmain = sock_open(NULL, addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 	{
 		freeaddrinfo(addrinfo);
 		return (SOCKET)-2;
@@ -2963,7 +2975,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 
 	if (sockctrl == INVALID_SOCKET)
 	{
-		sock_geterror("accept()", errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE, "accept() failed");
 		return (SOCKET)-2;
 	}
 
@@ -2987,7 +2999,8 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	/* Get the numeric for of the name of the connecting host */
 	if (getnameinfo((struct sockaddr *) &from, fromlen, connectinghost, RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST))
 	{
-		sock_geterror("getnameinfo()", errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
+		    "getnameinfo() failed");
 		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
 		if (ssl)
@@ -3253,7 +3266,8 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 			/*	if (getnameinfo( (struct sockaddr *) &temp->host, sizeof (struct sockaddr_storage), hoststr, */
 			/*		RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST) ) */
 		{
-			/*	sock_geterror("getnameinfo()", errbuf, PCAP_ERRBUF_SIZE); */
+			/*	sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE, */
+			/*	    "getnameinfo() failed");             */
 			return -1;
 		}
 
