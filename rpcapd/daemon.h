@@ -45,7 +45,7 @@
 // for active mode.
 //
 int daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
-    int nullAuthAllowed, int uses_ssl);
+    int nullAuthAllowed, char *data_port, int uses_ssl);
 
 void sleep_secs(int secs);
 

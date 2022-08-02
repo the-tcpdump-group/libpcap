@@ -135,7 +135,7 @@ static int daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars,
 static int daemon_msg_open_req(uint8_t ver, struct daemon_slpars *pars,
     uint32_t plen, char *source, size_t sourcelen);
 static int daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars,
-    uint32_t plen, char *source, struct session **sessionp,
+    uint32_t plen, char *source, char *data_port, struct session **sessionp,
     struct rpcap_sampling *samp_param, int uses_ssl);
 static int daemon_msg_endcap_req(uint8_t ver, struct daemon_slpars *pars,
     struct session *session);
@@ -212,7 +212,7 @@ static int is_url(const char *source);
 
 int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
-    int nullAuthAllowed, int uses_ssl)
+    int nullAuthAllowed, char *data_port, int uses_ssl)
 {
 	uint8_t first_octet;
 	struct tls_record_header tls_header;
@@ -901,8 +901,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				}
 
 				if (daemon_msg_startcap_req(header.ver, &pars,
-				    plen, source, &session, &samp_param,
-				    uses_ssl) == -1)
+				    plen, source, data_port, &session,
+				    &samp_param, uses_ssl) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -1949,7 +1949,7 @@ error:
 */
 static int
 daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
-    char *source, struct session **sessionp,
+    char *source, char *data_port, struct session **sessionp,
     struct rpcap_sampling *samp_param _U_, int uses_ssl)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -2090,9 +2090,18 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	{
 		hints.ai_flags = AI_PASSIVE;
 
-		// Make the server socket pick up a free network port for us
-		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
-			goto error;
+		if (data_port[0] != '\0')
+		{
+			// Use the specified network port
+			if (sock_initaddress(NULL, data_port, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				goto error;
+		}
+		else
+		{
+			// Make the server socket pick up a free network port for us
+			if (sock_initaddress(NULL, NULL, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				goto error;
+		}
 
 		if ((session->sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;

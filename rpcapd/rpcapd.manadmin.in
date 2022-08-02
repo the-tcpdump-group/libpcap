@@ -43,13 +43,16 @@ rpcapd
 .B \-p
 .I port
 ] [
-.B \-4
+.B \-t
+.I data_port
 ] [
-.B \-l
-.I host_list
+.B \-4
 ]
 .ti +8
 [
+.B \-l
+.I host_list
+] [
 .B \-a
 .IR host , port
 ] [
@@ -189,6 +192,14 @@ Bind to the port specified by
 By default,
 .B rpcapd
 binds to port 2002.
+.TP
+.BI \-t " data_port"
+Use the port specified by
+.I data_port
+as the port for data transfer.
+By default,
+.B rpcapd
+uses a port chosen by the operating system.
 .TP
 .B \-4
 Listen only on IPv4 addresses.
