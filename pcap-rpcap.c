@@ -45,6 +45,7 @@
 #include <limits.h>		/* for INT_MAX */
 #include "sockutils.h"
 #include "pcap-int.h"
+#include "pcap-util.h"
 #include "rpcap-protocol.h"
 #include "pcap-rpcap.h"
 
@@ -95,6 +96,7 @@ struct activehosts
 	SOCKET sockctrl;
 	SSL *ssl;
 	uint8 protocol_version;
+	int byte_swapped;
 	struct activehosts *next;
 };
 
@@ -130,6 +132,7 @@ struct pcap_rpcap {
 
 	uint8 protocol_version;		/* negotiated protocol version */
 	uint8 uses_ssl;				/* User asked for rpcaps scheme */
+	int byte_swapped;		/* Server byte order is swapped from ours */
 
 	unsigned int TotNetDrops;	/* keeps the number of packets that have been dropped by the network */
 
@@ -684,9 +687,14 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 		if (ret == 1)
 		{
 			/*
-			 * We got a packet.  Hand it to the callback
-			 * and count it so we can return the count.
+			 * We got a packet.
+			 *
+			 * Do whatever post-processing is necessary, hand
+			 * it to the callback, and count it so we can
+			 * return the count.
 			 */
+			pcap_post_process(p->linktype, pr->byte_swapped,
+			    &pkt_header, pkt_data);
 			(*callback)(user, &pkt_header, pkt_data);
 			n++;
 		}
@@ -1945,6 +1953,10 @@ static int pcap_setsampling_remote(pcap_t *fp)
  * \param ver: pointer to variable to which to set the protocol version
  * number we selected.
  *
+ * \param byte_swapped: pointer to variable to which to set 1 if the
+ * byte order the server says it has is byte-swapped from ours, 0
+ * otherwise (whether it's the same as ours or is unknown).
+ *
  * \param auth: authentication parameters that have to be sent.
  *
  * \param errbuf: a pointer to a user-allocated buffer (of size
@@ -1955,7 +1967,8 @@ static int pcap_setsampling_remote(pcap_t *fp)
  * \return '0' if everything is fine, '-1' for an error.  For errors,
  * an error message string is returned in the 'errbuf' variable.
  */
-static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
+static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver,
+    int *byte_swapped, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
@@ -1967,6 +1980,8 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 	uint32 plen;
 	struct rpcap_authreply authreply;	/* authentication reply message */
 	uint8 ourvers;
+	int has_byte_order;			/* The server sent its version of the byte-order magic number */
+	u_int their_byte_order_magic;		/* Here's what it is */
 
 	if (auth)
 	{
@@ -2071,8 +2086,10 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 	plen = header.plen;
 	if (plen != 0)
 	{
-		/* Yes - is it big enough to be version information? */
-		if (plen < sizeof(struct rpcap_authreply))
+		size_t reply_len;
+
+		/* Yes - is it big enough to include version information? */
+		if (plen < sizeof(struct rpcap_authreply_old))
 		{
 			/* No - discard it and fail. */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -2081,9 +2098,34 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			return -1;
 		}
 
+		/* Yes - does it include server byte order information? */
+		if (plen == sizeof(struct rpcap_authreply_old))
+		{
+			/* No - just read the version information */
+			has_byte_order = 0;
+			reply_len = sizeof(struct rpcap_authreply_old);
+		}
+		else if (plen >= sizeof(struct rpcap_authreply_old))
+		{
+			/* Yes - read it all. */
+			has_byte_order = 1;
+			reply_len = sizeof(struct rpcap_authreply);
+		}
+		else
+		{
+			/*
+			 * Too long for old reply, too short for new reply.
+			 * Discard it and fail.
+			 */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Authenticaton reply from server is too short");
+			(void)rpcap_discard(sockctrl, ssl, plen, NULL);
+			return -1;
+		}
+
 		/* Read the reply body */
 		if (rpcap_recv(sockctrl, ssl, (char *)&authreply,
-		    sizeof(struct rpcap_authreply), &plen, errbuf) == -1)
+		    reply_len, &plen, errbuf) == -1)
 		{
 			(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 			return -1;
@@ -2106,12 +2148,32 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			    "The server's minimum supported protocol version is greater than its maximum supported protocol version");
 			return -1;
 		}
+
+		if (has_byte_order)
+		{
+			their_byte_order_magic = authreply.byte_order_magic;
+		}
+		else
+		{
+			/*
+			 * The server didn't tell us what its byte
+			 * order is; assume it's ours.
+			 */
+			their_byte_order_magic = RPCAP_BYTE_ORDER_MAGIC;;
+		}
 	}
 	else
 	{
 		/* No - it supports only version 0. */
 		authreply.minvers = 0;
 		authreply.maxvers = 0;
+
+		/*
+		 * And it didn't tell us what its byte order is; assume
+		 * it's ours.
+		 */
+		has_byte_order = 0;
+		their_byte_order_magic = RPCAP_BYTE_ORDER_MAGIC;
 	}
 
 	/*
@@ -2142,6 +2204,27 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 		 */
 		if (ourvers < authreply.minvers)
 			goto novers;
+	}
+
+	/*
+	 * Is the server byte order the opposite of ours?
+	 */
+	if (their_byte_order_magic == RPCAP_BYTE_ORDER_MAGIC)
+	{
+		/* No, it's the same. */
+		*byte_swapped = 0;
+	}
+	else if (their_byte_order_magic == RPCAP_BYTE_ORDER_MAGIC_SWAPPED)
+	{
+		/* Yes, it's the opposite of ours. */
+		*byte_swapped = 1;
+	}
+	else
+	{
+		/* They sent us something bogus. */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "The server did not send us a valid byte order value");
+		return -1;
 	}
 
 	*ver = ourvers;
@@ -2176,8 +2259,8 @@ pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
 static int
 rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
     int *activep, SOCKET *sockctrlp, uint8 *uses_sslp, SSL **sslp,
-    int rmt_flags, uint8 *protocol_versionp, char *host, char *port,
-    char *iface, char *errbuf)
+    int rmt_flags, uint8 *protocol_versionp, int *byte_swappedp,
+    char *host, char *port, char *iface, char *errbuf)
 {
 	int type;
 	struct activehosts *activeconn;		/* active connection, if there is one */
@@ -2227,6 +2310,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 		*sockctrlp = activeconn->sockctrl;
 		*sslp = activeconn->ssl;
 		*protocol_versionp = activeconn->protocol_version;
+		*byte_swappedp = activeconn->byte_swapped;
 	}
 	else
 	{
@@ -2293,8 +2377,8 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
-		if (rpcap_doauth(*sockctrlp, *sslp, protocol_versionp, auth,
-		    errbuf) == -1)
+		if (rpcap_doauth(*sockctrlp, *sslp, protocol_versionp,
+		    byte_swappedp, auth, errbuf) == -1)
 		{
 #ifdef HAVE_OPENSSL
 			if (*sslp)
@@ -2360,6 +2444,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	SOCKET sockctrl;
 	SSL *ssl = NULL;
 	uint8 protocol_version;			/* negotiated protocol version */
+	int byte_swapped;			/* server is known to be byte-swapped */
 	int active;
 	uint32 plen;
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
@@ -2405,8 +2490,8 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	 * Attempt to set up the session with the server.
 	 */
 	if (rpcap_setup_session(fp->opt.device, auth, &active, &sockctrl,
-	    &pr->uses_ssl, &ssl, flags, &protocol_version, host, ctrlport,
-	    iface, errbuf) == -1)
+	    &pr->uses_ssl, &ssl, flags, &protocol_version, &byte_swapped,
+	    host, ctrlport, iface, errbuf) == -1)
 	{
 		/* Session setup failed. */
 		pcap_close(fp);
@@ -2455,6 +2540,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	pr->rmt_sockctrl = sockctrl;
 	pr->ctrl_ssl = ssl;
 	pr->protocol_version = protocol_version;
+	pr->byte_swapped = byte_swapped;
 	pr->rmt_clientside = 1;
 
 	/* This code is duplicated from the end of this function */
@@ -2526,6 +2612,7 @@ int
 pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
 	uint8 protocol_version;		/* protocol version */
+	int byte_swapped;		/* Server byte order is swapped from ours */
 	SOCKET sockctrl;		/* socket descriptor of the control connection */
 	SSL *ssl = NULL;		/* optional SSL handler for sockctrl */
 	uint32 plen;
@@ -2547,7 +2634,8 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	 * Attempt to set up the session with the server.
 	 */
 	if (rpcap_setup_session(source, auth, &active, &sockctrl, &uses_ssl,
-	    &ssl, 0, &protocol_version, host, port, NULL, errbuf) == -1)
+	    &ssl, 0, &protocol_version, &byte_swapped, host, port, NULL,
+	    errbuf) == -1)
 	{
 		/* Session setup failed. */
 		return -1;
@@ -2839,6 +2927,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	SOCKET sockctrl;				/* keeps the main socket identifier */
 	SSL *ssl = NULL;				/* Optional SSL handler for sockctrl */
 	uint8 protocol_version;			/* negotiated protocol version */
+	int byte_swapped;			/* 1 if server byte order is known to be the reverse of ours */
 	struct activehosts *temp, *prev;	/* temp var needed to scan he host list chain */
 
 	*connectinghost = 0;		/* just in case */
@@ -2949,7 +3038,8 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	/*
 	 * Send authentication to the remote machine.
 	 */
-	if (rpcap_doauth(sockctrl, ssl, &protocol_version, auth, errbuf) == -1)
+	if (rpcap_doauth(sockctrl, ssl, &protocol_version, &byte_swapped,
+	    auth, errbuf) == -1)
 	{
 		/* Unrecoverable error. */
 		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
@@ -3014,6 +3104,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	temp->sockctrl = sockctrl;
 	temp->ssl = ssl;
 	temp->protocol_version = protocol_version;
+	temp->byte_swapped = byte_swapped;
 	temp->next = NULL;
 
 	return sockctrl;

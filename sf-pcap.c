@@ -46,6 +46,7 @@
 #include <limits.h> /* for INT_MAX */
 
 #include "pcap-int.h"
+#include "pcap-util.h"
 
 #include "pcap-common.h"
 
@@ -706,10 +707,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	}
 	*data = p->buffer;
 
-	if (p->swapped)
-		swap_pseudo_headers(p->linktype, hdr, *data);
-
-	fixup_pcap_pkthdr(p->linktype, hdr, *data);
+	pcap_post_process(p->linktype, p->swapped, hdr, *data);
 
 	return (1);
 }

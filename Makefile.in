@@ -92,7 +92,7 @@ PLATFORM_CXX_SRC =	@PLATFORM_CXX_SRC@
 MODULE_C_SRC =		@MODULE_C_SRC@
 REMOTE_C_SRC =		@REMOTE_C_SRC@
 COMMON_C_SRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
-		fmtutils.c \
+		fmtutils.c pcap-util.c \
 		savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
 		pcap-usb-linux-common.c bpf_image.c bpf_filter.c bpf_dump.c
 GENERATED_C_SRC = scanner.c grammar.c
@@ -114,6 +114,7 @@ PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
 	pcap-namedb.h \
+	pcap-util.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/can_socketcan.h \
