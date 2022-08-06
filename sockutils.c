@@ -198,7 +198,7 @@ void sock_geterrmsg(char *errbuf, size_t errbuflen, const char *fmt, ...)
  *
  * These are sorted by how likely they are to be the "underlying" problem,
  * so that lower-rated errors for a given address in a given family
- * should not overwrite higher-rated errors for another addres in that
+ * should not overwrite higher-rated errors for another address in that
  * family, and higher-rated errors should overwrit elower-rated errors.
  */
 typedef enum {
@@ -647,7 +647,7 @@ SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nc
 
 		/*
 		 * Sort the structures to put the IPv4 addresses before the
-		 * IPv6 addresses; we will ahve to create an IPv4 socket
+		 * IPv6 addresses; we will have to create an IPv4 socket
 		 * for the IPv4 addresses and an IPv6 socket for the IPv6
 		 * addresses (one of the arguments to socket() is the
 		 * address/protocol family to use, and IPv4 and IPv6 are
@@ -780,7 +780,7 @@ SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nc
 				{
 					/*
 					 * GEt the numeric address athat
-					 * this erro.
+					 * this error.
 					 */
 					sock_getascii_addrport((struct sockaddr_storage *) addrs_to_try[i].info->ai_addr,
 					    errbufptr, (int)bufspaceleft,
