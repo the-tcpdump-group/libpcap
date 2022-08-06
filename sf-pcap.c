@@ -71,6 +71,7 @@
 
 /*
  * Standard libpcap format.
+ * rpcapd can too use this number in its network protocol to tell endianness.
  */
 #define TCPDUMP_MAGIC		0xa1b2c3d4
 
@@ -96,6 +97,11 @@
  * as per a request by Ulf Lamping <ulf.lamping@web.de>
  */
 #define NSEC_TCPDUMP_MAGIC	0xa1b23c4d
+
+/*
+ * Used for identification of cbpf-savefile(5).
+ */
+#define CBPF_SAVEFILE_MAGIC	0xa1b2c3cb
 
 static int pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **datap);
 
