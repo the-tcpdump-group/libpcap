@@ -1822,7 +1822,7 @@ fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
 		    hdr->len == sizeof(pcap_usb_header_mmapped) +
 		      (usb_hdr->ndesc * sizeof (usb_isodesc)) + usb_hdr->urb_len) {
 			/*
-			 * It might leed fixing; fix it if it's a completion
+			 * It might need fixing; fix it if it's a completion
 			 * event for an incoming isochronous transfer.
 			 */
 			fix_linux_usb_mmapped_length(hdr, data);
