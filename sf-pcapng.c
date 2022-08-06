@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "pcap-int.h"
+#include "pcap-util.h"
 
 #include "pcap-common.h"
 
@@ -1511,10 +1512,7 @@ found:
 	if (*data == NULL)
 		return (-1);
 
-	if (p->swapped)
-		swap_pseudo_headers(p->linktype, hdr, *data);
-
-	fixup_pcap_pkthdr(p->linktype, hdr, *data);
+	pcap_post_process(p->linktype, p->swapped, hdr, *data);
 
 	return (1);
 }

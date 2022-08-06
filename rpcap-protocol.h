@@ -152,6 +152,25 @@ struct rpcap_header
  */
 struct rpcap_authreply
 {
+	uint8_t minvers;		/* Minimum version supported */
+	uint8_t maxvers;		/* Maximum version supported */
+	uint8_t pad[2];			/* Pad to 4-byte boundary **/
+	uint32_t byte_order_magic;	/* RPCAP_BYTE_ORDER_MAGIC, in server byte order */
+};
+
+/*
+ * Any resemblance between this and the pcap file magic number
+ * is purely coincidental, trust me.
+ */
+#define RPCAP_BYTE_ORDER_MAGIC		0xa1b2c3d4U
+#define RPCAP_BYTE_ORDER_MAGIC_SWAPPED	0xd4c3b2a1U
+
+/*
+ * Older version of authentication reply, without byte order indication
+ * and padding.
+ */
+struct rpcap_authreply_old
+{
 	uint8_t minvers;	/* Minimum version supported */
 	uint8_t maxvers;	/* Maximum version supported */
 };

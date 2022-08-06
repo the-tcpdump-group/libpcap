@@ -1371,11 +1371,16 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32_t plen)
 		goto error;
 
 	//
-	// Indicate to our peer what versions we support.
+	// Indicate to our peer what versions we support and what our
+	// version of the byte-order magic is (which will tell the
+	// client whether our byte order differs from theirs, in which
+	// case they will need to byte-swap some fields in some
+	// link-layer types' headers).
 	//
 	memset(authreply, 0, sizeof(struct rpcap_authreply));
 	authreply->minvers = RPCAP_MIN_VERSION;
 	authreply->maxvers = RPCAP_MAX_VERSION;
+	authreply->byte_order_magic = RPCAP_BYTE_ORDER_MAGIC;
 
 	// Send the reply.
 	if (sock_send(pars->sockctrl, pars->ssl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
