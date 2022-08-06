@@ -779,8 +779,8 @@ SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nc
 				    i++)
 				{
 					/*
-					 * GEt the numeric address athat
-					 * this error.
+					 * Get the string for the address
+					 * and port that got this error.
 					 */
 					sock_getascii_addrport((struct sockaddr_storage *) addrs_to_try[i].info->ai_addr,
 					    errbufptr, (int)bufspaceleft,
