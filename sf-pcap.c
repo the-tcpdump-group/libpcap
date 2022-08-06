@@ -71,6 +71,7 @@
 
 /*
  * Standard libpcap format.
+ * rpcapd can too use this number in its network protocol to tell endianness.
  */
 #define TCPDUMP_MAGIC		0xa1b2c3d4
 
