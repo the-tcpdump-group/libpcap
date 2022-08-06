@@ -2075,6 +2075,8 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 		if (plen < sizeof(struct rpcap_authreply))
 		{
 			/* No - discard it and fail. */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Authenticaton reply from server is too short");
 			(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 			return -1;
 		}
