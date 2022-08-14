@@ -459,7 +459,7 @@ fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
 		 * length is equal to the value calculated from the raw URB
 		 * length, then it might be one of those transfers.
 		 *
-		 * We only do this if we hae the full USB pseudo-header.
+		 * We only do this if we have the full USB pseudo-header.
 		 */
 		if (!usb_hdr->data_flag &&
 		    hdr->len == sizeof(pcap_usb_header_mmapped) +
