@@ -81,9 +81,11 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 		    desc++, bytes_left -= sizeof (usb_isodesc)) {
 			u_int desc_end;
 
-			desc_end = descs[desc].offset + descs[desc].len;
-			if (desc_end > pre_truncation_data_len)
-				pre_truncation_data_len = desc_end;
+			if (descs[desc].len != 0) {
+				desc_end = descs[desc].offset + descs[desc].len;
+				if (desc_end > pre_truncation_data_len)
+					pre_truncation_data_len = desc_end;
+			}
 		}
 
 		/*
