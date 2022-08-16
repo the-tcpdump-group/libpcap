@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
 
 		// LINUX WARNING: the current linux implementation of pthreads requires a management thread
 		// to handle some hidden stuff. So, as soon as you create the first thread, two threads are
-		// created. Fom this point on, the number of threads active are always one more compared
+		// created. From this point on, the number of threads active are always one more compared
 		// to the number you're expecting
 
 		// Second child continues
