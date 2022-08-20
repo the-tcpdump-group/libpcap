@@ -26,17 +26,17 @@ linux_task:
   name: linux-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   container:
-    image: ubuntu:20.04
+    image: ubuntu:22.04
     cpu: 2
     memory: 1G
   env:
     DEBIAN_FRONTEND: noninteractive
     MAKEFLAGS: -j 3
   script:
-    - apt-get -qy update
-    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
-    - apt-get -qy install flex bison autoconf make clang gcc valgrind
-    - apt-get -qy install cmake git bc # for build_matrix.sh and build.sh
+    - apt-get -qy update >/dev/null
+    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev >/dev/null
+    - apt-get -qy install flex bison autoconf make clang gcc valgrind >/dev/null
+    - apt-get -qy install cmake git bc >/dev/null # for build_matrix.sh and build.sh
     - apt list --installed 'lib*-dev'
     - ./build_matrix.sh
 
@@ -66,7 +66,7 @@ coverity_task:
   name: Coverity Scan
   only_if: $CIRRUS_BRANCH == 'coverity_scan'
   container:
-    image: ubuntu:20.04
+    image: ubuntu:22.04
     cpu: 2
     memory: 2G
   env:
@@ -77,9 +77,9 @@ coverity_task:
     COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote
     COVERITY_SCAN_BUILD_COMMAND: make
   script:
-    - apt-get -qy update
-    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev
-    - apt-get -qy install flex bison autoconf make gcc
-    - apt-get -qy install git curl wget ruby rubygems ruby-json # for the coverity script
+    - apt-get -qy update >/dev/null
+    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev >/dev/null
+    - apt-get -qy install flex bison autoconf make gcc >/dev/null
+    - apt-get -qy install git curl wget ruby rubygems ruby-json >/dev/null # for the coverity script
     - apt list --installed 'lib*-dev'
     - ./.ci-coverity-scan-build.sh
