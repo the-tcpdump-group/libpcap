@@ -10,15 +10,15 @@ freebsd_task:
       - image_family: freebsd-12-3
         cpu: 2
         memory: 2G
-      - image_family: freebsd-13-0
+      - image_family: freebsd-13-1
         cpu: 4
         memory: 4G
   env:
     IGNORE_OSVERSION: yes
     MAKEFLAGS: -j 4
-    MATRIX_CC: clang gcc11
+    MATRIX_CC: clang14 gcc12
   script:
-    - pkg install -qy autoconf gcc11
+    - pkg install -qy autoconf gcc12 llvm14
     - pkg install -qy cmake git-tiny # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
