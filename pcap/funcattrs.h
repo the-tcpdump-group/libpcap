@@ -290,10 +290,8 @@
  * PCAP_DEPRECATED(func, msg), after a function declaration, marks the
  * function as deprecated.
  *
- * The first argument is the name of the function; the second argument is
- * a string giving the warning message to use if the compiler supports that.
- *
- * (Thank you, Microsoft, for requiring the function name.)
+ * The argument is a string giving the warning message to use if the
+ * compiler supports that.
  */
 #if __has_attribute(deprecated) \
     || PCAP_IS_AT_LEAST_GNUC_VERSION(4,5) \
@@ -306,7 +304,7 @@
    * incorrectly, that anything that supports __has_attribute() is
    * recent enough to support __attribute__((deprecated(msg)))).
    */
-  #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated(msg)))
+  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated(msg)))
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(3,1)
   /*
    * GCC 3.1 through 4.4.
@@ -314,7 +312,7 @@
    * Those support __attribute__((deprecated)) but not
    * __attribute__((deprecated(msg))).
    */
-  #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
+  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated))
 #elif defined(_MSC_VER) && !defined(BUILDING_PCAP)
   /*
    * MSVC, and we're not building libpcap itself; it's VS 2015
@@ -323,9 +321,9 @@
    * If we *are* building libpcap, we don't want this, as it'll warn
    * us even if we *define* the function.
    */
-  #define PCAP_DEPRECATED(func, msg)	__pragma(deprecated(func))
+  #define PCAP_DEPRECATED(msg)	_declspec(deprecated(msg))
 #else
-  #define PCAP_DEPRECATED(func, msg)
+  #define PCAP_DEPRECATED(msg)
 #endif
 
 /*

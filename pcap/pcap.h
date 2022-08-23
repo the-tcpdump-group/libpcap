@@ -439,8 +439,8 @@ PCAP_API int	pcap_init(unsigned int, char *);
  * should use pcap_findalldevs() and use the first device.
  */
 PCAP_AVAILABLE_0_4
-PCAP_API char	*pcap_lookupdev(char *)
-PCAP_DEPRECATED(pcap_lookupdev, "use 'pcap_findalldevs' and use the first device");
+PCAP_DEPRECATED("use 'pcap_findalldevs' and use the first device")
+PCAP_API char	*pcap_lookupdev(char *);
 
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
@@ -662,9 +662,9 @@ PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 	    bpf_u_int32);
 
 PCAP_AVAILABLE_0_5
+PCAP_DEPRECATED("use pcap_open_dead(), pcap_compile() and pcap_close()")
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
-	    const char *, int, bpf_u_int32)
-PCAP_DEPRECATED(pcap_compile_nopcap, "use pcap_open_dead(), pcap_compile() and pcap_close()");
+	    const char *, int, bpf_u_int32);
 
 /* XXX - this took two arguments in 0.4 and 0.5 */
 PCAP_AVAILABLE_0_6
@@ -729,8 +729,8 @@ PCAP_API FILE	*pcap_file(pcap_t *);
  * a Windows-only pcap_handle() API that returns the HANDLE.
  */
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_fileno(pcap_t *)
-PCAP_DEPRECATED(pcap_fileno, "request a 'pcap_handle' that returns a HANDLE if you need it");
+PCAP_DEPRECATED("request a 'pcap_handle' that returns a HANDLE if you need it")
+PCAP_API int	pcap_fileno(pcap_t *);
 #else /* _WIN32 */
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_fileno(pcap_t *);
