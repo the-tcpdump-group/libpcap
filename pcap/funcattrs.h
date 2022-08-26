@@ -316,7 +316,7 @@
 #elif defined(_MSC_VER) && !defined(BUILDING_PCAP)
   /*
    * MSVC, and we're not building libpcap itself; it's VS 2015
-   * and later, so we have the deprecated pragma.
+   * and later, so we have __declspec(deprecated(...)).
    *
    * If we *are* building libpcap, we don't want this, as it'll warn
    * us even if we *define* the function.
