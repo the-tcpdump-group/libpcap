@@ -967,21 +967,21 @@ index operations.
 For instance, \fBtcp[\fP0\fB]\fP always means the first
 byte of the TCP \fIheader\fP, and never means the first byte of an
 intervening fragment.
-
+.IP
 Some offsets and field values may be expressed as names rather than
 as numeric values.
 The following protocol header field offsets are
 available: \fBicmptype\fP (ICMP type field), \fBicmp6type\fP (ICMPv6 type field),
 \fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMPv6 code field) and
 \fBtcpflags\fP (TCP flags field).
-
+.IP
 The following ICMP type field values are available: \fBicmp-echoreply\fP,
 \fBicmp-unreach\fP, \fBicmp-sourcequench\fP, \fBicmp-redirect\fP,
 \fBicmp-echo\fP, \fBicmp-routeradvert\fP, \fBicmp-routersolicit\fP,
 \fBicmp-timxceed\fP, \fBicmp-paramprob\fP, \fBicmp-tstamp\fP,
 \fBicmp-tstampreply\fP, \fBicmp-ireq\fP, \fBicmp-ireqreply\fP,
 \fBicmp-maskreq\fP, \fBicmp-maskreply\fP.
-
+.IP
 The following ICMPv6 type fields are available: \fBicmp6-destinationrunreach\fP,
 \fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP,
 \fBicmp6-parameterproblem\fP, \fBicmp6-echo\fP,
@@ -997,7 +997,7 @@ The following ICMPv6 type fields are available: \fBicmp6-destinationrunreach\fP,
 \fBicmp6-certpathsolicit\fP, \fBicmp6-certpathadvert\fP,
 \fBicmp6-multicastrouteradvert\fP, \fBicmp6-multicastroutersolicit\fP,
 \fBicmp6-multicastrouterterm\fP.
-
+.IP
 The following TCP flags field values are available: \fBtcp-fin\fP,
 \fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
 \fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
