@@ -433,7 +433,7 @@ Sunday, June 24, 2018, by mcr@sandelman.ca
     Added testing system to libpcap, independent of tcpdump
     Changes to how pcap_t is activated
     Adding support for Large stream buffers on Endace DAG cards
-    Changes to BSD 3-clause license to 2-clause licence
+    Changes to BSD 3-clause license to 2-clause license
     Additions to TCP header parsing, per RFC3168
     Add CMake build process (extensive number of changes)
     Assign a value for OpenBSD DLT_OPENFLOW.
