@@ -71,7 +71,10 @@
 
 /*
  * Standard libpcap format.
- * rpcapd can too use this number in its network protocol to tell endianness.
+ *
+ * The same value is used in the rpcap protocol as an indication of
+ * the server byte order, to let the client know whether it needs to
+ * byte-swap some host-byte-order metadata.
  */
 #define TCPDUMP_MAGIC		0xa1b2c3d4
 
