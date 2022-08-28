@@ -454,7 +454,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		# This test fails if we don't have <arpa/inet.h>
 		# (if we have ether_hostton(), we should have
 		# networking, and if we have networking, we should
-		# have <arapa/inet.h>) or if we do but it doesn't
+		# have <arpa/inet.h>) or if we do but it doesn't
 		# declare ether_hostton().
 		#
 		# Unset ac_cv_have_decl_ether_hostton so we don't
