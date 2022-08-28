@@ -12,6 +12,9 @@ Monthday, Month DD, YYYY:
       Use PCAP_ERROR (defined as -1) rather than explicit -1 for
         functions the documentation says return PCAP_ERROR.
       Remove unused code from the filter compiler.
+      Use _declspec(deprecated(msg)) rather than __pragma(deprecated)
+        for Windows deprecation warnings, so the message that was
+        specified shows up.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -54,6 +57,8 @@ Monthday, Month DD, YYYY:
       Make sure there's reserved space for a DLT_LINUX_SLL2 header
         when capturing.
       Correctly compute the "real" length for isochronous USB transfers.
+      Don't have an eventfd descriptor open in non-blocking mode, so as
+        not to waste descriptors.
     BPF capture (*BSD, macOS, AIX, Solaris 11):
       Fix case where a device open might fail, rather than falling back
         to a smaller buffer size, when the initial buffer size is too
@@ -69,6 +74,14 @@ Monthday, Month DD, YYYY:
       Clean up bufferizing code.
       Fix a file descriptor/handle leak in pcap_findalldevs_ex()
         (Coverity CID 1507240).
+      Improve error messages for host and port resolution errors.
+      Fix connect code not to fail if both IPv4 and IPv6 addresses are
+        tried.
+      Improve connect failure error message.
+      Provide an error message for a bad authentication reply size.
+      For link-layer types with host-endian fields in the header, fix
+        those fields if capturing from a server with a different byte
+        order.
     Windows:
       Add support for NdisMediumIP (pull request #1027).
       Don't require applications using pcap to be built with VS 2015 or
@@ -137,7 +150,7 @@ Monthday, Month DD, YYYY:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
       Note that = and == are the same operator in filters (issue #1044).
-      Update INSTALL.md and README.md.
+      Update INSTALL.md, README.md, and README.solaris.md.
       Update and clean up CONTRIBUTING.md.
       Trim documentation of support for now-dead UN*Xe and older
         versions of other UN*Xes.
@@ -148,6 +161,8 @@ Monthday, Month DD, YYYY:
       Improve some protocol details in pcap-filter(7).
       Refine "relop" notes in pcap-filter(7).
       In pcap-filter(7) "domain" is an id.
+      Discuss backward compatibility in pcap-filter(7).
+      Other improvements to pcap-filter(7).
 
 Wednesday, June 9, 2021:
   Summary for 1.10.1 libpcap release:
