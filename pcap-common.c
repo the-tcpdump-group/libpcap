@@ -1230,7 +1230,16 @@
 #define LINKTYPE_USB_2_0_FULL_SPEED	294
 #define LINKTYPE_USB_2_0_HIGH_SPEED	295
 
-#define LINKTYPE_MATCHING_MAX	295		/* highest value in the "matching" range */
+/*
+ * Auerswald Logger Protocol
+ * description is provided on
+ * https://github.com/Auerswald-GmbH/auerlog/blob/master/auerlog.txt
+ * requested by Auerswald Developer Team <developer(at)auerswald.de>
+ */
+#define LINKTYPE_AUERSWALD_LOG	296
+
+#define LINKTYPE_MATCHING_MAX	296		/* highest value in the "matching" range */
+
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
