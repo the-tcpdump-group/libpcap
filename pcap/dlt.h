@@ -1610,6 +1610,13 @@
 #define DLT_USB_2_0_HIGH_SPEED	295
 
 /*
+ * Auerswald Logger Protocol
+ * description is provided on
+ * https://github.com/Auerswald-GmbH/auerlog/blob/master/auerlog.txt
+ */
+#define DLT_AUERSWALD_LOG	296
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1619,6 +1626,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	295	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	296	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
