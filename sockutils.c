@@ -301,7 +301,7 @@ static sock_errtype sock_geterrtype(int errcode)
 		 */
 		return (SOCK_UNKNOWNERR);
 	}
-} 
+}
 
 /*
  * \brief This function initializes the socket mechanism if it hasn't
@@ -723,7 +723,7 @@ SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nc
 			 */
 			qsort(addrs_to_try, numaddrinfos, sizeof *addrs_to_try,
 			    compare_addrs_to_try_by_status);
-			
+
 			/*
 			 * Are all the errors the same?
 			 */
