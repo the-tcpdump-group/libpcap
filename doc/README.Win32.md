@@ -174,6 +174,18 @@ with control-S.
 Visual Studio will then re-run CMake.  If that completes without errors,
 you can build with Build > "Build All".
 
+Building libpcap - Using vcpkg
+
+You can download and install libpcap using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install libpcap
+
+The libpcap port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 Building from the command line
 ------------------------------
 
