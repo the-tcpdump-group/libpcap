@@ -2113,7 +2113,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		*flags |= PCAP_IF_WIRELESS;
 
 		/*
-		 * A "network assosiation state" makes no sense for airpcap.
+		 * A "network association state" makes no sense for airpcap.
 		 */
 		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 		PacketCloseAdapter(adapter);
