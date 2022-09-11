@@ -960,13 +960,15 @@
 /*
  * Link-layer header type for upper-protocol layer PDU saves from wireshark.
  *
- * the actual contents are determined by two TAGs stored with each
- * packet:
- *   EXP_PDU_TAG_LINKTYPE          the link type (LINKTYPE_ value) of the
- *				   original packet.
+ * the actual contents are determined by two TAGs, one or more of
+ * which is stored with each packet:
  *
- *   EXP_PDU_TAG_PROTO_NAME        the name of the wireshark dissector
- * 				   that can make sense of the data stored.
+ *   EXP_PDU_TAG_DISSECTOR_NAME      the name of the Wireshark dissector
+ * 				     that can make sense of the data stored.
+ *
+ *   EXP_PDU_TAG_HEUR_DISSECTOR_NAME the name of the Wireshark heuristic
+ *				     dissector that can make sense of the
+ *				     data stored.
  */
 #define LINKTYPE_WIRESHARK_UPPER_PDU	252
 
