@@ -238,7 +238,9 @@ Allows to record when the compilation was performed.
 Type is 6, Length is 8, Value contains a 64-bit Unix timestamp.
 
 .SH SOFTWARE SUPPORT
-None at the time of this writing.
+BPF Exam at
+.I \%https://www.tcpdump.org/bpfexam/
+can produce a cBPF savefile from user input.
 
 .SH SEE ALSO
 .BR \%pcap-savefile (@MAN_FILE_FORMATS@)
