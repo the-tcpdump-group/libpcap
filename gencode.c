@@ -8722,7 +8722,7 @@ gen_vlan_tpid_test(compiler_state_t *cstate)
 {
 	struct block *b0, *b1;
 
-	/* check for VLAN, including QinQ */
+	/* check for VLAN, including 802.1ad and QinQ */
 	b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
 	b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
 	gen_or(b0,b1);
