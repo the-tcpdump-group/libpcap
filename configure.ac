@@ -1064,7 +1064,7 @@ snoop)
 	;;
 
 hurd)
- 	PLATFORM_C_SRC="pcap-hurd.c"
+	PLATFORM_C_SRC="pcap-hurd.c"
 	LIBS="$LIBS -lrt"
 	;;
 

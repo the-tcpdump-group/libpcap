@@ -7193,6 +7193,18 @@ fi
 
 done
 
+	for ac_header in hurd.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "hurd.h" "ac_cv_header_hurd_h" "$ac_includes_default"
+if test "x$ac_cv_header_hurd_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_HURD_H 1
+_ACEOF
+
+fi
+
+done
+
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
@@ -7254,6 +7266,11 @@ done
 		# Haiku.
 		#
 		V_PCAP=haiku
+	elif test "$ac_cv_header_hurd_h" = yes; then
+		#
+		# Hurd.
+		#
+		V_PCAP=hurd
 	else
 		#
 		# Nothing we support.
@@ -8028,6 +8045,11 @@ snoop)
 	# Capture module
 	#
  	PLATFORM_C_SRC="pcap-snoop.c"
+	;;
+
+hurd)
+	PLATFORM_C_SRC="pcap-hurd.c"
+	LIBS="$LIBS -lrt"
 	;;
 
 dag)

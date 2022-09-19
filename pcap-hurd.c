@@ -31,7 +31,7 @@ struct pcap_hurd {
 
 static struct bpf_insn filter[] = {
 	{ NETF_IN | NETF_OUT | NETF_BPF, 0, 0, 0 },
-	{ BPF_RET | BPF_K, 0, 0, 1500 },
+	{ BPF_RET | BPF_K, 0, 0, MAXIMUM_SNAPLEN },
 };
 
 #define FILTER_COUNT (sizeof(filter) / sizeof(short))

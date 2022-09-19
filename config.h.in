@@ -69,6 +69,9 @@
 /* on HP-UX 9.x */
 #undef HAVE_HPUX9
 
+/* Define to 1 if you have the <hurd.h> header file. */
+#undef HAVE_HURD_H
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
