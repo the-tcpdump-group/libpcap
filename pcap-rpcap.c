@@ -3523,7 +3523,7 @@ pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int
 	if (setsockopt(pr->rmt_sockctrl, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)) < 0)
 	{
 		sock_geterror("setsockopt(): ", p->errbuf, PCAP_ERRBUF_SIZE);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* when SO_KEEPALIVE isn't active, the following options aren't used */
@@ -3536,14 +3536,14 @@ pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int
 	    setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0)
 	{
 		sock_geterror("setsockopt(): ", p->errbuf, PCAP_ERRBUF_SIZE);
-		return -1;
+		return PCAP_ERROR;
 	}
 #else
 	if (keepcnt || keepidle || keepintvl)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "TCP_KEEPCNT, TCP_KEEPIDLE or TCP_KEEPINTVL not supported on this platform");
-		return -1;
+		return PCAP_ERROR;
 	}
 #endif
 
