@@ -42,9 +42,16 @@ do
 	shift
 done
 #
-# If libdir isn't /usr/lib, add it to the link-time linker path.
+# If we aren't installing in /usr, then provide a -L flag to let build
+# processes find our library.
 #
-if [ "$libdir" != "/usr/lib" ]
+# (We must check $prefix, as $libdir isn't necessarily /usr/lib in this
+# case - for example, Linux distributions for 64-bit platforms that
+# also provide support for binaries for a 32-bit version of the
+# platform may put the 64-bit libraries, the 32-bit libraries, or both
+# in directories other than /usr/lib.)
+#
+if [ "$prefix" != "/usr" ]
 then
 	LPATH=-L$libdir
 fi
