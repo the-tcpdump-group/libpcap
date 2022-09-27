@@ -472,7 +472,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    #
 		    # Platforms where the C compiler is GCC or accepts
 		    # compatible command-line arguments, and the linker
-		    # is the GNU linker or acceptscompatible command-line
+		    # is the GNU linker or accepts compatible command-line
 		    # arguments.
 		    #
 		    # Some instruction sets require -fPIC on some
@@ -555,7 +555,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    #
 		    # Platforms where the C compiler is GCC or accepts
 		    # compatible command-line arguments, and the linker
-		    # is the GNU linker or acceptscompatible command-line
+		    # is the GNU linker or accepts compatible command-line
 		    # arguments.
 		    #
 		    # XXX - does 64-bit SPARC require -fPIC?

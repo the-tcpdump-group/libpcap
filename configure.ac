@@ -3009,7 +3009,7 @@ if test "x$enable_rdma" != "xno"; then
 fi
 
 #
-# If this is a platform wherw we need to have the .pc file and
+# If this is a platform where we need to have the .pc file and
 # pcap-config script supply an rpath option to specify the directory
 # in which the libpcap shared library is installed, and the install
 # prefix /usr (meaning we're not installing a system library), provide
@@ -3024,7 +3024,7 @@ fi
 # In AIX, do we have to do this?
 #
 # In Darwin-based OSes, the full paths of the shared libraries with
-# which the program was linked are stored in the executable, so we don't
+# that the program was linked are stored in the executable, so we don't
 # need to provide an rpath option.
 #
 # With the HP-UX linker, directories specified with -L are, by default,
