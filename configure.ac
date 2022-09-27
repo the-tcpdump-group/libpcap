@@ -758,7 +758,6 @@ PKG_PROG_PKG_CONFIG
 #
 AC_PATH_PROG([BREW], [brew])
 
-
 #
 # Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
 # looking at *you*!), there are separate include files for 32-bit and
