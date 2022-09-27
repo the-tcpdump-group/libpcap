@@ -14,7 +14,6 @@ includedir="@includedir@"
 libdir="@libdir@"
 V_RPATH_OPT="@V_RPATH_OPT@"
 LIBS="@LIBS@"
-PACKAGE_NAME="@PACKAGE_NAME@"
 
 static=0
 show_cflags=0
@@ -73,7 +72,7 @@ then
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir $LPATH -lpcap $LIBS"
+		echo "-I$includedir $LPATH -l@PACKAGE_NAME@ $LIBS"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
 		echo "-I$includedir $LPATH $LIBS"
@@ -82,7 +81,7 @@ then
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "$LPATH -lpcap $LIBS"
+		echo "$LPATH -l@PACKAGE_NAME@ $LIBS"
 	elif [ "$show_additional_libs" = 1 ]
 	then
 		echo "$LIBS"
@@ -94,7 +93,7 @@ else
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir $LPATH $RPATH -l$PACKAGE_NAME"
+		echo "-I$includedir $LPATH $RPATH -l@PACKAGE_NAME@"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
 		echo "-I$includedir"
@@ -103,6 +102,6 @@ else
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "$LPATH $RPATH -l$PACKAGE_NAME"
+		echo "$LPATH $RPATH -l@PACKAGE_NAME@"
 	fi
 fi
