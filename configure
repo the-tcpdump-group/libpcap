@@ -630,7 +630,7 @@ PLATFORM_CXX_SRC
 PLATFORM_C_SRC
 ADDLARCHIVEOBJS
 ADDLOBJS
-V_RPATH_OPT
+RPATH
 V_SONAME_OPT
 V_SHLIB_OPT
 V_SHLIB_CMD
@@ -5241,9 +5241,10 @@ $as_echo "#define const /**/" >>confdefs.h
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*|midipix*|gnu*)
 		    #
-		    # Platforms where the linker is the GNU linker
-		    # or accepts command-line arguments like
-		    # those the GNU linker accepts.
+		    # Platforms where the C compiler is GCC or accepts
+		    # compatible command-line arguments, and the linker
+		    # is the GNU linker or acceptscompatible command-line
+		    # arguments.
 		    #
 		    # Some instruction sets require -fPIC on some
 		    # operating systems.  Check for them.  If you
@@ -5264,7 +5265,6 @@ $as_echo "#define const /**/" >>confdefs.h
 		    esac
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT $PIC_OPT"
 		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
@@ -5286,11 +5286,12 @@ $as_echo "#define const /**/" >>confdefs.h
 	    solaris*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    #
-		    # XXX - this assumes GCC is using the Sun linker,
-		    # rather than the GNU linker.
+		    # Sun/Oracle's C compiler, GCC, and GCC-compatible
+		    # compilers support -Wl,{comma-separated list of options},
+		    # and we use the C compiler, not ld, for all linking,
+		    # including linking to produce a shared library.
 		    #
 		    V_SONAME_OPT="-Wl,-h,"
-		    V_RPATH_OPT="-Wl,-R,"
 		    ;;
 	    esac
     else
@@ -5312,7 +5313,7 @@ $as_echo "#define const /**/" >>confdefs.h
 	    # "-Wl,-soname,{soname}" option, with the soname part
 	    # of the option, while on other platforms the C compiler
 	    # driver takes it as a regular option with the soname
-	    # following the option.  The same applies to V_RPATH_OPT.
+	    # following the option.
 	    #
 	    case "$host_os" in
 
@@ -5323,13 +5324,17 @@ $as_echo "#define const /**/" >>confdefs.h
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
 		    #
-		    # "cc" is GCC.
+		    # Platforms where the C compiler is GCC or accepts
+		    # compatible command-line arguments, and the linker
+		    # is the GNU linker or acceptscompatible command-line
+		    # arguments.
+		    #
+		    # XXX - does 64-bit SPARC require -fPIC?
 		    #
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
@@ -5352,15 +5357,19 @@ $as_echo "#define const /**/" >>confdefs.h
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-soname "
-		    V_RPATH_OPT="-rpath "
 		    ;;
 
 	    solaris*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -Kpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
-		    V_SONAME_OPT="-h "
-		    V_RPATH_OPT="-R"
+		    #
+		    # Sun/Oracle's C compiler, GCC, and GCC-compatible
+		    # compilers support -Wl,{comma-separated list of options},
+		    # and we use the C compiler, not ld, for all linking,
+		    # including linking to produce a shared library.
+		    #
+		    V_SONAME_OPT="-Wl,-h,"
 		    ;;
 	    esac
     fi
@@ -10201,14 +10210,6 @@ irix*)
 
 linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	DYEXT="so"
-
-	#
-	# Compiler assumed to be GCC; run-time linker may require a -R
-	# flag.
-	#
-	if test "$libdir" != "/usr/lib"; then
-		V_RFLAGS=-Wl,-R$libdir
-	fi
 	;;
 
 osf*)
@@ -13418,6 +13419,61 @@ $as_echo "#define PCAP_SUPPORT_RDMASNIFF /**/" >>confdefs.h
 		LIBS="$LIBIBVERBS_LIBS $LIBS"
 	fi
 
+fi
+
+#
+# If this is a platform wherw we need to have the .pc file and
+# pcap-config script supply an rpath option to specify the directory
+# in which the libpcap shared library is installed, and the install
+# prefix /usr (meaning we're not installing a system library), provide
+# the rpath option.
+#
+# (We must check $prefix, as $libdir isn't necessarily /usr/lib in this
+# case - for example, Linux distributions for 64-bit platforms that
+# also provide support for binaries for a 32-bit version of the
+# platform may put the 64-bit libraries, the 32-bit libraries, or both
+# in directories other than /usr/lib.)
+#
+# In AIX, do we have to do this?
+#
+# In Darwin-based OSes, the full paths of the shared libraries with
+# which the program was linked are stored in the executable, so we don't
+# need to provide an rpath option.
+#
+# With the HP-UX linker, directories specified with -L are, by default,
+# added to the run-time search path, so we don't need to supply them.
+#
+# For Tru64 UNIX, "-rpath" works with DEC's^WCompaq's^WHP's C compiler
+# for Alpha, but isn't documented as working with GCC, and no GCC-
+# compatible option is documented as working with the DEC compiler.
+# If anybody needs this on Tru64/Alpha, they're welcome to figure out a
+# way to make it work.
+#
+# This must *not* depend on the compiler, as, on platforms where there's
+# a GCC-compatible compiler and a vendor compiler, we need to work with
+# both.
+#
+if test "$prefix" != "/usr"; then
+	case "$host_os" in
+
+	freebsd*|netbsd*|openbsd*|dragonfly*|linux*|haiku*|midipix*|gnu*)
+		#
+		# Platforms where the "native" C compiler is GCC or
+		# accepts compatible command-line arguments, and the
+		# "native" linker is the GNU linker or accepts
+		# compatible command-line arguments.
+		#
+		RPATH="-Wl,-rpath,\${libdir}"
+		;;
+
+	solaris*)
+		#
+		# Sun/Oracle's linker, the GNU linker, and
+		# GNU-compatible linkers all support -R.
+		#
+		RPATH="-Wl,-R,\${libdir}"
+		;;
+	esac
 fi
 
 # Find a good install program.  We prefer a C program (faster),

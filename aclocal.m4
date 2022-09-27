@@ -445,7 +445,6 @@ dnl	V_SHLIB_CCOPT (modified to build position-independent code)
 dnl	V_SHLIB_CMD
 dnl	V_SHLIB_OPT
 dnl	V_SONAME_OPT
-dnl	V_RPATH_OPT
 dnl
 AC_DEFUN(AC_LBL_SHLIBS_INIT,
     [AC_PREREQ(2.50)
@@ -471,9 +470,10 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*|midipix*|gnu*)
 		    #
-		    # Platforms where the linker is the GNU linker
-		    # or accepts command-line arguments like
-		    # those the GNU linker accepts.
+		    # Platforms where the C compiler is GCC or accepts
+		    # compatible command-line arguments, and the linker
+		    # is the GNU linker or acceptscompatible command-line
+		    # arguments.
 		    #
 		    # Some instruction sets require -fPIC on some
 		    # operating systems.  Check for them.  If you
@@ -494,7 +494,6 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    esac
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT $PIC_OPT"
 		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
@@ -516,11 +515,12 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 	    solaris*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    #
-		    # XXX - this assumes GCC is using the Sun linker,
-		    # rather than the GNU linker.
+		    # Sun/Oracle's C compiler, GCC, and GCC-compatible
+		    # compilers support -Wl,{comma-separated list of options},
+		    # and we use the C compiler, not ld, for all linking,
+		    # including linking to produce a shared library.
 		    #
 		    V_SONAME_OPT="-Wl,-h,"
-		    V_RPATH_OPT="-Wl,-R,"
 		    ;;
 	    esac
     else
@@ -542,7 +542,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 	    # "-Wl,-soname,{soname}" option, with the soname part
 	    # of the option, while on other platforms the C compiler
 	    # driver takes it as a regular option with the soname
-	    # following the option.  The same applies to V_RPATH_OPT.
+	    # following the option.
 	    #
 	    case "$host_os" in
 
@@ -553,13 +553,17 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
 		    #
-		    # "cc" is GCC.
+		    # Platforms where the C compiler is GCC or accepts
+		    # compatible command-line arguments, and the linker
+		    # is the GNU linker or acceptscompatible command-line
+		    # arguments.
+		    #
+		    # XXX - does 64-bit SPARC require -fPIC?
 		    #
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
@@ -582,15 +586,19 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-soname "
-		    V_RPATH_OPT="-rpath "
 		    ;;
 
 	    solaris*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -Kpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
-		    V_SONAME_OPT="-h "
-		    V_RPATH_OPT="-R"
+		    #
+		    # Sun/Oracle's C compiler, GCC, and GCC-compatible
+		    # compilers support -Wl,{comma-separated list of options},
+		    # and we use the C compiler, not ld, for all linking,
+		    # including linking to produce a shared library.
+		    #
+		    V_SONAME_OPT="-Wl,-h,"
 		    ;;
 	    esac
     fi

@@ -2929,31 +2929,68 @@ if(NOT MSVC)
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")
     set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "DragonFly BSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
-       CMAKE_SYSTEM_NAME STREQUAL "OSF1")
-        #
-        # Platforms where the linker is the GNU linker
-        # or accepts command-line arguments like
-        # those the GNU linker accepts.
-        #
-        set(V_RPATH_OPT "-Wl,-rpath,")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
-        #
-        # SunOS 5.x.
-        #
-        # XXX - this assumes GCC is using the Sun linker,
-        # rather than the GNU linker.
-        #
-        set(V_RPATH_OPT "-Wl,-R,")
-    else()
-        #
-        # No option needed to set the RPATH.
-        #
-        set(V_RPATH_OPT "")
+
+    #
+    # If this is a platform wherw we need to have the .pc file and
+    # pcap-config script supply an rpath option to specify the directory
+    # in which the libpcap shared library is installed, and the install
+    # prefix /usr (meaning we're not installing a system library),
+    # provide the rpath option.
+    #
+    # (We must check CMAKE_INSTALL_PREFIX, as the library directory
+    # isn't  necessarily /usr/lib in this case - for example, Linux
+    # distributions for 64-bit platforms that also provide support for
+    # binaries for a 32-bit version of the platform may put the 64-bit
+    # libraries, the 32-bit libraries, or both in directories other than
+    # /usr/lib.)
+    #
+    # In AIX, do we have to do this?
+    #
+    # In Darwin-based OSes, the full paths of the shared libraries with
+    # which the program was linked are stored in the executable, so we
+    # don't need to provide an rpath option.
+    #
+    # With the HP-UX linker, directories specified with -L are, by
+    # default, added to the run-time search path, so we don't need to
+    # supply them.
+    #
+    # For Tru64 UNIX, "-rpath" works with DEC's^WCompaq's^WHP's C
+    # compiler for Alpha, but isn't documented as working with GCC, and
+    # no GCC-compatible option is documented as working with the DEC
+    # compiler.  If anybody needs this on Tru64/Alpha, they're welcome
+    # to figure out a way to make it work.
+    #
+    # This must *not* depend on the compiler, as, on platforms where
+    # there's a GCC-compatible compiler and a vendor compiler, we need
+    # to work with both.
+    #
+    if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/usr")
+        if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+           CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
+           CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
+           CMAKE_SYSTEM_NAME STREQUAL "DragonFly BSD" OR
+           CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            #
+            # Platforms where the "native" C compiler is GCC or accepts
+            # compatible command-line arguments, and the "native" linker
+            # is the GNU linker or accepts compatible command-line
+            # arguments.
+            #
+            set(RPATH "-Wl,-rpath,\${libdir}")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
+            #
+            # SunOS 5.x.
+            #
+            # Sun/Oracle's linker, the GNU linker, and GNU-compatible
+            # linkers all support -R.
+            #
+            set(RPATH "-Wl,-R,\${libdir}")
+        else()
+            #
+            # No option needed to set the RPATH.
+            #
+            set(RPATH "")
+        endif()
     endif()
     set(LIBS "")
     foreach(LIB ${PCAP_LINK_LIBRARIES})
