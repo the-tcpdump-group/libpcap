@@ -2303,14 +2303,6 @@ irix*)
 
 linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	DYEXT="so"
-
-	#
-	# Compiler assumed to be GCC; run-time linker may require a -R
-	# flag.
-	#
-	if test "$libdir" != "/usr/lib"; then
-		V_RFLAGS=-Wl,-R$libdir
-	fi
 	;;
 
 osf*)
@@ -3006,6 +2998,61 @@ if test "x$enable_rdma" != "xno"; then
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
 
+#
+# If this is a platform wherw we need to have the .pc file and
+# pcap-config script supply an rpath option to specify the directory
+# in which the libpcap shared library is installed, and the install
+# prefix /usr (meaning we're not installing a system library), provide
+# the rpath option.
+#
+# (We must check $prefix, as $libdir isn't necessarily /usr/lib in this
+# case - for example, Linux distributions for 64-bit platforms that
+# also provide support for binaries for a 32-bit version of the
+# platform may put the 64-bit libraries, the 32-bit libraries, or both
+# in directories other than /usr/lib.)
+#
+# In AIX, do we have to do this?
+#
+# In Darwin-based OSes, the full paths of the shared libraries with
+# which the program was linked are stored in the executable, so we don't
+# need to provide an rpath option.
+#
+# With the HP-UX linker, directories specified with -L are, by default,
+# added to the run-time search path, so we don't need to supply them.
+#
+# For Tru64 UNIX, "-rpath" works with DEC's^WCompaq's^WHP's C compiler
+# for Alpha, but isn't documented as working with GCC, and no GCC-
+# compatible option is documented as working with the DEC compiler.
+# If anybody needs this on Tru64/Alpha, they're welcome to figure out a
+# way to make it work.
+#
+# This must *not* depend on the compiler, as, on platforms where there's
+# a GCC-compatible compiler and a vendor compiler, we need to work with
+# both.
+#
+if test "$prefix" != "/usr"; then
+	case "$host_os" in
+
+	freebsd*|netbsd*|openbsd*|dragonfly*|linux*|haiku*|midipix*|gnu*)
+		#
+		# Platforms where the "native" C compiler is GCC or
+		# accepts compatible command-line arguments, and the
+		# "native" linker is the GNU linker or accepts
+		# compatible command-line arguments.
+		#
+		RPATH="-Wl,-rpath,\${libdir}"
+		;;
+
+	solaris*)
+		#
+		# Sun/Oracle's linker, the GNU linker, and
+		# GNU-compatible linkers all support -R.
+		#
+		RPATH="-Wl,-R,\${libdir}"
+		;;
+	esac
+fi
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
@@ -3017,7 +3064,7 @@ AC_SUBST(V_SHLIB_CCOPT)
 AC_SUBST(V_SHLIB_CMD)
 AC_SUBST(V_SHLIB_OPT)
 AC_SUBST(V_SONAME_OPT)
-AC_SUBST(V_RPATH_OPT)
+AC_SUBST(RPATH)
 AC_SUBST(ADDLOBJS)
 AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(PLATFORM_C_SRC)

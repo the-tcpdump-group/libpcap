@@ -12,7 +12,6 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 includedir="@includedir@"
 libdir="@libdir@"
-V_RPATH_OPT="@V_RPATH_OPT@"
 LIBS="@LIBS@"
 
 static=0
@@ -54,16 +53,6 @@ if [ "$prefix" != "/usr" ]
 then
 	LPATH=-L$libdir
 fi
-if [ "$V_RPATH_OPT" != "" ]
-then
-	#
-	# If libdir isn't /usr/lib, add it to the run-time linker path.
-	#
-	if [ "$libdir" != "/usr/lib" ]
-	then
-		RPATH=$V_RPATH_OPT$libdir
-	fi
-fi
 if [ "$static" = 1 ]
 then
 	#
@@ -91,9 +80,13 @@ else
 	# Omit LIBS - libpcap is assumed to be linked with those
 	# libraries, so there's no need to do so explicitly.
 	#
+	# Do, however, include RPATH, to make sure that, on platforms
+	# that require this, programs built with this version of
+	# libpcap can find it at run time.
+	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir $LPATH $RPATH -l@PACKAGE_NAME@"
+		echo "-I$includedir $LPATH @RPATH@ -l@PACKAGE_NAME@"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
 		echo "-I$includedir"
@@ -102,6 +95,6 @@ else
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "$LPATH $RPATH -l@PACKAGE_NAME@"
+		echo "$LPATH @RPATH@ -l@PACKAGE_NAME@"
 	fi
 fi
