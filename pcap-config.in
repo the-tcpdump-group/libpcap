@@ -12,17 +12,24 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 includedir="@includedir@"
 libdir="@libdir@"
+LIBS="@LIBS@"
 LIBS_STATIC="@LIBS_STATIC@"
 
 static=0
+static_pcap_only=0
 show_cflags=0
 show_libs=0
+show_additional_libs=0
 while [ "$#" != 0 ]
 do
 	case "$1" in
 
 	--static)
 		static=1
+		;;
+
+	--static-pcap-only)
+		static_pcap_only=1
 		;;
 
 	--cflags)
@@ -36,9 +43,21 @@ do
 	--additional-libs)
 		show_additional_libs=1
 		;;
+
+	-h|--help)
+		echo "Usage: pcap-config [ --help ] [ --static | --static-pcap-only ] [ --libs | --additional-libs ]"
+		exit 0
+		;;
+
+	*)
+		echo "pcap-config: Invalid command-line option $1 specified" 1>&2
+		echo "Usage: pcap-config [ --help ] [ --static | --static-pcap-only ] [ --libs | --additional-libs ]" 1>&2
+		exit 1
+		;;
 	esac
 	shift
 done
+
 #
 # If we aren't installing in /usr, then provide a -L flag to let build
 # processes find our library.
@@ -56,8 +75,12 @@ fi
 if [ "$static" = 1 ]
 then
 	#
-	# Include LIBS so that the flags include libraries containing
-	# routines that libpcap uses.
+	# Include LIBS_STATIC so that the flags include libraries
+	# containing routines that libpcap uses, and libraries
+	# containing routines those libraries use, etc., so that a
+	# completely statically linked program - i.e., linked only with
+	# static libraries - will be linked with all necessary
+	# libraries.
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
@@ -75,10 +98,39 @@ then
 	then
 		echo "$LIBS_STATIC"
 	fi
+elif [ "$static_pcap_only" = 1 ]
+then
+	#
+	# Include LIBS so that the flags include libraries
+	# containing routines that libpcap uses, but not the libraries
+	# on which libpcap depends, so that an otherwise
+	# dynamically-linked program, linked statically only with
+	# libpcap - i.e., linked with a static libpcap and dynamic
+	# versions of other libraries - will be linked with all
+	# necessary libraries.
+	#
+	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
+	then
+		echo "-I$includedir $LPATH -l@PACKAGE_NAME@ $LIBS"
+	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
+	then
+		echo "-I$includedir $LPATH $LIBS"
+	elif [ "$show_cflags" = 1 ]
+	then
+		echo "-I$includedir"
+	elif [ "$show_libs" = 1 ]
+	then
+		echo "$LPATH -l@PACKAGE_NAME@ $LIBS"
+	elif [ "$show_additional_libs" = 1 ]
+	then
+		echo "$LIBS"
+	fi
 else
 	#
-	# Omit LIBS - libpcap is assumed to be linked with those
-	# libraries, so there's no need to do so explicitly.
+	# Don't included LIBS or LIBS_STATIC, for building a program
+	# with a dynamic libpcap; libpcap, being a dynamic library, will
+	# cause all of its dynamic-library dependencies to be pulled in
+	# at run time.
 	#
 	# Do, however, include RPATH, to make sure that, on platforms
 	# that require this, programs built with this version of
