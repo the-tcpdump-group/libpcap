@@ -21,7 +21,7 @@ Monthday, Month DD, YYYY:
         "link-layer type plus other stuff" is non-zero.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
-      Aadd a -t flag to rpcapd to specify the data channel port; from
+      Add a -t flag to rpcapd to specify the data channel port; from
         another incorporate-remote-capture project. (issue #1120)
     Documentation:
       Document a standard format for writing out BPF filter programs.
