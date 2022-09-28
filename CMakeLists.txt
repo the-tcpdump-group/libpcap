@@ -1522,7 +1522,7 @@ else(WIN32)
             #
             set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
             set(LIBS_STATIC "${LIBS_STATIC} -ldlpi")
-            set(LIBS_PRIVATE "${LIBS_PRIVATE} dlpi")
+            set(LIBS_PRIVATE "${LIBS_PRIVATE} -ldlpi")
             set(PCAP_TYPE libdlpi)
         endif()
 
