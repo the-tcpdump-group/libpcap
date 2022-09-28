@@ -2945,7 +2945,7 @@ if(NOT MSVC)
     # In AIX, do we have to do this?
     #
     # In Darwin-based OSes, the full paths of the shared libraries with
-    # that the program was linked are stored in the executable, so we
+    # which the program was linked are stored in the executable, so we
     # don't need to provide an rpath option.
     #
     # With the HP-UX linker, directories specified with -L are, by
