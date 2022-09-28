@@ -5,6 +5,10 @@
 # dpdk_FOUND
 # dpdk_INCLUDE_DIRS
 # dpdk_LIBRARIES
+# dpdk_STATIC_LIBRARIES
+# dpdk_LIBS_STATIC
+# dpdk_REQUIRES_PRIVATE
+# dpdk_PACKAGE_NAME
 
 #
 # We only try to find DPDK using pkg-config; DPDK is *SO*
@@ -34,10 +38,16 @@ if(PKG_CONFIG_FOUND)
     set(ENV{PKG_CONFIG_PATH} "${dpdk_ROOT}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
   endif()
   pkg_check_modules(dpdk QUIET libdpdk)
+  if(dpdk_FOUND)
+    #
+    # Get static library information for DPDK.
+    #
+    pkg_get_static_link_info(dpdk libdpdk)
+  endif()
   set(ENV{PKG_CONFIG_PATH} "${save_PKG_CONFIG_PATH}")
 endif()
 
-mark_as_advanced(dpdk_INCLUDE_DIRS ${dpdk_LIBRARIES})
+mark_as_advanced(dpdk_INCLUDE_DIRS dpdk_LIBRARIES dpdk_STATIC_LIBRARIES dpdk_REQUIRES_PRIVATE)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(dpdk DEFAULT_MSG

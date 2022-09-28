@@ -78,9 +78,6 @@
 /* Define to 1 if you have the `bsd' library (-lbsd). */
 #undef HAVE_LIBBSD
 
-/* Define to 1 if you have the `dag' library (-ldag). */
-#undef HAVE_LIBDAG
-
 /* if libdlpi exists */
 #undef HAVE_LIBDLPI
 
