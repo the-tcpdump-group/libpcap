@@ -12,7 +12,7 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 includedir="@includedir@"
 libdir="@libdir@"
-LIBS="@LIBS@"
+LIBS_STATIC="@LIBS_STATIC@"
 
 static=0
 show_cflags=0
@@ -61,19 +61,19 @@ then
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I$includedir $LPATH -l@PACKAGE_NAME@ $LIBS"
+		echo "-I$includedir $LPATH -l@PACKAGE_NAME@ $LIBS_STATIC"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
-		echo "-I$includedir $LPATH $LIBS"
+		echo "-I$includedir $LPATH $LIBS_STATIC"
 	elif [ "$show_cflags" = 1 ]
 	then
 		echo "-I$includedir"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "$LPATH -l@PACKAGE_NAME@ $LIBS"
+		echo "$LPATH -l@PACKAGE_NAME@ $LIBS_STATIC"
 	elif [ "$show_additional_libs" = 1 ]
 	then
-		echo "$LIBS"
+		echo "$LIBS_STATIC"
 	fi
 else
 	#

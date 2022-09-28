@@ -232,6 +232,29 @@ AC_DEFUN(AC_LBL_C_INIT,
 ])
 
 dnl
+dnl Save the values of various variables that affect compilation and
+dnl linking, and that we don't ourselves modify persistently; done
+dnl before a test involving compiling or linking is done, so that we
+dnl can restore those variables after the test is done.
+dnl
+AC_DEFUN(AC_LBL_SAVE_CHECK_STATE,
+[
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+])
+
+dnl
+dnl Restore the values of variables saved by AC_LBL_SAVE_CHECK_STATE.
+dnl
+AC_DEFUN(AC_LBL_RESTORE_CHECK_STATE,
+[
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+])
+
+dnl
 dnl Check whether the compiler option specified as the second argument
 dnl is supported by the compiler and, if so, add it to the macro
 dnl specified as the first argument
@@ -1121,7 +1144,7 @@ m4_ifvaln([$3], [else
   $3])dnl
 fi])
 
-dnl _PKG_CONFIG([VARIABLE], [COMMAND], [MODULES])
+dnl _PKG_CONFIG([VARIABLE], [FLAGS], [MODULES])
 dnl ---------------------------------------------
 dnl Internal wrapper calling pkg-config via PKG_CONFIG and setting
 dnl pkg_failed based on the result.
@@ -1130,7 +1153,7 @@ m4_define([_PKG_CONFIG],
     pkg_cv_[]$1="$$1"
  elif test -n "$PKG_CONFIG"; then
     PKG_CHECK_EXISTS([$3],
-                     [pkg_cv_[]$1=`$PKG_CONFIG --[]$2 "$3" 2>/dev/null`
+                     [pkg_cv_[]$1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes ],
 		     [pkg_failed=yes])
  else
@@ -1159,6 +1182,7 @@ AC_DEFUN([PKG_CHECK_MODULES],
 [
 AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $2, overriding pkg-config])dnl
 AC_ARG_VAR([$1][_LIBS], [linker flags for $2, overriding pkg-config])dnl
+AC_ARG_VAR([$1][_LIBS_STATIC], [static-link linker flags for $2, overriding pkg-config])dnl
 
 pkg_failed=no
 AC_MSG_CHECKING([for $2 with pkg-config])
@@ -1168,8 +1192,9 @@ PKG_CHECK_EXISTS($2,
 	# The package was found, so try to get its C flags and
 	# libraries.
 	#
-	_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
-	_PKG_CONFIG([$1][_LIBS], [libs], [$2])
+	_PKG_CONFIG([$1][_CFLAGS], [--cflags], [$2])
+	_PKG_CONFIG([$1][_LIBS], [--libs], [$2])
+	_PKG_CONFIG([$1][_LIBS_STATIC], [--libs --static], [$2])
 
 	m4_define([_PKG_TEXT], [
 Alternatively, you may set the environment variables $1[]_CFLAGS
@@ -1211,6 +1236,7 @@ _PKG_TEXT])[]dnl
 		#
 		$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
 		$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
+		$1[]_LIBS_STATIC=$pkg_cv_[]$1[]_LIBS_STATIC
 	        AC_MSG_RESULT([found])
 		$3
 	fi[]dnl
@@ -1295,7 +1321,7 @@ AC_DEFUN([PKG_CHECK_VAR],
 [
 AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])dnl
 
-_PKG_CONFIG([$1], [variable="][$3]["], [$2])
+_PKG_CONFIG([$1], [--variable="][$3]["], [$2])
 AS_VAR_COPY([$1], [pkg_cv_][$1])
 
 AS_VAR_IF([$1], [""], [$5], [$4])dnl

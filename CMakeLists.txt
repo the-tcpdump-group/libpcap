@@ -628,6 +628,9 @@ endif()
 # that's been set, it skips the test, so we need different variables.
 #
 set(PCAP_LINK_LIBRARIES "")
+set(LIBS_STATIC "")
+set(REQUIRES_PRIVATE "")
+set(LIBS_PRIVATE "")
 include(CheckLibraryExists)
 if(WIN32)
     #
@@ -663,6 +666,8 @@ else(WIN32)
             # OK, we found it in libsocket.
             #
             set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
+            set(LIBS_STATIC "-lsocket -lnsl ${LIBS_STATIC}")
+            set(LIBS_PRIVATE "-lsocket -lnsl ${LIBS_PRIVATE}")
         else(LIBSOCKET_HAS_GETADDRINFO)
             check_library_exists(network getaddrinfo "" LIBNETWORK_HAS_GETADDRINFO)
             if(LIBNETWORK_HAS_GETADDRINFO)
@@ -670,6 +675,8 @@ else(WIN32)
                 # OK, we found it in libnetwork (Haiku).
                 #
                 set(PCAP_LINK_LIBRARIES network ${PCAP_LINK_LIBRARIES})
+                set(LIBS_STATIC "-lnetwork ${LIBS_STATIC}")
+                set(LIBS_PRIVATE "-lnetwork ${LIBS_PRIVATE}")
             else(LIBNETWORK_HAS_GETADDRINFO)
                 #
                 # We didn't find it.
@@ -691,6 +698,8 @@ else(WIN32)
             # Yes - link with it as well.
             #
             set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
+            set(LIBS_STATIC "-lxnet ${LIBS_STATIC}")
+            set(LIBS_PRIVATE "-lxnet ${LIBS_PRIVATE}")
         endif(LIBXNET_HAS_RECVMSG)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
 
@@ -700,6 +709,8 @@ else(WIN32)
         check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
         if(LIBSTR_HAS_PUTMSG)
             set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
+            set(LIBS_STATIC "-lstr ${LIBS_STATIC}")
+            set(LIBS_PRIVATE "-lstr ${LIBS_PRIVATE}")
         endif(LIBSTR_HAS_PUTMSG)
     endif(NOT STDLIBS_HAVE_PUTMSG)
 
@@ -1155,6 +1166,42 @@ if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
 endif()
 
 #
+# For getting a raw list of --libs --static information from a
+# pkg-config module.
+#
+macro(pkg_get_static_link_info _prefix _package)
+  set(_pkg_config_result "")
+  execute_process(
+    COMMAND ${PKG_CONFIG_EXECUTABLE} "--libs" "--static" ${_package}
+    OUTPUT_VARIABLE _pkg_config_result
+    RESULT_VARIABLE _pkg_config_failed
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if (_pkg_config_failed)
+    #
+    # pkg-config failed; assume that means that there is no such
+    # package for it to find.  XXX - what do we do here?
+    #
+    set(${_prefix}_FOUND_WITH_PKG_CONFIG FALSE)
+  else()
+    #
+    # pkg-config succeeded; replace CR and LF with spaces.
+    #
+    string(REGEX REPLACE "[\r\n]" " " ${_prefix}_LIBS_STATIC "${_pkg_config_result}")
+
+    #
+    # List this package in its PACKAGE_NAME variable.
+    #
+    set(${_prefix}_PACKAGE_NAME "${_package}")
+
+    #
+    # It worked.
+    #
+    set(${_prefix}_FOUND_WITH_PKG_CONFIG TRUE)
+  endif()
+endmacro()
+
+#
 # OpenSSL/libressl.
 #
 find_package(OpenSSL)
@@ -1164,6 +1211,50 @@ if(OPENSSL_FOUND)
   #
   include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
   set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENSSL_LIBRARIES})
+
+  #
+  # The find_package() module CMake provides for OpenSSL uses does not
+  # give us a defined indication of whether it found OpenSSL with
+  # pkg-config or not.  We need to know that as, if it was found with
+  # pkg-config, we should set the Requires.private value in libpcap.pc
+  # to include its package name, openssl, otherwise we should add the
+  # names for the static libraries to Libs.private.
+  #
+  # Furthermore, it also does not appear to set OPENSSL_STATIC_LIBRARIES
+  # for us, even though it uses pkg_check_modules(), which does appear
+  # to set the _STATIC_LIBRARIES variable.
+  #
+  # And, even if it *did* set it, it'd set it to a list of library names
+  # or something such as that, rather than to the sequence of -L and -l
+  # flags that we need for the pcap-config script.
+  #
+  # If it were to set OPENSSL_STATIC_LDFLAGS, that would be a
+  # (semicolon-separated) list of -L and -l flags (and other flags, as
+  # needed), which is at least something we could turn into such a list,
+  # but, again, it doesn't.
+  #
+  # Therefore, if we have pkg-config, we try to run pkg-config ourselves
+  # on openssl, with --libs --static.
+  #
+  if (PKG_CONFIG_EXECUTABLE)
+    pkg_get_static_link_info(OPENSSL openssl)
+    if (NOT OPENSSL_FOUND_WITH_PKG_CONFIG)
+      #
+      # pkg-config failed; assume that means that there is no openssl
+      # package for it to find.  Just add OPENSSL_LIBRARIES to
+      # LIBS_PRIVATE AND LIBS_STATIC, as that's the
+      # best we can do. XXX - need list of -l and -L flags to add....
+      #
+    endif()
+    set(LIBS_STATIC "${LIBS_STATIC} ${OPENSSL_LIBS_STATIC}")
+    set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${OPENSSL_PACKAGE_NAME}")
+  else()
+    #
+    # No pkg-config binary, so FindOpenSSL.cmake obviously didn't
+    # use pkg-config to find OpenSSL.  Just ...
+    #
+message(STATUS "XXX FIX ME")
+  endif()
   set(HAVE_OPENSSL YES)
 endif(OPENSSL_FOUND)
 
@@ -1429,6 +1520,8 @@ else(WIN32)
             # XXX - add -L/lib
             #
             set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
+            set(LIBS_STATIC "${LIBS_STATIC} -ldlpi")
+            set(LIBS_PRIVATE "${LIBS_PRIVATE} dlpi")
             set(PCAP_TYPE libdlpi)
         endif()
 
@@ -1461,9 +1554,16 @@ else(WIN32)
         # let's drop support for older versions of libnl, too.
         #
         if(BUILD_WITH_LIBNL)
-            pkg_check_modules(LIBNL libnl-3.0)
+            pkg_check_modules(LIBNL libnl-genl-3.0)
             if(LIBNL_FOUND)
                 set(PCAP_LINK_LIBRARIES ${LIBNL_LIBRARIES} ${PCAP_LINK_LIBRARIES})
+
+                #
+                # Get raw link flags from pkg-config.
+                #
+                pkg_get_static_link_info(LIBNL libnl-genl-3.0)
+                set(LIBS_STATIC "${LIBNL_LIBS_STATIC} ${LIBS_STATIC}")
+                set(REQUIRES_PRIVATE "${LIBNL_PACKAGE_NAME} ${REQUIRES_PRIVATE}")
             else()
                 cmake_push_check_state()
                 set(CMAKE_REQUIRED_LIBRARIES nl-3)
@@ -1475,6 +1575,8 @@ else(WIN32)
                     #
                     set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
                     include_directories("/usr/include/libnl3")
+                    set(LIBS_STATIC "-lnl-genl-3 -lnl-3 ${LIBS_STATIC}")
+                    set(LIBS_PRIVATE "-lnl-genl-3 -lnl-3 ${LIBS_PRIVATE}")
                 endif()
             endif()
         else()
@@ -1557,6 +1659,8 @@ if(NOT WIN32)
                 check_library_exists(socket getifaddrs "" SOCKET_HAS_GETIFADDRS)
                 if(SOCKET_HAS_GETIFADDRS)
                     set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
+                    set(LIBS_STATIC "-lsocket ${LIBS_STATIC}")
+                    set(LIBS_PRIVATE "-lsocket ${LIBS_PRIVATE}")
                     set(HAVE_GETIFADDRS TRUE)
                 endif()
             endif()
@@ -1738,6 +1842,8 @@ if(NOT DISABLE_DPDK)
             include_directories(AFTER ${dpdk_INCLUDE_DIRS})
             link_directories(AFTER ${dpdk_LIBRARIES})
             set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${dpdk_LIBRARIES})
+            set(LIBS_STATIC "${LIBS_STATIC} ${dpdk_LIBS_STATIC}")
+            set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${dpdk_PACKAGE_NAME}")
             set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
             set(PCAP_SUPPORT_DPDK TRUE)
 
@@ -1840,13 +1946,30 @@ if(NOT DISABLE_DBUS)
             list(APPEND DBUS_LIBRARY_FULLPATHS ${_libfullpath})
         endforeach()
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DBUS_LIBRARY_FULLPATHS})
+
+        #
+        # Get static library information for DPDK.
+        #
+        pkg_get_static_link_info(DBUS dbus-1)
+        set(LIBS_STATIC "${LIBS_STATIC} ${DBUS_LIBS_STATIC}")
+        set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${DBUS_PACKAGE_NAME}")
     endif(DBUS_FOUND)
 endif(NOT DISABLE_DBUS)
 
 # Check for RDMA sniffing support
 if(NOT DISABLE_RDMA)
     pkg_check_modules(LIBIBVERBS libibverbs)
-    if(NOT LIBIBVERBS_FOUND)
+    if(LIBIBVERBS_FOUND)
+        #
+        # pkg-config found it; remember its pkg-config name.
+        #
+        set(LIBIBVERBS_REQUIRES_PRIVATE ${LIBIBVERBS_PACKAGE_NAME})
+
+        #
+        # Get static linking information for it.
+        #
+        pkg_get_static_link_info(LIBIBVERBS libibverbs)
+    else()
         #
         # pkg-config didn't find it; try to look for it ourselves
         #
@@ -1854,6 +1977,14 @@ if(NOT DISABLE_RDMA)
         if(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
             set(LIBIBVERBS_FOUND TRUE)
             set(LIBIBVERBS_LIBRARIES ibverbs)
+            # XXX - at least on Ubuntu 20.04, there are many more
+            # libraries needed; is there any platform where
+            # libibverbs is available but where pkg-config
+            # isn't available or libibverbs doesn't use it?
+            # If not, we should only use pkg-config for it.
+            set(LIBIBVERBS_STATIC_LIBRARIES ibverbs)
+            set(LIBIBVERBS_LIBS_STATIC -libverbs)
+            set(LIBIBVERBS_LIBS_PRIVATE -libverbs)
         endif()
     endif()
     if(LIBIBVERBS_FOUND)
@@ -1863,6 +1994,9 @@ if(NOT DISABLE_RDMA)
             if(PCAP_SUPPORT_RDMASNIFF)
                 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-rdmasniff.c)
                 set(PCAP_LINK_LIBRARIES ${LIBIBVERBS_LIBRARIES} ${PCAP_LINK_LIBRARIES})
+                set(LIBS_STATIC "${LIBIBVERBS_LIBS_STATIC} ${LIBS_STATIC}")
+                set(LIBS_PRIVATE "${LIBIBVERBS_LIBS_PRIVATE} ${LIBS_PRIVATE}")
+                set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${LIBIBVERBS_PACKAGE_NAME}")
             endif(PCAP_SUPPORT_RDMASNIFF)
         endif(HAVE_INFINIBAND_VERBS_H)
     endif(LIBIBVERBS_FOUND)
@@ -1903,12 +2037,21 @@ if(NOT DISABLE_DAG)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
         set(HAVE_DAG_API TRUE)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DAG_LIBRARIES})
+        #
+        # XXX - this needs more static library work to handle
+        # compiler-command-style rather than CMake-style
+        # flags.
+        #
+        set(LIBS_STATIC "${LIBS_STATIC} ${DAG_STATIC_LIBRARIES}")
+        set(LIBS_PRIVATE "${LIBS_PRIVATE} ${DAG_STATIC_LIBRARIES}")
 
         if(HAVE_DAG_LARGE_STREAMS_API)
             get_filename_component(DAG_LIBRARY_DIR ${DAG_LIBRARY} PATH)
             check_library_exists(vdag vdag_set_device_info ${DAG_LIBRARY_DIR} HAVE_DAG_VDAG)
             if(HAVE_DAG_VDAG)
                 set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+                set(LIBS_STATIC "${LIBS_STATIC} ${CMAKE_THREAD_LIBS_INIT}")
+                set(LIBS_PRIVATE "${LIBS_PRIVATE} ${CMAKE_THREAD_LIBS_INIT}")
             endif()
         endif()
     endif()
@@ -1954,6 +2097,13 @@ if(NOT DISABLE_SNF)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-snf.c)
         set(HAVE_SNF_API TRUE)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${SNF_LIBRARIES})
+        #
+        # XXX - this needs more static library work to handle
+        # compiler-command-style rather than CMake-style
+        # flags.
+        #
+        set(LIBS_STATIC "${LIBS_STATIC} ${SNF_STATIC_LIBRARIES}")
+        set(LIBS_PRIVATE "${LIBS_PRIVATE} ${SNF_STATIC_LIBRARIES}")
     endif()
 endif()
 
@@ -2345,6 +2495,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
         # we use them to load the BPF module.
         #
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} odm cfg)
+        set(LIBS_STATIC "${LIBS_STATIC} -lodm -lcfg")
+        set(LIBS_PRIVATE "${LIBS_PRIVATE} -lodm -lcfg")
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
     if(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*9\.[0-9]*")
@@ -2990,10 +3142,6 @@ if(NOT MSVC)
             set(RPATH "")
         endif()
     endif()
-    set(LIBS "")
-    foreach(LIB ${PCAP_LINK_LIBRARIES})
-        set(LIBS "${LIBS} -l${LIB}")
-    endforeach(LIB)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)

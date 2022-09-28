@@ -635,20 +635,20 @@ V_SONAME_OPT
 V_SHLIB_OPT
 V_SHLIB_CMD
 V_SHLIB_CCOPT
-V_INCLS
-V_DEFS
-V_CCOPT
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
 PCAP_SUPPORT_RDMASNIFF
+LIBIBVERBS_LIBS_STATIC
 LIBIBVERBS_LIBS
 LIBIBVERBS_CFLAGS
 PCAP_SUPPORT_DBUS
+DBUS_LIBS_STATIC
 DBUS_LIBS
 DBUS_CFLAGS
 PCAP_SUPPORT_BT
 PCAP_SUPPORT_DPDK
+DPDK_LIBS_STATIC
 DPDK_LIBS
 DPDK_CFLAGS
 PCAP_SUPPORT_NETMAP
@@ -673,8 +673,10 @@ BISON_BYACC
 LEXLIB
 LEX_OUTPUT_ROOT
 LEX
+OPENSSL_LIBS_STATIC
 OPENSSL_LIBS
 OPENSSL_CFLAGS
+LIBNL_LIBS_STATIC
 LIBNL_LIBS
 LIBNL_CFLAGS
 BREW
@@ -709,6 +711,12 @@ build_os
 build_vendor
 build_cpu
 build
+LIBS_PRIVATE
+REQUIRES_PRIVATE
+LIBS_STATIC
+V_INCLS
+V_DEFS
+V_CCOPT
 target_alias
 host_alias
 build_alias
@@ -793,14 +801,19 @@ PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 LIBNL_CFLAGS
 LIBNL_LIBS
+LIBNL_LIBS_STATIC
 OPENSSL_CFLAGS
 OPENSSL_LIBS
+OPENSSL_LIBS_STATIC
 DPDK_CFLAGS
 DPDK_LIBS
+DPDK_LIBS_STATIC
 DBUS_CFLAGS
 DBUS_LIBS
+DBUS_LIBS_STATIC
 LIBIBVERBS_CFLAGS
-LIBIBVERBS_LIBS'
+LIBIBVERBS_LIBS
+LIBIBVERBS_LIBS_STATIC'
 
 
 # Initialize some variables set by options.
@@ -1481,18 +1494,29 @@ Some influential environment variables:
   LIBNL_CFLAGS
               C compiler flags for libnl-genl-3.0, overriding pkg-config
   LIBNL_LIBS  linker flags for libnl-genl-3.0, overriding pkg-config
+  LIBNL_LIBS_STATIC
+              static-link linker flags for libnl-genl-3.0, overriding
+              pkg-config
   OPENSSL_CFLAGS
               C compiler flags for openssl, overriding pkg-config
   OPENSSL_LIBS
               linker flags for openssl, overriding pkg-config
+  OPENSSL_LIBS_STATIC
+              static-link linker flags for openssl, overriding pkg-config
   DPDK_CFLAGS C compiler flags for libdpdk, overriding pkg-config
   DPDK_LIBS   linker flags for libdpdk, overriding pkg-config
+  DPDK_LIBS_STATIC
+              static-link linker flags for libdpdk, overriding pkg-config
   DBUS_CFLAGS C compiler flags for dbus-1, overriding pkg-config
   DBUS_LIBS   linker flags for dbus-1, overriding pkg-config
+  DBUS_LIBS_STATIC
+              static-link linker flags for dbus-1, overriding pkg-config
   LIBIBVERBS_CFLAGS
               C compiler flags for libibverbs, overriding pkg-config
   LIBIBVERBS_LIBS
               linker flags for libibverbs, overriding pkg-config
+  LIBIBVERBS_LIBS_STATIC
+              static-link linker flags for libibverbs, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2828,6 +2852,86 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+
+
+
+#
+# These are the variables that are used in Makefile, pcap-config, and
+# libpcap.pc.
+#
+# CFLAGS: inherited from the environment, not modified by us (except
+# temporarily during tests that involve compilation).  Used only when
+# compiling C source.
+#
+# CXXFLAGS: inherited from the environment, not modified by us.  Used only
+# when compiling C++ source.
+#
+# LDFLAGS: inherited from the environment, not modified by us.
+#
+# LIBS: inherited from the environment; we add libraries required by
+# libpcap.  Librares that the core libpcap code requires are added
+# first; libraries required by additional pcap modules are first
+# added to ADDITIONAL_LIBS, and only added to LIBS at the end, after
+# we're finished doing configuration tests for the modules.
+#
+# LIBS_STATIC: libraries with which a program using the libpcap *static*
+# library needs to be linked.  This is a superset of LIBS, used in
+# pcap-config, so that "pcap-config --libs --static" will report them.
+# Initialized to LIBS.
+#
+# REQUIRES_PRIVATE: pkg-config package names for additional libraries
+# with which a program using the libpcap *static* library needs to be
+# linked and for which a .pc file exists.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them, and so that
+# those libraries will be determined using the library's .pc file, not
+# from our .pc file.  Initialized to an empty string.
+#
+# V_CCOPT: additional compiler flags other than -I and -D flags
+# needed when compiling libpcap.  Used in Makefile for both C and
+# C++ source.
+#
+# V_DEFS: additional -D compiler flags needed when compiling
+# libpcap.  Used in Makefile for both C and C++ source.
+#
+# V_INCLS: additional -I compiler flags needed when compiling
+# libpcap.  Used in Makefile for both C and C++ source.
+#
+# ADDITIONAL_LIBS: additional libraries with which the libpcap dynamic
+# library needs to be linked.  Used in Makwfile; not used in pcap-config
+# or libpcap.pc, as, in all platforms on which we run, if a dynamic
+# library is linked with other dynamic libraries, a program using
+# that dynamic library doesn't have to link with those libraries -
+# they will be automatically loaded at run time.  Initialized to an
+# empty string.
+#
+# ADDITIONAL_LIBS_STATIC: additional libraries with which a program
+# using the libpcap *static* library needs to be linked.  This is used
+# in pcap-config, so that "pcap-config --libs --static" will report
+# them.  Initialized to an empty string.
+#
+# REQUIRES_PRIVATE: pkg-config package names for additional libraries
+# with which a program using the libpcap *static* library needs to be
+# linked and for which a .pc file exists.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them, and so that
+# those libraries will be determined using the library's .pc file, not
+# from our .pc file.  Initialized to an empty string.
+#
+# LIBS_PRIVATE: pkg-config package names for additional libraries with
+# which a program using the libpcap *static* library needs to be linked
+# and for which a .pc file does not exist.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them (those libraries
+# cannot be determined using the library's .pc file, as there is no such
+# file, so it has to come from our .pc file.  Initialized to an empty
+# string.
+#
+LIBS_STATIC=""
+REQUIRES_PRIVATE=""
+LIBS_PRIVATE=""
+
+
+
 
 
 
@@ -5854,6 +5958,11 @@ fi
 done
 
 
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 case "$host_os" in
 haiku*)
 	#
@@ -5956,6 +6065,11 @@ $as_echo "$ac_cv_lbl_gcc_fixincludes" >&6; }
 		    as_fn_error $? "see the INSTALL for more info" "$LINENO" 5
 	    fi
     fi
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 
 for ac_func in strerror
 do :
@@ -7579,6 +7693,8 @@ $as_echo "$ac_cv_lib_dlpi_dlpi_walk" >&6; }
 if test "x$ac_cv_lib_dlpi_dlpi_walk" = xyes; then :
 
 			LIBS="-ldlpi $LIBS"
+			LIBS_STATIC="-ldlpi $LIBS_STATIC"
+			LIBS_PRIVATE="-ldlpi $LIBS_PRIVATE"
 			V_PCAP=libdlpi
 
 			#
@@ -7797,6 +7913,24 @@ fi
  else
     pkg_failed=untried
 fi
+	if test -n "$LIBNL_LIBS_STATIC"; then
+    pkg_cv_LIBNL_LIBS_STATIC="$LIBNL_LIBS_STATIC"
+ elif test -n "$PKG_CONFIG"; then
+
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnl-genl-3.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnl-genl-3.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBNL_LIBS_STATIC=`$PKG_CONFIG --libs --static "libnl-genl-3.0" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
 
 
@@ -7843,12 +7977,15 @@ $as_echo "not found (pkg-config not found)" >&6; }
 		#
 		LIBNL_CFLAGS=$pkg_cv_LIBNL_CFLAGS
 		LIBNL_LIBS=$pkg_cv_LIBNL_LIBS
+		LIBNL_LIBS_STATIC=$pkg_cv_LIBNL_LIBS_STATIC
 	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 
 			pkg_config_found_libnl=yes
 			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
-			LIBS="$LIBNL_LIBS $LIBS"
+			ADDITIONAL_LIBS="$LIBNL_LIBS $ADDITIONAL_LIBS"
+			ADDITIONAL_LIBS_STATIC="$LIBNL_LIBS_STATIC $ADDITIONAL_LIBS_STATIC"
+			REQUIRES_PRIVATE="libnl-genl-3.0 $REQUIRES_PRIVATE"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -7926,7 +8063,9 @@ if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 				#
 				# Yes, we have libnl 3.x.
 				#
-				LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
+				ADDITIONAL_LIBS="${libnldir} -lnl-genl-3 -lnl-3 $ADDITIONAL_LIBS"
+				ADDITIONAL_LIBS_STATIC="${libnldir} -lnl-genl-3 -lnl-3 $ADDITIONAL_LIBS_STATIC"
+				LIBS_PRIVATE="${libnldir} -lnl-genl-3 -lnl-3 $LIBS_PRIVATE"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -8323,7 +8462,11 @@ if test "$want_dag" != no; then
 		fi
 	fi
 
+
 	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 	CFLAGS="$CFLAGS -I$dag_include_dir"
 	for ac_header in dagapi.h
 do :
@@ -8338,6 +8481,11 @@ fi
 done
 
 
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
+
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		V_INCLS="$V_INCLS -I$dag_include_dir"
@@ -8349,7 +8497,11 @@ done
 		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
-		save_LDFLAGS="$LDFLAGS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		LDFLAGS="-L$dag_lib_dir"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream in -ldag" >&5
 $as_echo_n "checking for dag_attach_stream in -ldag... " >&6; }
@@ -8388,11 +8540,15 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dag_dag_attach_stream" >&5
 $as_echo "$ac_cv_lib_dag_dag_attach_stream" >&6; }
 if test "x$ac_cv_lib_dag_dag_attach_stream" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBDAG 1
-_ACEOF
 
-  LIBS="-ldag $LIBS"
+			#
+			# We assume that if we have libdag we have
+			# libdagconf, as they're installed at the
+			# same time from the same package.
+			#
+			ADDITIONAL_LIBS="-L$dag_lib_dir $ADDITIONAL_LIBS -ldag -ldagconf"
+			ADDITIONAL_LIBS_STATIC="-L$dag_lib_dir $ADDITIONAL_LIBS_STATIC -ldag -ldagconf"
+			LIBS_PRIVATE="-L$dag_lib_dir $LIBS_PRIVATE -ldag -ldagconf"
 
 else
   as_fn_error $? "DAG library lacks streams support" "$LINENO" 5
@@ -8527,20 +8683,27 @@ $as_echo "#define HAVE_DAG_GET_STREAM_ERF_TYPES 1" >>confdefs.h
 fi
 
 
-		LDFLAGS="$save_LDFLAGS"
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 
 		#
 		# We assume that if we have libdag we have libdagconf,
 		# as they're installed at the same time from the same
 		# package.
 		#
-		LIBS="$LIBS -ldag -ldagconf"
-		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
-
 		if test "$dag_large_streams" = 1; then
 
 $as_echo "#define HAVE_DAG_LARGE_STREAMS_API 1" >>confdefs.h
 
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
+			LIBS="$LIBS -ldag -ldagconf"
+			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for vdag_set_device_info in -lvdag" >&5
 $as_echo_n "checking for vdag_set_device_info in -lvdag... " >&6; }
 if ${ac_cv_lib_vdag_vdag_set_device_info+:} false; then :
@@ -8583,6 +8746,11 @@ else
   ac_dag_have_vdag="0"
 fi
 
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 			if test "$ac_dag_have_vdag" = 1; then
 
 $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
@@ -8590,7 +8758,9 @@ $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
 				if test "$ac_lbl_have_pthreads" != "found"; then
 					as_fn_error $? "DAG requires pthreads, but we didn't find them" "$LINENO" 5
 				fi
-				LIBS="$LIBS $PTHREAD_LIBS"
+				ADDITIONAL_LIBS="$ADDITIONAL_LIBS $PTHREAD_LIBS"
+				ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $PTHREAD_LIBS"
+				LIBS_PRIVATE="$LIBS_PRIVATE $PTHREAD_LIBS"
 			fi
 		fi
 
@@ -8598,7 +8768,6 @@ $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
 $as_echo "#define HAVE_DAG_API 1" >>confdefs.h
 
 	else
-
 		if test "$V_PCAP" = dag; then
 			# User requested "dag" capture type but we couldn't
 			# find the DAG API support.
@@ -8788,7 +8957,11 @@ $as_echo_n "checking whether we have Myricom Sniffer API... " >&6; }
 
 	if test -f "$snf_include_dir/snf.h"; then
 		# We found a header; make sure we can link with the library
-		save_LDFLAGS="$LDFLAGS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for snf_init in -lsnf" >&5
 $as_echo_n "checking for snf_init in -lsnf... " >&6; }
@@ -8830,7 +9003,11 @@ if test "x$ac_cv_lib_snf_snf_init" = xyes; then :
   ac_cv_lbl_snf_api="yes"
 fi
 
-		LDFLAGS="$save_LDFLAGS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 		if test "$ac_cv_lbl_snf_api" = no; then
 			as_fn_error $? "SNF API cannot correctly be linked; check config.log" "$LINENO" 5
 		fi
@@ -8841,8 +9018,9 @@ fi
 $as_echo "yes ($snf_root)" >&6; }
 
 		V_INCLS="$V_INCLS -I$snf_include_dir"
-		LIBS="$LIBS -lsnf"
-		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS -L$snf_lib_dir -lsnf"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC -L$snf_lib_dir -lsnf"
+		LIBS_PRIVATE="$LIBS_PRIVATE -L$snf_lib_dir -lsnf"
 
 		if test "$V_PCAP" != snf ; then
 			MODULE_C_SRC="$MODULE_C_SRC pcap-snf.c"
@@ -8908,12 +9086,16 @@ if test "$want_turbocap" != no; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether TurboCap is supported" >&5
 $as_echo_n "checking whether TurboCap is supported... " >&6; }
 
+
 	save_CFLAGS="$CFLAGS"
 	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 	if test ! -z "$turbocap_root"; then
 		TURBOCAP_CFLAGS="-I$turbocap_root/include"
-		TURBOCAP_LIBS="-L$turbocap_root/lib"
+		TURBOCAP_LDFLAGS="-L$turbocap_root/lib"
 		CFLAGS="$CFLAGS $TURBOCAP_CFLAGS"
+		LDFLAGS="$LDFLAGS $TURBOCAP_LDFLAGS"
 	fi
 
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -8938,14 +9120,20 @@ if ac_fn_c_try_compile "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+
 	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 	if test $ac_cv_lbl_turbocap_api = yes; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 		MODULE_C_SRC="$MODULE_C_SRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
-		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
+		LIBS_PRIVATE="$LIBS_PRIVATE $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
 
 
 $as_echo "#define HAVE_TC_API 1" >>confdefs.h
@@ -9174,6 +9362,24 @@ fi
  else
     pkg_failed=untried
 fi
+	if test -n "$OPENSSL_LIBS_STATIC"; then
+    pkg_cv_OPENSSL_LIBS_STATIC="$OPENSSL_LIBS_STATIC"
+ elif test -n "$PKG_CONFIG"; then
+
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"openssl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "openssl") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_OPENSSL_LIBS_STATIC=`$PKG_CONFIG --libs --static "openssl" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
 
 
@@ -9220,6 +9426,7 @@ $as_echo "not found (pkg-config not found)" >&6; }
 		#
 		OPENSSL_CFLAGS=$pkg_cv_OPENSSL_CFLAGS
 		OPENSSL_LIBS=$pkg_cv_OPENSSL_LIBS
+		OPENSSL_LIBS_STATIC=$pkg_cv_OPENSSL_LIBS_STATIC
 	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 
@@ -9227,6 +9434,7 @@ $as_echo "found" >&6; }
 		# We found OpenSSL/libressl.
 		#
 		HAVE_OPENSSL=yes
+		REQUIRES_PRIVATE="openssl $REQUIRES_PRIVATE"
 
 	fi
 else
@@ -9270,6 +9478,8 @@ $as_echo "yes" >&6; }
 			openssl_path=`$BREW --prefix openssl`
 			OPENSSL_CFLAGS="-I$openssl_path/include"
 			OPENSSL_LIBS="-L$openssl_path/lib -lssl -lcrypto"
+			OPENSSL_LIBS_STATIC="-L$openssl_path/lib -lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-L$openssl_path/lib -lssl -lcrypto"
 		else
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -9291,8 +9501,11 @@ $as_echo "no" >&6; }
 	# in others.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes" -a -d "/usr/local/include" -a -d "/usr/local/lib"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		CFLAGS="$CFLAGS -I/usr/local/include"
 		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have OpenSSL/libressl in /usr/local that we can use" >&5
@@ -9320,15 +9533,21 @@ $as_echo "yes" >&6; }
 			HAVE_OPENSSL=yes
 			OPENSSL_CFLAGS="-I/usr/local/include"
 			OPENSSL_LIBS="-L/usr/local/lib -lssl -lcrypto"
+			OPENSSL_LIBS_STATIC="-L/usr/local/lib -lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-L/usr/local/lib -lssl -lcrypto"
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+  nnn
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 	fi
 
 	#
@@ -9342,7 +9561,11 @@ rm -f core conftest.err conftest.$ac_objext \
 	# in others.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes"; then
-		save_LIBS="$LIBS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		LIBS="$LIBS -lssl -lcrypto"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have a system OpenSSL/libressl that we can use" >&5
 $as_echo_n "checking whether we have a system OpenSSL/libressl that we can use... " >&6; }
@@ -9368,6 +9591,8 @@ if ac_fn_c_try_link "$LINENO"; then :
 $as_echo "yes" >&6; }
 			HAVE_OPENSSL=yes
 			OPENSSL_LIBS="-lssl -lcrypto"
+			OPENSSL_LIBS_STATIC="-lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-lssl -lcrypto"
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -9375,7 +9600,11 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-		LIBS="$save_LIBS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 	fi
 
 	#
@@ -9385,8 +9614,11 @@ rm -f core conftest.err conftest.$ac_objext \
 
 $as_echo "#define HAVE_OPENSSL 1" >>confdefs.h
 
-		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
-		LIBS="$LIBS $OPENSSL_LIBS"
+		V_INCLS="$V_INCLS $OPENSSL_CFLAGS"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $OPENSSL_LIBS"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $OPENSSL_LIBS_STATIC"
+		LIBS_PRIVATE="$LIBS_PRIVATE $OPENSSL_LIBS_PRIVATE"
+		REQUIRES_PRIVATE="$REQUIRES_PRIVATE $OPENSSL_REQUIRES_PRIVATE"
 	else
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: OpenSSL not found" >&5
 $as_echo "$as_me: OpenSSL not found" >&6;}
@@ -9971,7 +10203,11 @@ fi
 			#
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether building for 32-bit x86 is supported" >&5
 $as_echo_n "checking whether building for 32-bit x86 is supported... " >&6; }
-			save_CFLAGS="$CFLAGS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 			CFLAGS="$CFLAGS -arch i386"
 			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10035,7 +10271,11 @@ $as_echo "$as_me: WARNING: Compiling for 32-bit x86 gives an error; try installi
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-			CFLAGS="$save_CFLAGS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 			;;
 
 		darwin19*)
@@ -10070,8 +10310,11 @@ rm -f core conftest.err conftest.$ac_objext \
 			if test "$HAVE_OPENSSL" = yes; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether building fat with libssl is supported" >&5
 $as_echo_n "checking whether building fat with libssl is supported... " >&6; }
-				save_CFLAGS="$CFLAGS"
-				save_LDFLAGS="$LDFLAGS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
 				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
 				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10106,8 +10349,11 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-				CFLAGS="$save_CFLAGS"
-				LDFLAGS="$save_LDFLAGS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 			else
 				V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
 				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
@@ -12609,6 +12855,24 @@ fi
  else
     pkg_failed=untried
 fi
+	if test -n "$DPDK_LIBS_STATIC"; then
+    pkg_cv_DPDK_LIBS_STATIC="$DPDK_LIBS_STATIC"
+ elif test -n "$PKG_CONFIG"; then
+
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libdpdk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libdpdk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_DPDK_LIBS_STATIC=`$PKG_CONFIG --libs --static "libdpdk" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
 
 
@@ -12655,6 +12919,7 @@ $as_echo "not found (pkg-config not found)" >&6; }
 		#
 		DPDK_CFLAGS=$pkg_cv_DPDK_CFLAGS
 		DPDK_LIBS=$pkg_cv_DPDK_LIBS
+		DPDK_LIBS_STATIC=$pkg_cv_DPDK_LIBS_STATIC
 	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 
@@ -12683,43 +12948,41 @@ fi
 		# We call rte_eth_dev_count_avail(), and older versions
 		# of DPDK didn't have it, so check for it.
 		#
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		save_LDFLAGS="$LDFLAGS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LIBS"
-		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 		ac_fn_c_check_func "$LINENO" "rte_eth_dev_count_avail" "ac_cv_func_rte_eth_dev_count_avail"
 if test "x$ac_cv_func_rte_eth_dev_count_avail" = xyes; then :
 
 fi
 
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
-		LDFLAGS="$save_LDFLAGS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 	fi
 
 	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
 		#
-		# We found a usable DPDK.  Build with it.
-		#
-		CFLAGS="$CFLAGS $DPDK_CFLAGS"
-		LIBS="$LIBS $DPDK_LIBS"
-		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
-		V_INCLS="$V_INCLS $DPDK_CFLAGS"
-
-$as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
-
-		if test $V_PCAP != dpdk ; then
-			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
-		fi
-
+		# We found a usable DPDK.
 		#
 		# Check whether the rte_ether.h file defines
 		# struct ether_addr or struct rte_ether_addr.
 		#
 		# ("API compatibility?  That's for losers!")
 		#
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LIBS"
 		ac_fn_c_check_type "$LINENO" "struct rte_ether_addr" "ac_cv_type_struct_rte_ether_addr" "
 			#include <rte_ether.h>
 
@@ -12733,6 +12996,27 @@ _ACEOF
 
 fi
 
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
+
+		#
+		# We can build with DPDK.
+		#
+		V_INCLS="$V_INCLS $DPDK_CFLAGS"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: DPDK_LIBS_STATIC is $DPDK_LIBS_STATIC" >&5
+$as_echo "$as_me: WARNING: DPDK_LIBS_STATIC is $DPDK_LIBS_STATIC" >&2;}
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $DPDK_LIBS"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $DPDK_LIBS_STATIC"
+		REQUIRES_PRIVATE="libdpdk $REQUIRES_PRIVATE"
+
+$as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
+
+		if test $V_PCAP != dpdk ; then
+			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
+		fi
 	else
 		#
 		# We didn't find a usable DPDK.
@@ -13044,6 +13328,24 @@ fi
  else
     pkg_failed=untried
 fi
+	if test -n "$DBUS_LIBS_STATIC"; then
+    pkg_cv_DBUS_LIBS_STATIC="$DBUS_LIBS_STATIC"
+ elif test -n "$PKG_CONFIG"; then
+
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"dbus-1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_DBUS_LIBS_STATIC=`$PKG_CONFIG --libs --static "dbus-1" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
 
 
@@ -13084,11 +13386,15 @@ $as_echo "not found (pkg-config not found)" >&6; }
 		#
 		DBUS_CFLAGS=$pkg_cv_DBUS_CFLAGS
 		DBUS_LIBS=$pkg_cv_DBUS_LIBS
+		DBUS_LIBS_STATIC=$pkg_cv_DBUS_LIBS_STATIC
 	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
 		CFLAGS="$CFLAGS $DBUS_CFLAGS"
 		LIBS="$LIBS $DBUS_LIBS"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the D-Bus library defines dbus_connection_read_write" >&5
@@ -13118,6 +13424,9 @@ $as_echo "#define PCAP_SUPPORT_DBUS 1" >>confdefs.h
 
 			MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
 			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			ADDITIONAL_LIBS="$ADDITIONAL_LIBS $DBUS_LIBS"
+			ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $DBUS_LIBS_STATIC"
+			REQUIRES_PRIVATE="dbus-1 $REQUIRES_PRIVATE"
 
 else
 
@@ -13126,12 +13435,15 @@ $as_echo "no" >&6; }
 			if test "x$enable_dbus" = "xyes"; then
 			    as_fn_error $? "--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()" "$LINENO" 5
 			fi
-			LIBS="$save_LIBS"
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-		CFLAGS="$save_CFLAGS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 
 	fi
 else
@@ -13215,6 +13527,24 @@ fi
  else
     pkg_failed=untried
 fi
+	if test -n "$LIBIBVERBS_LIBS_STATIC"; then
+    pkg_cv_LIBIBVERBS_LIBS_STATIC="$LIBIBVERBS_LIBS_STATIC"
+ elif test -n "$PKG_CONFIG"; then
+
+if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libibverbs\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libibverbs") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBIBVERBS_LIBS_STATIC=`$PKG_CONFIG --libs --static "libibverbs" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
 
 
@@ -13261,10 +13591,12 @@ $as_echo "not found (pkg-config not found)" >&6; }
 		#
 		LIBIBVERBS_CFLAGS=$pkg_cv_LIBIBVERBS_CFLAGS
 		LIBIBVERBS_LIBS=$pkg_cv_LIBIBVERBS_LIBS
+		LIBIBVERBS_LIBS_STATIC=$pkg_cv_LIBIBVERBS_LIBS_STATIC
 	        { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
 
 		found_libibverbs=yes
+		LIBIBVERBS_REQUIRES_PRIVATE="libibverbs"
 
 	fi
 else
@@ -13320,6 +13652,13 @@ if test "x$ac_cv_lib_ibverbs_ibv_get_device_list" = xyes; then :
 			found_libibverbs=yes
 			LIBIBVERBS_CFLAGS=""
 			LIBIBVERBS_LIBS="-libverbs"
+			# XXX - at least on Ubuntu 20.04, there are many more
+			# libraries needed; is there any platform where
+			# libibverbs is available but where pkg-config isn't
+			# available or libibverbs doesn't use it?  If not,
+			# we should only use pkg-config for it.
+			LIBIBVERBS_LIBS_STATIC="-libverbs"
+			LIBIBVERBS_LIBS_PRIVATE="-libverbs"
 
 
 fi
@@ -13327,10 +13666,13 @@ fi
 	fi
 
 	if test "x$found_libibverbs" = "xyes"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		CFLAGS="$LIBIBVERBS_CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+
+		CFLAGS="$CFLAGS $LIBIBVERBS_CFLAGS"
+		LIBS="$LIBS $LIBIBVERBS_LIBS"
 		ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
 if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
 
@@ -13382,8 +13724,11 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 
 
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
 	fi
 
 	if test "x$found_usable_libibverbs" = "xyes"
@@ -13393,7 +13738,12 @@ $as_echo "#define PCAP_SUPPORT_RDMASNIFF /**/" >>confdefs.h
 
 		MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
 		CFLAGS="$LIBIBVERBS_CFLAGS $CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS $LIBS"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: LIBIBVERBS_LIBS_STATIC is $LIBIBVERBS_LIBS_STATIC" >&5
+$as_echo "$as_me: WARNING: LIBIBVERBS_LIBS_STATIC is $LIBIBVERBS_LIBS_STATIC" >&2;}
+		ADDITIONAL_LIBS="$LIBIBVERBS_LIBS $ADDITIONAL_LIBS"
+		ADDITIONAL_LIBS_STATIC="$LIBIBVERBS_LIBS_STATIC $ADDITIONAL_LIBS_STATIC"
+		LIBS_PRIVATE="$LIBIBVERBS_LIBS_PRIVATE $LIBS_PRIVATE"
+		REQUIRES_PRIVATE="$LIBIBVERBS_REQUIRES_PRIVATE $REQUIRES_PRIVATE"
 	fi
 
 fi
@@ -13566,8 +13916,12 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-
-
+#
+# We're done with configuration operations; add ADDITIONAL_LIBS and
+# ADDITIONAL_LIBS_STATIC to LIBS and LIBS_STATIC, respectively.
+#
+LIBS="$ADDITIONAL_LIBS $LIBS"
+LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $LIBS_STATIC"
 
 ac_config_commands="$ac_config_commands default-1"
 

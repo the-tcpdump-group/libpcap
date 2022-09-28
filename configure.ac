@@ -20,6 +20,86 @@ AC_INIT(pcap, m4_esyscmd_s([cat VERSION]))
 AC_CONFIG_SRCDIR(pcap.c)
 AC_SUBST(PACKAGE_NAME)
 
+#
+# These are the variables that are used in Makefile, pcap-config, and
+# libpcap.pc.
+#
+# CFLAGS: inherited from the environment, not modified by us (except
+# temporarily during tests that involve compilation).  Used only when
+# compiling C source.
+#
+# CXXFLAGS: inherited from the environment, not modified by us.  Used only
+# when compiling C++ source.
+#
+# LDFLAGS: inherited from the environment, not modified by us.
+#
+# LIBS: inherited from the environment; we add libraries required by
+# libpcap.  Librares that the core libpcap code requires are added
+# first; libraries required by additional pcap modules are first
+# added to ADDITIONAL_LIBS, and only added to LIBS at the end, after
+# we're finished doing configuration tests for the modules.
+#
+# LIBS_STATIC: libraries with which a program using the libpcap *static*
+# library needs to be linked.  This is a superset of LIBS, used in
+# pcap-config, so that "pcap-config --libs --static" will report them.
+# Initialized to LIBS.
+#
+# REQUIRES_PRIVATE: pkg-config package names for additional libraries
+# with which a program using the libpcap *static* library needs to be
+# linked and for which a .pc file exists.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them, and so that
+# those libraries will be determined using the library's .pc file, not
+# from our .pc file.  Initialized to an empty string.
+#
+# V_CCOPT: additional compiler flags other than -I and -D flags
+# needed when compiling libpcap.  Used in Makefile for both C and
+# C++ source.
+#
+# V_DEFS: additional -D compiler flags needed when compiling
+# libpcap.  Used in Makefile for both C and C++ source.
+#
+# V_INCLS: additional -I compiler flags needed when compiling
+# libpcap.  Used in Makefile for both C and C++ source.
+#
+# ADDITIONAL_LIBS: additional libraries with which the libpcap dynamic
+# library needs to be linked.  Used in Makwfile; not used in pcap-config
+# or libpcap.pc, as, in all platforms on which we run, if a dynamic
+# library is linked with other dynamic libraries, a program using
+# that dynamic library doesn't have to link with those libraries -
+# they will be automatically loaded at run time.  Initialized to an
+# empty string.
+#
+# ADDITIONAL_LIBS_STATIC: additional libraries with which a program
+# using the libpcap *static* library needs to be linked.  This is used
+# in pcap-config, so that "pcap-config --libs --static" will report
+# them.  Initialized to an empty string.
+#
+# REQUIRES_PRIVATE: pkg-config package names for additional libraries
+# with which a program using the libpcap *static* library needs to be
+# linked and for which a .pc file exists.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them, and so that
+# those libraries will be determined using the library's .pc file, not
+# from our .pc file.  Initialized to an empty string.
+#
+# LIBS_PRIVATE: pkg-config package names for additional libraries with
+# which a program using the libpcap *static* library needs to be linked
+# and for which a .pc file does not exist.  This is used in libpcap.pc,
+# so that "pkg-config --libs --static" will report them (those libraries
+# cannot be determined using the library's .pc file, as there is no such
+# file, so it has to come from our .pc file.  Initialized to an empty
+# string.
+#
+LIBS_STATIC=""
+REQUIRES_PRIVATE=""
+LIBS_PRIVATE=""
+
+AC_SUBST(V_CCOPT)
+AC_SUBST(V_DEFS)
+AC_SUBST(V_INCLS)
+AC_SUBST(LIBS_STATIC)
+AC_SUBST(REQUIRES_PRIVATE)
+AC_SUBST(LIBS_PRIVATE)
+
 AC_CANONICAL_SYSTEM
 
 AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
@@ -98,6 +178,7 @@ dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 
+AC_LBL_SAVE_CHECK_STATE
 case "$host_os" in
 haiku*)
 	#
@@ -112,6 +193,7 @@ haiku*)
 esac
 
 AC_LBL_FIXINCLUDES
+AC_LBL_RESTORE_CHECK_STATE
 
 AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNC(strerror_r,
@@ -841,6 +923,8 @@ dlpi)
 	AC_CHECK_LIB(dlpi, dlpi_walk,
 		[
 			LIBS="-ldlpi $LIBS"
+			LIBS_STATIC="-ldlpi $LIBS_STATIC"
+			LIBS_PRIVATE="-ldlpi $LIBS_PRIVATE"
 			V_PCAP=libdlpi
 
 			#
@@ -950,7 +1034,9 @@ linux)
 		    [
 			pkg_config_found_libnl=yes
 			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
-			LIBS="$LIBNL_LIBS $LIBS"
+			ADDITIONAL_LIBS="$LIBNL_LIBS $ADDITIONAL_LIBS"
+			ADDITIONAL_LIBS_STATIC="$LIBNL_LIBS_STATIC $ADDITIONAL_LIBS_STATIC"
+			REQUIRES_PRIVATE="libnl-genl-3.0 $REQUIRES_PRIVATE"
 			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 		    ])
 
@@ -979,7 +1065,9 @@ linux)
 				#
 				# Yes, we have libnl 3.x.
 				#
-				LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
+				ADDITIONAL_LIBS="${libnldir} -lnl-genl-3 -lnl-3 $ADDITIONAL_LIBS"
+				ADDITIONAL_LIBS_STATIC="${libnldir} -lnl-genl-3 -lnl-3 $ADDITIONAL_LIBS_STATIC"
+				LIBS_PRIVATE="${libnldir} -lnl-genl-3 -lnl-3 $LIBS_PRIVATE"
 				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 				V_INCLS="$V_INCLS ${incdir}"
 			],[
@@ -1279,9 +1367,10 @@ if test "$want_dag" != no; then
 		fi
 	fi
 
-	save_CFLAGS="$CFLAGS"
+	AC_LBL_SAVE_CHECK_STATE
 	CFLAGS="$CFLAGS -I$dag_include_dir"
 	AC_CHECK_HEADERS([dagapi.h])
+	AC_LBL_RESTORE_CHECK_STATE
 
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
@@ -1294,42 +1383,52 @@ if test "$want_dag" != no; then
 		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
-		save_LDFLAGS="$LDFLAGS"
+		AC_LBL_SAVE_CHECK_STATE
 		LDFLAGS="-L$dag_lib_dir"
 		AC_CHECK_LIB([dag], [dag_attach_stream],
-		    [],
+		    [
+			#
+			# We assume that if we have libdag we have
+			# libdagconf, as they're installed at the
+			# same time from the same package.
+			#
+			ADDITIONAL_LIBS="-L$dag_lib_dir $ADDITIONAL_LIBS -ldag -ldagconf"
+			ADDITIONAL_LIBS_STATIC="-L$dag_lib_dir $ADDITIONAL_LIBS_STATIC -ldag -ldagconf"
+			LIBS_PRIVATE="-L$dag_lib_dir $LIBS_PRIVATE -ldag -ldagconf"
+		    ],
 		    [AC_MSG_ERROR(DAG library lacks streams support)])
 		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
 		AC_CHECK_LIB([dag],[dag_get_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
 		AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_STREAM_ERF_TYPES, 1, [define if you have dag_get_stream_erf_types()])])
-
-		LDFLAGS="$save_LDFLAGS"
+		AC_LBL_RESTORE_CHECK_STATE
 
 		#
 		# We assume that if we have libdag we have libdagconf,
 		# as they're installed at the same time from the same
 		# package.
 		#
-		LIBS="$LIBS -ldag -ldagconf"
-		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
-
 		if test "$dag_large_streams" = 1; then
 			AC_DEFINE(HAVE_DAG_LARGE_STREAMS_API, 1, [define if you have large streams capable DAG API])
+			AC_LBL_SAVE_CHECK_STATE
+			LIBS="$LIBS -ldag -ldagconf"
+			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 			AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
+			AC_LBL_RESTORE_CHECK_STATE
 			if test "$ac_dag_have_vdag" = 1; then
 				AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
 				if test "$ac_lbl_have_pthreads" != "found"; then
 					AC_MSG_ERROR([DAG requires pthreads, but we didn't find them])
 				fi
-				LIBS="$LIBS $PTHREAD_LIBS"
+				ADDITIONAL_LIBS="$ADDITIONAL_LIBS $PTHREAD_LIBS"
+				ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $PTHREAD_LIBS"
+				LIBS_PRIVATE="$LIBS_PRIVATE $PTHREAD_LIBS"
 			fi
 		fi
 
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
 	else
-
 		if test "$V_PCAP" = dag; then
 			# User requested "dag" capture type but we couldn't
 			# find the DAG API support.
@@ -1497,10 +1596,10 @@ if test "$with_snf" != no; then
 
 	if test -f "$snf_include_dir/snf.h"; then
 		# We found a header; make sure we can link with the library
-		save_LDFLAGS="$LDFLAGS"
+		AC_LBL_SAVE_CHECK_STATE
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"])
-		LDFLAGS="$save_LDFLAGS"
+		AC_LBL_RESTORE_CHECK_STATE
 		if test "$ac_cv_lbl_snf_api" = no; then
 			AC_MSG_ERROR(SNF API cannot correctly be linked; check config.log)
 		fi
@@ -1510,8 +1609,9 @@ if test "$with_snf" != no; then
 		AC_MSG_RESULT([yes ($snf_root)])
 
 		V_INCLS="$V_INCLS -I$snf_include_dir"
-		LIBS="$LIBS -lsnf"
-		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS -L$snf_lib_dir -lsnf"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC -L$snf_lib_dir -lsnf"
+		LIBS_PRIVATE="$LIBS_PRIVATE -L$snf_lib_dir -lsnf"
 
 		if test "$V_PCAP" != snf ; then
 			MODULE_C_SRC="$MODULE_C_SRC pcap-snf.c"
@@ -1568,12 +1668,12 @@ if test "$want_turbocap" != no; then
 
 	AC_MSG_CHECKING(whether TurboCap is supported)
 
-	save_CFLAGS="$CFLAGS"
-	save_LIBS="$LIBS"
+	AC_LBL_SAVE_CHECK_STATE
 	if test ! -z "$turbocap_root"; then
 		TURBOCAP_CFLAGS="-I$turbocap_root/include"
-		TURBOCAP_LIBS="-L$turbocap_root/lib"
+		TURBOCAP_LDFLAGS="-L$turbocap_root/lib"
 		CFLAGS="$CFLAGS $TURBOCAP_CFLAGS"
+		LDFLAGS="$LDFLAGS $TURBOCAP_LDFLAGS"
 	fi
 
 	AC_TRY_COMPILE(
@@ -1587,13 +1687,15 @@ if test "$want_turbocap" != no; then
 	],
 	ac_cv_lbl_turbocap_api=yes)
 
-	CFLAGS="$save_CFLAGS"
+	AC_LBL_RESTORE_CHECK_STATE
 	if test $ac_cv_lbl_turbocap_api = yes; then
 		AC_MSG_RESULT(yes)
 
 		MODULE_C_SRC="$MODULE_C_SRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
-		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
+		LIBS_PRIVATE="$LIBS_PRIVATE $TURBOCAP_LDFLAGS -lTcApi -lpthread -lstdc++"
 
 		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
 	else
@@ -1699,6 +1801,7 @@ yes)	AC_MSG_RESULT(yes)
 		# We found OpenSSL/libressl.
 		#
 		HAVE_OPENSSL=yes
+		REQUIRES_PRIVATE="openssl $REQUIRES_PRIVATE"
 	    ])
 	PKG_CONFIG_PATH="$save_PKG_CONFIG_PATH"
 
@@ -1729,6 +1832,8 @@ yes)	AC_MSG_RESULT(yes)
 			openssl_path=`$BREW --prefix openssl`
 			OPENSSL_CFLAGS="-I$openssl_path/include"
 			OPENSSL_LIBS="-L$openssl_path/lib -lssl -lcrypto"
+			OPENSSL_LIBS_STATIC="-L$openssl_path/lib -lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-L$openssl_path/lib -lssl -lcrypto"
 		else
 			AC_MSG_RESULT(no)
 		fi
@@ -1749,8 +1854,7 @@ yes)	AC_MSG_RESULT(yes)
 	# in others.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes" -a -d "/usr/local/include" -a -d "/usr/local/lib"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
+		AC_LBL_SAVE_CHECK_STATE
 		CFLAGS="$CFLAGS -I/usr/local/include"
 		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local that we can use)
@@ -1767,10 +1871,11 @@ return 0;
 			HAVE_OPENSSL=yes
 			OPENSSL_CFLAGS="-I/usr/local/include"
 			OPENSSL_LIBS="-L/usr/local/lib -lssl -lcrypto"
-		    ],
+			OPENSSL_LIBS_STATIC="-L/usr/local/lib -lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-L/usr/local/lib -lssl -lcrypto"
+		    ],nnn
 		    AC_MSG_RESULT(no))
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
+		AC_LBL_RESTORE_CHECK_STATE
 	fi
 
 	#
@@ -1784,7 +1889,7 @@ return 0;
 	# in others.
 	#
 	if test "x$HAVE_OPENSSL" != "xyes"; then
-		save_LIBS="$LIBS"
+		AC_LBL_SAVE_CHECK_STATE
 		LIBS="$LIBS -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
 		AC_TRY_LINK(
@@ -1799,9 +1904,11 @@ return 0;
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
 			OPENSSL_LIBS="-lssl -lcrypto"
+			OPENSSL_LIBS_STATIC="-lssl -lcrypto"
+			OPENSSL_LIBS_PRIVATE="-lssl -lcrypto"
 		    ],
 		    AC_MSG_RESULT(no))
-		LIBS="$save_LIBS"
+		AC_LBL_RESTORE_CHECK_STATE
 	fi
 
 	#
@@ -1809,8 +1916,11 @@ return 0;
 	#
 	if test "x$HAVE_OPENSSL" = "xyes"; then
 		AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
-		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
-		LIBS="$LIBS $OPENSSL_LIBS"
+		V_INCLS="$V_INCLS $OPENSSL_CFLAGS"
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $OPENSSL_LIBS"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $OPENSSL_LIBS_STATIC"
+		LIBS_PRIVATE="$LIBS_PRIVATE $OPENSSL_LIBS_PRIVATE"
+		REQUIRES_PRIVATE="$REQUIRES_PRIVATE $OPENSSL_REQUIRES_PRIVATE"
 	else
 		AC_MSG_NOTICE(OpenSSL not found)
 	fi
@@ -2117,7 +2227,7 @@ darwin*)
 			# fat.
 			#
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
-			save_CFLAGS="$CFLAGS"
+			AC_LBL_SAVE_CHECK_STATE
 			CFLAGS="$CFLAGS -arch i386"
 			AC_TRY_LINK(
 			    [],
@@ -2164,7 +2274,7 @@ darwin*)
 					;;
 				esac
 			    ])
-			CFLAGS="$save_CFLAGS"
+			AC_LBL_RESTORE_CHECK_STATE
 			;;
 
 		darwin19*)
@@ -2198,8 +2308,7 @@ darwin*)
 			#
 			if test "$HAVE_OPENSSL" = yes; then
 				AC_MSG_CHECKING(whether building fat with libssl is supported)
-				save_CFLAGS="$CFLAGS"
-				save_LDFLAGS="$LDFLAGS"
+				AC_LBL_SAVE_CHECK_STATE
 				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
 				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
 				AC_TRY_LINK(
@@ -2219,8 +2328,7 @@ darwin*)
 				    ],
 				    [AC_MSG_RESULT(no)]
 				)
-				CFLAGS="$save_CFLAGS"
-				LDFLAGS="$save_LDFLAGS"
+				AC_LBL_RESTORE_CHECK_STATE
 			else
 				V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
 				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch arm64"
@@ -2633,41 +2741,43 @@ if test "$want_dpdk" != no; then
 		# We call rte_eth_dev_count_avail(), and older versions
 		# of DPDK didn't have it, so check for it.
 		#
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		save_LDFLAGS="$LDFLAGS"
+		AC_LBL_SAVE_CHECK_STATE
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LIBS"
-		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 		AC_CHECK_FUNC(rte_eth_dev_count_avail)
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
-		LDFLAGS="$save_LDFLAGS"
+		AC_LBL_RESTORE_CHECK_STATE
 	fi
 
 	if test "$ac_cv_func_rte_eth_dev_count_avail" = yes; then
 		#
-		# We found a usable DPDK.  Build with it.
-		#
-		CFLAGS="$CFLAGS $DPDK_CFLAGS"
-		LIBS="$LIBS $DPDK_LIBS"
-		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
-		V_INCLS="$V_INCLS $DPDK_CFLAGS"
-		AC_DEFINE(PCAP_SUPPORT_DPDK, 1, [target host supports DPDK])
-		if test $V_PCAP != dpdk ; then
-			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
-		fi
-
+		# We found a usable DPDK.
 		#
 		# Check whether the rte_ether.h file defines
 		# struct ether_addr or struct rte_ether_addr.
 		#
 		# ("API compatibility?  That's for losers!")
 		#
+		AC_LBL_SAVE_CHECK_STATE
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LIBS"
 		AC_CHECK_TYPES(struct rte_ether_addr,,,
 		    [
 			#include <rte_ether.h>
 		    ])
+		AC_LBL_RESTORE_CHECK_STATE
+
+		#
+		# We can build with DPDK.
+		#
+		V_INCLS="$V_INCLS $DPDK_CFLAGS"
+AC_MSG_WARN([DPDK_LIBS_STATIC is $DPDK_LIBS_STATIC])
+		ADDITIONAL_LIBS="$ADDITIONAL_LIBS $DPDK_LIBS"
+		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $DPDK_LIBS_STATIC"
+		REQUIRES_PRIVATE="libdpdk $REQUIRES_PRIVATE"
+		AC_DEFINE(PCAP_SUPPORT_DPDK, 1, [target host supports DPDK])
+		if test $V_PCAP != dpdk ; then
+			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
+		fi
 	else
 		#
 		# We didn't find a usable DPDK.
@@ -2885,8 +2995,7 @@ fi
 if test "x$enable_dbus" != "xno"; then
 	PKG_CHECK_MODULES(DBUS, dbus-1,
 	    [
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
+		AC_LBL_SAVE_CHECK_STATE
 		CFLAGS="$CFLAGS $DBUS_CFLAGS"
 		LIBS="$LIBS $DBUS_LIBS"
 		AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
@@ -2903,15 +3012,17 @@ if test "x$enable_dbus" != "xno"; then
 			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
 			MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
 			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			ADDITIONAL_LIBS="$ADDITIONAL_LIBS $DBUS_LIBS"
+			ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $DBUS_LIBS_STATIC"
+			REQUIRES_PRIVATE="dbus-1 $REQUIRES_PRIVATE"
 		    ],
 		    [
 			AC_MSG_RESULT([no])
 			if test "x$enable_dbus" = "xyes"; then
 			    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
 			fi
-			LIBS="$save_LIBS"
 		     ])
-		CFLAGS="$save_CFLAGS"
+		AC_LBL_RESTORE_CHECK_STATE
 	    ],
 	    [
 		if test "x$enable_dbus" = "xyes"; then
@@ -2936,6 +3047,7 @@ if test "x$enable_rdma" != "xno"; then
 	PKG_CHECK_MODULES(LIBIBVERBS, libibverbs,
 	    [
 		found_libibverbs=yes
+		LIBIBVERBS_REQUIRES_PRIVATE="libibverbs"
 	    ])
 
 	if test "x$found_libibverbs" != "xyes"; then
@@ -2944,15 +3056,21 @@ if test "x$enable_rdma" != "xno"; then
 			found_libibverbs=yes
 			LIBIBVERBS_CFLAGS=""
 			LIBIBVERBS_LIBS="-libverbs"
+			# XXX - at least on Ubuntu 20.04, there are many more
+			# libraries needed; is there any platform where
+			# libibverbs is available but where pkg-config isn't
+			# available or libibverbs doesn't use it?  If not,
+			# we should only use pkg-config for it.
+			LIBIBVERBS_LIBS_STATIC="-libverbs"
+			LIBIBVERBS_LIBS_PRIVATE="-libverbs"
 		    ]
 		)
 	fi
 
 	if test "x$found_libibverbs" = "xyes"; then
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-		CFLAGS="$LIBIBVERBS_CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS"
+		AC_LBL_SAVE_CHECK_STATE
+		CFLAGS="$CFLAGS $LIBIBVERBS_CFLAGS"
+		LIBS="$LIBS $LIBIBVERBS_LIBS"
 		AC_CHECK_HEADER(infiniband/verbs.h, [
 			#
 			# ibv_create_flow may be defined as a static inline
@@ -2983,8 +3101,7 @@ if test "x$enable_rdma" != "xno"; then
 				]
 			)
 		])
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
+		AC_LBL_RESTORE_CHECK_STATE
 	fi
 
 	if test "x$found_usable_libibverbs" = "xyes"
@@ -2992,7 +3109,11 @@ if test "x$enable_rdma" != "xno"; then
 		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
 		MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
 		CFLAGS="$LIBIBVERBS_CFLAGS $CFLAGS"
-		LIBS="$LIBIBVERBS_LIBS $LIBS"
+AC_MSG_WARN([LIBIBVERBS_LIBS_STATIC is $LIBIBVERBS_LIBS_STATIC])
+		ADDITIONAL_LIBS="$LIBIBVERBS_LIBS $ADDITIONAL_LIBS"
+		ADDITIONAL_LIBS_STATIC="$LIBIBVERBS_LIBS_STATIC $ADDITIONAL_LIBS_STATIC"
+		LIBS_PRIVATE="$LIBIBVERBS_LIBS_PRIVATE $LIBS_PRIVATE"
+		REQUIRES_PRIVATE="$LIBIBVERBS_REQUIRES_PRIVATE $REQUIRES_PRIVATE"
 	fi
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
@@ -3056,9 +3177,6 @@ AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
 
-AC_SUBST(V_CCOPT)
-AC_SUBST(V_DEFS)
-AC_SUBST(V_INCLS)
 AC_SUBST(V_SHLIB_CCOPT)
 AC_SUBST(V_SHLIB_CMD)
 AC_SUBST(V_SHLIB_OPT)
@@ -3074,6 +3192,13 @@ AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)
+
+#
+# We're done with configuration operations; add ADDITIONAL_LIBS and
+# ADDITIONAL_LIBS_STATIC to LIBS and LIBS_STATIC, respectively.
+#
+LIBS="$ADDITIONAL_LIBS $LIBS"
+LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $LIBS_STATIC"
 
 AC_OUTPUT_COMMANDS([if test -f .devel; then
 	echo timestamp > stamp-h
