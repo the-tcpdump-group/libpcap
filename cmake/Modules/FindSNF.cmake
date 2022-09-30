@@ -8,6 +8,11 @@ find_path(SNF_INCLUDE_DIR snf.h /opt/snf)
 # Try to find the library
 find_library(SNF_LIBRARY snf /opt/snf)
 
+#
+# Get link information from the _LIBRARY paths.
+#
+get_link_info_from_library_path(SNF snf)
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SNF
   DEFAULT_MSG

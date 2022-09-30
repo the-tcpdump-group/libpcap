@@ -40,9 +40,9 @@ if(PKG_CONFIG_FOUND)
   pkg_check_modules(dpdk QUIET libdpdk)
   if(dpdk_FOUND)
     #
-    # Get static library information for DPDK.
+    # Get link information for DPDK.
     #
-    pkg_get_static_link_info(dpdk libdpdk)
+    pkg_get_link_info(dpdk libdpdk)
   endif()
   set(ENV{PKG_CONFIG_PATH} "${save_PKG_CONFIG_PATH}")
 endif()
