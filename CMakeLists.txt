@@ -53,11 +53,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 project(pcap C)
 
 #
-# Provide build host information.
-#
-message(STATUS "Building on ${CMAKE_HOST_SYSTEM_NAME} ${CMAKE_HOST_SYSTEM_VERSION}")
-
-#
 # For getting raw lists of --libs and --libs --static information from a
 # pkg-config module.
 #
@@ -233,6 +228,19 @@ ${CMAKE_CXX_COMPILER} produces code with \
 ${CMAKE_CXX_SIZEOF_DATA_PTR}-byte pointers. \
 This prevents code in these languages from being combined.")
     endif()
+endif()
+
+#
+# Show the bit width for which we're compiling.
+# This can help debug problems if you're dealing with a compiler that
+# defaults to generating 32-bit code even when running on a 64-bit
+# platform, and where that platform may provide only 64-bit versions of
+# libraries that we might use (looking at *you*, Oracle Studio!).
+#
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+  message(STATUS "Building 32-bit")
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(STATUS "Building 64-bit")
 endif()
 
 #
@@ -2852,8 +2860,7 @@ endif()
 # CMAKE_OSX_ARCHITECTURES isn't set (if it is, let that control
 # the architectures for which to build it).
 #
-if(APPLE)
-  if(CMAKE_OSX_ARCHITECTURES STREQUAL "")
+if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
     #
     # Get the major version of Darwin.
     #
@@ -3022,34 +3029,7 @@ main(void)
     endif(BUILD_SHARED_LIBS)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES
         OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
-  else()
-    set(OSX_LIBRARY_ARCHITECTURES "${CMAKE_OSX_ARCHITECTURES}")
-  endif()
-
-  #
-  # Announce the target architecture(s).
-  #
-  if(NOT DEFINED OSX_LIBRARY_ARCHITECTURES OR OSX_LIBRARY_ARCHITECTURES STREQUAL "")
-    set(_architectures "${CMAKE_SYSTEM_PROCESSOR}")
-  else()
-    set(_prefix "")
-    set(_architectures "")
-    foreach(_arch IN LISTS OSX_LIBRARY_ARCHITECTURES)
-      set(_architectures "${_architectures}${_prefix}${_arch}")
-      set(_prefix ", ")
-    endforeach()
-  endif()
-else()
-  #
-  # Not doing fat builds.
-  #
-  set(_architectures "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
-
-#
-# Provide build target information.
-#
-message(STATUS "Building for ${CMAKE_SYSTEM_NAME} on ${_architectures}")
 
 ######################################
 # Write out the config.h file
