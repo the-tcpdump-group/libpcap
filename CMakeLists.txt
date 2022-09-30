@@ -35,6 +35,15 @@ if(POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif()
 
+#
+# We want check_include_file() to honor CMAKE_REQUIRED_LIBRARIES; see
+# the big comment before the check_include_file() test for
+# infiniband/verbs.h for the reason.
+#
+if(POLICY CMP0075)
+    cmake_policy(SET CMP0075 NEW)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 #
@@ -2134,6 +2143,22 @@ if(NOT DISABLE_RDMA)
         endif()
     endif()
     if(LIBIBVERBS_FOUND)
+        #
+        # For unknown reasons, check_include_file() doesn't just attempt
+        # to compile a test program that includes the header in
+        # question, it also attempts to link it.
+        #
+        # For unknown reasons, at least some of the static inline
+        # functions defined in infiniband/verbs.h are not inlined by the
+        # Sun^WOracle Studio C compiler, so the compiler generates code
+        # for them as part of the object code resulting from compiling
+        # the test program. At lest some of those functions call
+        # routines in -libverbs, so, in order to keep the compile and
+        # link from failing, even though the header file exists and is
+        # usable, we need to link with -libverbs.
+        #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES ${LIBIBVERBS_LIBRARIES})
         check_include_file(infiniband/verbs.h HAVE_INFINIBAND_VERBS_H)
         if(HAVE_INFINIBAND_VERBS_H)
             check_symbol_exists(ibv_create_flow infiniband/verbs.h PCAP_SUPPORT_RDMASNIFF)
@@ -2146,6 +2171,7 @@ if(NOT DISABLE_RDMA)
                 set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${LIBIBVERBS_PACKAGE_NAME}")
             endif(PCAP_SUPPORT_RDMASNIFF)
         endif(HAVE_INFINIBAND_VERBS_H)
+        cmake_pop_check_state()
     endif(LIBIBVERBS_FOUND)
 endif(NOT DISABLE_RDMA)
 
