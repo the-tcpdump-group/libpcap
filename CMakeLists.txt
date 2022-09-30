@@ -53,6 +53,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 project(pcap C)
 
 #
+# Provide build host information.
+#
+message(STATUS "Building on ${CMAKE_HOST_SYSTEM_NAME} ${CMAKE_HOST_SYSTEM_VERSION}")
+
+#
 # For getting raw lists of --libs and --libs --static information from a
 # pkg-config module.
 #
@@ -2846,7 +2851,8 @@ endif()
 # CMAKE_OSX_ARCHITECTURES isn't set (if it is, let that control
 # the architectures for which to build it).
 #
-if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
+if(APPLE)
+  if(CMAKE_OSX_ARCHITECTURES STREQUAL "")
     #
     # Get the major version of Darwin.
     #
@@ -3015,7 +3021,34 @@ main(void)
     endif(BUILD_SHARED_LIBS)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES
         OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
+  else()
+    set(OSX_LIBRARY_ARCHITECTURES "${CMAKE_OSX_ARCHITECTURES}")
+  endif()
+
+  #
+  # Announce the target architecture(s).
+  #
+  if(NOT DEFINED OSX_LIBRARY_ARCHITECTURES OR OSX_LIBRARY_ARCHITECTURES STREQUAL "")
+    set(_architectures "${CMAKE_SYSTEM_PROCESSOR}")
+  else()
+    set(_prefix "")
+    set(_architectures "")
+    foreach(_arch IN LISTS OSX_LIBRARY_ARCHITECTURES)
+      set(_architectures "${_architectures}${_prefix}${_arch}")
+      set(_prefix ", ")
+    endforeach()
+  endif()
+else()
+  #
+  # Not doing fat builds.
+  #
+  set(_architectures "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
+
+#
+# Provide build target information.
+#
+message(STATUS "Building for ${CMAKE_SYSTEM_NAME} on ${_architectures}")
 
 ######################################
 # Write out the config.h file
