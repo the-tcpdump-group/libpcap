@@ -2159,7 +2159,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			 * The server didn't tell us what its byte
 			 * order is; assume it's ours.
 			 */
-			their_byte_order_magic = RPCAP_BYTE_ORDER_MAGIC;;
+			their_byte_order_magic = RPCAP_BYTE_ORDER_MAGIC;
 		}
 	}
 	else
