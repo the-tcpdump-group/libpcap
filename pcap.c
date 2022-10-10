@@ -131,8 +131,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #ifdef _WIN32
 /*
- * DllMain(), required when built as a Windows DLL.
- *
  * To quote the WSAStartup() documentation:
  *
  *   The WSAStartup function typically leads to protocol-specific helper
@@ -147,19 +145,12 @@ struct rtentry;		/* declarations in <net/if.h> */
  *   be called from the DllMain function in a application DLL. This can
  *   potentially cause deadlocks.
  *
- * So we don't initialize Winsock here.  pcap_init() should be called
- * to initialize pcap on both UN*X and Windows; it will initialize
- * Winsock on Windows.  (It will also be initialized as needed if
- * pcap_init() hasn't been called.)
+ * So we don't initialize Winsock in a DllMain() routine.
+ *
+ * pcap_init() should be called to initialize pcap on both UN*X and
+ * Windows; it will initialize Winsock on Windows.  (It will also be
+ * initialized as needed if pcap_init() hasn't been called.)
  */
-BOOL WINAPI DllMain(
-  HANDLE hinstDLL _U_,
-  DWORD dwReason _U_,
-  LPVOID lpvReserved _U_
-)
-{
-	return (TRUE);
-}
 
 /*
  * Start Winsock.
