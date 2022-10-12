@@ -46,6 +46,7 @@ Monthday, Month DD, YYYY:
       Use _declspec(deprecated(msg)) rather than __pragma(deprecated)
         for Windows deprecation warnings, so the message that was
         specified shows up.
+      Remove unnecessary DllMain() function.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -177,6 +178,7 @@ Monthday, Month DD, YYYY:
       On Solaris, check the target bit-width and set PKG_CONFIG_PATH
         appropriately, to handle the mess that is the D-Bus library
         package (issue #1112).
+      Fix generation of pcap-config and libpcap.pc files (issue #1062).
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
