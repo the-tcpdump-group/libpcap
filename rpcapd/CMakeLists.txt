@@ -154,8 +154,12 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     #
     # XXX - the Linux Filesystem Hierarchy Standard says /usr/sbin
     # is for daemons, but some other systems use /usr/libexec instead.
+    # However, since some users might, instead of having rpcapd be
+    # launched by inetd/xinetd/launchd/systemd, just run it on a
+    # machine when remote capture is to be done, a case can be made
+    # for the sbin directory even on systems with /usr/libexec.
     #
-    install(TARGETS rpcapd DESTINATION sbin)
+    install(TARGETS rpcapd DESTINATION ${CMAKE_INSTALL_SBINDIR})
   endif(WIN32)
 
   # On UN*X, and on Windows when not using MSVC, generate process man
