@@ -1368,7 +1368,7 @@ if(OPENSSL_FOUND)
     # Get it from OPENSSL_LIBRARIES
     foreach(_lib IN LISTS OPENSSL_LIBRARIES)
       #
-      # Get the directoory in which the library resides.
+      # Get the directory in which the library resides.
       #
       get_filename_component(_lib_directory "${_lib}" DIRECTORY)
 
