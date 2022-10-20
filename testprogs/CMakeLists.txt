@@ -48,4 +48,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
   add_test_executable(valgrindtest)
 endif()
 
-add_subdirectory(fuzz)
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+   CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR
+   CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_subdirectory(fuzz)
+endif()
