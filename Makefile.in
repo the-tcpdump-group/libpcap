@@ -420,8 +420,9 @@ EXTRA_DIST = \
 	testprogs/unix.h \
 	testprogs/valgrindtest.c \
 	testprogs/visopts.py \
-	testprogs/writecaptest.c \
-	tests/shb-option-too-long.pcapng
+	testprogs/writecaptest.c
+
+TEST_DIST = `git ls-files tests | grep -v 'tests/\..*'`
 
 all: libpcap.a shared $(BUILD_RPCAPD) libpcap.pc pcap-config
 
@@ -822,10 +823,10 @@ releasetar:
 	   mkdir $$name && \
 	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
-	      $(MANMISC) $(EXTRA_DIST) >/dev/null && \
+	      $(MANMISC) $(EXTRA_DIST) $(TEST_DIST) >/dev/null && \
 	   tar cf - $(COMMON_C_SRC) $(HDR) $(MAN1) \
 	      $(MAN3PCAP_EXPAND) $(MAN3PCAP_NOEXPAND) $(MANFILE) \
-	      $(MANMISC) $(EXTRA_DIST) | \
+	      $(MANMISC) $(EXTRA_DIST) $(TEST_DIST) | \
 	      (cd $$name; tar xf -) && \
 	   tar cf - $$name >/dev/null && \
 	   tar cf - $$name | gzip >$$name.tar.gz && \
