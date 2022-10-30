@@ -1346,7 +1346,7 @@ if(OPENSSL_FOUND)
   # assume that, if we got here, we have pkg-config.
   #
   # So we use pkg_get_link_info() to run pkg-config ourselves, both
-  # because FindOpenSSL dosn't set the OPENSSL_LDFLAGS or
+  # because FindOpenSSL doesn't set the OPENSSL_LDFLAGS or
   # OPENSSL_STATIC_LDFLAGS variables and because, for reasons explained
   # in the comment before the pkg_get_link_info() macro, even if it did,
   # it wouldn't be what we want anyway.
