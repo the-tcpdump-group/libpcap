@@ -117,6 +117,7 @@ Monthday, Month DD, YYYY:
       Handle some Autoconf/make errors better.
       Fix "make releasetar" on AIX, OpenBSD and Solaris.
       Use "git archive" for the "make releasetar" process.
+      Remove the release candidate rcX targets.
       Fix compiling on Solaris 9/SPARC and 11/AMD64.
       Address assorted compiler warnings.
       Fix cross-building on Linux for Windows with mingw32 for Win64
