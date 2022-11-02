@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <pcap/pcap.h>
 
@@ -38,10 +40,11 @@ void fuzz_openFile(const char * name) {
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     pcap_t * pkts;
     char errbuf[PCAP_ERRBUF_SIZE];
+    char filename[FILENAME_MAX] = { 0 };
     const u_char *pkt;
     struct pcap_pkthdr *header;
     struct pcap_stat stats;
-    int r;
+    int fd = -1, r;
 
     //initialize output file
     if (outfile == NULL) {
@@ -51,15 +54,24 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
         }
     }
 
+    //generate temporary file name
+    snprintf(filename, FILENAME_MAX, "/tmp/libpcap_fuzz_pcap.XXXXXX");
+    if ((fd = mkstemp(filename)) < 0) {
+        return 0;
+    }
+    close(fd);
+
     //rewrite buffer to a file as libpcap does not have buffer inputs
-    if (bufferToFile("/tmp/fuzz.pcap", Data, Size) < 0) {
+    if (bufferToFile(filename, Data, Size) < 0) {
+        unlink(filename);
         return 0;
     }
 
     //initialize structure
-    pkts = pcap_open_offline("/tmp/fuzz.pcap", errbuf);
+    pkts = pcap_open_offline(filename, errbuf);
     if (pkts == NULL) {
         fprintf(outfile, "Couldn't open pcap file %s\n", errbuf);
+        unlink(filename);
         return 0;
     }
 
@@ -76,5 +88,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     //close structure
     pcap_close(pkts);
 
+    unlink(filename);
     return 0;
 }
