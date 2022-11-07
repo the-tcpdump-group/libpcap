@@ -16,6 +16,10 @@ Monthday, Month DD, YYYY:
         for Windows deprecation warnings, so the message that was
         specified shows up.
       Remove unnecessary DllMain() function.
+      Use "%d" to print some signed ints.
+      Use the Wayback Machine for a removed document in a comment.
+      Add some const qualifiers.
+      RDMA: Use PRIu64 to print a uint64_t.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -39,6 +43,7 @@ Monthday, Month DD, YYYY:
       Don't require PFLOG support on the target machine in order to
         support PFLOG filtering (also fixes issue #1076).
       Expand abbreviations into "proto X" properly.
+      gencode.c: Update a comment about the VLAN TPID test.
     Linux:
       Fix memory leak in capture device open (pull request #1038).
       Fix detection of CAN/CAN FD packets in direction check (issue
@@ -60,6 +65,7 @@ Monthday, Month DD, YYYY:
       Correctly compute the "real" length for isochronous USB transfers.
       Don't have an eventfd descriptor open in non-blocking mode, so as
         not to waste descriptors.
+      netfilter: Squelch a narrowing warning (To be look at before 2038).
     BPF capture (*BSD, macOS, AIX, Solaris 11):
       Fix case where a device open might fail, rather than falling back
         to a smaller buffer size, when the initial buffer size is too
@@ -83,6 +89,7 @@ Monthday, Month DD, YYYY:
       For link-layer types with host-endian fields in the header, fix
         those fields if capturing from a server with a different byte
         order.
+      Suppress temporarily the warnings with "enable remote packet capture".
     Windows:
       Add support for NdisMediumIP (pull request #1027).
       Don't require applications using pcap to be built with VS 2015 or
@@ -150,6 +157,10 @@ Monthday, Month DD, YYYY:
         appropriately, to handle the mess that is the D-Bus library
         package (issue #1112).
       Fix generation of pcap-config and libpcap.pc files (issue #1062).
+      Cirrus CI: Use the same configuration as for the main branch.
+      Add four libpcap test files.
+      Update Npcap SDK to 1.13.
+      Makefile.in: Use TEST_DIST, like for tcpdump.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
