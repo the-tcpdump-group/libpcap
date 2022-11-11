@@ -836,6 +836,32 @@ releasetar:
 	    echo "No $$TAG tag. Archive build from HEAD."; \
 	fi
 
+releasecheck: releasetar
+	@TAG=$(PROG)-`cat VERSION` && \
+	DIR=`pwd` && \
+	cd /tmp && \
+	rm -rf "$$TAG" && \
+	tar xf "$$DIR"/"$$TAG".tar.gz && \
+	cd "$$TAG" && \
+	echo '[$@] $$ ./configure --enable-remote --quiet' && \
+	./configure --enable-remote --quiet && \
+	echo '[$@] $$ make -s all testprogs' && \
+	make -s all testprogs && \
+	cd .. && \
+	rm -rf "$$TAG" && \
+	tar xf "$$DIR"/"$$TAG".tar.gz && \
+	cd "$$TAG" && \
+	mkdir build && \
+	cd build && \
+	echo '[$@] $$ cmake -DENABLE_REMOTE=yes [...] ..' && \
+	cmake -DENABLE_REMOTE=yes \
+	    -DCMAKE_MESSAGE_LOG_LEVEL=NOTICE \
+	    -DCMAKE_RULE_MESSAGES=OFF .. && \
+	echo '[$@] $$ make -s all testprogs' && \
+	make -s all testprogs && \
+	cd ../.. && \
+	rm -rf "$$TAG"
+
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	(cd rpcapd; $(MAKE) depend)
