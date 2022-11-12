@@ -273,6 +273,7 @@ EXTRA_DIST = \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
+	cmake/Modules/FindAirPcap.cmake \
 	cmake/Modules/FindDAG.cmake \
 	cmake/Modules/Finddpdk.cmake \
 	cmake/Modules/FindFseeko.cmake \
@@ -413,6 +414,7 @@ EXTRA_DIST = \
 	testprogs/fuzz/fuzz_pcap.c \
 	testprogs/fuzz/fuzz_pcap.options \
 	testprogs/fuzz/onefile.c \
+	testprogs/nonblocktest.c \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
