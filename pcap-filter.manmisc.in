@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "8 July 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "19 November 2022"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -984,7 +984,7 @@ The following ICMP type field values are available: \fBicmp-echoreply\fP,
 \fBicmp-tstampreply\fP, \fBicmp-ireq\fP, \fBicmp-ireqreply\fP,
 \fBicmp-maskreq\fP, \fBicmp-maskreply\fP.
 .IP
-The following ICMPv6 type fields are available: \fBicmp6-destinationrunreach\fP,
+The following ICMPv6 type fields are available: \fBicmp6-destinationunreach\fP,
 \fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP,
 \fBicmp6-parameterproblem\fP, \fBicmp6-echo\fP,
 \fBicmp6-echoreply\fP, \fBicmp6-multicastlistenerquery\fP,
