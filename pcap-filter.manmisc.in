@@ -574,11 +574,11 @@ modifier.
 .IP "\fBreason \fIcode\fR"
 True if the packet was logged with the specified PF reason code.  The known
 codes are:
-.BR match ,
-.BR bad-offset ,
-.BR fragment ,
-.BR short ,
-.BR normalize ,
+.BR \%match ,
+.BR \%bad-offset ,
+.BR \%fragment ,
+.BR \%short ,
+.BR \%normalize ,
 and
 .B memory
 (applies only to packets logged by OpenBSD's or FreeBSD's
@@ -678,21 +678,22 @@ then valid \fIwlan_subtype\fRs are:
 .IP
 If the specified \fIwlan_type\fR is \fBdata\fP,
 then valid \fIwlan_subtype\fRs are:
-\fBdata\fP,
-\fBdata-cf-ack\fP,
-\fBdata-cf-poll\fP,
-\fBdata-cf-ack-poll\fP,
-\fBnull\fP,
-\fBcf-ack\fP,
-\fBcf-poll\fP,
-\fBcf-ack-poll\fP,
-\fBqos-data\fP,
-\fBqos-data-cf-ack\fP,
-\fBqos-data-cf-poll\fP,
-\fBqos-data-cf-ack-poll\fP,
-\fBqos\fP,
-\fBqos-cf-poll\fP and
-\fBqos-cf-ack-poll\fP.
+.BR \%data ,
+.BR \%data-cf-ack ,
+.BR \%data-cf-poll ,
+.BR \%data-cf-ack-poll ,
+.BR \%null ,
+.BR \%cf-ack ,
+.BR \%cf-poll ,
+.BR \%cf-ack-poll ,
+.BR \%qos-data ,
+.BR \%qos-data-cf-ack ,
+.BR \%qos-data-cf-poll ,
+.BR \%qos-data-cf-ack-poll ,
+.BR \%qos ,
+.B \%qos-cf-poll
+and
+.BR \%qos-cf-ack-poll .
 .IP "\fBsubtype \fIwlan_subtype\fR"
 True if the IEEE 802.11 frame subtype matches the specified \fIwlan_subtype\fR
 and frame has the type to which the specified \fIwlan_subtype\fR belongs.
@@ -975,28 +976,53 @@ available: \fBicmptype\fP (ICMP type field), \fBicmp6type\fP (ICMPv6 type field)
 \fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMPv6 code field) and
 \fBtcpflags\fP (TCP flags field).
 .IP
-The following ICMP type field values are available: \fBicmp-echoreply\fP,
-\fBicmp-unreach\fP, \fBicmp-sourcequench\fP, \fBicmp-redirect\fP,
-\fBicmp-echo\fP, \fBicmp-routeradvert\fP, \fBicmp-routersolicit\fP,
-\fBicmp-timxceed\fP, \fBicmp-paramprob\fP, \fBicmp-tstamp\fP,
-\fBicmp-tstampreply\fP, \fBicmp-ireq\fP, \fBicmp-ireqreply\fP,
-\fBicmp-maskreq\fP, \fBicmp-maskreply\fP.
+The following ICMP type field values are available:
+.BR \%icmp-echoreply ,
+.BR \%icmp-unreach ,
+.BR \%icmp-sourcequench ,
+.BR \%icmp-redirect ,
+.BR \%icmp-echo ,
+.BR \%icmp-routeradvert ,
+.BR \%icmp-routersolicit ,
+.BR \%icmp-timxceed ,
+.BR \%icmp-paramprob ,
+.BR \%icmp-tstamp ,
+.BR \%icmp-tstampreply ,
+.BR \%icmp-ireq ,
+.BR \%icmp-ireqreply ,
+.BR \%icmp-maskreq ,
+.BR \%icmp-maskreply .
 .IP
-The following ICMPv6 type fields are available: \fBicmp6-destinationunreach\fP,
-\fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP,
-\fBicmp6-parameterproblem\fP, \fBicmp6-echo\fP,
-\fBicmp6-echoreply\fP, \fBicmp6-multicastlistenerquery\fP,
-\fBicmp6-multicastlistenerreportv1\fP, \fBicmp6-multicastlistenerdone\fP,
-\fBicmp6-routersolicit\fP, \fBicmp6-routeradvert\fP,
-\fBicmp6-neighborsolicit\fP, \fBicmp6-neighboradvert\fP, \fBicmp6-redirect\fP,
-\fBicmp6-routerrenum\fP, \fBicmp6-nodeinformationquery\fP,
-\fBicmp6-nodeinformationresponse\fP, \fBicmp6-ineighbordiscoverysolicit\fP,
-\fBicmp6-ineighbordiscoveryadvert\fP, \fBicmp6-multicastlistenerreportv2\fP,
-\fBicmp6-homeagentdiscoveryrequest\fP, \fBicmp6-homeagentdiscoveryreply\fP,
-\fBicmp6-mobileprefixsolicit\fP, \fBicmp6-mobileprefixadvert\fP,
-\fBicmp6-certpathsolicit\fP, \fBicmp6-certpathadvert\fP,
-\fBicmp6-multicastrouteradvert\fP, \fBicmp6-multicastroutersolicit\fP,
-\fBicmp6-multicastrouterterm\fP.
+The following ICMPv6 type field values are available:
+.BR \%icmp6-destinationunreach ,
+.BR \%icmp6-packettoobig ,
+.BR \%icmp6-timeexceeded ,
+.BR \%icmp6-parameterproblem ,
+.BR \%icmp6-echo ,
+.BR \%icmp6-echoreply ,
+.BR \%icmp6-multicastlistenerquery ,
+.BR \%icmp6-multicastlistenerreportv1 ,
+.BR \%icmp6-multicastlistenerdone ,
+.BR \%icmp6-routersolicit ,
+.BR \%icmp6-routeradvert ,
+.BR \%icmp6-neighborsolicit ,
+.BR \%icmp6-neighboradvert ,
+.BR \%icmp6-redirect ,
+.BR \%icmp6-routerrenum ,
+.BR \%icmp6-nodeinformationquery ,
+.BR \%icmp6-nodeinformationresponse ,
+.BR \%icmp6-ineighbordiscoverysolicit ,
+.BR \%icmp6-ineighbordiscoveryadvert ,
+.BR \%icmp6-multicastlistenerreportv2 ,
+.BR \%icmp6-homeagentdiscoveryrequest ,
+.BR \%icmp6-homeagentdiscoveryreply ,
+.BR \%icmp6-mobileprefixsolicit ,
+.BR \%icmp6-mobileprefixadvert ,
+.BR \%icmp6-certpathsolicit ,
+.BR \%icmp6-certpathadvert ,
+.BR \%icmp6-multicastrouteradvert ,
+.BR \%icmp6-multicastroutersolicit ,
+.BR \%icmp6-multicastrouterterm .
 .IP
 The following TCP flags field values are available: \fBtcp-fin\fP,
 \fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
