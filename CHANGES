@@ -1,7 +1,7 @@
 Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
     Source code:
-      Use C99 fixed-width integer types, rather than self-defiined
+      Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
