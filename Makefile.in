@@ -342,6 +342,7 @@ EXTRA_DIST = \
 	pcap-dpdk.h \
 	pcap-enet.c \
 	pcap-haiku.cpp \
+	pcap-hurd.c \
 	pcap-int.h \
 	pcap-libdlpi.c \
 	pcap-linux.c \
