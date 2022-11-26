@@ -860,7 +860,8 @@ releasecheck: releasetar
 	echo '[$@] $$ make -s all testprogs' && \
 	make -s all testprogs && \
 	cd ../.. && \
-	rm -rf "$$TAG"
+	rm -rf "$$TAG" && \
+	echo '[$@] Done.'
 
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
