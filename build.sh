@@ -6,6 +6,7 @@
 : "${CMAKE:=no}"
 : "${REMOTE:=no}"
 : "${LIBPCAP_TAINTED:=no}"
+: "${LIBPCAP_CMAKE_TAINTED:=no}"
 : "${MAKE_BIN:=make}"
 
 . ./build_common.sh
@@ -107,6 +108,12 @@ suncc-5.1[45]/SunOS-5.11)
 esac
 [ "$LIBPCAP_TAINTED" != yes ] && CFLAGS=`cc_werr_cflags`
 
+# If necessary, set LIBPCAP_CMAKE_TAINTED here to exempt particular cmake from
+# warnings. Use as specific terms as possible (e.g. some specific version and
+# some specific OS).
+
+[ "$LIBPCAP_CMAKE_TAINTED" != yes ] && CMAKE_OPTIONS='-Werror=dev'
+
 if [ "$CMAKE" = no ]; then
     run_after_echo ./configure --prefix="$PREFIX" --enable-remote="$REMOTE"
 else
@@ -120,6 +127,7 @@ else
     run_after_echo mkdir build
     run_after_echo cd build
     run_after_echo cmake ${CFLAGS:+-DEXTRA_CFLAGS="$CFLAGS"} \
+        "$CMAKE_OPTIONS" \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_REMOTE="$REMOTE" ..
 fi
 run_after_echo "$MAKE_BIN" -s clean
