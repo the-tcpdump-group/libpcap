@@ -230,6 +230,7 @@ pcap_wsockinit(void)
  */
 int pcap_new_api;		/* pcap_lookupdev() always fails */
 int pcap_utf_8_mode;		/* Strings should be in UTF-8. */
+int pcap_mmap_32bit;		/* Map packet buffers with 32-bit addresses. */
 
 int
 pcap_init(unsigned int opts, char *errbuf)
@@ -265,6 +266,10 @@ pcap_init(unsigned int opts, char *errbuf)
 			}
 		}
 		pcap_utf_8_mode = 1;
+		break;
+
+	case PCAP_MMAP_32BIT:
+		pcap_mmap_32bit = 1;
 		break;
 
 	default:

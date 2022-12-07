@@ -2667,6 +2667,9 @@ setup_mmapped(pcap_t *handle, int *status)
 	 * Attempt to allocate a buffer to hold the contents of one
 	 * packet, for use by the oneshot callback.
 	 */
+#ifdef MAP_32BIT
+	if (pcap_mmap_32bit) flags |= MAP_32BIT;
+#endif
 	handlep->oneshot_buffer = mmap(0, handle->snapshot, PROT_READ | PROT_WRITE, flags, -1, 0);
 	if (handlep->oneshot_buffer == MAP_FAILED) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -2870,6 +2873,7 @@ create_ring(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
 	unsigned i, j, frames_per_block;
+	int flags = MAP_SHARED;
 #ifdef HAVE_TPACKET3
 	/*
 	 * For sockets using TPACKET_V2, the extra stuff at the end of a
@@ -3252,8 +3256,10 @@ retry:
 
 	/* memory map the rx ring */
 	handlep->mmapbuflen = req.tp_block_nr * req.tp_block_size;
-	handlep->mmapbuf = mmap(0, handlep->mmapbuflen,
-	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
+#ifdef MAP_32BIT
+	if (pcap_mmap_32bit) flags |= MAP_32BIT;
+#endif
+	handlep->mmapbuf = mmap(0, handlep->mmapbuflen, PROT_READ | PROT_WRITE, flags, handle->fd, 0);
 	if (handlep->mmapbuf == MAP_FAILED) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't mmap rx ring");

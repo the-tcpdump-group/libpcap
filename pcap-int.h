@@ -108,6 +108,11 @@ extern int pcap_new_api;
 extern int pcap_utf_8_mode;
 
 /*
+ * Map packet buffers with 32-bit addresses.
+ */
+extern int pcap_mmap_32bit;
+
+/*
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
  */
