@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_BREAKLOOP 3PCAP "25 July 2018"
+.TH PCAP_BREAKLOOP 3PCAP "7 December 2022"
 .SH NAME
 pcap_breakloop \- force a pcap_dispatch() or pcap_loop() call to return
 .SH SYNOPSIS
@@ -50,20 +50,28 @@ itself will not necessarily terminate those loops - as well as in loops
 processing a set of packets returned by the OS.
 .ft B
 Note that if you are catching signals on UNIX systems that support
-restarting system calls after a signal, and calling pcap_breakloop()
+restarting system calls after a signal, and calling
+.BR pcap_breakloop ()
 in the signal handler, you must specify, when catching those signals,
 that system calls should NOT be restarted by that signal.  Otherwise,
 if the signal interrupted a call reading packets in a live capture,
-when your signal handler returns after calling pcap_breakloop(), the
-call will be restarted, and the loop will not terminate until more
+when your signal handler returns after calling
+.BR pcap_breakloop (),
+the call will be restarted, and the loop will not terminate until more
 packets arrive and the call completes.
 .ft R
 .PP
 .ft B
 Note also that, in a multi-threaded application, if one thread is
-blocked in pcap_dispatch(), pcap_loop(), pcap_next(3PCAP), or pcap_next_ex(3PCAP),
-a call to pcap_breakloop() in a different thread will not unblock that
-thread.
+blocked in
+.BR pcap_dispatch (),
+.BR pcap_loop (),
+.BR pcap_next (3PCAP),
+or
+.BR pcap_next_ex (3PCAP),
+a call to
+.BR pcap_breakloop ()
+in a different thread will not unblock that thread.
 .ft R
 You will need to use whatever mechanism the OS provides for
 breaking a thread out of blocking calls in order to unblock the thread,
