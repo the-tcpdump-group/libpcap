@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_BREAKLOOP 3PCAP "7 December 2022"
+.TH PCAP_BREAKLOOP 3PCAP "8 December 2022"
 .SH NAME
 pcap_breakloop \- force a pcap_dispatch() or pcap_loop() call to return
 .SH SYNOPSIS
@@ -137,5 +137,12 @@ If a positive number is returned, the flag is not cleared, so a
 subsequent call will return
 .B PCAP_ERROR_BREAK
 and clear the flag.
+.SH BACKWARD COMPATIBILITY
+.PP
+This function became available in libpcap release 0.8.1.
+.PP
+In releases prior to libpcap 1.10.0,
+.BR pcap_breakloop ()
+will not wake up a blocked thread on any platform.
 .SH SEE ALSO
 .BR pcap (3PCAP)
