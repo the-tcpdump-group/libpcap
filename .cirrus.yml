@@ -43,12 +43,12 @@ linux_task:
     - ./build_matrix.sh
 
 macos_task:
-  name: macos-amd64
+  name: macos-aarch64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   macos_instance:
-    image: big-sur-xcode
+    image: ghcr.io/cirruslabs/macos-ventura-xcode:14.1 # macOS 13 with Xcode 14.1
   env:
-    MAKEFLAGS: '-j 12' # macOS VMs always run on 12 cores
+    MAKEFLAGS: '-j 4' # macOS VMs run on 4 cores
   script:
     - brew update >/dev/null
     - ./build_matrix.sh
