@@ -32,6 +32,7 @@ Monthday, Month DD, YYYY:
       Makefile.in: Add the releasecheck target.
       Cirrus CI: Add the "make releasecheck" command in the Linux task.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
+      CMakeLists.txt: Print "Symlinking: /some/path to ..." conditionally.
       Makefile.in: Add "make -s install" in the releasecheck target.
 
 Monthday, Month DD, YYYY:
