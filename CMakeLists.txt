@@ -3112,8 +3112,10 @@ function(install_manpage_symlink SOURCE TARGET MANDIR)
         set(LINK_COMMAND "\"${CMAKE_COMMAND}\" \"-E\" \"create_symlink\" \"${SOURCE}\" \"${TARGET}\"")
     endif(MINGW)
 
-    install(CODE
-        "message(STATUS \"Symlinking: \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+    install(CODE "
+         if(NOT ${CMAKE_INSTALL_MESSAGE} STREQUAL \"NEVER\")
+             message(STATUS \"Symlinking: \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+         endif()
          execute_process(
             COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"remove\" \"${TARGET}\"
             WORKING_DIRECTORY \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}
