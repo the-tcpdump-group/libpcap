@@ -3330,6 +3330,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_2_0_LOW_SPEED, "Low-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_FULL_SPEED, "Full-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_HIGH_SPEED, "High-Speed USB 2.0 as transmitted over the cable"),
+	DLT_CHOICE(ALDL, "GM Assembly Line Diagnostic Link"),
 	DLT_CHOICE_SENTINEL
 };
 
