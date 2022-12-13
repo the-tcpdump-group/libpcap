@@ -1,7 +1,7 @@
 Currently, libpcap supports packet capturing on Linux 2.6.27 and later;
 earlier versions are not supported.
 
-You must configure 2.26.x kernels with the CONFIG_PACKET_MMAP option for
+You must configure 2.6.x kernels with the CONFIG_PACKET_MMAP option for
 this protocol.  3.x and later kernels do not require that.
 
 Note that, by default, libpcap will, if libnl is present, build with it;
