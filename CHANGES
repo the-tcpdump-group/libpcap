@@ -26,7 +26,6 @@ Monthday, Month DD, YYYY:
     Documentation:
       Document a standard format for writing out BPF filter programs.
     Building and testing:
-      Remove awk code from mkdep.
       Apply GNU Hurd support patch from the Debian package.
       cmake: Update the minimum required version to 2.8.12 (except Windows).
       Makefile.in: Add the releasecheck target.
@@ -198,6 +197,7 @@ Monthday, Month DD, YYYY:
       Add four libpcap test files.
       Update Npcap SDK to 1.13.
       Makefile.in: Use TEST_DIST, like for tcpdump.
+      Remove awk code from mkdep.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
