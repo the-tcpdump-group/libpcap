@@ -161,6 +161,7 @@ Monthday, Month DD, YYYY:
       Add four libpcap test files.
       Update Npcap SDK to 1.13.
       Makefile.in: Use TEST_DIST, like for tcpdump.
+      Remove awk code from mkdep.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
