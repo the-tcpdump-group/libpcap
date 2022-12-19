@@ -101,7 +101,7 @@ called but that weren't yet provided to libpcap, those packets will not
 have been processed by pcap_dispatch() or pcap_loop().  If
 pcap_breakloop() was called in order to terminate the capture process,
 then, in order to process those packets, you would have to call
-pcap_dispatch() one time in order to process the last batch of packets. 
+pcap_dispatch() one time in order to process the last batch of packets.
 This may block until the packet buffer timeout expires, so a non-zero
 packet buffer timeout must be used.
 .ft R
