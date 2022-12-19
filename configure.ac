@@ -1884,7 +1884,7 @@ return 0;
 			OPENSSL_LIBS="-L/usr/local/lib -lssl -lcrypto"
 			OPENSSL_LIBS_STATIC="-L/usr/local/lib -lssl -lcrypto"
 			OPENSSL_LIBS_PRIVATE="-L/usr/local/lib -lssl -lcrypto"
-		    ],nnn
+		    ],
 		    AC_MSG_RESULT(no))
 		AC_LBL_RESTORE_CHECK_STATE
 	fi

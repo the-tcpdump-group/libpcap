@@ -9559,8 +9559,7 @@ $as_echo "yes" >&6; }
 			OPENSSL_LIBS_PRIVATE="-L/usr/local/lib -lssl -lcrypto"
 
 else
-  nnn
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
