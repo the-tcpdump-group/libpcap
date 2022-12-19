@@ -33,6 +33,7 @@ Monthday, Month DD, YYYY:
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
       CMakeLists.txt: Print "Symlinking: /some/path to ..." conditionally.
       Makefile.in: Add "make -s install" in the releasecheck target.
+      Makefile.in: Add the whitespacecheck target.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
