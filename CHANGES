@@ -201,6 +201,7 @@ Monthday, Month DD, YYYY:
       Makefile.in: Use TEST_DIST, like for tcpdump.
       Remove awk code from mkdep.
       Cirrus CI: Add the libssl-dev package in the Linux task.
+      Cirrus CI: Add the openssl@3 brew package in the macOS task.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
