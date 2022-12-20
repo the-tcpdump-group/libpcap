@@ -52,6 +52,7 @@ macos_task:
     MAKEFLAGS: '-j 4' # macOS VMs run on 4 cores
   script:
     - brew update >/dev/null
+    - brew install openssl@3
     - ./build_matrix.sh
 
 #
