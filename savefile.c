@@ -115,8 +115,8 @@ static int
 sf_cant_set_rfmon(pcap_t *p _U_)
 {
 	/*
-	 * This is a savefile, not a live capture file, so never say
-	 * it's monitor mode.
+	 * This is a savefile, not a device on which you can capture,
+	 * so never say it supports being put into monitor mode.
 	 */
 	return (0);
 }
