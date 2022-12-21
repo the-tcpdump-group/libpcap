@@ -4201,12 +4201,10 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 	return (-1);
 }
 
-static int
-pcap_breakloop_dead(pcap_t *p)
+static void
+pcap_breakloop_dead(pcap_t *p _U_)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "A breakloop cannot be set on a pcap_open_dead pcap_t");
-	return (-1);
+	/* A breakloop should not be set on a pcap_open_dead pcap_t. */
 }
 
 static int
