@@ -112,6 +112,16 @@ sf_setnonblock(pcap_t *p, int nonblock _U_)
 }
 
 static int
+sf_cant_set_rfmon(pcap_t *p _U_)
+{
+	/*
+	 * This is a savefile, not a live capture file, so never say
+	 * it's monitor mode.
+	 */
+	return (0);
+}
+
+static int
 sf_stats(pcap_t *p, struct pcap_stat *ps _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -551,6 +561,7 @@ found:
 	p->selectable_fd = fileno(fp);
 #endif
 
+	p->can_set_rfmon_op = sf_cant_set_rfmon;
 	p->read_op = pcap_offline_read;
 	p->inject_op = sf_inject;
 	p->setfilter_op = install_bpf_program;
