@@ -4202,6 +4202,14 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 }
 
 static int
+pcap_breakloop_dead(pcap_t *p)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A breakloop cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
 pcap_inject_dead(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -4414,6 +4422,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->live_dump_ended_op = pcap_live_dump_ended_dead;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
 #endif
+	p->breakloop_op = pcap_breakloop_dead;
 	p->cleanup_op = pcap_cleanup_dead;
 
 	/*
