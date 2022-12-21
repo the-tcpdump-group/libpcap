@@ -4204,7 +4204,15 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 static void
 pcap_breakloop_dead(pcap_t *p _U_)
 {
-	/* A breakloop should not be set on a pcap_open_dead pcap_t. */
+	/*
+	 * A "dead" pcap_t is just a placeholder to use in order to
+	 * compile a filter to BPF code or to open a savefile for
+	 * writing.  It doesn't support any operations, including
+	 * capturing or reading packets, so there will never be a
+	 * get-packets loop in progress to break out *of*.
+	 *
+	 * As such, this routine doesn't need to do anything.
+	 */
 }
 
 static int
