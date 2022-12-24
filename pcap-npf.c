@@ -901,7 +901,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		/* No underlaying filtering system. We need to filter on our own */
+		/* No underlying filtering system. We need to filter on our own */
 		if (p->fcode.bf_insns)
 		{
 			if (pcap_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
