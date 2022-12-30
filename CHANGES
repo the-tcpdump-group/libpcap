@@ -23,6 +23,8 @@ Monthday, Month DD, YYYY:
       Fix NULL pointer dereference after calling
         pcap_open_dead_with_tstamp_precision() or
         pcap_fopen_offline_with_tstamp_precision() directly or indirectly.
+    "Dead" pcap_ts from pcap_open_dead():
+        Don't crash if pcap_breakloop() is called.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
         than 0, even at EOF.
@@ -34,6 +36,7 @@ Monthday, Month DD, YYYY:
         for LINUX_SLL.
       Fix inorrectly-computed "real" length for isochronous USB
         transfers when reading savefiles.
+      Don't crash if pcap_can_set_rfmon() is called.
     Capture:
       Never process more than INT_MAX packets in a pcap_dispatch() call,
         to avoid integer overflow (issue #1087).
