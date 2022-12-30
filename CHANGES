@@ -20,10 +20,7 @@ Monthday, Month DD, YYYY:
       Use the Wayback Machine for a removed document in a comment.
       Add some const qualifiers.
       RDMA: Use PRIu64 to print a uint64_t.
-      Fix NULL pointer dereference after calling
-        pcap_open_dead_with_tstamp_precision() or
-        pcap_fopen_offline_with_tstamp_precision() directly or indirectly.
-    "Dead" pcap_ts from pcap_open_dead():
+    "Dead" pcap_ts from pcap_open_dead() and ..._with_tstamp_precision():
         Don't crash if pcap_breakloop() is called.
     Savefiles:
       Fix pcap_dispatch() to return number of packets processed, rather
