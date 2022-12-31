@@ -1,5 +1,5 @@
-Monthday, Month DD, YYYY:
-  Summary for 1.10.2 libpcap release (so far!)
+Saturday, December 31, 2022 / The Tcpdump Group
+  Summary for 1.10.2 libpcap release
     Source code:
       Use __builtin_unreachable() in PCAP_UNREACHABLE.
       Use AS_HELP_STRING macro instead of AC_HELP_STRING in the
