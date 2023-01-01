@@ -51,12 +51,10 @@ pcap_open_offline.3pcap
 pcap_set_immediate_mode.3pcap
 pcap_set_tstamp_precision.3pcap
 pcap_set_tstamp_type.3pcap
-pcap_version.h
 scanner.c
 scanner.c.bottom
 scanner.h
 selpolltest
-version.c
 *.log
 *.tlog
 *.obj
