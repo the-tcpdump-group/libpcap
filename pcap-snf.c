@@ -137,9 +137,6 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	struct snf_recv_req req;
 	int nonblock, timeout;
 
-	if (!p)
-		return -1;
-
 	/*
 	 * This can conceivably process more than INT_MAX packets,
 	 * which would overflow the packet count, causing it either
