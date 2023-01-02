@@ -228,6 +228,7 @@ Saturday, December 31, 2022 / The Tcpdump Group
       autotools, cmake: provide an rpath option if necessary.
       configure: get rid of the attempt to auto-run PKG_PROG_PKG_CONFIG.
       configure: use PKG_CHECK_MODULES to run pkg-config.
+      install: Fixed not to install the non-public pcap-util.h header.
     Documentation:
       Add README.solaris.md.
       Add SCTP to pcap-filter(7).
