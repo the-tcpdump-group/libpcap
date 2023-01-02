@@ -131,7 +131,7 @@ snf_timestamp_to_timeval(const int64_t ts_nanosec, const int tstamp_precision)
 static int
 snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_snf *ps;
+	struct pcap_snf *ps = p->priv;
 	struct pcap_pkthdr hdr;
 	int i, flags, err, caplen, n;
 	struct snf_recv_req req;
@@ -139,7 +139,6 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	if (!p)
 		return -1;
-	ps = p->priv;
 
 	/*
 	 * This can conceivably process more than INT_MAX packets,
