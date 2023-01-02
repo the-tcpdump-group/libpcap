@@ -114,7 +114,6 @@ PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
 	pcap-namedb.h \
-	pcap-util.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/can_socketcan.h \
@@ -150,6 +149,7 @@ HDR = $(PUBHDR) \
 	pcap-rpcap.h \
 	pcap-types.h \
 	pcap-usb-linux-common.h \
+	pcap-util.h \
 	pflog.h \
 	portability.h \
 	ppp.h \
