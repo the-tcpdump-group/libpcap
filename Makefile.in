@@ -114,21 +114,21 @@ PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
 	pcap-namedb.h \
-	pcap/bpf.h \
 	pcap/bluetooth.h \
+	pcap/bpf.h \
 	pcap/can_socketcan.h \
 	pcap/compiler-tests.h \
 	pcap/dlt.h \
 	pcap/funcattrs.h \
-	pcap/pcap-inttypes.h \
 	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/nflog.h \
+	pcap/pcap-inttypes.h \
 	pcap/pcap.h \
 	pcap/sll.h \
 	pcap/socket.h \
-	pcap/vlan.h \
-	pcap/usb.h
+	pcap/usb.h \
+	pcap/vlan.h
 
 HDR = $(PUBHDR) \
 	arcnet.h \
