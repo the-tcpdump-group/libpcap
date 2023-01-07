@@ -120,6 +120,7 @@ esac
 [ "$LIBPCAP_CMAKE_TAINTED" != yes ] && CMAKE_OPTIONS='-Werror=dev'
 
 if [ "$CMAKE" = no ]; then
+    run_after_echo ./autogen.sh
     run_after_echo ./configure --prefix="$PREFIX" --enable-remote="$REMOTE"
 else
     # Remove the leftovers from any earlier in-source builds, so this

@@ -268,6 +268,7 @@ EXTRA_DIST = \
 	TODO \
 	VERSION \
 	aclocal.m4 \
+	autogen.sh \
 	charconv.c \
 	charconv.h \
 	chmod_bpf \
@@ -283,9 +284,7 @@ EXTRA_DIST = \
 	cmake/Modules/FindTC.cmake \
 	cmake/have_siocglifconf.c \
 	config.guess \
-	config.h.in \
 	config.sub \
-	configure \
 	configure.ac \
 	dlpisubs.c \
 	dlpisubs.h \
@@ -425,7 +424,7 @@ EXTRA_DIST = \
 	testprogs/visopts.py \
 	testprogs/writecaptest.c
 
-TEST_DIST = `git ls-files tests | grep -v 'tests/\..*'`
+TEST_DIST = `git -C "$$DIR" ls-files tests | grep -v 'tests/\..*'`
 
 RELEASE_FILES = $(COMMON_C_SRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
 	$(MAN3PCAP_NOEXPAND) $(MANFILE) $(MANMISC) $(EXTRA_DIST) \
@@ -811,7 +810,7 @@ clean:
 
 distclean: clean
 	rm -f Makefile grammar.y config.cache config.log config.status \
-	    config.h config.h.in~ configure~ configure.ac~ \
+	    config.h config.h.in config.h.in~ configure configure~ configure.ac~ \
 	    net os-proto.h libpcap.pc pcap-config stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
@@ -824,17 +823,52 @@ extags: $(TAGFILES)
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
+#
+# Use git archive piped to tar to construct a subdirectory whose name
+# is libpcap-{release}, containing all the checked-in source files,
+# and then run autoreconf in that directory to generate the configure
+# script and other files from that source. Then remove autom4te.cache,
+# construct the release tarball from that subdirectory, and remove
+# the subdirectory.
+#
+# The --format=tar is to force git archive to write a non-compressed
+# archive, in case the platform's tar command doesn't have built-in
+# decompression.
+#
+# The ^{tree} is there to force git archive not to write out the
+# "helpful" global extended pax header with a commit ID, as not all
+# versions of tar can handle that (Solaris tar can't, for example).
+# (It turns HEAD, or a tag, both of which are apparently "tree-ish"es,
+# into a tree; apparently, unlike HEAD, or a tag, which have a commit
+# ID associated with them, the tree associated with them doesn't have
+# a commit ID, so no commit ID is available to write, and thus
+# git archive doesn't write one.)
+#
 releasetar:
 	@TAG=$(PROG)-`cat VERSION` && \
-	if git show-ref --tags --quiet --verify -- "refs/tags/$$TAG"; then \
-	    git archive --prefix="$$TAG"/ -o "$$TAG".tar.gz "$$TAG" \
-	    $(RELEASE_FILES) && \
+	if ! [ -d .git ]; then echo 'Not in a git clone, stop.'; exit 1; fi && \
+	TMPTESTFILE=`mktemp -t tmptestfile_XXXXXXXX` && \
+	rm -f "$$TMPTESTFILE" && \
+	AUTORECONF_DIR=`dirname "$$TMPTESTFILE"`/"$(PROG)"_build_autoreconf_$$$$ && \
+	DIR=`pwd` && \
+	rm -rf "$$AUTORECONF_DIR" && \
+	mkdir "$$AUTORECONF_DIR" && \
+	cd "$$AUTORECONF_DIR" && \
+	if git -C "$$DIR" show-ref --tags --quiet --verify -- "refs/tags/$$TAG"; then \
+	    (git -C "$$DIR" archive --format=tar --prefix="$$TAG"/ "$$TAG^{tree}" $(RELEASE_FILES) | \
+	     tar xf -) && \
 	    echo "Archive build from tag $$TAG."; \
 	else \
-	    git archive --prefix="$$TAG"/ -o "$$TAG".tar.gz HEAD \
-	    $(RELEASE_FILES) && \
+	    (git -C "$$DIR" archive --format=tar --prefix="$$TAG"/ "HEAD^{tree}" $(RELEASE_FILES) | \
+	     tar xf -) && \
 	    echo "No $$TAG tag. Archive build from HEAD."; \
-	fi
+	fi && \
+	(cd "$$TAG" && "$${AUTORECONF:-autoreconf}" && rm -rf autom4te.cache) && \
+	tar cf "$$DIR/$$TAG".tar "$$TAG" && \
+	rm -f "$$DIR/$$TAG".tar.gz && \
+	gzip --best "$$DIR/$$TAG".tar && \
+	cd "$$DIR" && \
+	rm -rf "$$AUTORECONF_DIR"
 
 releasecheck: releasetar
 	@TAG=$(PROG)-`cat VERSION` && \

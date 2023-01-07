@@ -9,9 +9,11 @@ CMakeCache.txt
 cmake_install.cmake
 CMakeFiles/
 config.h
+config.h.in
 config.log
 config.cache
 config.status
+configure
 stamp-h
 stamp-h.in
 autom4te.cache/

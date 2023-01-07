@@ -40,7 +40,7 @@ if command -v valgrind >/dev/null 2>&1; then
     export VALGRIND_CMD
 fi
 
-touch .devel configure
+touch .devel
 for CC in $MATRIX_CC; do
     export CC
     discard_cc_cache
@@ -60,8 +60,6 @@ for CC in $MATRIX_CC; do
             if [ "$CMAKE" = yes ]; then rm -rf build; else "$MAKE_BIN" distclean; fi
             purge_directory "$PREFIX"
             run_after_echo git status -suall
-            # Cancel changes in configure
-            run_after_echo git checkout configure
         done
     done
 done

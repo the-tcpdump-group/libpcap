@@ -37,6 +37,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
       Makefile.in: Add a "touch .devel" command in the releasecheck target.
+      autoconf: Add autogen.sh, remove configure and config.h.in and put
+        these generated files in the release tarball.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.4 libpcap release (so far!)
