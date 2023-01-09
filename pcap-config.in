@@ -14,6 +14,7 @@ includedir="@includedir@"
 libdir="@libdir@"
 LIBS="@LIBS@"
 LIBS_STATIC="@LIBS_STATIC@"
+VERSION="@PACKAGE_VERSION@"
 
 static=0
 static_pcap_only=0
@@ -45,7 +46,12 @@ do
 		;;
 
 	-h|--help)
-		echo "Usage: pcap-config [ --help ] [ --static | --static-pcap-only ] [ --libs | --additional-libs ]"
+		echo "Usage: pcap-config [ --help ] [--version] [ --static | --static-pcap-only ] [ --libs | --additional-libs ]"
+		exit 0
+		;;
+
+	--version)
+		echo "$VERSION"
 		exit 0
 		;;
 
