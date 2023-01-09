@@ -2,6 +2,8 @@ Monthday, Month DD, YYYY:
   Summary for 1.10.3 libpcap release (so far!)
     Source code:
       Sort the PUBHDR variable in Makefile.in in "ls" order.
+      Fix typo in comment in pflog.h.
+      Remove two no-longer-present files from .gitignore.
     Building and testing:
       install: Fixed not to install the non-public pcap-util.h header.
       pcap-config: add a --version flag.
