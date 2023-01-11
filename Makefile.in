@@ -845,6 +845,8 @@ releasecheck: releasetar
 	rm -rf "$$INSTALL_DIR" && \
 	tar xf "$$DIR"/"$$TAG".tar.gz && \
 	cd "$$TAG" && \
+	echo "[$@] $$ touch .devel" && \
+	touch .devel && \
 	echo "[$@] $$ ./configure --enable-remote --quiet --prefix=$$INSTALL_DIR" && \
 	./configure --enable-remote --quiet --prefix="$$INSTALL_DIR" && \
 	echo '[$@] $$ make -s all testprogs' && \
