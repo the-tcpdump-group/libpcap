@@ -1,5 +1,5 @@
-Monthday, Month DD, YYYY:
-  Summary for 1.10.3 libpcap release (so far!)
+Thursday, January 12, 2023 / The Tcpdump Group
+  Summary for 1.10.3 libpcap release
     Source code:
       Sort the PUBHDR variable in Makefile.in in "ls" order.
       Fix typo in comment in pflog.h.
