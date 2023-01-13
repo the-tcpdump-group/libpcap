@@ -1,4 +1,4 @@
-Monthday, Month DD, YYYY:
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.0 libpcap release (so far!)
     Source code:
       Use C99 fixed-width integer types, rather than self-defined
@@ -37,8 +37,11 @@ Monthday, Month DD, YYYY:
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
 
-Monthday, Month DD, YYYY:
-  Summary for 1.10.3 libpcap release (so far!)
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
+  Summary for 1.10.4 libpcap release (so far!)
+
+Thursday, January 12, 2023 / The Tcpdump Group
+  Summary for 1.10.3 libpcap release
     Source code:
       Sort the PUBHDR variable in Makefile.in in "ls" order.
       Fix typo in comment in pflog.h.
