@@ -6315,8 +6315,9 @@ fi
 #
 
     #
-    # Most operating systems have getaddrinfo() in the default searched
-    # libraries (i.e. libc).  Check there first.
+    # Most operating systems have getaddrinfo(), and the other routines
+    # we may need, in the default searched libraries (e.g., libc).
+    # Check there first.
     #
     ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
 if test "x$ac_cv_func_getaddrinfo" = xyes; then :
@@ -6325,7 +6326,13 @@ else
 
 	#
 	# Not found in the standard system libraries.
-	# Try libsocket, which requires libnsl.
+	#
+	# In some versions of Solaris, we need to link with libsocket
+	# and libnsl, so check in libsocket and also link with liblnsl
+	# when doing this test.
+	#
+	# Linking with libsocket and libnsl will find all the routines
+	# we need.
 	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lsocket" >&5
 $as_echo_n "checking for getaddrinfo in -lsocket... " >&6; }
@@ -6375,6 +6382,9 @@ else
 	    #
 	    # Not found in libsocket; test for it in libnetwork, which
 	    # is where it is in Haiku.
+	    #
+	    # Linking with libnetwork will find all the routines we
+	    # need.
 	    #
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lnetwork" >&5
 $as_echo_n "checking for getaddrinfo in -lnetwork... " >&6; }
@@ -6433,8 +6443,23 @@ fi
 
 
 	#
-	# OK, do we have recvmsg() in libxnet?
-	# We also link with libsocket and libnsl.
+	# We require a version of recvmsg() that conforms to the Single
+	# UNIX Specification, so that we can check whether a datagram
+	# received with recvmsg() was truncated when received due to the
+	# buffer being too small.
+	#
+	# On most systems, the version of recvmsg() in the libraries
+	# found above conforms to the SUS.
+	#
+	# On at least some versions of Solaris, it does not conform to
+	# the SUS, and we need the version in libxnet, which does
+	# conform.
+	#
+	# Check whether libxnet exists and has a version of recvmsg();
+	# if it does, link with libxnet before we link with libsocket,
+	# to get that version.
+	#
+	# This test also links with libsocket and libnsl.
 	#
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for recvmsg in -lxnet" >&5
 $as_echo_n "checking for recvmsg in -lxnet... " >&6; }
@@ -6475,7 +6500,7 @@ $as_echo "$ac_cv_lib_xnet_recvmsg" >&6; }
 if test "x$ac_cv_lib_xnet_recvmsg" = xyes; then :
 
 	    #
-	    # Yes - link with it as well.
+	    # libxnet has recvmsg(); link with it as well.
 	    #
 	    LIBS="-lxnet $LIBS"
 
@@ -6484,7 +6509,10 @@ fi
 
 fi
 
-    # DLPI needs putmsg under HPUX so test for -lstr while we're at it
+
+    #
+    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
+    #
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing putmsg" >&5
 $as_echo_n "checking for library containing putmsg... " >&6; }
 if ${ac_cv_search_putmsg+:} false; then :

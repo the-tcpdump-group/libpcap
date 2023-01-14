@@ -975,35 +975,44 @@ fi
 dnl
 dnl AC_LBL_LIBRARY_NET
 dnl
-dnl This test is for network applications that need socket functions and
-dnl getaddrinfo()/getnameinfo()-ish functions.  We now require
-dnl getaddrinfo() and getnameinfo().  We also prefer versions of
-dnl recvmsg() that conform to the Single UNIX Specification, so that we
-dnl can check whether a datagram received with recvmsg() was truncated
-dnl when received due to the buffer being too small.
+dnl Look for various networking-related libraries that we may need.
 dnl
-dnl On most operating systems, they're available in the system library.
+dnl We need getaddrinfo() to translate host names in filters to IP
+dnl addresses. We use getaddrinfo() because we want a portable
+dnl thread-safe way of getting information for a host name or port;
+dnl there exist _r versions of gethostbyname() and getservbyname() on
+dnl some platforms, but not on all platforms.
 dnl
-dnl Under Solaris, we need to link with libsocket and libnsl to get
-dnl getaddrinfo() and getnameinfo() and, if we have libxnet, we need to
-dnl link with libxnet before libsocket to get a version of recvmsg()
-dnl that conforms to the Single UNIX Specification.
+dnl We may also need socket() and other socket functions to support:
 dnl
-dnl We use getaddrinfo() because we want a portable thread-safe way
-dnl of getting information for a host name or port; there exist _r
-dnl versions of gethostbyname() and getservbyname() on some platforms,
-dnl but not on all platforms.
+dnl   Local packet capture with capture mechanisms that use sockets.
+dnl
+dnl   Local capture device enumeration if a socket call is needed to
+dnl   enumerate devices or get device attributes.
+dnl
+dnl   Packet capture from services that put captured packets on the
+dnl   network, such as rpcap servers.
+dnl
+dnl We may also need getnameinfo() for packet capture from services
+dnl that put packets on the networik.
 dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
     #
-    # Most operating systems have getaddrinfo() in the default searched
-    # libraries (i.e. libc).  Check there first.
+    # Most operating systems have getaddrinfo(), and the other routines
+    # we may need, in the default searched libraries (e.g., libc).
+    # Check there first.
     #
     AC_CHECK_FUNC(getaddrinfo,,
     [
 	#
 	# Not found in the standard system libraries.
-	# Try libsocket, which requires libnsl.
+	#
+	# In some versions of Solaris, we need to link with libsocket
+	# and libnsl, so check in libsocket and also link with liblnsl
+	# when doing this test.
+	#
+	# Linking with libsocket and libnsl will find all the routines
+	# we need.
 	#
 	AC_CHECK_LIB(socket, getaddrinfo,
 	[
@@ -1016,6 +1025,9 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    #
 	    # Not found in libsocket; test for it in libnetwork, which
 	    # is where it is in Haiku.
+	    #
+	    # Linking with libnetwork will find all the routines we
+	    # need.
 	    #
 	    AC_CHECK_LIB(network, getaddrinfo,
 	    [
@@ -1033,18 +1045,36 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	], -lnsl)
 
 	#
-	# OK, do we have recvmsg() in libxnet?
-	# We also link with libsocket and libnsl.
+	# We require a version of recvmsg() that conforms to the Single
+	# UNIX Specification, so that we can check whether a datagram
+	# received with recvmsg() was truncated when received due to the
+	# buffer being too small.
+	#
+	# On most systems, the version of recvmsg() in the libraries
+	# found above conforms to the SUS.
+	#
+	# On at least some versions of Solaris, it does not conform to
+	# the SUS, and we need the version in libxnet, which does
+	# conform.
+	#
+	# Check whether libxnet exists and has a version of recvmsg();
+	# if it does, link with libxnet before we link with libsocket,
+	# to get that version.
+	#
+	# This test also links with libsocket and libnsl.
 	#
 	AC_CHECK_LIB(xnet, recvmsg,
 	[
 	    #
-	    # Yes - link with it as well.
+	    # libxnet has recvmsg(); link with it as well.
 	    #
 	    LIBS="-lxnet $LIBS"
 	], , -lsocket -lnsl)
     ])
-    # DLPI needs putmsg under HPUX so test for -lstr while we're at it
+
+    #
+    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
+    #
     AC_SEARCH_LIBS(putmsg, str)
 ])
 
