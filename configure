@@ -4712,7 +4712,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 if test "$ac_cv_prog_cc_c99" = "no"; then
-	as_fn_error $? "The C compiler does not support C99" "$LINENO" 5
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The C compiler does not support C99; there may be compiler errors" >&5
+printf "%s\n" "$as_me: WARNING: The C compiler does not support C99; there may be compiler errors" >&2;}
 fi
 
 #

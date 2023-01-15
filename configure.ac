@@ -110,7 +110,7 @@ AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
 #
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
-	AC_MSG_ERROR([The C compiler does not support C99])
+	AC_MSG_WARN([The C compiler does not support C99; there may be compiler errors])
 fi
 
 #
