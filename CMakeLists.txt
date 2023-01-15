@@ -755,29 +755,26 @@ if(NOT WIN32)
 endif()
 
 #
-# These tests are for network applications that need socket functions
-# and getaddrinfo()/getnameinfo()-ish functions.  We now require
-# getaddrinfo() and getnameinfo().  On UN*X systems, we also prefer
-# versions of recvmsg() that conform to the Single UNIX Specification,
-# so that we can check whether a datagram received with recvmsg() was
-# truncated when received due to the buffer being too small.
+# Look for various networking-related libraries that we may need.
 #
-# On Windows, getaddrinfo() is in the ws2_32 library.
-
-# On most UN*X systems, they're available in the system library.
+# We need getaddrinfo() to translate host names in filters to IP
+# addresses. We use getaddrinfo() because we want a portable
+# thread-safe way of getting information for a host name or port;
+# there exist _r versions of gethostbyname() and getservbyname() on
+# some platforms, but not on all platforms.
 #
-# Under Solaris, we need to link with libsocket and libnsl to get
-# getaddrinfo() and getnameinfo() and, if we have libxnet, we need to
-# link with libxnet before libsocket to get a version of recvmsg()
-# that conforms to the Single UNIX Specification.
+# We may also need socket() and other socket functions to support:
 #
-# We use getaddrinfo() because we want a portable thread-safe way
-# of getting information for a host name or port; there exist _r
-# versions of gethostbyname() and getservbyname() on some platforms,
-# but not on all platforms.
+#   Local packet capture with capture mechanisms that use sockets.
 #
-# NOTE: if you hand check_library_exists as its last argument a variable
-# that's been set, it skips the test, so we need different variables.
+#   Local capture device enumeration if a socket call is needed to
+#   enumerate devices or get device attributes.
+#
+#   Packet capture from services that put captured packets on the
+#   network, such as rpcap servers.
+#
+# We may also need getnameinfo() for packet capture from services
+# that put packets on the networik.
 #
 set(PCAP_LINK_LIBRARIES "")
 set(LIBS "")
@@ -787,7 +784,11 @@ set(LIBS_PRIVATE "")
 include(CheckLibraryExists)
 if(WIN32)
     #
+    # Windows.
+    #
     # We need winsock2.h and ws2tcpip.h.
+    #
+    # On Windows, getaddrinfo() is in the ws2_32 library.
     #
     cmake_push_check_state()
     set(CMAKE_REQUIRED_LIBRARIES ws2_32)
@@ -800,16 +801,28 @@ if(WIN32)
     endif(LIBWS2_32_HAS_GETADDRINFO)
 else(WIN32)
     #
-    # UN*X.  First try the system libraries, then try the libraries
-    # for Solaris and possibly other systems that picked up the
-    # System V library split.
+    # UN*X.
+    #
+    # Most UN*Xes have getaddrinfo(), and the other routines we may
+    # need, in the default searched libraries (e.g., libc).
+    # Check there first.
+    #
+    # NOTE: if you hand check_library_exists as its last argument a
+    # variable that's been set, it skips the test, so we need different
+    # variables for different libraries.
     #
     check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
     if(NOT STDLIBS_HAVE_GETADDRINFO)
-        #
-        # Not found in the standard system libraries.
-        # Try libsocket, which requires libnsl.
-        #
+	#
+	# Not found in the standard system libraries.
+	#
+	# In some versions of Solaris, we need to link with libsocket
+	# and libnsl, so check in libsocket and also link with liblnsl
+	# when doing this test.
+	#
+	# Linking with libsocket and libnsl will find all the routines
+	# we need.
+	#
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES nsl)
         check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
@@ -823,10 +836,17 @@ else(WIN32)
             set(LIBS_STATIC "-lsocket -lnsl ${LIBS_STATIC}")
             set(LIBS_PRIVATE "-lsocket -lnsl ${LIBS_PRIVATE}")
         else(LIBSOCKET_HAS_GETADDRINFO)
+	    #
+	    # Not found in libsocket; test for it in libnetwork, which
+	    # is where it is in Haiku.
+	    #
+	    # Linking with libnetwork will find all the routines we
+	    # need.
+	    #
             check_library_exists(network getaddrinfo "" LIBNETWORK_HAS_GETADDRINFO)
             if(LIBNETWORK_HAS_GETADDRINFO)
                 #
-                # OK, we found it in libnetwork (Haiku).
+		# OK, we found it in libnetwork.
                 #
                 set(PCAP_LINK_LIBRARIES network ${PCAP_LINK_LIBRARIES})
                 set(LIBS "-lnetwork ${LIBS}")
@@ -840,17 +860,32 @@ else(WIN32)
             endif(LIBNETWORK_HAS_GETADDRINFO)
         endif(LIBSOCKET_HAS_GETADDRINFO)
 
-        #
-        # OK, do we have recvmsg() in libxnet?
-        # We also link with libsocket and libnsl.
-        #
+	#
+	# We require a version of recvmsg() that conforms to the Single
+	# UNIX Specification, so that we can check whether a datagram
+	# received with recvmsg() was truncated when received due to the
+	# buffer being too small.
+	#
+	# On most systems, the version of recvmsg() in the libraries
+	# found above conforms to the SUS.
+	#
+	# On at least some versions of Solaris, it does not conform to
+	# the SUS, and we need the version in libxnet, which does
+	# conform.
+	#
+	# Check whether libxnet exists and has a version of recvmsg();
+	# if it does, link with libxnet before we link with libsocket,
+	# to get that version.
+	#
+	# This test also links with libsocket and libnsl.
+	#
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES socket nsl)
         check_library_exists(xnet recvmsg "" LIBXNET_HAS_RECVMSG)
         cmake_pop_check_state()
         if(LIBXNET_HAS_RECVMSG)
             #
-            # Yes - link with it as well.
+	    # libxnet has recvmsg(); link with it as well.
             #
             set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
             set(LIBSC "-lxnet ${LIBS_LIBS}")
@@ -859,7 +894,9 @@ else(WIN32)
         endif(LIBXNET_HAS_RECVMSG)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
 
-    # DLPI needs putmsg under HPUX so test for -lstr while we're at it
+    #
+    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
+    #
     check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
     if(NOT STDLIBS_HAVE_PUTMSG)
         check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
