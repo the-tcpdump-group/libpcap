@@ -36,12 +36,12 @@ struct pcap_haiku {
 
 
 bool
-prepare_request(struct ifreq& request, const char* name)
+prepare_request(struct ifreq *request, const char* name)
 {
 	if (strlen(name) >= IF_NAMESIZE)
 		return false;
 
-	strcpy(request.ifr_name, name);
+	strcpy(request->ifr_name, name);
 	return true;
 }
 
@@ -93,7 +93,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	}
 
 	// fill in pcap_header
-	pcap_pkthdr header;
+	struct pcap_pkthdr header;
 	header.caplen = captureLength;
 	header.len = bytesReceived;
 	header.ts.tv_usec = system_time() % 1000000;
@@ -122,20 +122,20 @@ static int
 pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
-	ifreq request;
-	int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
-	if (socket < 0) {
+	struct ifreq request;
+	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (pcapSocket < 0) {
 		return -1;
 	}
-	prepare_request(request, handlep->device);
-	if (ioctl(socket, SIOCGIFSTATS, &request, sizeof(struct ifreq)) < 0) {
+	prepare_request(&request, handlep->device);
+	if (ioctl(pcapSocket, SIOCGIFSTATS, &request, sizeof(struct ifreq)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "pcap_stats: %s",
 			strerror(errno));
-		close(socket);
+		close(pcapSocket);
 		return -1;
 	}
 
-	close(socket);
+	close(pcapSocket);
 	handlep->stat.ps_recv += request.ifr_stats.receive.packets;
 	handlep->stat.ps_drop += request.ifr_stats.receive.dropped;
 	*stats = handlep->stat;
@@ -199,68 +199,64 @@ pcap_activate_haiku(pcap_t *handle)
 //	#pragma mark - pcap API
 
 
-extern "C" pcap_t *
+pcap_t *
 pcap_create_interface(const char *device, char *errorBuffer)
 {
 	// TODO: handle promiscuous mode!
 
 	// we need a socket to talk to the networking stack
-	int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
-	if (socket < 0) {
+	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (pcapSocket < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
 			"The networking stack doesn't seem to be available.\n");
 		return NULL;
 	}
 
 	struct ifreq request;
-	if (!prepare_request(request, device)) {
+	if (!prepare_request(&request, device)) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
 			"Interface name \"%s\" is too long.", device);
-		close(socket);
+		close(pcapSocket);
 		return NULL;
 	}
 
 	// check if the interface exist
-	if (ioctl(socket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
+	if (ioctl(pcapSocket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
 			"Interface \"%s\" does not exist.\n", device);
-		close(socket);
+		close(pcapSocket);
 		return NULL;
 	}
 
-	close(socket);
+	close(pcapSocket);
 	// no longer needed after this point
 
 	// get link level interface for this interface
 
-	socket = ::socket(AF_LINK, SOCK_DGRAM, 0);
-	if (socket < 0) {
+	pcapSocket = socket(AF_LINK, SOCK_DGRAM, 0);
+	if (pcapSocket < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "No link level: %s\n",
 			strerror(errno));
 		return NULL;
 	}
 
 	// start monitoring
-	if (ioctl(socket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
+	if (ioctl(pcapSocket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "Cannot start monitoring: %s\n",
 			strerror(errno));
-		close(socket);
+		close(pcapSocket);
 		return NULL;
 	}
 
-	struct wrapper_struct { pcap_t __common; struct pcap_haiku __private; };
-	pcap_t* handle = pcap_create_common(errorBuffer,
-		sizeof (struct wrapper_struct),
-		offsetof (struct wrapper_struct, __private));
-
+	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "malloc: %s", strerror(errno));
-		close(socket);
+		close(pcapSocket);
 		return NULL;
 	}
 
-	handle->selectable_fd = socket;
-	handle->fd = socket;
+	handle->selectable_fd = pcapSocket;
+	handle->fd = pcapSocket;
 
 	handle->activate_op = pcap_activate_haiku;
 
@@ -288,7 +284,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	return (0);
 }
 
-extern "C" int
+int
 pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
 {
 	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
@@ -298,7 +294,7 @@ pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
 /*
  * Libpcap version string.
  */
-extern "C" const char *
+const char *
 pcap_lib_version(void)
 {
 	return (PCAP_VERSION_STRING);
