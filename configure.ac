@@ -1002,7 +1002,7 @@ haiku)
 	#
 	# Capture module
 	#
- 	PLATFORM_CXX_SRC="pcap-haiku.cpp"
+	PLATFORM_C_SRC="pcap-haiku.c"
 
 	#
 	# Just for the sake of it.
