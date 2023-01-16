@@ -1178,10 +1178,8 @@ dnl ---------------------------------------------
 dnl Internal wrapper calling pkg-config via PKG_CONFIG and, if
 dnl pkg-config fails, reporting the error and quitting.
 m4_define([_PKG_CONFIG_WITH_FLAGS],
-[if test -n "$$1"; then
-    pkg_cv_[]$1="$$1"
- else
-    pkg_cv_[]$1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
+[if test ! -n "$$1"; then
+    $1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
