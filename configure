@@ -7904,10 +7904,8 @@ if test -n "$PKG_CONFIG"; then
 	#
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-	if test -n "$LIBNL_CFLAGS"; then
-    pkg_cv_LIBNL_CFLAGS="$LIBNL_CFLAGS"
- else
-    pkg_cv_LIBNL_CFLAGS=`$PKG_CONFIG --cflags "libnl-genl-3.0" 2>/dev/null`
+	if test ! -n "$LIBNL_CFLAGS"; then
+    LIBNL_CFLAGS=`$PKG_CONFIG --cflags "libnl-genl-3.0" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -7930,10 +7928,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --cflags \"libnl-genl-3.0\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$LIBNL_LIBS"; then
-    pkg_cv_LIBNL_LIBS="$LIBNL_LIBS"
- else
-    pkg_cv_LIBNL_LIBS=`$PKG_CONFIG --libs "libnl-genl-3.0" 2>/dev/null`
+	if test ! -n "$LIBNL_LIBS"; then
+    LIBNL_LIBS=`$PKG_CONFIG --libs "libnl-genl-3.0" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -7956,10 +7952,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --libs \"libnl-genl-3.0\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$LIBNL_LIBS_STATIC"; then
-    pkg_cv_LIBNL_LIBS_STATIC="$LIBNL_LIBS_STATIC"
- else
-    pkg_cv_LIBNL_LIBS_STATIC=`$PKG_CONFIG --libs --static "libnl-genl-3.0" 2>/dev/null`
+	if test ! -n "$LIBNL_LIBS_STATIC"; then
+    LIBNL_LIBS_STATIC=`$PKG_CONFIG --libs --static "libnl-genl-3.0" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -9328,10 +9322,8 @@ if test -n "$PKG_CONFIG"; then
 	#
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-	if test -n "$OPENSSL_CFLAGS"; then
-    pkg_cv_OPENSSL_CFLAGS="$OPENSSL_CFLAGS"
- else
-    pkg_cv_OPENSSL_CFLAGS=`$PKG_CONFIG --cflags "openssl" 2>/dev/null`
+	if test ! -n "$OPENSSL_CFLAGS"; then
+    OPENSSL_CFLAGS=`$PKG_CONFIG --cflags "openssl" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -9354,10 +9346,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --cflags \"openssl\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$OPENSSL_LIBS"; then
-    pkg_cv_OPENSSL_LIBS="$OPENSSL_LIBS"
- else
-    pkg_cv_OPENSSL_LIBS=`$PKG_CONFIG --libs "openssl" 2>/dev/null`
+	if test ! -n "$OPENSSL_LIBS"; then
+    OPENSSL_LIBS=`$PKG_CONFIG --libs "openssl" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -9380,10 +9370,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --libs \"openssl\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$OPENSSL_LIBS_STATIC"; then
-    pkg_cv_OPENSSL_LIBS_STATIC="$OPENSSL_LIBS_STATIC"
- else
-    pkg_cv_OPENSSL_LIBS_STATIC=`$PKG_CONFIG --libs --static "openssl" 2>/dev/null`
+	if test ! -n "$OPENSSL_LIBS_STATIC"; then
+    OPENSSL_LIBS_STATIC=`$PKG_CONFIG --libs --static "openssl" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -12795,10 +12783,8 @@ if test -n "$PKG_CONFIG"; then
 	#
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-	if test -n "$DPDK_CFLAGS"; then
-    pkg_cv_DPDK_CFLAGS="$DPDK_CFLAGS"
- else
-    pkg_cv_DPDK_CFLAGS=`$PKG_CONFIG --cflags "libdpdk" 2>/dev/null`
+	if test ! -n "$DPDK_CFLAGS"; then
+    DPDK_CFLAGS=`$PKG_CONFIG --cflags "libdpdk" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -12821,10 +12807,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --cflags \"libdpdk\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$DPDK_LIBS"; then
-    pkg_cv_DPDK_LIBS="$DPDK_LIBS"
- else
-    pkg_cv_DPDK_LIBS=`$PKG_CONFIG --libs "libdpdk" 2>/dev/null`
+	if test ! -n "$DPDK_LIBS"; then
+    DPDK_LIBS=`$PKG_CONFIG --libs "libdpdk" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -12847,10 +12831,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --libs \"libdpdk\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$DPDK_LIBS_STATIC"; then
-    pkg_cv_DPDK_LIBS_STATIC="$DPDK_LIBS_STATIC"
- else
-    pkg_cv_DPDK_LIBS_STATIC=`$PKG_CONFIG --libs --static "libdpdk" 2>/dev/null`
+	if test ! -n "$DPDK_LIBS_STATIC"; then
+    DPDK_LIBS_STATIC=`$PKG_CONFIG --libs --static "libdpdk" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13241,10 +13223,8 @@ if test -n "$PKG_CONFIG"; then
 	#
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-	if test -n "$DBUS_CFLAGS"; then
-    pkg_cv_DBUS_CFLAGS="$DBUS_CFLAGS"
- else
-    pkg_cv_DBUS_CFLAGS=`$PKG_CONFIG --cflags "dbus-1" 2>/dev/null`
+	if test ! -n "$DBUS_CFLAGS"; then
+    DBUS_CFLAGS=`$PKG_CONFIG --cflags "dbus-1" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13267,10 +13247,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --cflags \"dbus-1\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$DBUS_LIBS"; then
-    pkg_cv_DBUS_LIBS="$DBUS_LIBS"
- else
-    pkg_cv_DBUS_LIBS=`$PKG_CONFIG --libs "dbus-1" 2>/dev/null`
+	if test ! -n "$DBUS_LIBS"; then
+    DBUS_LIBS=`$PKG_CONFIG --libs "dbus-1" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13293,10 +13271,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --libs \"dbus-1\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$DBUS_LIBS_STATIC"; then
-    pkg_cv_DBUS_LIBS_STATIC="$DBUS_LIBS_STATIC"
- else
-    pkg_cv_DBUS_LIBS_STATIC=`$PKG_CONFIG --libs --static "dbus-1" 2>/dev/null`
+	if test ! -n "$DBUS_LIBS_STATIC"; then
+    DBUS_LIBS_STATIC=`$PKG_CONFIG --libs --static "dbus-1" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13429,10 +13405,8 @@ if test -n "$PKG_CONFIG"; then
 	#
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
-	if test -n "$LIBIBVERBS_CFLAGS"; then
-    pkg_cv_LIBIBVERBS_CFLAGS="$LIBIBVERBS_CFLAGS"
- else
-    pkg_cv_LIBIBVERBS_CFLAGS=`$PKG_CONFIG --cflags "libibverbs" 2>/dev/null`
+	if test ! -n "$LIBIBVERBS_CFLAGS"; then
+    LIBIBVERBS_CFLAGS=`$PKG_CONFIG --cflags "libibverbs" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13455,10 +13429,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --cflags \"libibverbs\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$LIBIBVERBS_LIBS"; then
-    pkg_cv_LIBIBVERBS_LIBS="$LIBIBVERBS_LIBS"
- else
-    pkg_cv_LIBIBVERBS_LIBS=`$PKG_CONFIG --libs "libibverbs" 2>/dev/null`
+	if test ! -n "$LIBIBVERBS_LIBS"; then
+    LIBIBVERBS_LIBS=`$PKG_CONFIG --libs "libibverbs" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
@@ -13481,10 +13453,8 @@ fi
         as_fn_error $? "$PKG_CONFIG --libs \"libibverbs\" failed: $_pkg_error_string" "$LINENO" 5
     fi
  fi
-	if test -n "$LIBIBVERBS_LIBS_STATIC"; then
-    pkg_cv_LIBIBVERBS_LIBS_STATIC="$LIBIBVERBS_LIBS_STATIC"
- else
-    pkg_cv_LIBIBVERBS_LIBS_STATIC=`$PKG_CONFIG --libs --static "libibverbs" 2>/dev/null`
+	if test ! -n "$LIBIBVERBS_LIBS_STATIC"; then
+    LIBIBVERBS_LIBS_STATIC=`$PKG_CONFIG --libs --static "libibverbs" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.
