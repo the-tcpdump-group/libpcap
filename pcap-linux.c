@@ -829,7 +829,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 	}
 
 	if (handlep->oneshot_buffer != NULL) {
-		free(handlep->oneshot_buffer);
+		munmap(handlep->oneshot_buffer, handle->snapshot);
 		handlep->oneshot_buffer = NULL;
 	}
 
@@ -2661,14 +2661,17 @@ static int
 setup_mmapped(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
-	int ret;
+	int ret, flags = MAP_ANONYMOUS | MAP_PRIVATE;
 
 	/*
 	 * Attempt to allocate a buffer to hold the contents of one
 	 * packet, for use by the oneshot callback.
 	 */
-	handlep->oneshot_buffer = malloc(handle->snapshot);
-	if (handlep->oneshot_buffer == NULL) {
+#ifdef MAP_32BIT
+	if (pcap_mmap_32bit) flags |= MAP_32BIT;
+#endif
+	handlep->oneshot_buffer = mmap(0, handle->snapshot, PROT_READ | PROT_WRITE, flags, -1, 0);
+	if (handlep->oneshot_buffer == MAP_FAILED) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't allocate oneshot buffer");
 		*status = PCAP_ERROR;
@@ -2681,7 +2684,7 @@ setup_mmapped(pcap_t *handle, int *status)
 	}
 	ret = prepare_tpacket_socket(handle);
 	if (ret == -1) {
-		free(handlep->oneshot_buffer);
+		munmap(handlep->oneshot_buffer, handle->snapshot);
 		handlep->oneshot_buffer = NULL;
 		*status = PCAP_ERROR;
 		return ret;
@@ -2692,7 +2695,7 @@ setup_mmapped(pcap_t *handle, int *status)
 		 * Error attempting to enable memory-mapped capture;
 		 * fail.  create_ring() has set *status.
 		 */
-		free(handlep->oneshot_buffer);
+		munmap(handlep->oneshot_buffer, handle->snapshot);
 		handlep->oneshot_buffer = NULL;
 		return -1;
 	}
@@ -2870,6 +2873,7 @@ create_ring(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
 	unsigned i, j, frames_per_block;
+	int flags = MAP_SHARED;
 #ifdef HAVE_TPACKET3
 	/*
 	 * For sockets using TPACKET_V2, the extra stuff at the end of a
@@ -3252,8 +3256,10 @@ retry:
 
 	/* memory map the rx ring */
 	handlep->mmapbuflen = req.tp_block_nr * req.tp_block_size;
-	handlep->mmapbuf = mmap(0, handlep->mmapbuflen,
-	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
+#ifdef MAP_32BIT
+	if (pcap_mmap_32bit) flags |= MAP_32BIT;
+#endif
+	handlep->mmapbuf = mmap(0, handlep->mmapbuflen, PROT_READ | PROT_WRITE, flags, handle->fd, 0);
 	if (handlep->mmapbuf == MAP_FAILED) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't mmap rx ring");

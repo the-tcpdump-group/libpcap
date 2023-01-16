@@ -1790,6 +1790,7 @@ pcap_activate_bpf(pcap_t *p)
 #ifdef HAVE_ZEROCOPY_BPF
 	struct bpf_zbuf bz;
 	u_int bufmode, zbufmax;
+	int flags = MAP_ANON;
 #endif
 
 	fd = bpf_open(p->errbuf);
@@ -2092,10 +2093,13 @@ pcap_activate_bpf(pcap_t *p)
 		pb->zbufsize = roundup(v, getpagesize());
 		if (pb->zbufsize > zbufmax)
 			pb->zbufsize = zbufmax;
+#ifdef MAP_32BIT
+		if (pcap_mmap_32bit) flags |= MAP_32BIT;
+#endif
 		pb->zbuf1 = mmap(NULL, pb->zbufsize, PROT_READ | PROT_WRITE,
-		    MAP_ANON, -1, 0);
+		    flags, -1, 0);
 		pb->zbuf2 = mmap(NULL, pb->zbufsize, PROT_READ | PROT_WRITE,
-		    MAP_ANON, -1, 0);
+		    flags, -1, 0);
 		if (pb->zbuf1 == MAP_FAILED || pb->zbuf2 == MAP_FAILED) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "mmap");

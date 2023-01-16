@@ -429,6 +429,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
  */
 #define PCAP_CHAR_ENC_LOCAL	0x00000000U	/* strings are in the local character encoding */
 #define PCAP_CHAR_ENC_UTF_8	0x00000001U	/* strings are in UTF-8 */
+#define PCAP_MMAP_32BIT	0x00000002U	/* map packet buffers with 32-bit addresses */
 
 PCAP_AVAILABLE_1_10
 PCAP_API int	pcap_init(unsigned int, char *);

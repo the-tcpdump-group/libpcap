@@ -49,6 +49,9 @@ caller, as being in the local character encoding.
 .B PCAP_CHAR_ENC_UTF_8
 Treat all strings supplied as arguments, and return all strings to the
 caller, as being in UTF-8.
+.B PCAP_MMAP_32BIT
+Map packet buffers with 32-bit addresses.
+.TP
 .PP
 On UNIX-like systems, the local character encoding is assumed to be
 UTF-8, so no character encoding transformations are done.
