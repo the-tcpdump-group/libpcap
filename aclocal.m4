@@ -1158,12 +1158,12 @@ if test -n "$PKG_CONFIG"; then
 fi[]dnl
 ])dnl PKG_PROG_PKG_CONFIG
 
-dnl PKG_CHECK_EXISTS(MODULES, [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+dnl PKG_CHECK_EXISTS(MODULE, [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 dnl -------------------------------------------------------------------
 dnl Since: 0.18
 dnl
-dnl Check to see whether a particular set of modules exists. Similar to
-dnl PKG_CHECK_MODULES(), but does not set variables or print errors.
+dnl Check to see whether a particular module exists. Similar to
+dnl PKG_CHECK_MODULE(), but does not set variables or print errors.
 AC_DEFUN([PKG_CHECK_EXISTS],
 [
 if test -n "$PKG_CONFIG" && \
@@ -1173,7 +1173,36 @@ m4_ifvaln([$3], [else
   $3])dnl
 fi])
 
-dnl _PKG_CONFIG([VARIABLE], [FLAGS], [MODULES])
+dnl _PKG_CONFIG_WITH_FLAGS([VARIABLE], [FLAGS], [MODULE])
+dnl ---------------------------------------------
+dnl Internal wrapper calling pkg-config via PKG_CONFIG and, if
+dnl pkg-config fails, reporting the error and quitting.
+m4_define([_PKG_CONFIG_WITH_FLAGS],
+[if test -n "$$1"; then
+    pkg_cv_[]$1="$$1"
+ else
+    pkg_cv_[]$1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
+    if test "x$?" != "x0"; then
+        #
+        # That failed - report an error.
+        # Re-run the command, telling pkg-config to print an error
+        # message, capture the error message, and report it.
+        # This causes the configuration script to fail, as it means
+        # the script is almost certainly doing something wrong.
+        #
+        _PKG_SHORT_ERRORS_SUPPORTED
+	if test $_pkg_short_errors_supported = yes; then
+	    _pkg_error_string=`$PKG_CONFIG --short-errors --print-errors $2 "$3" 2>&1`
+	else
+	    _pkg_error_string=`$PKG_CONFIG --print-errors $2 "$3" 2>&1`
+	fi
+        AC_MSG_ERROR([$PKG_CONFIG $2 "$3" failed: $_pkg_error_string])
+    fi
+ fi[]dnl
+])dnl _PKG_CONFIG_WITH_FLAGS
+
+
+dnl _PKG_CONFIG([VARIABLE], [FLAGS], [MODULE])
 dnl ---------------------------------------------
 dnl Internal wrapper calling pkg-config via PKG_CONFIG and setting
 dnl pkg_failed based on the result.
@@ -1203,97 +1232,55 @@ fi[]dnl
 ])dnl _PKG_SHORT_ERRORS_SUPPORTED
 
 
-dnl PKG_CHECK_MODULES(VARIABLE-PREFIX, MODULES, [ACTION-IF-FOUND],
+dnl PKG_CHECK_MODULE(VARIABLE-PREFIX, MODULE, [ACTION-IF-FOUND],
 dnl   [ACTION-IF-NOT-FOUND])
 dnl --------------------------------------------------------------
 dnl Since: 0.4.0
-AC_DEFUN([PKG_CHECK_MODULES],
+AC_DEFUN([PKG_CHECK_MODULE],
 [
-AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $2, overriding pkg-config])dnl
-AC_ARG_VAR([$1][_LIBS], [linker flags for $2, overriding pkg-config])dnl
-AC_ARG_VAR([$1][_LIBS_STATIC], [static-link linker flags for $2, overriding pkg-config])dnl
-
-pkg_failed=no
 AC_MSG_CHECKING([for $2 with pkg-config])
-PKG_CHECK_EXISTS($2,
-    [
+if test -n "$PKG_CONFIG"; then
+    AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $2, overriding pkg-config])dnl
+    AC_ARG_VAR([$1][_LIBS], [linker flags for $2, overriding pkg-config])dnl
+    AC_ARG_VAR([$1][_LIBS_STATIC], [static-link linker flags for $2, overriding pkg-config])dnl
+
+    if AC_RUN_LOG([$PKG_CONFIG --exists --print-errors "$2"]); then
 	#
 	# The package was found, so try to get its C flags and
 	# libraries.
 	#
-	_PKG_CONFIG([$1][_CFLAGS], [--cflags], [$2])
-	_PKG_CONFIG([$1][_LIBS], [--libs], [$2])
-	_PKG_CONFIG([$1][_LIBS_STATIC], [--libs --static], [$2])
-
-	m4_define([_PKG_TEXT], [
-Alternatively, you may set the environment variables $1[]_CFLAGS
-and $1[]_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.])
-
-	if test $pkg_failed = yes; then
-		#
-		# That failed - report an error.
-		#
-		AC_MSG_RESULT([error])
-		_PKG_SHORT_ERRORS_SUPPORTED
-	        if test $_pkg_short_errors_supported = yes; then
-		        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
-	        else
-		        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
-	        fi
-		# Put the nasty error message in config.log where it belongs
-		echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
-
-		m4_default([$4], [AC_MSG_ERROR(
-[Package requirements ($2) were not met:
-
-$$1_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-_PKG_TEXT])[]dnl
-        ])
-	elif test $pkg_failed = untried; then
-		#
-		# We don't have pkg-config, so it didn't work.
-		#
-		AC_MSG_RESULT([not found (pkg-config not found)])
-	else
-		#
-		# We found the package.
-		#
-		$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
-		$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
-		$1[]_LIBS_STATIC=$pkg_cv_[]$1[]_LIBS_STATIC
-	        AC_MSG_RESULT([found])
-		$3
-	fi[]dnl
-    ],
-    [
-	#
-	# The package isn't present.
-	#
-	AC_MSG_RESULT([not found])
-    ])
-])dnl PKG_CHECK_MODULES
+        AC_MSG_RESULT([found])
+	_PKG_CONFIG_WITH_FLAGS([$1][_CFLAGS], [--cflags], [$2])
+	_PKG_CONFIG_WITH_FLAGS([$1][_LIBS], [--libs], [$2])
+	_PKG_CONFIG_WITH_FLAGS([$1][_LIBS_STATIC], [--libs --static], [$2])
+        m4_default([$3], [:])
+    else
+        AC_MSG_RESULT([not found])
+        m4_default([$4], [:])
+    fi
+else
+    # No pkg-config, so obviously not found with pkg-config.
+    AC_MSG_RESULT([pkg-config not found])
+    m4_default([$4], [:])
+fi
+])dnl PKG_CHECK_MODULE
 
 
-dnl PKG_CHECK_MODULES_STATIC(VARIABLE-PREFIX, MODULES, [ACTION-IF-FOUND],
+dnl PKG_CHECK_MODULE_STATIC(VARIABLE-PREFIX, MODULE, [ACTION-IF-FOUND],
 dnl   [ACTION-IF-NOT-FOUND])
 dnl ---------------------------------------------------------------------
 dnl Since: 0.29
 dnl
-dnl Checks for existence of MODULES and gathers its build flags with
+dnl Checks for existence of MODULE and gathers its build flags with
 dnl static libraries enabled. Sets VARIABLE-PREFIX_CFLAGS from --cflags
 dnl and VARIABLE-PREFIX_LIBS from --libs.
-AC_DEFUN([PKG_CHECK_MODULES_STATIC],
+AC_DEFUN([PKG_CHECK_MODULE_STATIC],
 [
 _save_PKG_CONFIG=$PKG_CONFIG
 PKG_CONFIG="$PKG_CONFIG --static"
-PKG_CHECK_MODULES($@)
+PKG_CHECK_MODULE($@)
 PKG_CONFIG=$_save_PKG_CONFIG[]dnl
-])dnl PKG_CHECK_MODULES_STATIC
+])dnl PKG_CHECK_MODULE_STATIC
 
 
 dnl PKG_INSTALLDIR([DIRECTORY])

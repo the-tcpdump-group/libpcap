@@ -1030,7 +1030,7 @@ linux)
 		#
 		# Check for libnl-genl-3.0 with pkg-config.
 		#
-		PKG_CHECK_MODULES(LIBNL, libnl-genl-3.0,
+		PKG_CHECK_MODULE(LIBNL, libnl-genl-3.0,
 		    [
 			pkg_config_found_libnl=yes
 			V_INCLS="$V_INCLS $LIBNL_CFLAGS"
@@ -1795,7 +1795,7 @@ yes)	AC_MSG_RESULT(yes)
 		openssl_pkgconfig_dir=`$BREW --env --plain openssl | sed -n 's/PKG_CONFIG_PATH: //p'`
 		PKG_CONFIG_PATH="$openssl_pkgconfig_dir:$PKG_CONFIG_PATH"
 	fi
-	PKG_CHECK_MODULES(OPENSSL, openssl,
+	PKG_CHECK_MODULE(OPENSSL, openssl,
 	    [
 		#
 		# We found OpenSSL/libressl.
@@ -2725,7 +2725,7 @@ if test "$want_dpdk" != no; then
 	if test -n "$dpdk_dir"; then
 		PKG_CONFIG_PATH="$dpdk_dir:$PKG_CONFIG_PATH"
 	fi
-	PKG_CHECK_MODULES(DPDK, libdpdk,
+	PKG_CHECK_MODULE(DPDK, libdpdk,
 	    [
 		found_dpdk=yes
 	    ])
@@ -2992,7 +2992,7 @@ if test "x$enable_dbus" != "xno"; then
 fi
 
 if test "x$enable_dbus" != "xno"; then
-	PKG_CHECK_MODULES(DBUS, dbus-1,
+	PKG_CHECK_MODULE(DBUS, dbus-1,
 	    [
 		AC_LBL_SAVE_CHECK_STATE
 		CFLAGS="$CFLAGS $DBUS_CFLAGS"
@@ -3043,7 +3043,7 @@ if test "xxx_only" = yes; then
 fi
 
 if test "x$enable_rdma" != "xno"; then
-	PKG_CHECK_MODULES(LIBIBVERBS, libibverbs,
+	PKG_CHECK_MODULE(LIBIBVERBS, libibverbs,
 	    [
 		found_libibverbs=yes
 		LIBIBVERBS_REQUIRES_PRIVATE="libibverbs"
