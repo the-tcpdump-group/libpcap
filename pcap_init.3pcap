@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_INIT 3PCAP "4 May 2022"
+.TH PCAP_INIT 3PCAP "17 January 2023"
 .SH NAME
 pcap_init \- initialize the library
 .SH SYNOPSIS
@@ -42,6 +42,9 @@ is used to initialize the Packet Capture library.
 specifies options for the library;
 currently, the options are:
 .TP
+.B PCAP_MMAP_32BIT
+Map packet buffers with 32-bit addresses.
+.TP
 .B PCAP_CHAR_ENC_LOCAL
 Treat all strings supplied as arguments, and return all strings to the
 caller, as being in the local character encoding.
@@ -49,9 +52,6 @@ caller, as being in the local character encoding.
 .B PCAP_CHAR_ENC_UTF_8
 Treat all strings supplied as arguments, and return all strings to the
 caller, as being in UTF-8.
-.B PCAP_MMAP_32BIT
-Map packet buffers with 32-bit addresses.
-.TP
 .PP
 On UNIX-like systems, the local character encoding is assumed to be
 UTF-8, so no character encoding transformations are done.
