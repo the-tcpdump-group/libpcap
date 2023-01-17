@@ -6317,6 +6317,59 @@ fi
 	save_LIBS="$LIBS"
 	save_LDFLAGS="$LDFLAGS"
 
+if test "$GCC" = yes ; then
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ANSI ioctl definitions" >&5
+printf %s "checking for ANSI ioctl definitions... " >&6; }
+	    if test ${ac_cv_lbl_gcc_fixincludes+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+/*
+		     * This generates a "duplicate case value" when fixincludes
+		     * has not be run.
+		     */
+#		include <sys/types.h>
+#		include <sys/time.h>
+#		include <sys/ioctl.h>
+#		ifdef HAVE_SYS_IOCCOM_H
+#		include <sys/ioccom.h>
+#		endif
+int
+main (void)
+{
+switch (0) {
+		    case _IO('A', 1):;
+		    case _IO('B', 1):;
+		    }
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ac_cv_lbl_gcc_fixincludes=yes
+else $as_nop
+  ac_cv_lbl_gcc_fixincludes=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_gcc_fixincludes" >&5
+printf "%s\n" "$ac_cv_lbl_gcc_fixincludes" >&6; }
+	    if test $ac_cv_lbl_gcc_fixincludes = no ; then
+		    # Don't cache failure
+		    unset ac_cv_lbl_gcc_fixincludes
+		    as_fn_error $? "see the INSTALL for more info" "$LINENO" 5
+	    fi
+    fi
+
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
+
+
 case "$host_os" in
 haiku*)
 	#
@@ -6371,59 +6424,6 @@ fi
 
 	;;
 esac
-
-if test "$GCC" = yes ; then
-	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ANSI ioctl definitions" >&5
-printf %s "checking for ANSI ioctl definitions... " >&6; }
-	    if test ${ac_cv_lbl_gcc_fixincludes+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-/*
-		     * This generates a "duplicate case value" when fixincludes
-		     * has not be run.
-		     */
-#		include <sys/types.h>
-#		include <sys/time.h>
-#		include <sys/ioctl.h>
-#		ifdef HAVE_SYS_IOCCOM_H
-#		include <sys/ioccom.h>
-#		endif
-int
-main (void)
-{
-switch (0) {
-		    case _IO('A', 1):;
-		    case _IO('B', 1):;
-		    }
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  ac_cv_lbl_gcc_fixincludes=yes
-else $as_nop
-  ac_cv_lbl_gcc_fixincludes=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_gcc_fixincludes" >&5
-printf "%s\n" "$ac_cv_lbl_gcc_fixincludes" >&6; }
-	    if test $ac_cv_lbl_gcc_fixincludes = no ; then
-		    # Don't cache failure
-		    unset ac_cv_lbl_gcc_fixincludes
-		    as_fn_error $? "see the INSTALL for more info" "$LINENO" 5
-	    fi
-    fi
-
-	CFLAGS="$save_CFLAGS"
-	LIBS="$save_LIBS"
-	LDFLAGS="$save_LDFLAGS"
-
 
 ac_fn_c_check_func "$LINENO" "strerror" "ac_cv_func_strerror"
 if test "x$ac_cv_func_strerror" = xyes

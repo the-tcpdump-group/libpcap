@@ -179,6 +179,9 @@ AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 
 AC_LBL_SAVE_CHECK_STATE
+AC_LBL_FIXINCLUDES
+AC_LBL_RESTORE_CHECK_STATE
+
 case "$host_os" in
 haiku*)
 	#
@@ -191,9 +194,6 @@ haiku*)
 	AC_CHECK_LIB(bsd, getpass)
 	;;
 esac
-
-AC_LBL_FIXINCLUDES
-AC_LBL_RESTORE_CHECK_STATE
 
 AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNC(strerror_r,
