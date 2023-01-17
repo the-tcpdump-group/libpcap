@@ -178,13 +178,12 @@ dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 
-AC_LBL_SAVE_CHECK_STATE
 case "$host_os" in
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
 	#
-	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	V_DEFS="$V_DEFS -D_BSD_SOURCE"
 	#
 	# Haiku has getpass in libbsd.
 	#
@@ -192,6 +191,7 @@ haiku*)
 	;;
 esac
 
+AC_LBL_SAVE_CHECK_STATE
 AC_LBL_FIXINCLUDES
 AC_LBL_RESTORE_CHECK_STATE
 

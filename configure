@@ -5958,17 +5958,12 @@ fi
 done
 
 
-
-	save_CFLAGS="$CFLAGS"
-	save_LIBS="$LIBS"
-	save_LDFLAGS="$LDFLAGS"
-
 case "$host_os" in
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
 	#
-	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	V_DEFS="$V_DEFS -D_BSD_SOURCE"
 	#
 	# Haiku has getpass in libbsd.
 	#
@@ -6019,6 +6014,11 @@ fi
 
 	;;
 esac
+
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
 
 if test "$GCC" = yes ; then
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI ioctl definitions" >&5
