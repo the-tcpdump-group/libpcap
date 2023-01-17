@@ -24,9 +24,10 @@ AC_SUBST(PACKAGE_NAME)
 # These are the variables that are used in Makefile, pcap-config, and
 # libpcap.pc.
 #
-# CFLAGS: inherited from the environment, not modified by us (except
-# temporarily during tests that involve compilation).  Used only when
-# compiling C source.
+# CFLAGS: inherited from the environment, not modified by us except
+# for flags required for the platform for which we're building (and
+# except temporarily during tests that involve compilation).  Used only
+# when compiling C source.
 #
 # CXXFLAGS: inherited from the environment, not modified by us.  Used only
 # when compiling C++ source.
@@ -178,12 +179,18 @@ dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 
+#
+# Check whether the platform for which we're compiling requires extra
+# defines and libraries.  If so, add them to CFLAGS and LIBS, as we want
+# all subsequent tests to be done with those defines and libraries.
+3
 case "$host_os" in
 haiku*)
 	#
-	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't
+	# use them.
 	#
-	V_DEFS="$V_DEFS -D_BSD_SOURCE"
+	CFLAGS="$CFLAGS -D_BSD_SOURCE"
 	#
 	# Haiku has getpass in libbsd.
 	#
