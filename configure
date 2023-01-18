@@ -6317,7 +6317,7 @@ fi
 # Check whether the platform for which we're compiling requires extra
 # defines and libraries.  If so, add them to CFLAGS and LIBS, as we want
 # all subsequent tests to be done with those defines and libraries.
-3
+#
 case "$host_os" in
 haiku*)
 	#
