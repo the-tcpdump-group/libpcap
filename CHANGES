@@ -42,6 +42,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.4 libpcap release (so far!)
     Building and testing:
       Require at least pkg-config 0.17.0, as we use --static.
+      Get rid of the remains of gnuc.h.
 
 Thursday, January 12, 2023 / The Tcpdump Group
   Summary for 1.10.3 libpcap release
