@@ -194,7 +194,7 @@ and the
 .B org.tcpdump.rpcapd.plist
 file has been installed, the rpcapd service can be enabled by loading
 the
-.B com.tcpdump.rpcapd
+.B org.tcpdump.rpcapd
 service.
 .LP
 If your system supports
