@@ -1,5 +1,7 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.4 libpcap release (so far!)
+    rpcap:
+      Fix name of launchd service.
     Documentation:
       Document use of rpcapd with systemd, launchd, inetd, and xinetd.
     Building and testing:
