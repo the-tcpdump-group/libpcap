@@ -42,7 +42,7 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
 
-/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
+/* Define to 1 if `dl_hp_ppa_info_t' is a member of `dl_module_id_1'. */
 #undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 /* Define to 1 if the system has the type `dl_passive_req_t'. */
@@ -105,6 +105,9 @@
 /* Define to 1 if you have the <linux/wireless.h> header file. */
 #undef HAVE_LINUX_WIRELESS_H
 
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #undef HAVE_NETPACKET_PACKET_H
 
@@ -165,9 +168,6 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
-/* Define to 1 if you have the <stdio.h> header file. */
-#undef HAVE_STDIO_H
-
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
@@ -195,29 +195,29 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #undef HAVE_STRUCT_ETHER_ADDR
 
-/* Define to 1 if `msg_control' is a member of `struct msghdr'. */
+/* Define to 1 if `struct msghdr' is a member of `msg_control'. */
 #undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 
-/* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
+/* Define to 1 if `struct msghdr' is a member of `msg_flags'. */
 #undef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 
 /* Define to 1 if the system has the type `struct rte_ether_addr'. */
 #undef HAVE_STRUCT_RTE_ETHER_ADDR
 
-/* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
+/* Define to 1 if `struct sockaddr_hci' is a member of `hci_channel'. */
 #undef HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL
 
-/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
+/* Define to 1 if `struct sockaddr' is a member of `sa_len'. */
 #undef HAVE_STRUCT_SOCKADDR_SA_LEN
 
 /* Define to 1 if the system has the type `struct sockaddr_storage'. */
 #undef HAVE_STRUCT_SOCKADDR_STORAGE
 
-/* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
+/* Define to 1 if `struct tpacket_auxdata' is a member of `tp_vlan_tci'. */
 #undef HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI
 
-/* Define to 1 if `bRequestType' is a member of `struct
-   usbdevfs_ctrltransfer'. */
+/* Define to 1 if `struct usbdevfs_ctrltransfer' is a member of
+   `bRequestType'. */
 #undef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
@@ -328,9 +328,7 @@
 /* The size of `void *', as computed by sizeof. */
 #undef SIZEOF_VOID_P
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
-   required in a freestanding environment). This macro is provided for
-   backward compatibility; new code need not use it. */
+/* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Define to 1 if strings.h declares `ffs' */
