@@ -42,7 +42,7 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
 
-/* Define to 1 if `dl_hp_ppa_info_t' is a member of `dl_module_id_1'. */
+/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
 #undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 /* Define to 1 if the system has the type `dl_passive_req_t'. */
@@ -195,29 +195,29 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #undef HAVE_STRUCT_ETHER_ADDR
 
-/* Define to 1 if `struct msghdr' is a member of `msg_control'. */
+/* Define to 1 if `msg_control' is a member of `struct msghdr'. */
 #undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 
-/* Define to 1 if `struct msghdr' is a member of `msg_flags'. */
+/* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
 #undef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 
 /* Define to 1 if the system has the type `struct rte_ether_addr'. */
 #undef HAVE_STRUCT_RTE_ETHER_ADDR
 
-/* Define to 1 if `struct sockaddr_hci' is a member of `hci_channel'. */
+/* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
 #undef HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL
 
-/* Define to 1 if `struct sockaddr' is a member of `sa_len'. */
+/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
 #undef HAVE_STRUCT_SOCKADDR_SA_LEN
 
 /* Define to 1 if the system has the type `struct sockaddr_storage'. */
 #undef HAVE_STRUCT_SOCKADDR_STORAGE
 
-/* Define to 1 if `struct tpacket_auxdata' is a member of `tp_vlan_tci'. */
+/* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
 #undef HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI
 
-/* Define to 1 if `struct usbdevfs_ctrltransfer' is a member of
-   `bRequestType'. */
+/* Define to 1 if `bRequestType' is a member of `struct
+   usbdevfs_ctrltransfer'. */
 #undef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
@@ -343,6 +343,11 @@
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */
 #undef YYTEXT_POINTER
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS
