@@ -176,6 +176,9 @@ needs sufficient privileges to perform packet capture, e.g.
 run as root or be owned by root and have suid set. Most operating
 systems provide more elegant solutions when run as user than the
 above solutions, all of them different.
+.LP
+If your system supports systemd and the corresponding service files have been
+installed, the rpcapd service can be enabled by enabling the rpcap.socket unit.
 .SH OPTIONS
 .TP
 .BI \-b " address"
