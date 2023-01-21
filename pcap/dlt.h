@@ -1019,9 +1019,9 @@
 #define DLT_AOS                 222
 
 /*
- * Wireless HART (Highway Addressable Remote Transducer)
+ * WirelessHART (Highway Addressable Remote Transducer)
  * From the HART Communication Foundation
- * IES/PAS 62591
+ * IEC/PAS 62591
  *
  * Requested by Sam Roberts <vieuxtech@gmail.com>.
  */

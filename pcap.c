@@ -3257,7 +3257,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_LINUX_MMAPPED, "USB with padded Linux header"),
 	DLT_CHOICE(DECT, "DECT"),
 	DLT_CHOICE(AOS, "AOS Space Data Link protocol"),
-	DLT_CHOICE(WIHART, "Wireless HART"),
+	DLT_CHOICE(WIHART, "WirelessHART"),
 	DLT_CHOICE(FC_2, "Fibre Channel FC-2"),
 	DLT_CHOICE(FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
 	DLT_CHOICE(IPNET, "Solaris ipnet"),
