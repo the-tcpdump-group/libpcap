@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * pcap-common.c - common code for pcap and pcapng files
+ * pcap-util.c - common code for various files
  */
 
 #ifdef HAVE_CONFIG_H
