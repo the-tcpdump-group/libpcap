@@ -258,6 +258,7 @@ EXTRA_DIST = \
 	doc/README.Win32.md \
 	doc/README.aix \
 	doc/README.dag \
+	doc/README.haiku.md \
 	doc/README.hpux \
 	doc/README.linux \
 	doc/README.macos \
