@@ -218,9 +218,12 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	bpf_dump.c	    - BPF program printing routines
 	bpf_filter.c	    - BPF filtering routines
 	bpf_image.c	    - BPF disassembly routine
+	charconv.c	    - Windows Unicode routines
+	charconv.h	    - Windows Unicode prototypes
 	config.guess	    - autoconf support
 	config.sub	    - autoconf support
 	configure.ac	    - configure script source
+	diag-control.h	    - compiler diagnostics control macros
 	dlpisubs.c	    - DLPI-related functions for pcap-dlpi.c and pcap-libdlpi.c
 	dlpisubs.h	    - DLPI-related function declarations
 	etherent.c	    - /etc/ethers support routines
@@ -228,6 +231,9 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	fad-getad.c	    - pcap_findalldevs() for systems with getifaddrs()
 	fad-gifc.c	    - pcap_findalldevs() for systems with only SIOCGIFLIST
 	fad-glifc.c	    - pcap_findalldevs() for systems with SIOCGLIFCONF
+	fmtutils.c	    - error message formatting routines
+	fmtutils.h	    - error message formatting prototypes
+	ftmacros.h	    - feature test macros
 	testprogs/filtertest.c      - test program for BPF compiler
 	testprogs/findalldevstest.c - test program for pcap_findalldevs()
 	gencode.c	    - BPF code generation routines
@@ -241,41 +247,80 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	mkdep		    - construct Makefile dependency list
 	msdos/*		    - drivers for MS-DOS capture support
 	nametoaddr.c	    - hostname to address routines
+	nametoaddr.h	    - hostname to address prototypes
 	nlpid.h		    - OSI network layer protocol identifier definitions
 	optimize.c	    - BPF optimization routines
+	optimize.h	    - BPF optimization prototypes
 	pcap/bluetooth.h    - public definition of DLT_BLUETOOTH_HCI_H4_WITH_PHDR header
 	pcap/bpf.h	    - BPF definitions
+	pcap/can_socketcan.h - SocketCAN header
+	pcap/compiler-tests.h - compiler version comparison and other macros
+	pcap/dlt.h	    - Link-layer header type codes.
+	pcap/funcattrs.h    - function attribute macros
+	pcap/ipnet.h	    - Solaris IPnet definitions
 	pcap/namedb.h	    - public libpcap name database definitions
+	pcap/nflog.h	    - NFLOG-related definitions
 	pcap/pcap.h	    - public libpcap definitions
+	pcap/pcap-inttypes.h - header for OS-specific integer type includes
 	pcap/sll.h	    - public definitions of DLT_LINUX_SLL and DLT_LINUX_SLL2 headers
+	pcap/socket.h	    - IP sockets support for various OSes
 	pcap/usb.h	    - public definition of DLT_USB header
+	pcap/vlan.h	    - VLAN-specific definitions
+	pcap-airpcap.c	    - AirPcap device capture support
+	pcap-airpcap.h	    - AirPcap device capture support
 	pcap-bpf.c	    - BSD Packet Filter support
 	pcap-bpf.h	    - header for backwards compatibility
 	pcap-bt-linux.c	    - Bluetooth capture support for Linux
 	pcap-bt-linux.h	    - Bluetooth capture support for Linux
+	pcap-bt-monitor-linux.c - Bluetooth monitor capture support for Linux
+	pcap-bt-monitor-linux.h - Bluetooth monitor capture support for Linux
+	pcap-common.c	    - common code for pcap and pcapng files
+	pcap-common.h	    - common code for pcap and pcapng files
 	pcap-dag.c	    - Endace DAG device capture support
 	pcap-dag.h	    - Endace DAG device capture support
+	pcap-dbus.c	    - D-Bus capture support
+	pcap-dbus.h	    - D-Bus capture support
 	pcap-dlpi.c	    - Data Link Provider Interface support
 	pcap-dos.c	    - MS-DOS capture support
 	pcap-dos.h	    - headers for MS-DOS capture support
+	pcap-dpdk.c	    - DPDK device support
+	pcap-dpdk.h	    - DPDK device support
 	pcap-enet.c	    - enet support
+	pcap-hurd.c	    - GNU Hurd support
 	pcap-int.h	    - internal libpcap definitions
 	pcap-libdlpi.c	    - Data Link Provider Interface support for systems with libdlpi
 	pcap-linux.c	    - Linux packet socket support
 	pcap-namedb.h	    - header for backwards compatibility
+	pcap-netfilter-linux.c - Linux netfilter support
+	pcap-netfilter-linux.h - Linux netfilter support
+	pcap-netmap.c	    - netmap support
+	pcap-netmap.h	    - netmap support
 	pcap-nit.c	    - SunOS Network Interface Tap support
 	pcap-npf.c	    - Npcap capture support
 	pcap-null.c	    - dummy monitor support (allows offline use of libpcap)
 	pcap-pf.c	    - Ultrix and Digital/Tru64 UNIX Packet Filter support
+	pcap-rdmasniff.c    - RDMA/InfiniBand capture support
+	pcap-rdmasniff.h    - RDMA/InfiniBand capture support
+	pcap-rpcap.c	    - RPCAP protocol capture support
+	pcap-rpcap.h	    - RPCAP protocol capture support
 	pcap-septel.c       - Intel/Septel device capture support
 	pcap-septel.h       - Intel/Septel device capture support
 	pcap-sita.c	    - SITA device capture support
 	pcap-sita.h	    - SITA device capture support
 	pcap-sita.html	    - SITA device capture documentation
+	pcap-snf.c	    - Myricom SNF device capture support
+	pcap-snf.h	    - Myricom SNF device capture support
 	pcap-snit.c	    - SunOS 4.x STREAMS-based Network Interface Tap support
 	pcap-snoop.c	    - IRIX Snoop network monitoring support
+	pcap-tc.c	    - TurboCap device capture support
+	pcap-tc.h	    - TurboCap device capture support
+	pcap-types.h	    - header for OS-specific type includes
 	pcap-usb-linux.c    - USB capture support for Linux
 	pcap-usb-linux.h    - USB capture support for Linux
+	pcap-usb-linux-common.c - Linux USB common routines
+	pcap-usb-linux-common.h - Linux USB common prototypes
+	pcap-util.c	    - common code for various files
+	pcap-util.h	    - common code for various files
 	pcap.3pcap	    - manual entry for the library
 	pcap.c		    - pcap utility routines
 	pcap.h		    - header for backwards compatibility
@@ -283,6 +328,17 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-filter.manmisc.in   - manual entry for filter syntax
 	pcap-linktype.manmisc.in - manual entry for link-layer header types
 	ppp.h		    - Point to Point Protocol definitions
+	rpcap-protocol.c    - RPCAP client/server common routines
+	rpcap-protocol.h    - RPCAP client/server common prototypes
 	savefile.c	    - offline support
 	scanner.l	    - filter string scanner
+	sf-pcap.c	    - routines for .pcap savefiles
+	sf-pcap.h	    - prototypes for .pcap savefiles
+	sf-pcapng.c	    - routines for .pcapng savefiles
+	sf-pcapng.h	    - prototypes for .pcapng savefiles
+	sockutils.c	    - socket and name lookup API routines
+	sockutils.h	    - socket and name lookup API prototypes
+	sslutils.c	    - OpenSSL interface routines
+	sslutils.h	    - OpenSSL interface prototypes
 	sunatmpos.h	    - definitions for SunATM capturing
+	varattrs.h	    - variable attribute macros
