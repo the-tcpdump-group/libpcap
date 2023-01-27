@@ -699,10 +699,6 @@ LDFLAGS
 CFLAGS
 CC
 SHLICC2
-target_os
-target_vendor
-target_cpu
-target
 host_os
 host_vendor
 host_cpu
@@ -1414,7 +1410,6 @@ _ACEOF
 System types:
   --build=BUILD     configure for building on BUILD [guessed]
   --host=HOST       cross-compile to build programs to run on HOST [BUILD]
-  --target=TARGET   configure for building compilers for TARGET [HOST]
 _ACEOF
 fi
 
@@ -3037,46 +3032,6 @@ host_os=$*
 IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking target system type" >&5
-$as_echo_n "checking target system type... " >&6; }
-if ${ac_cv_target+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "x$target_alias" = x; then
-  ac_cv_target=$ac_cv_host
-else
-  ac_cv_target=`$SHELL "$ac_aux_dir/config.sub" $target_alias` ||
-    as_fn_error $? "$SHELL $ac_aux_dir/config.sub $target_alias failed" "$LINENO" 5
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_target" >&5
-$as_echo "$ac_cv_target" >&6; }
-case $ac_cv_target in
-*-*-*) ;;
-*) as_fn_error $? "invalid value of canonical target" "$LINENO" 5;;
-esac
-target=$ac_cv_target
-ac_save_IFS=$IFS; IFS='-'
-set x $ac_cv_target
-shift
-target_cpu=$1
-target_vendor=$2
-shift; shift
-# Remember, the first character of IFS is used to create $*,
-# except with old shells:
-target_os=$*
-IFS=$ac_save_IFS
-case $target_os in *\ *) target_os=`echo "$target_os" | sed 's/ /-/g'`;; esac
-
-
-# The aliases save the names the user supplied, while $host etc.
-# will get canonicalized.
-test -n "$target_alias" &&
-  test "$program_prefix$program_suffix$program_transform_name" = \
-    NONENONEs,x,x, &&
-  program_prefix=${target_alias}-
 
 
 
@@ -13835,7 +13790,7 @@ ac_config_headers="$ac_config_headers config.h"
 LIBS="$ADDITIONAL_LIBS $LIBS"
 LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $LIBS_STATIC"
 
-ac_config_commands="$ac_config_commands default-1"
+ac_config_commands="$ac_config_commands .devel"
 
 ac_config_files="$ac_config_files Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc cbpf-savefile.manfile pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile testprogs/Makefile"
 
@@ -14525,11 +14480,6 @@ _ASBOX
 
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
-#
-# INIT-COMMANDS
-#
-
-
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
@@ -14539,7 +14489,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-    "default-1") CONFIG_COMMANDS="$CONFIG_COMMANDS default-1" ;;
+    ".devel") CONFIG_COMMANDS="$CONFIG_COMMANDS .devel" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "grammar.y") CONFIG_FILES="$CONFIG_FILES grammar.y" ;;
     "pcap-filter.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-filter.manmisc" ;;
@@ -15118,7 +15068,7 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
 
   case $ac_file$ac_mode in
-    "default-1":C) if test -f .devel; then
+    ".devel":C) if test -f .devel; then
 	echo timestamp > stamp-h
 	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend || exit 1

@@ -14,9 +14,9 @@ dnl
 # config.sub.
 #
 
-AC_PREREQ(2.69)
+AC_PREREQ([2.69])
 
-AC_INIT(pcap, m4_esyscmd_s([cat VERSION]))
+AC_INIT([pcap],[m4_esyscmd_s(cat VERSION)])
 AC_CONFIG_SRCDIR(pcap.c)
 AC_SUBST(PACKAGE_NAME)
 
@@ -101,7 +101,7 @@ AC_SUBST(LIBS_STATIC)
 AC_SUBST(REQUIRES_PRIVATE)
 AC_SUBST(LIBS_PRIVATE)
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 
 AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
 #
@@ -1739,8 +1739,8 @@ AC_ARG_ENABLE([remote],
    [enableval=no])
 case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
-	AC_WARN([Remote packet capture may expose libpcap-based applications])
-	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_MSG_WARN(Remote packet capture may expose libpcap-based applications)
+	AC_MSG_WARN(to attacks by malicious remote capture servers!)
 	#
 	# rpcapd requires pthreads on UN*X.
 	#
@@ -3216,12 +3216,12 @@ AC_SUBST(RPCAPD_LIBS)
 LIBS="$ADDITIONAL_LIBS $LIBS"
 LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $LIBS_STATIC"
 
-AC_OUTPUT_COMMANDS([if test -f .devel; then
+AC_CONFIG_COMMANDS([.devel],[[if test -f .devel; then
 	echo timestamp > stamp-h
 	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend || exit 1
-fi])
-AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
+fi]])
+AC_CONFIG_FILES([Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc cbpf-savefile.manfile pcap-savefile.manfile pcap.3pcap
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
@@ -3229,5 +3229,6 @@ AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap
 	pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap
 	rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile
-	testprogs/Makefile)
+	testprogs/Makefile])
+AC_OUTPUT
 exit 0
