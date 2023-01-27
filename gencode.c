@@ -230,6 +230,26 @@ struct chunk {
 	void *m;
 };
 
+/*
+ * A chunk can store any of:
+ *  - a string (guaranteed alignment 1 but present for completeness)
+ *  - a block
+ *  - an slist
+ *  - an arth
+ * For this simple allocator every allocated chunk gets rounded up to the
+ * alignment needed for any chunk.
+ */
+struct chunk_align {
+	char dummy;
+	union {
+		char c;
+		struct block b;
+		struct slist s;
+		struct arth a;
+	} u;
+};
+#define CHUNK_ALIGN (offsetof(struct chunk_align, u))
+
 /* Code generator state */
 
 struct _compiler_state {
@@ -598,13 +618,8 @@ newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 	int k;
 	size_t size;
 
-#ifndef __NetBSD__
-	/* XXX Round up to nearest long. */
-	n = (n + sizeof(long) - 1) & ~(sizeof(long) - 1);
-#else
-	/* XXX Round up to structure boundary. */
-	n = ALIGN(n);
-#endif
+	/* Round up to chunk alignment. */
+	n = (n + CHUNK_ALIGN - 1) & ~(CHUNK_ALIGN - 1);
 
 	cp = &cstate->chunks[cstate->cur_chunk];
 	if (n > cp->n_left) {
