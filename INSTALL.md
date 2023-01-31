@@ -15,7 +15,7 @@ to select the `autoreconf` version you want to use.
 * Run `./configure` (a shell script).  The configure script will
 determine your system attributes and generate an appropriate `Makefile`
 from `Makefile.in`.  The configure script has a number of options to
-control the configuration of libpcap; `./configure --help`` will show
+control the configuration of libpcap; `./configure --help` will show
 them.
 
 * Next, run `make`.  If everything goes well, you can
@@ -74,7 +74,7 @@ forget to include an autoconf fragment suitable for use in
 `configure.ac`.
 
 It is possible to override the default packet capture type with the
-`--with-pcap`` option to `./configure` or the `-DPCAP_TYPE` option to
+`--with-pcap` option to `./configure` or the `-DPCAP_TYPE` option to
 CMake, although the circumstances where this works are limited.  One
 possible reason to do that would be to force a supported packet capture
 type in the case where the configure or CMake scripts fails to detect
