@@ -846,7 +846,7 @@ tags: $(TAGFILES)
 #
 releasetar:
 	@TAG=$(PROG)-`cat VERSION` && \
-	if ! [ -d .git ]; then echo 'Not in a git clone, stop.'; exit 1; fi && \
+	if [ ! -d .git ]; then echo 'Not in a git clone, stop.'; exit 1; fi && \
 	TMPTESTFILE=`mktemp -t tmptestfile_XXXXXXXX` && \
 	rm -f "$$TMPTESTFILE" && \
 	AUTORECONF_DIR=`dirname "$$TMPTESTFILE"`/"$(PROG)"_build_autoreconf_$$$$ && \
