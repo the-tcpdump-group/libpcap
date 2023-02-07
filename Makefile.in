@@ -562,9 +562,6 @@ gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
 asprintf.o: $(srcdir)/missing/asprintf.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/asprintf.c
 
-snprintf.o: $(srcdir)/missing/snprintf.c
-	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
-
 strlcat.o: $(srcdir)/missing/strlcat.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strlcat.c
 

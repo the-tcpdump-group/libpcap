@@ -23,8 +23,7 @@ ASM    = tasm.exe -t -l -mx -m2 -DDEBUG
 
 SOURCE = grammar.c  scanner.c bpf_filt.c bpf_imag.c bpf_dump.c \
          etherent.c gencode.c nametoad.c pcap-dos.c optimize.c \
-         savefile.c pcap.c msdos\ndis2.c msdos\pktdrvr.c \
-         missing\snprintf.c
+         savefile.c pcap.c msdos\ndis2.c msdos\pktdrvr.c
 
 BORLAND_OBJ = $(SOURCE:.c=.obj) msdos\pkt_rx0.obj msdos\ndis_0.obj
 
