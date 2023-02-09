@@ -1045,8 +1045,6 @@ Alternation (`\fB||\fP' or `\fBor\fP').
 Negation has the highest precedence.
 Alternation and concatenation have equal precedence and associate
 left to right.
-Note that explicit \fBand\fR tokens, not juxtaposition,
-are now required for concatenation.
 .LP
 If an identifier is given without a keyword, the most recent keyword
 is assumed.
