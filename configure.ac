@@ -168,13 +168,9 @@ AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
 dnl
-dnl Even if <net/bpf.h> were, on all OSes that support BPF, fixed to
-dnl include <sys/ioccom.h>, and we were to drop support for older
-dnl releases without that fix, so that pcap-bpf.c doesn't need to
-dnl include <sys/ioccom.h>, the test program in "AC_LBL_FIXINCLUDES"
-dnl in "aclocal.m4" uses it, so we would still have to test for it
-dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
-dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
+dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+dnl (this might have already happened).
 dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
@@ -197,10 +193,6 @@ haiku*)
 	AC_CHECK_LIB(bsd, getpass)
 	;;
 esac
-
-AC_LBL_SAVE_CHECK_STATE
-AC_LBL_FIXINCLUDES
-AC_LBL_RESTORE_CHECK_STATE
 
 AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNC(strerror_r,
