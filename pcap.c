@@ -1503,10 +1503,6 @@ pcap_lookupdev(char *errbuf)
    * XXX - that might not be large enough for capture devices
    * that aren't regular network interfaces.
    */
-  /* for old BSD systems, including bsdi3 */
-  #ifndef IF_NAMESIZE
-  #define IF_NAMESIZE IFNAMSIZ
-  #endif
 #endif
 	static char device[IF_NAMESIZE + 1];
 	char *ret;
