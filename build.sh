@@ -84,15 +84,6 @@ suncc-5.1[45]/SunOS-5.11)
     LIBPCAP_TAINTED=yes
     ;;
 */Haiku-*)
-    # (GCC 8.3.0 and later, Clang 9.0.1.)
-    # pcap-haiku.cpp:55:21: warning: unused variable 'handlep' [-Wunused-variable]
-    # pcap-haiku.cpp:50:37: warning: unused parameter 'maxPackets' [-Wunused-parameter]
-    # pcap-haiku.cpp:111:47: warning: unused parameter 'buffer' [-Wunused-parameter]
-    # pcap-haiku.cpp:111:59: warning: unused parameter 'size' [-Wunused-parameter]
-    # pcap-haiku.cpp:268:26: warning: unused parameter 'name' [-Wunused-parameter]
-    # pcap-haiku.cpp:274:26: warning: unused parameter 'name' [-Wunused-parameter]
-    # pcap-haiku.cpp:274:58: warning: unused parameter 'errbuf' [-Wunused-parameter]
-    #
     # (The warnings below come from GCC and Clang in CMake builds after installing
     # all system updates.)
     # gencode.c:4143:9: warning: converting a packed 'struct in6_addr' pointer
