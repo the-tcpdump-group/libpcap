@@ -35,14 +35,14 @@ struct pcap_haiku {
 };
 
 
-bool
+static int
 prepare_request(struct ifreq *request, const char* name)
 {
 	if (strlen(name) >= IF_NAMESIZE)
-		return false;
+		return 0;
 
 	strcpy(request->ifr_name, name);
-	return true;
+	return 1;
 }
 
 
@@ -107,7 +107,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 
 static int
-pcap_inject_haiku(pcap_t *handle, const void *buffer, int size)
+pcap_inject_haiku(pcap_t *handle, const void *buffer _U_, int size _U_)
 {
 	// we don't support injecting packets yet
 	// TODO: use the AF_LINK protocol (we need another socket for this) to
@@ -270,7 +270,7 @@ can_be_bound(const char *name _U_)
 }
 
 static int
-get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
+get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
 {
 	/* TODO */
 	if (*flags & PCAP_IF_LOOPBACK) {
