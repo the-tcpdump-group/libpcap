@@ -802,7 +802,7 @@ uninstall-rpcapd:
 	(cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) uninstall)
 
 clean:
-	rm -f $(CLEANFILES) config.h.in~ configure~ configure.ac~ 
+	rm -f $(CLEANFILES) config.h.in~ configure~ configure.ac~
 	(cd rpcapd; $(MAKE) clean)
 	(cd testprogs; $(MAKE) clean)
 
