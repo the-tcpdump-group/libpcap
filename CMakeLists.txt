@@ -47,19 +47,50 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 #
-# We only need a C++ compiler for Haiku; all code except for its
-# pcap module is in C.
+# OK, this is a royal pain.
 #
-# We do that by specifying just C in the project() call and, after
-# that finishes, checking for Haiku and, if we're building for
-# Haiku, use enable_language() to check for C++.  This means that
-# we don't require a C++ compiler on platforms other than Haiku.
+# CMake will try to determine the sizes of some data types, including
+# void *, early in the process of configuration; apparently, it's done
+# as part of processing the project() command.
 #
-# CMAKE_SYSTEM_NAME is set by project(), so we can't do this by
-# testing CMAKE_SYSTEM_NAME and then passing different language
-# lists to project() based on the system.
+# At least as of CMake 2.8.6, it does so by checking the size of
+# "void *" in C, setting CMAKE_C_SIZEOF_DATA_PTR based on that,
+# setting CMAKE_SIZEOF_VOID_P to that, and then checking the size
+# of "void *" in C++, setting CMAKE_CXX_SIZEOF_DATA_PTR based on
+# that, and then setting CMAKE_SIZEOF_VOID_P to *that*.
+#
+# The compile tests include whatever C flags may have been provided
+# to CMake in the CFLAGS and CXXFLAGS environment variables.
+#
+# If you set an architecture flag such as -m32 or -m64 in CFLAGS
+# but *not* in CXXFLAGS, the size for C++ will win, and hilarity
+# will ensue.
+#
+# Or if, at least on Solaris, you have a newer version of GCC
+# installed, but *not* a newer version of G++, and you have Oracle
+# Studio installed, it will find GCC, which will default to building
+# 64-bit, and Oracle Studio's C++ compiler, which will default to
+# building 32-bit, the size for C++ will win, and, again, hilarity
+# will ensue.
+#
+# So we *explicitly* state that only C is used; there is currently no
+# C++ code in libpcap.
 #
 project(pcap C)
+if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    #
+    # Due to Haiku bug 18258, it is difficult if not impossible
+    # to get Clang to be usable as a compiler for CMake projects.
+    #
+    # If CMAKE_SIZEOF_VOID_P is undefined, we assume that means
+    # that the attempt to determine the compiler ABI failed, due
+    # the the consequences of that bug, and tell the user that
+    # this compiler doesn't work wel with CMake on Haiku
+    #
+    if(NOT CMAKE_SIZEOF_VOID_P)
+        message(FATAL_ERROR "${CMAKE_C_COMPILER} does not work well on Haiku for projects using CMake")
+    endif()
+endif()
 
 #
 # For getting raw lists of --libs and --libs --static information from a
