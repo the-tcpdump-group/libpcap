@@ -70,7 +70,6 @@ INSTALL_RPCAPD=@INSTALL_RPCAPD@
 
 # Standard CFLAGS for building members of a shared library
 FULL_CFLAGS = $(CCOPT) @V_LIB_CCOPT_FAT@ $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
-CXXFLAGS = $(CCOPT) @V_LIB_CCOPT_FAT@ $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -88,7 +87,6 @@ BISON_BYACC = @BISON_BYACC@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
 PLATFORM_C_SRC =	@PLATFORM_C_SRC@
-PLATFORM_CXX_SRC =	@PLATFORM_CXX_SRC@
 MODULE_C_SRC =		@MODULE_C_SRC@
 REMOTE_C_SRC =		@REMOTE_C_SRC@
 COMMON_C_SRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
@@ -98,14 +96,13 @@ COMMON_C_SRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
 GENERATED_C_SRC = scanner.c grammar.c
 LIBOBJS = @LIBOBJS@
 
-SRC =	$(PLATFORM_C_SRC) $(PLATFORM_CXX_SRC) \
+SRC =	$(PLATFORM_C_SRC) \
 	$(MODULE_C_SRC) $(REMOTE_C_SRC) $(COMMON_C_SRC) \
 	$(GENERATED_C_SRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
-# hack the extra indirection, and we have to handle PLATFORM_CXX_SRC
-# differently from the defines for C source
-OBJ =	$(PLATFORM_C_SRC:.c=.o) $(PLATFORM_CXX_SRC:.cpp=.o) \
+# hack the extra indirection
+OBJ =	$(PLATFORM_C_SRC:.c=.o) \
 	$(MODULE_C_SRC:.c=.o) $(REMOTE_C_SRC:.c=.o) $(COMMON_C_SRC:.c=.o) \
 	$(GENERATED_C_SRC:.c=.o) \
 	$(LIBOBJS)

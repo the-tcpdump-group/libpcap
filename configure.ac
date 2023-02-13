@@ -29,9 +29,6 @@ AC_SUBST(PACKAGE_NAME)
 # except temporarily during tests that involve compilation).  Used only
 # when compiling C source.
 #
-# CXXFLAGS: inherited from the environment, not modified by us.  Used only
-# when compiling C++ source.
-#
 # LDFLAGS: inherited from the environment, not modified by us.
 #
 # LIBS: inherited from the environment; we add libraries required by
@@ -143,41 +140,6 @@ fi
 #
 AC_CHECK_SIZEOF([void *])
 ac_lbl_c_sizeof_void_p="$ac_cv_sizeof_void_p"
-
-#
-# We only need a C++ compiler for Haiku; all code except for its
-# pcap module is in C.
-#
-case "$host_os" in
-haiku*)
-	AC_PROG_CXX
-
-	#
-	# Make sure C and C++ have the same pointer sizes with the flags
-	# they're given; if they don't, it means that the compilers for the
-	# languages will, with those flags, not produce code that can be
-	# linked together.
-	#
-	# We have to use different data types, because the results of
-	# a test are cached, so if we test for the size of a given type
-	# in C, the subsequent test in C++ will use the cached variable.
-	# We trick autoconf by testing the size of a "void *" in C and a
-	# "const void *" in C++.
-	#
-	AC_LANG_PUSH([C++])
-	AC_CHECK_SIZEOF([const void *])
-	ac_lbl_cxx_sizeof_void_p="$ac_cv_sizeof_const_void_p"
-	AC_LANG_POP([C++])
-	if test "$ac_lbl_cxx_sizeof_void_p" -eq 0; then
-		AC_MSG_ERROR([No C++ compiler was found])
-	fi
-	if test "$ac_lbl_c_sizeof_void_p" -ne "$ac_lbl_cxx_sizeof_void_p"; then
-		AC_MSG_ERROR([C compiler $CC produces code with $ac_lbl_c_sizeof_void_p-byte pointers
-while C++ compiler $CXX produces code with $ac_lbl_cxx_sizeof_void_p-byte pointers.  This prevents
-code in those languages from being combined.])
-	fi
-	;;
-esac
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
@@ -3213,7 +3175,6 @@ AC_SUBST(RPATH)
 AC_SUBST(ADDLOBJS)
 AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(PLATFORM_C_SRC)
-AC_SUBST(PLATFORM_CXX_SRC)
 AC_SUBST(MODULE_C_SRC)
 AC_SUBST(REMOTE_C_SRC)
 AC_SUBST(PTHREAD_LIBS)
