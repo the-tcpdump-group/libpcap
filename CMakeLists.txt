@@ -4,20 +4,7 @@ if(WIN32)
     # below.
     #
     cmake_minimum_required(VERSION 3.12)
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Haiku")
-    #
-    # We need 3.7 or later, so we can use CMAKE_C_FLAGS_INIT; see
-    # below.
-    #
-    # We test CMAKE_HOST_SYSTEM_NAME rather than CMAKE_SYSTEM_NAME,
-    # because the former is set before project() is called (it's set
-    # from the results of uname()), but the latter isn't set until
-    # after project() returns, and we have to do those tests before
-    # calling project() so we set CMAKE_C_FLAGS_INIT before calling
-    # project().
-    #
-    cmake_minimum_required(VERSION 3.7)
-else()
+else(WIN32)
     #
     # For now, require only 2.8.12, just in case somebody is
     # configuring with CMake on a "long-term support" version
@@ -25,7 +12,7 @@ else()
     # CMake.
     #
     cmake_minimum_required(VERSION 2.8.12)
-endif()
+endif(WIN32)
 
 #
 # Apple doesn't build with an install_name starting with @rpath, and
@@ -72,27 +59,6 @@ if(POLICY CMP0075)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
-
-#
-# See above for why we test CMAKE_HOST_SYSTEM_NAME rather than
-# CMAKE_SYSTEM_NAME.
-#
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Haiku")
-    #
-    # On Haiku, all executables are built as shared objects,
-    # and must have their code build as PIC.
-    #
-    # At least some versions of Haiku's GCC default to PIC,
-    # with a -fno-pic option for cases where that's not desired.
-    #
-    # Clang hasn't been modified in that fashion, so Clang
-    # builds of tcpdump fail.  This is Haiku bug 18258.
-    #
-    # Force the use of -fPIC (even for GCC; adding -fPIC for GCC
-    # won't break anything).
-    #
-    set(CMAKE_C_FLAGS_INIT "-fPIC")
-endif()
 
 #
 # We explicitly indicate what languages are used in libpcap to avoid
