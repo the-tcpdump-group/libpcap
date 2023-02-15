@@ -94,36 +94,6 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Haiku")
     set(CMAKE_C_FLAGS_INIT "-fPIC")
 endif()
 
-#
-# OK, this is a royal pain.
-#
-# CMake will try to determine the sizes of some data types, including
-# void *, early in the process of configuration; apparently, it's done
-# as part of processing the project() command.
-#
-# At least as of CMake 2.8.6, it does so by checking the size of
-# "void *" in C, setting CMAKE_C_SIZEOF_DATA_PTR based on that,
-# setting CMAKE_SIZEOF_VOID_P to that, and then checking the size
-# of "void *" in C++, setting CMAKE_CXX_SIZEOF_DATA_PTR based on
-# that, and then setting CMAKE_SIZEOF_VOID_P to *that*.
-#
-# The compile tests include whatever C flags may have been provided
-# to CMake in the CFLAGS and CXXFLAGS environment variables.
-#
-# If you set an architecture flag such as -m32 or -m64 in CFLAGS
-# but *not* in CXXFLAGS, the size for C++ will win, and hilarity
-# will ensue.
-#
-# Or if, at least on Solaris, you have a newer version of GCC
-# installed, but *not* a newer version of G++, and you have Oracle
-# Studio installed, it will find GCC, which will default to building
-# 64-bit, and Oracle Studio's C++ compiler, which will default to
-# building 32-bit, the size for C++ will win, and, again, hilarity
-# will ensue.
-#
-# So we *explicitly* state that only C is used; there is currently no
-# C++ code in libpcap.
-#
 project(pcap C)
 
 #
@@ -266,55 +236,6 @@ macro(get_link_info_from_library_path  _library_prefix _library_name)
     set(${_library_prefix}_LIBS_PRIVATE "${${_library_prefix}_LIBS} -l${_library_name}")
   endif()
 endmacro()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
-    enable_language(CXX)
-
-    #
-    # OK, this is a royal pain.
-    #
-    # CMake will try to determine the sizes of some data types, including
-    # void *, early in the process of configuration; apparently, it's done
-    # as part of processing the project() command.
-    #
-    # At least as of CMake 2.8.6, it does so by checking the size of
-    # "void *" in C, setting CMAKE_C_SIZEOF_DATA_PTR based on that,
-    # setting CMAKE_SIZEOF_VOID_P to that, and then checking the size
-    # of "void *" in C++, setting CMAKE_CXX_SIZEOF_DATA_PTR based on
-    # that, and then setting CMAKE_SIZEOF_VOID_P to *that*.
-    #
-    # The compile tests include whatever C flags may have been provided
-    # to CMake in the CFLAGS and CXXFLAGS environment variables.
-    #
-    # If you set an architecture flag such as -m32 or -m64 in CFLAGS
-    # but *not* in CXXFLAGS, the size for C++ will win, and hilarity
-    # will ensue.
-    #
-    # Or if, at least on Solaris, you have a newer version of GCC
-    # installed, but *not* a newer version of G++, and you have Oracle
-    # Studio installed, it will find GCC, which will default to building
-    # 64-bit, and Oracle Studio's C++ compiler, which will default to
-    # building 32-bit, the size for C++ will win, and, again, hilarity
-    # will ensue.
-    #
-    # So we make sure both languages have the same pointer sizes with
-    # the flags they're given; if they don't, it means that the
-    # compilers for the languages will, with those flags, not produce
-    # code that can be linked together.
-    #
-    # This is unlikely to happen on Haiku, but it *has* happened on
-    # Solaris; we do this for future-proofing, in case we ever need
-    # C++ on a platform where that can happen.
-    #
-    if(NOT ${CMAKE_C_SIZEOF_DATA_PTR} EQUAL ${CMAKE_CXX_SIZEOF_DATA_PTR})
-         message(FATAL_ERROR
-"C compiler ${CMAKE_C_COMPILER} produces code with \
-${CMAKE_C_SIZEOF_DATA_PTR}-byte pointers while C++ compiler \
-${CMAKE_CXX_COMPILER} produces code with \
-${CMAKE_CXX_SIZEOF_DATA_PTR}-byte pointers. \
-This prevents code in these languages from being combined.")
-    endif()
-endif()
 
 #
 # Show the bit width for which we're compiling.
@@ -692,9 +613,7 @@ if(USE_STATIC_RT)
         if(MSVC)
             foreach(RT_FLAG
                 CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
                 string(REGEX REPLACE "/MD" "/MT" ${RT_FLAG} "${${RT_FLAG}}")
             endforeach(RT_FLAG)
         elseif(MINGW)
@@ -1345,7 +1264,6 @@ endif(NOT WIN32)
 if(ENABLE_PROFILING)
     if(NOT MSVC)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
     endif()
 endif()
 
@@ -1378,7 +1296,7 @@ endif()
 #
 # Test if the each of the sanitizers in the ENABLE_SANITIZERS list are
 # supported by the compiler, and, if so, adds the appropriate flags to
-# CMAKE_C_FLAGS, CMAKE_CXX_FLAGS, and SANITIZER_FLAGS.  If not, it fails.
+# CMAKE_C_FLAGS, and SANITIZER_FLAGS.  If not, it fails.
 #
 # Do this last, in the hope that it will prevent configuration on Linux
 # from somehow deciding it doesn't need -lpthread when building rpcapd
@@ -1433,7 +1351,6 @@ endforeach()
 
 if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 #
