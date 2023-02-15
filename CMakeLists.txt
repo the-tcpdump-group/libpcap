@@ -94,6 +94,39 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Haiku")
     set(CMAKE_C_FLAGS_INIT "-fPIC")
 endif()
 
+#
+# We explicitly indicate what languages are used in libpcap to avoid
+# checking for a C++ compiler.
+#
+# One reason to avoid that check is that there's no need to waste
+# configuration time performing it.
+#
+# Another reason is that:
+#
+# CMake will try to determine the sizes of some data types, including
+# void *, early in the process of configuration; apparently, it's done
+# as part of processing the project() command.
+#
+# At least as of CMake 2.8.6, it does so by checking the size of
+# "void *" in C, setting CMAKE_C_SIZEOF_DATA_PTR based on that,
+# setting CMAKE_SIZEOF_VOID_P to that, and then checking the size
+# of "void *" in C++, setting CMAKE_CXX_SIZEOF_DATA_PTR based on
+# that, and then setting CMAKE_SIZEOF_VOID_P to *that*.
+#
+# The compile tests include whatever C flags may have been provided
+# to CMake in the CFLAGS and CXXFLAGS environment variables.
+#
+# If you set an architecture flag such as -m32 or -m64 in CFLAGS
+# but *not* in CXXFLAGS, the size for C++ will win, and hilarity
+# will ensue.
+#
+# Or if, at least on Solaris, you have a newer version of GCC
+# installed, but *not* a newer version of G++, and you have Oracle
+# Studio installed, it will find GCC, which will default to building
+# 64-bit, and Oracle Studio's C++ compiler, which will default to
+# building 32-bit, the size for C++ will win, and, again, hilarity
+# will ensue.
+#
 project(pcap C)
 
 #
