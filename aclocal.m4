@@ -1204,8 +1204,8 @@ See the pkg-config man page for more details.])
 		#
 		# That failed - report an error.
 		#
-	   	AC_MSG_RESULT([error])
-        	_PKG_SHORT_ERRORS_SUPPORTED
+		AC_MSG_RESULT([error])
+		_PKG_SHORT_ERRORS_SUPPORTED
 	        if test $_pkg_short_errors_supported = yes; then
 		        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
 	        else
@@ -1228,7 +1228,7 @@ _PKG_TEXT])[]dnl
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	AC_MSG_RESULT([not found (pkg-config not found)])
+		AC_MSG_RESULT([not found (pkg-config not found)])
 	else
 		#
 		# We found the package.

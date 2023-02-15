@@ -6110,7 +6110,7 @@ main(void)
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
 
-	        # GNU-style
+		# GNU-style
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
@@ -7343,9 +7343,9 @@ done
 		V_PCAP=linux
 		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
-	        #
-	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
-        	#
+		#
+		# DEC OSF/1, Digital UNIX, Tru64 UNIX
+		#
 		V_PCAP=pf
 	elif test "$ac_cv_header_net_enet_h" = yes; then
 		#
@@ -7784,14 +7784,14 @@ enet)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-enet.c"
+	PLATFORM_C_SRC="pcap-enet.c"
 	;;
 
 haiku)
 	#
 	# Capture module
 	#
- 	PLATFORM_CXX_SRC="pcap-haiku.cpp"
+	PLATFORM_CXX_SRC="pcap-haiku.cpp"
 
 	#
 	# Just for the sake of it.
@@ -7815,7 +7815,7 @@ linux)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-linux.c"
+	PLATFORM_C_SRC="pcap-linux.c"
 
 	#
 	# Do we have the wireless extensions?
@@ -7938,7 +7938,7 @@ fi
 		#
 		# That failed - report an error.
 		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
 $as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -7969,7 +7969,7 @@ See the pkg-config man page for more details." "$LINENO" 5
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
 $as_echo "not found (pkg-config not found)" >&6; }
 	else
 		#
@@ -8115,7 +8115,7 @@ bpf)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-bpf.c"
+	PLATFORM_C_SRC="pcap-bpf.c"
 
 	#
 	# Check whether we have the *BSD-style ioctls.
@@ -8160,21 +8160,21 @@ pf)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-pf.c"
+	PLATFORM_C_SRC="pcap-pf.c"
 	;;
 
 snit)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-snit.c"
+	PLATFORM_C_SRC="pcap-snit.c"
 	;;
 
 snoop)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-snoop.c"
+	PLATFORM_C_SRC="pcap-snoop.c"
 	;;
 
 dag)
@@ -8221,7 +8221,7 @@ null)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-null.c"
+	PLATFORM_C_SRC="pcap-null.c"
 	;;
 
 *)
@@ -9387,7 +9387,7 @@ fi
 		#
 		# That failed - report an error.
 		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
 $as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -9418,7 +9418,7 @@ See the pkg-config man page for more details." "$LINENO" 5
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
 $as_echo "not found (pkg-config not found)" >&6; }
 	else
 		#
@@ -12879,7 +12879,7 @@ fi
 		#
 		# That failed - report an error.
 		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
 $as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -12910,7 +12910,7 @@ See the pkg-config man page for more details." "$LINENO" 5
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
 $as_echo "not found (pkg-config not found)" >&6; }
 	else
 		#
@@ -13350,7 +13350,7 @@ fi
 		#
 		# That failed - report an error.
 		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
 $as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -13375,7 +13375,7 @@ fi
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
 $as_echo "not found (pkg-config not found)" >&6; }
 	else
 		#
@@ -13549,7 +13549,7 @@ fi
 		#
 		# That failed - report an error.
 		#
-	   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: error" >&5
 $as_echo "error" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -13580,7 +13580,7 @@ See the pkg-config man page for more details." "$LINENO" 5
 		#
 		# We don't have pkg-config, so it didn't work.
 		#
-	     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found (pkg-config not found)" >&5
 $as_echo "not found (pkg-config not found)" >&6; }
 	else
 		#
