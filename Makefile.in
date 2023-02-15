@@ -917,6 +917,11 @@ whitespacecheck:
 	    echo 'Error: Trailing tabs(s).'; \
 	    exit 1; \
 	fi
+	@# space(s) before tab(s)?
+	@if git grep -I -n '[ ][	]' $$(git ls-files|grep -v '^tests/'); then \
+	    echo 'Error: space(s) before tab(s).'; \
+	    exit 1; \
+	fi
 
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
