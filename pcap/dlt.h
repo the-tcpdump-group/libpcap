@@ -1597,6 +1597,14 @@
 #define DLT_AUERSWALD_LOG	296
 
 /*
+ * ALDL - Assembly Line Diagnostic Link (8192 baud)
+ * Used in most pre-OBDII GM vehicles.
+ *
+ * Requested by Jake Mannens <jake@asger.xyz>
+ */
+#define DLT_ALDL 297
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1607,6 +1615,6 @@
 #undef DLT_MATCHING_MAX
 #endif
 
-#define DLT_MATCHING_MAX	296	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	297	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */

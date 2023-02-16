@@ -1240,7 +1240,15 @@
  */
 #define LINKTYPE_AUERSWALD_LOG	296
 
-#define LINKTYPE_MATCHING_MAX	296		/* highest value in the "matching" range */
+/*
+ * ALDL - Assembly Line Diagnostic Link (8192 baud)
+ * Used in most pre-OBDII GM vehicles.
+ *
+ * Requested by Jake Mannens <jake@asger.xyz>
+ */
+#define LINKTYPE_ALDL 297
+
+#define LINKTYPE_MATCHING_MAX	297		/* highest value in the "matching" range */
 
 
 /*
