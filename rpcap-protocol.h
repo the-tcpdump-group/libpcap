@@ -236,7 +236,7 @@ struct rpcap_sockaddr
 /*
  * Format of an IPv4 address as sent over the wire.
  */
-#define RPCAP_AF_INET	2		/* Value on all OSes */
+#define RPCAP_AF_INET	2		/* Value on all OSes except for Haiku */
 struct rpcap_sockaddr_in
 {
 	uint16_t family;	/* Address family */
