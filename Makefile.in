@@ -100,12 +100,7 @@ SRC =	$(PLATFORM_C_SRC) \
 	$(MODULE_C_SRC) $(REMOTE_C_SRC) $(COMMON_C_SRC) \
 	$(GENERATED_C_SRC)
 
-# We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
-# hack the extra indirection
-OBJ =	$(PLATFORM_C_SRC:.c=.o) \
-	$(MODULE_C_SRC:.c=.o) $(REMOTE_C_SRC:.c=.o) $(COMMON_C_SRC:.c=.o) \
-	$(GENERATED_C_SRC:.c=.o) \
-	$(LIBOBJS)
+OBJ =	$(SRC:.c=.o) $(LIBOBJS)
 
 PUBHDR = \
 	pcap.h \
@@ -296,7 +291,6 @@ EXTRA_DIST = \
 	lbl/os-osf5.h \
 	lbl/os-solaris2.h \
 	lbl/os-sunos4.h \
-	lbl/os-ultrix4.h \
 	libpcap.pc.in \
 	missing/asprintf.c \
 	missing/getopt.c \
