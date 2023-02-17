@@ -289,8 +289,6 @@ EXTRA_DIST = \
 	lbl/os-hpux11.h \
 	lbl/os-osf4.h \
 	lbl/os-osf5.h \
-	lbl/os-solaris2.h \
-	lbl/os-sunos4.h \
 	libpcap.pc.in \
 	missing/asprintf.c \
 	missing/getopt.c \
