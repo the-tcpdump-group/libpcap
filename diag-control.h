@@ -62,9 +62,6 @@
     __pragma(warning(disable:4061))
   #define DIAG_ON_ENUM_SWITCH \
     __pragma(warning(pop))
-#else
-  #define DIAG_OFF_ENUM_SWITCH
-  #define DIAG_ON_ENUM_SWITCH
 #endif
 
 /*
@@ -78,9 +75,6 @@
     __pragma(warning(disable:4065))
   #define DIAG_ON_DEFAULT_ONLY_SWITCH \
     __pragma(warning(pop))
-#else
-  #define DIAG_OFF_DEFAULT_ONLY_SWITCH
-  #define DIAG_ON_DEFAULT_ONLY_SWITCH
 #endif
 
 /*
@@ -128,8 +122,6 @@
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(clang diagnostic pop)
-  #define DIAG_OFF_FORMAT_TRUNCATION
-  #define DIAG_ON_FORMAT_TRUNCATION
 #elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
@@ -165,8 +157,6 @@
     __pragma(warning(disable:4996))
   #define DIAG_ON_DEPRECATION \
     __pragma(warning(pop))
-  #define DIAG_OFF_FORMAT_TRUNCATION
-  #define DIAG_ON_FORMAT_TRUNCATION
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * This is GCC 4.6 or later, or a compiler claiming to be that.
@@ -184,8 +174,6 @@
   /*
    * GCC currently doesn't issue any narrowing warnings.
    */
-  #define DIAG_OFF_NARROWING
-  #define DIAG_ON_NARROWING
 
   /*
    * Suppress deprecation warnings.
@@ -207,24 +195,7 @@
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wformat-truncation=")
     #define DIAG_ON_FORMAT_TRUNCATION \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
-  #else
-   #define DIAG_OFF_FORMAT_TRUNCATION
-   #define DIAG_ON_FORMAT_TRUNCATION
   #endif
-#else
-  /*
-   * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
-   * or a compiler claiming to be that; there's nothing we know of that
-   * we can do.
-   */
-  #define DIAG_OFF_FLEX
-  #define DIAG_ON_FLEX
-  #define DIAG_OFF_NARROWING
-  #define DIAG_ON_NARROWING
-  #define DIAG_OFF_DEPRECATION
-  #define DIAG_ON_DEPRECATION
-  #define DIAG_OFF_FORMAT_TRUNCATION
-  #define DIAG_ON_FORMAT_TRUNCATION
 #endif
 
 #ifdef YYBYACC
@@ -268,12 +239,6 @@
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wshadow") \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
-  #else
-    /*
-     * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
-     * claiming to be that; there's nothing we know of that we can do.
-     */
-    #define DIAG_OFF_BISON_BYACC
   #endif
 #else
   /*
@@ -310,12 +275,6 @@
      */
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
-  #else
-    /*
-     * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
-     * claiming to be that; there's nothing we know of that we can do.
-     */
-    #define DIAG_OFF_BISON_BYACC
   #endif
 #endif
 
@@ -331,8 +290,49 @@
    * So please remember to use this very carefully.
    */
   #define PCAP_UNREACHABLE __builtin_unreachable();
-#else
-  #define PCAP_UNREACHABLE
+#endif
+
+#ifndef DIAG_OFF_ENUM_SWITCH
+#define DIAG_OFF_ENUM_SWITCH
+#endif
+#ifndef DIAG_ON_ENUM_SWITCH
+#define DIAG_ON_ENUM_SWITCH
+#endif
+#ifndef DIAG_OFF_DEFAULT_ONLY_SWITCH
+#define DIAG_OFF_DEFAULT_ONLY_SWITCH
+#endif
+#ifndef DIAG_ON_DEFAULT_ONLY_SWITCH
+#define DIAG_ON_DEFAULT_ONLY_SWITCH
+#endif
+#ifndef DIAG_OFF_FLEX
+#define DIAG_OFF_FLEX
+#endif
+#ifndef DIAG_ON_FLEX
+#define DIAG_ON_FLEX
+#endif
+#ifndef DIAG_OFF_NARROWING
+#define DIAG_OFF_NARROWING
+#endif
+#ifndef DIAG_ON_NARROWING
+#define DIAG_ON_NARROWING
+#endif
+#ifndef DIAG_OFF_DEPRECATION
+#define DIAG_OFF_DEPRECATION
+#endif
+#ifndef DIAG_ON_DEPRECATION
+#define DIAG_ON_DEPRECATION
+#endif
+#ifndef DIAG_OFF_FORMAT_TRUNCATION
+#define DIAG_OFF_FORMAT_TRUNCATION
+#endif
+#ifndef DIAG_ON_FORMAT_TRUNCATION
+#define DIAG_ON_FORMAT_TRUNCATION
+#endif
+#ifndef DIAG_OFF_BISON_BYACC
+#define DIAG_OFF_BISON_BYACC
+#endif
+#ifndef PCAP_UNREACHABLE
+#define PCAP_UNREACHABLE
 #endif
 
 #endif /* _diag_control_h */
