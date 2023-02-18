@@ -141,12 +141,6 @@ lowest_set_bit(int mask)
 		abort();	/* mask is zero */
 	return (u_int)bit;
 }
-#elif defined(MSDOS) && defined(__DJGPP__)
-  /*
-   * MS-DOS with DJGPP, which declares ffs() in <string.h>, which
-   * we've already included.
-   */
-  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
 #elif (defined(MSDOS) && defined(__WATCOMC__)) || defined(STRINGS_H_DECLARES_FFS)
   /*
    * MS-DOS with Watcom C, which has <strings.h> and declares ffs() there,
@@ -155,6 +149,14 @@ lowest_set_bit(int mask)
    */
   #include <strings.h>
   #define lowest_set_bit(mask)	(u_int)((ffs((mask)) - 1))
+#elif (defined(MSDOS) && defined(__DJGPP__)) || defined(__hpux)
+  /*
+   * MS-DOS with DJGPP or HP-UX 11i v3, which declare ffs() in <string.h>,
+   * which we've already included.  Place this branch after the <strings.h>
+   * branch, in case a later release of HP-UX makes the declaration available
+   * via the standard header.
+   */
+  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
 #else
 /*
  * None of the above.

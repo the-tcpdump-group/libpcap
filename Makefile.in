@@ -286,7 +286,6 @@ EXTRA_DIST = \
 	fad-glifc.c \
 	grammar.y.in \
 	install-sh \
-	lbl/os-hpux11.h \
 	lbl/os-osf4.h \
 	lbl/os-osf5.h \
 	libpcap.pc.in \
