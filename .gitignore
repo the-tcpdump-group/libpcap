@@ -30,6 +30,7 @@ libpcap.pc
 libpcap.sl
 libpcap.so
 libpcap.so.*
+libpcap.shareda
 libpcap-*.tar.gz
 net
 os-proto.h
