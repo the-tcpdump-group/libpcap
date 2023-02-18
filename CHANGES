@@ -1,5 +1,7 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)
+    Documentation:
+      Document pcap-config better.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release

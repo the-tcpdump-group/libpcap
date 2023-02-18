@@ -128,6 +128,23 @@ else
     run_after_echo "$MAKE_BIN" testprogs
 fi
 run_after_echo "$MAKE_BIN" install
+
+while read -r opts; do
+    # opts is meant to expand
+    # shellcheck disable=SC2086
+    run_after_echo "$PREFIX/bin/pcap-config" $opts
+done <<EOF
+--help
+--version
+--cflags
+--libs
+--additional-libs
+--libs --static
+--additional-libs --static
+--libs --static-pcap-only
+--additional-libs --static-pcap-only
+EOF
+
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
