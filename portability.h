@@ -109,7 +109,8 @@ extern int pcap_asprintf(char **, PCAP_FORMAT_STRING(const char *), ...)
 #ifdef HAVE_VASPRINTF
 #define pcap_vasprintf vasprintf
 #else
-extern int pcap_vasprintf(char **, const char *, va_list ap);
+extern int pcap_vasprintf(char **, PCAP_FORMAT_STRING(const char *), va_list ap)
+    PCAP_PRINTFLIKE(2, 0);
 #endif
 
 /* For Solaris before 11. */
