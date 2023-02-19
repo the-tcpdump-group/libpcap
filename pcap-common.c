@@ -1240,7 +1240,14 @@
  */
 #define LINKTYPE_AUERSWALD_LOG	296
 
-#define LINKTYPE_MATCHING_MAX	296		/* highest value in the "matching" range */
+/*
+ * Z-Wave TAP packets with a meta-data header
+ * https://gitlab.com/exegin/zwave-g9959-tap
+ * requested on tcpdump-workers@
+ */
+#define LINKTYPE_ZWAVE_TAP	297
+
+#define LINKTYPE_MATCHING_MAX	297		/* highest value in the "matching" range */
 
 
 /*
