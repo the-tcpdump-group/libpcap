@@ -1617,6 +1617,13 @@
 #define DLT_AUERSWALD_LOG	296
 
 /*
+ * Z-Wave TAP packets with a meta-data header
+ * https://gitlab.com/exegin/zwave-g9959-tap
+ * requested on tcpdump-workers@
+ */
+#define DLT_ZWAVE_TAP		297
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1626,6 +1633,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	296	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	297	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
