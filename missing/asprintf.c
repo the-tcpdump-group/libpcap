@@ -21,7 +21,7 @@ pcap_vasprintf(char **strp, const char *format, va_list args)
 
 	/*
 	 * XXX - the C99 standard says, in section 7.19.6.5 "The
-	 * nprintf function":
+	 * snprintf function":
 	 *
 	 *    The snprintf function is equivalent to fprintf, except that
 	 *    the output is written into an array (specified by argument s)
