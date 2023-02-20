@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "19 November 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "20 February 2023"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -107,7 +107,7 @@ E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
 If there is no
 .I proto
 qualifier, all protocols consistent with the type are assumed.
-E.g., `\fBsrc\fP foo' means `\fB(ip or arp or rarp) src\fP foo',
+E.g., `\fBsrc\fP foo' means `\fB(ip6 or ip or arp or rarp) src\fP foo',
 `\fBnet\fP bar' means `\fB(ip or arp or rarp) net\fP bar' and
 `\fBport\fP 53' means `\fB(tcp or udp or sctp) port\fP 53'
 (note that these examples use invalid syntax to illustrate the principle).
