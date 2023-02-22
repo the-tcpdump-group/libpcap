@@ -3,8 +3,6 @@ Makefile
 *~
 *.o
 /bpf_filter.c
-capturetest
-can_set_rfmon_test
 CMakeCache.txt
 cmake_install.cmake
 CMakeFiles/
@@ -18,11 +16,6 @@ stamp-h
 stamp-h.in
 autom4te.cache/
 .devel
-filtertest
-findalldevstest
-opentest
-valgrindtest
-reactivatetest
 grammar.c
 grammar.h
 grammar.y
@@ -34,7 +27,6 @@ libpcap.so
 libpcap.so.*
 libpcap.shareda
 libpcap-*.tar.gz
-net
 os-proto.h
 pcap-config
 pcap-filter.manmisc
@@ -57,7 +49,6 @@ pcap_set_tstamp_type.3pcap
 scanner.c
 scanner.c.bottom
 scanner.h
-selpolltest
 *.log
 *.tlog
 *.obj
