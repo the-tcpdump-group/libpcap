@@ -1258,7 +1258,12 @@
  */
 #define LINKTYPE_SILABS_DEBUG_CHANNEL 298
 
-#define LINKTYPE_HIGH_MATCHING_MAX	298		/* highest value in the "matching" range */
+/*
+ * Ultra-wideband (UWB) controller interface protocol (UCI).
+ */
+#define LINKTYPE_FIRA_UCI	299
+
+#define LINKTYPE_HIGH_MATCHING_MAX	299		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
