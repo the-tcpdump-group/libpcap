@@ -15,6 +15,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
       Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
       Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
+      Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
