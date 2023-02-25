@@ -1926,7 +1926,7 @@ AC_MSG_RESULT(${enable_yydebug-no})
 #
 # Look for {f}lex.
 #
-AC_PROG_LEX
+AC_PROG_LEX(noyywrap)
 if test "$LEX" = ":"; then
 	AC_MSG_ERROR([Neither flex nor lex was found.])
 fi
