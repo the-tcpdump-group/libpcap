@@ -8,6 +8,9 @@
 : "${LIBPCAP_TAINTED:=no}"
 : "${LIBPCAP_CMAKE_TAINTED:=no}"
 : "${MAKE_BIN:=make}"
+# At least one OS (AIX 7) where this software can build does not have at least
+# one command (mktemp) required for a successful run of "make releasetar".
+: "${TEST_RELEASETAR:=yes}"
 
 . ./build_common.sh
 # Install directory prefix
@@ -158,7 +161,7 @@ EOF
 # shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
-    run_after_echo "$MAKE_BIN" releasetar
+    [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
     run_after_echo $VALGRIND_CMD run/findalldevstest
 fi
