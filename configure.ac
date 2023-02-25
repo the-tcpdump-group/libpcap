@@ -2398,20 +2398,6 @@ osf*)
 	MAN_DEVICES=7
 	;;
 
-sinix*)
-	AC_MSG_CHECKING(if SINIX compiler defines sinix)
-	AC_CACHE_VAL(ac_cv_cc_sinix_defined,
-		AC_TRY_COMPILE(
-		    [],
-		    [int i = sinix;],
-		    ac_cv_cc_sinix_defined=yes,
-		    ac_cv_cc_sinix_defined=no))
-	    AC_MSG_RESULT($ac_cv_cc_sinix_defined)
-	    if test $ac_cv_cc_sinix_defined = no ; then
-		    AC_DEFINE(sinix,1,[on sinix])
-	    fi
-	;;
-
 solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 
