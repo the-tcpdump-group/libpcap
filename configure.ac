@@ -283,16 +283,16 @@ AC_LBL_LIBRARY_NET
 AC_CHECK_DECL(getnetbyname_r,
     [
 	AC_MSG_CHECKING([for the Linux getnetbyname_r()])
-	AC_TRY_LINK(
-	    [#include <netdb.h>],
-	    [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	    [[#include <netdb.h>]],
+	    [[
 		struct netent netent_buf;
 		char buf[1024];
 		struct netent *resultp;
 		int h_errnoval;
 
 		return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
-	    ],
+	    ]])],
 	    [
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_LINUX_GETNETBYNAME_R, 1,
@@ -302,14 +302,14 @@ AC_CHECK_DECL(getnetbyname_r,
 		AC_MSG_RESULT(no)
 
 		AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
-		AC_TRY_LINK(
-		    [#include <netdb.h>],
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <netdb.h>]],
+		    [[
 			struct netent netent_buf;
 			char buf[1024];
 
 			return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
@@ -319,14 +319,14 @@ AC_CHECK_DECL(getnetbyname_r,
 			AC_MSG_RESULT(no)
 
 			AC_MSG_CHECKING([for AIX getnetbyname_r()])
-			AC_TRY_LINK(
-			    [#include <netdb.h>],
-			    [
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[#include <netdb.h>]],
+			    [[
 				struct netent netent_buf;
 				struct netent_data net_data;
 
 				return getnetbyname_r((const char *)0, &netent_buf, &net_data);
-			    ],
+			    ]])],
 			    [
 				AC_MSG_RESULT(yes)
 				AC_DEFINE(HAVE_AIX_GETNETBYNAME_R, 1,
@@ -355,15 +355,15 @@ AC_CHECK_DECL(getnetbyname_r,
 AC_CHECK_DECL(getprotobyname_r,
     [
 	AC_MSG_CHECKING([for the Linux getprotobyname_r()])
-	AC_TRY_LINK(
-	    [#include <netdb.h>],
-	    [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	    [[#include <netdb.h>]],
+	    [[
 		struct protoent protoent_buf;
 		char buf[1024];
 		struct protoent *resultp;
 
 		return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
-	    ],
+	    ]])],
 	    [
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_LINUX_GETPROTOBYNAME_R, 1,
@@ -373,14 +373,14 @@ AC_CHECK_DECL(getprotobyname_r,
 		AC_MSG_RESULT(no)
 
 		AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
-		AC_TRY_LINK(
-		    [#include <netdb.h>],
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <netdb.h>]],
+		    [[
 			struct protoent protoent_buf;
 			char buf[1024];
 
 			return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
@@ -390,14 +390,14 @@ AC_CHECK_DECL(getprotobyname_r,
 			AC_MSG_RESULT(no)
 
 			AC_MSG_CHECKING([for AIX getprotobyname_r()])
-			AC_TRY_LINK(
-			    [#include <netdb.h>],
-			    [
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[#include <netdb.h>]],
+			    [[
 				struct protoent protoent_buf;
 				struct protoent_data proto_data;
 
 				return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
-			    ],
+			    ]])],
 			    [
 				AC_MSG_RESULT(yes)
 				AC_DEFINE(HAVE_AIX_GETPROTOBYNAME_R, 1,
@@ -1830,14 +1830,14 @@ yes)	AC_MSG_RESULT(yes)
 		CFLAGS="$CFLAGS -I/usr/local/include"
 		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local that we can use)
-		AC_TRY_LINK(
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[
 #include <openssl/ssl.h>
-		    ],
-		    [
+		    ]],
+		    [[
 SSL_library_init();
 return 0;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
@@ -1864,14 +1864,14 @@ return 0;
 		AC_LBL_SAVE_CHECK_STATE
 		LIBS="$LIBS -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
-		AC_TRY_LINK(
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[
 #include <openssl/ssl.h>
-		    ],
-		    [
+		    ]],
+		    [[
 SSL_library_init();
 return 0;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
@@ -2201,9 +2201,9 @@ darwin*)
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
 			AC_LBL_SAVE_CHECK_STATE
 			CFLAGS="$CFLAGS -arch i386"
-			AC_TRY_LINK(
-			    [],
-			    [return 0;],
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[]],
+			    [[return 0;]])],
 			    [
 				AC_MSG_RESULT(yes)
 				V_LIB_CCOPT_FAT="-arch x86_64"
@@ -2283,14 +2283,14 @@ darwin*)
 				AC_LBL_SAVE_CHECK_STATE
 				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
 				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
-				AC_TRY_LINK(
-				    [
+				AC_LINK_IFELSE([AC_LANG_PROGRAM(
+				    [[
 					#include <openssl/ssl.h>
-				    ],
-				    [
+				    ]],
+				    [[
 					SSL_library_init();
 					return 0;
-				    ],
+				    ]])],
 				    [
 					AC_MSG_RESULT(yes)
 					V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
@@ -2970,14 +2970,14 @@ if test "x$enable_dbus" != "xno"; then
 		CFLAGS="$CFLAGS $DBUS_CFLAGS"
 		LIBS="$LIBS $DBUS_LIBS"
 		AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
-		AC_TRY_LINK(
-		    [#include <string.h>
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <string.h>
 
 		     #include <time.h>
 		     #include <sys/time.h>
 
-		     #include <dbus/dbus.h>],
-		    [return dbus_connection_read_write(NULL, 0);],
+		     #include <dbus/dbus.h>]],
+		    [[return dbus_connection_read_write(NULL, 0);]])],
 		    [
 			AC_MSG_RESULT([yes])
 			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
@@ -3055,14 +3055,14 @@ if test "x$enable_rdma" != "xno"; then
 			# to know the function's signature).
 			#
 			AC_MSG_CHECKING(whether libibverbs defines ibv_create_flow)
-			AC_TRY_LINK(
-				[
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+				[[
 					#include <infiniband/verbs.h>
-				],
-				[
+				]],
+				[[
 					(void) ibv_create_flow((struct ibv_qp *) NULL,
 							       (struct ibv_flow_attr *) NULL);
-				],
+				]])],
 				[
 					AC_MSG_RESULT([yes])
 					found_usable_libibverbs=yes

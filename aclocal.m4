@@ -600,7 +600,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 #
 # Test whether we have __atomic_load_n() and __atomic_store_n().
 #
-# We use AC_TRY_LINK because AC_TRY_COMPILE will succeed, as the
+# We use AC_LINK_IFELSE because AC_TRY_COMPILE will succeed, as the
 # compiler will just think that those functions are undefined,
 # and perhaps warn about that, but not fail to compile.
 #
@@ -608,14 +608,14 @@ AC_DEFUN(AC_PCAP_C___ATOMICS,
     [
 	AC_MSG_CHECKING(for __atomic_load_n)
 	AC_CACHE_VAL(ac_cv_have___atomic_load_n,
-	    AC_TRY_LINK([],
-		[
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[
 		    int i = 17;
 		    int j;
 		    j = __atomic_load_n(&i, __ATOMIC_RELAXED);
-		],
-		ac_have___atomic_load_n=yes,
-		ac_have___atomic_load_n=no))
+		]])],
+		[ac_have___atomic_load_n=yes],
+		[ac_have___atomic_load_n=no]))
 	AC_MSG_RESULT($ac_have___atomic_load_n)
 	if test $ac_have___atomic_load_n = yes ; then
 	    AC_DEFINE(HAVE___ATOMIC_LOAD_N, 1,
@@ -624,13 +624,13 @@ AC_DEFUN(AC_PCAP_C___ATOMICS,
 
 	AC_MSG_CHECKING(for __atomic_store_n)
 	AC_CACHE_VAL(ac_cv_have___atomic_store_n,
-	    AC_TRY_LINK([],
-		[
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[
 		    int i;
 		    __atomic_store_n(&i, 17, __ATOMIC_RELAXED);
-		],
-		ac_have___atomic_store_n=yes,
-		ac_have___atomic_store_n=no))
+		]])],
+		[ac_have___atomic_store_n=yes],
+		[ac_have___atomic_store_n=no]))
 	AC_MSG_RESULT($ac_have___atomic_store_n)
 	if test $ac_have___atomic_store_n = yes ; then
 	    AC_DEFINE(HAVE___ATOMIC_STORE_N, 1,
