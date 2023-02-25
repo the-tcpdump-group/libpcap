@@ -696,8 +696,8 @@ else
 		#
 		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
 		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,
-			AC_TRY_COMPILE(
-[
+			AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[[
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -707,10 +707,10 @@ else
 #endif
 #include <net/bpf.h>
 #include <net/if.h>
-],
-			[u_int i = BIOCSETIF;],
-			ac_cv_lbl_bpf_h_defines_biocsetif=yes,
-			ac_cv_lbl_bpf_h_defines_biocsetif=no))
+]],
+			[[u_int i = BIOCSETIF;]])],
+			[ac_cv_lbl_bpf_h_defines_biocsetif=yes],
+			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
 	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
@@ -918,15 +918,15 @@ dlpi)
 	#
 	AC_MSG_CHECKING(whether <sys/dlpi.h> is usable)
 	AC_CACHE_VAL(ac_cv_sys_dlpi_usable,
-		AC_TRY_COMPILE(
-		    [
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		    [[
 			#include <sys/types.h>
 			#include <sys/time.h>
 			#include <sys/dlpi.h>
-		    ],
-		    [int i = DL_PROMISC_PHYS;],
-		    ac_cv_sys_dlpi_usable=yes,
-		    ac_cv_sys_dlpi_usable=no))
+		    ]],
+		    [[int i = DL_PROMISC_PHYS;]])],
+		    [ac_cv_sys_dlpi_usable=yes],
+		    [ac_cv_sys_dlpi_usable=no]))
 	AC_MSG_RESULT($ac_cv_sys_dlpi_usable)
 	if test $ac_cv_sys_dlpi_usable = no ; then
 		AC_MSG_ERROR(<sys/dlpi.h> is not usable on this system; it probably has a non-standard DLPI)
@@ -1218,15 +1218,15 @@ then
 		#
 		AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
 		AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
-		    AC_TRY_COMPILE(
-			[#include <sys/param.h>
+		    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[[#include <sys/param.h>
 			#include <sys/file.h>
 			#include <sys/ioctl.h>
 			#include <sys/socket.h>
-			#include <sys/sockio.h>],
-			[ioctl(0, SIOCGLIFCONF, (char *)0);],
-			ac_cv_lbl_have_siocglifconf=yes,
-			ac_cv_lbl_have_siocglifconf=no))
+			#include <sys/sockio.h>]],
+			[[ioctl(0, SIOCGLIFCONF, (char *)0);]])],
+			[ac_cv_lbl_have_siocglifconf=yes],
+			[ac_cv_lbl_have_siocglifconf=no]))
 		AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
 		if test $ac_cv_lbl_have_siocglifconf = yes ; then
 			PLATFORM_C_SRC="$PLATFORM_C_SRC fad-glifc.c"
@@ -1648,16 +1648,16 @@ if test "$want_turbocap" != no; then
 		LDFLAGS="$LDFLAGS $TURBOCAP_LDFLAGS"
 	fi
 
-	AC_TRY_COMPILE(
-	[
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+	[[
 	    #include <TcApi.h>
-	],
-	[
+	]],
+	[[
 	    TC_INSTANCE a; TC_PORT b; TC_BOARD c;
 	    TC_INSTANCE i;
 	    (void)TcInstanceCreateByName("foo", &i);
-	],
-	ac_cv_lbl_turbocap_api=yes)
+	]])],
+	[ac_cv_lbl_turbocap_api=yes])
 
 	AC_LBL_RESTORE_CHECK_STATE
 	if test $ac_cv_lbl_turbocap_api = yes; then
@@ -2562,7 +2562,7 @@ if test "xxx_only" != yes; then
     #
     AC_MSG_CHECKING(whether we can compile the netfilter support)
     AC_CACHE_VAL(ac_cv_netfilter_can_compile,
-      AC_TRY_COMPILE([
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_INCLUDES_DEFAULT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -2572,10 +2572,10 @@ AC_INCLUDES_DEFAULT
 #include <linux/netfilter.h>
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
-#include <linux/netfilter/nfnetlink_queue.h>],
-        [],
-        ac_cv_netfilter_can_compile=yes,
-        ac_cv_netfilter_can_compile=no))
+#include <linux/netfilter/nfnetlink_queue.h>]],
+        [[]])],
+        [ac_cv_netfilter_can_compile=yes],
+        [ac_cv_netfilter_can_compile=no]))
     AC_MSG_RESULT($ac_cv_netfilter_can_compile)
     if test $ac_cv_netfilter_can_compile = yes ; then
       AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
@@ -2602,13 +2602,13 @@ if test "x$enable_netmap" != "xno" ; then
 	#
 	AC_MSG_CHECKING(whether we can compile the netmap support)
 	AC_CACHE_VAL(ac_cv_net_netmap_user_can_compile,
-	  AC_TRY_COMPILE([
+	  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_INCLUDES_DEFAULT
 #define NETMAP_WITH_LIBS
-#include <net/netmap_user.h>],
-	    [],
-	    ac_cv_net_netmap_user_can_compile=yes,
-	    ac_cv_net_netmap_user_can_compile=no))
+#include <net/netmap_user.h>]],
+	    [[]])],
+	    [ac_cv_net_netmap_user_can_compile=yes],
+	    [ac_cv_net_netmap_user_can_compile=no]))
 	AC_MSG_RESULT($ac_cv_net_netmap_user_can_compile)
 	if test $ac_cv_net_netmap_user_can_compile = yes ; then
 	  AC_DEFINE(PCAP_SUPPORT_NETMAP, 1,
@@ -2860,14 +2860,14 @@ if test "x$enable_bluetooth" != "xno" ; then
 				#
 				AC_MSG_CHECKING(if HCI_CHANNEL_MONITOR is defined)
 				AC_CACHE_VAL(ac_cv_lbl_hci_channel_monitor_is_defined,
-				    AC_TRY_COMPILE(
-					[
+				    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+					[[
 					    #include <bluetooth/bluetooth.h>
 					    #include <bluetooth/hci.h>
-					],
-					[
+					]],
+					[[
 					    u_int i = HCI_CHANNEL_MONITOR;
-					],
+					]])],
 					[
 					    AC_MSG_RESULT(yes)
 					    AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
