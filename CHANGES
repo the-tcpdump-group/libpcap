@@ -14,6 +14,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
       Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
       Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
+      Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).

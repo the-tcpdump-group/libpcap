@@ -1247,7 +1247,12 @@
  */
 #define LINKTYPE_ZWAVE_TAP	297
 
-#define LINKTYPE_MATCHING_MAX	297		/* highest value in the "matching" range */
+/*
+ * Silicon Labs debug channel protocol:
+ */
+#define LINKTYPE_SILABS_DEBUG_CHANNEL 298
+
+#define LINKTYPE_MATCHING_MAX	298		/* highest value in the "matching" range */
 
 
 /*
