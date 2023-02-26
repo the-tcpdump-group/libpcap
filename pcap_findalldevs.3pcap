@@ -158,7 +158,9 @@ a pointer to a
 that contains the broadcast address corresponding to the address pointed
 to by
 .BR addr ;
-may be null if the device doesn't support broadcasts
+may be
+.B NULL
+if the device doesn't support broadcasts
 .TP
 .B dstaddr
 if not
@@ -168,7 +170,9 @@ a pointer to a
 that contains the destination address corresponding to the address pointed
 to by
 .BR addr ;
-may be null if the device isn't a point-to-point interface
+may be
+.B NULL
+if the device isn't a point-to-point interface
 .RE
 .PP
 Note that the addresses in the list of addresses might be IPv4

@@ -124,8 +124,8 @@ message describing the warning or error code.
 If
 .BR pcap_activate ()
 fails, the
-.I pcap_t *
+.B pcap_t *
 is not closed and freed; it should be closed using
-.BR pcap_close ().
+.BR pcap_close (3PCAP).
 .SH SEE ALSO
 .BR pcap (3PCAP)
