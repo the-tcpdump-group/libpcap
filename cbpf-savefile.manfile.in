@@ -94,15 +94,27 @@ part of the header up to and including MinorVer identical.
 +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 .fi
 
-MOD, XOR, COP and CPX: if set to 1, in this BPF dialect BPF_MOD, BPF_XOR,
-BPF_COP and BPF_COPX respectively are valid instructions.  For the current
-list of OSes that support BPF_MOD and BPF_XOR in the kernel see the
+MOD, XOR, COP and CPX: if set to 1, in this BPF dialect
+.BR BPF_MOD ,
+.BR BPF_XOR ,
+.B BPF_COP
+and
+.B BPF_COPX
+respectively are valid instructions.  For the current list of OSes that
+support
+.B BPF_MOD
+and
+.B BPF_XOR
+in the kernel see the
 .B %
 and
 .B ^
 binary operators in
 .BR \%pcap-filter (7).
-BPF_COP and BPF_COPX are implemented in NetBSD kernel.
+.B BPF_COP
+and
+.B BPF_COPX
+are implemented in NetBSD kernel.
 .LP
 Note that the fact an instruction is valid in a BPF dialect does not always
 mean the compiled bytecode in the savefile contains the instruction.  In other
@@ -134,14 +146,15 @@ or the value(s) returned by
 and
 .BR pcap_list_datalinks (3PCAP).
 Although these functions take and return link-layer header type values via the
-.I int
+.B int
 C type, by convention only the low 16 bits are in use.
 
 .SS InstructionCount
 This is the last field of the fixed header in major version 1, it contains the
 number of bytecode instructions following the header.  By convention, valid
-BPF bytecode always ends with a "ret" instruction, so in a valid savefile this
-field value is at least 1.
+BPF bytecode always ends with a
+.B ret
+instruction, so in a valid savefile this field value is at least 1.
 
 .PP
 The file format thus far minimizes the overhead for software that uses the BPF
