@@ -79,7 +79,7 @@ coverity_task:
     MAKEFLAGS: -j 3
     COVERITY_SCAN_PROJECT_NAME: $CIRRUS_REPO_FULL_NAME
     COVERITY_SCAN_TOKEN: ENCRYPTED[58bfbfcf624e5b7b85fb9df95dd0b3f9f93642824e6ae94616e4d345af4848580932a6ece02337fee112194b29ce6593]
-    COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote --enable-optimizer-dbg
+    COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote --enable-optimizer-dbg --enable-yydebug
     COVERITY_SCAN_BUILD_COMMAND: make
   script:
     - apt-get -qy update >/dev/null
