@@ -756,6 +756,7 @@ ac_user_opts='
 enable_option_checking
 with_gcc
 enable_largefile
+enable_instrument_functions
 enable_protochain
 with_pcap
 with_libnl
@@ -1422,6 +1423,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
+  --enable-instrument-functions
+                          enable instrument functions code [default=no]
   --disable-protochain    disable \"protochain\" insn
   --enable-ipv6           build IPv6-capable version [default=yes]
   --enable-remote         enable remote packet capture [default=no]
@@ -6567,6 +6570,32 @@ else
 fi
 
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable the instrument functions code" >&5
+$as_echo_n "checking whether to enable the instrument functions code... " >&6; }
+# Check whether --enable-instrument-functions was given.
+if test "${enable_instrument_functions+set}" = set; then :
+  enableval=$enable_instrument_functions;
+else
+  enableval=no
+fi
+
+case "$enableval" in
+yes)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define ENABLE_INSTRUMENT_FUNCTIONS 1" >>confdefs.h
+
+	# Add '-finstrument-functions' instrumentation option to generate
+	# instrumentation calls for entry and exit to functions.
+	# Use '--enable-instrument-functions' also with tcpdump (or tcpslice)
+	# to see the output. See also https://www.tcpdump.org/faq.html#q17.
+	CFLAGS="$CFLAGS -O0 -ggdb -finstrument-functions"
+	;;
+*)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	;;
+esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if --disable-protochain option is specified" >&5
 $as_echo_n "checking if --disable-protochain option is specified... " >&6; }

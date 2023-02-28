@@ -6,6 +6,9 @@
 /* Enable optimizer debugging */
 #undef BDEBUG
 
+/* define if you want to build the instrument functions code */
+#undef ENABLE_INSTRUMENT_FUNCTIONS
+
 /* Define to 1 if remote packet capture is to be supported */
 #undef ENABLE_REMOTE
 
