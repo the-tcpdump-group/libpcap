@@ -83,7 +83,7 @@ coverity_task:
     COVERITY_SCAN_BUILD_COMMAND: make
   script:
     - apt-get -qy update >/dev/null
-    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev >/dev/null
+    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
     - apt-get -qy install flex bison autoconf make gcc >/dev/null
     - apt-get -qy install git curl wget ruby rubygems ruby-json >/dev/null # for the coverity script
     - apt list --installed 'lib*-dev'
