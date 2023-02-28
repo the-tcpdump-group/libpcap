@@ -629,6 +629,26 @@ AC_CHECK_HEADER(pthread.h,
     ]
 )
 
+AC_MSG_CHECKING([whether to enable the instrument functions code])
+AC_ARG_ENABLE([instrument-functions],
+   [AS_HELP_STRING([--enable-instrument-functions],
+     [enable instrument functions code [default=no]])],
+   [],
+   [enableval=no])
+case "$enableval" in
+yes)	AC_MSG_RESULT(yes)
+	AC_DEFINE(ENABLE_INSTRUMENT_FUNCTIONS, 1,
+	    [define if you want to build the instrument functions code])
+	# Add '-finstrument-functions' instrumentation option to generate
+	# instrumentation calls for entry and exit to functions.
+	# Use '--enable-instrument-functions' also with tcpdump (or tcpslice)
+	# to see the output.
+	CFLAGS="$CFLAGS -O0 -ggdb -finstrument-functions"
+	;;
+*)	AC_MSG_RESULT(no)
+	;;
+esac
+
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
 AC_ARG_ENABLE(protochain,
