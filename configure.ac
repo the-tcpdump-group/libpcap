@@ -60,7 +60,7 @@ AC_SUBST(PACKAGE_NAME)
 # libpcap.  Used in Makefile for both C and C++ source.
 #
 # ADDITIONAL_LIBS: additional libraries with which the libpcap dynamic
-# library needs to be linked.  Used in Makwfile; not used in pcap-config
+# library needs to be linked.  Used in Makefile; not used in pcap-config
 # or libpcap.pc, as, in all platforms on which we run, if a dynamic
 # library is linked with other dynamic libraries, a program using
 # that dynamic library doesn't have to link with those libraries -
