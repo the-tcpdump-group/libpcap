@@ -3331,6 +3331,9 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_2_0_LOW_SPEED, "Low-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_FULL_SPEED, "Full-Speed USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE(USB_2_0_HIGH_SPEED, "High-Speed USB 2.0 as transmitted over the cable"),
+	DLT_CHOICE(AUERSWALD_LOG, "Auerswald Logger Protocol"),
+	DLT_CHOICE(ZWAVE_TAP, "Z-Wave packets with a TAP meta-data header"),
+	DLT_CHOICE(SILABS_DEBUG_CHANNEL, "Silicon Labs debug channel protocol"),
 	DLT_CHOICE(FIRA_UCI, "Ultra-wideband controller interface protocol"),
 	DLT_CHOICE_SENTINEL
 };

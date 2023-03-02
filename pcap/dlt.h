@@ -1597,7 +1597,7 @@
 #define DLT_AUERSWALD_LOG	296
 
 /*
- * Z-Wave TAP packets with a meta-data header
+ * Z-Wave packets with a TAP meta-data header
  * https://gitlab.com/exegin/zwave-g9959-tap
  * requested on tcpdump-workers@
  */
