@@ -55,7 +55,7 @@ on the handle before activating it.
 .SH RETURN VALUE
 .BR pcap_create ()
 returns a
-.I pcap_t *
+.B pcap_t *
 on success and
 .B NULL
 on failure.

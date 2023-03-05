@@ -93,7 +93,7 @@ Note that on Windows, that stream should be opened in binary mode.
 and
 .BR pcap_fopen_offline_with_tstamp_precision ()
 return a
-.I pcap_t *
+.B pcap_t *
 on success and
 .B NULL
 on failure.
