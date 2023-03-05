@@ -66,7 +66,7 @@ for an explanation of the packet buffer timeout.)
 .SH RETURN VALUE
 .BR pcap_open_live ()
 returns a
-.I pcap_t *
+.B pcap_t *
 on success and
 .B NULL
 on failure.

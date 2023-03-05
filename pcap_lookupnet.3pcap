@@ -47,7 +47,7 @@ Both
 and
 .I maskp
 are
-.I bpf_u_int32
+.B bpf_u_int32
 pointers.
 .SH RETURN VALUE
 .BR pcap_lookupnet ()
