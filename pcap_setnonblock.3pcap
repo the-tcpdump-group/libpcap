@@ -77,7 +77,7 @@ should be used instead.
 When first activated with
 .BR pcap_activate (3PCAP)
 or opened with
-.BR pcap_open_live (3PCAP) ,
+.BR pcap_open_live (3PCAP),
 a capture handle is not in ``non-blocking mode''; a call to
 .BR pcap_setnonblock ()
 is required in order to put it into ``non-blocking'' mode.
