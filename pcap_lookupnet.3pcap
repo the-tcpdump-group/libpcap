@@ -33,8 +33,7 @@ char errbuf[PCAP_ERRBUF_SIZE];
 .LP
 .ft B
 int pcap_lookupnet(const char *device, bpf_u_int32 *netp,
-.ti +8
-bpf_u_int32 *maskp, char *errbuf);
+    bpf_u_int32 *maskp, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
