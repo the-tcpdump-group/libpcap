@@ -28,17 +28,11 @@ pcap_loop, pcap_dispatch \- process packets from a live capture or savefile
 .LP
 .ft B
 typedef void (*pcap_handler)(u_char *user, const struct pcap_pkthdr *h,
-.ti +8
-			     const u_char *bytes);
-.ft
-.LP
-.ft B
+    const u_char *bytes);
 int pcap_loop(pcap_t *p, int cnt,
-.ti +8
-pcap_handler callback, u_char *user);
+    pcap_handler callback, u_char *user);
 int pcap_dispatch(pcap_t *p, int cnt,
-.ti +8
-pcap_handler callback, u_char *user);
+    pcap_handler callback, u_char *user);
 .ft
 .fi
 .SH DESCRIPTION

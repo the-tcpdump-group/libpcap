@@ -33,8 +33,7 @@ char errbuf[PCAP_ERRBUF_SIZE];
 .LP
 .ft B
 pcap_t *pcap_open_live(const char *device, int snaplen,
-.ti +8
-int promisc, int to_ms, char *errbuf);
+    int promisc, int to_ms, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION

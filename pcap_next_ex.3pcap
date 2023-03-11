@@ -28,8 +28,7 @@ pcap_next_ex, pcap_next \- read the next packet from a pcap_t
 .LP
 .ft B
 int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
-.ti +8
-const u_char **pkt_data);
+    const u_char **pkt_data);
 const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h);
 .ft
 .fi
