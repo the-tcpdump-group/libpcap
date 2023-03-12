@@ -6775,21 +6775,12 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 			bpf_error(cstate, "only ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel supports link-level host name");
 		} else if (proto == Q_DECNET) {
-			unsigned short dn_addr;
-
-			if (!__pcap_nametodnaddr(name, &dn_addr)) {
-#ifdef	DECNETLIB
-				bpf_error(cstate, "unknown decnet host name '%s'\n", name);
-#else
-				bpf_error(cstate, "decnet name support not included, '%s' cannot be translated\n",
-					name);
-#endif
-			}
 			/*
-			 * I don't think DECNET hosts can be multihomed, so
-			 * there is no need to build up a list of addresses
+			 * A long time ago on Ultrix libpcap supported
+			 * translation of DECnet host names into DECnet
+			 * addresses, but this feature is history now.
 			 */
-			return (gen_host(cstate, dn_addr, 0, proto, dir, q.addr));
+			bpf_error(cstate, "invalid DECnet address '%s'", name);
 		} else {
 #ifdef INET6
 			memset(&mask128, 0xff, sizeof(mask128));
@@ -7060,13 +7051,35 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 
 	proto = q.proto;
 	dir = q.dir;
-	if (s == NULL)
+	if (s == NULL) {
+		/*
+		 * v contains a 32-bit unsigned parsed from a string of the
+		 * form {N}, which could be decimal, hexadecimal or octal.
+		 * Although it would be possible to use the value as a raw
+		 * 16-bit DECnet address when the value fits into 16 bits, this
+		 * would be a questionable feature: DECnet address wire
+		 * encoding is little-endian, so this would not work as
+		 * intuitively as the same works for [big-endian] IPv4
+		 * addresses (0x01020304 means 1.2.3.4).
+		 */
+		if (proto == Q_DECNET)
+			bpf_error(cstate, "invalid DECnet address '%u'", v);
 		vlen = 32;
-	else if (q.proto == Q_DECNET) {
+	} else if (proto == Q_DECNET) {
+		/*
+		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
+		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
+		 * for a valid DECnet address.
+		 */
 		vlen = __pcap_atodn(s, &v);
 		if (vlen == 0)
-			bpf_error(cstate, "malformed decnet address '%s'", s);
+			bpf_error(cstate, "invalid DECnet address '%s'", s);
 	} else {
+		/*
+		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
+		 * {N}.{N}.{N}.{N}, all of which potentially stand for a valid
+		 * IPv4 address.
+		 */
 		vlen = __pcap_atoin(s, &v);
 		if (vlen < 0)
 			bpf_error(cstate, "invalid IPv4 address '%s'", s);

@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "20 February 2023"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "12 March 2023"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -476,10 +476,11 @@ currently know how to parse these protocols.
 .IP "\fBdecnet src \fIdecnetaddr\fR"
 True if the DECnet source address is
 .IR decnetaddr ,
-which may be an address of the form ``10.123'', or a DECnet host
-name.
-[DECnet host name support is only available on ULTRIX systems
-that are configured to run DECnet.]
+which is an address of the form
+.B AREANUMBER.NODENUMBER
+(for example, "10.123"), where the area number can be between 0 and 63
+and the node number can be between 0 and 1023 and both numbers always use
+decimal base.
 .IP "\fBdecnet dst \fIdecnetaddr\fR"
 True if the DECnet destination address is
 .IR decnetaddr .

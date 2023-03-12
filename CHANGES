@@ -4,6 +4,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
       Remove an always-false pointer test from snf_read().
+      Clean up DECnet address handling.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
