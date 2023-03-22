@@ -1623,6 +1623,11 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 	char *device_copy = NULL;
 	ADAPTER *adapter = NULL;
 	ULONG num_ts_modes;
+	/* Npcap 1.00 driver is buggy and will write 16 bytes regardless of
+	 * buffer size. Using a sufficient stack buffer avoids overflow and
+	 * avoids a heap allocation in most (currently all) cases.
+	 */
+	ULONG ts_modes[4];
 	BOOL ret;
 	DWORD error = ERROR_SUCCESS;
 	ULONG *modes = NULL;
@@ -1713,8 +1718,8 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 		 * happen), and that ULONG should be set to the
 		 * number of modes.
 		 */
-		num_ts_modes = 1;
-		ret = PacketGetTimestampModes(adapter, &num_ts_modes);
+		ts_modes[0] = sizeof(ts_modes) / sizeof(ULONG);
+		ret = PacketGetTimestampModes(adapter, ts_modes);
 		if (!ret) {
 			/*
 			 * OK, it failed.  Did it fail with
@@ -1754,50 +1759,51 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 				status = -1;
 				break;
 			}
+
+			/*
+			 * Yes, so we now know how many types to fetch.
+			 *
+			 * The buffer needs to have one ULONG for the
+			 * count and num_ts_modes ULONGs for the
+			 * num_ts_modes time stamp types.
+			 */
+			num_ts_modes = ts_modes[0];
+			modes = (ULONG *)malloc((1 + num_ts_modes) * sizeof(ULONG));
+			if (modes == NULL) {
+				/* Out of memory. */
+				pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+				status = -1;
+				break;
+			}
+			modes[0] = 1 + num_ts_modes;
+			if (!PacketGetTimestampModes(adapter, modes)) {
+				pcap_fmt_errmsg_for_win32_err(ebuf,
+						PCAP_ERRBUF_SIZE, GetLastError(),
+						"Error calling PacketGetTimestampModes");
+				status = -1;
+				break;
+			}
+			if (modes[0] != num_ts_modes) {
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+						"First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
+						num_ts_modes, modes[0]);
+				status = -1;
+				break;
+			}
 		}
-		/* else (ret == TRUE)
-		 * Unexpected success. Let's act like we got ERROR_MORE_DATA.
-		 * If it doesn't work, we'll hit some other error condition farther on.
-		 */
+		else {
+			modes = ts_modes;
+			num_ts_modes = ts_modes[0];
+		}
 
 		/* If the driver reports no modes supported *and*
 		 * ERROR_MORE_DATA, something is seriously wrong.
 		 * We *could* ignore the error and continue without supporting
 		 * settable timestamp modes, but that would hide a bug.
 		 */
-		if (num_ts_modes == 0) {
+		if (modes[0] == 0) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "PacketGetTimestampModes() reports 0 modes supported.");
-			status = -1;
-			break;
-		}
-
-		/*
-		 * Yes, so we now know how many types to fetch.
-		 *
-		 * The buffer needs to have one ULONG for the
-		 * count and num_ts_modes ULONGs for the
-		 * num_ts_modes time stamp types.
-		 */
-		modes = (ULONG *)malloc((1 + num_ts_modes) * sizeof(ULONG));
-		if (modes == NULL) {
-			/* Out of memory. */
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
-			status = -1;
-			break;
-		}
-		modes[0] = 1 + num_ts_modes;
-		if (!PacketGetTimestampModes(adapter, modes)) {
-			pcap_fmt_errmsg_for_win32_err(ebuf,
-			    PCAP_ERRBUF_SIZE, GetLastError(),
-			    "Error calling PacketGetTimestampModes");
-			status = -1;
-			break;
-		}
-		if (modes[0] != num_ts_modes) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "First PacketGetTimestampModes() call gives %lu modes, second call gives %lu modes",
-			    num_ts_modes, modes[0]);
 			status = -1;
 			break;
 		}
@@ -1866,7 +1872,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 	if (device_copy != NULL) {
 		free(device_copy);
 	}
-	if (modes != NULL) {
+	if (modes != NULL && modes != ts_modes) {
 		free(modes);
 	}
 	if (adapter != NULL) {
