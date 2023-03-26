@@ -5,6 +5,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         fixed-width integer types, in rpcap code.
       Remove an always-false pointer test from snf_read().
       Clean up DECnet address handling.
+      Finalize moving of bpf_filter.c. (GH #1166)
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request

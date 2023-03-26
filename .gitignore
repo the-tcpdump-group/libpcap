@@ -2,7 +2,6 @@
 /Makefile
 *~
 /*.o
-/bpf_filter.c
 CMakeCache.txt
 cmake_install.cmake
 CMakeFiles/
