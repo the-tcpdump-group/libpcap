@@ -522,7 +522,7 @@ scanner.o: scanner.c grammar.h
 #
 # and this is an explicit target entry.
 #
-# Therefore, instead of using $<, we explicitly put in $(srcdir)/libpcap.pc.in.
+# Therefore, instead of using $<, we explicitly put in $(srcdir)/grammar.y.in.
 #
 grammar.y: $(srcdir)/grammar.y.in ./config.status
 	@rm -f $@ $@.tmp
