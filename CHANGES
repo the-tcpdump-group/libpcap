@@ -47,8 +47,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         these generated files in the release tarball.
       autoconf: Add the option to print functions and files names.
 
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.4 libpcap release (so far!)
+Friday, April 7, 2023 / The Tcpdump Group
+  Summary for 1.10.4 libpcap release
     Source code:
       Fix spaces before tabs in indentation.
     rpcap:
