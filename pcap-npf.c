@@ -143,14 +143,56 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 #endif
 
 /*
- * Sigh.  PacketRequest() will have made a DeviceIoControl()
- * call to the NPF driver to perform the OID request, with a
- * BIOCQUERYOID ioctl.  The kernel code should get back one
- * of NDIS_STATUS_INVALID_OID, NDIS_STATUS_NOT_SUPPORTED,
- * or NDIS_STATUS_NOT_RECOGNIZED if the OID request isn't
- * supported by the OS or the driver, but that doesn't seem
- * to make it to the caller of PacketRequest() in a
- * reliable fashion.
+ * If a driver returns an NTSTATUS value:
+ *
+ *    https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/87fba13e-bf06-450e-83b1-9241dc81e781
+ *
+ * with the "Customer" bit set, it will not be mapped to a Windows error
+ * value in userland, so it will be returned by GetLastError().
+ *
+ * Note that "driver" here includes the Npcap NPF driver, as various
+ * versions would take NT status values and set the "Customer" bit
+ * before returning the status code.  The commit message for the
+ * change that started doing that is
+ *
+ *    Returned a customer-defined NTSTATUS in OID requests to avoid
+ *    NTSTATUS-to-Win32 Error code translation.
+ *
+ * but I don't know why the goal was to avoid that translation.  For
+ * a while, I suspected that the NT status STATUS_NOT_SUPPORTED was
+ * getting mapped to ERROR_GEN_FAILURE, but, in the cases where
+ * attempts to set promiscuous mode on regular Ethernet devices were
+ * failing with ERROR_GEN_FAILURE, it turns out that the drivers for
+ * those devices were NetAdapterCx drivers, and Microsoft's NetAdapterCx
+ * mechanism wasn't providing the correct "bytes processed" value on
+ * attempts to set OIDs, and the Npcap NPF driver was checking for
+ * that and returning STATUS_UNSUCCESSFUL, which gets mapped to
+ * ERROR_GEN_FAILURE, so perhaps there's no need to avoid that
+ * translation.
+ *
+ * Attempting to set the hardware filter on a Microsoft Surface Pro's
+ * Mobile Broadband Adapter returns an error that appears to be
+ * NDIS_STATUS_NOT_SUPPORTED ORed with the "Customer" bit, so it's
+ * probably indicating that it doesn't support that.  It was probably
+ * the NPF driver setting that bit.
+ */
+#define NT_STATUS_CUSTOMER_DEFINED	0x20000000
+
+/*
+ * PacketRequest() makes a DeviceIoControl() call to the NPF driver to
+ * perform the OID request, with a BIOCQUERYOID ioctl.  The kernel code
+ * should get back one of NDIS_STATUS_INVALID_OID, NDIS_STATUS_NOT_SUPPORTED,
+ * or NDIS_STATUS_NOT_RECOGNIZED if the OID request isn't supported by
+ * the OS or the driver.
+ *
+ * Currently, that code may be returned by the Npcap NPF driver with the
+ * NT_STATUS_CUSTOMER_DEFINED bit.  That prevents the return status from
+ * being mapped to a Windows error code; if the NPF driver were to stop
+ * ORing in the NT_STATUS_CUSTOMER_DEFINED bit, it's not obvious how those
+ * the NDIS_STATUS_ values that don't correspond to NTSTATUS values would
+ * be translated to Windows error values (NDIS_STATUS_NOT_SUPPORTED is
+ * the same as STATUS_NOT_SUPPORTED, which is an NTSTATUS value that is
+ * mapped to ERROR_NOT_SUPPORTED).
  */
 #define NDIS_STATUS_INVALID_OID		0xc0010017
 #define NDIS_STATUS_NOT_SUPPORTED	0xc00000bb	/* STATUS_NOT_SUPPORTED */
@@ -984,38 +1026,6 @@ pcap_breakloop_npf(pcap_t *p)
 	SetEvent(PacketGetReadEvent(pw->adapter));
 }
 
-/*
- * These are NTSTATUS values:
- *
- *    https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/87fba13e-bf06-450e-83b1-9241dc81e781
- *
- * with the "Customer" bit set.  If a driver returns them, they are not
- * mapped to Windows error values in userland; they're returned by
- * GetLastError().
- *
- * Note that "driver" here includes the Npcap NPF driver, as various
- * versions would take NT status values and set the "Customer" bit
- * before returning the status code.  The commit message for the
- * change that started doing that is
- *
- *    Returned a customer-defined NTSTATUS in OID requests to avoid
- *    NTSTATUS-to-Win32 Error code translation.
- *
- * but I don't know why the goal was to avoid that translation.
- *
- * Attempting to set the hardware filter on a Microsoft Surface Pro's
- * Mobile Broadband Adapter returns an error that appears to be
- * NDIS_STATUS_NOT_SUPPORTED ORed with the "Customer" bit, so it's
- * probably indicating that it doesn't support that.
- *
- * It is likely that there are other devices which throw spurious errors,
- * at which point this will need refactoring to efficiently check against
- * a list, but for now we can just check this one value.  Perhaps the
- * right way to do this is compare against various NDIS errors with
- * the "customer" bit ORed in.
- */
-#define NT_STATUS_CUSTOMER_DEFINED	0x20000000
-
 static int
 pcap_activate_npf(pcap_t *p)
 {
@@ -1297,7 +1307,12 @@ pcap_activate_npf(pcap_t *p)
 	/* Set promiscuous mode */
 	if (p->opt.promisc)
 	{
-
+		/*
+		 * For future reference, in case we ever want to query
+		 * whether an adapter supports promiscuous mode, that
+		 * would be done on Windows by querying the value
+		 * of the OID_GEN_SUPPORTED_PACKET_FILTERS OID.
+		 */
 		if (PacketSetHwFilter(pw->adapter,NDIS_PACKET_TYPE_PROMISCUOUS) == FALSE)
 		{
 			DWORD errcode = GetLastError();
@@ -1341,8 +1356,16 @@ pcap_activate_npf(pcap_t *p)
 			 * value, so that old incorrect programs that
 			 * assume a non-zero return from pcap_activate()
 			 * is an error don't break.)
+			 *
+			 * We check here for ERROR_NOT_SUPPORTED, which
+			 * is what NDIS_STATUS_NOT_SUPPORTED (which is
+			 * the same value as the NTSTATUS value
+			 * STATUS_NOT_SUPPORTED) gets mapped to, as
+			 * well as NDIS_STATUS_NOT_SUPPORTED with the
+			 * "Customer" bit set.
 			 */
-			if (errcode != (NDIS_STATUS_NOT_SUPPORTED|NT_STATUS_CUSTOMER_DEFINED))
+			if (errcode != ERROR_NOT_SUPPORTED &&
+			    errcode != (NDIS_STATUS_NOT_SUPPORTED|NT_STATUS_CUSTOMER_DEFINED))
 			{
 				pcap_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
