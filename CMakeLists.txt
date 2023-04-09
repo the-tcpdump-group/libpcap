@@ -1314,6 +1314,39 @@ endif()
 # mean "all supported sanitizers that we know about and that can all
 # be used together".
 #
+macro(test_sanitizer _sanitizer _sanitizer_flag)
+    message(STATUS "Checking sanitizer ${_sanitizer}")
+    set(sanitizer_variable "sanitize_${_sanitizer}")
+    # Set -Werror to catch "argument unused during compilation" warnings
+    set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize=${_sanitizer}")
+    check_c_compiler_flag("-fsanitize=${_sanitizer}" ${sanitizer_variable})
+    if(${${sanitizer_variable}})
+        set(${_sanitizer_flag} "-fsanitize=${_sanitizer}")
+    else()
+        #
+        # Try the versions supported prior to Clang 3.2.
+        # If the sanitizer is "address", try -fsanitize-address.
+        # If it's "undefined", try -fcatch-undefined-behavior.
+        # Otherwise, give up.
+        #
+        set(sanitizer_variable "OLD_${sanitizer_variable}")
+        if ("${_sanitizer}" STREQUAL "address")
+            set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize-address")
+            check_c_compiler_flag("-fsanitize-address" ${sanitizer_variable})
+            if(${${sanitizer_variable}})
+                set(${_sanitizer_flag} "-fsanitize-address")
+            endif()
+        elseif("${_sanitizer}" STREQUAL "undefined")
+            set(CMAKE_REQUIRED_FLAGS "-Werror -fcatch-undefined-behavior")
+            check_c_compiler_flag("-fcatch-undefined-behavior" ${sanitizer_variable})
+            if(${${sanitizer_variable}})
+                set(${_sanitizer_flag} "-fcatch-undefined-behavior")
+            endif()
+        endif()
+    endif()
+    unset(CMAKE_REQUIRED_FLAGS)
+endmacro(test_sanitizer)
+
 set(SANITIZER_FLAGS "")
 if("${ENABLE_SANITIZERS}")
     #
@@ -1328,47 +1361,14 @@ if("${ENABLE_SANITIZERS}")
     # supports".
     #
     foreach(sanitizer "address" "undefined")
-        # Set -Werror to catch "argument unused during compilation" warnings
-
-        message(STATUS "Checking sanitizer ${sanitizer}")
-        set(sanitizer_variable "sanitize_${sanitizer}")
-        set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize=${sanitizer}")
-        check_c_compiler_flag("-fsanitize=${sanitizer}" ${sanitizer_variable})
-        if(${${sanitizer_variable}})
-            set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize=${sanitizer}")
-            message(STATUS "${sanitizer} sanitizer supported using -fsanitizer=${sanitizer}")
+        unset(SANITIZER_FLAG)
+        test_sanitizer(${sanitizer} SANITIZER_FLAG)
+        if(SANITIZER_FLAG)
+            message(STATUS "${sanitizer} sanitizer supported using ${SANITIZER_FLAG}")
+            set(SANITIZER_FLAGS "${SANITIZER_FLAGS} ${SANITIZER_FLAG}")
         else()
-            #
-            # Try the versions supported prior to Clang 3.2.
-            # If the sanitizer is "address", try -fsanitize-address.
-            # If it's "undefined", try -fcatch-undefined-behavior.
-            # Otherwise, give up.
-            #
-            set(sanitizer_variable "OLD_${sanitizer_variable}")
-            if ("${sanitizer}" STREQUAL "address")
-                set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize-address")
-                check_c_compiler_flag("-fsanitize-address" ${sanitizer_variable})
-                if(${${sanitizer_variable}})
-                    set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize-address")
-                    message(STATUS "${sanitizer} sanitizer supported using -fsanitize-address")
-                else()
-                    message(STATUS "${sanitizer} isn't a supported sanitizer")
-                endif()
-            elseif("${sanitizer}" STREQUAL "undefined")
-                set(CMAKE_REQUIRED_FLAGS "-Werror -fcatch-undefined-behavior")
-                check_c_compiler_flag("-fcatch-undefined-behavior" ${sanitizer_variable})
-                if(${${sanitizer_variable}})
-                    set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fcatch-undefined-behavior")
-                    message(STATUS "${sanitizer} sanitizer supported using catch-undefined-behavior")
-                else()
-                    message(STATUS "${sanitizer} isn't a supported sanitizer")
-                endif()
-            else()
-                message(STATUS "${sanitizer} isn't a supported sanitizer")
-            endif()
+            message(STATUS "${sanitizer} isn't a supported sanitizer")
         endif()
-
-        unset(CMAKE_REQUIRED_FLAGS)
     endforeach()
 else()
     #
@@ -1401,49 +1401,14 @@ else()
         # we treat it as a list of sanitizers.
         #
         foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
-            #
-            # Set -Werror to catch "argument unused during compilation"
-            # warnings
-            #
-            message(STATUS "Checking sanitizer ${sanitizer}")
-            set(sanitizer_variable "sanitize_${sanitizer}")
-            set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize=${sanitizer}")
-            check_c_compiler_flag("-fsanitize=${sanitizer}" ${sanitizer_variable})
-            if(${${sanitizer_variable}})
-                set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize=${sanitizer}")
-                message(STATUS "${sanitizer} sanitizer supported using -fsanitizer=${sanitizer}")
+            unset(SANITIZER_FLAG)
+            test_sanitizer(${sanitizer} SANITIZER_FLAG)
+            if(SANITIZER_FLAG)
+                message(STATUS "${sanitizer} sanitizer supported using ${SANITIZER_FLAG}")
+                set(SANITIZER_FLAGS "${SANITIZER_FLAGS} ${SANITIZER_FLAG}")
             else()
-                #
-                # Try the versions supported prior to Clang 3.2.
-                # If the sanitizer is "address", try -fsanitize-address.
-                # If it's "undefined", try -fcatch-undefined-behavior.
-                # Otherwise, give up.
-                #
-                set(sanitizer_variable "OLD_${sanitizer_variable}")
-                if ("${sanitizer}" STREQUAL "address")
-                    set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize-address")
-                    check_c_compiler_flag("-fsanitize-address" ${sanitizer_variable})
-                    if(${${sanitizer_variable}})
-                        set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize-address")
-                        message(STATUS "${sanitizer} sanitizer supported using -fsanitize-address")
-                    else()
-                        message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
-                    endif()
-                elseif("${sanitizer}" STREQUAL "undefined")
-                    set(CMAKE_REQUIRED_FLAGS "-Werror -fcatch-undefined-behavior")
-                    check_c_compiler_flag("-fcatch-undefined-behavior" ${sanitizer_variable})
-                    if(${${sanitizer_variable}})
-                        set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fcatch-undefined-behavior")
-                        message(STATUS "${sanitizer} sanitizer supported using catch-undefined-behavior")
-                    else()
-                        message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
-                    endif()
-                else()
-                    message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
-                endif()
+                message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
             endif()
-
-            unset(CMAKE_REQUIRED_FLAGS)
         endforeach()
     else()
         #
