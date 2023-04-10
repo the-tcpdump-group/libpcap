@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP\-CONFIG 1 "18 February 2023"
+.TH PCAP\-CONFIG 1 "10 April 2023"
 .SH NAME
 pcap-config \- write libpcap compiler and linker flags to standard output
 .SH SYNOPSIS
@@ -120,6 +120,14 @@ libpcap.
 .I pcap\-config
 exits with a non-zero status when invoked with an invalid command\-line
 option, and with status 0 otherwise.
+
+.SH BACKWARD COMPATIBILITY
+.PP
+The
+.B \-\-static\-pcap\-only
+flag became available in libpcap release 1.10.2.  The
+.B \-\-static
+flag became available in libpcap release 1.1.0.
 
 .SH SEE ALSO
 .BR pkg\-config (1),
