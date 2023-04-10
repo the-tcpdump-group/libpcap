@@ -1370,6 +1370,9 @@ if("${ENABLE_SANITIZERS}")
             message(STATUS "${sanitizer} isn't a supported sanitizer")
         endif()
     endforeach()
+    if("${SANITIZER_FLAGS}" STREQUAL "")
+        message(FATAL_ERROR "No supported sanitizers found")
+    endif()
 else()
     #
     # This appears to indicate that ENABLE_SANITIZERS was either:
