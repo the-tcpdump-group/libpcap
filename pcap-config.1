@@ -52,13 +52,9 @@ pcap-config \- write libpcap compiler and linker flags to standard output
 .I pcap\-config
 writes to the standard output various compiler and linker flags required to
 build a user program with libpcap.  By default, it writes flags appropriate
-for building with a dynamically\-linked version of libpcap; see the
-.B \-\-static
-and
-.B \-\-static\-pcap\-only
-options for building with a statically\-linked version.  Depending on the
-manner of libpcap installation, some options or their combinations may
-produce empty output \- this is by design.
+for building with a dynamically\-linked version of libpcap; see below
+for static linking.  Depending on the manner of libpcap installation, some
+options or their combinations may produce empty output \- this is by design.
 
 .SH OPTIONS
 .TP
@@ -123,7 +119,9 @@ option, and with status 0 otherwise.
 
 .SH BACKWARD COMPATIBILITY
 .PP
-The
+Before libpcap release 1.10.2
+.I pcap\-config
+did not treat invalid command\-line options as an error. The
 .B \-\-static\-pcap\-only
 flag became available in libpcap release 1.10.2.  The
 .B \-\-static
