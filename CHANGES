@@ -2,6 +2,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)
     Source code:
       Finalize moving of bpf_filter.c. (GH #1166)
+      Address a few compiler warnings on Haiku.
     Documentation:
       Document pcap-config better.
 
