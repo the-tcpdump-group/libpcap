@@ -1616,7 +1616,19 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
 	(void)pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+#if defined(__HAIKU__) && defined(__clang__)
+	/*
+	 * In Haiku R1/beta4 <unistd.h> ioctl() is a macro that needs to take 4
+	 * arguments to initialize its intermediate 2-member structure fully so
+	 * that Clang does not generate a -Wmissing-field-initializers warning
+	 * (which manifests only when it runs with -Werror).  This workaround
+	 * can be removed as soon as there is a Haiku release that fixes the
+	 * problem.  See also https://review.haiku-os.org/c/haiku/+/6369
+	 */
+	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr, sizeof(ifr)) < 0) {
+#else
 	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
+#endif /* __HAIKU__ && __clang__ */
 		if (errno == EADDRNOTAVAIL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: no IPv4 address assigned", device);
@@ -1635,7 +1647,12 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
 	(void)pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+#if defined(__HAIKU__) && defined(__clang__)
+	/* Same as above. */
+	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr, sizeof(ifr)) < 0) {
+#else
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
+#endif /* __HAIKU__ && __clang__ */
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "SIOCGIFNETMASK: %s", device);
 		(void)close(fd);

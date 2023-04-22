@@ -4102,7 +4102,16 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 {
 	struct block *b0, *b1;
 	u_int offset;
-	uint32_t *a, *m;
+	/*
+	 * Code below needs to access four separate 32-bit parts of the 128-bit
+	 * IPv6 address and mask.  In some OSes this is as simple as using the
+	 * s6_addr32 pseudo-member of struct in6_addr, which contains a union of
+	 * 8-, 16- and 32-bit arrays.  In other OSes this is not the case, as
+	 * far as libpcap sees it.  Hence copy the data before use to avoid
+	 * potential unaligned memory access and the associated compiler
+	 * warnings (whether genuine or not).
+	 */
+	bpf_u_int32 a[4], m[4];
 
 	switch (dir) {
 
@@ -4156,8 +4165,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		/*NOTREACHED*/
 	}
 	/* this order is important */
-	a = (uint32_t *)addr;
-	m = (uint32_t *)mask;
+	memcpy(a, addr, sizeof(a));
+	memcpy(m, mask, sizeof(m));
 	b1 = gen_mcmp(cstate, OR_LINKPL, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
 	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
 	gen_and(b0, b1);
@@ -7186,7 +7195,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 	struct in6_addr *addr;
 	struct in6_addr mask;
 	struct block *b;
-	uint32_t *a, *m;
+	bpf_u_int32 a[4], m[4]; /* Same as in gen_hostop6(). */
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -7215,8 +7224,8 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 			(0xff << (8 - masklen % 8)) & 0xff;
 	}
 
-	a = (uint32_t *)addr;
-	m = (uint32_t *)&mask;
+	memcpy(a, addr, sizeof(a));
+	memcpy(m, &mask, sizeof(m));
 	if ((a[0] & ~m[0]) || (a[1] & ~m[1])
 	 || (a[2] & ~m[2]) || (a[3] & ~m[3])) {
 		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s1, masklen);

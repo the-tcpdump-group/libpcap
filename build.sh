@@ -87,21 +87,16 @@ suncc-5.1[45]/SunOS-5.11)
     # "./filtertest.c", line 281: warning: statement not reached
     LIBPCAP_TAINTED=yes
     ;;
-*/Haiku-*)
-    # (The warnings below come from GCC and Clang in CMake builds after installing
-    # all system updates.)
-    # gencode.c:4143:9: warning: converting a packed 'struct in6_addr' pointer
-    #   (alignment 1) to a 'uint32_t' {aka 'unsigned int'} pointer (alignment 4) may
-    #   result in an unaligned pointer value [-Waddress-of-packed-member]
-    # gencode.c:4144:9: warning: converting a packed 'struct in6_addr' pointer
-    #   (alignment 1) to a 'uint32_t' {aka 'unsigned int'} pointer (alignment 4) may
-    #   result in an unaligned pointer value [-Waddress-of-packed-member]
-    # gencode.c:7189:9: warning: converting a packed 'struct in6_addr' pointer
-    #   (alignment 1) to a 'uint32_t' {aka 'unsigned int'} pointer (alignment 4) may
-    #   result in an unaligned pointer value [-Waddress-of-packed-member]
-    # gencode.c:7190:9: warning: converting a packed 'struct in6_addr' pointer
-    #   (alignment 1) to a 'uint32_t' {aka 'unsigned int'} pointer (alignment 4) may
-    #   result in an unaligned pointer value [-Waddress-of-packed-member]
+clang-*/Haiku-*)
+    # pcap-haiku.c:82:26: error: implicit conversion loses integer precision:
+    #   'ssize_t' (aka 'long') to 'int32_t' (aka 'int')
+    #   [-Werror,-Wshorten-64-to-32]
+    # pcap-haiku.c:88:51: error: implicit conversion loses integer precision:
+    #   'ssize_t' (aka 'long') to 'u_int' (aka 'unsigned int')
+    #   [-Werror,-Wshorten-64-to-32]
+    # pcap-haiku.c:98:15: error: implicit conversion loses integer precision:
+    #   'ssize_t' (aka 'long') to 'bpf_u_int32' (aka 'unsigned int')
+    #   [-Werror,-Wshorten-64-to-32]
     LIBPCAP_TAINTED=yes
     ;;
 esac
