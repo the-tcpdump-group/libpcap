@@ -65,6 +65,8 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "diag-control.h"
 
+#include "thread-local.h"
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -3379,7 +3381,7 @@ pcap_datalink_val_to_description(int dlt)
 const char *
 pcap_datalink_val_to_description_or_dlt(int dlt)
 {
-        static char unkbuf[40];
+        static thread_local char unkbuf[40];
         const char *description;
 
         description = pcap_datalink_val_to_description(dlt);
@@ -3645,7 +3647,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock)
 const char *
 pcap_statustostr(int errnum)
 {
-	static char ebuf[15+10+1];
+	static thread_local char ebuf[15+10+1];
 
 	switch (errnum) {
 
@@ -3706,7 +3708,7 @@ pcap_strerror(int errnum)
 {
 #ifdef HAVE_STRERROR
 #ifdef _WIN32
-	static char errbuf[PCAP_ERRBUF_SIZE];
+	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
 	errno_t err = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
 
 	if (err != 0) /* err = 0 if successful */
@@ -3718,7 +3720,7 @@ pcap_strerror(int errnum)
 #else
 	extern int sys_nerr;
 	extern const char *const sys_errlist[];
-	static char errbuf[PCAP_ERRBUF_SIZE];
+	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
 
 	if ((unsigned int)errnum < sys_nerr)
 		return ((char *)sys_errlist[errnum]);
