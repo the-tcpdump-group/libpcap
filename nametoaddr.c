@@ -135,6 +135,8 @@
 #include <pcap/namedb.h>
 #include "nametoaddr.h"
 
+#include "thread-local.h"
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -806,16 +808,18 @@ pcap_ether_aton(const char *s)
 #ifndef HAVE_ETHER_HOSTTON
 /*
  * Roll our own.
- * XXX - not thread-safe, because pcap_next_etherent() isn't thread-
- * safe!  Needs a mutex or a thread-safe pcap_next_etherent().
+ *
+ * This should be thread-safe, as we define the static variables
+ * we use to be thread-local, and as pcap_next_etherent() does so
+ * as well.
  */
 u_char *
 pcap_ether_hostton(const char *name)
 {
 	register struct pcap_etherent *ep;
 	register u_char *ap;
-	static FILE *fp = NULL;
-	static int init = 0;
+	static thread_local FILE *fp = NULL;
+	static thread_local int init = 0;
 
 	if (!init) {
 		fp = fopen(PCAP_ETHERS_FILE, "r");
