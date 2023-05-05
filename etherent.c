@@ -157,7 +157,7 @@ pcap_next_etherent(FILE *fp)
 		/* Use 'namesize' to prevent buffer overflow. */
 		namesize = sizeof(e.name) - 1;
 		do {
-			*bp++ = (u_char)c;
+			*bp++ = (char)c;
 			c = getc(fp);
 			if (c == EOF)
 				return (NULL);
