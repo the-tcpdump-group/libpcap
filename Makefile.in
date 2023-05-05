@@ -149,6 +149,7 @@ HDR = $(PUBHDR) \
 	sf-pcap.h \
 	sf-pcapng.h \
 	sunatmpos.h \
+	thread-local.h \
 	varattrs.h
 
 GENHDR = \
