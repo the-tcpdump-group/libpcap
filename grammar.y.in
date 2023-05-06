@@ -472,7 +472,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 	| HID6 '/' NUM		{
 				  CHECK_PTR_VAL($1);
 #ifdef INET6
-				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, NULL, $3,
+				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, $3,
 				    $$.q = $<blk>0.q)));
 #else
 				  bpf_set_error(cstate, "'ip6addr/prefixlen' not supported "
@@ -483,7 +483,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 	| HID6			{
 				  CHECK_PTR_VAL($1);
 #ifdef INET6
-				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 0, 128,
+				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 128,
 				    $$.q = $<blk>0.q)));
 #else
 				  bpf_set_error(cstate, "'ip6addr' not supported "
