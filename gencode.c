@@ -7160,8 +7160,8 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 
 #ifdef INET6
 struct block *
-gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
-    bpf_u_int32 masklen, struct qual q)
+gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
+    struct qual q)
 {
 	struct addrinfo *res;
 	struct in6_addr *addr;
@@ -7176,15 +7176,12 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (s2)
-		bpf_error(cstate, "no mask %s supported", s2);
-
-	res = pcap_nametoaddrinfo(s1);
+	res = pcap_nametoaddrinfo(s);
 	if (!res)
-		bpf_error(cstate, "invalid ip6 address %s", s1);
+		bpf_error(cstate, "invalid ip6 address %s", s);
 	cstate->ai = res;
 	if (res->ai_next)
-		bpf_error(cstate, "%s resolved to multiple address", s1);
+		bpf_error(cstate, "%s resolved to multiple address", s);
 	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
 
 	if (masklen > sizeof(mask.s6_addr) * 8)
@@ -7200,7 +7197,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 	memcpy(m, &mask, sizeof(m));
 	if ((a[0] & ~m[0]) || (a[1] & ~m[1])
 	 || (a[2] & ~m[2]) || (a[3] & ~m[3])) {
-		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s1, masklen);
+		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s, masklen);
 	}
 
 	switch (q.addr) {
