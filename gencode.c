@@ -6682,6 +6682,277 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 	/*NOTREACHED*/
 }
 
+/*
+ * Convert a non-numeric name to a port number.
+ */
+static int
+nametoport(compiler_state_t *cstate, const char *name, int ipproto)
+{
+	struct addrinfo hints, *res, *ai;
+	int error;
+	struct sockaddr_in *in4;
+#ifdef INET6
+	struct sockaddr_in6 *in6;
+#endif
+	int port = -1;
+
+	/*
+	 * We check for both TCP and UDP in case there are
+	 * ambiguous entries.
+	 */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = (ipproto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
+	hints.ai_protocol = ipproto;
+	error = getaddrinfo(NULL, name, &hints, &res);
+	if (error != 0) {
+		switch (error) {
+
+		case EAI_NONAME:
+		case EAI_SERVICE:
+			/*
+			 * No such port.  Just return -1.
+			 */
+			break;
+
+#ifdef EAI_SYSTEM
+		case EAI_SYSTEM:
+			/*
+			 * We don't use strerror() because it's not
+			 * guaranteed to be thread-safe on all platforms
+			 * (probably because it might use a non-thread-local
+			 * buffer into which to format an error message
+			 * if the error code isn't one for which it has
+			 * a canned string; three cheers for C string
+			 * handling).
+			 */
+			bpf_set_error(cstate, "getaddrinfo(\"%s\" fails with system error: %d",
+			    name, errno);
+			port = -2;	/* a real error */
+			break;
+#endif
+
+		default:
+			/*
+			 * This is a real error, not just "there's
+			 * no such service name".
+			 *
+			 * We don't use gai_strerror() because it's not
+			 * guaranteed to be thread-safe on all platforms
+			 * (probably because it might use a non-thread-local
+			 * buffer into which to format an error message
+			 * if the error code isn't one for which it has
+			 * a canned string; three cheers for C string
+			 * handling).
+			 */
+			bpf_set_error(cstate, "getaddrinfo(\"%s\") fails with error: %d",
+			    name, error);
+			port = -2;	/* a real error */
+			break;
+		}
+	} else {
+		/*
+		 * OK, we found it.  Did it find anything?
+		 */
+		for (ai = res; ai != NULL; ai = ai->ai_next) {
+			/*
+			 * Does it have an address?
+			 */
+			if (ai->ai_addr != NULL) {
+				/*
+				 * Yes.  Get a port number; we're done.
+				 */
+				if (ai->ai_addr->sa_family == AF_INET) {
+					in4 = (struct sockaddr_in *)ai->ai_addr;
+					port = ntohs(in4->sin_port);
+					break;
+				}
+#ifdef INET6
+				if (ai->ai_addr->sa_family == AF_INET6) {
+					in6 = (struct sockaddr_in6 *)ai->ai_addr;
+					port = ntohs(in6->sin6_port);
+					break;
+				}
+#endif
+			}
+		}
+		freeaddrinfo(res);
+	}
+	return port;
+}
+
+/*
+ * Convert a string to a port number.
+ */
+static bpf_u_int32
+stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
+    int *proto)
+{
+	stoulen_ret ret;
+	char *cpy;
+	bpf_u_int32 val;
+	int tcp_port = -1;
+	int udp_port = -1;
+
+	/*
+	 * See if it's a number.
+	 */
+	ret = stoulen(string, string_size, &val, cstate);
+	switch (ret) {
+
+	case STOULEN_OK:
+		/* Unknown port type - it's just a numbrer. */
+		*proto = PROTO_UNDEF;
+		break;
+
+	case STOULEN_NOT_OCTAL_NUMBER:
+	case STOULEN_NOT_HEX_NUMBER:
+	case STOULEN_NOT_DECIMAL_NUMBER:
+		/*
+		 * Not a valid number; try looking it up as a port.
+		 */
+		cpy = malloc(string_size + 1);	/* +1 for terminating '\0' */
+		memcpy(cpy, string, string_size);
+		cpy[string_size] = '\0';
+		tcp_port = nametoport(cstate, cpy, IPPROTO_TCP);
+		if (tcp_port == -2) {
+			/*
+			 * We got a hard error; the error string has
+			 * already been set.
+			 */
+			free(cpy);
+			longjmp(cstate->top_ctx, 1);
+			/*NOTREACHED*/
+		}
+		udp_port = nametoport(cstate, cpy, IPPROTO_UDP);
+		if (udp_port == -2) {
+			/*
+			 * We got a hard error; the error string has
+			 * already been set.
+			 */
+			free(cpy);
+			longjmp(cstate->top_ctx, 1);
+			/*NOTREACHED*/
+		}
+
+		/*
+		 * We need to check /etc/services for ambiguous entries.
+		 * If we find an ambiguous entry, and it has the
+		 * same port number, change the proto to PROTO_UNDEF
+		 * so both TCP and UDP will be checked.
+		 */
+		if (tcp_port >= 0) {
+			val = (bpf_u_int32)tcp_port;
+			*proto = IPPROTO_TCP;
+			if (udp_port >= 0) {
+				if (udp_port == tcp_port)
+					*proto = PROTO_UNDEF;
+#ifdef notdef
+				else
+					/* Can't handle ambiguous names that refer
+					   to different port numbers. */
+					warning("ambiguous port %s in /etc/services",
+						cpy);
+#endif
+			}
+			free(cpy);
+			break;
+		}
+		if (udp_port >= 0) {
+			val = (bpf_u_int32)udp_port;
+			*proto = IPPROTO_UDP;
+			free(cpy);
+			break;
+		}
+#if defined(ultrix) || defined(__osf__)
+		/* Special hack in case NFS isn't in /etc/services */
+		if (strcmp(cpy, "nfs") == 0) {
+			val = 2049;
+			*proto = PROTO_UNDEF;
+			free(cpy);
+			break;
+		}
+#endif
+		bpf_set_error(cstate, "'%s' is not a valid port", cpy);
+		free(cpy);
+		longjmp(cstate->top_ctx, 1);
+		/*NOTREACHED*/
+
+	case STOULEN_ERROR:
+		/* Error already set. */
+		longjmp(cstate->top_ctx, 1);
+		/*NOTREACHED*/
+
+	default:
+		/* Should not happen */
+		bpf_set_error(cstate, "stoulen returned %d - this should not happen", ret);
+		longjmp(cstate->top_ctx, 1);
+		/*NOTREACHED*/
+	}
+	return (val);
+}
+
+/*
+ * Convert a string in the form PPP-PPP, which correspond to ports, to
+ * a starting and ending port in a port range.
+ */
+static void
+stringtoportrange(compiler_state_t *cstate, const char *string,
+    bpf_u_int32 *port1, bpf_u_int32 *port2, int *proto)
+{
+	char *hyphen_off;
+	const char *first, *second;
+	size_t first_size, second_size;
+	int save_proto;
+
+	if ((hyphen_off = strchr(string, '-')) == NULL)
+		bpf_error(cstate, "port range '%s' contains no hyphen", string);
+
+	/*
+	 * Make sure there are no other hyphens.
+	 *
+	 * XXX - we support named ports, but there are some port names
+	 * in /etc/services that include hyphens, so this would rule
+	 * that out.
+	 */
+	if (strchr(hyphen_off + 1, '-') != NULL)
+		bpf_error(cstate, "port range '%s' contains more than one hyphen",
+		    string);
+
+	/*
+	 * Get the length of the first port.
+	 */
+	first = string;
+	first_size = hyphen_off - string;
+	if (first_size == 0) {
+		/* Range of "-port", which we don't support. */
+		bpf_error(cstate, "port range '%s' has no starting port", string);
+	}
+
+	/*
+	 * Try to convert it to a port.
+	 */
+	*port1 = stringtoport(cstate, first, first_size, proto);
+	save_proto = *proto;
+
+	/*
+	 * Get the length of the second port.
+	 */
+	second = hyphen_off + 1;
+	second_size = strlen(second);
+	if (second_size == 0) {
+		/* Range of "port-", which we don't support. */
+		bpf_error(cstate, "port range '%s' has no ending port", string);
+	}
+
+	/*
+	 * Try to convert it to a port.
+	 */
+	*port2 = stringtoport(cstate, second, second_size, proto);
+	if (*proto != save_proto)
+		*proto = PROTO_UNDEF;
+}
+
 struct block *
 gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 {
@@ -6699,7 +6970,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 #endif /*INET6*/
 	struct block *b, *tmp;
 	int port, real_proto;
-	int port1, port2;
+	bpf_u_int32 port1, port2;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -6899,8 +7170,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		if (proto != Q_DEFAULT &&
 		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
 			bpf_error(cstate, "illegal qualifier of 'portrange'");
-		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0)
-			bpf_error(cstate, "unknown port in range '%s'", name);
+		stringtoportrange(cstate, name, &port1, &port2, &real_proto);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
 				bpf_error(cstate, "port in range '%s' is tcp", name);
@@ -6928,12 +7198,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
-		if (port1 < 0)
-			bpf_error(cstate, "illegal port number %d < 0", port1);
 		if (port1 > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port1);
-		if (port2 < 0)
-			bpf_error(cstate, "illegal port number %d < 0", port2);
 		if (port2 > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port2);
 
