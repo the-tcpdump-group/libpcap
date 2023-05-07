@@ -451,16 +451,16 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Check whether HID/NUM is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-					bpf_set_error(cstate, "'port' modifier applied to <ipaddr>/<prefixlen>");
+					bpf_set_error(cstate, "'port' modifier applied to IP address and prefix length");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-					bpf_set_error(cstate, "'portrange' modifier applied to <ipaddr>/<prefixlen>");
+					bpf_set_error(cstate, "'portrange' modifier applied to IP address and prefix length");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-					bpf_set_error(cstate, "'proto' modifier applied to <ipaddr>/<prefixlen>");
+					bpf_set_error(cstate, "'proto' modifier applied to IP address and prefix length");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-					bpf_set_error(cstate, "'protochain' modifier applied to <ipaddr>/<prefixlen>");
+					bpf_set_error(cstate, "'protochain' modifier applied to IP address and prefix length");
 					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, NULL, $3, $$.q)));
@@ -470,16 +470,16 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Check whether HID maesk HID is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-					bpf_set_error(cstate, "'port' modifier applied to <ipnet> mask <netmask>");
+					bpf_set_error(cstate, "'port' modifier applied to IP address and netmask");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-					bpf_set_error(cstate, "'portrange' modifier applied to <ipnet> mask <netmask>");
+					bpf_set_error(cstate, "'portrange' modifier applied to IP address and netmask");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-					bpf_set_error(cstate, "'proto' modifier applied to <ipnet> mask <netmask>");
+					bpf_set_error(cstate, "'proto' modifier applied to IP address and netmask");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-					bpf_set_error(cstate, "'protochain' modifier applied to <ipnet> mask <netmask>");
+					bpf_set_error(cstate, "'protochain' modifier applied to IP address and netmask");
 					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, $3, 0, $$.q)));
@@ -489,16 +489,16 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Check whether HID is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-					bpf_set_error(cstate, "'port' modifier applied to <ipaddr>");
+					bpf_set_error(cstate, "'port' modifier applied to IP address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-					bpf_set_error(cstate, "'portrange' modifier applied to <ipaddr>");
+					bpf_set_error(cstate, "'portrange' modifier applied to IP address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-					bpf_set_error(cstate, "'proto' modifier applied to <ipaddr>");
+					bpf_set_error(cstate, "'proto' modifier applied to IP address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-					bpf_set_error(cstate, "'protochain' modifier applied to <ipaddr>");
+					bpf_set_error(cstate, "'protochain' modifier applied to IP address");
 					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_ncode(cstate, $1, 0, $$.q)));
@@ -509,21 +509,21 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Check whether HID6/NUM is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-					bpf_set_error(cstate, "'port' modifier applied to <ip6addr>/<prefixlen>");
+					bpf_set_error(cstate, "'port' modifier applied to IP address and prefix length");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-					bpf_set_error(cstate, "'portrange' modifier applied to <ip6addr>/<prefixlen>");
+					bpf_set_error(cstate, "'portrange' modifier applied to IP address and prefix length");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-					bpf_set_error(cstate, "'proto' modifier applied to 'ip6addr/prefixlen");
+					bpf_set_error(cstate, "'proto' modifier applied to IP address and prefix length ");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-					bpf_set_error(cstate, "'protochain' modifier applied to <ip6addr>/<prefixlen>");
+					bpf_set_error(cstate, "'protochain' modifier applied to IP address and prefix length");
 					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, $3, $$.q)));
 #else
-				  bpf_set_error(cstate, "<ip6addr>/<prefixlen> not supported "
+				  bpf_set_error(cstate, "IPv6 addresses not supported "
 					"in this configuration");
 				  YYABORT;
 #endif /*INET6*/
@@ -534,21 +534,21 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Check whether HID6 is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-					bpf_set_error(cstate, "'port' modifier applied to <ip6addr>");
+					bpf_set_error(cstate, "'port' modifier applied to IP address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-					bpf_set_error(cstate, "'portrange' modifier applied to <ip6addr>");
+					bpf_set_error(cstate, "'portrange' modifier applied to IP address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
 					bpf_set_error(cstate, "'proto' modifier applied to 'ip6addr/prefixlen");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-					bpf_set_error(cstate, "'protochain' modifier applied to <ip6addr>");
+					bpf_set_error(cstate, "'protochain' modifier applied to IP address");
 					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 128, $$.q)));
 #else
-				  bpf_set_error(cstate, "<ip6addr> not supported "
+				  bpf_set_error(cstate, "IPv6 addresses not supported "
 					"in this configuration");
 				  YYABORT;
 #endif /*INET6*/
