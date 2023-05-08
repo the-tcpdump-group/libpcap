@@ -865,10 +865,10 @@ releasecheck: releasetar
 	touch .devel && \
 	echo "[$@] $$ ./configure --enable-remote --quiet --prefix=$$INSTALL_DIR" && \
 	./configure --enable-remote --quiet --prefix="$$INSTALL_DIR" && \
-	echo '[$@] $$ make -s all testprogs' && \
-	make -s all testprogs && \
-	echo '[$@] $$ make -s install' && \
-	make -s install && \
+	echo '[$@] $$ $(MAKE) -s all testprogs' && \
+	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s install' && \
+	$(MAKE) -s install && \
 	cd .. && \
 	rm -rf "$$TAG" && \
 	rm -rf "$$INSTALL_DIR" && \
@@ -883,10 +883,10 @@ releasecheck: releasetar
 	    -DCMAKE_RULE_MESSAGES=OFF \
 	    -DCMAKE_INSTALL_MESSAGE=NEVER \
 	    .. && \
-	echo '[$@] $$ make -s all testprogs' && \
-	make -s all testprogs && \
-	echo '[$@] $$ make -s install' && \
-	make -s install && \
+	echo '[$@] $$ $(MAKE) -s all testprogs' && \
+	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s install' && \
+	$(MAKE) -s install && \
 	cd ../.. && \
 	rm -rf "$$TAG" && \
 	rm -rf "$$INSTALL_DIR" && \
