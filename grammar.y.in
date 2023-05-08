@@ -110,21 +110,31 @@ struct rtentry;
 #include "os-proto.h"
 #endif
 
-#ifdef YYBYACC
+/*
+ * Work around some bugs in Berkeley YACC prior to the 2017-07-09
+ * release.
+ *
+ * The 2005-05-05 release was the first one to define YYPATCH, so
+ * we treat any release that either 1) doesn't define YYPATCH or
+ * 2) defines it to a value < 20170709 as being buggy.
+ */
+#if defined(YYBYACC) && (!defined(YYPATCH) || YYPATCH < 20170709)
 /*
  * Both Berkeley YACC and Bison define yydebug (under whatever name
  * it has) as a global, but Bison does so only if YYDEBUG is defined.
- * Berkeley YACC define it even if YYDEBUG isn't defined; declare it
- * here to suppress a warning.
+ * Berkeley YACC, prior to the 2017-07-09 release, defines it even if
+ * YYDEBUG isn't defined; declare it here to suppress a warning.  The
+ * 2017-07-09 release fixes that.
  */
 #if !defined(YYDEBUG)
 extern int yydebug;
 #endif
 
 /*
- * In Berkeley YACC, yynerrs (under whatever name it has) is global,
- * even if it's building a reentrant parser.  In Bison, it's local
- * in reentrant parsers.
+ * In Berkeley YACC, prior to the 2017-07-09 release, yynerrs (under
+ * whatever name it has) is global, even if it's building a reentrant
+ * parser.  In Bison, and in the Berkeley YACC 2017-07-09 release and
+ * later, it's local in reentrant parsers.
  *
  * Declare it to squelch a warning.
  */
