@@ -54,7 +54,7 @@ clang-*/NetBSD-*)
     # 'long' to 'suseconds_t' (aka 'int') [-Wshorten-64-to-32]
     LIBPCAP_TAINTED=yes
     ;;
-clang-15.*/*)
+clang-1[56].*/*)
     # grammar.c:1369:14: warning: variable 'pcap_nerrs' set but not used
     #   [-Wunused-but-set-variable]
     LIBPCAP_TAINTED=yes
