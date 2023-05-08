@@ -529,8 +529,8 @@ static void eth_addr_str(ETHER_ADDR_TYPE *addrp, char* mac_str, int len)
 static uint16_t portid_by_device(char * device)
 {
 	uint16_t ret = DPDK_PORTID_MAX;
-	int len = strlen(device);
-	int prefix_len = strlen(DPDK_PREFIX);
+	size_t len = strlen(device);
+	size_t prefix_len = strlen(DPDK_PREFIX);
 	unsigned long ret_ul = 0L;
 	char *pEnd;
 	if (len<=prefix_len || strncmp(device, DPDK_PREFIX, prefix_len)) // check prefix dpdk:
