@@ -32,6 +32,7 @@ linux_task:
   env:
     DEBIAN_FRONTEND: noninteractive
     MAKEFLAGS: -j 3
+    LANG: C
   script:
     - apt-get -qy update >/dev/null
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
