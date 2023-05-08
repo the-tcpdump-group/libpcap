@@ -37,7 +37,7 @@ linux_task:
   script:
     - apt-get -qy update >/dev/null
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
-    - apt-get -qy install flex bison autoconf make clang-15 gcc valgrind >/dev/null
+    - apt-get -qy install flex bison autoconf make clang-15 gcc >/dev/null
     - apt-get -qy install cmake git bc >/dev/null # for build_matrix.sh and build.sh
     - apt list --installed 'lib*-dev'
     - ./autogen.sh
