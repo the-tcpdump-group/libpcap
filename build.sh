@@ -55,11 +55,6 @@ clang-*/NetBSD-*)
     # 'long' to 'suseconds_t' (aka 'int') [-Wshorten-64-to-32]
     LIBPCAP_TAINTED=yes
     ;;
-clang-1[56].*/*)
-    # grammar.c:1369:14: warning: variable 'pcap_nerrs' set but not used
-    #   [-Wunused-but-set-variable]
-    LIBPCAP_TAINTED=yes
-    ;;
 clang-*/SunOS-5.11)
     # (Solaris 11 and OpenIndiana)
     # pcap-bpf.c:1044:18: warning: implicit conversion loses integer precision:
