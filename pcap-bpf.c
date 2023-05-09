@@ -1061,7 +1061,7 @@ static int
 pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_bpf *pb = p->priv;
-	int cc;
+	ssize_t cc;
 	int n = 0;
 	register u_char *bp, *ep;
 	u_char *datap;
@@ -1107,7 +1107,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		} else
 #endif
 		{
-			cc = (int)read(p->fd, p->buffer, p->bufsize);
+			cc = read(p->fd, p->buffer, p->bufsize);
 		}
 		if (cc < 0) {
 			/* Don't choke when we get ptraced */

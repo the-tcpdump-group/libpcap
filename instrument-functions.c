@@ -77,7 +77,7 @@ static void print_debug(void *this_fn, void *call_site, action_type action)
 	static int instrument_set;
 	static int instrument_off;
 	static int instrument_global;
-	int i;
+	long i;
 
 	if (!instrument_set) {
 		static char *instrument_type;
