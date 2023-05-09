@@ -432,6 +432,14 @@ DIAG_OFF_BISON_BYACC
 %%
 prog:	  null expr
 {
+	/*
+	 * I'm not sure we have a reason to use yynerrs, but it's
+	 * declared, and incremented, whether we need it or not,
+	 * which means tha Clang 15 will give a "used but not
+	 * set" warning.  This should suppress the warning for
+	 * yynerrs without suppressing it for other variables.
+	 */
+	(void) yynerrs;
 	CHECK_INT_VAL(finish_parse(cstate, $2.b));
 }
 	| null
