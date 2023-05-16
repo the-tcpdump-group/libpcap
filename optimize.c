@@ -2447,7 +2447,7 @@ slength(struct slist *s)
  * Return the number of nodes reachable by 'p'.
  * All nodes should be initially unmarked.
  */
-static int
+static u_int
 count_blocks(struct icode *ic, struct block *p)
 {
 	if (p == 0 || isMarked(ic, p))
@@ -2522,7 +2522,7 @@ static void
 opt_init(opt_state_t *opt_state, struct icode *ic)
 {
 	bpf_u_int32 *p;
-	int i, n, max_stmts;
+	u_int i, n, max_stmts;
 	u_int product;
 	size_t block_memsize, edge_memsize;
 

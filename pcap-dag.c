@@ -1271,10 +1271,9 @@ static int
 dag_get_datalink(pcap_t *p)
 {
 	struct pcap_dag *pd = p->priv;
-	int index=0, dlt_index=0;
-	uint8_t types[255];
-
-	memset(types, 0, 255);
+	size_t index=0;
+	int dlt_index=0;
+	uint8_t types[255] = {0};
 
 	if (p->dlt_list == NULL && (p->dlt_list = malloc(255*sizeof(*(p->dlt_list)))) == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
