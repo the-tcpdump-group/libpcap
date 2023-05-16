@@ -533,7 +533,7 @@ static void sort_if_table(void) {
 
 	if (!acn_if_list) return;				/* nothing to do if the list is empty */
 
-	while (1) {
+	do {
 		p1 = acn_if_list;					/* start at the head of the list */
 		prev = 0;
 		has_swapped = 0;
@@ -551,16 +551,12 @@ static void sort_if_table(void) {
 					p1->next = temp;
 				}
 				p1 = p2;
-				prev = p1;
 				has_swapped = 1;
 			}
 			prev = p1;
 			p1 = p1->next;
 		}
-		if (has_swapped == 0)
-			return;
-	}
-	return;
+	} while (has_swapped);
 }
 
 static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0 = OK */
