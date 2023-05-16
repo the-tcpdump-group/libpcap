@@ -238,7 +238,7 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			cc = data.len;
 		} while (cc == 0);
-		bp = (u_char *)p->buffer + p->offset;
+		bp = p->buffer + p->offset;
 	} else
 		bp = p->bp;
 

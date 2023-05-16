@@ -241,7 +241,7 @@ struct pcap {
 	 * Read buffer.
 	 */
 	u_int bufsize;
-	void *buffer;
+	u_char *buffer;
 	u_char *bp;
 	int cc;
 

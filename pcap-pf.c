@@ -128,7 +128,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 			    sizeof(pc->errbuf), errno, "pf read");
 			return (-1);
 		}
-		bp = (u_char *)pc->buffer + pc->offset;
+		bp = pc->buffer + pc->offset;
 	} else
 		bp = pc->bp;
 	/*

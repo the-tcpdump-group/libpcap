@@ -1181,7 +1181,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			    errno, "read");
 			return (PCAP_ERROR);
 		}
-		bp = (u_char *)p->buffer;
+		bp = p->buffer;
 	} else
 		bp = p->bp;
 

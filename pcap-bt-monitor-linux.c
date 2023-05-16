@@ -102,7 +102,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     u_char *pktd;
     struct hci_mon_hdr hdr;
 
-    pktd = (u_char *)handle->buffer + BT_CONTROL_SIZE;
+    pktd = handle->buffer + BT_CONTROL_SIZE;
     bthdr = (pcap_bluetooth_linux_monitor_header*)(void *)pktd;
 
     iv[0].iov_base = &hdr;

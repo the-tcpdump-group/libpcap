@@ -52,7 +52,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 {
 	// Receive a single packet
 
-	u_char* buffer = (u_char*)handle->buffer + handle->offset;
+	u_char* buffer = handle->buffer + handle->offset;
 	struct sockaddr_dl from;
 	ssize_t bytesReceived;
 	do {

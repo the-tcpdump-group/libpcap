@@ -133,7 +133,7 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			    errno, "pcap_read");
 			return (-1);
 		}
-		bp = (u_char *)p->buffer;
+		bp = p->buffer;
 	} else
 		bp = p->bp;
 
