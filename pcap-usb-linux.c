@@ -671,7 +671,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 
 	/* the usb header is going to be part of 'packet' data*/
 	info.hdr = (pcap_usb_header*) handle->buffer;
-	info.data = (u_char *)handle->buffer + sizeof(pcap_usb_header);
+	info.data = handle->buffer + sizeof(pcap_usb_header);
 	info.data_len = clen;
 
 	/* ignore interrupt system call errors */

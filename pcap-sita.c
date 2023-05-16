@@ -970,7 +970,7 @@ static int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback,
 	pcap_header.caplen		= ntohl(*(uint32_t *)&packet_header[8]);				/* caplen */
 	pcap_header.len			= ntohl(*(uint32_t *)&packet_header[12]);				/* len */
 
-	handle->bp = (u_char *)handle->buffer + handle->offset;									/* start off the receive pointer at the right spot */
+	handle->bp = handle->buffer + handle->offset;									/* start off the receive pointer at the right spot */
 	if (acn_read_n_bytes_with_timeout(handle, pcap_header.caplen) == -1) return 0;	/* then try to read in the rest of the data */
 
 	callback(user, &pcap_header, handle->bp);										/* call the user supplied callback function */

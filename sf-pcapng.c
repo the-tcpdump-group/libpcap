@@ -352,7 +352,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * of the block.
 	 */
 	memcpy(p->buffer, &bhdr, sizeof(bhdr));
-	bdata = (u_char *)p->buffer + sizeof(bhdr);
+	bdata = p->buffer + sizeof(bhdr);
 	data_remaining = bhdr.total_length - sizeof(bhdr);
 	if (read_bytes(fp, bdata, data_remaining, 1, errbuf) == -1)
 		return (-1);
@@ -943,12 +943,12 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	 * of the SHB.
 	 */
 	bhdrp = (struct block_header *)p->buffer;
-	shbp = (struct section_header_block *)((u_char *)p->buffer + sizeof(struct block_header));
+	shbp = (struct section_header_block *)(p->buffer + sizeof(struct block_header));
 	bhdrp->block_type = magic_int;
 	bhdrp->total_length = total_length;
 	shbp->byte_order_magic = byte_order_magic;
 	if (read_bytes(fp,
-	    (u_char *)p->buffer + (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
+	    p->buffer + (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
 	    total_length - (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
 	    1, errbuf) == -1)
 		goto fail;

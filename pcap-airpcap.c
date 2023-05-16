@@ -621,7 +621,7 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			return (-1);
 		}
 		cc = bytes_read;
-		bp = (u_char *)p->buffer;
+		bp = p->buffer;
 	} else
 		bp = p->bp;
 
