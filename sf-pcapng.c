@@ -1090,7 +1090,7 @@ pcap_ng_cleanup(pcap_t *p)
 	struct pcap_ng_sf *ps = p->priv;
 
 	free(ps->ifaces);
-	sf_cleanup(p);
+	pcap_sf_cleanup(p);
 }
 
 /*

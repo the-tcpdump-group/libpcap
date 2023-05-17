@@ -275,11 +275,11 @@ airpcap_setfilter(pcap_t *p, struct bpf_program *fp)
 		 */
 
 		/*
-		 * install_bpf_program() validates the program.
+		 * pcap_install_bpf_program() validates the program.
 		 *
 		 * XXX - what if we already have a filter in the kernel?
 		 */
-		if (install_bpf_program(p, fp) < 0)
+		if (pcap_install_bpf_program(p, fp) < 0)
 			return (-1);
 		pa->filtering_in_kernel = 0;	/* filtering in userland */
 		return (0);
@@ -1040,7 +1040,7 @@ airpcap_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	for (airpcap_device = airpcap_devices; airpcap_device != NULL;
 	    airpcap_device = airpcap_device->next) {
-		if (add_dev(devlistp, airpcap_device->Name, 0,
+		if (pcap_add_dev(devlistp, airpcap_device->Name, 0,
 		    airpcap_device->Description, errbuf) == NULL) {
 			/*
 			 * Failure.

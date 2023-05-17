@@ -595,7 +595,7 @@ netfilter_activate(pcap_t* handle)
 	handle->offset = 0;
 	handle->read_op = netfilter_read_linux;
 	handle->inject_op = netfilter_inject_linux;
-	handle->setfilter_op = install_bpf_program; /* no kernel filtering */
+	handle->setfilter_op = pcap_install_bpf_program; /* no kernel filtering */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = netfilter_set_datalink;
 	handle->getnonblock_op = pcap_getnonblock_fd;
@@ -781,11 +781,11 @@ netfilter_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	 * The notion of "connected" vs. "disconnected" doesn't apply.
 	 * XXX - what about "up" and "running"?
 	 */
-	if (add_dev(devlistp, NFLOG_IFACE,
+	if (pcap_add_dev(devlistp, NFLOG_IFACE,
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    "Linux netfilter log (NFLOG) interface", err_str) == NULL)
 		return -1;
-	if (add_dev(devlistp, NFQUEUE_IFACE,
+	if (pcap_add_dev(devlistp, NFQUEUE_IFACE,
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    "Linux netfilter queue (NFQUEUE) interface", err_str) == NULL)
 		return -1;

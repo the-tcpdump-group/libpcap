@@ -323,7 +323,7 @@ rdmasniff_activate(pcap_t *handle)
 	handle->read_op = rdmasniff_read;
 	handle->stats_op = rdmasniff_stats;
 	handle->cleanup_op = rdmasniff_cleanup;
-	handle->setfilter_op = install_bpf_program;
+	handle->setfilter_op = pcap_install_bpf_program;
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;
 	handle->getnonblock_op = pcap_getnonblock_fd;
@@ -444,7 +444,7 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 * XXX - do the notions of "up", "running", or
 		 * "connected" apply here?
 		 */
-		if (!add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
+		if (!pcap_add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
 			ret = -1;
 			break;
 		}

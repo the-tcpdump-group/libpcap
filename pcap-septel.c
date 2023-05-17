@@ -207,7 +207,7 @@ static pcap_t *septel_activate(pcap_t* handle) {
 
   handle->read_op = septel_read;
   handle->inject_op = septel_inject;
-  handle->setfilter_op = install_bpf_program;
+  handle->setfilter_op = pcap_install_bpf_program;
   handle->set_datalink_op = NULL; /* can't change data link type */
   handle->getnonblock_op = septel_getnonblock;
   handle->setnonblock_op = septel_setnonblock;
@@ -267,7 +267,7 @@ septel_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
   /*
    * XXX - do the notions of "up", "running", or "connected" apply here?
    */
-  if (add_dev(devlistp,"septel",0,"Intel/Septel device",errbuf) == NULL)
+  if (pcap_add_dev(devlistp,"septel",0,"Intel/Septel device",errbuf) == NULL)
     return -1;
   return 0;
 }

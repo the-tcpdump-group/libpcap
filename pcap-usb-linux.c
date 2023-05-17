@@ -157,7 +157,7 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 * "connected" vs. "disconnected", as that's a property
 		 * that would apply to a particular USB interface.
 		 */
-		if (add_dev(devlistp, dev_name,
+		if (pcap_add_dev(devlistp, dev_name,
 		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 		    "Raw USB traffic, all USB buses", err_str) == NULL)
 			return -1;
@@ -169,7 +169,7 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
 		 */
 		snprintf(dev_descr, 30, "Raw USB traffic, bus number %d", n);
-		if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
+		if (pcap_add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
 			return -1;
 	}
 
@@ -482,7 +482,7 @@ usb_activate(pcap_t* handle)
 	handle->linktype = DLT_USB_LINUX;
 
 	handle->inject_op = usb_inject_linux;
-	handle->setfilter_op = install_bpf_program; /* no kernel filtering */
+	handle->setfilter_op = pcap_install_bpf_program; /* no kernel filtering */
 	handle->setdirection_op = usb_setdirection_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
