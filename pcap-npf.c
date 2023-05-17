@@ -1944,11 +1944,11 @@ pcap_setfilter_npf(pcap_t *p, struct bpf_program *fp)
 		 */
 
 		/*
-		 * install_bpf_program() validates the program.
+		 * pcap_install_bpf_program() validates the program.
 		 *
 		 * XXX - what if we already have a filter in the kernel?
 		 */
-		if (install_bpf_program(p, fp) < 0)
+		if (pcap_install_bpf_program(p, fp) < 0)
 			return (-1);
 		pw->filtering_in_kernel = 0;	/* filtering in userland */
 		return (0);
@@ -1982,7 +1982,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 	}
 
 	/* Install a user level filter */
-	if (install_bpf_program(p, fp) < 0)
+	if (pcap_install_bpf_program(p, fp) < 0)
 		return (-1);
 
 	return (0);
@@ -2047,7 +2047,7 @@ pcap_add_if_npf(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	curdev = add_dev(devlistp, name, flags, description, errbuf);
+	curdev = pcap_add_dev(devlistp, name, flags, description, errbuf);
 	if (curdev == NULL) {
 		/*
 		 * Failure.
@@ -2079,7 +2079,7 @@ pcap_add_if_npf(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
 		 * "curdev" is an entry for this interface; add an entry for
 		 * this address to its list of addresses.
 		 */
-		res = add_addr_to_dev(curdev,
+		res = pcap_add_addr_to_dev(curdev,
 		    (struct sockaddr *)&if_addrs[if_addr_size].IPAddress,
 		    sizeof (struct sockaddr_storage),
 		    (struct sockaddr *)&if_addrs[if_addr_size].SubnetMask,

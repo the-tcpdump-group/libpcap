@@ -1704,7 +1704,7 @@ static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
 	if (!pr->rmt_capstarted)
 	{
 		/* copy filter into the pcap_t structure */
-		if (install_bpf_program(fp, prog) == -1)
+		if (pcap_install_bpf_program(fp, prog) == -1)
 			return -1;
 		return 0;
 	}

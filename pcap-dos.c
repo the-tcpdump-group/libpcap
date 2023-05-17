@@ -599,7 +599,7 @@ int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
      * a wired device, and set PCAP_IF_CONNECTION_STATUS_CONNECTED
      * or PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
      */
-    if ((curdev = add_dev(devlistp, dev->name, 0,
+    if ((curdev = pcap_add_dev(devlistp, dev->name, 0,
                 dev->long_name, errbuf)) == NULL)
     {
       ret = -1;
@@ -618,7 +618,7 @@ int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
     broadaddr = (struct sockaddr*) &sa_ll_2;
     memset (&sa_ll_2.sin_addr, 0xFF, sizeof(sa_ll_2.sin_addr));
 
-    if (add_addr_to_dev(curdev, addr, sizeof(*addr),
+    if (pcap_add_addr_to_dev(curdev, addr, sizeof(*addr),
                         netmask, sizeof(*netmask),
                         broadaddr, sizeof(*broadaddr),
                         dstaddr, sizeof(*dstaddr), errbuf) < 0)

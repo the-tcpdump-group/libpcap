@@ -1760,7 +1760,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	 * network device, the notion of "connected" vs. "disconnected"
 	 * doesn't apply.
 	 */
-	if (add_dev(devlistp, "any",
+	if (pcap_add_dev(devlistp, "any",
 	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf) == NULL)
 		return (-1);
@@ -4339,8 +4339,8 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 	/* Make our private copy of the filter */
 
-	if (install_bpf_program(handle, filter) < 0)
-		/* install_bpf_program() filled in errbuf */
+	if (pcap_install_bpf_program(handle, filter) < 0)
+		/* pcap_install_bpf_program() filled in errbuf */
 		return -1;
 
 	/*

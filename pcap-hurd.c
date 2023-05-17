@@ -220,7 +220,7 @@ pcap_activate_hurd(pcap_t *p)
 
 	p->read_op = pcap_read_hurd;
 	p->inject_op = pcap_inject_hurd;
-	p->setfilter_op = install_bpf_program;
+	p->setfilter_op = pcap_install_bpf_program;
 	p->stats_op = pcap_stats_hurd;
 
 	return 0;
