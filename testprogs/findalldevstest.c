@@ -190,7 +190,9 @@ static int ifprint(pcap_if_t *d)
 {
   pcap_addr_t *a;
   char ipv4_buf[INET_ADDRSTRLEN];
+#ifdef INET6
   char ipv6_buf[INET6_ADDRSTRLEN];
+#endif
   const char *sep;
   int status = 1; /* success */
 
