@@ -731,9 +731,8 @@ sf_write_header(pcap_t *p, FILE *fp, int linktype, int snaplen)
 
 	/*
 	 * https://www.tcpdump.org/manpages/pcap-savefile.5.txt states:
-	 * thiszone: 4-byte time zone offset; this is always 0.
-	 * sigfigs:  4-byte number giving the accuracy of time stamps
-	 *           in the file; this is always 0.
+	 * thiszone (Reserved1): 4-byte not used - SHOULD be filled with 0
+	 * sigfigs (Reserved2):  4-byte not used - SHOULD be filled with 0
 	 */
 	hdr.thiszone = 0;
 	hdr.sigfigs = 0;

@@ -208,8 +208,8 @@ struct pcap_file_header {
 	bpf_u_int32 magic;
 	u_short version_major;
 	u_short version_minor;
-	bpf_int32 thiszone;	/* gmt to local correction; this is always 0 */
-	bpf_u_int32 sigfigs;	/* accuracy of timestamps; this is always 0 */
+	bpf_int32 thiszone;	/* not used - SHOULD be filled with 0 */
+	bpf_u_int32 sigfigs;	/* not used - SHOULD be filled with 0 */
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
 	bpf_u_int32 linktype;	/* data link type (LINKTYPE_*) */
 };
