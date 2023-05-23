@@ -41,9 +41,9 @@ Magic number
 _
 Major version	Minor version
 _
-Reverved1
+Time zone offset
 _
-Reverved2
+Time stamp accuracy
 _
 Snapshot length
 _
@@ -80,15 +80,10 @@ A 2-byte file format major version number; the current version number is
 A 2-byte file format minor version number; the current version number is
 4.
 .IP
-A 4-byte not used - SHOULD be filled with 0 by pcap file writers, and MUST
-be ignored by pcap file readers.  This value was documented by some older
-implementations as "gmt to local correction" or "time zone offset".
-Some older pcap file writers stored non-zero values in this field.
+A 4-byte time zone offset; this is always 0.
 .IP
-A 4-byte not used - SHOULD be filled with 0 by pcap file writers, and MUST
-be ignored by pcap file readers.  This value was documented by some older
-implementations as "accuracy of timestamps".  Some older pcap file
-writers stored non-zero values in this field.
+A 4-byte number giving the accuracy of time stamps in the file; this is
+always 0.
 .IP
 A 4-byte number giving the "snapshot length" of the capture; packets
 longer than the snapshot length are truncated to the snapshot length, so
