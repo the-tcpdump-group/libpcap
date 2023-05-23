@@ -1,10 +1,11 @@
 #!/bin/sh -e
 
 # This script executes the matrix loops, exclude tests and cleaning.
-# The matrix can be configured with the following environment variables: MATRIX_CC,
-# MATRIX_CMAKE and MATRIX_REMOTE.
+# The matrix can be configured with the following environment variables:
+# MATRIX_CC, MATRIX_CMAKE, MATRIX_IPV6 and MATRIX_REMOTE.
 : "${MATRIX_CC:=gcc clang}"
 : "${MATRIX_CMAKE:=no yes}"
+: "${MATRIX_IPV6:=no yes}"
 : "${MATRIX_REMOTE:=no yes}"
 # Set this variable to "yes" before calling this script to disregard all cmake
 # warnings in a particular environment (CI or a local working copy).  Set it
@@ -22,7 +23,7 @@
 # GNU Make available as "gmake".
 : "${MAKE_BIN:=make}"
 # It calls the build.sh script which runs one build with setup environment
-# variables: CC, CMAKE and REMOTE.
+# variables: CC, CMAKE, IPV6 and REMOTE.
 
 . ./build_common.sh
 print_sysinfo
@@ -50,16 +51,20 @@ for CC in $MATRIX_CC; do
     fi
     for CMAKE in $MATRIX_CMAKE; do
         export CMAKE
-        for REMOTE in $MATRIX_REMOTE; do
-            export REMOTE
-            COUNT=`increment $COUNT`
-            echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE REMOTE=$REMOTE =====" >&2
-            # Run one build with setup environment variables: CC, CMAKE and REMOTE
-            run_after_echo ./build.sh
-            echo 'Cleaning...'
-            if [ "$CMAKE" = yes ]; then rm -rf build; else "$MAKE_BIN" distclean; fi
-            purge_directory "$PREFIX"
-            run_after_echo git status -suall
+        for IPV6 in $MATRIX_IPV6; do
+            export IPV6
+            for REMOTE in $MATRIX_REMOTE; do
+                export REMOTE
+                COUNT=`increment $COUNT`
+                echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE IPV6=$IPV6 REMOTE=$REMOTE =====" >&2
+                # Run one build with setup environment variables: CC, CMAKE,
+                # IPV6 and REMOTE
+                run_after_echo ./build.sh
+                echo 'Cleaning...'
+                if [ "$CMAKE" = yes ]; then rm -rf build; else "$MAKE_BIN" distclean; fi
+                purge_directory "$PREFIX"
+                run_after_echo git status -suall
+            done
         done
     done
 done
