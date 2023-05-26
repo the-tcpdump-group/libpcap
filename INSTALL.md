@@ -197,7 +197,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 	doc/README.sita	    - notes on using libpcap to capture on SITA devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
-	doc/README.Win32.md - notes on using libpcap on Win32 systems (with Npcap)
+	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
 	VERSION		    - version of this release
 	aclocal.m4	    - autoconf macros
 	arcnet.h	    - ARCNET definitions
