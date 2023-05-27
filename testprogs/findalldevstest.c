@@ -258,7 +258,7 @@ static int ifprint(pcap_if_t *d)
     if (a->addr != NULL)
       switch(a->addr->sa_family) {
       case AF_INET:
-        printf("\tAddress Family: AF_INET\n");
+        printf("\tAddress Family: AF_INET (%d)\n", a->addr->sa_family);
         if (a->addr)
           printf("\t\tAddress: %s\n",
             inet_ntop(AF_INET,
@@ -282,7 +282,7 @@ static int ifprint(pcap_if_t *d)
         break;
 #ifdef INET6
       case AF_INET6:
-        printf("\tAddress Family: AF_INET6\n");
+        printf("\tAddress Family: AF_INET6 (%d)\n", a->addr->sa_family);
         if (a->addr)
           printf("\t\tAddress: %s\n",
             inet_ntop(AF_INET6,
