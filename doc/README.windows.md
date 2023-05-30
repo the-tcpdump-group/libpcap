@@ -100,7 +100,7 @@ include built-in support for CMake-based projects:
   https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/
 
 For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
-installed; for Visual Studio 2019, make sure "C++ CMake tools for
+installed; for Visual Studio 2019 or later, make sure "C++ CMake tools for
 Windows" is installed.
 
 ### winflexbison ###
@@ -152,7 +152,7 @@ with control-S.
 Visual Studio will then re-run CMake.  If that completes without errors,
 you can build with CMake > "Build All".
 
-### Visual Studio 2019 ###
+### Visual Studio 2019 or later ###
 
 Open the folder containing the libpcap source with Open > Folder.
 Visual Studio will run CMake; however, you will need to indicate where
