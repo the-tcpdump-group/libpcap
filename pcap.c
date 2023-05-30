@@ -155,6 +155,19 @@ struct rtentry;		/* declarations in <net/if.h> */
  */
 
 /*
+ * Shut down Winsock.
+ *
+ * Ignores the return value of WSACleanup(); given that this is
+ * an atexit() routine, there's nothing much we can do about
+ * a failure.
+ */
+static void
+internal_wsockfini(void)
+{
+	WSACleanup();
+}
+
+/*
  * Start Winsock.
  * Internal routine.
  */
@@ -184,7 +197,7 @@ internal_wsockinit(char *errbuf)
 		}
 		return (err);
 	}
-	atexit ((void(*)(void))WSACleanup);
+	atexit(internal_wsockfini);
 	err = 0;
 	return (err);
 }
