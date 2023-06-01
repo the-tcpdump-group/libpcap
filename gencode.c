@@ -1717,6 +1717,20 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
+	case DLT_DSA_TAG_DSA:
+		cstate->off_linktype.constant_part = 16;
+		cstate->off_linkpl.constant_part = 18;	/* Ethernet header length */
+		cstate->off_nl = 0;		/* Ethernet II */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		break;
+
+	case DLT_DSA_TAG_EDSA:
+		cstate->off_linktype.constant_part = 20;
+		cstate->off_linkpl.constant_part = 22;	/* Ethernet header length */
+		cstate->off_nl = 0;		/* Ethernet II */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		break;
+
 	default:
 		/*
 		 * For values in the range in which we've assigned new
@@ -7535,6 +7549,8 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_DSA:
+		case DLT_DSA_TAG_EDSA:
 			tmp = gen_prevlinkhdr_check(cstate);
 			b = gen_ehostop(cstate, cstate->e, (int)q.dir);
 			if (tmp != NULL)
@@ -8356,6 +8372,8 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_DSA:
+		case DLT_DSA_TAG_EDSA:
 			b1 = gen_prevlinkhdr_check(cstate);
 			/* ether[0] & 1 != 0 */
 			b0 = gen_mac_multicast(cstate, 0);
