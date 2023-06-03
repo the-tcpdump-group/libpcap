@@ -7483,7 +7483,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
 
 	if (masklen > sizeof(mask.s6_addr) * 8)
-		bpf_error(cstate, "mask length must be <= %u", (unsigned int)(sizeof(mask.s6_addr) * 8));
+		bpf_error(cstate, "mask length must be <= %zu", sizeof(mask.s6_addr) * 8);
 	memset(&mask, 0, sizeof(mask));
 	memset(&mask.s6_addr, 0xff, masklen / 8);
 	if (masklen % 8) {
