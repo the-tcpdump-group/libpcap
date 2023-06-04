@@ -83,6 +83,7 @@ coverity_task:
     COVERITY_SCAN_TOKEN: ENCRYPTED[58bfbfcf624e5b7b85fb9df95dd0b3f9f93642824e6ae94616e4d345af4848580932a6ece02337fee112194b29ce6593]
     COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote --enable-optimizer-dbg --enable-yydebug
     COVERITY_SCAN_BUILD_COMMAND: make
+    LANG: C
   script:
     - apt-get -qy update >/dev/null
     - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
