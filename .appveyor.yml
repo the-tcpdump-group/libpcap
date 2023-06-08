@@ -33,10 +33,10 @@ environment:
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
@@ -47,15 +47,15 @@ environment:
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
@@ -70,17 +70,17 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
-      SDK: npcap-sdk-1.12
+      SDK: npcap-sdk-1.13
       AIRPCAP: -DDISABLE_AIRPCAP=NO
 
 build_script:
