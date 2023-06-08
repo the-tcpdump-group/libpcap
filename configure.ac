@@ -806,11 +806,18 @@ else
 		V_PCAP=hurd
 	else
 		#
-		# Nothing we support.
+		# We don't have any capture type we know about.
+		# Report an error, and tell the user to configure with
+		# --with-pcap=null if they want a libpcap that can't
+		# capture but that can read capture files.  That way,
+		# nobody gets surprised by getting a no-capture
+		# libpcap without asking for that.
 		#
-		V_PCAP=null
-		AC_MSG_WARN(cannot determine packet capture interface)
-		AC_MSG_WARN((see the INSTALL.md file for more info))
+		AC_MSG_ERROR([No supported packet capture interface was found.
+ See the INSTALL.md file for information on packet capture support in
+ various operating systems.
+ If you want a libpcap that cannot capture packets but that can read
+ pcap and pcapng files, run configure with --with-pcap=null.])
 	fi
 fi
 AC_MSG_CHECKING(packet capture type)
