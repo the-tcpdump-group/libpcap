@@ -4332,7 +4332,7 @@ $as_echo_n "checking whether the compiler supports the -fvisibility=hidden optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -4441,7 +4441,7 @@ $as_echo_n "checking whether the compiler supports the -fvisibility=hidden optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -4612,7 +4612,7 @@ $as_echo_n "checking whether the compiler supports the -xldscope=hidden option..
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -6805,13 +6805,18 @@ done
 		V_PCAP=haiku
 	else
 		#
-		# Nothing we support.
+		# We don't have any capture type we know about.
+		# Report an error, and tell the user to configure with
+		# --with-pcap=null if they want a libpcap that can't
+		# capture but that can read capture files.  That way,
+		# nobody gets surprised by getting a no-capture
+		# libpcap without asking for that.
 		#
-		V_PCAP=null
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot determine packet capture interface" >&5
-$as_echo "$as_me: WARNING: cannot determine packet capture interface" >&2;}
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (see the INSTALL.md file for more info)" >&5
-$as_echo "$as_me: WARNING: (see the INSTALL.md file for more info)" >&2;}
+		as_fn_error $? "No supported packet capture interface was found.
+ See the INSTALL.md file for information on packet capture support in
+ various operating systems.
+ If you want a libpcap that cannot capture packets but that can read
+ pcap and pcapng files, run configure with --with-pcap=null." "$LINENO" 5
 	fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking packet capture type" >&5
@@ -10132,7 +10137,7 @@ $as_echo_n "checking whether the compiler supports the -W option... " >&6; }
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10223,7 +10228,7 @@ $as_echo_n "checking whether the compiler supports the -Wall option... " >&6; }
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10314,7 +10319,7 @@ $as_echo_n "checking whether the compiler supports the -Wcomma option... " >&6; 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10405,7 +10410,7 @@ $as_echo_n "checking whether the compiler supports the -Wdocumentation option...
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10496,7 +10501,7 @@ $as_echo_n "checking whether the compiler supports the -Wformat-nonliteral optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10587,7 +10592,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-noreturn option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10678,7 +10683,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-prototypes opti
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10769,7 +10774,7 @@ $as_echo_n "checking whether the compiler supports the -Wmissing-variable-declar
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10860,7 +10865,7 @@ $as_echo_n "checking whether the compiler supports the -Wpointer-arith option...
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10951,7 +10956,7 @@ $as_echo_n "checking whether the compiler supports the -Wpointer-sign option... 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11042,7 +11047,7 @@ $as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6;
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11133,7 +11138,7 @@ $as_echo_n "checking whether the compiler supports the -Wsign-compare option... 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11224,7 +11229,7 @@ $as_echo_n "checking whether the compiler supports the -Wstrict-prototypes optio
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11315,7 +11320,7 @@ $as_echo_n "checking whether the compiler supports the -Wunused-parameter option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11406,7 +11411,7 @@ $as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused 
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11524,7 +11529,7 @@ $as_echo_n "checking whether the compiler supports the -Wunreachable-code option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11622,7 +11627,7 @@ $as_echo_n "checking whether the compiler supports the -Wshorten-64-to-32 option
 	#    https://www.postgresql.org/message-id/2192993.1591682589%40sss.pgh.pa.us
 	#
 	# This may, as per those two messages, be fixed in autoconf 2.70,
-	# but we only require 2.64 or newer for now.
+	# but we only require 2.69 or newer for now.
 	#
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */

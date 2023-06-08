@@ -1492,11 +1492,21 @@ if(WIN32)
             set(PCAP_TYPE npf)
         else()
             #
-            # We don't have any capture type we know about, so just use
-            # the null capture type, and only support reading (and writing)
-            # capture files.
+            # We don't have any capture type we know about.
+            # Report an error, and tell the user to configure with
+            # -DPCAP_TYPE=null if they want a libpcap that can't
+            # capture but that can read capture files.  That way,
+            # nobody gets surprised by getting a no-capture
+            # libpcap without asking for that.
             #
-            set(PCAP_TYPE null)
+            message(FATAL_ERROR "No supported packet capture interface was found.
+In order to build a version of libpcap that supports packet capture
+on Windows, you will need to install Npcap and the Npcap SDK, or
+WinPcap and the WinPcap SDK, and run cmake with -DPacket_ROOT={path of SDK},
+where {path of SDK} is the path name of the top-level directory of the SDK.
+That argument may have to be quoted if the path contains blanks.
+If you want a libpcap that cannot capture packets but that can read
+pcap and pcapng files, run cmake with -DPCAP_TYPE=null.")
         endif()
     endif()
 else()
@@ -1612,12 +1622,18 @@ else()
             set(PCAP_TYPE haiku)
         else()
             #
-            # Nothing we support.
+            # We don't have any capture type we know about.
+            # Report an error, and tell the user to configure with
+            # -DPCAP_TYPE=null if they want a libpcap that can't
+            # capture but that can read capture files.  That way,
+            # nobody gets surprised by getting a no-capture
+            # libpcap without asking for that.
             #
-            set(PCAP_TYPE null)
-            message(WARNING
-"cannot determine packet capture interface
-(see the INSTALL.md file for more info)")
+            message(FATAL_ERROR "No supported packet capture interface was found.
+See the INSTALL.md file for information on packet capture support in
+various operating systems.
+If you want a libpcap that cannot capture packets but that can read
+pcap and pcapng files, run cmake with -DPCAP_TYPE=null.")
         endif()
     endif()
 endif(WIN32)
