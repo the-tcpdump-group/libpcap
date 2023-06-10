@@ -130,7 +130,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	 * Allocate a buffer for those entries.
 	 */
 	buf_size = ifn.lifn_count * sizeof (struct lifreq);
-	buf = malloc(buf_size);
+	buf = calloc(1, buf_size);
 	if (buf == NULL) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
@@ -146,7 +146,6 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	ifc.lifc_buf = buf;
 	ifc.lifc_family = AF_UNSPEC;
 	ifc.lifc_flags = 0;
-	memset(buf, 0, buf_size);
 	if (ioctl(fd4, SIOCGLIFCONF, (char *)&ifc) < 0) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "SIOCGLIFCONF");

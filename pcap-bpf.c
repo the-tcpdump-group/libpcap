@@ -2672,18 +2672,15 @@ pcap_activate_bpf(pcap_t *p)
 #ifdef HAVE_ZEROCOPY_BPF
 	if (!pb->zerocopy) {
 #endif
-	p->buffer = malloc(p->bufsize);
+	/* For some strange reason, calloc instead of malloc seems to prevent the EFAULT
+	 * problems we have experienced from AIX BPF. */
+	p->buffer = calloc(1, p->bufsize);
 	if (p->buffer == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		status = PCAP_ERROR;
 		goto bad;
 	}
-#ifdef _AIX
-	/* For some strange reason this seems to prevent the EFAULT
-	 * problems we have experienced from AIX BPF. */
-	memset(p->buffer, 0x0, p->bufsize);
-#endif
 #ifdef HAVE_ZEROCOPY_BPF
 	}
 #endif

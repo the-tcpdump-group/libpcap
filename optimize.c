@@ -2881,13 +2881,12 @@ icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
 	    unMarkAll(ic);
 	    n = *lenp = count_stmts(ic, root);
 
-	    fp = (struct bpf_insn *)malloc(sizeof(*fp) * n);
+	    fp = (struct bpf_insn *)calloc(n, sizeof(*fp));
 	    if (fp == NULL) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc");
 		return NULL;
 	    }
-	    memset((char *)fp, 0, sizeof(*fp) * n);
 	    conv_state.fstart = fp;
 	    conv_state.ftail = fp + n;
 

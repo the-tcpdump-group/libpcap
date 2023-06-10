@@ -1414,7 +1414,7 @@ int sock_recv(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
     int flags, char *errbuf, int errbuflen)
 {
 	int recv_flags = 0;
-	char *bufp = buffer;
+	char *bufp;
 	int remaining;
 	ssize_t nread;
 

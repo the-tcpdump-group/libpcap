@@ -89,7 +89,15 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		return -1;
 	}
 
-	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
+	/*
+	 * Zero the complete header, which is larger than dev_num because of tail
+	 * padding, to silence Valgrind, which overshoots validating that dev_num
+	 * has been set.
+	 * https://github.com/the-tcpdump-group/libpcap/issues/1083
+	 * https://bugs.kde.org/show_bug.cgi?id=448464
+	 */
+
+	dev_list = calloc(1, HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 	if (!dev_list)
 	{
 		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
@@ -98,14 +106,6 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		goto done;
 	}
 
-	/*
-	 * Zero the complete header, which is larger than dev_num because of tail
-	 * padding, to silence Valgrind, which overshoots validating that dev_num
-	 * has been set.
-	 * https://github.com/the-tcpdump-group/libpcap/issues/1083
-	 * https://bugs.kde.org/show_bug.cgi?id=448464
-	 */
-	memset(dev_list, 0, sizeof(*dev_list));
 	dev_list->dev_num = HCI_MAX_DEV;
 
 	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0)

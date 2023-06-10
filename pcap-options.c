@@ -48,8 +48,7 @@ struct pcap_options {
 
 pcap_options *pcap_alloc_option(void)
 {
-        pcap_options *po = malloc(sizeof(struct pcap_options));
-        memset(po, 0, sizeof(struct pcap_options));
+        pcap_options *po = calloc(1, sizeof(struct pcap_options));
         return po;  // caller has to check for NULL anyway.
 }
 

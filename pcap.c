@@ -556,7 +556,7 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		**tstamp_typesp = PCAP_TSTAMP_HOST;
 		return (1);
 	} else {
-		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
+		*tstamp_typesp = (int*)malloc(sizeof(**tstamp_typesp) *
 		    p->tstamp_type_count);
 		if (*tstamp_typesp == NULL) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
@@ -2494,7 +2494,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t total_size, size_t private_offset)
 	 * total_size is the size of a structure containing a pcap_t
 	 * followed by a private structure.
 	 */
-	chunk = calloc(total_size, 1);
+	chunk = calloc(1, total_size);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
@@ -3030,7 +3030,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		**dlt_buffer = p->linktype;
 		return (1);
 	} else {
-		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
+		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer) * p->dlt_count);
 		if (*dlt_buffer == NULL) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
@@ -4460,10 +4460,9 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 		precision = PCAP_TSTAMP_PRECISION_MICRO;
 		break;
 	}
-	p = malloc(sizeof(*p));
+	p = calloc(1, sizeof(*p));
 	if (p == NULL)
 		return NULL;
-	memset (p, 0, sizeof(*p));
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;

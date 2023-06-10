@@ -432,12 +432,11 @@ static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 if
 	char		*port;
 	int			IOPportnum = 0;
 
-	iface = malloc(sizeof(iface_t));		/* get memory for a structure */
+	iface = calloc(1, sizeof(iface_t));		/* get memory for a structure */
 	if (iface == NULL) {	/* oops, we didn't get the memory requested	*/
 		fprintf(stderr, "Error...couldn't allocate memory for interface structure...value of errno is: %d\n", errno);
 		return NULL;
 	}
-	memset((char *)iface, 0, sizeof(iface_t));	/* bzero is deprecated(), replaced with memset() */
 
 	iface->iftype = iftype;					/* remember the interface type of this interface */
 
@@ -583,12 +582,11 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 			empty_unit_iface(u);
 			ptr = u->imsg;													/* point to the start of the msg for this IOP */
 			while (ptr < (u->imsg + u->len)) {
-				if ((iff = malloc(sizeof(pcap_if_t))) == NULL) {
+				if ((iff = calloc(sizeof(pcap_if_t))) == NULL) {
 					pcap_fmt_errmsg_for_errno(errbuf,
 					    PCAP_ERRBUF_SIZE, errno, "malloc");
 					return -1;
 				}
-				memset((char *)iff, 0, sizeof(pcap_if_t)); /* bzero() is deprecated, replaced with memset() */
 				if (acn_if_list == 0)	acn_if_list = iff;					/* remember the head of the list */
 				if (prev_iff)			prev_iff->next = iff;				/* insert a forward link */
 
@@ -628,23 +626,21 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 
 				prev_addr = 0;
 				while (address_count--) {
-					if ((addr = malloc(sizeof(pcap_addr_t))) == NULL) {
+					if ((addr = calloc(1, sizeof(pcap_addr_t))) == NULL) {
 						pcap_fmt_errmsg_for_errno(errbuf,
 						    PCAP_ERRBUF_SIZE, errno,
 						    "malloc");
 						return -1;
 					}
-					memset((char *)addr, 0, sizeof(pcap_addr_t)); /* bzero() is deprecated, replaced with memset() */
 					if (iff->addresses == 0) iff->addresses = addr;
 					if (prev_addr) prev_addr->next = addr;							/* insert a forward link */
 					if (*ptr) {														/* if there is a count for the address */
-						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {		/* get that amount of space */
+						if ((s = calloc(1, sizeof(struct sockaddr_in))) == NULL) {		/* get that amount of space */
 							pcap_fmt_errmsg_for_errno(errbuf,
 							    PCAP_ERRBUF_SIZE,
 							    errno, "malloc");
 							return -1;
 						}
-						memset((char *)s, 0, sizeof(struct sockaddr_in)); /* bzero() is deprecated, replaced with memset() */
 						addr->addr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
 						s->sin_addr.s_addr	= *(bpf_u_int32 *)(ptr + 1);			/* copy the address in */
@@ -652,14 +648,12 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					}
 					ptr++;													/* then forwards one more for the 'length of the address' field */
 					if (*ptr) {												/* process any netmask */
-						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
+						if ((s = calloc(1, sizeof(struct sockaddr_in))) == NULL) {
 							pcap_fmt_errmsg_for_errno(errbuf,
 							    PCAP_ERRBUF_SIZE,
 							    errno, "malloc");
 							return -1;
 						}
-						/* bzero() is deprecated, replaced with memset() */
-						memset((char *)s, 0, sizeof(struct sockaddr_in));
 
 						addr->netmask = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
@@ -668,14 +662,12 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					}
 					ptr++;
 					if (*ptr) {												/* process any broadcast address */
-						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
+						if ((s = calloc(1, sizeof(struct sockaddr_in))) == NULL) {
 							pcap_fmt_errmsg_for_errno(errbuf,
 							    PCAP_ERRBUF_SIZE,
 							    errno, "malloc");
 							return -1;
 						}
-						/* bzero() is deprecated, replaced with memset() */
-						memset((char *)s, 0, sizeof(struct sockaddr_in));
 
 						addr->broadaddr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
@@ -684,14 +676,12 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					}
 					ptr++;
 					if (*ptr) {												/* process any destination address */
-						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
+						if ((s = calloc(1, sizeof(struct sockaddr_in))) == NULL) {
 							pcap_fmt_errmsg_for_errno(errbuf,
 							    PCAP_ERRBUF_SIZE,
 							    errno, "malloc");
 							return -1;
 						}
-						/* bzero() is deprecated, replaced with memset() */
-						memset((char *)s, 0, sizeof(struct sockaddr_in));
 
 						addr->dstaddr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;

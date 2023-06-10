@@ -441,13 +441,11 @@ static pcap_if_t* TcCreatePcapIfFromPort(TC_PORT port)
 	CHAR *description;
 	pcap_if_t *newIf = NULL;
 
-	newIf = (pcap_if_t*)malloc(sizeof(*newIf));
+	newIf = (pcap_if_t*)calloc(1, sizeof(*newIf));
 	if (newIf == NULL)
 	{
 		return NULL;
 	}
-
-	memset(newIf, 0, sizeof(*newIf));
 
 	name = g_TcFunctions.PortGetName(port);
 	description = g_TcFunctions.PortGetDescription(port);
