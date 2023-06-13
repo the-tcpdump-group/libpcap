@@ -186,7 +186,7 @@
  * anything and doesn't appear to have ever used it for anything.)
  *
  * We define it as 18 on those platforms; it is, unfortunately, used
- * for DLT_CIP in Suse 6.3, so we don't define it as DLT_PFSYNC
+ * for DLT_CIP in SUSE 6.3, so we don't define it as DLT_PFSYNC
  * in general.  As the packet format for it, like that for
  * DLT_PFLOG, is not only OS-dependent but OS-version-dependent,
  * we don't support printing it in tcpdump except on OSes that

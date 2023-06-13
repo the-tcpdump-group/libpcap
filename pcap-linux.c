@@ -111,7 +111,7 @@
 #error "Libpcap will only work if TPACKET_V2 is supported; you must build for a 2.6.27 or later kernel"
 #endif
 
-/* check for memory mapped access avaibility. We assume every needed
+/* check for memory mapped access availability. We assume every needed
  * struct is defined if the macro TPACKET_HDRLEN is defined, because it
  * uses many ring related structs and macros */
 #ifdef TPACKET3_HDRLEN
@@ -287,7 +287,7 @@ static void pcap_oneshot_linux(u_char *user, const struct pcap_pkthdr *h,
 #else
   /*
    * This is being compiled on a system that lacks TP_STATUS_VLAN_VALID,
-   * so we testwith the value it has in the 3.0 and later kernels, so
+   * so we test with the value it has in the 3.0 and later kernels, so
    * we can test it if we're running on a system that has it.  (If we're
    * running on a system that doesn't have it, it won't be set in the
    * tp_status field, so the tests of it will always fail; that means
@@ -742,7 +742,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
  *
  * Compared to /proc/net/dev this avoids counting software drops,
  * but may be unimplemented and just return 0.
- * The author has found no straigthforward way to check for support.
+ * The author has found no straightforward way to check for support.
  */
 static long long int
 linux_get_stat(const char * if_name, const char * stat) {

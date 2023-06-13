@@ -209,7 +209,7 @@ lowest_set_bit(int mask)
 #define AX_ATOM N_ATOMS
 
 /*
- * These data structures are used in a Cocke and Shwarz style
+ * These data structures are used in a Cocke and Schwartz style
  * value numbering scheme.  Since the flowgraph is acyclic,
  * exit values can be propagated from a node's predecessors
  * provided it is uniquely defined.

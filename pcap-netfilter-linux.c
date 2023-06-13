@@ -61,7 +61,7 @@
  *       It took me quite some time to debug ;/
  *
  *       Sending any data to nfnetlink socket requires CAP_NET_ADMIN privileges,
- *       and in nfqueue we need to send verdict reply after recving packet.
+ *       and in nfqueue we need to send verdict reply after receiving packet.
  *
  *       In tcpdump you can disable dropping privileges with -Z root
  */

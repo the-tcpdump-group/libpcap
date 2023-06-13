@@ -352,7 +352,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 	 * sure that the timeout gets adjusted accordingly.  This requires
 	 * that we analyze when the timeout should be been expired, and
 	 * subtract the current time from that.  If after this operation,
-	 * our timeout is less then or equal to zero, handle it like a
+	 * our timeout is less than or equal to zero, handle it like a
 	 * regular timeout.
 	 */
 	tmout = p->opt.timeout;
@@ -2748,7 +2748,7 @@ check_bpf_bindable(const char *name)
 	 * adapter, rather than by implementing the ioctls that
 	 * {Free,Net,Open,DragonFly}BSD provide. Opening that device
 	 * puts the adapter into monitor mode, which, at least for
-	 * some adapters, causes them to deassociate from the network
+	 * some adapters, causes them to disassociate from the network
 	 * with which they're associated.
 	 *
 	 * Instead, we try to open the corresponding "en" device (so

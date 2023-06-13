@@ -70,7 +70,7 @@ mkdir -p build && cd build && cmake -DDPDK_DIR=$RTE_SDK/$RTE_TARGET ../ && make 
 
 4. Link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 And you shall set DPDK configure options by environment variable DPDK_CFG
-For example, the testprogs/capturetest could be lanched by:
+For example, the testprogs/capturetest could be launched by:
 
 env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so" ./capturetest -i dpdk:0
 */
@@ -570,7 +570,7 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 			skip_space=!skip_space; // skip normal char
 			dargv[cnt++] = dpdk_cfg+i;
 		}
-		if (!skip_space && dpdk_cfg[i]==' '){ // fint a space
+		if (!skip_space && dpdk_cfg[i]==' '){ // find a space
 			dpdk_cfg[i]=0x00; // end of this opt
 			skip_space=!skip_space; // skip space char
 		}
@@ -600,7 +600,7 @@ static int dpdk_pre_init(char * ebuf, int eaccess_not_fatal)
 	char *dargv[DPDK_ARGC_MAX];
 	char *ptr_dpdk_cfg = NULL;
 	int ret;
-	// globale var
+	// global var
 	if (is_dpdk_pre_inited != 0)
 	{
 		// already inited; did that succeed?

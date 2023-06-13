@@ -692,7 +692,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    # on whether it is, does a compile-time swap or
 		    # a run-time swap; perhaps the compiler always
 		    # considers one of the two results of the
-		    # conditional expressin is never evaluated,
+		    # conditional expression is never evaluated,
 		    # because the conditional check is done at
 		    # compile time, and thus always says "that
 		    # expression is never executed".
@@ -761,7 +761,7 @@ dnl   Packet capture from services that put captured packets on the
 dnl   network, such as rpcap servers.
 dnl
 dnl We may also need getnameinfo() for packet capture from services
-dnl that put packets on the networik.
+dnl that put packets on the network.
 dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
     #
