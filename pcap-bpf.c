@@ -658,7 +658,19 @@ bpf_bind(int fd, const char *name, char *errbuf)
 	if (status < 0) {
 		switch (errno) {
 
+#if defined(HAVE_SOLARIS)
+		/*
+		 * For some reason, Solaris 11 appears to return ESRCH
+		 * for unknown devices.
+		 */
+		case ESRCH:
+#else
+		/*
+		 * The *BSDs (including CupertinoBSD a/k/a Darwin)
+		 * return ENXIO for unknown devices.
+		 */
 		case ENXIO:
+#endif
 			/*
 			 * There's no such device.
 			 *
