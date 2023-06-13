@@ -127,7 +127,7 @@ struct pcap_rpcap {
 	SOCKET rmt_sockdata;		/* socket ID of the socket used for the data connection */
 	SSL *ctrl_ssl, *data_ssl;	/* optional transport of rmt_sockctrl and rmt_sockdata via TLS */
 	int rmt_flags;			/* we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture() */
-	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
+	int rmt_capstarted;		/* 'true' if the capture is already started (needed to know if we have to call the pcap_startcapture() */
 	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
 
 	uint8_t protocol_version;	/* negotiated protocol version */
@@ -1548,7 +1548,7 @@ error_nodiscard:
  *
  * \param sendbuf: the buffer on which the serialized data has to copied.
  *
- * \param sendbufidx: it is used to return the abounf of bytes copied into the buffer.
+ * \param sendbufidx: it is used to return the amount of bytes copied into the buffer.
  *
  * \param prog: the bpf program we have to copy.
  *
@@ -1870,7 +1870,7 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	struct rpcap_header header;		/* To keep the reply message */
 	struct rpcap_sampling *sampling_pars;	/* Structure that is needed to send sampling parameters to the remote host */
 
-	/* If no samping is requested, return 'ok' */
+	/* If no sampling is requested, return 'ok' */
 	if (fp->rmt_samp.method == PCAP_SAMP_NOSAMP)
 		return 0;
 
@@ -2096,7 +2096,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 		{
 			/* No - discard it and fail. */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Authenticaton reply from server is too short");
+			    "Authentication reply from server is too short");
 			(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 			return -1;
 		}
@@ -2121,7 +2121,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			 * Discard it and fail.
 			 */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Authenticaton reply from server is too short");
+			    "Authentication reply from server is too short");
 			(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 			return -1;
 		}

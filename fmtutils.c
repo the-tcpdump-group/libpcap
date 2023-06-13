@@ -62,7 +62,7 @@
  */
 #ifdef _WIN32
 /*
- * True if we shouold use UTF-8.
+ * True if we should use UTF-8.
  */
 static int use_utf_8;
 
@@ -154,7 +154,7 @@ utf_16le_to_utf_8_truncated(const wchar_t *utf_16, char *utf_8,
 					uc = SURROGATE_VALUE(c, c2);
 				} else {
 					/*
-					 * Not a trailing surroage;
+					 * Not a trailing surrogate;
 					 * try to drop in a
 					 * REPLACEMENT CHARACTER.
 					 */

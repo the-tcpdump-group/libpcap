@@ -42,7 +42,7 @@
 
 #include "pcap-sita.h"
 
-	/* non-configureable manifests follow */
+	/* non-configurable manifests follow */
 
 #define IOP_SNIFFER_PORT	49152			/* TCP port on the IOP used for 'distributed pcap' usage */
 #define MAX_LINE_SIZE		255				/* max size of a buffer/line in /etc/hosts we allow */
@@ -1057,7 +1057,7 @@ int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf) {
 	strcpy(errbuf, "");
 	if (acn_parse_hosts_file(errbuf))							/* scan the hosts file for potential IOPs */
 		{
-		//printf("pcap_findalldevs() returning BAD after parsehosts\n");				// fulko
+		//printf("pcap_findalldevs() returning BAD after parse_hosts\n");				// fulko
 		return -1;
 		}
 	//printf("pcap_findalldevs() got hostlist now finding devs\n");				// fulko

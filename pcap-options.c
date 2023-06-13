@@ -34,7 +34,7 @@
 /*
  * Private data for storing sets of options.
  * This is to be used by functions which seem to grow additional options
- * This is avoid ABI explosition of do_thing, and do_thing_with_opt_bar(),
+ * This is avoid ABI explosion of do_thing, and do_thing_with_opt_bar(),
  * and then do_thing_with_opt_bar_baz(...). Instead a "pcap_option" should be
  * created to which get/set shall be done.
  *
