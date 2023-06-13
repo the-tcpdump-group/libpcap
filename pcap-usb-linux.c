@@ -254,7 +254,7 @@ usb_set_ring_size(pcap_t* handle, int header_size)
 
 	/*
 	 * Will this get an error?
-	 * (There's no wqy to query the minimum or maximum, so we just
+	 * (There's no way to query the minimum or maximum, so we just
 	 * copy the value from the kernel source.  We don't round it
 	 * up to a multiple of the page size.)
 	 */
@@ -913,7 +913,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 		}
 
 		/*
-		 * If max_packets specifiesg "unlimited", we stop after
+		 * If max_packets specifies "unlimited", we stop after
 		 * the first chunk.
 		 */
 		if (PACKET_COUNT_IS_UNLIMITED(max_packets) ||

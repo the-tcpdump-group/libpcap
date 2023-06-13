@@ -92,7 +92,7 @@ Saturday, December 31, 2022 / The Tcpdump Group
         when reading a LINKTYPE_PFLOG file.
       Put CAN ID field in CAN pseudo-headers for LINUX_SLL2, as we do
         for LINUX_SLL.
-      Fix inorrectly-computed "real" length for isochronous USB
+      Fix incorrectly-computed "real" length for isochronous USB
         transfers when reading savefiles.
       Don't crash if pcap_can_set_rfmon() is called.
       Fix pcap_offline_read() loop.
@@ -173,7 +173,7 @@ Saturday, December 31, 2022 / The Tcpdump Group
       Return an error if the driver reports 0 timestamp modes supported.
       Close the ADAPTER handle for some errors in
         pcap_create_interface().
-      Get rid of old umaintained VS project files.
+      Get rid of old unmaintained VS project files.
       Fix deprecation warning for pcap_handle().
       Npcap is now at npcap.com, not npcap.org.
       Make sure "no such device" and "no permission to open device"
@@ -341,7 +341,7 @@ Tuesday, December 29, 2020
     Remove (unused) SITA support
     Capture file reading:
         Correctly handle pcapng captures with more than one IDB with a
-            snspshot length greater than the supported maximum
+            snapshot length greater than the supported maximum
     Capture file writing:
         Create the file in pcap_dump_open_append() if it doesn't exist
     Packet filtering:
@@ -455,7 +455,7 @@ Tuesday, December 29, 2020
             isn't called
         Fix compilation on Cygwin/MSYS
         Add pcap_handle(), and deprecate pcap_fileno()
-        Report PCAP_ERROR_NO_SUCH_DEVICE for a non-existent device
+        Report PCAP_ERROR_NO_SUCH_DEVICE for a nonexistent device
         Return an appropriate error message for device removed or
             device unusable due to a suspend/resume
         Report a warning for unknown NdisMedium types
@@ -537,7 +537,7 @@ Sunday, July 22, 2018
         Windows with WinPcap/Npcap (GitHub issue #824)
     Have pcap_dump_open_append() create the dump file if it doesn't
         exists (GitHub issue #247)
-    Fix the maxmum snapshot length for DLT_USBPCAP
+    Fix the maximum snapshot length for DLT_USBPCAP
     Use -fPIC when building for 64-bit SPARC on Linux (GitHub issue #837)
     Fix CMake 64-bit library installation directory on some Linux
         distributions
@@ -702,7 +702,7 @@ Wednesday Nov. 12, 2014 guy@alum.mit.edu/mcr@sandelman.ca
 
 Monday Aug. 12, 2014 guy@alum.mit.edu
   Summary for 1.6.2 libpcap release
-	Don't crash on filters testing a non-existent link-layer type
+	Don't crash on filters testing a nonexistent link-layer type
 	    field.
 	Fix sending in non-blocking mode on Linux with memory-mapped
 	    capture.
@@ -990,7 +990,7 @@ Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap rele
 	Autogenerate VERSION numbers better
 
 Mon.    September 10, 2007.  ken@xelerance.com.  Summary for 0.9.8 libpcap release
-        Change build process to put public libpcap headers into pcap subir
+        Change build process to put public libpcap headers into pcap subdir
         DLT: Add value for IPMI IPMB packets
         DLT: Add value for u10 Networks boards
         Require <net/pfvar.h> for pf definitions - allows reading of pflog formatted
@@ -1319,7 +1319,7 @@ v0.2.1 Sun Jul 14 03:02:26 PDT 1996
   (steve@research.oknet.com)
 
 - Fixed to handle raw ip addresses such as 0.0.0.1 without "left
-  justifing"
+  justifying"
 
 - Add "sca" keyword (for DEC cluster services) as suggested by Terry
   Kennedy (terry@spcvxa.spc.edu)

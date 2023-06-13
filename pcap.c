@@ -846,7 +846,7 @@ get_figure_of_merit(pcap_if_t *dev)
 #ifndef _WIN32
 /*
  * Try to get a description for a given device.
- * Returns a mallocated description if it could and NULL if it couldn't.
+ * Returns a malloced description if it could and NULL if it couldn't.
  *
  * XXX - on FreeBSDs that support it, should it get the sysctl named
  * "dev.{adapter family name}.{adapter unit}.%desc" to get a description
@@ -1981,7 +1981,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		if (*parsep == '[') {
 			/*
 			 * Yes.
-			 * Treat verything up to the closing square
+			 * Treat everything up to the closing square
 			 * bracket as the IP-Literal; we don't worry
 			 * about whether it's a valid IPv6address or
 			 * IPvFuture (or an IPv4address, for that
@@ -2007,7 +2007,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 			    *(bracketp + 1) != ':') {
 				/*
 				 * There's extra crud after the
-				 * closing square bracketn.
+				 * closing square bracket.
 				 */
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				    "Extra text after IP-literal in URL");
@@ -3530,7 +3530,7 @@ pcap_fileno(pcap_t *p)
 		/*
 		 * This is a bogus and now-deprecated API; we
 		 * squelch the narrowing warning for the cast
-		 * from HANDLE to intptr_t.  If Windows programmmers
+		 * from HANDLE to intptr_t.  If Windows programmers
 		 * need to get at the HANDLE for a pcap_t, *if*
 		 * there is one, they should request such a
 		 * routine (and be prepared for it to return
@@ -3940,7 +3940,7 @@ pcap_get_airpcap_handle(pcap_t *p)
 /*
  * On some platforms, we need to clean up promiscuous or monitor mode
  * when we close a device - and we want that to happen even if the
- * application just exits without explicitl closing devices.
+ * application just exits without explicitly closing devices.
  * On those platforms, we need to register a "close all the pcaps"
  * routine to be called when we exit, and need to maintain a list of
  * pcaps that need to be closed to clean up modes.

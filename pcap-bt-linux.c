@@ -431,7 +431,7 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	}
 
-	/* we receive both rx and tx frames, so comulate all stats */
+	/* we receive both rx and tx frames, so cumulate all stats */
 	stats->ps_recv = s->evt_rx + s->acl_rx + s->sco_rx + s->cmd_tx +
 		s->acl_tx +s->sco_tx;
 	stats->ps_drop = s->err_rx + s->err_tx;

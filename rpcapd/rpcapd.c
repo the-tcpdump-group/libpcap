@@ -780,7 +780,7 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 	// CTRL_CLOSE_EVENT - the console was closed; this is like SIGHUP
 	// CTRL_LOGOFF_EVENT - a user is logging off; this is received
 	//   only by services
-	// CTRL_SHUTDOWN_EVENT - the systemis shutting down; this is
+	// CTRL_SHUTDOWN_EVENT - the system is shutting down; this is
 	//   received only by services
 	//
 	// For now, we treat all but CTRL_LOGOFF_EVENT as indications

@@ -32,7 +32,7 @@ AC_SUBST(PACKAGE_NAME)
 # LDFLAGS: inherited from the environment, not modified by us.
 #
 # LIBS: inherited from the environment; we add libraries required by
-# libpcap.  Librares that the core libpcap code requires are added
+# libpcap.  Libraries that the core libpcap code requires are added
 # first; libraries required by additional pcap modules are first
 # added to ADDITIONAL_LIBS, and only added to LIBS at the end, after
 # we're finished doing configuration tests for the modules.
@@ -820,7 +820,7 @@ AC_PATH_PROG([BREW], [brew])
 # Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
 # looking at *you*!), there are separate include files for 32-bit and
 # 64-bit builds (I guess using "unsigned long long" as a 64-bit integer
-# type on a 64-bit build is like crossing the beams or soething), and
+# type on a 64-bit build is like crossing the beams or something), and
 # there are two separate .pc files, so if we're doing a 32-bit build we
 # should make sure we look in /usr/lib/pkgconfig for .pc files and if
 # we're doing a 64-bit build we should make sure we look in
@@ -2551,7 +2551,7 @@ if test "xxx_only" != yes; then
       # software that looks for /dev/null or /dev/tty, for example,
       # so doing that is *REALLY* not a good idea), please provide
       # some mechanism to determine that directory at *run time*,
-      # rather than *configure time*, so that it works when doinga
+      # rather than *configure time*, so that it works when doing
       # a cross-build, and that works with *multiple* distributions,
       # with our without udev, and with multiple versions of udev,
       # with udevinfo or udevadm or any other mechanism to get the
@@ -2634,7 +2634,7 @@ if test "x$enable_netmap" != "xno" ; then
 	#
 	# Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
 	# defined; it's not usable on DragonFly BSD 4.6 if NETMAP_WITH_LIBS
-	# is defined, for example, as it includes a non-existent malloc.h
+	# is defined, for example, as it includes a nonexistent malloc.h
 	# header.
 	#
 	AC_MSG_CHECKING(whether we can compile the netmap support)
@@ -2977,7 +2977,7 @@ if test "x$enable_dbus" != "xno"; then
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
-			# The user dind't explicitly request it, so just
+			# The user didn't explicitly request it, so just
 			# silently refuse to enable it.
 			#
 			enable_dbus="no"

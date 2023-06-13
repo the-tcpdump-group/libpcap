@@ -73,7 +73,7 @@ PCAP_API int	pcap_nametollc(const char *);
 /*
  * If a protocol is unknown, PROTO_UNDEF is returned.
  * Also, pcap_nametoport() returns the protocol along with the port number.
- * If there are ambiguous entried in /etc/services (i.e. domain
+ * If there are ambiguous entries in /etc/services (i.e. domain
  * can be either tcp or udp) PROTO_UNDEF is returned.
  */
 #define PROTO_UNDEF		-1

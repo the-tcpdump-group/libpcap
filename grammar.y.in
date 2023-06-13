@@ -483,7 +483,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				}
 	| HID NETMASK HID	{
 				  CHECK_PTR_VAL($1);
-				  /* Check whether HID maesk HID is being used when appropriate */
+				  /* Check whether HID mask HID is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
 					bpf_set_error(cstate, "'port' modifier applied to IP address and netmask");

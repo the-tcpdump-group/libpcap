@@ -199,7 +199,7 @@ void sock_geterrmsg(char *errbuf, size_t errbuflen, const char *fmt, ...)
  * These are sorted by how likely they are to be the "underlying" problem,
  * so that lower-rated errors for a given address in a given family
  * should not overwrite higher-rated errors for another address in that
- * family, and higher-rated errors should overwrit elower-rated errors.
+ * family, and higher-rated errors should overwrite lower-rated errors.
  */
 typedef enum {
 	SOCK_CONNERR,		/* connection error */
@@ -230,7 +230,7 @@ static sock_errtype sock_geterrtype(int errcode)
 		 * and we're trying the wrong address family.
 		 *
 		 * These overwrite all other errors, as they indicate
-		 * that, even if somethng else went wrong in another
+		 * that, even if something else went wrong in another
 		 * attempt, this probably wouldn't work even if the
 		 * other problems were fixed.
 		 */
@@ -881,7 +881,7 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
 	 */
 	if (shutdown(sock, SHUT_WR))
 	{
-		sock_geterrmsg(errbuf, errbuflen, "shutdown() feiled");
+		sock_geterrmsg(errbuf, errbuflen, "shutdown() failed");
 		/* close the socket anyway */
 		closesocket(sock);
 		return -1;
@@ -1043,7 +1043,7 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 }
 
 /*
- * \brief Checks that the address, port and flags given are valids and it returns an 'addrinfo' structure.
+ * \brief Checks that the address, port and flags given are valid and it returns an 'addrinfo' structure.
  *
  * This function basically calls the getaddrinfo() calls, and it performs a set of sanity checks
  * to control that everything is fine (e.g. a TCP socket cannot have a mcast address, and such).
@@ -1327,7 +1327,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
  * \param totsize: total size of the buffer into which data is being copied.
  *
  * \param checkonly: '1' if we do not want to copy data into the buffer and we
- * want just do a buffer ovreflow control, '0' if data has to be copied as well.
+ * want just do a buffer overflow control, '0' if data has to be copied as well.
  *
  * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
  * error message. This buffer has to be at least 'errbuflen' in length.
@@ -1848,7 +1848,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
  * i.e. an sockaddr_storage structure.
  *
  * The two structures do not need to be sockaddr_storage; you can have both 'sockaddr_in' and
- * sockaddr_in6, properly acsted in order to be compliant to the function interface.
+ * sockaddr_in6, properly casted in order to be compliant to the function interface.
  *
  * This function will return '0' if the two addresses matches, '-1' if not.
  *

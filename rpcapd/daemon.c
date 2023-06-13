@@ -559,7 +559,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		plen = header.plen;
 
 		//
-		// While we're in the authentication pharse, all requests
+		// While we're in the authentication phase, all requests
 		// must use version 0.
 		//
 		if (header.ver != 0)
@@ -1483,7 +1483,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	 * we have getspnam(), otherwise we just do traditional
 	 * authentication, which, on some platforms, might work, even
 	 * with shadow passwords, if we're running as root.  Traditional
-	 * authenticaion won't work if we're not running as root, as
+	 * authentication won't work if we're not running as root, as
 	 * I think these days all UN*Xes either won't return the password
 	 * at all with getpwnam() or will only do so if you're root.
 	 *
@@ -1532,7 +1532,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 	//
 	// The Single UNIX Specification says that if crypt() fails it
-	// sets errno, but some implementatons that haven't been run
+	// sets errno, but some implementations that haven't been run
 	// through the SUS test suite might not do so.
 	//
 	errno = 0;

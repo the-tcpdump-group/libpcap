@@ -218,7 +218,7 @@ enum e_offrel {
 };
 
 /*
- * We divy out chunks of memory rather than call malloc each time so
+ * We divvy out chunks of memory rather than call malloc each time so
  * we don't have to worry about leaking memory.  It's probably
  * not a big deal if all this memory was wasted but if this ever
  * goes into a library that would probably not be a good idea.
@@ -1838,7 +1838,7 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		/*
 		 * Load the item at {offset of the link-layer payload} +
 		 * {offset, relative to the start of the link-layer
-		 * paylod, of the IPv4 header} + {length of the IPv4 header} +
+		 * payload, of the IPv4 header} + {length of the IPv4 header} +
 		 * {specified offset}.
 		 *
 		 * If the offset of the link-layer payload is variable,
@@ -1901,7 +1901,7 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 	} else {
 		/*
 		 * The offset of the link-layer payload is a constant,
-		 * so no code was generated to load the (non-existent)
+		 * so no code was generated to load the (nonexistent)
 		 * variable part of that offset.
 		 *
 		 * This means we can use the 4*([k]&0xf) addressing
@@ -6130,7 +6130,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/*
 	 * To quote a comment in optimize.c:
 	 *
-	 * "These data structures are used in a Cocke and Shwarz style
+	 * "These data structures are used in a Cocke and Schwartz style
 	 * value numbering scheme.  Since the flowgraph is acyclic,
 	 * exit values can be propagated from a node's predecessors
 	 * provided it is uniquely defined."
@@ -6790,7 +6790,7 @@ stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
 	switch (ret) {
 
 	case STOULEN_OK:
-		/* Unknown port type - it's just a numbrer. */
+		/* Unknown port type - it's just a number. */
 		*proto = PROTO_UNDEF;
 		break;
 
@@ -9112,7 +9112,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 
 	/* Jump to the test in b_vid. We need to jump one instruction before
 	 * the end of the b_vid block so that we only skip loading the TCI
-	 * from packet data and not the 'and' instruction extractging VID.
+	 * from packet data and not the 'and' instruction extracting VID.
 	 */
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)

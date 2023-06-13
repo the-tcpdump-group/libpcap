@@ -228,7 +228,7 @@ endif()
 # Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
 # looking at *you*!), there are separate include files for 32-bit and
 # 64-bit builds (I guess using "unsigned long long" as a 64-bit integer
-# type on a 64-bit build is like crossing the beams or soething), and
+# type on a 64-bit build is like crossing the beams or something), and
 # there are two separate .pc files, so if we're doing a 32-bit build we
 # should make sure we look in /usr/lib/pkgconfig for .pc files and if
 # we're doing a 64-bit build we should make sure we look in
@@ -744,7 +744,7 @@ endif()
 #   network, such as rpcap servers.
 #
 # We may also need getnameinfo() for packet capture from services
-# that put packets on the networik.
+# that put packets on the network.
 #
 set(PCAP_LINK_LIBRARIES "")
 set(LIBS "")
@@ -1999,7 +1999,7 @@ if(NOT DISABLE_NETMAP)
     #
     # Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
     # defined; it's not usable on DragonFly BSD 4.6 if NETMAP_WITH_LIBS
-    # is defined, for example, as it includes a non-existent malloc.h
+    # is defined, for example, as it includes a nonexistent malloc.h
     # header.
     #
     check_c_source_compiles(
