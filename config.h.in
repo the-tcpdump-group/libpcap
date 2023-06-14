@@ -156,6 +156,9 @@
 /* On solaris */
 #undef HAVE_SOLARIS
 
+/* target host supports Solaris "any" device */
+#undef HAVE_SOLARIS_ANY_DEVICE
+
 /* define if we have the Solaris/IRIX getnetbyname_r() */
 #undef HAVE_SOLARIS_IRIX_GETNETBYNAME_R
 

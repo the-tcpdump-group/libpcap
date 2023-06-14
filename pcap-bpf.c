@@ -3027,6 +3027,14 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
+#if defined(HAVE_SOLARIS_ANY_DEVICE)
+	/*
+	 * Add the "any" device.
+	 */
+	if (pcap_add_any_dev(devlistp, errbuf) == NULL)
+		return (-1);
+#endif
+
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 	if (finddevs_usb(devlistp, errbuf) == -1)
 		return (-1);

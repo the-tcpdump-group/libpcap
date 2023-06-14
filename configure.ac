@@ -1097,6 +1097,25 @@ bpf)
 		#endif
 		#include <net/bpf.h>
 	    ])
+
+	#
+	# Check whether there's a net/ipnet.h header and,
+	# if so, whether it defines IPNET_ANY_LINK - if so,
+	# we assume we have the "any" device (that's a
+	# Solaris header, and later versions of Solaris
+	# have an "any" device).
+	#
+	# Attempting to include it at compile time could
+	# be a pain, as it's a kernel header.
+	#
+	AC_MSG_CHECKING(whether the Solaris "any" device is supported)
+	if test -e /usr/include/inet/ipnet.h &&
+	    grep -q IPNET_ANY_LINK /usr/include/inet/ipnet.h; then
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SOLARIS_ANY_DEVICE, , [target host supports Solaris "any" device])
+	else
+		AC_MSG_RESULT(no)
+	fi
 	;;
 
 pf)
