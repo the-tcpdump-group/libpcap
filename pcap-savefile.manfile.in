@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "24 April 2020"
+.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "23 May 2023"
 .SH NAME
 pcap-savefile \- libpcap savefile format
 .SH DESCRIPTION
@@ -41,9 +41,9 @@ Magic number
 _
 Major version	Minor version
 _
-Reverved1
+Reserved1
 _
-Reverved2
+Reserved2
 _
 Snapshot length
 _
