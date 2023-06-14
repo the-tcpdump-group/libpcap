@@ -150,6 +150,9 @@
 /* On solaris */
 #cmakedefine HAVE_SOLARIS 1
 
+/* target host supports Solaris "any" device */
+#cmakedefine HAVE_SOLARIS_ANY_DEVICE 1
+
 /* define if we have the Solaris/IRIX getnetbyname_r() */
 #cmakedefine HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1
 

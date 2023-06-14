@@ -1431,11 +1431,6 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 /*
- * Description string for the "any" device.
- */
-static const char any_descr[] = "Pseudo-device that captures on all interfaces";
-
-/*
  * A PF_PACKET socket can be bound to any network interface.
  */
 static int
@@ -1756,13 +1751,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	/*
 	 * Add the "any" device.
-	 * As it refers to all network devices, not to any particular
-	 * network device, the notion of "connected" vs. "disconnected"
-	 * doesn't apply.
 	 */
-	if (pcap_add_dev(devlistp, "any",
-	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
-	    any_descr, errbuf) == NULL)
+	if (pcap_add_any_dev(devlistp, errbuf) == NULL)
 		return (-1);
 
 	return (0);

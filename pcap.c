@@ -1440,6 +1440,24 @@ pcap_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 }
 
 /*
+ * Add an entry for the "any" device.
+ */
+pcap_if_t *
+pcap_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
+{
+	static const char any_descr[] = "Pseudo-device that captures on all interfaces";
+
+	/*
+	 * As it refers to all network devices, not to any particular
+	 * network device, the notion of "connected" vs. "disconnected"
+	 * doesn't apply to the "any" device.
+	 */
+	return pcap_add_dev(devlistp, "any",
+	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
+	    any_descr, errbuf);
+}
+
+/*
  * Free a list of interfaces.
  */
 void
