@@ -2466,6 +2466,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 					"falling back to cooked "
 					"socket",
 					arptype);
+				status = PCAP_WARNING;
 			}
 
 			/*
@@ -2477,12 +2478,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 			    handle->linktype != DLT_LINUX_LAPD &&
 			    handle->linktype != DLT_NETLINK)
 				handle->linktype = DLT_LINUX_SLL;
-			if (handle->linktype == -1) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				    "unknown arptype %d, defaulting to cooked mode",
-				    arptype);
-				status = PCAP_WARNING;
-			}
 		}
 
 		handlep->ifindex = iface_get_id(sock_fd, device,
