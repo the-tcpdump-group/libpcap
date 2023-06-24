@@ -1886,7 +1886,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 			 */
 			handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 			/*
-			 * If that fails, just leave the list empty.
+			 * If that failed, just leave the list empty.
 			 */
 			if (handle->dlt_list != NULL) {
 				handle->dlt_list[0] = DLT_EN10MB;

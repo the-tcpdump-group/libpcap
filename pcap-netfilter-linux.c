@@ -613,6 +613,10 @@ netfilter_activate(pcap_t* handle)
 	if (type == NFLOG) {
 		handle->linktype = DLT_NFLOG;
 		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+
+		/*
+		 * If that failed, just leave the list empty.
+		 */
 		if (handle->dlt_list != NULL) {
 			handle->dlt_list[0] = DLT_NFLOG;
 			handle->dlt_list[1] = DLT_IPV4;
