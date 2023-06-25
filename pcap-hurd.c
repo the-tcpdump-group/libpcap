@@ -201,9 +201,6 @@ pcap_activate_hurd(pcap_t *p)
 		goto error;
 	}
 
-	/* XXX Ethernet only currently */
-	p->linktype = DLT_EN10MB;
-
 	p->bufsize = sizeof(struct net_rcv_msg);
 	p->buffer = malloc(p->bufsize);
 
@@ -213,10 +210,23 @@ pcap_activate_hurd(pcap_t *p)
 		goto error;
 	}
 
-	p->dlt_list = malloc(sizeof(*p->dlt_list));
-
-	if (p->dlt_list != NULL)
-		*p->dlt_list = DLT_EN10MB;
+	/*
+	 * XXX Ethernet only currently
+	 *
+	 * XXX - does "Ethernet only currently" mean "the only devices
+	 * on which the Hurd supports packet capture are Ethernet
+	 * devices", or "it supports other devices but makes them
+	 * all provide Ethernet headers"?
+	 *
+	 * If the latter, is there a way to determine whether the
+	 * device is a real Ethernet, so that we could offer DLT_DOCSIS,
+	 * in case you're capturing DOCSIS traffic that a Cisco Cable
+	 * Modem Termination System is putting out onto an Ethernet
+	 * (it doesn't put an Ethernet header onto the wire, it puts
+	 * raw DOCSIS frames out on the wire inside the low-level
+	 * Ethernet framing)?
+	 */
+	p->linktype = DLT_EN10MB;
 
 	p->read_op = pcap_read_hurd;
 	p->inject_op = pcap_inject_hurd;
