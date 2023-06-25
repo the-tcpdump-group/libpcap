@@ -1315,12 +1315,9 @@ dag_get_datalink(pcap_t *p)
 		case ERF_TYPE_COLOR_HDLC_POS:
 		case ERF_TYPE_DSM_COLOR_HDLC_POS:
 		case ERF_TYPE_COLOR_HASH_POS:
-
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_CHDLC;
-				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
-				p->dlt_list[dlt_index++] = DLT_FRELAY;
-			}
+			p->dlt_list[dlt_index++] = DLT_CHDLC;
+			p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
+			p->dlt_list[dlt_index++] = DLT_FRELAY;
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
 			break;
@@ -1339,10 +1336,8 @@ dag_get_datalink(pcap_t *p)
 			 * DOCSIS frames out on the wire inside the low-level
 			 * Ethernet framing).
 			 */
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_EN10MB;
-				p->dlt_list[dlt_index++] = DLT_DOCSIS;
-			}
+			p->dlt_list[dlt_index++] = DLT_EN10MB;
+			p->dlt_list[dlt_index++] = DLT_DOCSIS;
 			if(!p->linktype)
 				p->linktype = DLT_EN10MB;
 			break;
@@ -1351,42 +1346,34 @@ dag_get_datalink(pcap_t *p)
 		case ERF_TYPE_AAL5:
 		case ERF_TYPE_MC_ATM:
 		case ERF_TYPE_MC_AAL5:
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_ATM_RFC1483;
-				p->dlt_list[dlt_index++] = DLT_SUNATM;
-			}
+			p->dlt_list[dlt_index++] = DLT_ATM_RFC1483;
+			p->dlt_list[dlt_index++] = DLT_SUNATM;
 			if(!p->linktype)
 				p->linktype = DLT_ATM_RFC1483;
 			break;
 
 		case ERF_TYPE_COLOR_MC_HDLC_POS:
 		case ERF_TYPE_MC_HDLC:
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_CHDLC;
-				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
-				p->dlt_list[dlt_index++] = DLT_FRELAY;
-				p->dlt_list[dlt_index++] = DLT_MTP2;
-				p->dlt_list[dlt_index++] = DLT_MTP2_WITH_PHDR;
-				p->dlt_list[dlt_index++] = DLT_LAPD;
-			}
+			p->dlt_list[dlt_index++] = DLT_CHDLC;
+			p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
+			p->dlt_list[dlt_index++] = DLT_FRELAY;
+			p->dlt_list[dlt_index++] = DLT_MTP2;
+			p->dlt_list[dlt_index++] = DLT_MTP2_WITH_PHDR;
+			p->dlt_list[dlt_index++] = DLT_LAPD;
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
 			break;
 
 		case ERF_TYPE_IPV4:
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_RAW;
-				p->dlt_list[dlt_index++] = DLT_IPV4;
-			}
+			p->dlt_list[dlt_index++] = DLT_RAW;
+			p->dlt_list[dlt_index++] = DLT_IPV4;
 			if(!p->linktype)
 				p->linktype = DLT_RAW;
 			break;
 
 		case ERF_TYPE_IPV6:
-			if (p->dlt_list != NULL) {
-				p->dlt_list[dlt_index++] = DLT_RAW;
-				p->dlt_list[dlt_index++] = DLT_IPV6;
-			}
+			p->dlt_list[dlt_index++] = DLT_RAW;
+			p->dlt_list[dlt_index++] = DLT_IPV6;
 			if(!p->linktype)
 				p->linktype = DLT_RAW;
 			break;
