@@ -540,14 +540,14 @@ TcActivate(pcap_t *p)
 
 	p->linktype = DLT_EN10MB;
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-	/*
-	 * If that fails, just leave the list empty.
-	 */
-	if (p->dlt_list != NULL) {
-		p->dlt_list[0] = DLT_EN10MB;
-		p->dlt_list[1] = DLT_PPI;
-		p->dlt_count = 2;
+	if (p->dlt_list == NULL)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Error allocating memory");
+		return PCAP_ERROR;
 	}
+	p->dlt_list[0] = DLT_EN10MB;
+	p->dlt_list[1] = DLT_PPI;
+	p->dlt_count = 2;
 
 	/*
 	 * ignore promiscuous mode
