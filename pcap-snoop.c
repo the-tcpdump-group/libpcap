@@ -283,14 +283,14 @@ pcap_activate_snoop(pcap_t *p)
 		 * Classical IP devices?
 		 */
 		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-		/*
-		 * If that fails, just leave the list empty.
-		 */
-		if (p->dlt_list != NULL) {
-			p->dlt_list[0] = DLT_EN10MB;
-			p->dlt_list[1] = DLT_DOCSIS;
-			p->dlt_count = 2;
+		if (p->dlt_list == NULL) {
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
+			goto bad;
 		}
+		p->dlt_list[0] = DLT_EN10MB;
+		p->dlt_list[1] = DLT_DOCSIS;
+		p->dlt_count = 2;
 	} else if (strncmp("ipg", p->opt.device, 3) == 0 ||
 		   strncmp("rns", p->opt.device, 3) == 0 ||	/* O2/200/2000 FDDI */
 		   strncmp("xpi", p->opt.device, 3) == 0) {
