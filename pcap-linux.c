@@ -2293,24 +2293,6 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 	}
 }
 
-static void
-set_dlt_list_cooked(pcap_t *handle)
-{
-	/*
-	 * Support both DLT_LINUX_SLL and DLT_LINUX_SLL2.
-	 */
-	handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-
-	/*
-	 * If that failed, just leave the list empty.
-	 */
-	if (handle->dlt_list != NULL) {
-		handle->dlt_list[0] = DLT_LINUX_SLL;
-		handle->dlt_list[1] = DLT_LINUX_SLL2;
-		handle->dlt_count = 2;
-	}
-}
-
 /*
  * Try to set up a PF_PACKET socket.
  * Returns 0 or a PCAP_WARNING_ value on success and a PCAP_ERROR_ value
@@ -2481,7 +2463,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 				free(handle->dlt_list);
 				handle->dlt_list = NULL;
 				handle->dlt_count = 0;
-				set_dlt_list_cooked(handle);
 			}
 
 			if (handle->linktype == -1) {
@@ -2542,12 +2523,19 @@ setup_socket(pcap_t *handle, int is_any_device)
 
 		/*
 		 * It uses cooked mode.
+		 * Support both DLT_LINUX_SLL and DLT_LINUX_SLL2.
 		 */
 		handlep->cooked = 1;
 		handle->linktype = DLT_LINUX_SLL;
-		handle->dlt_list = NULL;
-		handle->dlt_count = 0;
-		set_dlt_list_cooked(handle);
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that failed, just leave the list empty.
+		 */
+		if (handle->dlt_list != NULL) {
+			handle->dlt_list[0] = DLT_LINUX_SLL;
+			handle->dlt_list[1] = DLT_LINUX_SLL2;
+			handle->dlt_count = 2;
+		}
 
 		/*
 		 * We're not bound to a device.
