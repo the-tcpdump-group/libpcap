@@ -221,7 +221,7 @@ struct pcap_linux {
  */
 static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(const char *);
-static void map_arphrd_to_dlt(pcap_t *, int, const char *, int);
+static int map_arphrd_to_dlt(pcap_t *, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int setup_socket(pcap_t *, int);
 static int setup_mmapped(pcap_t *);
@@ -1845,9 +1845,11 @@ is_wifi(const char *device)
  *  to pick some type that works in raw mode, or fail.
  *
  *  Sets the link type to -1 if unable to map the type.
+ *
+ *  Returns 0 on success or a PCAP_ERROR_ value on error.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
-			      const char *device, int cooked_ok)
+static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
+			     const char *device, int cooked_ok)
 {
 	static const char cdma_rmnet[] = "cdma_rmnet";
 
@@ -1868,7 +1870,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 */
 		if (strncmp(device, cdma_rmnet, sizeof cdma_rmnet - 1) == 0) {
 			handle->linktype = DLT_RAW;
-			return;
+			return 0;
 		}
 
 		/*
@@ -1898,7 +1900,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 			 */
 			ret = iface_dsa_get_proto_info(device, handle);
 			if (ret < 0)
-				return;
+				return ret;
 
 			if (ret == 1) {
 				/*
@@ -1915,14 +1917,14 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 			 * It's not a Wi-Fi device; offer DOCSIS.
 			 */
 			handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-			/*
-			 * If that fails, just leave the list empty.
-			 */
-			if (handle->dlt_list != NULL) {
-				handle->dlt_list[0] = DLT_EN10MB;
-				handle->dlt_list[1] = DLT_DOCSIS;
-				handle->dlt_count = 2;
+			if (handle->dlt_list == NULL) {
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc");
+				return (PCAP_ERROR);
 			}
+			handle->dlt_list[0] = DLT_EN10MB;
+			handle->dlt_list[1] = DLT_DOCSIS;
+			handle->dlt_count = 2;
 		}
 		/* FALLTHROUGH */
 
@@ -2211,17 +2213,17 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 * IP-over-FC on which somebody wants to capture
 		 * packets.
 		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
-		/*
-		 * If that fails, just leave the list empty.
-		 */
-		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_FC_2;
-			handle->dlt_list[1] = DLT_FC_2_WITH_FRAME_DELIMS;
-			handle->dlt_list[2] = DLT_IP_OVER_FC;
-			handle->dlt_count = 3;
-		}
 		handle->linktype = DLT_FC_2;
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
+		if (handle->dlt_list == NULL) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "malloc");
+			return (PCAP_ERROR);
+		}
+		handle->dlt_list[0] = DLT_FC_2;
+		handle->dlt_list[1] = DLT_FC_2_WITH_FRAME_DELIMS;
+		handle->dlt_list[2] = DLT_IP_OVER_FC;
+		handle->dlt_count = 3;
 		break;
 
 #ifndef ARPHRD_IRDA
@@ -2291,6 +2293,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		handle->linktype = -1;
 		break;
 	}
+	return (0);
 }
 
 /*
@@ -2411,7 +2414,9 @@ setup_socket(pcap_t *handle, int is_any_device)
 			close(sock_fd);
 			return arptype;
 		}
-		map_arphrd_to_dlt(handle, arptype, device, 1);
+		status = map_arphrd_to_dlt(handle, arptype, device, 1);
+		if (status < 0)
+			return status;
 		if (handle->linktype == -1 ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
@@ -2528,14 +2533,14 @@ setup_socket(pcap_t *handle, int is_any_device)
 		handlep->cooked = 1;
 		handle->linktype = DLT_LINUX_SLL;
 		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-		/*
-		 * If that failed, just leave the list empty.
-		 */
-		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_LINUX_SLL;
-			handle->dlt_list[1] = DLT_LINUX_SLL2;
-			handle->dlt_count = 2;
+		if (handle->dlt_list == NULL) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "malloc");
+			return (PCAP_ERROR);
 		}
+		handle->dlt_list[0] = DLT_LINUX_SLL;
+		handle->dlt_list[1] = DLT_LINUX_SLL2;
+		handle->dlt_count = 2;
 
 		/*
 		 * We're not bound to a device.

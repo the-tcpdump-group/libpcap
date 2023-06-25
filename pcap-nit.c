@@ -344,14 +344,14 @@ pcap_activate_nit(pcap_t *p)
 	 * Ethernet framing).
 	 */
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-	/*
-	 * If that fails, just leave the list empty.
-	 */
-	if (p->dlt_list != NULL) {
-		p->dlt_list[0] = DLT_EN10MB;
-		p->dlt_list[1] = DLT_DOCSIS;
-		p->dlt_count = 2;
+	if (p->dlt_list == NULL) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
+		goto bad;
 	}
+	p->dlt_list[0] = DLT_EN10MB;
+	p->dlt_list[1] = DLT_DOCSIS;
+	p->dlt_count = 2;
 
 	p->read_op = pcap_read_nit;
 	p->inject_op = pcap_inject_nit;
