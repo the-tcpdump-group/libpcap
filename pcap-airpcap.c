@@ -896,8 +896,11 @@ airpcap_activate(pcap_t *p)
 	 * followed by PPI, followed by "no radio metadata".
 	 */
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
-	if (p->dlt_list == NULL)
+	if (p->dlt_list == NULL) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		goto bad;
+	}
 	p->dlt_list[0] = DLT_IEEE802_11_RADIO;
 	p->dlt_list[1] = DLT_PPI;
 	p->dlt_list[2] = DLT_IEEE802_11;
