@@ -700,31 +700,31 @@ install-shared-sl: libpcap.sl
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	$(INSTALL_PROGRAM) libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)
 	ln -sf libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.sl
+#
+# AIX shared libraries are weird.  They're archive libraries
+# with one or more shared object components.
+#
 install-shared-shareda: libpcap.shareda
-	#
-	# AIX shared libraries are weird.  They're archive libraries
-	# with one or more shared object components.
-	#
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_PROGRAM) libpcap.shareda $(DESTDIR)$(libdir)/libpcap.a
 install-shared-none:
 
 install-archive: install-archive-$(DYEXT)
+#
+# Most platforms have separate suffixes for shared and
+# archive libraries, so we install both.
+#
 install-archive-so install-archive-dylib install-archive-sl install-archive-none: libpcap.a
-	#
-	# Most platforms have separate suffixes for shared and
-	# archive libraries, so we install both.
-	#
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
 	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
+#
+# AIX, however, doesn't, so we don't install the archive
+# library on AIX.
+#
 install-archive-shareda:
-	#
-	# AIX, however, doesn't, so we don't install the archive
-	# library on AIX.
-	#
 
 install-rpcapd:
 	(cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) install)
