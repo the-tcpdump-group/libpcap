@@ -1327,88 +1327,90 @@ if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
-#
-# OpenSSL/libressl.
-#
-find_package(OpenSSL)
-if(OPENSSL_FOUND)
+if(ENABLE_REMOTE)
   #
-  # We have OpenSSL.
+  # OpenSSL/libressl.
   #
-  include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
-  set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENSSL_LIBRARIES})
+  find_package(OpenSSL)
+  if(OPENSSL_FOUND)
+    #
+    # We have OpenSSL.
+    #
+    include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
+    set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENSSL_LIBRARIES})
 
-  #
-  # The find_package() module CMake provides for OpenSSL uses does not
-  # give us a defined indication of whether it found OpenSSL with
-  # pkg-config or not.  We need to know that as, if it was found with
-  # pkg-config, we should set the Requires.private value in libpcap.pc
-  # to include its package name, openssl, otherwise we should add the
-  # names for the static libraries to Libs.private.
-  #
-  # On UN*X, FindOpenSSL happens to use pkg-config to find OpenSSL, but
-  # it doesn't appear to be documented as doing so; therefore, we don't
-  # assume that, if we got here, we have pkg-config.
-  #
-  # So we use pkg_get_link_info() to run pkg-config ourselves, both
-  # because FindOpenSSL doesn't set the OPENSSL_LDFLAGS or
-  # OPENSSL_STATIC_LDFLAGS variables and because, for reasons explained
-  # in the comment before the pkg_get_link_info() macro, even if it did,
-  # it wouldn't be what we want anyway.
-  #
-  if (PKG_CONFIG_EXECUTABLE)
-    pkg_get_link_info(OPENSSL openssl)
-    if (OPENSSL_FOUND_WITH_PKG_CONFIG)
-      #
-      # pkg-config failed; assume that means that there is no openssl
-      # package for it to find.  Just add OPENSSL_LIBRARIES to
-      # LIBS_PRIVATE AND LIBS_STATIC, as that's the
-      # best we can do. XXX - need list of -l and -L flags to add....
-      #
-      set(LIBS "${LIBS} ${OPENSSL_LIBS}")
-      set(LIBS_STATIC "${LIBS_STATIC} ${OPENSSL_LIBS_STATIC}")
-      set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${OPENSSL_PACKAGE_NAME}")
-    endif()
-  else()
-    # Get it from OPENSSL_LIBRARIES
-    foreach(_lib IN LISTS OPENSSL_LIBRARIES)
-      #
-      # Get the directory in which the library resides.
-      #
-      get_filename_component(_lib_directory "${_lib}" DIRECTORY)
-
-      #
-      # Is the library directory in CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES?
-      # (See comment above on why we use that.)
-      #
-      list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_lib_directory}" _lib_index)
-      if(_lib_index EQUAL -1)
+    #
+    # The find_package() module CMake provides for OpenSSL uses does not
+    # give us a defined indication of whether it found OpenSSL with
+    # pkg-config or not.  We need to know that as, if it was found with
+    # pkg-config, we should set the Requires.private value in libpcap.pc
+    # to include its package name, openssl, otherwise we should add the
+    # names for the static libraries to Libs.private.
+    #
+    # On UN*X, FindOpenSSL happens to use pkg-config to find OpenSSL, but
+    # it doesn't appear to be documented as doing so; therefore, we don't
+    # assume that, if we got here, we have pkg-config.
+    #
+    # So we use pkg_get_link_info() to run pkg-config ourselves, both
+    # because FindOpenSSL doesn't set the OPENSSL_LDFLAGS or
+    # OPENSSL_STATIC_LDFLAGS variables and because, for reasons explained
+    # in the comment before the pkg_get_link_info() macro, even if it did,
+    # it wouldn't be what we want anyway.
+    #
+    if (PKG_CONFIG_EXECUTABLE)
+      pkg_get_link_info(OPENSSL openssl)
+      if (OPENSSL_FOUND_WITH_PKG_CONFIG)
         #
-        # No, so add a -L flag to get the linker to search in that
-        # directory.
+        # pkg-config failed; assume that means that there is no openssl
+        # package for it to find.  Just add OPENSSL_LIBRARIES to
+        # LIBS_PRIVATE AND LIBS_STATIC, as that's the
+        # best we can do. XXX - need list of -l and -L flags to add....
         #
-        set(LIBS "${LIBS} -L${_lib_directory}")
-        set(LIBS_STATIC "${LIBS_STATIC} -L${_lib_directory}")
-        set(LIBS_PRIVATE "${LIBS_PRIVATE} -L${_lib_directory}")
+        set(LIBS "${LIBS} ${OPENSSL_LIBS}")
+        set(LIBS_STATIC "${LIBS_STATIC} ${OPENSSL_LIBS_STATIC}")
+        set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${OPENSSL_PACKAGE_NAME}")
       endif()
+    else()
+      # Get it from OPENSSL_LIBRARIES
+      foreach(_lib IN LISTS OPENSSL_LIBRARIES)
+        #
+        # Get the directory in which the library resides.
+        #
+        get_filename_component(_lib_directory "${_lib}" DIRECTORY)
 
-      #
-      # Get the file name of the library, without the extension.
-      #
-      get_filename_component(_lib_filename "${_lib}" NAME_WE)
+        #
+        # Is the library directory in CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES?
+        # (See comment above on why we use that.)
+        #
+        list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${_lib_directory}" _lib_index)
+        if(_lib_index EQUAL -1)
+          #
+          # No, so add a -L flag to get the linker to search in that
+          # directory.
+          #
+          set(LIBS "${LIBS} -L${_lib_directory}")
+          set(LIBS_STATIC "${LIBS_STATIC} -L${_lib_directory}")
+          set(LIBS_PRIVATE "${LIBS_PRIVATE} -L${_lib_directory}")
+        endif()
 
-      #
-      # Strip off the "lib" prefix to get the library name, and
-      # add a -l flag based on that.
-      #
-      string(REGEX REPLACE "^lib" "" _library_name "${_lib_filename}")
-      set(LIBS "${LIBS} -l${_library_name}")
-      set(LIBS_STATIC "${LIBS_STATIC} -l${_library_name}")
-      set(LIBS_PRIVATE "${LIBS_PRIVATE} -l${_library_name}")
-    endforeach()
-  endif()
-  set(HAVE_OPENSSL YES)
-endif(OPENSSL_FOUND)
+        #
+        # Get the file name of the library, without the extension.
+        #
+        get_filename_component(_lib_filename "${_lib}" NAME_WE)
+
+        #
+        # Strip off the "lib" prefix to get the library name, and
+        # add a -l flag based on that.
+        #
+        string(REGEX REPLACE "^lib" "" _library_name "${_lib_filename}")
+        set(LIBS "${LIBS} -l${_library_name}")
+        set(LIBS_STATIC "${LIBS_STATIC} -l${_library_name}")
+        set(LIBS_PRIVATE "${LIBS_PRIVATE} -l${_library_name}")
+      endforeach()
+    endif()
+    set(HAVE_OPENSSL YES)
+  endif(OPENSSL_FOUND)
+endif(ENABLE_REMOTE)
 
 #
 # Additional linker flags.
@@ -3074,6 +3076,7 @@ main(void)
           # include <openssl/ssl.h>, and check_function_exists()
           # isn't sufficient.
           #
+message(STATUS "post-Catalina build with remote support")
           check_c_source_compiles(
 "#include <openssl/ssl.h>
 int
@@ -3089,6 +3092,7 @@ main(void)
               set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
           endif()
         else()
+message(STATUS "post-Catalina build without remote support")
             set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
         endif()
     endif()
