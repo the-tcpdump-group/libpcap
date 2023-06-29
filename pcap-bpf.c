@@ -1869,9 +1869,36 @@ pcap_activate_bpf(pcap_t *p)
 		(void) pcap_strlcpy(path_zname, p->opt.device, znamelen + 1);
 		ifr.lifr_zoneid = getzoneidbyname(path_zname);
 		if (ifr.lifr_zoneid == -1) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "getzoneidbyname(%s)", path_zname);
-			status = PCAP_ERROR;
+			switch (errno) {
+
+			case EINVAL:
+			case ENAMETOOLONG:
+				/*
+				 * If the name's length exceeds
+				 * ZONENAMEMAX, clearly there cannot
+				 * be such a zone; it's not clear that
+				 * "that name's too long for a zone"
+				 * is more informative than "there's
+				 * no such zone".
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "There is no zone named \"%s\"",
+				    path_zname);
+
+				/*
+				 * No such zone means the name
+				 * refers to a non-existent interface.
+				 */
+				status = PCAP_ERROR_NO_SUCH_DEVICE;
+				break;
+
+			default:
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "getzoneidbyname(%s)", path_zname);
+				status = PCAP_ERROR;
+				break;
+			}
 			goto bad;
 		}
 		lnamep = strdup(zonesep + 1);
