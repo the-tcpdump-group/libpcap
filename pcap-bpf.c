@@ -606,7 +606,7 @@ bpf_open(char *errbuf)
  * BPF device and the name of the network adapter.
  *
  * Use BIOCSETLIF if available (meaning "on Solaris"), as it supports
- * longer device names.
+ * longer device names and binding to devices in other zones.
  *
  * If the name is longer than will fit, return PCAP_ERROR_NO_SUCH_DEVICE
  * before trying to bind the interface, as there cannot be such a device.
@@ -615,18 +615,13 @@ bpf_open(char *errbuf)
  *
  * If the attempt fails:
  *
- *    if it fails with ENXIO, return PCAP_ERROR_NO_SUCH_DEVICE, as
- *    the device doesn't exist;
- *
- *    if it fails with ENETDOWN, return PCAP_ERROR_IFACE_NOT_UP, as
- *    the interface exists but isn't up and the OS doesn't allow
- *    binding to an interface that isn't up;
- *
  *    if it fails with ENOBUFS, return BPF_BIND_BUFFER_TOO_BIG, and
  *    fill in an error message, as the buffer being requested is too
- *    large;
+ *    large - our caller may try a smaller buffer if no buffer size
+ *    was explicitly specified.
  *
- *    otherwise, return PCAP_ERROR and fill in an error message.
+ *    otherwise, return the appropriate PCAP_ERROR_ code and
+ *    fill in an error message.
  */
 #define BPF_BIND_SUCCEEDED	0
 #define BPF_BIND_BUFFER_TOO_BIG	1
@@ -637,12 +632,118 @@ bpf_bind(int fd, const char *name, char *errbuf)
 	int status;
 #ifdef LIFNAMSIZ
 	struct lifreq ifr;
+	const char *ifname = name;
 
-	if (strlen(name) >= sizeof(ifr.lifr_name)) {
+  #if defined(ZONENAME_MAX) && defined(lifr_zoneid)
+	char *zonesep;
+
+	/*
+	 * We have support for zones.
+	 * Retrieve the zoneid of the zone we are currently executing in.
+	 */
+	if ((ifr.lifr_zoneid = getzoneid()) == -1) {
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "getzoneid()");
+		return (PCAP_ERROR);
+	}
+
+	/*
+	 * Check if the given source datalink name has a '/' separated
+	 * zonename prefix string.  The zonename prefixed source datalink can
+	 * be used by pcap consumers in the Solaris global zone to capture
+	 * traffic on datalinks in non-global zones.  Non-global zones
+	 * do not have access to datalinks outside of their own namespace.
+	 */
+	if ((zonesep = strchr(name, '/')) != NULL) {
+		char *zname;
+		int  znamelen;
+
+		if (ifr.lifr_zoneid != GLOBAL_ZONEID) {
+			/*
+			 * We treat this as a generic error rather
+			 * than as "permission denied" because
+			 * this isn't a case of "you don't have
+			 * enough permission to capture on this
+			 * device, so you'll have to do something
+			 * to get that permission" (such as
+			 * configuring the system to allow non-root
+			 * users to capture traffic), it's a case
+			 * of "nobody has permission to do this,
+			 * so there's nothing to do to fix it
+			 * other than running the capture program
+			 * in the global zone or the zone containing
+			 * the adapter".
+			 *
+			 * (And, yes, this is a real issue; for example,
+			 * Wireshark might make platform-specific suggestions
+			 * on how to fix a PCAP_ERROR_PERM_DENIED problem,
+			 * none of which will help here.)
+			 */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "zonename/linkname only valid in global zone.");
+			return (PCAP_ERROR);
+		}
+		znamelen = zonesep - name;
+		zname = malloc(znamelen + 1);
+		if (zname == NULL) {
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
+			return (PCAP_ERROR);
+		}
+		memcpy(zname, name, znamelen + 1);
+		zname[znamelen] = '\0';
+		ifr.lifr_zoneid = getzoneidbyname(zname);
+		if (ifr.lifr_zoneid == -1) {
+			switch (errno) {
+
+			case EINVAL:
+			case ENAMETOOLONG:
+				/*
+				 * If the name's length exceeds
+				 * ZONENAMEMAX, clearly there cannot
+				 * be such a zone; it's not clear that
+				 * "that name's too long for a zone"
+				 * is more informative than "there's
+				 * no such zone".
+				 */
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "There is no zone named \"%s\"",
+				    zname);
+
+				/*
+				 * No such zone means the name
+				 * refers to a non-existent interface.
+				 */
+				status = PCAP_ERROR_NO_SUCH_DEVICE;
+				break;
+
+			default:
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "getzoneidbyname(%s)", zname);
+				status = PCAP_ERROR;
+				break;
+			}
+			free(zname);
+			return (status);
+		}
+		free(zname);
+
+		/*
+		 * To bind to this interface, we set the ifr.lifr_zoneid
+		 * to the zone ID of its zone (done above), and we set
+		 * ifr.lifr_name to the name of the interface within that
+		 * zone (done below, using ifname).
+		 */
+		ifname = zonesep + 1;
+	}
+  #endif
+
+	if (strlen(ifname) >= sizeof(ifr.lifr_name)) {
 		/* The name is too long, so it can't possibly exist. */
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
-	(void)pcap_strlcpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
+	(void)pcap_strlcpy(ifr.lifr_name, ifname, sizeof(ifr.lifr_name));
 	status = ioctl(fd, BIOCSETLIF, (caddr_t)&ifr);
 #else
 	struct ifreq ifr;
@@ -1776,10 +1877,6 @@ pcap_activate_bpf(pcap_t *p)
 	int retv;
 #endif
 	int fd;
-#if defined(LIFNAMSIZ) && defined(ZONENAME_MAX) && defined(lifr_zoneid)
-	struct lifreq ifr;
-	char *zonesep;
-#endif
 	struct bpf_version bv;
 #ifdef __APPLE__
 	int sockfd;
@@ -1837,82 +1934,6 @@ pcap_activate_bpf(pcap_t *p)
 	 */
 	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
 		p->snapshot = MAXIMUM_SNAPLEN;
-
-#if defined(LIFNAMSIZ) && defined(ZONENAME_MAX) && defined(lifr_zoneid)
-	/*
-	 * Retrieve the zoneid of the zone we are currently executing in.
-	 */
-	if ((ifr.lifr_zoneid = getzoneid()) == -1) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "getzoneid()");
-		status = PCAP_ERROR;
-		goto bad;
-	}
-	/*
-	 * Check if the given source datalink name has a '/' separated
-	 * zonename prefix string.  The zonename prefixed source datalink can
-	 * be used by pcap consumers in the Solaris global zone to capture
-	 * traffic on datalinks in non-global zones.  Non-global zones
-	 * do not have access to datalinks outside of their own namespace.
-	 */
-	if ((zonesep = strchr(p->opt.device, '/')) != NULL) {
-		char path_zname[ZONENAME_MAX];
-		int  znamelen;
-		char *lnamep;
-
-		if (ifr.lifr_zoneid != GLOBAL_ZONEID) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "zonename/linkname only valid in global zone.");
-			status = PCAP_ERROR;
-			goto bad;
-		}
-		znamelen = zonesep - p->opt.device;
-		(void) pcap_strlcpy(path_zname, p->opt.device, znamelen + 1);
-		ifr.lifr_zoneid = getzoneidbyname(path_zname);
-		if (ifr.lifr_zoneid == -1) {
-			switch (errno) {
-
-			case EINVAL:
-			case ENAMETOOLONG:
-				/*
-				 * If the name's length exceeds
-				 * ZONENAMEMAX, clearly there cannot
-				 * be such a zone; it's not clear that
-				 * "that name's too long for a zone"
-				 * is more informative than "there's
-				 * no such zone".
-				 */
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "There is no zone named \"%s\"",
-				    path_zname);
-
-				/*
-				 * No such zone means the name
-				 * refers to a non-existent interface.
-				 */
-				status = PCAP_ERROR_NO_SUCH_DEVICE;
-				break;
-
-			default:
-				pcap_fmt_errmsg_for_errno(p->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "getzoneidbyname(%s)", path_zname);
-				status = PCAP_ERROR;
-				break;
-			}
-			goto bad;
-		}
-		lnamep = strdup(zonesep + 1);
-		if (lnamep == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "strdup");
-			status = PCAP_ERROR;
-			goto bad;
-		}
-		free(p->opt.device);
-		p->opt.device = lnamep;
-	}
-#endif
 
 	pb->device = strdup(p->opt.device);
 	if (pb->device == NULL) {
