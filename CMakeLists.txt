@@ -1516,6 +1516,213 @@ if(ENABLE_REMOTE)
 endif(ENABLE_REMOTE)
 
 #
+# On macOS, build libpcap for the appropriate architectures, if
+# CMAKE_OSX_ARCHITECTURES isn't set (if it is, let that control
+# the architectures for which to build it).
+#
+if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
+    #
+    # Get the major version of Darwin.
+    #
+    string(REGEX MATCH "^([0-9]+)" SYSTEM_VERSION_MAJOR "${CMAKE_SYSTEM_VERSION}")
+
+    if(SYSTEM_VERSION_MAJOR LESS 8)
+        #
+        # Pre-Tiger.
+        #
+        # Build liraries and excutables only for 32-bit PowerPC, as
+        # that's all that is supported.
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "ppc")
+        set(OSX_EXECUTABLE_ARCHITECTURES "ppc")
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 8)
+        #
+        # Tiger.  Is this prior to, or with, Intel support?
+        #
+        # Get the minor version of Darwin.
+        #
+        string(REPLACE "${SYSTEM_VERSION_MAJOR}." "" SYSTEM_MINOR_AND_PATCH_VERSION ${CMAKE_SYSTEM_VERSION})
+        string(REGEX MATCH "^([0-9]+)" SYSTEM_VERSION_MINOR "${SYSTEM_MINOR_AND_PATCH_VERSION}")
+        if(SYSTEM_VERSION_MINOR LESS 4)
+            #
+            # Prior to Intel support.
+            #
+            # Build libraries and executables for 32-bit PowerPC and
+            # 64-bit PowerPC, with 32-bit PowerPC first, as those
+            # are both supported.  (I'm guessing that's what Apple
+            # does.)
+            #
+            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64")
+            set(OSX_EXECUTABLE_ARCHITECTURES "ppc;ppc64")
+        elseif(SYSTEM_VERSION_MINOR LESS 7)
+            #
+            # With Intel support but prior to x86-64 support.
+            #
+            # Build for 32-bit PowerPC, 64-bit PowerPC, and 32-bit x86,
+            # with 32-bit PowerPC first, as those are all supported.
+            # (I'm guessing that's what Apple does.)
+            #
+            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386")
+            set(OSX_EXECUTABLE_ARCHITECTURES "ppc;ppc64;i386")
+        else()
+            #
+            # With Intel support including x86-64 support.
+            #
+            # Build for 32-bit PowerPC, 64-bit PowerPC, 32-bit x86,
+            # and x86-64, with 32-bit PowerPC first, as those are
+            # all supported.  (I'm guessing that's what Apple does.)
+            #
+            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386;x86_64")
+            set(OSX_EXECUTABLE_ARCHITECTURES "ppc;ppc64;i386;x86_64")
+        endif()
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 9)
+        #
+        # Leopard.
+        #
+        # Build libraries and executables for 32-bit PowerPC, 64-bit
+        # PowerPC, 32-bit x86, and x86-64, with 32-bit PowerPC
+        # first, as those are all supported.  (That's what Apple
+        # does.)
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386;x86_64")
+        set(OSX_EXECUTABLE_ARCHITECTURES "ppc;ppc64;i386;x86_64")
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 10)
+        #
+        # Snow Leopard.
+        #
+        # Build libraries for x86-64, 32-bit x86, and 32-bit PowerPC,
+        # with x86-64 first, because 32-bit PowerPC executables are
+        # supported with Rosetta.  (That's what Apple does, even though
+        # Snow Leopard doesn't run on PPC, so PPC libpcap runs under
+        # Rosetta, and Rosetta doesn't support BPF ioctls, so PPC
+        # executables can't do live captures.)
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386;ppc")
+
+        #
+        # Build executables only for 32-bit x86 and 64-bit x86, as PPC
+        # machines are no longer supported.
+        #
+        set(OSX_EXECUTABLE_ARCHITECTURES "x86_64;i386")
+    elseif(SYSTEM_VERSION_MAJOR GREATER 10 AND SYSTEM_VERSION_MAJOR LESS 19)
+        #
+        # Post-Snow Leopard, pre-Catalina.
+        #
+        # Build libraries for 64-bit x86 and 32-bit x86, with 64-bit x86
+        # first, as PPC machines are no longer supported, but 32-bit
+        # x86 executables are.  (That's what Apple does.)
+        #
+        # First, check whether we're building with OpenSSL.
+        # If so, don't bother trying to build fat.
+        #
+        if(HAVE_OPENSSL)
+          set(X86_32_BIT_SUPPORTED NO)
+          set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+          set(OSX_EXECUTABLE_ARCHITECTURES "x86_64")
+          message(WARNING "We're assuming the OpenSSL libraries are 64-bit only, so we're not compiling for 32-bit x86")
+        else()
+          #
+          # Now, check whether we *can* build for i386.
+          #
+          cmake_push_check_state()
+          set(CMAKE_REQUIRED_FLAGS "-arch i386")
+          check_c_source_compiles(
+"int
+main(void)
+{
+    return 0;
+}
+"
+                   X86_32_BIT_SUPPORTED)
+          cmake_pop_check_state()
+          if(X86_32_BIT_SUPPORTED)
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+          else()
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+              #
+              # We can't build fat; suggest that the user install the
+              # /usr/include headers if they want to build fat.
+              #
+              if(SYSTEM_VERSION_MAJOR LESS 18)
+                  #
+                  # Pre-Mojave; the command-line tools should be sufficient to
+                  # enable 32-bit x86 builds.
+                  #
+                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools")
+              else()
+                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
+              endif()
+          endif()
+        endif()
+
+        #
+        # Build executables only for 64-bit x86, as 32-bit x86 machines
+        # are no longer supported.
+        #
+        set(OSX_EXECUTABLE_ARCHITECTURES "x86_64")
+    elseif(SYSTEM_VERSION_MAJOR EQUAL 19)
+        #
+        # Catalina.
+        #
+        # Build libraries and executables only for x86-64, as 32-bit
+        # executables are no longer supported.  (That's what Apple
+        # does.)
+        #
+        set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+        set(OSX_EXECUTABLE_ARCHITECTURES "x86_64")
+    else()
+        #
+        # Post-Catalina.  Build libraries and
+        # executables for x86-64 and ARM64.
+        # (That's what Apple does, except they
+        # build for arm64e, which may include
+        # some of the pointer-checking extensions.)
+        #
+        # If we're building with libssl, make sure
+        # we can build fat with it (i.e., that it
+        # was built fat); if we can't, don't set
+        # the target architectures, and just
+        # build for the host we're on.
+        #
+        # Otherwise, just add both of them.
+        #
+        if(HAVE_OPENSSL)
+          cmake_push_check_state()
+          set(CMAKE_REQUIRED_FLAGS "-arch x86_64 -arch arm64")
+          set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
+          set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_LIBRARIES})
+          #
+          # We must test whether this compiles and links, so
+          # check_symbol_exists() isn't sufficient.
+          #
+          # SSL_library_init() may be a macro that's #defined
+          # to be the real function to call, so we have to
+          # include <openssl/ssl.h>, and check_function_exists()
+          # isn't sufficient.
+          #
+          check_c_source_compiles(
+"#include <openssl/ssl.h>
+int
+main(void)
+{
+    SSL_library_init();
+    return 0;
+}
+"
+              FAT_SSL_BUILDS_SUPPORTED)
+          cmake_pop_check_state()
+          if(FAT_SSL_BUILDS_SUPPORTED)
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
+            set(OSX_EXECUTABLE_ARCHITECTURES "x86_64;arm64")
+          endif()
+        else()
+          set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
+          set(OSX_EXECUTABLE_ARCHITECTURES "x86_64;arm64")
+        endif()
+    endif()
+endif()
+
+#
 # Additional linker flags.
 #
 set(LINKER_FLAGS "${SANITIZER_FLAGS}")
@@ -3023,6 +3230,15 @@ if(BUILD_SHARED_LIBS)
     if(NOT C_ADDITIONAL_FLAGS STREQUAL "")
         set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
     endif()
+
+    #
+    # If this is macOS and we've picked the default architectures on
+    # which to build, build the library on them.
+    #
+    if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
+        set_target_properties(${LIBRARY_NAME} PROPERTIES
+            OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
+    endif()
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
 endif(BUILD_SHARED_LIBS)
 
@@ -3031,179 +3247,10 @@ if(NOT C_ADDITIONAL_FLAGS STREQUAL "")
 endif()
 
 #
-# On macOS, build libpcap for the appropriate architectures, if
-# CMAKE_OSX_ARCHITECTURES isn't set (if it is, let that control
-# the architectures for which to build it).
+# If this is macOS and we've picked the default architectures on
+# which to build, build the library on them.
 #
 if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
-    #
-    # Get the major version of Darwin.
-    #
-    string(REGEX MATCH "^([0-9]+)" SYSTEM_VERSION_MAJOR "${CMAKE_SYSTEM_VERSION}")
-
-    if(SYSTEM_VERSION_MAJOR LESS 8)
-        #
-        # Pre-Tiger.  Build only for 32-bit PowerPC.
-        #
-        set(OSX_LIBRARY_ARCHITECTURES "ppc")
-    elseif(SYSTEM_VERSION_MAJOR EQUAL 8)
-        #
-        # Tiger.  Is this prior to, or with, Intel support?
-        #
-        # Get the minor version of Darwin.
-        #
-        string(REPLACE "${SYSTEM_VERSION_MAJOR}." "" SYSTEM_MINOR_AND_PATCH_VERSION ${CMAKE_SYSTEM_VERSION})
-        string(REGEX MATCH "^([0-9]+)" SYSTEM_VERSION_MINOR "${SYSTEM_MINOR_AND_PATCH_VERSION}")
-        if(SYSTEM_VERSION_MINOR LESS 4)
-            #
-            # Prior to Intel support.  Build for 32-bit
-            # PowerPC and 64-bit PowerPC, with 32-bit PowerPC
-            # first.  (I'm guessing that's what Apple does.)
-            #
-            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64")
-        elseif(SYSTEM_VERSION_MINOR LESS 7)
-            #
-            # With Intel support but prior to x86-64 support.
-            # Build for 32-bit PowerPC, 64-bit PowerPC, and 32-bit x86,
-            # with 32-bit PowerPC first.
-            # (I'm guessing that's what Apple does.)
-            #
-            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386")
-        else()
-            #
-            # With Intel support including x86-64 support.
-            # Build for 32-bit PowerPC, 64-bit PowerPC, 32-bit x86,
-            # and x86-64, with 32-bit PowerPC first.
-            # (I'm guessing that's what Apple does.)
-            #
-            set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386;x86_64")
-        endif()
-    elseif(SYSTEM_VERSION_MAJOR EQUAL 9)
-        #
-        # Leopard.  Build for 32-bit PowerPC, 64-bit
-        # PowerPC, 32-bit x86, and x86-64, with 32-bit PowerPC
-        # first.  (That's what Apple does.)
-        #
-        set(OSX_LIBRARY_ARCHITECTURES "ppc;ppc64;i386;x86_64")
-    elseif(SYSTEM_VERSION_MAJOR EQUAL 10)
-        #
-        # Snow Leopard.  Build for x86-64, 32-bit x86, and
-        # 32-bit PowerPC, with x86-64 first.  (That's
-        # what Apple does, even though Snow Leopard
-        # doesn't run on PPC, so PPC libpcap runs under
-        # Rosetta, and Rosetta doesn't support BPF
-        # ioctls, so PPC programs can't do live
-        # captures.)
-        #
-        set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386;ppc")
-    elseif(SYSTEM_VERSION_MAJOR GREATER 10 AND SYSTEM_VERSION_MAJOR LESS 19)
-        #
-        # Post-Snow Leopard, pre-Catalina.  Build for x86-64
-        # and 32-bit x86, with x86-64 first.  (That's what Apple does)
-        #
-        # First, check whether we're building with OpenSSL.
-        # If so, don't bother trying to build fat.
-        #
-        if(HAVE_OPENSSL)
-          set(X86_32_BIT_SUPPORTED NO)
-          set(OSX_LIBRARY_ARCHITECTURES "x86_64")
-          message(WARNING "We're assuming the OpenSSL libraries are 64-bit only, so we're not compiling for 32-bit x86")
-        else()
-          #
-          # Now, check whether we *can* build for i386.
-          #
-          cmake_push_check_state()
-          set(CMAKE_REQUIRED_FLAGS "-arch i386")
-          check_c_source_compiles(
-"int
-main(void)
-{
-    return 0;
-}
-"
-                   X86_32_BIT_SUPPORTED)
-          cmake_pop_check_state()
-          if(X86_32_BIT_SUPPORTED)
-              set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
-          else()
-              set(OSX_LIBRARY_ARCHITECTURES "x86_64")
-              #
-              # We can't build fat; suggest that the user install the
-              # /usr/include headers if they want to build fat.
-              #
-              if(SYSTEM_VERSION_MAJOR LESS 18)
-                  #
-                  # Pre-Mojave; the command-line tools should be sufficient to
-                  # enable 32-bit x86 builds.
-                  #
-                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools")
-              else()
-                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
-              endif()
-          endif()
-        endif()
-    elseif(SYSTEM_VERSION_MAJOR EQUAL 19)
-        #
-        # Catalina.  Build libraries and executables
-        # only for x86-64.  (That's what Apple does;
-        # 32-bit x86 binaries are not supported on
-        # Catalina.)
-        #
-        set(OSX_LIBRARY_ARCHITECTURES "x86_64")
-    else()
-        #
-        # Post-Catalina.  Build libraries and
-        # executables for x86-64 and ARM64.
-        # (That's what Apple does, except they
-        # build for arm64e, which may include
-        # some of the pointer-checking extensions.)
-        #
-        # If we're building with libssl, make sure
-        # we can build fat with it (i.e., that it
-        # was built fat); if we can't, don't set
-        # the target architectures, and just
-        # build for the host we're on.
-        #
-        # Otherwise, just add both of them.
-        #
-        if(HAVE_OPENSSL)
-          cmake_push_check_state()
-          set(CMAKE_REQUIRED_FLAGS "-arch x86_64 -arch arm64")
-          set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
-          set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_LIBRARIES})
-          #
-          # We must test whether this compiles and links, so
-          # check_symbol_exists() isn't sufficient.
-          #
-          # SSL_library_init() may be a macro that's #defined
-          # to be the real function to call, so we have to
-          # include <openssl/ssl.h>, and check_function_exists()
-          # isn't sufficient.
-          #
-message(STATUS "post-Catalina build with remote support")
-          check_c_source_compiles(
-"#include <openssl/ssl.h>
-int
-main(void)
-{
-    SSL_library_init();
-    return 0;
-}
-"
-              FAT_SSL_BUILDS_SUPPORTED)
-          cmake_pop_check_state()
-          if(FAT_SSL_BUILDS_SUPPORTED)
-              set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
-          endif()
-        else()
-message(STATUS "post-Catalina build without remote support")
-            set(OSX_LIBRARY_ARCHITECTURES "x86_64;arm64")
-        endif()
-    endif()
-    if(BUILD_SHARED_LIBS)
-        set_target_properties(${LIBRARY_NAME} PROPERTIES
-            OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
-    endif(BUILD_SHARED_LIBS)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES
         OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
 endif()
