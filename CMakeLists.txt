@@ -1440,7 +1440,6 @@ if(ENABLE_REMOTE)
     # We have OpenSSL.
     #
     include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
-message(STATUS "find_package found OpenSSL: OPENSSL_LIBRARIES is ${OPENSSL_LIBRARIES}")
     set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENSSL_LIBRARIES})
 
     #
