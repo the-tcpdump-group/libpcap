@@ -67,11 +67,11 @@ windows_task:
   windows_container:
     image: cirrusci/windowsservercore:2019
   install_script:
-    - choco install -y winflexbison
+    - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
-    - choco install -y curl
-    - 7z/?
+    - choco install --no-progress -y curl
+    - 7z
   script:
     - set/?
 
