@@ -71,10 +71,14 @@ windows_task:
     - win_flex --version
     - win_bison --version
     - choco install --no-progress -y curl
-    - curl https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip >WpdPack_4_1_2.zip
+    - curl -s https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip >WpdPack_4_1_2.zip
     - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
+    - curl -s https://npcap.com/dist/npcap-sdk-1.13.zip >npcap-sdk-1.13.zip
+    - 7z x .\npcap-sdk-1.13.zip -oc:\projects\libpcap\Win32\npcap-sdk
+    - curl -s https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu >AirPcap_Devpack.zip
+    - 7z x .\AirPcap_Devpack.zip -oc:\projects\libpcap\Win32
   script:
-    - sh -c "env"
+    - sh -c "echo Hello | sed 's/Hello/Goodbye/' >C:\projects\output; cat C:\projects\output"
 
 coverity_task:
   name: Coverity Scan
