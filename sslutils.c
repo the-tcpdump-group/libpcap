@@ -59,6 +59,10 @@ void ssl_set_keyfile(const char *keyfile)
 	ssl_keyfile = keyfile;
 }
 
+#ifdef _MSC_VER
+#pragma message("OPENSSL_VERSION_NUMBER is " _CRT_STRINGIZE(OPENSSL_VERSION_NUMBER))
+#endif
+
 int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
 {
 	static int inited = 0;
