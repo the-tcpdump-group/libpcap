@@ -60,6 +60,18 @@ void ssl_set_keyfile(const char *keyfile)
 }
 
 #ifdef _MSC_VER
+#pragma message("OPENSSL_VERSION_MAJOR is " _CRT_STRINGIZE(OPENSSL_VERSION_MAJOR))
+#endif
+#ifdef _MSC_VER
+#pragma message("OPENSSL_VERSION_MINOR is " _CRT_STRINGIZE(OPENSSL_VERSION_MINOR))
+#endif
+#ifdef _MSC_VER
+#pragma message("OPENSSL_VERSION_PATCH is " _CRT_STRINGIZE(OPENSSL_VERSION_PATCH))
+#endif
+#ifdef _MSC_VER
+#pragma message("OPENSSL_VERSION_PRE_RELEASE is " _CRT_STRINGIZE(OPENSSL_VERSION_PRE_RELEASE))
+#endif
+#ifdef _MSC_VER
 #pragma message("OPENSSL_VERSION_NUMBER is " _CRT_STRINGIZE(OPENSSL_VERSION_NUMBER))
 #endif
 
