@@ -71,9 +71,10 @@ windows_task:
     - win_flex --version
     - win_bison --version
     - choco install --no-progress -y curl
-    - 7z
+    - curl https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip >WpdPack_4_1_2.zip
+    - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
   script:
-    - set/?
+    - sh -c "env"
 
 coverity_task:
   name: Coverity Scan
