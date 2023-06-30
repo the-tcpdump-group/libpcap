@@ -59,53 +59,19 @@ void ssl_set_keyfile(const char *keyfile)
 	ssl_keyfile = keyfile;
 }
 
-#ifdef _MSC_VER
-#pragma message("OPENSSL_VERSION_MAJOR is " _CRT_STRINGIZE(OPENSSL_VERSION_MAJOR))
-#endif
-#ifdef _MSC_VER
-#pragma message("OPENSSL_VERSION_MINOR is " _CRT_STRINGIZE(OPENSSL_VERSION_MINOR))
-#endif
-#ifdef _MSC_VER
-#pragma message("OPENSSL_VERSION_PATCH is " _CRT_STRINGIZE(OPENSSL_VERSION_PATCH))
-#endif
-#ifdef _MSC_VER
-#pragma message("OPENSSL_VERSION_PRE_RELEASE is " _CRT_STRINGIZE(OPENSSL_VERSION_PRE_RELEASE))
-#endif
-#ifdef _MSC_VER
-#pragma message("OPENSSL_VERSION_NUMBER is " _CRT_STRINGIZE(OPENSSL_VERSION_NUMBER))
-#endif
-
 int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
 {
 	static int inited = 0;
 	if (inited) return 0;
 
-	/*
-	 * Avoid deprecated routines, even if they're still documented,
-	 * as random versions of OpenSSL might not make them available.
-	 * XXX - what's the minimum OpenSSL version we should support?
-	 * And what about libressl?
-	 */
-#if defined(OPENSSL_VERSION_NUMBER) >= 0x10100000L
-	/* 1.1.0 or later */
-	OPENSSL_init_ssl(0, NULL);
-	OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
-#else
 	SSL_library_init();
 	SSL_load_error_strings();
-#endif
 	OpenSSL_add_ssl_algorithms();
 	if (enable_compression)
 		SSL_COMP_get_compression_methods();
 
-#if defined(OPENSSL_VERSION_NUMBER) >= 0x10100000L
-	/* 1.1.0 or later */
-	SSL_METHOD const *meth =
-	    is_server ? TLS_server_method() : TLS_client_method();
-#else
 	SSL_METHOD const *meth =
 	    is_server ? SSLv23_server_method() : SSLv23_client_method();
-#endif
 	ctx = SSL_CTX_new(meth);
 	if (! ctx)
 	{
