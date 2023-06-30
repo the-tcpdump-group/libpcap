@@ -53,7 +53,7 @@ build_script:
   # Appveyor defaults to cmd.exe, so use cmd.exe syntax.
   #
   - type NUL >.devel
-  - dir/s C:\OpenSSL-v30-Win32-temp\include\opensslv.h*
+  - find "OPENSSL_VERSION" C:\OpenSSL-v30-Win32-temp\include\openssl\*.h
   - md build
   - cd build
   # Remove the default MinGW path
