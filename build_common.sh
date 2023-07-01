@@ -227,7 +227,7 @@ os_id() {
 
 increment() {
     # No arithmetic expansion in Solaris /bin/sh before 11.
-    echo "${1:?} + 1" | bc
+    expr "${1:?}" + 1
 }
 
 # Display text in magenta.
