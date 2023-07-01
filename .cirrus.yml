@@ -73,8 +73,9 @@ windows_task:
     MATRIX_CMAKE: yes
     MSYSTEM: MINGW64
   install_script:
-    - dir/s "C:\Program Files\Git"
-    - dir/s "C:\cmake.exe"
+    - dir/s "C:\Program Files\Git\cmd"
+    - dir/s "C:\Program Files\Git\mingw64\bin"
+    - dir/s "C:\Program Files\Git\usr\bin"
     - dir/s "C:\cl.exe"
     - choco install --no-progress -y winflexbison
     - win_flex --version
