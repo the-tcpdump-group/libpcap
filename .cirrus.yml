@@ -73,6 +73,7 @@ windows_task:
     MATRIX_CMAKE: yes
     MSYSTEM: MINGW64
   install_script:
+    - sh -c "cp msys2-profile /etc/profile"
     - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
