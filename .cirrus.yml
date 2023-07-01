@@ -73,7 +73,7 @@ windows_task:
     MATRIX_CMAKE: yes
     MSYSTEM: MINGW64
   install_script:
-    - dir "C:\Program Files (x86)"
+    - dir/a "C:\Program Files (x86)"
     - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
