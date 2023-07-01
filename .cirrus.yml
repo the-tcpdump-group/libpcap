@@ -66,10 +66,18 @@ windows_task:
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   windows_container:
     image: cirrusci/windowsservercore:2019
+  env:
+    MAKE_BIN: msbuild
+    MAKEFLAGS: '/m /nologo /m /nologo /p:Configuration=Release'
+    MATRIX_CC: cl
+    MSYSTEM: MINGW64
   install_script:
     - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
+    - dir "C:\Program Files\Git\bin"
+    - dir "C:\Program Files\Git\usr\bin"
+    - dir/s/a C:\uname.exe
     - choco install -y --no-progress msys2
     - choco install --no-progress -y curl
     - curl -O -s https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
@@ -78,12 +86,8 @@ windows_task:
     - 7z x .\npcap-sdk-1.13.zip -oc:\projects\libpcap\Win32\npcap-sdk
     - curl -o AirPcap_Devpack.zip -L -s "https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu"
     - 7z x .\AirPcap_Devpack.zip -oc:\projects\libpcap\Win32
-  env:
-    MAKE_BIN: msbuild
-    MAKEFLAGS: '/m /nologo /m /nologo /p:Configuration=Release'
-    MATRIX_CC: cl
   script:
-   - C:\tools\msys64\usr\bin\bash -lc "./build_matrix.sh"
+   - C:\tools\msys64\usr\bin\bash -lc ".\build_matrix.sh"
 
 coverity_task:
   name: Coverity Scan
