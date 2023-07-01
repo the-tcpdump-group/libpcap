@@ -83,7 +83,7 @@ windows_task:
     MAKEFLAGS: '/m /nologo /m /nologo /p:Configuration=Release'
     MATRIX_CC: cl
   script:
-   - sh -c "./build_matrix.sh"
+   - C:\tools\msys64\usr\bin\bash -lc "./build_matrix.sh"
 
 coverity_task:
   name: Coverity Scan
