@@ -145,7 +145,7 @@ cc_id_nocache() {
         return
     fi
 
-    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^.* Microsoft ($) C/C++ Optimizing Compiler Version \([0-9\.]*\) .*$/msvc-\1/'`
+    cc_id_guessed=`echo "$cc_id_firstline" | sed 's/^Microsoft (R) C\/C++ Optimizing Compiler Version \([0-9\.]*\) .*$/msvc-\1/'`
     if [ "$cc_id_firstline" != "$cc_id_guessed" ]; then
         echo "$cc_id_guessed"
         return
@@ -244,7 +244,7 @@ os_id() {
     MSYS*)
         # uname -s produces "MSYS_NT-{NT version?}-{build?}
         # uname -r produces MSYS2 version?
-        echo "$os_id_version", MSYS "os_id_release"
+        echo "$os_id_version", MSYS "$os_id_release"
         ;;
     *)
         echo 'UNKNOWN'
@@ -279,7 +279,7 @@ print_so_deps() {
         run_after_echo objdump -p "${1:?}"
         ;;
     MSYS*)
-        run_after_echo dumpbin/dependents "${1:?}"
+        run_after_echo dumpbin /dependents "${1:?}"
         ;;
     *)
         run_after_echo ldd "${1:?}"
