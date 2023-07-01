@@ -73,6 +73,8 @@ windows_task:
     MATRIX_CMAKE: yes
     MSYSTEM: MINGW64
   install_script:
+    - sh -c "cat /etc/profile"
+    - sh -c "cat .profile"
     - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
@@ -84,8 +86,6 @@ windows_task:
     - curl -o AirPcap_Devpack.zip -L -s "https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu"
     - 7z x .\AirPcap_Devpack.zip -oc:\projects\libpcap\Win32
   script:
-   - set
-   - sh -c "env"
    - sh -c "./build_matrix.sh"
 
 coverity_task:
