@@ -74,6 +74,7 @@ windows_task:
     MSYSTEM: MINGW64
   install_script:
     - dir/a "C:\Program Files (x86)"
+    - choco install -y --no-progress --limit-output visualstudio2019-workload-vctools --package-parameters "--includeOptional"
     - choco install --no-progress -y winflexbison
     - win_flex --version
     - win_bison --version
