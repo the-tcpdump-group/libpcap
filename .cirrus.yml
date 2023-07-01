@@ -85,7 +85,7 @@ windows_task:
     - curl -o AirPcap_Devpack.zip -L -s "https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu"
     - 7z x .\AirPcap_Devpack.zip -oc:\projects\libpcap\Win32
   script:
-   - sh -c "WINDOWS_PATH='%PATH%'; export WINDOWS_PATH; env; ./build_matrix.sh"
+   - sh -lc "WINDOWS_PATH='%PATH%'; export WINDOWS_PATH; env; ./build_matrix.sh"
 
 coverity_task:
   name: Coverity Scan
