@@ -58,36 +58,6 @@ macos_task:
     - brew install openssl@3
     - ./build_matrix.sh
 
-#
-# Just testing for now.
-#
-windows_task:
-  name: windows-amd64
-  only_if: $CIRRUS_BRANCH != 'coverity_scan'
-  windows_container:
-    image: cirrusci/windowsservercore:2019
-  env:
-    MAKE_BIN: msbuild
-    MAKEFLAGS: '/m /nologo /m /nologo /p:Configuration=Release'
-    MATRIX_CC: cl
-    MATRIX_CMAKE: yes
-    MSYSTEM: MINGW64
-  install_script:
-    - dir/a "C:\Program Files (x86)"
-    - choco install -y --no-progress --limit-output visualstudio2019-workload-vctools --package-parameters "--includeOptional"
-    - choco install --no-progress -y winflexbison
-    - win_flex --version
-    - win_bison --version
-    - choco install --no-progress -y curl
-    - curl -O -s https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
-    - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
-    - curl -O -s https://npcap.com/dist/npcap-sdk-1.13.zip
-    - 7z x .\npcap-sdk-1.13.zip -oc:\projects\libpcap\Win32\npcap-sdk
-    - curl -o AirPcap_Devpack.zip -L -s "https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu"
-    - 7z x .\AirPcap_Devpack.zip -oc:\projects\libpcap\Win32
-  script:
-   - sh -lc ./build_matrix.sh
-
 coverity_task:
   name: Coverity Scan
   only_if: $CIRRUS_BRANCH == 'coverity_scan'
