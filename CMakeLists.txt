@@ -1427,7 +1427,7 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         #
         # Pre-Tiger.
         #
-        # Build liraries and excutables only for 32-bit PowerPC, as
+        # Build liraries and executables only for 32-bit PowerPC, as
         # that's all that is supported.
         #
         set(OSX_LIBRARY_ARCHITECTURES "ppc")
