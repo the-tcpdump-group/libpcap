@@ -181,7 +181,11 @@
  * I've never seen earlier releases.
  */
 #ifdef __APPLE__
-#include <Availability.h>
+#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
+#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1050
+ # include <Availability.h>
+#endif
+#endif
 /*
  * When building as part of macOS, define this as __API_AVAILABLE(__VA_ARGS__).
  *
