@@ -174,13 +174,13 @@
 #ifdef __APPLE__
 /*
  * Apple - insert #include <os/availability.h> here, and define
- * PCAP_AVAILABLE(v) as
+ * PCAP_AVAILABLE_MACOS(v) as
  *
  *    API_AVAILABLE(macos(v)) API_UNAVAILABLE(ios, tvos, watchos)
  *
- * and add any other OSes to the list as appropriate (visionOS?
- * Surely being able to watch packet traffic through your Apple Vision
- * Pro would be k00l as heck.... :-))
+ * and add any other OSes to the "unavailable" list as appropriate (iPadOS?
+ * visionOS?  Surely being able to watch packet traffic through your
+ * Apple Vision Pro would be k00l as heck.... :-))
  */
 #define PCAP_AVAILABLE_MACOS(v)
 #define PCAP_AVAILABLE_0_4	PCAP_AVAILABLE_MACOS(10.0) /* Did any version of Mac OS X ship with this? */
