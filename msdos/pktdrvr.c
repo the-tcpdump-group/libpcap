@@ -1066,7 +1066,7 @@ static void dump_pkt_stub (void)
            PktReceiver);
   for (i = 0; i < 15; i++)
       fprintf (stderr, "%02X, ", real_stub_array[i+PktReceiver]);
-  fputs ("\n", stderr);
+  fputc ('\n', stderr);
 }
 #endif
 
