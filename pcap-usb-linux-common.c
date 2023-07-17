@@ -55,7 +55,8 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 	    pkth->len == sizeof(pcap_usb_header_mmapped) +
 	                 (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len) {
 		usb_isodesc *descs;
-		u_int pre_truncation_data_len, pre_truncation_len;
+		u_int pre_truncation_data_len;
+		unsigned long pre_truncation_len;
 
 		descs = (usb_isodesc *) (bp + sizeof(pcap_usb_header_mmapped));
 
