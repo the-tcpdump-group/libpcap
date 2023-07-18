@@ -114,7 +114,7 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 		/*
 		 * Now calculate the total length based on that data
 		 * length.
-		 * 
+		 *
 		 * First, make sure the total length of the ISO
 		 * descriptors fits in an unsigned int.  We know
 		 * that sizeof (usb_isodesc) is a small power-of-2
