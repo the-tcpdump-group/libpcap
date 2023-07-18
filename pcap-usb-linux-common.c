@@ -22,10 +22,22 @@
  * deal with Linux USB captures.
  */
 
+#include <limits.h> /* for UINT_MAX */
+
 #include "pcap/pcap.h"
 #include "pcap/usb.h"
 
 #include "pcap-usb-linux-common.h"
+
+/*
+ * Return the sum of the two u_int arguments if that sum fits in a u_int,
+ * and return UINT_MAX otherwise.
+ */
+static inline u_int
+u_int_sum(u_int a, u_int b)
+{
+	return (((b) <= UINT_MAX - (b)) ? (a) + (b) : UINT_MAX);
+}
 
 /*
  * Compute, from the data provided by the Linux USB memory-mapped capture
@@ -55,7 +67,10 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 	    pkth->len == sizeof(pcap_usb_header_mmapped) +
 	                 (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len) {
 		usb_isodesc *descs;
-		u_int pre_truncation_data_len, pre_truncation_len;
+		u_int pre_truncation_descriptors_len;
+		u_int pre_truncation_header_len;
+		u_int pre_truncation_data_len;
+		u_int pre_truncation_len;
 
 		descs = (usb_isodesc *) (bp + sizeof(pcap_usb_header_mmapped));
 
@@ -82,7 +97,15 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 			u_int desc_end;
 
 			if (descs[desc].len != 0) {
-				desc_end = descs[desc].offset + descs[desc].len;
+				/*
+				 * Compute the end offset of the data
+				 * for this descriptor, i.e. the offset
+				 * of the byte after te data.  Clamp
+				 * the sum at UINT_MAX, so that it fits
+				 * in a u_int.
+				 */
+				desc_end = u_int_sum(descs[desc].offset,
+				    descs[desc].len);
 				if (desc_end > pre_truncation_data_len)
 					pre_truncation_data_len = desc_end;
 			}
@@ -91,14 +114,50 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 		/*
 		 * Now calculate the total length based on that data
 		 * length.
+		 * 
+		 * First, make sure the total length of the ISO
+		 * descriptors fits in an unsigned int.  We know
+		 * that sizeof (usb_isodesc) is a small power-of-2
+		 * integer (16 bytes), so we just check whether
+		 * hdr->ndesc < (UINT_MAX + (uint64_t)1) / sizeof (usb_isodesc),
+		 * as that would mean that hdr->ndesc * sizeof (usb_isodesc)
+		 * is < (UINT_MAX + (uint64_t)1) and thus <= UINT_MAX.
+		 * ((UINT_MAX + (uint64_t)1) will probably be computed
+		 * at compile time with most C compilers.)
 		 */
-		pre_truncation_len = sizeof(pcap_usb_header_mmapped) +
-		    (hdr->ndesc * sizeof (usb_isodesc)) +
-		    pre_truncation_data_len;
+		if (hdr->ndesc < (UINT_MAX + (uint64_t)1) / sizeof (usb_isodesc)) {
+			/*
+			 * It fits.
+			 */
+			pre_truncation_descriptors_len =
+			    hdr->ndesc * sizeof (usb_isodesc);
+		} else {
+			/*
+			 * It doesn't fit.
+			 */
+			pre_truncation_descriptors_len = UINT_MAX;
+		}
 
 		/*
-		 * If that's greater than or equal to the captured length,
-		 * use that as the length.
+		 * Now, add the length of the memory-mapped header and
+		 * the length of the ISO descriptors, clamping the
+		 * result at UINT_MAX.
+		 */
+		pre_truncation_header_len = u_int_sum(sizeof(pcap_usb_header_mmapped),
+		    pre_truncation_descriptors_len);
+
+		/*
+		 * Now, add the total header length (memory-mapped header
+		 * and ISO descriptors) and the data length, clamping
+		 * the result at UINT_MAX.
+		 */
+                pre_truncation_len = u_int_sum(pre_truncation_header_len,
+		    pre_truncation_data_len);
+
+		/*
+		 * pre_truncation_len is now the smaller of
+		 * UINT_MAX and the total header plus data length.
+		 * That's guaranteed to fit in a UINT_MAX.
 		 */
 		if (pre_truncation_len >= pkth->caplen)
 			pkth->len = pre_truncation_len;
