@@ -344,7 +344,7 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	nflog_tlv_t *tlv;
 	u_int caplen = hdr->caplen;
 	u_int length = hdr->len;
-	uint16_t size;
+	u_int size;
 
 	if (caplen < (u_int) sizeof(nflog_hdr_t) ||
 	    length < (u_int) sizeof(nflog_hdr_t)) {
