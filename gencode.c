@@ -875,7 +875,7 @@ quit:
 int
 pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 		    struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask)
+		    const char *buf, int optimize, bpf_u_int32 mask)
 {
 	pcap_t *p;
 	int ret;
@@ -7800,58 +7800,54 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		inst->b = b;
 		break;
 	case Q_ICMPV6:
-        /*
-        * Do the computation only if the packet contains
-        * the protocol in question.
-        */
-        b = gen_proto_abbrev_internal(cstate, Q_IPV6);
-        if (inst->b) {
-            gen_and(inst->b, b);
-        }
-        inst->b = b;
+		/*
+		 * Do the computation only if the packet contains
+		 * the protocol in question.
+		 */
+		b = gen_proto_abbrev_internal(cstate, Q_IPV6);
+		if (inst->b)
+			gen_and(inst->b, b);
+		inst->b = b;
 
-        /*
-        * Check if we have an icmp6 next header
-        */
-        b = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, 58);
-        if (inst->b) {
-            gen_and(inst->b, b);
-        }
-        inst->b = b;
+		/*
+		 * Check if we have an icmp6 next header
+		 */
+		b = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, 58);
+		if (inst->b)
+			gen_and(inst->b, b);
+		inst->b = b;
 
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		/*
+		 * If "s" is non-null, it has code to arrange that the
+		 * X register contains the variable part of the offset
+		 * of the link-layer payload.  Add to it the offset
+		 * computed into the register specified by "index",
+		 * and move that into the X register.  Otherwise, just
+		 * load into the X register the offset computed into
+		 * the register specified by "index".
+		 */
+		if (s != NULL) {
+			sappend(s, xfer_to_a(cstate, inst));
+			sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
+			sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
+		} else
+			s = xfer_to_x(cstate, inst);
 
-        s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
-        /*
-        * If "s" is non-null, it has code to arrange that the
-        * X register contains the variable part of the offset
-        * of the link-layer payload.  Add to it the offset
-        * computed into the register specified by "index",
-        * and move that into the X register.  Otherwise, just
-        * load into the X register the offset computed into
-        * the register specified by "index".
-        */
-        if (s != NULL) {
-            sappend(s, xfer_to_a(cstate, inst));
-            sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-            sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
-        } else {
-            s = xfer_to_x(cstate, inst);
-        }
+		/*
+		 * Load the item at the sum of the offset we've put in the
+		 * X register, the offset of the start of the network
+		 * layer header from the beginning of the link-layer
+		 * payload, and the constant part of the offset of the
+		 * start of the link-layer payload.
+		 */
+		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
+		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 40;
 
-        /*
-        * Load the item at the sum of the offset we've put in the
-        * X register, the offset of the start of the network
-        * layer header from the beginning of the link-layer
-        * payload, and the constant part of the offset of the
-        * start of the link-layer payload.
-        */
-        tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-        tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 40;
+		sappend(s, tmp);
+		sappend(inst->s, s);
 
-        sappend(s, tmp);
-        sappend(inst->s, s);
-
-        break;
+		break;
 	}
 	inst->regno = regno;
 	s = new_stmt(cstate, BPF_ST);
@@ -8511,7 +8507,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		/* match packets on this interface */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 4, BPF_W, ifindex);
 		break;
-        default:
+	default:
 #if defined(linux)
 		/*
 		 * This is Linux; we require PF_PACKET support.
@@ -9252,7 +9248,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 #endif
 			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num,
 			    has_vlan_tag);
-                break;
+		break;
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
@@ -9267,7 +9263,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		/*NOTREACHED*/
 	}
 
-        cstate->vlan_stack_depth++;
+	cstate->vlan_stack_depth++;
 
 	return (b0);
 }
@@ -9293,38 +9289,38 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-        if (cstate->label_stack_depth > 0) {
-            /* just match the bottom-of-stack bit clear */
-            b0 = gen_mcmp(cstate, OR_PREVMPLSHDR, 2, BPF_B, 0, 0x01);
-        } else {
-            /*
-             * We're not in an MPLS stack yet, so check the link-layer
-             * type against MPLS.
-             */
-            switch (cstate->linktype) {
+	if (cstate->label_stack_depth > 0) {
+		/* just match the bottom-of-stack bit clear */
+		b0 = gen_mcmp(cstate, OR_PREVMPLSHDR, 2, BPF_B, 0, 0x01);
+	} else {
+		/*
+		 * We're not in an MPLS stack yet, so check the link-layer
+		 * type against MPLS.
+		 */
+		switch (cstate->linktype) {
 
-            case DLT_C_HDLC: /* fall through */
-            case DLT_HDLC:
-            case DLT_EN10MB:
-            case DLT_NETANALYZER:
-            case DLT_NETANALYZER_TRANSPARENT:
-                    b0 = gen_linktype(cstate, ETHERTYPE_MPLS);
-                    break;
+		case DLT_C_HDLC: /* fall through */
+		case DLT_HDLC:
+		case DLT_EN10MB:
+		case DLT_NETANALYZER:
+		case DLT_NETANALYZER_TRANSPARENT:
+			b0 = gen_linktype(cstate, ETHERTYPE_MPLS);
+			break;
 
-            case DLT_PPP:
-                    b0 = gen_linktype(cstate, PPP_MPLS_UCAST);
-                    break;
+		case DLT_PPP:
+			b0 = gen_linktype(cstate, PPP_MPLS_UCAST);
+			break;
 
-                    /* FIXME add other DLT_s ...
-                     * for Frame-Relay/and ATM this may get messy due to SNAP headers
-                     * leave it for now */
+			/* FIXME add other DLT_s ...
+			 * for Frame-Relay/and ATM this may get messy due to SNAP headers
+			 * leave it for now */
 
-            default:
-                    bpf_error(cstate, "no MPLS support for %s",
-                          pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-                    /*NOTREACHED*/
-            }
-        }
+		default:
+			bpf_error(cstate, "no MPLS support for %s",
+			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+			/*NOTREACHED*/
+		}
+	}
 
 	/* If a specific MPLS label is requested, check it */
 	if (has_label_num) {
@@ -9339,23 +9335,23 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
 		b0 = b1;
 	}
 
-        /*
-         * Change the offsets to point to the type and data fields within
-         * the MPLS packet.  Just increment the offsets, so that we
-         * can support a hierarchy, e.g. "mpls 100000 && mpls 1024" to
-         * capture packets with an outer label of 100000 and an inner
-         * label of 1024.
-         *
-         * Increment the MPLS stack depth as well; this indicates that
-         * we're checking MPLS-encapsulated headers, to make sure higher
-         * level code generators don't try to match against IP-related
-         * protocols such as Q_ARP, Q_RARP etc.
-         *
-         * XXX - this is a bit of a kludge.  See comments in gen_vlan().
-         */
-        cstate->off_nl_nosnap += 4;
-        cstate->off_nl += 4;
-        cstate->label_stack_depth++;
+	/*
+	 * Change the offsets to point to the type and data fields within
+	 * the MPLS packet.  Just increment the offsets, so that we
+	 * can support a hierarchy, e.g. "mpls 100000 && mpls 1024" to
+	 * capture packets with an outer label of 100000 and an inner
+	 * label of 1024.
+	 *
+	 * Increment the MPLS stack depth as well; this indicates that
+	 * we're checking MPLS-encapsulated headers, to make sure higher
+	 * level code generators don't try to match against IP-related
+	 * protocols such as Q_ARP, Q_RARP etc.
+	 *
+	 * XXX - this is a bit of a kludge.  See comments in gen_vlan().
+	 */
+	cstate->off_nl_nosnap += 4;
+	cstate->off_nl += 4;
+	cstate->label_stack_depth++;
 	return (b0);
 }
 
@@ -10070,8 +10066,8 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 			bpf_error(cstate, "'sio' supported only on SS7");
 		/* sio coded on 1 byte so max value 255 */
 		if(jvalue > 255)
-		        bpf_error(cstate, "sio value %u too big; max value = 255",
-		            jvalue);
+			bpf_error(cstate, "sio value %u too big; max value = 255",
+			    jvalue);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, 0xffffffffU,
 		    jtype, reverse, jvalue);
 		break;
@@ -10080,13 +10076,13 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 		newoff_opc += 3;
 
 		/* FALLTHROUGH */
-        case M_OPC:
-	        if (cstate->off_opc == OFFSET_NOT_SET)
+	case M_OPC:
+		if (cstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
 		/* opc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
-		        bpf_error(cstate, "opc value %u too big; max value = 16383",
-		            jvalue);
+			bpf_error(cstate, "opc value %u too big; max value = 16383",
+			    jvalue);
 		/* the following instructions are made to convert jvalue
 		 * to the form used to write opc in an ss7 message*/
 		val1 = jvalue & 0x00003c00;
@@ -10105,12 +10101,12 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-	        if (cstate->off_dpc == OFFSET_NOT_SET)
+		if (cstate->off_dpc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'dpc' supported only on SS7");
 		/* dpc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
-		        bpf_error(cstate, "dpc value %u too big; max value = 16383",
-		            jvalue);
+			bpf_error(cstate, "dpc value %u too big; max value = 16383",
+			    jvalue);
 		/* the following instructions are made to convert jvalue
 		 * to the forme used to write dpc in an ss7 message*/
 		val1 = jvalue & 0x000000ff;
@@ -10127,12 +10123,12 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SLS:
-	        if (cstate->off_sls == OFFSET_NOT_SET)
+		if (cstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
 		/* sls coded on 4 bits so max value 15 */
 		if (jvalue > 15)
-		         bpf_error(cstate, "sls value %u too big; max value = 15",
-		             jvalue);
+			 bpf_error(cstate, "sls value %u too big; max value = 15",
+			     jvalue);
 		/* the following instruction is made to convert jvalue
 		 * to the forme used to write sls in an ss7 message*/
 		jvalue = jvalue << 4;
