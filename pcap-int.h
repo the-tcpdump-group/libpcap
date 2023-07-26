@@ -288,6 +288,7 @@ struct pcap {
 	 */
 	int bpf_codegen_flags;
 
+#if !defined(_WIN32)
 	int selectable_fd;	/* FD on which select()/poll()/epoll_wait()/kevent()/etc. can be done */
 
 	/*
@@ -302,6 +303,7 @@ struct pcap {
 	 * prepared not to see any packets from the attempt.
 	 */
 	const struct timeval *required_select_timeout;
+#endif
 
 	/*
 	 * Placeholder for filter code if bpf not in kernel.
