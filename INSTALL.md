@@ -245,7 +245,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	llc.h		    - 802.2 LLC SAP definitions
 	missing/*	    - replacements for missing library functions
 	mkdep		    - construct Makefile dependency list
-	msdos/*		    - drivers for MS-DOS capture support
 	nametoaddr.c	    - hostname to address routines
 	nametoaddr.h	    - hostname to address prototypes
 	nlpid.h		    - OSI network layer protocol identifier definitions
@@ -281,8 +280,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-dbus.c	    - D-Bus capture support
 	pcap-dbus.h	    - D-Bus capture support
 	pcap-dlpi.c	    - Data Link Provider Interface support
-	pcap-dos.c	    - MS-DOS capture support
-	pcap-dos.h	    - headers for MS-DOS capture support
+	pcap-dos.c	    - removed in 2023, after libpcap 1.9
 	pcap-dpdk.c	    - DPDK device support
 	pcap-dpdk.h	    - DPDK device support
 	pcap-enet.c	    - enet support
