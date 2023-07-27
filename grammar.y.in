@@ -389,7 +389,7 @@ DIAG_OFF_BISON_BYACC
 
 %token  DST SRC HOST GATEWAY
 %token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
-%token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP CARP
+%token  ARP RARP IP SCTP TCP TCPFLAGS UDP ICMP IGMP IGRP PIM VRRP CARP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
@@ -852,7 +852,10 @@ irelop:	  LEQ			{ $$ = BPF_JGT; }
 arth:	  pnum			{ CHECK_PTR_VAL(($$ = gen_loadi(cstate, $1))); }
 	| narth
 	;
-narth:	  pname '[' arth ']'		{ CHECK_PTR_VAL(($$ = gen_load(cstate, $1, $3, 1))); }
+tcpflags: TCPFLAGS
+	;
+narth:	  pname '[' tcpflags ']'	{ CHECK_PTR_VAL(($$ = gen_load(cstate, $1, gen_loadi(cstate, 12), 2))); }
+	| pname '[' arth ']'		{ CHECK_PTR_VAL(($$ = gen_load(cstate, $1, $3, 1))); }
 	| pname '[' arth ':' NUM ']'	{ CHECK_PTR_VAL(($$ = gen_load(cstate, $1, $3, $5))); }
 	| arth '+' arth			{ CHECK_PTR_VAL(($$ = gen_arth(cstate, BPF_ADD, $1, $3))); }
 	| arth '-' arth			{ CHECK_PTR_VAL(($$ = gen_arth(cstate, BPF_SUB, $1, $3))); }
