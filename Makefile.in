@@ -296,15 +296,6 @@ EXTRA_DIST = \
 	missing/strtok_r.c \
 	missing/win_asprintf.c \
 	mkdep \
-	msdos/bin2c.c \
-	msdos/makefile \
-	msdos/makefile.dj \
-	msdos/makefile.wc \
-	msdos/pkt_rx0.asm \
-	msdos/pkt_rx1.s \
-	msdos/pktdrvr.c \
-	msdos/pktdrvr.h \
-	msdos/readme.dos \
 	nomkdep \
 	org.tcpdump.chmod_bpf.plist \
 	pcap-airpcap.c \
@@ -321,8 +312,6 @@ EXTRA_DIST = \
 	pcap-dbus.h \
 	pcap-dll.rc \
 	pcap-dlpi.c \
-	pcap-dos.c \
-	pcap-dos.h \
 	pcap-dpdk.c \
 	pcap-dpdk.h \
 	pcap-enet.c \

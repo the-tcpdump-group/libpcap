@@ -38,9 +38,7 @@
 #include <pcap-types.h>
 #ifndef _WIN32
 #include <sys/param.h>
-#ifndef MSDOS
 #include <sys/file.h>
-#endif
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_SOCKIO_H
@@ -69,10 +67,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
-#endif
-
-#ifdef MSDOS
-#include "pcap-dos.h"
 #endif
 
 #include "pcap-int.h"
@@ -1508,13 +1502,10 @@ pcap_freealldevs(pcap_if_t *alldevs)
  * it actually returns the names of all interfaces, with a NUL separator
  * between them; some callers may depend on that.
  *
- * MS-DOS has its own pcap_lookupdev(), but that might be useful only
- * as an optimization.
- *
  * In all other cases, we just use pcap_findalldevs() to get a list of
  * devices, and pick from that list.
  */
-#if !defined(HAVE_PACKET32) && !defined(MSDOS)
+#if !defined(HAVE_PACKET32) 
 /*
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
@@ -1585,9 +1576,9 @@ pcap_lookupdev(char *errbuf)
 	pcap_freealldevs(alldevs);
 	return (ret);
 }
-#endif /* !defined(HAVE_PACKET32) && !defined(MSDOS) */
+#endif /* !defined(HAVE_PACKET32) */
 
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) 
 /*
  * We don't just fetch the entire list of devices, search for the
  * particular device, and use its first IPv4 address, as that's too
@@ -1709,7 +1700,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	*netp &= *maskp;
 	return (0);
 }
-#endif /* !defined(_WIN32) && !defined(MSDOS) */
+#endif /* !defined(_WIN32) */
 
 #ifdef ENABLE_REMOTE
 #include "pcap-rpcap.h"
@@ -2512,10 +2503,8 @@ pcap_alloc_pcap_t(char *ebuf, size_t total_size, size_t private_offset)
 	p->handle = INVALID_HANDLE_VALUE;	/* not opened yet */
 #else /* _WIN32 */
 	p->fd = -1;	/* not opened yet */
-#ifndef MSDOS
 	p->selectable_fd = -1;
 	p->required_select_timeout = NULL;
-#endif /* MSDOS */
 #endif /* _WIN32 */
 
 	/*
@@ -3565,7 +3554,7 @@ pcap_fileno(pcap_t *p)
 }
 #endif /* _WIN32 */
 
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) 
 int
 pcap_get_selectable_fd(pcap_t *p)
 {
@@ -3616,7 +3605,7 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
  * Get the current non-blocking mode setting, under the assumption that
  * it's just the standard POSIX non-blocking flag.
  */
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) 
 int
 pcap_getnonblock_fd(pcap_t *p)
 {
@@ -3656,7 +3645,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	return (ret);
 }
 
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) 
 /*
  * Set non-blocking mode, under the assumption that it's just the
  * standard POSIX non-blocking flag.  (This can be called by the
@@ -4094,7 +4083,7 @@ pcap_cleanup_live_common(pcap_t *p)
 		p->tstamp_precision_count = 0;
 	}
 	pcap_freecode(&p->fcode);
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) 
 	if (p->fd >= 0) {
 		close(p->fd);
 		p->fd = -1;

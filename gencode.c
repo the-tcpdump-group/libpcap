@@ -43,10 +43,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#ifdef MSDOS
-#include "pcap-dos.h"
-#endif
-
 #include "pcap-int.h"
 
 #include "extract.h"

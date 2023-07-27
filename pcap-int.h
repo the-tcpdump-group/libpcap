@@ -40,11 +40,6 @@
 
 #include <pcap/pcap.h>
 
-#ifdef MSDOS
-  #include <fcntl.h>
-  #include <io.h>
-#endif
-
 #include "varattrs.h"
 #include "fmtutils.h"
 
@@ -293,7 +288,7 @@ struct pcap {
 	 */
 	int bpf_codegen_flags;
 
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32)
 	int selectable_fd;	/* FD on which select()/poll()/epoll_wait()/kevent()/etc. can be done */
 
 	/*
@@ -469,7 +464,7 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 /*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32)
 int	pcap_getnonblock_fd(pcap_t *);
 int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
@@ -533,7 +528,7 @@ struct pcap_if_list;
 typedef struct pcap_if_list pcap_if_list_t;
 typedef int (*get_if_flags_func)(const char *, bpf_u_int32 *, char *);
 int	pcap_platform_finddevs(pcap_if_list_t *, char *);
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32)
 int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *), get_if_flags_func);
 #endif
