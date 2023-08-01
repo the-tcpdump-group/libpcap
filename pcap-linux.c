@@ -2405,8 +2405,10 @@ setup_socket(pcap_t *handle, int is_any_device)
 			return arptype;
 		}
 		status = map_arphrd_to_dlt(handle, arptype, device, 1);
-		if (status < 0)
+		if (status < 0) {
+			close(sock_fd);
 			return status;
+		}
 		if (handle->linktype == -1 ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
