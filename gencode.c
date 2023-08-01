@@ -1711,15 +1711,15 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * For values in the range in which we've assigned new
 		 * DLT_ values, only raw "link[N:M]" filtering is supported.
 		 */
-		if (cstate->linktype >= DLT_MATCHING_MIN &&
-		    cstate->linktype <= DLT_MATCHING_MAX) {
+		if (cstate->linktype >= DLT_HIGH_MATCHING_MIN &&
+		    cstate->linktype <= DLT_HIGH_MATCHING_MAX) {
 			cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 			cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 			cstate->off_nl = OFFSET_NOT_SET;
 			cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
 			bpf_set_error(cstate, "unknown data link type %d (min %d, max %d)",
-			    cstate->linktype, DLT_MATCHING_MIN, DLT_MATCHING_MAX);
+			    cstate->linktype, DLT_HIGH_MATCHING_MIN, DLT_HIGH_MATCHING_MAX);
 			return (-1);
 		}
 		break;
