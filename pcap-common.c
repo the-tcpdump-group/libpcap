@@ -1481,8 +1481,8 @@ linktype_to_dlt(int linktype)
 #endif
 #if LINKTYPE_NETBSD_HDLC != DLT_HDLC
 	/* NetBSD HDLC */
-	if (linktype == LINKTYPE_HDLC)
-		return (DLT_NETBSD_HDLC);
+	if (linktype == LINKTYPE_NETBSD_HDLC)
+		return (DLT_HDLC);
 #endif
 #if LINKTYPE_C_HDLC != DLT_C_HDLC
 	/* BSD/OS Cisco HDLC */
