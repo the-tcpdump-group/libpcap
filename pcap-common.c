@@ -1321,7 +1321,7 @@ dlt_to_linktype(int dlt)
 	 */
 #ifdef DLT_FR
 	/* BSD/OS Frame Relay */
-	if (dlt = DLT_FR)
+	if (dlt == DLT_FR)
 		return (LINKTYPE_FRELAY);
 #endif
 #if DLT_HDLC != LINKTYPE_NETBSD_HDLC
@@ -1451,6 +1451,54 @@ linktype_to_dlt(int linktype)
 		return (DLT_SLIP_BSDOS);
 	if (linktype == LINKTYPE_PPP_BSDOS)
 		return (DLT_PPP_BSDOS);
+
+	/*
+	 * These DLT_* codes were originally defined on some platform,
+	 * and weren't defined on other platforms.
+	 *
+	 * At least some of them have values, on at least one platform,
+	 * that collide with other DLT_* codes on other platforms, e.g.
+	 * DLT_LOOP, so we don't just define them, on all platforms,
+	 * as having the same value as on the original platform.
+	 *
+	 * Therefore, we assigned new LINKTYPE_* codes to them, and,
+	 * on the platforms where they weren't originally defined,
+	 * define the DLT_* codes to have the same value as the
+	 * corresponding LINKTYPE_* codes.
+	 *
+	 * This means that, for capture files with the original
+	 * platform's DLT_* code rather than the LINKTYPE_* code
+	 * as a link-layer type, we will recognize those types
+	 * on that platform, but not on other platforms.
+	 *
+	 * We map the LINKTYPE_* codes to the corresponding
+	 * DLT_* code on platforms where the two codes differ..
+	 */
+#ifdef DLT_FR
+	/* BSD/OS Frame Relay */
+	if (linktype == LINKTYPE_FRELAY)
+		return (DLT_FR);
+#endif
+#if LINKTYPE_NETBSD_HDLC != DLT_HDLC
+	/* NetBSD HDLC */
+	if (linktype == LINKTYPE_HDLC)
+		return (DLT_NETBSD_HDLC);
+#endif
+#if LINKTYPE_C_HDLC != DLT_C_HDLC
+	/* BSD/OS Cisco HDLC */
+	if (linktype == LINKTYPE_C_HDLC)
+		return (DLT_C_HDLC);
+#endif
+#if LINKTYPE_LOOP != DLT_LOOP
+	/* OpenBSD DLT_LOOP */
+	if (linktype == LINKTYPE_LOOP)
+		return (DLT_LOOP);
+#endif
+#if LINKTYPE_ENC != DLT_ENC
+	/* OpenBSD DLT_ENC */
+	if (linktype == LINKTYPE_ENC)
+		return (DLT_ENC);
+#endif
 
 	/*
 	 * These DLT_* codes are not on all platforms, but, so far,
