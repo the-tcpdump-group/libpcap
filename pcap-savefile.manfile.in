@@ -47,7 +47,7 @@ Reserved2
 _
 Snapshot length
 _
-Link-layer header type
+Link-layer header type and additional information
 .TE
 .RE
 .PP
@@ -100,12 +100,57 @@ bytes of a packet longer than
 .I N
 bytes will be saved in the capture.
 .IP
-a 4-byte number giving the link-layer header type for packets in the
-capture; see
+A 4-byte number giving the link-layer header type for packets in the
+capture and optional additional information.
+.IP
+This format of this field is:
+.PP
+.RS
+                     1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+.TS
+box;
+c s
+c
+c s.
+FCS len|R|P|     Reserved3     |        Link-layer type       
+.TE
+.RE
+.IP
+The field is shown as if it were in the byte order of the host reading
+or writing the file, with bit 0 being the most-significant bit of the
+field and bit 31 being the least-significant bit of the field.
+.IP
+Link-layer type (16 bits):
+A 16-bit value giving the link-layer header type for packets in the file;
+see
 .BR pcap-linktype (@MAN_MISC_INFO@)
 for the
 .B LINKTYPE_
 values that can appear in this field.
+.IP
+Reserved3 (10 bits):
+not used - MUST be set to zero by pcap writers, and MUST NOT be
+interpreted by pcap readers; a reader SHOULD treat a non-zero value as
+an error.
+.IP
+P (1 bit):
+A bit that, if set, indicates that the Frame Check Sequence (FCS)
+length value is present and, if not set, indicates that the FCS value is
+not present.
+.IP
+R (1 bit):
+not used - MUST be set to zero by pcap writers, and MUST NOT be
+interpreted by pcap readers; a reader SHOULD treat a non-zero value as
+an error.
+.IP
+FCS len (4 bits):
+A 4-bit unsigned value giving the number of 16-bit (2-octet) words
+of FCS that are appended to each packet, if the P bit is set; if the P
+bit is not set, and the FCS length is not indicated by the link-layer
+type value, the FCS length is unknown.  The valid values of the FCS len
+field are between 0 and 15; Ethernet, for example, would have an FCS
+length value of 2, corresponding to a 4-octet FCS.
 .PP
 Following the per-file header are zero or more packets; each packet
 begins with a per-packet header, which is immediately followed by the
