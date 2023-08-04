@@ -5,6 +5,12 @@
 * Neither illumos lex nor illumos yacc are suitable.
 * Solaris m4 and illumos m4 are suitable.
 
+## OmniOS r151046/AMD64
+
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake 3.26.4 works.
+* GCC 12.2.0 and Clang 16.0.4 work.
+
 ## OmniOS r151044/AMD64
 
 * flex 2.6.4 and GNU Bison 3.8.2 work.
@@ -36,15 +42,19 @@ developer/clang-90
 ENDOFTEXT
 ```
 
-## Solaris 11/AMD64
+## Solaris 11.4.57.144.3/SPARC
+
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake does not work.
+* GCC 12.2.0 and Clang 13.0.1 work.
+
+## Solaris 11.4.42.111.0/AMD64
 
 * flex 2.6.4 and GNU Bison 3.7.3 work.
 * CMake 3.21.0 works.
 * Clang 11.0 works, GCC 11.2 works.
 
-For reference, the tests were done using Oracle Solaris 11.4.42.111.0.
-
-## Solaris 11/SPARC
+## Solaris 11.3/SPARC
 
 * flex 2.6.4 and GNU Bison 3.7.1 work.
 * CMake 3.14.3 works.
