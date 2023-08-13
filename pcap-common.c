@@ -1283,7 +1283,7 @@ dlt_to_linktype(int dlt)
 	 * That way, for example, "raw IP" packets will have
 	 * LINKTYPE_RAW as the code in all savefiles for
 	 * which the code that writes them maps to that
-	 * value, regardless of the platform on whih they
+	 * value, regardless of the platform on which they
 	 * were written, so they should be readable on all
 	 * platforms without having to determine on which
 	 * platform they were written.
@@ -1435,7 +1435,7 @@ linktype_to_dlt(int linktype)
 	 * That way, for example, "raw IP" packets will have
 	 * LINKTYPE_RAW as the code in all savefiles for
 	 * which the code that writes them maps to that
-	 * value, regardless of the platform on whih they
+	 * value, regardless of the platform on which they
 	 * were written, so they should be readable on all
 	 * platforms without having to determine on which
 	 * platform they were written.
