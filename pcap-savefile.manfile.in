@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "2 Aug 2023"
+.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "16 Aug 2023"
 .SH NAME
 pcap-savefile \- libpcap savefile format
 .SH DESCRIPTION
@@ -105,17 +105,13 @@ capture and optional additional information.
 .IP
 This format of this field is:
 .PP
-.RS
+.nf
                      1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-.TS
-box;
-c s
-c
-c s.
-FCS len|R|P|     Reserved3     |        Link-layer type       
-.TE
-.RE
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|FCS len|R|P|     Reserved3     |        Link-layer type        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+.fi
 .IP
 The field is shown as if it were in the byte order of the host reading
 or writing the file, with bit 0 being the most-significant bit of the
