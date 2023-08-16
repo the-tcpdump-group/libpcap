@@ -1263,7 +1263,19 @@
  */
 #define LINKTYPE_FIRA_UCI	299
 
-#define LINKTYPE_HIGH_MATCHING_MAX	299		/* highest value in the "matching" range */
+/*
+ * MDB (Multi-Drop Bus) protocol between a vending machine controller and
+ * peripherals inside the vending machine. See
+ *
+ *	https://www.kaiser.cx/pcap-mdb.html
+ *
+ * for the specification.
+ *
+ * Requested by Martin Kaiser <martin@kaiser.cx>.
+ */
+#define LINKTYPE_MDB		300
+
+#define LINKTYPE_HIGH_MATCHING_MAX	300		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

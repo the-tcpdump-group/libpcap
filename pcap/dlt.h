@@ -1635,6 +1635,18 @@
 #define DLT_FIRA_UCI		299
 
 /*
+ * MDB (Multi-Drop Bus) protocol between a vending machine controller and
+ * peripherals inside the vending machine. See
+ *
+ *	https://www.kaiser.cx/pcap-mdb.html
+ *
+ * for the specification.
+ *
+ * Requested by Martin Kaiser <martin@kaiser.cx>.
+ */
+#define DLT_MDB			300
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1644,6 +1656,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	299	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	300	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
