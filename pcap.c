@@ -3374,6 +3374,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(ZWAVE_TAP, "Z-Wave packets with a TAP meta-data header"),
 	DLT_CHOICE(SILABS_DEBUG_CHANNEL, "Silicon Labs debug channel protocol"),
 	DLT_CHOICE(FIRA_UCI, "Ultra-wideband controller interface protocol"),
+	DLT_CHOICE(MDB, "Multi-Drop Bus"),
 	DLT_CHOICE_SENTINEL
 };
 
