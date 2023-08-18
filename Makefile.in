@@ -883,7 +883,7 @@ releasecheck: releasetar
 
 whitespacecheck:
 	@# trailing space(s)?
-	@if git grep -I -n ' $$' $$(git ls-files|grep -vE '^(tests/|pcap-savefile.manfile.in$$)'); then \
+	@if git grep -I -n ' $$' $$(git ls-files|grep -v '^tests/'); then \
 	    echo 'Error: Trailing space(s).'; \
 	    exit 1; \
 	fi
