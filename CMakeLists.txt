@@ -3144,6 +3144,10 @@ if(BUILD_SHARED_LIBS)
         ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
         ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
+    target_include_directories(${LIBRARY_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+    )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         COMPILE_DEFINITIONS BUILDING_PCAP)
@@ -3168,6 +3172,10 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_EXTERNAL_OBJECT_LIST}
+)
+target_include_directories(${LIBRARY_NAME}_static PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES
@@ -3293,21 +3301,21 @@ function(install_manpage_symlink SOURCE TARGET MANDIR)
 
     install(CODE "
          if(NOT ${CMAKE_INSTALL_MESSAGE} STREQUAL \"NEVER\")
-             message(STATUS \"Symlinking: \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+             message(STATUS \"Symlinking: \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
          endif()
          execute_process(
             COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"remove\" \"${TARGET}\"
-            WORKING_DIRECTORY \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}
+            WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${MANDIR}
           )
          execute_process(
             COMMAND ${LINK_COMMAND}
-            WORKING_DIRECTORY \$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${MANDIR}
+            WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${MANDIR}
             RESULT_VARIABLE EXIT_STATUS
           )
           if(NOT EXIT_STATUS EQUAL 0)
-              message(FATAL_ERROR \"Could not create symbolic link from ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+              message(FATAL_ERROR \"Could not create symbolic link from \${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
           endif()
-          set(CMAKE_INSTALL_MANIFEST_FILES \${CMAKE_INSTALL_MANIFEST_FILES} ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${TARGET})")
+          set(CMAKE_INSTALL_MANIFEST_FILES \${CMAKE_INSTALL_MANIFEST_FILES} \${CMAKE_INSTALL_PREFIX}/${MANDIR}/${TARGET})")
 endfunction(install_manpage_symlink)
 
 set(MAN1_NOEXPAND pcap-config.1)
@@ -3432,7 +3440,7 @@ if(WIN32 OR CYGWIN OR MSYS)
         endif(MSVC)
     endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 else(WIN32 OR CYGWIN OR MSYS)
-    install(TARGETS ${LIBRARIES_TO_INSTALL} DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
+    install(TARGETS ${LIBRARIES_TO_INSTALL} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(WIN32 OR CYGWIN OR MSYS)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/pcap)
