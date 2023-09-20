@@ -36,7 +36,7 @@
 static inline u_int
 u_int_sum(u_int a, u_int b)
 {
-	return (((b) <= UINT_MAX - (b)) ? (a) + (b) : UINT_MAX);
+	return (((b) <= UINT_MAX - (a)) ? (a) + (b) : UINT_MAX);
 }
 
 /*
