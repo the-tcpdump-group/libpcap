@@ -328,6 +328,9 @@
 /* target host supports RDMA sniffing */
 #cmakedefine PCAP_SUPPORT_RDMASNIFF 1
 
+/* target host supports OpenVizsla */
+#cmakedefine PCAP_SUPPORT_OPENVIZSLA 1
+
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
 

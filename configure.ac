@@ -3120,6 +3120,39 @@ if test "x$enable_rdma" != "xno"; then
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
 
+AC_ARG_ENABLE([openvizsla],
+[AC_HELP_STRING([--enable-openvizsla],[enable OpenVizsla support @<:@default=yes, if support available@:>@])],
+    [],
+    [enable_openvizsla=ifavailable])
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want OpenVizsla support.
+	enable_openvizsla=no
+fi
+
+if test "x$enable_openvizsla" != "xno"; then
+	if test "x$PKGCONFIG" != "xno"; then
+		AC_MSG_CHECKING([for libopenvizsla])
+		if "$PKGCONFIG" openvizsla; then
+			AC_MSG_RESULT([yes])
+			OPENVIZSLA_CFLAGS=`"$PKGCONFIG" --cflags openvizsla`
+			OPENVIZSLA_LIBS=`"$PKGCONFIG" --libs openvizsla`
+			CFLAGS="$CFLAGS $OPENVIZSLA_CFLAGS"
+			LIBS="$LIBS $OPENVIZSLA_LIBS"
+			MODULE_C_SRC="$MODULE_C_SRC pcap-openvizsla.c"
+
+			AC_DEFINE(PCAP_SUPPORT_OPENVIZSLA, 1, [support OpenVizsla])
+		else
+			AC_MSG_RESULT([no])
+			if test "x$enable_openvizsla" = "xyes"; then
+				AC_MSG_ERROR([--enable-openvizsla was given, but the openvizsla package is not installed])
+			fi
+		fi
+	fi
+	AC_SUBST(PCAP_SUPPORT_OPENVIZSLA)
+fi
+
 #
 # If this is a platform where we need to have the .pc file and
 # pcap-config script supply an rpath option to specify the directory

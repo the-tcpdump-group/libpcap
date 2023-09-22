@@ -125,6 +125,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-airpcap.h"
 #endif
 
+#ifdef PCAP_SUPPORT_OPENVIZSLA
+#include "pcap-openvizsla.h"
+#endif
+
 #ifdef _WIN32
 /*
  * To quote the WSAStartup() documentation:
@@ -706,6 +710,9 @@ static struct capture_source_type {
 #endif
 #ifdef HAVE_AIRPCAP_API
 	{ airpcap_findalldevs, airpcap_create },
+#endif
+#ifdef PCAP_SUPPORT_OPENVIZSLA
+	{ openvizsla_findalldevs, openvizsla_create },
 #endif
 	{ NULL, NULL }
 };
