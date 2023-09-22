@@ -5028,11 +5028,13 @@ fail:
 }
 
 struct pcap_samp *
-pcap_setsampling(pcap_t *p _USED_FOR_REMOTE)
+pcap_setsampling(pcap_t *p)
 {
 #ifdef ENABLE_REMOTE
 	return (&p->rmt_samp);
 #else
+	pcap_strlcpy(p->errbuf, "Capture sampling is not supported",
+	    PCAP_ERRBUF_SIZE);
 	return (NULL);
 #endif
 }
