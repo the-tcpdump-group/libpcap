@@ -1945,7 +1945,7 @@ return 0;
 
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
-	REMOTE_C_SRC="$REMOTE_C_SRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
+	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;

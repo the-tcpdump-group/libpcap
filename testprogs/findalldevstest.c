@@ -95,25 +95,18 @@ getpass(const char *prompt)
 }
 #endif
 
-#ifdef ENABLE_REMOTE
 int main(int argc, char **argv)
-#else
-int main(int argc _U_, char **argv _U_)
-#endif
 {
   pcap_if_t *alldevs;
   pcap_if_t *d;
   bpf_u_int32 net, mask;
   int exit_status = 0;
   char errbuf[PCAP_ERRBUF_SIZE+1];
-#ifdef ENABLE_REMOTE
   struct pcap_rmtauth auth;
   char username[128+1];
   char *p;
   char *password;
-#endif
 
-#ifdef ENABLE_REMOTE
   if (argc >= 2)
   {
     if (pcap_findalldevs_ex(argv[1], NULL, &alldevs, errbuf) == -1)
@@ -139,7 +132,6 @@ int main(int argc _U_, char **argv _U_)
     }
   }
   else
-#endif
   {
     if (pcap_findalldevs(&alldevs, errbuf) == -1)
     {

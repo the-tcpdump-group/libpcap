@@ -903,10 +903,31 @@ PCAP_API const char *pcap_lib_version(void);
 #endif /* _WIN32/MSDOS/UN*X */
 
 /*
- * Remote capture definitions.
+ * APIs.added in WinPcap for remote capture.
  *
- * These routines are only present if libpcap has been configured to
- * include remote capture support.
+ * They are present even if remote capture isn't enabled, as they
+ * also support local capture, and as their absence may complicate
+ * code build on macOS 14 with Xcode 15, as that platform supports
+ * "weakly linked symbols":
+ *
+ *    https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/WeakLinking.html
+ *
+ * which are symbols in dynamically-linked shared libraries, declare in
+ * such a fashion that if a program linked against a newer software
+ * development kit (SDK), and using a symbol present in the OS version
+ * for which that SDK is provided, is run on an older OS version that
+ * lacks that symbol, that symbol's value is a NULL pointer.  This
+ * allows those programs to test for the presence of that symbol
+ * by checking whether it's non-null and, if it is, using the symbol,
+ * otherwise not using it.
+ *
+ * (This is a slightly more convenient alternative to the usual
+ * technique used on Windows - and also available, and sometimes
+ * used, on UN*Xes - of loading the library containing the symbol
+ * at run time with dlopen() on UN*Xes and LoadLibrary() on Windows,
+ * looking up the symbol with dlsym() on UN*Xes and GetProcAddress()
+ * on Windows, and using the symbol with the returned pointer if it's
+ * not null.)
  */
 
 /*
