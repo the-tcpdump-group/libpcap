@@ -2693,7 +2693,7 @@ if(ENABLE_REMOTE)
     check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_FLAGS)
     cmake_pop_check_state()
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c)
+        pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c)
 endif(ENABLE_REMOTE)
 
 ###################################################################

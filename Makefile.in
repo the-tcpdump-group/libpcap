@@ -321,7 +321,6 @@ EXTRA_DIST = \
 	pcap-libdlpi.c \
 	pcap-linux.c \
 	pcap-namedb.h \
-	pcap-new.c \
 	pcap-netfilter-linux.c \
 	pcap-netfilter-linux.h \
 	pcap-netmap.c \
