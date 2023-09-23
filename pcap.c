@@ -4580,12 +4580,6 @@ pcap_set_parser_debug(int value)
 #define PCAP_TEXT_SOURCE_ON_LOCAL_HOST "on local host"
 #define PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN (sizeof PCAP_TEXT_SOURCE_ON_LOCAL_HOST + 1)
 
-/****************************************************
- *                                                  *
- * Function bodies                                  *
- *                                                  *
- ****************************************************/
-
 #ifdef ENABLE_REMOTE
  #define _USED_FOR_REMOTE
 #else
@@ -4943,8 +4937,9 @@ pcap_open(const char *source, int snaplen, int flags, int read_timeout,
 		return (NULL);
 
 	switch (type) {
+
 	case PCAP_SRC_FILE:
-		return pcap_open_offline(name, errbuf);
+		return (pcap_open_offline(name, errbuf));
 
 	case PCAP_SRC_IFLOCAL:
 		fp = pcap_create(name, errbuf);
