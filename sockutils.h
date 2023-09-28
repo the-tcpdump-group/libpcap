@@ -138,9 +138,8 @@ void sock_fmterrmsg(char *errbuf, size_t errbuflen, int errcode,
     PCAP_FORMAT_STRING(const char *fmt), ...) PCAP_PRINTFLIKE(4, 5);
 void sock_geterrmsg(char *errbuf, size_t errbuflen,
     PCAP_FORMAT_STRING(const char *fmt), ...)  PCAP_PRINTFLIKE(3, 4);
-int sock_initaddress(const char *address, const char *port,
-    struct addrinfo *hints, struct addrinfo **addrinfo,
-    char *errbuf, int errbuflen);
+struct addrinfo *sock_initaddress(const char *address, const char *port,
+    struct addrinfo *hints, char *errbuf, int errbuflen);
 int sock_recv(SOCKET sock, SSL *, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen);
 int sock_recv_dgram(SOCKET sock, SSL *, void *buffer, size_t size,
