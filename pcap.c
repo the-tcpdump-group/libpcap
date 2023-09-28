@@ -4893,7 +4893,7 @@ pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth _USED_FOR_REMO
 #ifdef ENABLE_REMOTE
 		return (pcap_findalldevs_ex_remote(source, auth, alldevs, errbuf));
 #else
-		pcap_strlcpy(errbuf, "Remote packte capture is not supported",
+		pcap_strlcpy(errbuf, "Remote packet capture is not supported",
 		    PCAP_ERRBUF_SIZE);
 		return (PCAP_ERROR);
 #endif
@@ -4956,7 +4956,7 @@ pcap_open(const char *source, int snaplen, int flags, int read_timeout,
 		return (pcap_open_rpcap(source, snaplen, flags, read_timeout,
 		    auth, errbuf));
 #else
-		pcap_strlcpy(errbuf, "Remote packte capture is not supported",
+		pcap_strlcpy(errbuf, "Remote packet capture is not supported",
 		    PCAP_ERRBUF_SIZE);
 		return (NULL);
 #endif
