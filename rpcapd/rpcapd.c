@@ -618,7 +618,9 @@ void main_startup(void)
 		//
 		// Get a list of sockets on which to listen.
 		//
-		if (sock_initaddress((address[0]) ? address : NULL, port, &mainhints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		addrinfo = sock_initaddress((address[0]) ? address : NULL,
+		    port, &mainhints, errbuf, PCAP_ERRBUF_SIZE);
+		if (addrinfo == NULL)
 		{
 			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 			return;
@@ -1357,7 +1359,9 @@ main_active(void *ptr)
 	memset(errbuf, 0, sizeof(errbuf));
 
 	// Do the work
-	if (sock_initaddress(activepars->address, activepars->port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	addrinfo = sock_initaddress(activepars->address, activepars->port,
+	    &hints, errbuf, PCAP_ERRBUF_SIZE);
+	if (addrinfo == NULL)
 	{
 		rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 		return 0;

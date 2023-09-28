@@ -2085,7 +2085,9 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 			goto error;
 		}
 
-		if (sock_initaddress(peerhost, portdata, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+		addrinfo = sock_initaddress(peerhost, portdata, &hints,
+		    errmsgbuf, PCAP_ERRBUF_SIZE);
+		if (addrinfo == NULL)
 			goto error;
 
 		if ((session->sockdata = sock_open(peerhost, addrinfo, SOCKOPEN_CLIENT, 0, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
@@ -2098,15 +2100,17 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 		if (data_port[0] != '\0')
 		{
 			// Use the specified network port
-			if (sock_initaddress(NULL, data_port, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
-				goto error;
+			addrinfo = sock_initaddress(NULL, data_port, &hints,
+			    errmsgbuf, PCAP_ERRBUF_SIZE);
 		}
 		else
 		{
 			// Make the server socket pick up a free network port for us
-			if (sock_initaddress(NULL, NULL, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
-				goto error;
+			addrinfo = sock_initaddress(NULL, NULL, &hints,
+			    errmsgbuf, PCAP_ERRBUF_SIZE);
 		}
+		if (addrinfo == NULL)
+			goto error;
 
 		if ((session->sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;

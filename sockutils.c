@@ -1069,20 +1069,21 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
  * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
  * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable. The addrinfo variable that has to be used in the following sockets calls is
- * returned into the addrinfo parameter.
+ * \return a pointer to the first element in a list of addrinfo structures
+ * if everything is fine, NULL if some errors occurred. The error message
+ * is returned in the 'errbuf' variable.
  *
- * \warning The 'addrinfo' variable has to be deleted by the programmer by calling freeaddrinfo() when
- * it is no longer needed.
+ * \warning The list of addrinfo structures returned has to be deleted by
+ * the programmer by calling freeaddrinfo() when it is no longer needed.
  *
  * \warning This function requires the 'hints' variable as parameter. The semantic of this variable is the same
  * of the one of the corresponding variable used into the standard getaddrinfo() socket function. We suggest
  * the programmer to look at that function in order to set the 'hints' variable appropriately.
  */
-int sock_initaddress(const char *host, const char *port,
-    struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
+struct addrinfo *sock_initaddress(const char *host, const char *port,
+    struct addrinfo *hints, char *errbuf, int errbuflen)
 {
+	struct addrinfo *addrinfo;
 	int retval;
 
 	/*
@@ -1094,9 +1095,13 @@ int sock_initaddress(const char *host, const char *port,
 	 * as those messages won't talk about a problem with the port if
 	 * no port was specified.
 	 */
-	retval = getaddrinfo(host, port == NULL ? "0" : port, hints, addrinfo);
+	retval = getaddrinfo(host, port == NULL ? "0" : port, hints, &addrinfo);
 	if (retval != 0)
 	{
+		/*
+		 * That call failed.
+		 * Determine whether the problem is that the host is bad.
+		 */
 		if (errbuf)
 		{
 			if (host != NULL && port != NULL) {
@@ -1108,7 +1113,7 @@ int sock_initaddress(const char *host, const char *port,
 				int try_retval;
 
 				try_retval = getaddrinfo(host, NULL, hints,
-				    addrinfo);
+				    &addrinfo);
 				if (try_retval == 0) {
 					/*
 					 * Worked with just the host,
@@ -1117,14 +1122,16 @@ int sock_initaddress(const char *host, const char *port,
 					 *
 					 * Free up the address info first.
 					 */
-					freeaddrinfo(*addrinfo);
+					freeaddrinfo(addrinfo);
 					get_gai_errstring(errbuf, errbuflen,
 					    "", retval, NULL, port);
 				} else {
 					/*
 					 * Didn't work with just the host,
 					 * so assume the problem is
-					 * with the host.
+					 * with the host; we assume
+					 * the original error indicates
+					 * the underlying problem.
 					 */
 					get_gai_errstring(errbuf, errbuflen,
 					    "", retval, host, NULL);
@@ -1132,13 +1139,14 @@ int sock_initaddress(const char *host, const char *port,
 			} else {
 				/*
 				 * Either the host or port was null, so
-				 * there's nothing to determine.
+				 * there's nothing to determine; report
+				 * the error from the original call.
 				 */
 				get_gai_errstring(errbuf, errbuflen, "",
 				    retval, host, port);
 			}
 		}
-		return -1;
+		return NULL;
 	}
 	/*
 	 * \warning SOCKET: I should check all the accept() in order to bind to all addresses in case
@@ -1153,30 +1161,28 @@ int sock_initaddress(const char *host, const char *port,
 	 * ignore all addresses that are neither?  (What, no IPX
 	 * support? :-))
 	 */
-	if (((*addrinfo)->ai_family != PF_INET) &&
-	    ((*addrinfo)->ai_family != PF_INET6))
+	if ((addrinfo->ai_family != PF_INET) &&
+	    (addrinfo->ai_family != PF_INET6))
 	{
 		if (errbuf)
 			snprintf(errbuf, errbuflen, "getaddrinfo(): socket type not supported");
-		freeaddrinfo(*addrinfo);
-		*addrinfo = NULL;
-		return -1;
+		freeaddrinfo(addrinfo);
+		return NULL;
 	}
 
 	/*
 	 * You can't do multicast (or broadcast) TCP.
 	 */
-	if (((*addrinfo)->ai_socktype == SOCK_STREAM) &&
-	    (sock_ismcastaddr((*addrinfo)->ai_addr) == 0))
+	if ((addrinfo->ai_socktype == SOCK_STREAM) &&
+	    (sock_ismcastaddr(addrinfo->ai_addr) == 0))
 	{
 		if (errbuf)
 			snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
-		freeaddrinfo(*addrinfo);
-		*addrinfo = NULL;
-		return -1;
+		freeaddrinfo(addrinfo);
+		return NULL;
 	}
 
-	return 0;
+	return addrinfo;
 }
 
 /*
@@ -2089,7 +2095,9 @@ int sock_present2network(const char *address, struct sockaddr_storage *sockaddr,
 
 	hints.ai_family = addr_family;
 
-	if (sock_initaddress(address, "22222" /* fake port */, &hints, &addrinfo, errbuf, errbuflen) == -1)
+	addrinfo = sock_initaddress(address, "22222" /* fake port */, &hints,
+	    errbuf, errbuflen);
+	if (addrinfo == NULL)
 		return 0;
 
 	if (addrinfo->ai_family == PF_INET)

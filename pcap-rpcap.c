@@ -1024,7 +1024,6 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 {
 	struct activehosts *temp;			/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
-	int retval;
 
 	/* retrieve the network address corresponding to 'host' */
 	addrinfo = NULL;
@@ -1032,9 +1031,9 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = sock_initaddress(host, NULL, &hints, &addrinfo, errbuf,
+	addrinfo = sock_initaddress(host, NULL, &hints, errbuf,
 	    PCAP_ERRBUF_SIZE);
-	if (retval != 0)
+	if (addrinfo == NULL)
 	{
 		*error = 1;
 		return NULL;
@@ -1186,7 +1185,9 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		hints.ai_flags = AI_PASSIVE;	/* Data connection is opened by the server toward the client */
 
 		/* Let's the server pick up a free network port for us */
-		if (sock_initaddress(NULL, NULL, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		addrinfo = sock_initaddress(NULL, NULL, &hints, fp->errbuf,
+		    PCAP_ERRBUF_SIZE);
+		if (addrinfo == NULL)
 			goto error_nodiscard;
 
 		if ((sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER,
@@ -1311,7 +1312,9 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			snprintf(portstring, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
-			if (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+			addrinfo = sock_initaddress(host, portstring, &hints,
+			    fp->errbuf, PCAP_ERRBUF_SIZE);
+			if (addrinfo == NULL)
 				goto error;
 
 			if ((sockdata = sock_open(host, addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
@@ -2418,16 +2421,16 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 		if (port[0] == 0)
 		{
 			/* the user chose not to specify the port */
-			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT,
-			    &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
+			addrinfo = sock_initaddress(host, RPCAP_DEFAULT_NETPORT,
+			    &hints, errbuf, PCAP_ERRBUF_SIZE);
 		}
 		else
 		{
-			if (sock_initaddress(host, port, &hints, &addrinfo,
-			    errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
+			addrinfo = sock_initaddress(host, port, &hints,
+			    errbuf, PCAP_ERRBUF_SIZE);
 		}
+		if (addrinfo == NULL)
+			return -1;
 
 		if ((*sockctrlp = sock_open(host, addrinfo, SOCKOPEN_CLIENT, 0,
 		    errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
@@ -3038,19 +3041,19 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	/* Do the work */
 	if ((port == NULL) || (port[0] == 0))
 	{
-		if (sock_initaddress(address, RPCAP_DEFAULT_NETPORT_ACTIVE, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		{
-			return (SOCKET)-2;
-		}
+		addrinfo = sock_initaddress(address,
+		    RPCAP_DEFAULT_NETPORT_ACTIVE, &hints, errbuf,
+		    PCAP_ERRBUF_SIZE);
 	}
 	else
 	{
-		if (sock_initaddress(address, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		{
-			return (SOCKET)-2;
-		}
+		addrinfo = sock_initaddress(address, port, &hints, errbuf,
+		    PCAP_ERRBUF_SIZE);
 	}
-
+	if (addrinfo == NULL)
+	{
+		return (SOCKET)-2;
+	}
 
 	if ((sockmain = sock_open(NULL, addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 	{
@@ -3210,7 +3213,6 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 {
 	struct activehosts *temp, *prev;	/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
-	int retval;
 
 	temp = activeHosts;
 	prev = NULL;
@@ -3221,9 +3223,9 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	retval = sock_initaddress(host, NULL, &hints, &addrinfo, errbuf,
+	addrinfo = sock_initaddress(host, NULL, &hints, errbuf,
 	    PCAP_ERRBUF_SIZE);
-	if (retval != 0)
+	if (addrinfo == NULL)
 	{
 		return -1;
 	}
