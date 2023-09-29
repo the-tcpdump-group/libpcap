@@ -34,6 +34,10 @@
 #ifndef lib_pcap_namedb_h
 #define lib_pcap_namedb_h
 
+#include <stdio.h>		/* FILE */
+
+#include <pcap/funcattrs.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,21 +59,42 @@ struct pcap_etherent {
 #ifndef PCAP_ETHERS_FILE
 #define PCAP_ETHERS_FILE "/etc/ethers"
 #endif
+
+PCAP_AVAILABLE_0_4
 PCAP_API struct	pcap_etherent *pcap_next_etherent(FILE *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API u_char *pcap_ether_hostton(const char*);
+
+PCAP_AVAILABLE_0_4
 PCAP_API u_char *pcap_ether_aton(const char *);
 
+PCAP_AVAILABLE_0_4
 PCAP_API
 PCAP_DEPRECATED("this is not reentrant; use 'pcap_nametoaddrinfo' instead")
 bpf_u_int32 **pcap_nametoaddr(const char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API struct addrinfo *pcap_nametoaddrinfo(const char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API bpf_u_int32 pcap_nametonetaddr(const char *);
 
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoport(const char *, int *, int *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoportrange(const char *, int *, int *, int *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoproto(const char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoeproto(const char *);
+
+PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametollc(const char *);
+
 /*
  * If a protocol is unknown, PROTO_UNDEF is returned.
  * Also, pcap_nametoport() returns the protocol along with the port number.
