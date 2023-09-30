@@ -5,8 +5,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         fixed-width integer types, in rpcap code.
       Remove an always-false pointer test from snf_read().
       Clean up DECnet address handling.
-      Finalize moving of bpf_filter.c. (GH #1166)
-      Address a few compiler warnings on Haiku.
       struct pcap: Update buffer type from "void *" to "u_char *".
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
@@ -34,7 +32,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         another incorporate-remote-capture project. (issue #1120)
     Documentation:
       Document a standard format for writing out BPF filter programs.
-      Document pcap-config better.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       cmake: Update the minimum required version to 2.8.12 (except Windows).
@@ -50,6 +47,40 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         these generated files in the release tarball.
       autoconf: Add the option to print functions and files names.
       Autoconf: Update install-sh script to the latest available version.
+
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
+  Summary for 1.10.5 libpcap release (so far!)
+    Source code:
+      Spell WirelessHART details properly.
+      Mark pcap_vasprintf() as printf-like.
+      Finalize moving of bpf_filter.c. (GH #1166)
+      Remove an unneeded argument from gen_mcode6().
+      Don't do some Berkeley YACC workarounds with YACC releases not
+        requiring them.
+      Use correct data types rather than int in some cases.
+      Squelch compiler warning in grammar.c.
+    Thread safety:
+      Make some static variables thread-local; fixes issue #1174.
+    Packet filtering:
+      Improve reporting of some invalid filter expressions.
+    Haiku:
+      Convert the module to C.
+      Address a few compiler warnings.
+      Fix various build problems.
+    Windows:
+      Work around a bug in Npcap 1.00 in case of driver version mismatch.
+    nflog:
+      Fix count of dropped packets.
+    Building and testing:
+      Improved tests and error reporting for uses of pkg-config.
+      Fix Haiku build
+      With CMake, insteall headers in CMAKE_INSTALL_INCLUDEDIR rather
+        than just include
+      Build libpcap.a before building test programs.
+    Documentation:
+      Add a README.haiku.md file.
+      Document pcap-config better.
+      Man page formatting and prose fixes.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release
