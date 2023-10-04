@@ -118,7 +118,7 @@ else
     run_after_echo mkdir build
     run_after_echo cd build
     run_after_echo cmake ${CFLAGS:+-DEXTRA_CFLAGS="$CFLAGS"} \
-        "$CMAKE_OPTIONS" \
+        ${CMAKE_OPTIONS:+"$CMAKE_OPTIONS"} \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" -DINET6="$IPV6" -DENABLE_REMOTE="$REMOTE" ..
 fi
 run_after_echo "$MAKE_BIN" -s clean
