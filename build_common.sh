@@ -254,6 +254,7 @@ os_id() {
 
 increment() {
     # No arithmetic expansion in Solaris /bin/sh before 11.
+    # shellcheck disable=SC2003
     expr "${1:?}" + 1
 }
 
