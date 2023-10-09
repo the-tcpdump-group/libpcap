@@ -52,17 +52,6 @@ macos_task:
     - brew install openssl@3
     - ./build_matrix.sh
 
-#
-# Just testing for now.
-#
-#windows_task:
-#  name: windows-amd64
-#  only_if: $CIRRUS_BRANCH != 'coverity_scan'
-#  windows_container:
-#    image: cirrusci/windowsservercore:2019
-#  script:
-#    - set/?
-
 coverity_task:
   name: Coverity Scan
   only_if: $CIRRUS_BRANCH == 'coverity_scan'
