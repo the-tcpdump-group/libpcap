@@ -1275,7 +1275,13 @@
  */
 #define LINKTYPE_MDB		300
 
-#define LINKTYPE_HIGH_MATCHING_MAX	300		/* highest value in the "matching" range */
+/*
+ * DECT-2020 New Radio (NR) - ETSI TS 103 636.
+ * Requested by Stig Bjorlykke <stig@bjorlykke.org>.
+ */
+#define LINKTYPE_DECT_NR	301
+
+#define LINKTYPE_HIGH_MATCHING_MAX	301		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

@@ -1647,6 +1647,12 @@
 #define DLT_MDB			300
 
 /*
+ * DECT-2020 New Radio (NR) - ETSI TS 103 636.
+ * Requested by Stig Bjorlykke <stig@bjorlykke.org>.
+ */
+#define DLT_DECT_NR		301
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1656,6 +1662,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	300	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	301	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
