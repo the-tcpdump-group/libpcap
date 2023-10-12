@@ -9,28 +9,80 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         requiring them.
       Use correct data types rather than int in some cases.
       Squelch compiler warning in grammar.c.
+      Fix findalldevtest compilation if IPv6 isn't enabled.
+      Rename helper routines for pcap modules to have names
+        beginning with pcap_, to avoid namespace collisions for code
+        linking statically with libpcap.
+      Avoid casting hack for the Windows cleanup-on-exit routine.
+      Use %zu format for one case of printing a size_t.
+      Fix some Coverity errors.
     Thread safety:
       Make some static variables thread-local; fixes issue #1174.
     Packet filtering:
       Improve reporting of some invalid filter expressions.
+      Return an error from pcap_compile() if the scanner fails to initialize.
+    Linux:
+      Properlty return warnings.
+      Don't use DLT_LINUX_SLL2 for anything other than the "any" device.
+      Avoid 32-bit unsigned integer overflow in USB captures.  Fixes
+        issues #1134 #1205.
+    Solaris:
+      Handle BPF returning ESRCH for unknown devices.
+      List the "any" device if it's supported.
+      Report {non-existent zone}/{interface} errors appropriately.
+      Allow attaching to links owned by a non-global zone.  (Based on
+        pull request #1202.)
+    macOS:
+      Redid the availability macros to be closer to what Apple's doing
+        in recent SDKs, including tagging pcap-named b.h routines.
+      Fix the install name of the installed shared library to have a
+        full path when building with CMake.
     Haiku:
       Convert the module to C.
       Address a few compiler warnings.
       Fix various build problems.
     Windows:
+      Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.
+    AirPcap:
+      Format an error message if we run out of memory.
     nflog:
       Fix count of dropped packets.
+      Make sure we don't overflow when rounding up the TLV length.
+    rpcap:
+      Handle routines removed in at least some OpenSSL libraries.
+      Clean up sock_initaddress() and its callers to avoid double frees
+        in some cases.
+    Savefiles:
+      Handle DLT_/LINKTYPE_ mapping better, to handle some
+        OpenBSD-specific link types better.
     Building and testing:
       Improved tests and error reporting for uses of pkg-config.
       Fix Haiku build
       With CMake, insteall headers in CMAKE_INSTALL_INCLUDEDIR rather
         than just include
       Build libpcap.a before building test programs.
+      Print address family numerically, as well as symbolically,
+        in findalldevstest.
+      Fail with suggestions, rather than failing over to no capture
+        support, if no capture mechanism was found.  Fixes issue #1016.
+      Don't indent coments in Make, as that may cause them not to be
+        recognized as comments.
+      Don't check for libssl if we aren't going to use it.
+      Fix macOS universal builds.
+      Better handle enabling and disabling of sanitizers.  Fixes issue
+        #1171.
+      CMakeLists.txt: Print "Symlinking: /some/path to ..." conditionally.
+      Evaluate CMAKE_INSTALL_PREFIX at install time.
     Documentation:
+      Update and fix pcap-filter man page.
       Add a README.haiku.md file.
       Document pcap-config better.
       Man page formatting and prose fixes.
+      Rename doc/README.Win32.md to doc/README.windows.md.
+      Update pcap-savefile man page to match the Internet-Draft for
+        pcap.
+      Fix CMake issues for target used by other projects.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release
