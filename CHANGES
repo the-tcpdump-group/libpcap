@@ -70,10 +70,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Improve reporting of some invalid filter expressions.
       Return an error from pcap_compile() if the scanner fails to initialize.
     Linux:
-      Properlty return warnings.
+      Properly return warnings.
       Don't use DLT_LINUX_SLL2 for anything other than the "any" device.
       Avoid 32-bit unsigned integer overflow in USB captures.  Fixes
-        issues #1134 #1205.
+        issues #1134 and #1205.
+      Fix a file descriptor leak.
     Solaris:
       Handle BPF returning ESRCH for unknown devices.
       List the "any" device if it's supported.
@@ -82,13 +83,14 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         pull request #1202.)
     macOS:
       Redid the availability macros to be closer to what Apple's doing
-        in recent SDKs, including tagging pcap-named b.h routines.
+        in recent SDKs, including tagging pcap-namedb.h routines.
       Fix the install name of the installed shared library to have a
         full path when building with CMake.
+      Fix universal builds.
     Haiku:
-      Convert the module to C.
-      Address a few compiler warnings.
-      Fix various build problems.
+      Convert the module to C.  Fixes issue #1114.
+      Address a few compiler warnings.  Fixes issue #1114.
+      Fix various build problems.  Fixes issue #1114.
     Windows:
       Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.
@@ -105,7 +107,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Handle DLT_/LINKTYPE_ mapping better, to handle some
         OpenBSD-specific link types better.
     Building and testing:
-      Improved tests and error reporting for uses of pkg-config.
+      Improved tests and error reporting for uses of pkg-config, and
+        improve help message
       Fix Haiku build
       With CMake, insteall headers in CMAKE_INSTALL_INCLUDEDIR rather
         than just include
@@ -117,7 +120,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Don't indent coments in Make, as that may cause them not to be
         recognized as comments.
       Don't check for libssl if we aren't going to use it.
-      Fix macOS universal builds.
       Better handle enabling and disabling of sanitizers.  Fixes issue
         #1171.
       CMakeLists.txt: Print "Symlinking: /some/path to ..." conditionally.
