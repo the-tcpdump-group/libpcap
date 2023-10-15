@@ -16,6 +16,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Avoid casting hack for the Windows cleanup-on-exit routine.
       Use %zu format for one case of printing a size_t.
       Fix some Coverity errors.
+      Fix availabilities of some functions to match reality.
     Thread safety:
       Make some static variables thread-local; fixes issue #1174.
     Packet filtering:
