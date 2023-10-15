@@ -650,7 +650,7 @@ PCAP_API const char *pcap_datalink_val_to_name(int);
 PCAP_AVAILABLE_0_8
 PCAP_API const char *pcap_datalink_val_to_description(int);
 
-PCAP_AVAILABLE_1_10
+PCAP_AVAILABLE_1_9
 PCAP_API const char *pcap_datalink_val_to_description_or_dlt(int);
 
 PCAP_AVAILABLE_0_4
