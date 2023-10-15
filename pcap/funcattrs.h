@@ -152,17 +152,16 @@
  * APIs to be designated as "first available in this release" to do so
  * by appropriately defining them.
  *
- * On macOS, Apple can tweak this to define PCAP_AVAILABLE_MACOS()
- * as necessary to make various APIs "weak exports" to make it easier
- * for software that's distributed in binary form and that uses libpcap
- * to run on multiple macOS versions and use new APIs when available.
- * (Yes, such third-party software exists - Wireshark provides binary
- * packages for macOS, for example.  tcpdump doesn't count, as that's
- * provided by Apple, so each release can come with a version compiled
- * to use the APIs present in that release.)
+ * On macOS, Apple can tweak this to make various APIs "weakly exported
+ * symbols" to make it easier for software that's distributed in binary
+ * form and that uses libpcap to run on multiple macOS versions and use
+ * new APIs when available.  (Yes, such third-party software exists -
+ * Wireshark provides binary packages for macOS, for example.  tcpdump
+ * doesn't count, as that's provided by Apple, so each release can
+ * come with a version compiled to use the APIs present in that release.)
  *
- * We don't define it ourselves because, if you're building and
- * installing libpcap on macOS yourself, the APIs will be available
+ * We don't tweak it that way ourselves because, if you're building
+ * and installing libpcap on macOS yourself, the APIs will be available
  * no matter what OS version you're installing it on.
  *
  * For other platforms, we don't define them, leaving it up to
@@ -173,33 +172,32 @@
  */
 #ifdef __APPLE__
 /*
- * Apple - insert #include <os/availability.h> here, and define
- * PCAP_AVAILABLE_MACOS(v) as
+ * Apple - insert #include <os/availability.h> here, and replace the two
+ * #defines below with:
  *
- *    API_AVAILABLE(macos(v)) API_UNAVAILABLE(ios, tvos, watchos)
+ *   #define PCAP_API_AVAILABLE	API_AVAILABLE
  *
- * and add any other OSes to the "unavailable" list as appropriate (iPadOS?
- * visionOS?  Surely being able to watch packet traffic through your
- * Apple Vision Pro would be k00l as heck.... :-))
+ * and adjust availabilities as necessary, including adding information
+ * about operating systems other than macOS.
  */
-#define PCAP_AVAILABLE_MACOS(v)
-#define PCAP_AVAILABLE_0_4	PCAP_AVAILABLE_MACOS(10.0) /* Did any version of Mac OS X ship with this? */
-#define PCAP_AVAILABLE_0_5	PCAP_AVAILABLE_MACOS(10.0) /* Did any version of Mac OS X ship with this? */
-#define PCAP_AVAILABLE_0_6	PCAP_AVAILABLE_MACOS(10.1)
-#define PCAP_AVAILABLE_0_7	PCAP_AVAILABLE_MACOS(10.4)
-#define PCAP_AVAILABLE_0_8	PCAP_AVAILABLE_MACOS(10.4)
-#define PCAP_AVAILABLE_0_9	PCAP_AVAILABLE_MACOS(10.5)
-#define PCAP_AVAILABLE_1_0	PCAP_AVAILABLE_MACOS(10.6)
+#define PCAP_API_AVAILABLE(...)
+#define PCAP_AVAILABLE_0_4	PCAP_API_AVAILABLE(macos(10.0))
+#define PCAP_AVAILABLE_0_5	PCAP_API_AVAILABLE(macos(10.0))
+#define PCAP_AVAILABLE_0_6	PCAP_API_AVAILABLE(macos(10.1))
+#define PCAP_AVAILABLE_0_7	PCAP_API_AVAILABLE(macos(10.4))
+#define PCAP_AVAILABLE_0_8	PCAP_API_AVAILABLE(macos(10.4))
+#define PCAP_AVAILABLE_0_9	PCAP_API_AVAILABLE(macos(10.5))
+#define PCAP_AVAILABLE_1_0	PCAP_API_AVAILABLE(macos(10.6))
 /* #define PCAP_AVAILABLE_1_1	no routines added to the API */
-#define PCAP_AVAILABLE_1_2	PCAP_AVAILABLE_MACOS(10.9)
+#define PCAP_AVAILABLE_1_2	PCAP_API_AVAILABLE(macos(10.9))
 /* #define PCAP_AVAILABLE_1_3	no routines added to the API */
 /* #define PCAP_AVAILABLE_1_4	no routines added to the API */
-#define PCAP_AVAILABLE_1_5	PCAP_AVAILABLE_MACOS(10.10)
+#define PCAP_AVAILABLE_1_5	PCAP_API_AVAILABLE(macos(10.10))
 /* #define PCAP_AVAILABLE_1_6	no routines added to the API */
-#define PCAP_AVAILABLE_1_7	PCAP_AVAILABLE_MACOS(10.12)
-#define PCAP_AVAILABLE_1_8	PCAP_AVAILABLE_MACOS(10.13)
-#define PCAP_AVAILABLE_1_9	PCAP_AVAILABLE_MACOS(10.13)
-#define PCAP_AVAILABLE_1_10	PCAP_AVAILABLE_MACOS(12.1)
+#define PCAP_AVAILABLE_1_7	PCAP_API_AVAILABLE(macos(10.12))
+#define PCAP_AVAILABLE_1_8	PCAP_API_AVAILABLE(macos(10.13))
+#define PCAP_AVAILABLE_1_9	PCAP_API_AVAILABLE(macos(10.13))
+#define PCAP_AVAILABLE_1_10	PCAP_API_AVAILABLE(macos(12.1))
 #define PCAP_AVAILABLE_1_11	/* not released yet, so not in macOS yet */
 #else /* __APPLE__ */
 #define PCAP_AVAILABLE_0_4
