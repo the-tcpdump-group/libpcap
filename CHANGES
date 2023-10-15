@@ -27,6 +27,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Avoid 32-bit unsigned integer overflow in USB captures.  Fixes
         issues #1134 and #1205.
       Fix a file descriptor leak.
+      Properly report warnings about unknown ARPHRD_ types.
     Solaris:
       Handle BPF returning ESRCH for unknown devices.
       List the "any" device if it's supported.
