@@ -33,13 +33,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Document a standard format for writing out BPF filter programs.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
-      Makefile.in: Add the releasecheck target.
-      Cirrus CI: Add the "make releasecheck" command in the Linux task.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
-      Makefile.in: Add "make -s install" in the releasecheck target.
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
-      Makefile.in: Add two "touch .devel" commands in the releasecheck target.
       autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
       autoconf: Add the option to print functions and files names.
@@ -127,6 +123,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Evaluate CMAKE_INSTALL_PREFIX at install time.
       cmake: Update the minimum required version to 2.8.12 (except Windows).
       cmake: suppress CMP0042 OLD deprecated warning.
+      Makefile.in: Add the releasecheck target.
+      Cirrus CI: Add the "make releasecheck" command in the Linux task.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
