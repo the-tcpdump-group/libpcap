@@ -862,6 +862,8 @@ releasecheck: releasetar
 	rm -rf "$$INSTALL_DIR" && \
 	tar xf "$$DIR"/"$$TAG".tar.gz && \
 	cd "$$TAG" && \
+	echo "[$@] $$ touch .devel" && \
+	touch .devel && \
 	mkdir build && \
 	cd build && \
 	echo '[$@] $$ cmake -DENABLE_REMOTE=yes [...] ..' && \
