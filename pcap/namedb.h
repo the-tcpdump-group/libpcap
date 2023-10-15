@@ -74,7 +74,7 @@ PCAP_API
 PCAP_DEPRECATED("this is not reentrant; use 'pcap_nametoaddrinfo' instead")
 bpf_u_int32 **pcap_nametoaddr(const char *);
 
-PCAP_AVAILABLE_0_4
+PCAP_AVAILABLE_0_7
 PCAP_API struct addrinfo *pcap_nametoaddrinfo(const char *);
 
 PCAP_AVAILABLE_0_4
@@ -83,7 +83,7 @@ PCAP_API bpf_u_int32 pcap_nametonetaddr(const char *);
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoport(const char *, int *, int *);
 
-PCAP_AVAILABLE_0_4
+PCAP_AVAILABLE_0_9
 PCAP_API int	pcap_nametoportrange(const char *, int *, int *, int *);
 
 PCAP_AVAILABLE_0_4
@@ -92,7 +92,7 @@ PCAP_API int	pcap_nametoproto(const char *);
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_nametoeproto(const char *);
 
-PCAP_AVAILABLE_0_4
+PCAP_AVAILABLE_0_9
 PCAP_API int	pcap_nametollc(const char *);
 
 /*
