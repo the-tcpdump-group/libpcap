@@ -833,6 +833,48 @@ releasetar:
 	    echo "No $$TAG tag. Archive build from HEAD."; \
 	fi
 
+releasecheck: releasetar
+	@TAG=$(PROG)-`cat VERSION` && \
+	INSTALL_DIR=/tmp/install_"$$TAG"_$$$$ && \
+	DIR=`pwd` && \
+	cd /tmp && \
+	rm -rf "$$TAG" && \
+	rm -rf "$$INSTALL_DIR" && \
+	tar xf "$$DIR"/"$$TAG".tar.gz && \
+	cd "$$TAG" && \
+	echo "[$@] $$ touch .devel" && \
+	touch .devel && \
+	echo "[$@] $$ ./configure --enable-remote --quiet --prefix=$$INSTALL_DIR" && \
+	./configure --enable-remote --quiet --prefix="$$INSTALL_DIR" && \
+	echo '[$@] $$ $(MAKE) -s all testprogs' && \
+	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s install' && \
+	$(MAKE) -s install && \
+	cd .. && \
+	rm -rf "$$TAG" && \
+	rm -rf "$$INSTALL_DIR" && \
+	tar xf "$$DIR"/"$$TAG".tar.gz && \
+	cd "$$TAG" && \
+	echo "[$@] $$ touch .devel" && \
+	touch .devel && \
+	mkdir build && \
+	cd build && \
+	echo '[$@] $$ cmake -DENABLE_REMOTE=yes [...] ..' && \
+	cmake -DENABLE_REMOTE=yes \
+	    -DCMAKE_INSTALL_PREFIX="$$INSTALL_DIR" \
+	    -DCMAKE_MESSAGE_LOG_LEVEL=NOTICE \
+	    -DCMAKE_RULE_MESSAGES=OFF \
+	    -DCMAKE_INSTALL_MESSAGE=NEVER \
+	    .. && \
+	echo '[$@] $$ $(MAKE) -s all testprogs' && \
+	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s install' && \
+	$(MAKE) -s install && \
+	cd ../.. && \
+	rm -rf "$$TAG" && \
+	rm -rf "$$INSTALL_DIR" && \
+	echo '[$@] Done.'
+
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	(cd rpcapd; $(MAKE) depend)
