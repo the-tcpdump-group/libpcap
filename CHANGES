@@ -33,8 +33,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Document a standard format for writing out BPF filter programs.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
-      cmake: Update the minimum required version to 2.8.12 (except Windows).
-      cmake: suppress CMP0042 OLD deprecated warning.
       Makefile.in: Add the releasecheck target.
       Cirrus CI: Add the "make releasecheck" command in the Linux task.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
@@ -126,6 +124,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         #1171.
       CMakeLists.txt: Print "Symlinking: /some/path to ..." conditionally.
       Evaluate CMAKE_INSTALL_PREFIX at install time.
+      cmake: Update the minimum required version to 2.8.12 (except Windows).
+      cmake: suppress CMP0042 OLD deprecated warning.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
