@@ -42,6 +42,7 @@ linux_task:
     - apt list --installed 'lib*-dev'
     - ./configure --quiet # build the Makefile
     - make releasecheck
+    - make whitespacecheck
     - ./build_matrix.sh
 
 macos_task:
