@@ -47,6 +47,8 @@
 
 #include "portability.h"
 
+#define PCAP_DEBUG {printf(" [%s:%d %s] ", __FILE__, __LINE__, __func__); fflush(stdout);}
+
 /*
  * If we're compiling with Visual Studio, make sure we have at least
  * VS 2015 or later, so we have sufficient C99 support.
