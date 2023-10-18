@@ -642,7 +642,7 @@ yes)	AC_MSG_RESULT(yes)
 	# Add '-finstrument-functions' instrumentation option to generate
 	# instrumentation calls for entry and exit to functions.
 	# Use '--enable-instrument-functions' also with tcpdump (or tcpslice)
-	# to see the output.
+	# to see the output. See also https://www.tcpdump.org/faq.html#q17.
 	CFLAGS="$CFLAGS -O0 -ggdb -finstrument-functions"
 	;;
 *)	AC_MSG_RESULT(no)
