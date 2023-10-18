@@ -105,14 +105,14 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Improved tests and error reporting for uses of pkg-config, and
         improve help message
       Fix Haiku build
-      With CMake, insteall headers in CMAKE_INSTALL_INCLUDEDIR rather
+      With CMake, install headers in CMAKE_INSTALL_INCLUDEDIR rather
         than just include
       Build libpcap.a before building test programs.
       Print address family numerically, as well as symbolically,
         in findalldevstest.
       Fail with suggestions, rather than failing over to no capture
         support, if no capture mechanism was found.  Fixes issue #1016.
-      Don't indent coments in Make, as that may cause them not to be
+      Don't indent comments in Make, as that may cause them not to be
         recognized as comments.
       Don't check for libssl if we aren't going to use it.
       Better handle enabling and disabling of sanitizers.  Fixes issue

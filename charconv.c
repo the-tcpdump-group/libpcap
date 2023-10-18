@@ -185,7 +185,7 @@ utf_8_to_acp_truncated(char *errbuf)
 
 	/*
 	 * Now, convert that to the local code page.
-	 * Use the current thread's code page.  For unconvertable
+	 * Use the current thread's code page.  For unconvertible
 	 * characters, let it pick the "best fit" character.
 	 *
 	 * XXX - we'd like some way to do what utf_16le_to_utf_8_truncated()
