@@ -109,6 +109,8 @@ pcap_netmap_dispatch(pcap_t *p, int cnt, pcap_handler cb, u_char *user)
 			break;
 		errno = 0;
 		ret = poll(&pfd, 1, p->opt.timeout);
+		if (ret == 0)
+			break;
 	}
 	return ret;
 }
