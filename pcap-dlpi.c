@@ -865,7 +865,7 @@ pcap_activate_dlpi(pcap_t *p)
 
 	p->read_op = pcap_read_dlpi;
 	p->inject_op = pcap_inject_dlpi;
-	p->setfilter_op = pcap_install_bpf_program;	/* no kernel filtering */
+	p->setfilter_op = pcapint_install_bpf_program;	/* no kernel filtering */
 	p->setdirection_op = NULL;	/* Not implemented.*/
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;
@@ -1148,7 +1148,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * And is there a way to determine whether the
 		 * interface is plugged into a network?
 		 */
-		if (pcap_add_dev(devlistp, baname, 0, NULL, errbuf) == NULL)
+		if (pcapint_add_dev(devlistp, baname, 0, NULL, errbuf) == NULL)
 			return (-1);
 	}
 #endif

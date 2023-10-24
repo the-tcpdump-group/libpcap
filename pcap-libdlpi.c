@@ -248,7 +248,7 @@ pcap_activate_libdlpi(pcap_t *p)
 
 	p->read_op = pcap_read_libdlpi;
 	p->inject_op = pcap_inject_libdlpi;
-	p->setfilter_op = pcap_install_bpf_program;	/* No kernel filtering */
+	p->setfilter_op = pcapint_install_bpf_program;	/* No kernel filtering */
 	p->setdirection_op = NULL;	/* Not implemented */
 	p->set_datalink_op = NULL;	/* Can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;
@@ -377,7 +377,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * If it isn't already in the list of devices, try to
 		 * add it.
 		 */
-		if (pcap_find_or_add_dev(devlistp, entry->linkname, 0, get_if_flags,
+		if (pcapint_find_or_add_dev(devlistp, entry->linkname, 0, get_if_flags,
 		    NULL, errbuf) == NULL)
 			retv = -1;
 	}

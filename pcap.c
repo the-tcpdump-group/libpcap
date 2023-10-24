@@ -1032,7 +1032,7 @@ get_if_description(const char *name _U_)
  * the new entry, otherwise return NULL and set errbuf to an error message.
  */
 pcap_if_t *
-pcap_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
+pcapint_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
     bpf_u_int32 if_flags, get_if_flags_func get_flags_func, char *errbuf)
 {
 	bpf_u_int32 pcap_flags;
@@ -1066,7 +1066,7 @@ pcap_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
 	 * Attempt to find an entry for this device; if we don't find one,
 	 * attempt to add one.
 	 */
-	return (pcap_find_or_add_dev(devlistp, name, pcap_flags,
+	return (pcapint_find_or_add_dev(devlistp, name, pcap_flags,
 	    get_flags_func, get_if_description(name), errbuf));
 }
 
@@ -1089,7 +1089,7 @@ pcap_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
  * add interfaces even if they have no addresses.)
  */
 int
-pcap_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
+pcapint_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
     bpf_u_int32 if_flags, get_if_flags_func get_flags_func,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
@@ -1102,7 +1102,7 @@ pcap_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
 	/*
 	 * Check whether the device exists and, if not, add it.
 	 */
-	curdev = pcap_find_or_add_if(devlistp, name, if_flags, get_flags_func,
+	curdev = pcapint_find_or_add_if(devlistp, name, if_flags, get_flags_func,
 	    errbuf);
 	if (curdev == NULL) {
 		/*
@@ -1124,7 +1124,7 @@ pcap_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
 	 * address for it; add an entry for that address to the
 	 * interface's list of addresses.
 	 */
-	return (pcap_add_addr_to_dev(curdev, addr, addr_size, netmask,
+	return (pcapint_add_addr_to_dev(curdev, addr, addr_size, netmask,
 	    netmask_size, broadaddr, broadaddr_size, dstaddr,
 	    dstaddr_size, errbuf));
 }
@@ -1135,7 +1135,7 @@ pcap_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
  * "curdev" is the entry for that interface.
  */
 int
-pcap_add_addr_to_dev(pcap_if_t *curdev,
+pcapint_add_addr_to_dev(pcap_if_t *curdev,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
@@ -1250,7 +1250,7 @@ pcap_add_addr_to_dev(pcap_if_t *curdev,
  * return -1 and set errbuf to an error message.
  */
 pcap_if_t *
-pcap_find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
+pcapint_find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
     get_if_flags_func get_flags_func, const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
@@ -1258,7 +1258,7 @@ pcap_find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 fla
 	/*
 	 * Is there already an entry in the list for this device?
 	 */
-	curdev = pcap_find_dev(devlistp, name);
+	curdev = pcapint_find_dev(devlistp, name);
 	if (curdev != NULL) {
 		/*
 		 * Yes, return it.
@@ -1283,7 +1283,7 @@ pcap_find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 fla
 	/*
 	 * Now, try to add it to the list of devices.
 	 */
-	return (pcap_add_dev(devlistp, name, flags, description, errbuf));
+	return (pcapint_add_dev(devlistp, name, flags, description, errbuf));
 }
 
 /*
@@ -1291,7 +1291,7 @@ pcap_find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 fla
  * the entry for it if we find it or NULL if we don't.
  */
 pcap_if_t *
-pcap_find_dev(pcap_if_list_t *devlistp, const char *name)
+pcapint_find_dev(pcap_if_list_t *devlistp, const char *name)
 {
 	pcap_if_t *curdev;
 
@@ -1325,7 +1325,7 @@ pcap_find_dev(pcap_if_list_t *devlistp, const char *name)
  * If we weren't given a description, try to get one.
  */
 pcap_if_t *
-pcap_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
+pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev, *prevdev, *nextdev;
@@ -1457,7 +1457,7 @@ pcap_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
 	 * network device, the notion of "connected" vs. "disconnected"
 	 * doesn't apply to the "any" device.
 	 */
-	return pcap_add_dev(devlistp, "any",
+	return pcapint_add_dev(devlistp, "any",
 	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf);
 }
