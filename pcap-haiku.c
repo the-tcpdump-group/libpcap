@@ -151,7 +151,7 @@ pcap_activate_haiku(pcap_t *handle)
 	const char* device = handle->opt.device;
 
 	handle->read_op = pcap_read_haiku;
-	handle->setfilter_op = pcap_install_bpf_program; /* no kernel filtering */
+	handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
 	handle->inject_op = pcap_inject_haiku;
 	handle->stats_op = pcap_stats_haiku;
 

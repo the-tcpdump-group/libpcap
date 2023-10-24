@@ -227,7 +227,7 @@ dbus_activate(pcap_t *handle)
 	handle->linktype = DLT_DBUS;
 	handle->read_op = dbus_read;
 	handle->inject_op = dbus_write;
-	handle->setfilter_op = pcap_install_bpf_program; /* XXX, later add support for dbus_bus_add_match() */
+	handle->setfilter_op = pcapint_install_bpf_program; /* XXX, later add support for dbus_bus_add_match() */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;      /* can't change data link type */
 	handle->getnonblock_op = dbus_getnonblock;
@@ -338,11 +338,11 @@ dbus_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	 * The notion of "connected" vs. "disconnected" doesn't apply.
 	 * XXX - what about the notions of "up" and "running"?
 	 */
-	if (pcap_add_dev(devlistp, "dbus-system",
+	if (pcapint_add_dev(devlistp, "dbus-system",
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, "D-Bus system bus",
 	    err_str) == NULL)
 		return -1;
-	if (pcap_add_dev(devlistp, "dbus-session",
+	if (pcapint_add_dev(devlistp, "dbus-session",
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, "D-Bus session bus",
 	    err_str) == NULL)
 		return -1;

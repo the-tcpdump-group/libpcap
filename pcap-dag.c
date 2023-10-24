@@ -996,7 +996,7 @@ static int dag_activate(pcap_t* p)
 
 	p->read_op = dag_read;
 	p->inject_op = dag_inject;
-	p->setfilter_op = pcap_install_bpf_program;
+	p->setfilter_op = pcapint_install_bpf_program;
 	p->setdirection_op = NULL; /* Not implemented.*/
 	p->set_datalink_op = dag_set_datalink;
 	p->getnonblock_op = pcap_getnonblock_fd;
@@ -1179,7 +1179,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			 *
 			 * Also, are there notions of "up" and "running"?
 			 */
-			if (pcap_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
+			if (pcapint_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 				/*
 				 * Failure.
 				 */
@@ -1191,7 +1191,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					dag_detach_stream(dagfd, stream);
 
 					snprintf(name,  10, "dag%d:%d", c, stream);
-					if (pcap_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
+					if (pcapint_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 						/*
 						 * Failure.
 						 */

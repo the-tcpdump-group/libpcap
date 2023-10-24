@@ -50,9 +50,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Use correct data types rather than int in some cases.
       Squelch compiler warning in grammar.c.
       Fix findalldevtest compilation if IPv6 isn't enabled.
-      Rename helper routines for pcap modules to have names
-        beginning with pcap_, to avoid namespace collisions for code
-        linking statically with libpcap.
+      Rename helper routines for pcap modules to have names beginning with
+      pcapint_, to avoid namespace collisions for code linking statically
+      with libpcap.
       Avoid casting hack for the Windows cleanup-on-exit routine.
       Use %zu format for one case of printing a size_t.
       Fix some Coverity errors.

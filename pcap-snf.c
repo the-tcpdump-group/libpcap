@@ -320,7 +320,7 @@ snf_activate(pcap_t* p)
 	p->linktype = DLT_EN10MB;
 	p->read_op = snf_read;
 	p->inject_op = snf_inject;
-	p->setfilter_op = pcap_install_bpf_program;
+	p->setfilter_op = pcapint_install_bpf_program;
 	p->setdirection_op = NULL; /* Not implemented.*/
 	p->set_datalink_op = snf_set_datalink;
 	p->getnonblock_op = snf_getnonblock;
@@ -413,7 +413,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * See if there's already an entry for the device
 		 * with the name ifa->snf_ifa_name.
 		 */
-		dev = pcap_find_dev(devlistp, ifa->snf_ifa_name);
+		dev = pcapint_find_dev(devlistp, ifa->snf_ifa_name);
 		if (dev != NULL) {
 			/*
 			 * Yes.  Update its description.
@@ -439,7 +439,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
 			 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
 			 */
-			dev = pcap_add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
+			dev = pcapint_add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
 			    errbuf);
 			if (dev == NULL)
 				return -1;
@@ -454,7 +454,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				 * to IPv4 address.
 				 */
 				addr.sin_family = AF_INET;
-				if (pcap_add_addr_to_dev(dev, &addr, sizeof(addr),
+				if (pcapint_add_addr_to_dev(dev, &addr, sizeof(addr),
 				    NULL, 0, NULL, 0, NULL, 0, errbuf) == -1)
 					return -1;
                         } else if (ret == -1) {
@@ -489,7 +489,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * "disconnected", as "is this plugged into a network?"
 		 * would be a per-port property.
 		 */
-		if (pcap_add_dev(devlistp, name,
+		if (pcapint_add_dev(devlistp, name,
 		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, desc,
 		    errbuf) == NULL)
 			return (-1);

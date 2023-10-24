@@ -419,7 +419,7 @@ TcFindAllDevs(pcap_if_list_t *devlist, char *errbuf)
 			dev = TcCreatePcapIfFromPort(pPorts[i]);
 
 			if (dev != NULL)
-				pcap_add_dev(devlist, dev->name, dev->flags, dev->description, errbuf);
+				pcapint_add_dev(devlist, dev->name, dev->flags, dev->description, errbuf);
 		}
 
 		if (numPorts > 0)
@@ -610,7 +610,7 @@ TcActivate(pcap_t *p)
 	}
 
 	p->read_op = TcRead;
-	p->setfilter_op = pcap_install_bpf_program;
+	p->setfilter_op = pcapint_install_bpf_program;
 	p->setdirection_op = NULL;	/* Not implemented. */
 	p->set_datalink_op = TcSetDatalink;
 	p->getnonblock_op = TcGetNonBlock;

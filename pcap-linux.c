@@ -4327,8 +4327,8 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 	/* Make our private copy of the filter */
 
-	if (pcap_install_bpf_program(handle, filter) < 0)
-		/* pcap_install_bpf_program() filled in errbuf */
+	if (pcapint_install_bpf_program(handle, filter) < 0)
+		/* pcapint_install_bpf_program() filled in errbuf */
 		return -1;
 
 	/*
