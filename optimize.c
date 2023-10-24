@@ -2942,7 +2942,7 @@ conv_error(conv_state_t *conv_state, const char *fmt, ...)
  * otherwise, return 0.
  */
 int
-pcap_install_bpf_program(pcap_t *p, struct bpf_program *fp)
+pcapint_install_bpf_program(pcap_t *p, struct bpf_program *fp)
 {
 	size_t prog_size;
 

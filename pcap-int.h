@@ -517,13 +517,13 @@ void	pcap_breakloop_common(pcap_t *);
  * "pcap_findalldevs_interfaces()" is a helper to find those interfaces
  * using the "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
  *
- * "pcap_add_dev()" adds an entry to a pcap_if_list_t.
+ * "pcapint_add_dev()" adds an entry to a pcap_if_list_t.
  *
  * "pcap_add_any_dev()" adds an entry for the "any" device to a pcap_if_list_t.
  *
- * "pcap_find_dev()" tries to find a device, by name, in a pcap_if_list_t.
+ * "pcapint_find_dev()" tries to find a device, by name, in a pcap_if_list_t.
  *
- * "pcap_find_or_add_dev()" checks whether a device is already in a
+ * "pcapint_find_or_add_dev()" checks whether a device is already in a
  * pcap_if_list_t and, if not, adds an entry for it.
  */
 struct pcap_if_list;
@@ -534,19 +534,19 @@ int	pcap_platform_finddevs(pcap_if_list_t *, char *);
 int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *), get_if_flags_func);
 #endif
-pcap_if_t *pcap_find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
+pcap_if_t *pcapint_find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
 	    get_if_flags_func, const char *, char *);
-pcap_if_t *pcap_find_dev(pcap_if_list_t *, const char *);
-pcap_if_t *pcap_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
+pcap_if_t *pcapint_find_dev(pcap_if_list_t *, const char *);
+pcap_if_t *pcapint_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
 	    const char *, char *);
 pcap_if_t *pcap_add_any_dev(pcap_if_list_t *, char *);
-int	pcap_add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
+int	pcapint_add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
 #ifndef _WIN32
-pcap_if_t *pcap_find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
+pcap_if_t *pcapint_find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
 	    get_if_flags_func, char *);
-int	pcap_add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
+int	pcapint_add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 	    get_if_flags_func,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
@@ -562,11 +562,11 @@ int	pcap_add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
  * "pcap_adjust_snapshot()" adjusts the snapshot to be non-zero and
  * fit within an int.
  *
- * "pcap_sf_cleanup()" closes the file handle associated with a pcap_t, if
+ * "pcapint_sf_cleanup()" closes the file handle associated with a pcap_t, if
  * appropriate, and frees all data common to all modules for handling
  * savefile types.
  *
- * "pcap_charset_fopen()", in UTF-8 mode on Windows, does an fopen() that
+ * "pcapint_charset_fopen()", in UTF-8 mode on Windows, does an fopen() that
  * treats the pathname as being in UTF-8, rather than the local
  * code page, on Windows.
  */
@@ -585,14 +585,14 @@ int	pcap_add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 pcap_t	*pcap_open_offline_common(char *ebuf, size_t total_size,
     size_t private_data);
 bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen);
-void	pcap_sf_cleanup(pcap_t *p);
+void	pcapint_sf_cleanup(pcap_t *p);
 #ifdef _WIN32
-FILE	*pcap_charset_fopen(const char *path, const char *mode);
+FILE	*pcapint_charset_fopen(const char *path, const char *mode);
 #else
 /*
  * On other OSes, just use Boring Old fopen().
  */
-#define pcap_charset_fopen(path, mode)	fopen((path), (mode))
+#define pcapint_charset_fopen(path, mode)	fopen((path), (mode))
 #endif
 
 /*
@@ -646,7 +646,7 @@ int	pcap_validate_filter(const struct bpf_insn *, int);
  */
 void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
-int	pcap_install_bpf_program(pcap_t *, struct bpf_program *);
+int	pcapint_install_bpf_program(pcap_t *, struct bpf_program *);
 
 int	pcap_strcasecmp(const char *, const char *);
 

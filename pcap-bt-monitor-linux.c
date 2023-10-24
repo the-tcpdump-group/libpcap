@@ -80,7 +80,7 @@ bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
      * more than there's a notion of "connected" or "disconnected"
      * for the "any" device.
      */
-    if (pcap_add_dev(devlistp, INTERFACE_NAME,
+    if (pcapint_add_dev(devlistp, INTERFACE_NAME,
                 PCAP_IF_WIRELESS|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
                 "Bluetooth Linux Monitor", err_str) == NULL)
     {
@@ -204,7 +204,7 @@ bt_monitor_activate(pcap_t* handle)
 
     handle->read_op = bt_monitor_read;
     handle->inject_op = bt_monitor_inject;
-    handle->setfilter_op = pcap_install_bpf_program; /* no kernel filtering */
+    handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
     handle->setdirection_op = NULL; /* Not implemented */
     handle->set_datalink_op = NULL; /* can't change data link type */
     handle->getnonblock_op = pcap_getnonblock_fd;

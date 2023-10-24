@@ -248,7 +248,7 @@ sf_setdirection(pcap_t *p, pcap_direction_t d _U_)
 }
 
 void
-pcap_sf_cleanup(pcap_t *p)
+pcapint_sf_cleanup(pcap_t *p)
 {
 	if (p->rfile != stdin)
 		(void)fclose(p->rfile);
@@ -268,7 +268,7 @@ pcap_sf_cleanup(pcap_t *p)
  * local code page.
  */
 FILE *
-pcap_charset_fopen(const char *path, const char *mode)
+pcapint_charset_fopen(const char *path, const char *mode)
 {
 	wchar_t *utf16_path;
 #define MAX_MODE_LEN	16
@@ -375,7 +375,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	}
 	else {
 		/*
-		 * Use pcap_charset_fopen(); on Windows, it tests whether we're
+		 * Use pcapint_charset_fopen(); on Windows, it tests whether we're
 		 * in "local code page" or "UTF-8" mode, and treats the
 		 * pathname appropriately, and on other platforms, it just
 		 * wraps fopen().
@@ -384,7 +384,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		 * support it, even though it does nothing.  For MS-DOS,
 		 * we again need it.
 		 */
-		fp = pcap_charset_fopen(fname, "rb");
+		fp = pcapint_charset_fopen(fname, "rb");
 		if (fp == NULL) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "%s", fname);
@@ -564,7 +564,7 @@ found:
 	p->can_set_rfmon_op = sf_cant_set_rfmon;
 	p->read_op = pcap_offline_read;
 	p->inject_op = sf_inject;
-	p->setfilter_op = pcap_install_bpf_program;
+	p->setfilter_op = pcapint_install_bpf_program;
 	p->setdirection_op = sf_setdirection;
 	p->set_datalink_op = NULL;	/* we don't support munging link-layer headers */
 	p->getnonblock_op = sf_getnonblock;

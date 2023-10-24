@@ -266,7 +266,7 @@ pcap_netmap_activate(pcap_t *p)
 	p->selectable_fd = p->fd;
 	p->read_op = pcap_netmap_dispatch;
 	p->inject_op = pcap_netmap_inject;
-	p->setfilter_op = pcap_install_bpf_program;
+	p->setfilter_op = pcapint_install_bpf_program;
 	p->setdirection_op = NULL;
 	p->set_datalink_op = NULL;
 	p->getnonblock_op = pcap_getnonblock_fd;

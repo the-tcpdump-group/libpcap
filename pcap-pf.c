@@ -660,7 +660,7 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 	/*
 	 * We couldn't do filtering in the kernel; do it in userland.
 	 */
-	if (pcap_install_bpf_program(p, fp) < 0)
+	if (pcapint_install_bpf_program(p, fp) < 0)
 		return (-1);
 
 	/*

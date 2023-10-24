@@ -449,7 +449,7 @@ pcap_activate_snit(pcap_t *p)
 
 	p->read_op = pcap_read_snit;
 	p->inject_op = pcap_inject_snit;
-	p->setfilter_op = pcap_install_bpf_program;	/* no kernel filtering */
+	p->setfilter_op = pcapint_install_bpf_program;	/* no kernel filtering */
 	p->setdirection_op = NULL;	/* Not implemented. */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;

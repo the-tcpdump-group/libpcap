@@ -2929,7 +2929,7 @@ finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 		 * so we need to avoid adding multiple capture devices
 		 * for each bus.
 		 */
-		if (pcap_find_or_add_dev(devlistp, name, PCAP_IF_UP,
+		if (pcapint_find_or_add_dev(devlistp, name, PCAP_IF_UP,
 		    get_usb_if_flags, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
@@ -3472,11 +3472,11 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 	}
 
 	/*
-	 * pcap_install_bpf_program() validates the program.
+	 * pcapint_install_bpf_program() validates the program.
 	 *
 	 * XXX - what if we already have a filter in the kernel?
 	 */
-	if (pcap_install_bpf_program(p, fp) < 0)
+	if (pcapint_install_bpf_program(p, fp) < 0)
 		return (-1);
 	pb->filtering_in_kernel = 0;	/* filtering in userland */
 	return (0);
