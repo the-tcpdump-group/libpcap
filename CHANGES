@@ -36,7 +36,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
       autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
-      autoconf: Add the option to print functions and files names.
       Autoconf: Update install-sh script to the latest available version.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
@@ -102,6 +101,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Handle DLT_/LINKTYPE_ mapping better, to handle some
         OpenBSD-specific link types better.
     Building and testing:
+      Add a configure option to help debugging (--enable-instrument-functions)
       Improved tests and error reporting for uses of pkg-config, and
         improve help message
       Fix Haiku build
