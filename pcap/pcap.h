@@ -1156,15 +1156,15 @@ struct pcap_rmtauth
  * For opening a remote capture, pcap_open() is currently the only
  * API available.
  */
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API pcap_t	*pcap_open(const char *source, int snaplen, int flags,
 	    int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_createsrcstr(char *source, int type, const char *host,
 	    const char *port, const char *name, char *errbuf);
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
 	    char *port, char *name, char *errbuf);
 
@@ -1187,7 +1187,7 @@ PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
  * For listing remote capture devices, pcap_findalldevs_ex() is currently
  * the only API available.
  */
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_findalldevs_ex(const char *source,
 	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf);
 
@@ -1258,7 +1258,7 @@ struct pcap_samp
 /*
  * New functions.
  */
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 /*
@@ -1268,24 +1268,24 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 /* Maximum length of an host name (needed for the RPCAP active mode) */
 #define RPCAP_HOSTLIST_SIZE 1024
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, char *errbuf);
 
-PCAP_AVAILABLE_1_10
+PCAP_AVAILABLE_1_10_REMOTE
 PCAP_API SOCKET	pcap_remoteact_accept_ex(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf);
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_remoteact_list(char *hostlist, char sep, int size,
 	    char *errbuf);
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf);
 
-PCAP_AVAILABLE_1_9
+PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API void	pcap_remoteact_cleanup(void);
 
 enum pcap_option_name {  /* never renumber this */
