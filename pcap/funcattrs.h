@@ -197,7 +197,32 @@
 #define PCAP_AVAILABLE_1_7	PCAP_API_AVAILABLE(macos(10.12))
 #define PCAP_AVAILABLE_1_8	PCAP_API_AVAILABLE(macos(10.13))
 #define PCAP_AVAILABLE_1_9	PCAP_API_AVAILABLE(macos(10.13))
+/*
+ * The remote capture APIs are, in 1.9 and 1.10, usually only
+ * available in the library if the library was built with
+ * remote capture enabled.
+ *
+ * However, macOS Sonoma provides stub versions of those routine,
+ * which return an error.  This means that we need a separate
+ * availability indicator macro for those routines, so that
+ * progras built on macOS Sonoma that attempt to use weak
+ * importing and availability tests to use those routines
+ * if they're available will get those routines weakly imported,
+ * so that if they're run on releases prior to Sonoma, they
+ * won't get an error from dyld about those routines being
+ * missing in libpcap.  (If they don't use run-time availability
+ * tests, they will, instead, get crashes if they call one of
+ * those routines, as the addresses of those routines will be
+ * set to 0 by dyld, meaning the program will dereference a
+ * null pointer and crash when trying to call them.)
+ *
+ * (Not that it's useful to use those routines *anyway*, as they're
+ * stubs that always fail.  The stubs were necessary in order to
+ * support weak exporting at all.)
+ */
+#define PCAP_AVAILABLE_1_9_REMOTE	PCAP_API_AVAILABLE(macos(14.0))
 #define PCAP_AVAILABLE_1_10	PCAP_API_AVAILABLE(macos(12.1))
+#define PCAP_AVAILABLE_1_10_REMOTE	PCAP_API_AVAILABLE(macos(14.0))
 #define PCAP_AVAILABLE_1_11	/* not released yet, so not in macOS yet */
 #else /* __APPLE__ */
 #define PCAP_AVAILABLE_0_4
@@ -216,7 +241,9 @@
 #define PCAP_AVAILABLE_1_7
 #define PCAP_AVAILABLE_1_8
 #define PCAP_AVAILABLE_1_9
+#define PCAP_AVAILABLE_1_9_REMOTE
 #define PCAP_AVAILABLE_1_10
+#define PCAP_AVAILABLE_1_10_REMOTE
 #define PCAP_AVAILABLE_1_11
 #endif /* __APPLE__ */
 
