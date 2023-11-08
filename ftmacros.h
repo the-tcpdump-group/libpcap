@@ -95,7 +95,7 @@
    *
    * Unfortunately, one thing it has to offer is a strerror_r()
    * that's not POSIX-compliant, but we deal with that in
-   * pcap_fmt_errmsg_for_errno().
+   * pcapint_fmt_errmsg_for_errno().
    *
    * We don't limit this to, for example, Linux and Cygwin, because
    * this might, for example, be GNU/HURD or one of Debian's kFreeBSD

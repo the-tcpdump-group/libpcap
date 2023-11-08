@@ -1,4 +1,4 @@
-/*	$OpenBSD: pcap_strlcpy.c,v 1.12 2015/01/15 03:54:12 millert Exp $	*/
+/*	$OpenBSD: strlcpy.c,v 1.12 2015/01/15 03:54:12 millert Exp $	*/
 
 /*
  * Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
@@ -31,7 +31,7 @@
  * Returns strlen(src); if retval >= dsize, truncation occurred.
  */
 size_t
-pcap_strlcpy(char * restrict dst, const char * restrict src, size_t dsize)
+pcapint_strlcpy(char * restrict dst, const char * restrict src, size_t dsize)
 {
 	const char *osrc = src;
 	size_t nleft = dsize;

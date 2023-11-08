@@ -1267,7 +1267,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			username = (char *) malloc (usernamelen + 1);
 			if (username == NULL)
 			{
-				pcap_fmt_errmsg_for_errno(errmsgbuf,
+				pcapint_fmt_errmsg_for_errno(errmsgbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
@@ -1288,7 +1288,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			passwd = (char *) malloc (passwdlen + 1);
 			if (passwd == NULL)
 			{
-				pcap_fmt_errmsg_for_errno(errmsgbuf,
+				pcapint_fmt_errmsg_for_errno(errmsgbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				free(username);
 				goto error;
@@ -1451,7 +1451,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		{
 			// Some error other than an authentication error;
 			// log it.
-			pcap_fmt_errmsg_for_win32_err(errmsgbuf,
+			pcapint_fmt_errmsg_for_win32_err(errmsgbuf,
 			    PCAP_ERRBUF_SIZE, error, "LogonUser() failed");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errmsgbuf);
 		}
@@ -1463,7 +1463,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	if (ImpersonateLoggedOnUser(Token) == 0)
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
-		pcap_fmt_errmsg_for_win32_err(errmsgbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(errmsgbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "ImpersonateLoggedOnUser() failed");
 		rpcapd_log(LOGPRIO_ERROR, "%s", errmsgbuf);
 		CloseHandle(Token);
@@ -1562,7 +1562,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	if (setuid(user->pw_uid))
 	{
 		error = errno;
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    error, "setuid");
 		rpcapd_log(LOGPRIO_ERROR, "setuid() failed: %s",
 		    strerror(error));
@@ -1572,7 +1572,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 /*	if (setgid(user->pw_gid))
 	{
 		error = errno;
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "setgid");
 		rpcapd_log(LOGPRIO_ERROR, "setgid() failed: %s",
 		    strerror(error));
@@ -1594,7 +1594,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
  */
 #define CHECK_AND_INCREASE_REPLY_LEN(itemlen) \
 	if (replylen > UINT32_MAX - (itemlen)) { \
-		pcap_strlcpy(errmsgbuf, "Reply length doesn't fit in 32 bits", \
+		pcapint_strlcpy(errmsgbuf, "Reply length doesn't fit in 32 bits", \
 		    sizeof (errmsgbuf)); \
 		goto error; \
 	} \
@@ -1648,7 +1648,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		if (d->description) {
 			size_t stringlen = strlen(d->description);
 			if (stringlen > UINT16_MAX) {
-				pcap_strlcpy(errmsgbuf,
+				pcapint_strlcpy(errmsgbuf,
 				    "Description length doesn't fit in 16 bits",
 				    sizeof (errmsgbuf));
 				goto error;
@@ -1658,7 +1658,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		if (d->name) {
 			size_t stringlen = strlen(d->name);
 			if (stringlen > UINT16_MAX) {
-				pcap_strlcpy(errmsgbuf,
+				pcapint_strlcpy(errmsgbuf,
 				    "Name length doesn't fit in 16 bits",
 				    sizeof (errmsgbuf));
 				goto error;
@@ -1682,7 +1682,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 #endif
 				CHECK_AND_INCREASE_REPLY_LEN(sizeof(struct rpcap_sockaddr) * 4);
 				if (naddrs == UINT16_MAX) {
-					pcap_strlcpy(errmsgbuf,
+					pcapint_strlcpy(errmsgbuf,
 					    "Number of interfaces doesn't fit in 16 bits",
 					    sizeof (errmsgbuf));
 					goto error;
@@ -2231,7 +2231,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	    (void *) session);
 	if (ret != 0)
 	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    ret, "Error creating the data thread");
 		goto error;
 	}
@@ -2371,7 +2371,7 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 	bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
 	if (bf_insn == NULL)
 	{
-		pcap_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc() failed");
 		return -2;
 	}

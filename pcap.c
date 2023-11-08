@@ -192,7 +192,7 @@ internal_wsockinit(char *errbuf)
 	done = 1;
 	if (status != 0) {
 		if (errbuf != NULL) {
-			pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 			    status, "WSAStartup() failed");
 		}
 		return (err);
@@ -243,8 +243,8 @@ pcap_wsockinit(void)
  *
  * Returns 0 on success, -1 on error.
  */
-int pcap_new_api;		/* pcap_lookupdev() always fails */
-int pcap_utf_8_mode;		/* Strings should be in UTF-8. */
+int pcapint_new_api;		/* pcap_lookupdev() always fails */
+int pcapint_utf_8_mode;		/* Strings should be in UTF-8. */
 
 int
 pcap_init(unsigned int opts, char *errbuf)
@@ -262,7 +262,7 @@ pcap_init(unsigned int opts, char *errbuf)
 	case PCAP_CHAR_ENC_LOCAL:
 		/* Leave "UTF-8 mode" off. */
 		if (initialized) {
-			if (pcap_utf_8_mode) {
+			if (pcapint_utf_8_mode) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Multiple pcap_init calls with different character encodings");
 				return (PCAP_ERROR);
@@ -273,13 +273,13 @@ pcap_init(unsigned int opts, char *errbuf)
 	case PCAP_CHAR_ENC_UTF_8:
 		/* Turn on "UTF-8 mode". */
 		if (initialized) {
-			if (!pcap_utf_8_mode) {
+			if (!pcapint_utf_8_mode) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Multiple pcap_init calls with different character encodings");
 				return (PCAP_ERROR);
 			}
 		}
-		pcap_utf_8_mode = 1;
+		pcapint_utf_8_mode = 1;
 		break;
 
 	default:
@@ -293,7 +293,7 @@ pcap_init(unsigned int opts, char *errbuf)
 	 * UTF-8 mode flag, so we have to call a routine to set its
 	 * UTF-8 mode flag.
 	 */
-	pcap_fmt_set_encoding(opts);
+	pcapint_fmt_set_encoding(opts);
 
 	if (initialized) {
 		/*
@@ -317,7 +317,7 @@ pcap_init(unsigned int opts, char *errbuf)
 	 * We're done.
 	 */
 	initialized = 1;
-	pcap_new_api = 1;
+	pcapint_new_api = 1;
 	return (0);
 }
 
@@ -539,7 +539,7 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		 */
 		*tstamp_typesp = (int*)malloc(sizeof(**tstamp_typesp));
 		if (*tstamp_typesp == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
@@ -549,7 +549,7 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
 		    p->tstamp_type_count);
 		if (*tstamp_typesp == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
@@ -582,7 +582,7 @@ pcap_free_tstamp_types(int *tstamp_type_list)
  * returns, so that a copy must be made.
  */
 void
-pcap_oneshot(u_char *user, const struct pcap_pkthdr *h, const u_char *pkt)
+pcapint_oneshot(u_char *user, const struct pcap_pkthdr *h, const u_char *pkt)
 {
 	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
 
@@ -621,11 +621,11 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		int status;
 
 		/* We are on an offline capture */
-		status = pcap_offline_read(p, 1, p->oneshot_callback,
+		status = pcapint_offline_read(p, 1, p->oneshot_callback,
 		    (u_char *)&s);
 
 		/*
-		 * Return codes for pcap_offline_read() are:
+		 * Return codes for pcapint_offline_read() are:
 		 *   -  0: EOF
 		 *   - -1: error
 		 *   - >0: OK - result is number of packets read, so
@@ -653,7 +653,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 *         it will be 1 in this case, as we've passed
 	 *         a maximum packet count of 1
 	 * The first one ('0') conflicts with the return code of 0 from
-	 * pcap_offline_read() meaning "end of file".
+	 * pcapint_offline_read() meaning "end of file".
 	*/
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
@@ -728,7 +728,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	 * can capture.
 	 */
 	devlist.beginning = NULL;
-	if (pcap_platform_finddevs(&devlist, errbuf) == -1) {
+	if (pcapint_platform_finddevs(&devlist, errbuf) == -1) {
 		/*
 		 * Failed - free all of the entries we were given
 		 * before we failed.
@@ -910,7 +910,7 @@ get_if_description(const char *name)
 	 * Get the description for the interface.
 	 */
 	memset(&ifrdesc, 0, sizeof ifrdesc);
-	pcap_strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
+	pcapint_strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s >= 0) {
 #ifdef __FreeBSD__
@@ -995,7 +995,7 @@ get_if_description(const char *name)
 				 * (If that fails, we don't worry about
 				 * it, we just return NULL.)
 				 */
-				if (pcap_asprintf(&description,
+				if (pcapint_asprintf(&description,
 				    "USB bus number %ld", busnum) == -1) {
 					/* Failed. */
 					description = NULL;
@@ -1139,7 +1139,7 @@ pcapint_add_addr_to_dev(pcap_if_t *curdev,
 	 */
 	curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (-1);
 	}
@@ -1148,7 +1148,7 @@ pcapint_add_addr_to_dev(pcap_if_t *curdev,
 	if (addr != NULL && addr_size != 0) {
 		curaddr->addr = (struct sockaddr *)dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			free(curaddr);
 			return (-1);
@@ -1159,7 +1159,7 @@ pcapint_add_addr_to_dev(pcap_if_t *curdev,
 	if (netmask != NULL && netmask_size != 0) {
 		curaddr->netmask = (struct sockaddr *)dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			if (curaddr->addr != NULL)
 				free(curaddr->addr);
@@ -1172,7 +1172,7 @@ pcapint_add_addr_to_dev(pcap_if_t *curdev,
 	if (broadaddr != NULL && broadaddr_size != 0) {
 		curaddr->broadaddr = (struct sockaddr *)dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			if (curaddr->netmask != NULL)
 				free(curaddr->netmask);
@@ -1187,7 +1187,7 @@ pcapint_add_addr_to_dev(pcap_if_t *curdev,
 	if (dstaddr != NULL && dstaddr_size != 0) {
 		curaddr->dstaddr = (struct sockaddr *)dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			if (curaddr->broadaddr != NULL)
 				free(curaddr->broadaddr);
@@ -1323,7 +1323,7 @@ pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 
 	curdev = malloc(sizeof(pcap_if_t));
 	if (curdev == NULL) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
@@ -1334,7 +1334,7 @@ pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 	curdev->next = NULL;
 	curdev->name = strdup(name);
 	if (curdev->name == NULL) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		free(curdev);
 		return (NULL);
@@ -1350,7 +1350,7 @@ pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 		 */
 		curdev->description = strdup(description);
 		if (curdev->description == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			free(curdev->name);
 			free(curdev);
@@ -1549,7 +1549,7 @@ pcap_lookupdev(char *errbuf)
 	 * In addition, it's not thread-safe, so we've marked it as
 	 * deprecated.
 	 */
-	if (pcap_new_api) {
+	if (pcapint_new_api) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "pcap_lookupdev() is deprecated and is not supported in programs calling pcap_init()");
 		return (NULL);
@@ -1570,14 +1570,14 @@ pcap_lookupdev(char *errbuf)
 		 * on the list, there aren't any non-loopback devices,
 		 * so why not just supply it as the default device?
 		 */
-		(void)pcap_strlcpy(errbuf, "no suitable device found",
+		(void)pcapint_strlcpy(errbuf, "no suitable device found",
 		    PCAP_ERRBUF_SIZE);
 		ret = NULL;
 	} else {
 		/*
 		 * Return the name of the first device on the list.
 		 */
-		(void)pcap_strlcpy(device, alldevs->name, sizeof(device));
+		(void)pcapint_strlcpy(device, alldevs->name, sizeof(device));
 		ret = device;
 	}
 
@@ -1638,7 +1638,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket");
 		return (-1);
 	}
@@ -1647,7 +1647,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	/* XXX Work around Linux kernel bug */
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
-	(void)pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	(void)pcapint_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 #if defined(__HAIKU__) && defined(__clang__)
 	/*
 	 * In Haiku R1/beta4 <unistd.h> ioctl() is a macro that needs to take 4
@@ -1665,7 +1665,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: no IPv4 address assigned", device);
 		} else {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "SIOCGIFADDR: %s", device);
 		}
 		(void)close(fd);
@@ -1678,14 +1678,14 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	/* XXX Work around Linux kernel bug */
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
-	(void)pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	(void)pcapint_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 #if defined(__HAIKU__) && defined(__clang__)
 	/* Same as above. */
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr, sizeof(ifr)) < 0) {
 #else
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
 #endif /* __HAIKU__ && __clang__ */
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "SIOCGIFNETMASK: %s", device);
 		(void)close(fd);
 		return (-1);
@@ -1723,7 +1723,7 @@ get_substring(const char *p, size_t len, char *ebuf)
 
 	token = malloc(len + 1);
 	if (token == NULL) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
@@ -1818,7 +1818,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			return (-1);
 		}
@@ -1843,7 +1843,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			return (-1);
 		}
@@ -1861,7 +1861,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	scheme_len = colonp - source;
 	scheme = malloc(scheme_len + 1);
 	if (scheme == NULL) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (-1);
 	}
@@ -1872,10 +1872,10 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 * Treat file: specially - take everything after file:// as
 	 * the pathname.
 	 */
-	if (pcap_strcasecmp(scheme, "file") == 0) {
+	if (pcapint_strcasecmp(scheme, "file") == 0) {
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			free(scheme);
 			return (-1);
@@ -1892,8 +1892,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 *
 	 * XXX - %-escaping?
 	 */
-	if ((pcap_strcasecmp(scheme, "rpcap") == 0 ||
-	    pcap_strcasecmp(scheme, "rpcaps") == 0) &&
+	if ((pcapint_strcasecmp(scheme, "rpcap") == 0 ||
+	    pcapint_strcasecmp(scheme, "rpcaps") == 0) &&
 	    strchr(colonp + 3, '/') == NULL) {
 		/*
 		 * Local device.
@@ -1904,7 +1904,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		free(scheme);
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			return (-1);
 		}
@@ -2087,7 +2087,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	else
 		path = strdup(endp + 1);
 	if (path == NULL) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		free(port);
 		free(host);
@@ -2104,15 +2104,15 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 }
 
 int
-pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
+pcapint_createsrcstr_ex(char *source, int type, const char *host, const char *port,
     const char *name, unsigned char uses_ssl, char *errbuf)
 {
 	switch (type) {
 
 	case PCAP_SRC_FILE:
-		pcap_strlcpy(source, PCAP_SRC_FILE_STRING, PCAP_BUF_SIZE);
+		pcapint_strlcpy(source, PCAP_SRC_FILE_STRING, PCAP_BUF_SIZE);
 		if (name != NULL && *name != '\0') {
-			pcap_strlcat(source, name, PCAP_BUF_SIZE);
+			pcapint_strlcat(source, name, PCAP_BUF_SIZE);
 			return (0);
 		} else {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -2121,7 +2121,7 @@ pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
 		}
 
 	case PCAP_SRC_IFREMOTE:
-		pcap_strlcpy(source,
+		pcapint_strlcpy(source,
 		    (uses_ssl ? "rpcaps://" : PCAP_SRC_IF_STRING),
 		    PCAP_BUF_SIZE);
 		if (host != NULL && *host != '\0') {
@@ -2131,18 +2131,18 @@ pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
 				 * probably an IPv6 address, and needs to
 				 * be included in square brackets.
 				 */
-				pcap_strlcat(source, "[", PCAP_BUF_SIZE);
-				pcap_strlcat(source, host, PCAP_BUF_SIZE);
-				pcap_strlcat(source, "]", PCAP_BUF_SIZE);
+				pcapint_strlcat(source, "[", PCAP_BUF_SIZE);
+				pcapint_strlcat(source, host, PCAP_BUF_SIZE);
+				pcapint_strlcat(source, "]", PCAP_BUF_SIZE);
 			} else
-				pcap_strlcat(source, host, PCAP_BUF_SIZE);
+				pcapint_strlcat(source, host, PCAP_BUF_SIZE);
 
 			if (port != NULL && *port != '\0') {
-				pcap_strlcat(source, ":", PCAP_BUF_SIZE);
-				pcap_strlcat(source, port, PCAP_BUF_SIZE);
+				pcapint_strlcat(source, ":", PCAP_BUF_SIZE);
+				pcapint_strlcat(source, port, PCAP_BUF_SIZE);
 			}
 
-			pcap_strlcat(source, "/", PCAP_BUF_SIZE);
+			pcapint_strlcat(source, "/", PCAP_BUF_SIZE);
 		} else {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "The host name cannot be NULL.");
@@ -2150,15 +2150,15 @@ pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
 		}
 
 		if (name != NULL && *name != '\0')
-			pcap_strlcat(source, name, PCAP_BUF_SIZE);
+			pcapint_strlcat(source, name, PCAP_BUF_SIZE);
 
 		return (0);
 
 	case PCAP_SRC_IFLOCAL:
-		pcap_strlcpy(source, PCAP_SRC_IF_STRING, PCAP_BUF_SIZE);
+		pcapint_strlcpy(source, PCAP_SRC_IF_STRING, PCAP_BUF_SIZE);
 
 		if (name != NULL && *name != '\0')
-			pcap_strlcat(source, name, PCAP_BUF_SIZE);
+			pcapint_strlcat(source, name, PCAP_BUF_SIZE);
 
 		return (0);
 
@@ -2174,11 +2174,11 @@ int
 pcap_createsrcstr(char *source, int type, const char *host, const char *port,
     const char *name, char *errbuf)
 {
-	return (pcap_createsrcstr_ex(source, type, host, port, name, 0, errbuf));
+	return (pcapint_createsrcstr_ex(source, type, host, port, name, 0, errbuf));
 }
 
 int
-pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
+pcapint_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
     char *name, unsigned char *uses_ssl, char *errbuf)
 {
 	char *scheme, *tmpuserinfo, *tmphost, *tmpport, *tmppath;
@@ -2207,7 +2207,7 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 		 * Local device.
 		 */
 		if (name && tmppath)
-			pcap_strlcpy(name, tmppath, PCAP_BUF_SIZE);
+			pcapint_strlcpy(name, tmppath, PCAP_BUF_SIZE);
 		if (type)
 			*type = PCAP_SRC_IFLOCAL;
 		free(tmppath);
@@ -2237,12 +2237,12 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 				snprintf(host, PCAP_BUF_SIZE, "%s@%s",
 				    tmpuserinfo, tmphost);
 			else
-				pcap_strlcpy(host, tmphost, PCAP_BUF_SIZE);
+				pcapint_strlcpy(host, tmphost, PCAP_BUF_SIZE);
 		}
 		if (port && tmpport)
-			pcap_strlcpy(port, tmpport, PCAP_BUF_SIZE);
+			pcapint_strlcpy(port, tmpport, PCAP_BUF_SIZE);
 		if (name && tmppath)
-			pcap_strlcpy(name, tmppath, PCAP_BUF_SIZE);
+			pcapint_strlcpy(name, tmppath, PCAP_BUF_SIZE);
 		if (type)
 			*type = PCAP_SRC_IFREMOTE;
 		free(tmppath);
@@ -2258,7 +2258,7 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 		 * file://
 		 */
 		if (name && tmppath)
-			pcap_strlcpy(name, tmppath, PCAP_BUF_SIZE);
+			pcapint_strlcpy(name, tmppath, PCAP_BUF_SIZE);
 		if (type)
 			*type = PCAP_SRC_FILE;
 		free(tmppath);
@@ -2274,7 +2274,7 @@ pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 	 * as a local device.
 	 */
 	if (name)
-		pcap_strlcpy(name, source, PCAP_BUF_SIZE);
+		pcapint_strlcpy(name, source, PCAP_BUF_SIZE);
 	if (type)
 		*type = PCAP_SRC_IFLOCAL;
 	free(tmppath);
@@ -2289,7 +2289,7 @@ int
 pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
     char *name, char *errbuf)
 {
-	return (pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf));
+	return (pcapint_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf));
 }
 #endif
 
@@ -2348,13 +2348,13 @@ pcap_create(const char *device, char *errbuf)
 		 * We keep it around in legacy mode for backwards
 		 * compatibility.
 		 */
-		if (!pcap_new_api && device[0] != '\0' && device[1] == '\0') {
+		if (!pcapint_new_api && device[0] != '\0' && device[1] == '\0') {
 			size_t length;
 
 			length = wcslen((wchar_t *)device);
 			device_str = (char *)malloc(length + 1);
 			if (device_str == NULL) {
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "malloc");
 				return (NULL);
@@ -2367,7 +2367,7 @@ pcap_create(const char *device, char *errbuf)
 			device_str = strdup(device);
 	}
 	if (device_str == NULL) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
@@ -2406,7 +2406,7 @@ pcap_create(const char *device, char *errbuf)
 	/*
 	 * OK, try it as a regular network interface.
 	 */
-	p = pcap_create_interface(device_str, errbuf);
+	p = pcapint_create_interface(device_str, errbuf);
 	if (p == NULL) {
 		/*
 		 * We assume the caller filled in errbuf.
@@ -2462,23 +2462,23 @@ initialize_ops(pcap_t *p)
 
 	/*
 	 * Default cleanup operation - implementations can override
-	 * this, but should call pcap_cleanup_live_common() after
+	 * this, but should call pcapint_cleanup_live_common() after
 	 * doing their own additional cleanup.
 	 */
-	p->cleanup_op = pcap_cleanup_live_common;
+	p->cleanup_op = pcapint_cleanup_live_common;
 
 	/*
 	 * In most cases, the standard one-shot callback can
 	 * be used for pcap_next()/pcap_next_ex().
 	 */
-	p->oneshot_callback = pcap_oneshot;
+	p->oneshot_callback = pcapint_oneshot;
 
 	/*
 	 * Default breakloop operation - implementations can override
-	 * this, but should call pcap_breakloop_common() before doing
+	 * this, but should call pcapint_breakloop_common() before doing
 	 * their own logic.
 	 */
-	p->breakloop_op = pcap_breakloop_common;
+	p->breakloop_op = pcapint_breakloop_common;
 }
 
 static pcap_t *
@@ -2493,7 +2493,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t total_size, size_t private_offset)
 	 */
 	chunk = calloc(total_size, 1);
 	if (chunk == NULL) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
@@ -2526,7 +2526,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t total_size, size_t private_offset)
 }
 
 pcap_t *
-pcap_create_common(char *ebuf, size_t total_size, size_t private_offset)
+pcapint_create_common(char *ebuf, size_t total_size, size_t private_offset)
 {
 	pcap_t *p;
 
@@ -2579,7 +2579,7 @@ pcap_create_common(char *ebuf, size_t total_size, size_t private_offset)
 }
 
 int
-pcap_check_activated(pcap_t *p)
+pcapint_check_activated(pcap_t *p)
 {
 	if (p->activated) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
@@ -2592,7 +2592,7 @@ pcap_check_activated(pcap_t *p)
 int
 pcap_set_snaplen(pcap_t *p, int snaplen)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	p->snapshot = snaplen;
 	return (0);
@@ -2601,7 +2601,7 @@ pcap_set_snaplen(pcap_t *p, int snaplen)
 int
 pcap_set_promisc(pcap_t *p, int promisc)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.promisc = promisc;
 	return (0);
@@ -2610,7 +2610,7 @@ pcap_set_promisc(pcap_t *p, int promisc)
 int
 pcap_set_rfmon(pcap_t *p, int rfmon)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.rfmon = rfmon;
 	return (0);
@@ -2619,7 +2619,7 @@ pcap_set_rfmon(pcap_t *p, int rfmon)
 int
 pcap_set_timeout(pcap_t *p, int timeout_ms)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.timeout = timeout_ms;
 	return (0);
@@ -2630,7 +2630,7 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 {
 	int i;
 
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 
 	/*
@@ -2673,7 +2673,7 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 int
 pcap_set_immediate_mode(pcap_t *p, int immediate)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.immediate = immediate;
 	return (0);
@@ -2682,7 +2682,7 @@ pcap_set_immediate_mode(pcap_t *p, int immediate)
 int
 pcap_set_buffer_size(pcap_t *p, int buffer_size)
 {
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	if (buffer_size <= 0) {
 		/*
@@ -2699,7 +2699,7 @@ pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 {
 	int i;
 
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 
 	/*
@@ -2761,7 +2761,7 @@ pcap_activate(pcap_t *p)
 	 * as some code that showed up in a Stack Exchange
 	 * question did.
 	 */
-	if (pcap_check_activated(p))
+	if (pcapint_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	status = p->activate_op(p);
 	if (status >= 0) {
@@ -2901,7 +2901,7 @@ fail:
 		 */
 		char trimbuf[PCAP_ERRBUF_SIZE - 5]; /* 2 bytes shorter */
 
-		pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
+		pcapint_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %.*s", device,
 		    PCAP_ERRBUF_SIZE - 3, trimbuf);
 	} else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
@@ -2917,7 +2917,7 @@ fail:
 			 */
 			char trimbuf[PCAP_ERRBUF_SIZE - 8]; /* 2 bytes shorter */
 
-			pcap_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
+			pcapint_strlcpy(trimbuf, p->errbuf, sizeof(trimbuf));
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%.*s)",
 			    device, pcap_statustostr(status),
 			    PCAP_ERRBUF_SIZE - 6, trimbuf);
@@ -2934,7 +2934,7 @@ fail:
 }
 
 pcap_t *
-pcap_open_offline_common(char *ebuf, size_t total_size, size_t private_offset)
+pcapint_open_offline_common(char *ebuf, size_t total_size, size_t private_offset)
 {
 	pcap_t *p;
 
@@ -2963,7 +2963,7 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/*
 			 * 0 means EOF, so don't loop if we get 0.
 			 */
-			n = pcap_offline_read(p, cnt, callback, user);
+			n = pcapint_offline_read(p, cnt, callback, user);
 		} else {
 			/*
 			 * XXX keep reading until we get something
@@ -3022,7 +3022,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		 */
 		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer));
 		if (*dlt_buffer == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
@@ -3031,7 +3031,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 	} else {
 		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
 		if (*dlt_buffer == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
@@ -3196,7 +3196,7 @@ static const u_char charmap[] = {
 };
 
 int
-pcap_strcasecmp(const char *s1, const char *s2)
+pcapint_strcasecmp(const char *s1, const char *s2)
 {
 	register const u_char	*cm = charmap,
 				*us1 = (const u_char *)s1,
@@ -3379,7 +3379,7 @@ pcap_datalink_name_to_val(const char *name)
 	int i;
 
 	for (i = 0; dlt_choices[i].name != NULL; i++) {
-		if (pcap_strcasecmp(dlt_choices[i].name, name) == 0)
+		if (pcapint_strcasecmp(dlt_choices[i].name, name) == 0)
 			return (dlt_choices[i].dlt);
 	}
 	return (-1);
@@ -3446,7 +3446,7 @@ pcap_tstamp_type_name_to_val(const char *name)
 	int i;
 
 	for (i = 0; tstamp_type_choices[i].name != NULL; i++) {
-		if (pcap_strcasecmp(tstamp_type_choices[i].name, name) == 0)
+		if (pcapint_strcasecmp(tstamp_type_choices[i].name, name) == 0)
 			return (tstamp_type_choices[i].type);
 	}
 	return (PCAP_ERROR);
@@ -3592,7 +3592,7 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 		 * We copy the error message to errbuf, so callers
 		 * can find it in either place.
 		 */
-		pcap_strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+		pcapint_strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
 	}
 	return (ret);
 }
@@ -3603,13 +3603,13 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
  */
 #if !defined(_WIN32) && !defined(MSDOS)
 int
-pcap_getnonblock_fd(pcap_t *p)
+pcapint_getnonblock_fd(pcap_t *p)
 {
 	int fdflags;
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "F_GETFL");
 		return (-1);
 	}
@@ -3636,7 +3636,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		 * We copy the error message to errbuf, so callers
 		 * can find it in either place.
 		 */
-		pcap_strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+		pcapint_strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
 	}
 	return (ret);
 }
@@ -3649,13 +3649,13 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
  * needs to do some additional work.)
  */
 int
-pcap_setnonblock_fd(pcap_t *p, int nonblock)
+pcapint_setnonblock_fd(pcap_t *p, int nonblock)
 {
 	int fdflags;
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "F_GETFL");
 		return (-1);
 	}
@@ -3664,7 +3664,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "F_SETFL");
 		return (-1);
 	}
@@ -3743,7 +3743,7 @@ pcap_strerror(int errnum)
 	errno_t err = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
 
 	if (err != 0) /* err = 0 if successful */
-		pcap_strlcpy(errbuf, "strerror_s() error", PCAP_ERRBUF_SIZE);
+		pcapint_strlcpy(errbuf, "strerror_s() error", PCAP_ERRBUF_SIZE);
 	return (errbuf);
 #else
 	return (strerror(errnum));
@@ -3972,9 +3972,9 @@ pcap_close_all(void)
 
 		/*
 		 * If a pcap module adds a pcap_t to the "close all"
-		 * list by calling pcap_add_to_pcaps_to_close(), it
+		 * list by calling pcapint_add_to_pcaps_to_close(), it
 		 * must have a cleanup routine that removes it from the
-		 * list, by calling pcap_remove_from_pcaps_to_close(),
+		 * list, by calling pcapint_remove_from_pcaps_to_close(),
 		 * and must make that cleanup routine the cleanup_op
 		 * for the pcap_t.
 		 *
@@ -3992,7 +3992,7 @@ pcap_close_all(void)
 }
 
 int
-pcap_do_addexit(pcap_t *p)
+pcapint_do_addexit(pcap_t *p)
 {
 	/*
 	 * If we haven't already done so, arrange to have
@@ -4003,7 +4003,7 @@ pcap_do_addexit(pcap_t *p)
 			/*
 			 * "atexit()" failed; let our caller know.
 			 */
-			pcap_strlcpy(p->errbuf, "atexit failed", PCAP_ERRBUF_SIZE);
+			pcapint_strlcpy(p->errbuf, "atexit failed", PCAP_ERRBUF_SIZE);
 			return (0);
 		}
 		did_atexit = 1;
@@ -4012,14 +4012,14 @@ pcap_do_addexit(pcap_t *p)
 }
 
 void
-pcap_add_to_pcaps_to_close(pcap_t *p)
+pcapint_add_to_pcaps_to_close(pcap_t *p)
 {
 	p->next = pcaps_to_close;
 	pcaps_to_close = p;
 }
 
 void
-pcap_remove_from_pcaps_to_close(pcap_t *p)
+pcapint_remove_from_pcaps_to_close(pcap_t *p)
 {
 	pcap_t *pc, *prevpc;
 
@@ -4046,14 +4046,14 @@ pcap_remove_from_pcaps_to_close(pcap_t *p)
 }
 
 void
-pcap_breakloop_common(pcap_t *p)
+pcapint_breakloop_common(pcap_t *p)
 {
 	p->break_loop = 1;
 }
 
 
 void
-pcap_cleanup_live_common(pcap_t *p)
+pcapint_cleanup_live_common(pcap_t *p)
 {
 	if (p->opt.device != NULL) {
 		free(p->opt.device);
@@ -4098,7 +4098,7 @@ int
 pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 {
 	if (size <= 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "The number of bytes to be sent must be positive");
 		return (PCAP_ERROR);
 	}
@@ -4120,13 +4120,13 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 	 * bytes to write must fit in an int.
 	 */
 	if (size > INT_MAX) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "More than %d bytes cannot be injected", INT_MAX);
 		return (PCAP_ERROR);
 	}
 
 	if (size == 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "The number of bytes to be injected must not be zero");
 		return (PCAP_ERROR);
 	}
@@ -4165,7 +4165,7 @@ pcap_close(pcap_t *p)
 // https://web.archive.org/web/20100828112111/http://blog.rapid7.com/?p=5325
 //
 pcap_code_handle_t
-pcap_load_code(const char *name)
+pcapint_load_code(const char *name)
 {
 	/*
 	 * XXX - should this work in UTF-16LE rather than in the local
@@ -4210,7 +4210,7 @@ pcap_load_code(const char *name)
 }
 
 pcap_funcptr_t
-pcap_find_function(pcap_code_handle_t code, const char *func)
+pcapint_find_function(pcap_code_handle_t code, const char *func)
 {
 	return (GetProcAddress(code, func));
 }
@@ -4229,7 +4229,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 	const struct bpf_insn *fcode = fp->bf_insns;
 
 	if (fcode != NULL)
-		return (pcap_filter(fcode, pkt, h->len, h->caplen));
+		return (pcapint_filter(fcode, pkt, h->len, h->caplen));
 	else
 		return (0);
 }

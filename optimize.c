@@ -2949,7 +2949,7 @@ pcapint_install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	/*
 	 * Validate the program.
 	 */
-	if (!pcap_validate_filter(fp->bf_insns, fp->bf_len)) {
+	if (!pcapint_validate_filter(fp->bf_insns, fp->bf_len)) {
 		snprintf(p->errbuf, sizeof(p->errbuf),
 			"BPF program is not valid");
 		return (-1);
@@ -2964,7 +2964,7 @@ pcapint_install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	p->fcode.bf_len = fp->bf_len;
 	p->fcode.bf_insns = (struct bpf_insn *)malloc(prog_size);
 	if (p->fcode.bf_insns == NULL) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "malloc");
 		return (-1);
 	}

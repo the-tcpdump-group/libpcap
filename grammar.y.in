@@ -242,7 +242,7 @@ str2tok(const char *str, const struct tok *toks)
 	int i;
 
 	for (i = 0; toks[i].s != NULL; i++) {
-		if (pcap_strcasecmp(toks[i].s, str) == 0) {
+		if (pcapint_strcasecmp(toks[i].s, str) == 0) {
 			/*
 			 * Just in case somebody is using this to
 			 * generate values of -1/0xFFFFFFFF.
@@ -791,11 +791,11 @@ type_subtype:	ID		{ int i;
 
 pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
 	| LLC ID		{ CHECK_PTR_VAL($2);
-				  if (pcap_strcasecmp($2, "i") == 0) {
+				  if (pcapint_strcasecmp($2, "i") == 0) {
 					CHECK_PTR_VAL(($$ = gen_llc_i(cstate)));
-				  } else if (pcap_strcasecmp($2, "s") == 0) {
+				  } else if (pcapint_strcasecmp($2, "s") == 0) {
 					CHECK_PTR_VAL(($$ = gen_llc_s(cstate)));
-				  } else if (pcap_strcasecmp($2, "u") == 0) {
+				  } else if (pcapint_strcasecmp($2, "u") == 0) {
 					CHECK_PTR_VAL(($$ = gen_llc_u(cstate)));
 				  } else {
 					int subtype;
@@ -819,13 +819,13 @@ pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
 
 dir:	  NUM			{ $$ = (int)$1; }
 	| ID			{ CHECK_PTR_VAL($1);
-				  if (pcap_strcasecmp($1, "nods") == 0)
+				  if (pcapint_strcasecmp($1, "nods") == 0)
 					$$ = IEEE80211_FC1_DIR_NODS;
-				  else if (pcap_strcasecmp($1, "tods") == 0)
+				  else if (pcapint_strcasecmp($1, "tods") == 0)
 					$$ = IEEE80211_FC1_DIR_TODS;
-				  else if (pcap_strcasecmp($1, "fromds") == 0)
+				  else if (pcapint_strcasecmp($1, "fromds") == 0)
 					$$ = IEEE80211_FC1_DIR_FROMDS;
-				  else if (pcap_strcasecmp($1, "dstods") == 0)
+				  else if (pcapint_strcasecmp($1, "dstods") == 0)
 					$$ = IEEE80211_FC1_DIR_DSTODS;
 				  else {
 					bpf_set_error(cstate, "unknown 802.11 direction");

@@ -85,7 +85,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 	// run the packet filter
 	if (handle->fcode.bf_insns) {
-		if (pcap_filter(handle->fcode.bf_insns, buffer, bytesReceived,
+		if (pcapint_filter(handle->fcode.bf_insns, buffer, bytesReceived,
 				captureLength) == 0) {
 			// packet got rejected
 			return 0;
@@ -156,8 +156,8 @@ pcap_activate_haiku(pcap_t *handle)
 	handle->stats_op = pcap_stats_haiku;
 
 	// use default hooks where possible
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->getnonblock_op = pcapint_getnonblock_fd;
+	handle->setnonblock_op = pcapint_setnonblock_fd;
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
@@ -172,7 +172,7 @@ pcap_activate_haiku(pcap_t *handle)
 
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 			errno, "strdup");
 		return PCAP_ERROR;
 	}
@@ -183,7 +183,7 @@ pcap_activate_haiku(pcap_t *handle)
 	// allocate buffer for monitoring the device
 	handle->buffer = (u_char*)malloc(handle->bufsize);
 	if (handle->buffer == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 			errno, "buffer malloc");
 		return PCAP_ERROR;
 	}
@@ -200,7 +200,7 @@ pcap_activate_haiku(pcap_t *handle)
 
 
 pcap_t *
-pcap_create_interface(const char *device, char *errorBuffer)
+pcapint_create_interface(const char *device, char *errorBuffer)
 {
 	// TODO: handle promiscuous mode!
 
@@ -285,9 +285,9 @@ get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
 }
 
 int
-pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
+pcapint_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
 {
-	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
+	return pcapint_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
 		get_if_flags);
 }
 
