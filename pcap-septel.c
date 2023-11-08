@@ -124,7 +124,7 @@ loop:
         caplen = packet_len;
       }
       /* Run the packet filter if there is one. */
-      if ((p->fcode.bf_insns == NULL) || pcap_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
+      if ((p->fcode.bf_insns == NULL) || pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
 
 
         /*  get a time stamp , consisting of :
@@ -171,7 +171,7 @@ loop:
 static int
 septel_inject(pcap_t *handle, const void *buf _U_, int size _U_)
 {
-  pcap_strlcpy(handle->errbuf, "Sending packets isn't supported on Septel cards",
+  pcapint_strlcpy(handle->errbuf, "Sending packets isn't supported on Septel cards",
           PCAP_ERRBUF_SIZE);
   return (-1);
 }
@@ -303,7 +303,7 @@ septel_setnonblock(pcap_t *p, int nonblock _U_)
  * There are no regular interfaces, just Septel interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
   return (0);
 }
@@ -312,7 +312,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
  * Attempts to open a regular interface fail.
  */
 pcap_t *
-pcap_create_interface(const char *device, char *errbuf)
+pcapint_create_interface(const char *device, char *errbuf)
 {
   snprintf(errbuf, PCAP_ERRBUF_SIZE,
                 "This version of libpcap only supports Septel cards");

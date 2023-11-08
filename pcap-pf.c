@@ -124,7 +124,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 				(void)lseek(pc->fd, 0L, SEEK_SET);
 				goto again;
 			}
-			pcap_fmt_errmsg_for_errno(pc->errbuf,
+			pcapint_fmt_errmsg_for_errno(pc->errbuf,
 			    sizeof(pc->errbuf), errno, "pf read");
 			return (-1);
 		}
@@ -203,7 +203,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		 * skipping that padding.
 		 */
 		if (pf->filtering_in_kernel ||
-		    pcap_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
+		    pcapint_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
 			struct pcap_pkthdr h;
 			pf->TotAccepted++;
 			h.ts = sp->ens_tstamp;
@@ -230,7 +230,7 @@ pcap_inject_pf(pcap_t *p, const void *buf, int size)
 
 	ret = write(p->fd, buf, size);
 	if (ret == -1) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "send");
 		return (-1);
 	}
@@ -335,7 +335,7 @@ pcap_activate_pf(pcap_t *p)
 			    p->opt.device);
 			err = PCAP_ERROR_PERM_DENIED;
 		} else {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "pf open: %s", p->opt.device);
 			err = PCAP_ERROR;
 		}
@@ -360,7 +360,7 @@ pcap_activate_pf(pcap_t *p)
 	if (p->opt.promisc)
 		enmode |= ENPROMISC;
 	if (ioctl(p->fd, EIOCMBIS, (caddr_t)&enmode) < 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "EIOCMBIS");
 		err = PCAP_ERROR;
 		goto bad;
@@ -372,14 +372,14 @@ pcap_activate_pf(pcap_t *p)
 #endif
 	/* set the backlog */
 	if (ioctl(p->fd, EIOCSETW, (caddr_t)&backlog) < 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "EIOCSETW");
 		err = PCAP_ERROR;
 		goto bad;
 	}
 	/* discover interface type */
 	if (ioctl(p->fd, EIOCDEVP, (caddr_t)&devparams) < 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "EIOCDEVP");
 		err = PCAP_ERROR;
 		goto bad;
@@ -405,7 +405,7 @@ pcap_activate_pf(pcap_t *p)
 		 */
 		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 		if (p->dlt_list == NULL) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			err = PCAP_ERROR;
 			goto bad;
@@ -477,7 +477,7 @@ pcap_activate_pf(pcap_t *p)
 	} else
 		p->fddipad = 0;
 	if (ioctl(p->fd, EIOCTRUNCATE, (caddr_t)&p->snapshot) < 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "EIOCTRUNCATE");
 		err = PCAP_ERROR;
 		goto bad;
@@ -487,7 +487,7 @@ pcap_activate_pf(pcap_t *p)
 	Filter.enf_Priority = 37;	/* anything > 2 */
 	Filter.enf_FilterLen = 0;	/* means "always true" */
 	if (ioctl(p->fd, EIOCSETF, (caddr_t)&Filter) < 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "EIOCSETF");
 		err = PCAP_ERROR;
 		goto bad;
@@ -498,7 +498,7 @@ pcap_activate_pf(pcap_t *p)
 		timeout.tv_sec = p->opt.timeout / 1000;
 		timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
 		if (ioctl(p->fd, EIOCSRTIMEOUT, (caddr_t)&timeout) < 0) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "EIOCSRTIMEOUT");
 			err = PCAP_ERROR;
 			goto bad;
@@ -508,7 +508,7 @@ pcap_activate_pf(pcap_t *p)
 	p->bufsize = BUFSPACE;
 	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		err = PCAP_ERROR;
 		goto bad;
@@ -524,18 +524,18 @@ pcap_activate_pf(pcap_t *p)
 	p->setfilter_op = pcap_setfilter_pf;
 	p->setdirection_op = NULL;	/* Not implemented. */
 	p->set_datalink_op = NULL;	/* can't change data link type */
-	p->getnonblock_op = pcap_getnonblock_fd;
-	p->setnonblock_op = pcap_setnonblock_fd;
+	p->getnonblock_op = pcapint_getnonblock_fd;
+	p->setnonblock_op = pcapint_setnonblock_fd;
 	p->stats_op = pcap_stats_pf;
 
 	return (0);
  bad:
-	pcap_cleanup_live_common(p);
+	pcapint_cleanup_live_common(p);
 	return (err);
 }
 
 pcap_t *
-pcap_create_interface(const char *device _U_, char *ebuf)
+pcapint_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
@@ -579,9 +579,9 @@ get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 }
 
 int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	return (pcapint_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
 	    get_if_flags));
 }
 
@@ -611,7 +611,7 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 			 * Yes.  Try to install the filter.
 			 */
 			if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
-				pcap_fmt_errmsg_for_errno(p->errbuf,
+				pcapint_fmt_errmsg_for_errno(p->errbuf,
 				    sizeof(p->errbuf), errno, "BIOCSETF");
 				return (-1);
 			}

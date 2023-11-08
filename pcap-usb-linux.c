@@ -277,7 +277,7 @@ usb_set_ring_size(pcap_t* handle, int header_size)
 	}
 
 	if (ioctl(handle->fd, MON_IOCT_RING_SIZE, ring_size) == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't set ring size from fd %d", handle->fd);
 		return -1;
 	}
@@ -485,8 +485,8 @@ usb_activate(pcap_t* handle)
 	handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
 	handle->setdirection_op = usb_setdirection_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->getnonblock_op = pcapint_getnonblock_fd;
+	handle->setnonblock_op = pcapint_setnonblock_fd;
 
 	/*get usb bus index from device name */
 	if (sscanf(handle->opt.device, USB_IFACE"%d", &handlep->bus_index) != 1)
@@ -544,7 +544,7 @@ DIAG_ON_FORMAT_TRUNCATION
 			/*
 			 * Something went wrong.
 			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno,
 			    "Can't open USB bus file %s", full_path);
 			return PCAP_ERROR;
@@ -609,7 +609,7 @@ DIAG_ON_FORMAT_TRUNCATION
 	 * buffer */
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		close(handle->fd);
 		return PCAP_ERROR;
@@ -645,7 +645,7 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
 	if (ret < 0)
 	{
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't read stats from fd %d", handle->fd);
 		return -1;
 	}
@@ -688,7 +688,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 		if (errno == EAGAIN)
 			return 0;	/* no data there */
 
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't read from fd %d", handle->fd);
 		return -1;
 	}
@@ -735,7 +735,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 	pkth.ts.tv_usec = info.hdr->ts_usec;
 
 	if (handle->fcode.bf_insns == NULL ||
-	    pcap_filter(handle->fcode.bf_insns, handle->buffer,
+	    pcapint_filter(handle->fcode.bf_insns, handle->buffer,
 	      pkth.len, pkth.caplen)) {
 		handlep->packets_read++;
 		callback(user, &pkth, handle->buffer);
@@ -818,7 +818,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (errno == EAGAIN)
 				return 0;	/* no data there */
 
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "Can't mfetch fd %d",
 			    handle->fd);
 			return -1;
@@ -904,7 +904,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			pkth.ts.tv_usec = hdr->ts_usec;
 
 			if (handle->fcode.bf_insns == NULL ||
-			    pcap_filter(handle->fcode.bf_insns, (u_char*) hdr,
+			    pcapint_filter(handle->fcode.bf_insns, (u_char*) hdr,
 			      pkth.len, pkth.caplen)) {
 				handlep->packets_read++;
 				callback(user, &pkth, (u_char*) hdr);
@@ -923,7 +923,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 
 	/* flush pending events*/
 	if (ioctl(handle->fd, MON_IOCH_MFLUSH, nflush) == -1) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't mflush fd %d", handle->fd);
 		return -1;
 	}
@@ -940,5 +940,5 @@ usb_cleanup_linux_mmap(pcap_t* handle)
 		munmap(handlep->mmapbuf, handlep->mmapbuflen);
 		handlep->mmapbuf = NULL;
 	}
-	pcap_cleanup_live_common(handle);
+	pcapint_cleanup_live_common(handle);
 }

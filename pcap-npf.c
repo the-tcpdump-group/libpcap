@@ -224,7 +224,7 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	oid_data_arg->Oid = oid;
 	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
 	if (!PacketRequest(adapter, FALSE, oid_data_arg)) {
-		pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "Error calling PacketRequest");
 		free(oid_data_arg);
 		return (-1);
@@ -263,7 +263,7 @@ pcap_stats_npf(pcap_t *p, struct pcap_stat *ps)
 	 * to us.
 	 */
 	if (!PacketGetStats(pw->adapter, &bstats)) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "PacketGetStats error");
 		return (-1);
 	}
@@ -320,7 +320,7 @@ pcap_stats_ex_npf(pcap_t *p, int *pcap_stat_size)
 	 * same layout, but let's not cheat.)
 	 */
 	if (!PacketGetStatsEx(pw->adapter, &bstats)) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "PacketGetStatsEx error");
 		return (NULL);
 	}
@@ -422,7 +422,7 @@ pcap_oid_set_request_npf(pcap_t *p, bpf_u_int32 oid, const void *data,
 	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
 	memcpy(oid_data_arg->Data, data, *lenp);
 	if (!PacketRequest(pw->adapter, TRUE, oid_data_arg)) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "Error calling PacketRequest");
 		free(oid_data_arg);
 		return (PCAP_ERROR);
@@ -452,7 +452,7 @@ pcap_sendqueue_transmit_npf(pcap_t *p, pcap_send_queue *queue, int sync)
 		(BOOLEAN)sync);
 
 	if(res != queue->len){
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "Error queueing packets");
 	}
 
@@ -660,7 +660,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				    "The interface disappeared (error code %s)",
 				    errcode_msg);
 			} else {
-				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				pcapint_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
 				    "PacketReceivePacket error");
 			}
@@ -718,13 +718,13 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * in kernel, no need to do it now - we already know
 		 * the packet passed the filter.
 		 *
-		 * XXX - pcap_filter() should always return TRUE if
+		 * XXX - pcapint_filter() should always return TRUE if
 		 * handed a null pointer for the program, but it might
 		 * just try to "run" the filter, so we check here.
 		 */
 		if (pw->filtering_in_kernel ||
 		    p->fcode.bf_insns == NULL ||
-		    pcap_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
+		    pcapint_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
 #ifdef ENABLE_REMOTE
 			switch (p->rmt_samp.method) {
 
@@ -946,7 +946,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/* No underlying filtering system. We need to filter on our own */
 		if (p->fcode.bf_insns)
 		{
-			if (pcap_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
+			if (pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
 			{
 				/* Move to next packet */
 				header = (dag_record_t*)((char*)header + erf_record_len);
@@ -987,7 +987,7 @@ pcap_inject_npf(pcap_t *p, const void *buf, int size)
 
 	PacketInitPacket(&pkt, (PVOID)buf, size);
 	if(PacketSendPacket(pw->adapter,&pkt,TRUE) == FALSE) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "send error: PacketSendPacket failed");
 		return (-1);
 	}
@@ -1013,13 +1013,13 @@ pcap_cleanup_npf(pcap_t *p)
 	{
 		PacketSetMonitorMode(p->opt.device, 0);
 	}
-	pcap_cleanup_live_common(p);
+	pcapint_cleanup_live_common(p);
 }
 
 static void
 pcap_breakloop_npf(pcap_t *p)
 {
-	pcap_breakloop_common(p);
+	pcapint_breakloop_common(p);
 	struct pcap_win *pw = p->priv;
 
 	/* XXX - what if this fails? */
@@ -1105,7 +1105,7 @@ pcap_activate_npf(pcap_t *p)
 			/*
 			 * Unknown - report details.
 			 */
-			pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errcode, "Error opening adapter");
 			if (pw->rfmon_selfstart)
 			{
@@ -1118,7 +1118,7 @@ pcap_activate_npf(pcap_t *p)
 	/*get network type*/
 	if(PacketGetNetType (pw->adapter,&type) == FALSE)
 	{
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "Cannot determine the network type");
 		goto bad;
 	}
@@ -1144,7 +1144,7 @@ pcap_activate_npf(pcap_t *p)
 		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 		if (p->dlt_list == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			goto bad;
 		}
@@ -1254,7 +1254,7 @@ pcap_activate_npf(pcap_t *p)
 		 */
 		if (!PacketSetTimestampMode(pw->adapter, TIMESTAMPMODE_SINGLE_SYNCHRONIZATION))
 		{
-			pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 			    GetLastError(), "Cannot set the time stamp mode to TIMESTAMPMODE_SINGLE_SYNCHRONIZATION");
 			goto bad;
 		}
@@ -1266,7 +1266,7 @@ pcap_activate_npf(pcap_t *p)
 		 */
 		if (!PacketSetTimestampMode(pw->adapter, TIMESTAMPMODE_QUERYSYSTEMTIME))
 		{
-			pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 			    GetLastError(), "Cannot set the time stamp mode to TIMESTAMPMODE_QUERYSYSTEMTIME");
 			goto bad;
 		}
@@ -1278,7 +1278,7 @@ pcap_activate_npf(pcap_t *p)
 		 */
 		if (!PacketSetTimestampMode(pw->adapter, TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE))
 		{
-			pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 			    GetLastError(), "Cannot set the time stamp mode to TIMESTAMPMODE_QUERYSYSTEMTIME_PRECISE");
 			goto bad;
 		}
@@ -1368,7 +1368,7 @@ pcap_activate_npf(pcap_t *p)
 			if (errcode != ERROR_NOT_SUPPORTED &&
 			    errcode != (NDIS_STATUS_NOT_SUPPORTED|NT_STATUS_CUSTOMER_DEFINED))
 			{
-				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				pcapint_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
 				    "failed to set hardware filter to promiscuous mode");
 				goto bad;
@@ -1399,7 +1399,7 @@ pcap_activate_npf(pcap_t *p)
 			 */
 			if (errcode != (NDIS_STATUS_NOT_SUPPORTED|NT_STATUS_CUSTOMER_DEFINED))
 			{
-				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				pcapint_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errcode,
 				    "failed to set hardware filter to non-promiscuous mode");
 				goto bad;
@@ -1431,7 +1431,7 @@ pcap_activate_npf(pcap_t *p)
 		p->buffer = malloc(p->bufsize);
 		if (p->buffer == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			goto bad;
 		}
@@ -1441,7 +1441,7 @@ pcap_activate_npf(pcap_t *p)
 			/* tell the driver to copy the buffer as soon as data arrives */
 			if(PacketSetMinToCopy(pw->adapter,0)==FALSE)
 			{
-				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				pcapint_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, GetLastError(),
 				    "Error calling PacketSetMinToCopy");
 				goto bad;
@@ -1452,7 +1452,7 @@ pcap_activate_npf(pcap_t *p)
 			/* tell the driver to copy the buffer only if it contains at least 16K */
 			if(PacketSetMinToCopy(pw->adapter,16000)==FALSE)
 			{
-				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				pcapint_fmt_errmsg_for_win32_err(p->errbuf,
 				    PCAP_ERRBUF_SIZE, GetLastError(),
 				    "Error calling PacketSetMinToCopy");
 				goto bad;
@@ -1529,7 +1529,7 @@ pcap_activate_npf(pcap_t *p)
 	total_prog.bf_len = 1;
 	total_prog.bf_insns = &total_insn;
 	if (!PacketSetBpf(pw->adapter, &total_prog)) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "PacketSetBpf");
 		status = PCAP_ERROR;
 		goto bad;
@@ -1645,7 +1645,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 		 */
 		device_copy = strdup(device);
 		if (device_copy == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
 			status = -1;
 			break;
 		}
@@ -1689,7 +1689,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 				p->tstamp_type_list = NULL;
 				status = 0;
 			} else {
-				pcap_fmt_errmsg_for_win32_err(ebuf,
+				pcapint_fmt_errmsg_for_win32_err(ebuf,
 				    PCAP_ERRBUF_SIZE, error,
 				    "Error opening adapter");
 				status = -1;
@@ -1754,7 +1754,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 				/*
 				 * No, some other error.  Fail.
 				 */
-				pcap_fmt_errmsg_for_win32_err(ebuf,
+				pcapint_fmt_errmsg_for_win32_err(ebuf,
 				    PCAP_ERRBUF_SIZE, error,
 				    "Error calling PacketGetTimestampModes");
 				status = -1;
@@ -1772,13 +1772,13 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 			modes = (ULONG *)malloc((1 + num_ts_modes) * sizeof(ULONG));
 			if (modes == NULL) {
 				/* Out of memory. */
-				pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+				pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
 				status = -1;
 				break;
 			}
 			modes[0] = 1 + num_ts_modes;
 			if (!PacketGetTimestampModes(adapter, modes)) {
-				pcap_fmt_errmsg_for_win32_err(ebuf,
+				pcapint_fmt_errmsg_for_win32_err(ebuf,
 						PCAP_ERRBUF_SIZE, GetLastError(),
 						"Error calling PacketGetTimestampModes");
 				status = -1;
@@ -1816,7 +1816,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 		 */
 		p->tstamp_type_list = malloc((1 + num_ts_modes) * sizeof(u_int));
 		if (p->tstamp_type_list == NULL) {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno, "malloc");
 			status = -1;
 			break;
 		}
@@ -1894,7 +1894,7 @@ get_ts_types(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
 pcap_t *
-pcap_create_interface(const char *device _U_, char *ebuf)
+pcapint_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
@@ -1978,7 +1978,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 
 	if(!fp)
 	{
-		pcap_strlcpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
+		pcapint_strlcpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
 		return (-1);
 	}
 
@@ -2026,7 +2026,7 @@ pcap_setnonblock_npf(pcap_t *p, int nonblock)
 		newtimeout = p->opt.timeout;
 	}
 	if (!PacketSetReadTimeout(pw->adapter, newtimeout)) {
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "PacketSetReadTimeout");
 		return (-1);
 	}
@@ -2357,7 +2357,7 @@ DIAG_ON_ENUM_SWITCH
 }
 
 int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int ret = 0;
 	const char *desc;
@@ -2389,7 +2389,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 
 		if (last_error != ERROR_INSUFFICIENT_BUFFER)
 		{
-			pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 			    last_error, "PacketGetAdapterNames");
 			return (-1);
 		}
@@ -2405,7 +2405,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	}
 
 	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
-		pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "PacketGetAdapterNames");
 		free(AdaptersName);
 		return (-1);
@@ -2520,7 +2520,7 @@ pcap_lookupdev(char *errbuf)
 	 * In addition, it's not thread-safe, so we've marked it as
 	 * deprecated.
 	 */
-	if (pcap_new_api) {
+	if (pcapint_new_api) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "pcap_lookupdev() is deprecated and is not supported in programs calling pcap_init()");
 		return (NULL);
@@ -2566,7 +2566,7 @@ DIAG_ON_DEPRECATION
 
 		if ( !PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength) )
 		{
-			pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 			    GetLastError(), "PacketGetAdapterNames");
 			free(TAdaptersName);
 			return NULL;
@@ -2740,7 +2740,7 @@ pcap_lib_version(void)
 			 */
 			char *full_pcap_version_string;
 
-			if (pcap_asprintf(&full_pcap_version_string,
+			if (pcapint_asprintf(&full_pcap_version_string,
 			    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING,
 			    packet_version_string) != -1) {
 				/* Success */
@@ -2767,7 +2767,7 @@ pcap_lib_version(void)
 		 */
 		char *full_pcap_version_string;
 
-		if (pcap_asprintf(&full_pcap_version_string,
+		if (pcapint_asprintf(&full_pcap_version_string,
 		    PCAP_VERSION_STRING " (packet.dll version %s)",
 		    PacketGetVersion()) != -1) {
 			/* Success */

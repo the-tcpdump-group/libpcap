@@ -263,7 +263,7 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 	amt_read = fread(buf, 1, bytes_to_read, fp);
 	if (amt_read != bytes_to_read) {
 		if (ferror(fp)) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "error reading dump file");
 		} else {
 			if (amt_read == 0 && !fail_on_eof)
@@ -820,7 +820,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	amt_read = fread(&total_length, 1, sizeof(total_length), fp);
 	if (amt_read < sizeof(total_length)) {
 		if (ferror(fp)) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "error reading dump file");
 			*err = 1;
 			return (NULL);	/* fail */
@@ -835,7 +835,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	amt_read = fread(&byte_order_magic, 1, sizeof(byte_order_magic), fp);
 	if (amt_read < sizeof(byte_order_magic)) {
 		if (ferror(fp)) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "error reading dump file");
 			*err = 1;
 			return (NULL);	/* fail */
@@ -1060,7 +1060,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 
 done:
 	p->linktype = linktype_to_dlt(idbp->linktype);
-	p->snapshot = pcap_adjust_snapshot(p->linktype, idbp->snaplen);
+	p->snapshot = pcapint_adjust_snapshot(p->linktype, idbp->snaplen);
 	p->linktype_ext = 0;
 
 	/*
@@ -1261,7 +1261,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * snapshot length.
 			 */
 			if ((bpf_u_int32)p->snapshot !=
-			    pcap_adjust_snapshot(p->linktype, idbp->snaplen)) {
+			    pcapint_adjust_snapshot(p->linktype, idbp->snaplen)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the snapshot length of the first interface",
 				    idbp->snaplen);
@@ -1512,7 +1512,7 @@ found:
 	if (*data == NULL)
 		return (-1);
 
-	pcap_post_process(p->linktype, p->swapped, hdr, *data);
+	pcapint_post_process(p->linktype, p->swapped, hdr, *data);
 
 	return (1);
 }
