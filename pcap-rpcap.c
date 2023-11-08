@@ -313,7 +313,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in));
 		if ((*sockaddrout) == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc() failed");
 			return -1;
 		}
@@ -343,7 +343,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in6));
 		if ((*sockaddrout) == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc() failed");
 			return -1;
 		}
@@ -696,7 +696,7 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 			 * it to the callback, and count it so we can
 			 * return the count.
 			 */
-			pcap_post_process(p->linktype, pr->byte_swapped,
+			pcapint_post_process(p->linktype, pr->byte_swapped,
 			    &pkt_header, pkt_data);
 			(*callback)(user, &pkt_header, pkt_data);
 			n++;
@@ -837,7 +837,7 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 		pr->currentfilter = NULL;
 	}
 
-	pcap_cleanup_live_common(fp);
+	pcapint_cleanup_live_common(fp);
 
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
@@ -1433,7 +1433,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	fp->buffer = (u_char *)malloc(fp->bufsize);
 	if (fp->buffer == NULL)
 	{
-		pcap_fmt_errmsg_for_errno(fp->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(fp->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		goto error;
 	}
@@ -1803,7 +1803,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			 * We have a current filter; add items to it to
 			 * filter out this rpcap session.
 			 */
-			if (pcap_asprintf(&newfilter,
+			if (pcapint_asprintf(&newfilter,
 			    "(%s) and not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
 			    pr->currentfilter, myaddress, peeraddress,
 			    myctrlport, peerctrlport, myaddress, peeraddress,
@@ -1821,7 +1821,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			 * We have no current filter; construct a filter to
 			 * filter out this rpcap session.
 			 */
-			if (pcap_asprintf(&newfilter,
+			if (pcapint_asprintf(&newfilter,
 			    "not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
 			    myaddress, peeraddress, myctrlport, peerctrlport,
 			    myaddress, peeraddress, mydataport) == -1)
@@ -2277,7 +2277,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 	 * You must have a valid source string even if we're in active mode,
 	 * because otherwise the call to the following function will fail.
 	 */
-	if (pcap_parsesrcstr_ex(source, &type, host, port, iface, uses_sslp,
+	if (pcapint_parsesrcstr_ex(source, &type, host, port, iface, uses_sslp,
 	    errbuf) == -1)
 		return -1;
 
@@ -2467,7 +2467,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	}
 	source_str = strdup(source);
 	if (source_str == NULL) {
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return NULL;
 	}
@@ -2687,7 +2687,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 		dev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (dev == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc() failed");
 			goto error;
 		}
@@ -2731,14 +2731,14 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 			tmpstring[findalldevs_if.namelen] = 0;
 
 			/* Create the new device identifier */
-			if (pcap_createsrcstr_ex(tmpstring2, PCAP_SRC_IFREMOTE,
+			if (pcapint_createsrcstr_ex(tmpstring2, PCAP_SRC_IFREMOTE,
 			    host, port, tmpstring, uses_ssl, errbuf) == -1)
 				goto error;
 
 			dev->name = strdup(tmpstring2);
 			if (dev->name == NULL)
 			{
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
@@ -2759,11 +2759,11 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			tmpstring[findalldevs_if.desclen] = 0;
 
-			if (pcap_asprintf(&dev->description,
+			if (pcapint_asprintf(&dev->description,
 			    "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
 			    tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host) == -1)
 			{
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
@@ -2789,7 +2789,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 			addr = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
 			if (addr == NULL)
 			{
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
@@ -3091,7 +3091,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 
 	if (temp == NULL)
 	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc() failed");
 		rpcap_senderror(sockctrl, ssl, protocol_version, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
@@ -3292,7 +3292,7 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 			return -1;
 		}
 
-		pcap_strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
+		pcapint_strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
 		hostlist[len - 1] = sep;
 		hostlist[len] = 0;
 
@@ -3512,7 +3512,7 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		 * If we're not in UTF-8 mode, convert it to the local
 		 * code page.
 		 */
-		if (!pcap_utf_8_mode)
+		if (!pcapint_utf_8_mode)
 			utf_8_to_acp_truncated(remote_errbuf);
 #endif
 

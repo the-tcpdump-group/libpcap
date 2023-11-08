@@ -41,7 +41,7 @@
 #include "portability.h"
 
 char *
-pcap_strtok_r(char *s, const char *delim, char **last)
+pcapint_strtok_r(char *s, const char *delim, char **last)
 {
 	char *spanp, *tok;
 	int c, sc;

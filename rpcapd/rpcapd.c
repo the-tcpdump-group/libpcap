@@ -199,8 +199,8 @@ int main(int argc, char *argv[])
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
 
-	pcap_strlcpy(address, RPCAP_DEFAULT_NETADDR, sizeof (address));
-	pcap_strlcpy(port, RPCAP_DEFAULT_NETPORT, sizeof (port));
+	pcapint_strlcpy(address, RPCAP_DEFAULT_NETADDR, sizeof (address));
+	pcapint_strlcpy(port, RPCAP_DEFAULT_NETPORT, sizeof (port));
 
 	// Prepare to open a new server socket
 	memset(&mainhints, 0, sizeof(struct addrinfo));
@@ -227,10 +227,10 @@ int main(int argc, char *argv[])
 				rpcapd_log_set(log_to_systemlog, log_debug_messages);
 				break;
 			case 'b':
-				pcap_strlcpy(address, optarg, sizeof (address));
+				pcapint_strlcpy(address, optarg, sizeof (address));
 				break;
 			case 'p':
-				pcap_strlcpy(port, optarg, sizeof (port));
+				pcapint_strlcpy(port, optarg, sizeof (port));
 				break;
 			case '4':
 				mainhints.ai_family = PF_INET;		// IPv4 server only
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'l':
 			{
-				pcap_strlcpy(hostlist, optarg, sizeof(hostlist));
+				pcapint_strlcpy(hostlist, optarg, sizeof(hostlist));
 				break;
 			}
 			case 'a':
@@ -267,20 +267,20 @@ int main(int argc, char *argv[])
 				char *lasts;
 				int i = 0;
 
-				tmpaddress = pcap_strtok_r(optarg, RPCAP_HOSTLIST_SEP, &lasts);
+				tmpaddress = pcapint_strtok_r(optarg, RPCAP_HOSTLIST_SEP, &lasts);
 
 				while ((tmpaddress != NULL) && (i < MAX_ACTIVE_LIST))
 				{
-					tmpport = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
+					tmpport = pcapint_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 
-					pcap_strlcpy(activelist[i].address, tmpaddress, sizeof (activelist[i].address));
+					pcapint_strlcpy(activelist[i].address, tmpaddress, sizeof (activelist[i].address));
 
 					if ((tmpport == NULL) || (strcmp(tmpport, "DEFAULT") == 0)) // the user choose a custom port
-						pcap_strlcpy(activelist[i].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof (activelist[i].port));
+						pcapint_strlcpy(activelist[i].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof (activelist[i].port));
 					else
-						pcap_strlcpy(activelist[i].port, tmpport, sizeof (activelist[i].port));
+						pcapint_strlcpy(activelist[i].port, tmpport, sizeof (activelist[i].port));
 
-					tmpaddress = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
+					tmpaddress = pcapint_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 
 					i++;
 				}
@@ -293,10 +293,10 @@ int main(int argc, char *argv[])
 				break;
 			}
 			case 'f':
-				pcap_strlcpy(loadfile, optarg, sizeof (loadfile));
+				pcapint_strlcpy(loadfile, optarg, sizeof (loadfile));
 				break;
 			case 's':
-				pcap_strlcpy(savefile, optarg, sizeof (savefile));
+				pcapint_strlcpy(savefile, optarg, sizeof (savefile));
 				break;
 #ifdef HAVE_OPENSSL
 			case 'S':
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 		exit(-1);
 	}
-	pcap_fmt_set_encoding(PCAP_CHAR_ENC_UTF_8);
+	pcapint_fmt_set_encoding(PCAP_CHAR_ENC_UTF_8);
 
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
