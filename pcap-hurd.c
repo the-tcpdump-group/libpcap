@@ -143,7 +143,7 @@ pcap_cleanup_hurd(pcap_t *p)
 		ph->mach_dev = MACH_PORT_NULL;
 	}
 
-	pcap_cleanup_live_common(p);
+	pcapint_cleanup_live_common(p);
 }
 
 static int
@@ -241,7 +241,7 @@ error:
 }
 
 pcap_t *
-pcap_create_interface(const char *device _U_, char *ebuf)
+pcapint_create_interface(const char *device _U_, char *ebuf)
 {
 	struct pcap_hurd *ph;
 	pcap_t *p;
@@ -258,7 +258,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 }
 
 int
-pcap_platform_finddevs(pcap_if_list_t *alldevsp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *alldevsp, char *errbuf)
 {
 	return 0;
 }

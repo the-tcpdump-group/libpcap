@@ -681,7 +681,7 @@ sdup(compiler_state_t *cstate, const char *s)
 
 	if (cp == NULL)
 		return (NULL);
-	pcap_strlcpy(cp, s, n);
+	pcapint_strlcpy(cp, s, n);
 	return (cp);
 }
 
@@ -798,7 +798,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 
 	if (pcap_lex_init(&scanner) != 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't initialize scanner");
 		rc = PCAP_ERROR;
 		goto quit;

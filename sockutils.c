@@ -163,10 +163,10 @@ void sock_vfmterrmsg(char *errbuf, size_t errbuflen, int errcode,
 		return;
 
 #ifdef _WIN32
-	pcap_vfmt_errmsg_for_win32_err(errbuf, errbuflen, errcode,
+	pcapint_vfmt_errmsg_for_win32_err(errbuf, errbuflen, errcode,
 	    fmt, ap);
 #else
-	pcap_vfmt_errmsg_for_errno(errbuf, errbuflen, errcode,
+	pcapint_vfmt_errmsg_for_errno(errbuf, errbuflen, errcode,
 	    fmt, ap);
 #endif
 }
@@ -1004,7 +1004,7 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 			/*
 			 * Assumed to be UN*X.
 			 */
-			pcap_fmt_errmsg_for_errno(errbuf, errbuflen, errno,
+			pcapint_fmt_errmsg_for_errno(errbuf, errbuflen, errno,
 			    "%sAn error occurred when looking up %s",
 			    prefix, hostport);
 			break;
@@ -1757,7 +1757,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			return -2;
 		}
 
-		token = pcap_strtok_r(temphostlist, sep, &lasts);
+		token = pcapint_strtok_r(temphostlist, sep, &lasts);
 
 		/* it avoids a warning in the compilation ('addrinfo used but not initialized') */
 		addrinfo = NULL;
@@ -1787,7 +1787,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 				getaddrinfo_failed = 1;
 
 				/* Get next token */
-				token = pcap_strtok_r(NULL, sep, &lasts);
+				token = pcapint_strtok_r(NULL, sep, &lasts);
 				continue;
 			}
 
@@ -1813,7 +1813,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			addrinfo = NULL;
 
 			/* Get next token */
-			token = pcap_strtok_r(NULL, sep, &lasts);
+			token = pcapint_strtok_r(NULL, sep, &lasts);
 		}
 
 		if (addrinfo)
@@ -2017,7 +2017,7 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 			(memcmp(&((struct sockaddr_in6 *) sockaddr)->sin6_addr, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", sizeof(struct in6_addr)) == 0))
 		{
 			if (address)
-				pcap_strlcpy(address, SOCKET_NAME_NULL_DAD, addrlen);
+				pcapint_strlcpy(address, SOCKET_NAME_NULL_DAD, addrlen);
 			return retval;
 		}
 	}
@@ -2034,13 +2034,13 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 
 		if (address)
 		{
-			pcap_strlcpy(address, SOCKET_NO_NAME_AVAILABLE, addrlen);
+			pcapint_strlcpy(address, SOCKET_NO_NAME_AVAILABLE, addrlen);
 			address[addrlen - 1] = 0;
 		}
 
 		if (port)
 		{
-			pcap_strlcpy(port, SOCKET_NO_PORT_AVAILABLE, portlen);
+			pcapint_strlcpy(port, SOCKET_NO_PORT_AVAILABLE, portlen);
 			port[portlen - 1] = 0;
 		}
 

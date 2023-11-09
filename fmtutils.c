@@ -67,14 +67,14 @@
 static int use_utf_8;
 
 void
-pcap_fmt_set_encoding(unsigned int opts)
+pcapint_fmt_set_encoding(unsigned int opts)
 {
 	if (opts == PCAP_CHAR_ENC_UTF_8)
 		use_utf_8 = 1;
 }
 #else
 void
-pcap_fmt_set_encoding(unsigned int opts _U_)
+pcapint_fmt_set_encoding(unsigned int opts _U_)
 {
 	/*
 	 * Nothing to do here.
@@ -266,18 +266,18 @@ utf_16le_to_utf_8_truncated(const wchar_t *utf_16, char *utf_8,
  * errno, with a message for the errno after the formatted output.
  */
 void
-pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
+pcapint_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
     const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	pcap_vfmt_errmsg_for_errno(errbuf, errbuflen, errnum, fmt, ap);
+	pcapint_vfmt_errmsg_for_errno(errbuf, errbuflen, errnum, fmt, ap);
 	va_end(ap);
 }
 
 void
-pcap_vfmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
+pcapint_vfmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
     const char *fmt, va_list ap)
 {
 	size_t msglen;
@@ -382,18 +382,18 @@ pcap_vfmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
  * Win32 error, with a message for the Win32 error after the formatted output.
  */
 void
-pcap_fmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
+pcapint_fmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
     const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	pcap_vfmt_errmsg_for_win32_err(errbuf, errbuflen, errnum, fmt, ap);
+	pcapint_vfmt_errmsg_for_win32_err(errbuf, errbuflen, errnum, fmt, ap);
 	va_end(ap);
 }
 
 void
-pcap_vfmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
+pcapint_vfmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
     const char *fmt, va_list ap)
 {
 	size_t msglen;

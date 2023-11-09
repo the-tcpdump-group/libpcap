@@ -55,7 +55,7 @@ snf_pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	int rc;
 
 	if ((rc = snf_ring_getstats(snfps->snf_ring, &stats))) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    rc, "snf_get_stats");
 		return -1;
 	}
@@ -76,7 +76,7 @@ snf_platform_cleanup(pcap_t *p)
 #endif
 	snf_ring_close(ps->snf_ring);
 	snf_close(ps->snf_handle);
-	pcap_cleanup_live_common(p);
+	pcapint_cleanup_live_common(p);
 }
 
 static int
@@ -178,7 +178,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				continue;
 			}
 			else {
-				pcap_fmt_errmsg_for_errno(p->errbuf,
+				pcapint_fmt_errmsg_for_errno(p->errbuf,
 				    PCAP_ERRBUF_SIZE, err, "snf_read");
 				return -1;
 			}
@@ -189,7 +189,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			caplen = p->snapshot;
 
 		if ((p->fcode.bf_insns == NULL) ||
-		     pcap_filter(p->fcode.bf_insns, req.pkt_addr, req.length, caplen)) {
+		     pcapint_filter(p->fcode.bf_insns, req.pkt_addr, req.length, caplen)) {
 			hdr.ts = snf_timestamp_to_timeval(req.timestamp, p->opt.tstamp_precision);
 			hdr.caplen = caplen;
 			hdr.len = req.length;
@@ -214,7 +214,7 @@ snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 	if (ps->snf_inj == NULL) {
 		rc = snf_inject_open(ps->snf_boardnum, 0, &ps->snf_inj);
 		if (rc) {
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    rc, "snf_inject_open");
 			return (-1);
 		}
@@ -225,12 +225,12 @@ snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 		return (size);
 	}
 	else {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    rc, "snf_inject_send");
 		return (-1);
 	}
 #else
-	pcap_strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
+	pcapint_strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
 	    PCAP_ERRBUF_SIZE);
 	return (-1);
 #endif
@@ -273,7 +273,7 @@ snf_activate(pcap_t* p)
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_open failed");
 		return -1;
 	}
@@ -283,7 +283,7 @@ snf_activate(pcap_t* p)
 	}
 	err = snf_ring_open_id(ps->snf_handle, ring_id, &ps->snf_ring);
 	if (err != 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_ring_open_id(ring=%d) failed", ring_id);
 		return -1;
 	}
@@ -306,7 +306,7 @@ snf_activate(pcap_t* p)
 
 	err = snf_start(ps->snf_handle);
 	if (err != 0) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_start failed");
 		return -1;
 	}
@@ -355,7 +355,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
 	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "snf_getifaddrs");
 		return (-1);
 	}
@@ -374,7 +374,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		/*
 		 * Myricom SNF adapter ports may appear as regular
 		 * network interfaces, which would already have been
-		 * added to the list of adapters by pcap_platform_finddevs()
+		 * added to the list of adapters by pcapint_platform_finddevs()
 		 * if this isn't an SNF-only version of libpcap.
 		 *
 		 * Our create routine intercepts pcap_create() calls for
@@ -422,7 +422,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 			desc_str = strdup(desc);
 			if (desc_str == NULL) {
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "snf_findalldevs strdup");
 				return -1;
@@ -461,7 +461,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				/*
 				 * Error.
 				 */
-				pcap_fmt_errmsg_for_errno(errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "sinf_findalldevs inet_pton");
                                 return -1;
@@ -563,7 +563,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	 */
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
 		    "malloc");
 		pcap_close(p);
 		return NULL;
@@ -587,7 +587,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
  * There are no regular interfaces, just SNF interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	return (0);
 }
@@ -596,7 +596,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
  * Attempts to open a regular interface fail.
  */
 pcap_t *
-pcap_create_interface(const char *device, char *errbuf)
+pcapint_create_interface(const char *device, char *errbuf)
 {
 	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "This version of libpcap only supports SNF cards");

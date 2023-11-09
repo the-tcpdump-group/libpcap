@@ -288,34 +288,34 @@ TC_API_LOAD_STATUS LoadTcFunctions(void)
 
 		currentStatus = TC_API_CANNOT_LOAD;
 
-		g_TcFunctions.hTcApiDllHandle = pcap_load_code("TcApi.dll");
+		g_TcFunctions.hTcApiDllHandle = pcapint_load_code("TcApi.dll");
 		if (g_TcFunctions.hTcApiDllHandle == NULL)	break;
 
-		g_TcFunctions.QueryPortList			= (TcFcnQueryPortList)			pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcQueryPortList");
-		g_TcFunctions.FreePortList			= (TcFcnFreePortList)			pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcFreePortList");
+		g_TcFunctions.QueryPortList			= (TcFcnQueryPortList)			pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcQueryPortList");
+		g_TcFunctions.FreePortList			= (TcFcnFreePortList)			pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcFreePortList");
 
-		g_TcFunctions.StatusGetString			= (TcFcnStatusGetString)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatusGetString");
+		g_TcFunctions.StatusGetString			= (TcFcnStatusGetString)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatusGetString");
 
-		g_TcFunctions.PortGetName			= (TcFcnPortGetName)			pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPortGetName");
-		g_TcFunctions.PortGetDescription		= (TcFcnPortGetDescription)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPortGetDescription");
+		g_TcFunctions.PortGetName			= (TcFcnPortGetName)			pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPortGetName");
+		g_TcFunctions.PortGetDescription		= (TcFcnPortGetDescription)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPortGetDescription");
 
-		g_TcFunctions.InstanceOpenByName		= (TcFcnInstanceOpenByName)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceOpenByName");
-		g_TcFunctions.InstanceClose			= (TcFcnInstanceClose)			pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceClose");
-		g_TcFunctions.InstanceSetFeature		= (TcFcnInstanceSetFeature)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceSetFeature");
-		g_TcFunctions.InstanceQueryFeature		= (TcFcnInstanceQueryFeature)	pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceQueryFeature");
-		g_TcFunctions.InstanceReceivePackets		= (TcFcnInstanceReceivePackets)	pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceReceivePackets");
-		g_TcFunctions.InstanceGetReceiveWaitHandle	= (TcFcnInstanceGetReceiveWaitHandle)pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceGetReceiveWaitHandle");
-		g_TcFunctions.InstanceTransmitPackets		= (TcFcnInstanceTransmitPackets)pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceTransmitPackets");
-		g_TcFunctions.InstanceQueryStatistics		= (TcFcnInstanceQueryStatistics)pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceQueryStatistics");
+		g_TcFunctions.InstanceOpenByName		= (TcFcnInstanceOpenByName)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceOpenByName");
+		g_TcFunctions.InstanceClose			= (TcFcnInstanceClose)			pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceClose");
+		g_TcFunctions.InstanceSetFeature		= (TcFcnInstanceSetFeature)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceSetFeature");
+		g_TcFunctions.InstanceQueryFeature		= (TcFcnInstanceQueryFeature)	pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceQueryFeature");
+		g_TcFunctions.InstanceReceivePackets		= (TcFcnInstanceReceivePackets)	pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceReceivePackets");
+		g_TcFunctions.InstanceGetReceiveWaitHandle	= (TcFcnInstanceGetReceiveWaitHandle)pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceGetReceiveWaitHandle");
+		g_TcFunctions.InstanceTransmitPackets		= (TcFcnInstanceTransmitPackets)pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceTransmitPackets");
+		g_TcFunctions.InstanceQueryStatistics		= (TcFcnInstanceQueryStatistics)pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcInstanceQueryStatistics");
 
-		g_TcFunctions.PacketsBufferCreate		= (TcFcnPacketsBufferCreate)	pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferCreate");
-		g_TcFunctions.PacketsBufferDestroy		= (TcFcnPacketsBufferDestroy)	pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferDestroy");
-		g_TcFunctions.PacketsBufferQueryNextPacket	= (TcFcnPacketsBufferQueryNextPacket)pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferQueryNextPacket");
-		g_TcFunctions.PacketsBufferCommitNextPacket	= (TcFcnPacketsBufferCommitNextPacket)pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferCommitNextPacket");
+		g_TcFunctions.PacketsBufferCreate		= (TcFcnPacketsBufferCreate)	pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferCreate");
+		g_TcFunctions.PacketsBufferDestroy		= (TcFcnPacketsBufferDestroy)	pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferDestroy");
+		g_TcFunctions.PacketsBufferQueryNextPacket	= (TcFcnPacketsBufferQueryNextPacket)pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferQueryNextPacket");
+		g_TcFunctions.PacketsBufferCommitNextPacket	= (TcFcnPacketsBufferCommitNextPacket)pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcPacketsBufferCommitNextPacket");
 
-		g_TcFunctions.StatisticsDestroy			= (TcFcnStatisticsDestroy)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsDestroy");
-		g_TcFunctions.StatisticsUpdate			= (TcFcnStatisticsUpdate)		pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsUpdate");
-		g_TcFunctions.StatisticsQueryValue		= (TcFcnStatisticsQueryValue)	pcap_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsQueryValue");
+		g_TcFunctions.StatisticsDestroy			= (TcFcnStatisticsDestroy)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsDestroy");
+		g_TcFunctions.StatisticsUpdate			= (TcFcnStatisticsUpdate)		pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsUpdate");
+		g_TcFunctions.StatisticsQueryValue		= (TcFcnStatisticsQueryValue)	pcapint_find_function(g_TcFunctions.hTcApiDllHandle, "TcStatisticsQueryValue");
 
 		if (   g_TcFunctions.QueryPortList == NULL
 			|| g_TcFunctions.FreePortList == NULL
@@ -774,7 +774,7 @@ static void TcCleanup(pcap_t *p)
 		pt->PpiPacket = NULL;
 	}
 
-	pcap_cleanup_live_common(p);
+	pcapint_cleanup_live_common(p);
 }
 
 /* Send a packet to the network */
@@ -917,7 +917,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/* No underlying filtering system. We need to filter on our own */
 		if (p->fcode.bf_insns)
 		{
-			filterResult = pcap_filter(p->fcode.bf_insns, data, tcHeader.Length, tcHeader.CapturedLength);
+			filterResult = pcapint_filter(p->fcode.bf_insns, data, tcHeader.Length, tcHeader.CapturedLength);
 
 			if (filterResult == 0)
 			{

@@ -91,7 +91,7 @@ dbus_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *us
 
 		gettimeofday(&pkth.ts, NULL);
 		if (handle->fcode.bf_insns == NULL ||
-		    pcap_filter(handle->fcode.bf_insns, (u_char *)raw_msg, pkth.len, pkth.caplen)) {
+		    pcapint_filter(handle->fcode.bf_insns, (u_char *)raw_msg, pkth.len, pkth.caplen)) {
 			handlep->packets_read++;
 			callback(user, &pkth, (u_char *)raw_msg);
 			count++;
@@ -142,7 +142,7 @@ dbus_cleanup(pcap_t *handle)
 
 	dbus_connection_unref(handlep->conn);
 
-	pcap_cleanup_live_common(handle);
+	pcapint_cleanup_live_common(handle);
 }
 
 /*

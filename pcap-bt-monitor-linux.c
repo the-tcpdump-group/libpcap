@@ -131,7 +131,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
             /* Nonblocking mode, no data */
             return 0;
         }
-        pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't receive packet");
         return -1;
     }
@@ -151,7 +151,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     bthdr->opcode = htons(hdr.opcode);
 
     if (handle->fcode.bf_insns == NULL ||
-        pcap_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+        pcapint_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
         callback(user, &pkth, pktd);
         return 1;
     }
@@ -207,20 +207,20 @@ bt_monitor_activate(pcap_t* handle)
     handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
     handle->setdirection_op = NULL; /* Not implemented */
     handle->set_datalink_op = NULL; /* can't change data link type */
-    handle->getnonblock_op = pcap_getnonblock_fd;
-    handle->setnonblock_op = pcap_setnonblock_fd;
+    handle->getnonblock_op = pcapint_getnonblock_fd;
+    handle->setnonblock_op = pcapint_setnonblock_fd;
     handle->stats_op = bt_monitor_stats;
 
     handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
     if (handle->fd < 0) {
-        pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't create raw socket");
         return PCAP_ERROR;
     }
 
     handle->buffer = malloc(handle->bufsize);
     if (!handle->buffer) {
-        pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't allocate dump buffer");
         goto close_fail;
     }
@@ -231,14 +231,14 @@ bt_monitor_activate(pcap_t* handle)
     addr.hci_channel = HCI_CHANNEL_MONITOR;
 
     if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't attach to interface");
         goto close_fail;
     }
 
     opt = 1;
     if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt)) < 0) {
-        pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't enable time stamp");
         goto close_fail;
     }
@@ -248,7 +248,7 @@ bt_monitor_activate(pcap_t* handle)
     return 0;
 
 close_fail:
-    pcap_cleanup_live_common(handle);
+    pcapint_cleanup_live_common(handle);
     return err;
 }
 

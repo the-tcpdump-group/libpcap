@@ -851,7 +851,7 @@ pcap_ether_hostton(const char *name)
 	/*
 	 * In AIX 7.1 and 7.2: int ether_hostton(char *, struct ether_addr *);
 	 */
-	pcap_strlcpy(namebuf, name, sizeof(namebuf));
+	pcapint_strlcpy(namebuf, name, sizeof(namebuf));
 	ap = NULL;
 	if (ether_hostton(namebuf, (struct ether_addr *)a) == 0) {
 		ap = (u_char *)malloc(6);

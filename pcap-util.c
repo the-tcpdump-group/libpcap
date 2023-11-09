@@ -429,17 +429,17 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 }
 
 void
-pcap_post_process(int linktype, int swapped, struct pcap_pkthdr *hdr,
+pcapint_post_process(int linktype, int swapped, struct pcap_pkthdr *hdr,
     u_char *data)
 {
 	if (swapped)
 		swap_pseudo_headers(linktype, hdr, data);
 
-	fixup_pcap_pkthdr(linktype, hdr, data);
+	pcapint_fixup_pcap_pkthdr(linktype, hdr, data);
 }
 
 void
-fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
+pcapint_fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
 {
 	const pcap_usb_header_mmapped *usb_hdr;
 
