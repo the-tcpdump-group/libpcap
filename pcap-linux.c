@@ -346,6 +346,7 @@ pcapint_create_interface(const char *device, char *ebuf)
 
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+	handle->cleanup_op = pcap_cleanup_linux;
 
 	/*
 	 * See what time stamp types we support.
