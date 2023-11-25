@@ -374,8 +374,12 @@ pcapint_create_interface(const char *device, char *ebuf)
 	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 	handle->tstamp_precision_count = 2;
 
+	/*
+	 * Start out with the breakloop handle not open; we don't
+	 * need it until we're activated and ready to capture.
+	 */
 	struct pcap_linux *handlep = handle->priv;
-	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
+	handlep->poll_breakloop_fd = -1;
 
 	return handle;
 }
@@ -1098,6 +1102,25 @@ pcap_activate_linux(pcap_t *handle)
 
 	/*
 	 * Success (possibly with a warning).
+	 *
+	 * First, try to allocate an event FD for breakloop, if
+	 * we're not going to start in non-blocking mode.
+	 */
+	if (!handle->opt.nonblock) {
+		handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
+		if (handlep->poll_breakloop_fd == -1) {
+			/*
+			 * Failed.
+			 */
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "could not open eventfd");
+			status = PCAP_ERROR;
+			goto fail;
+		}
+	}
+
+	/*
+	 * Succeeded.
 	 * Try to set up memory-mapped access.
 	 */
 	ret = setup_mmapped(handle);
@@ -2387,6 +2410,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 				 * on.
 				 */
 				close(sock_fd);
+
 				return PCAP_ERROR_RFMON_NOTSUP;
 			}
 
@@ -3348,7 +3372,7 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 	struct pcap_linux *handlep = handle->priv;
 
 	/*
-	 * Set the file descriptor to non-blocking mode, as we use
+	 * Set the file descriptor to the requested mode, as we use
 	 * it for sending packets.
 	 */
 	if (pcapint_setnonblock_fd(handle, nonblock) == -1)
@@ -3359,6 +3383,9 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 	 * preserve the timeout value provided with pcap_set_timeout.
 	 */
 	if (nonblock) {
+		/*
+		 * We're setting the mode to non-blocking mode.
+		 */
 		if (handlep->timeout >= 0) {
 			/*
 			 * Indicate that we're switching to
@@ -3372,14 +3399,15 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 			handlep->poll_breakloop_fd = -1;
 		}
 	} else {
+		/*
+		 * We're setting the mode to blocking mode.
+		 */
 		if (handlep->poll_breakloop_fd == -1) {
 			/* If we did not have an eventfd, open one now that we are blocking. */
 			if ( ( handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK) ) == -1 ) {
-				int save_errno = errno;
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-						"Could not open eventfd: %s",
-						strerror(errno));
-				errno = save_errno;
+				pcapint_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "could not open eventfd");
 				return -1;
 			}
 		}
