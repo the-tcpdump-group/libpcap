@@ -310,39 +310,6 @@ struct pcap_stat {
 #endif /* _WIN32 */
 };
 
-#ifdef MSDOS
-/*
- * As returned by the pcap_stats_ex()
- */
-struct pcap_stat_ex {
-       u_long  rx_packets;        /* total packets received       */
-       u_long  tx_packets;        /* total packets transmitted    */
-       u_long  rx_bytes;          /* total bytes received         */
-       u_long  tx_bytes;          /* total bytes transmitted      */
-       u_long  rx_errors;         /* bad packets received         */
-       u_long  tx_errors;         /* packet transmit problems     */
-       u_long  rx_dropped;        /* no space in Rx buffers       */
-       u_long  tx_dropped;        /* no space available for Tx    */
-       u_long  multicast;         /* multicast packets received   */
-       u_long  collisions;
-
-       /* detailed rx_errors: */
-       u_long  rx_length_errors;
-       u_long  rx_over_errors;    /* receiver ring buff overflow  */
-       u_long  rx_crc_errors;     /* recv'd pkt with crc error    */
-       u_long  rx_frame_errors;   /* recv'd frame alignment error */
-       u_long  rx_fifo_errors;    /* recv'r fifo overrun          */
-       u_long  rx_missed_errors;  /* recv'r missed packet         */
-
-       /* detailed tx_errors */
-       u_long  tx_aborted_errors;
-       u_long  tx_carrier_errors;
-       u_long  tx_fifo_errors;
-       u_long  tx_heartbeat_errors;
-       u_long  tx_window_errors;
-     };
-#endif
-
 /*
  * Item in a list of interfaces.
  */
@@ -878,16 +845,6 @@ PCAP_API const char *pcap_lib_version(void);
   #define MODE_STAT 1
   #define MODE_MON 2
 
-#elif defined(MSDOS)
-
-  /*
-   * MS-DOS definitions
-   */
-
-  PCAP_API int  pcap_stats_ex (pcap_t *, struct pcap_stat_ex *);
-  PCAP_API void pcap_set_wait (pcap_t *p, void (*yield)(void), int wait);
-  PCAP_API u_long pcap_mac_packets (void);
-
 #else /* UN*X */
 
   /*
@@ -900,7 +857,7 @@ PCAP_API const char *pcap_lib_version(void);
   PCAP_AVAILABLE_1_9
   PCAP_API const struct timeval *pcap_get_required_select_timeout(pcap_t *);
 
-#endif /* _WIN32/MSDOS/UN*X */
+#endif /* _WIN32/UN*X */
 
 /*
  * APIs.added in WinPcap for remote capture.
