@@ -203,7 +203,7 @@ struct pcap_ng_if {
 	uint64_t tsresol;		/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	uint64_t scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
-	uint64_t tsoffset;		/* time stamp offset */
+	int64_t tsoffset;		/* time stamp offset */
 };
 
 /*
@@ -460,7 +460,7 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
-    uint64_t *tsoffset, int *is_binary, char *errbuf)
+    int64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
 	void *optvalue;
@@ -595,7 +595,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 {
 	struct pcap_ng_sf *ps;
 	uint64_t tsresol;
-	uint64_t tsoffset;
+	int64_t tsoffset;
 	int is_binary;
 
 	ps = p->priv;
