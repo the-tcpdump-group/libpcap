@@ -1734,7 +1734,7 @@ int sock_discard(SOCKET sock, SSL *ssl, int size, char *errbuf, int errbuflen)
  * - '-1' in case the host does not belong to the host list (and therefore it is not allowed to connect
  * - '-2' in case or error. The error message is returned in the 'errbuf' variable.
  */
-int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen)
+int sock_check_hostlist(const char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen)
 {
 	/* checks if the connecting host is among the ones allowed */
 	if ((hostlist) && (hostlist[0]))
