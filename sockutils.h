@@ -151,7 +151,7 @@ int sock_send(SOCKET sock, SSL *, const char *buffer, size_t size,
     char *errbuf, int errbuflen);
 int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen);
 int sock_discard(SOCKET sock, SSL *, int size, char *errbuf, int errbuflen);
-int	sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen);
+int	sock_check_hostlist(const char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen);
 int sock_cmpaddr(struct sockaddr_storage *first, struct sockaddr_storage *second);
 
 int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int portlen, int flags, char *errbuf, int errbuflen);
