@@ -265,9 +265,13 @@ main(int argc, char **argv)
 			printf("%d packets seen, %d packets counted after pcap_dispatch returns\n",
 			    status, packet_count);
 			struct pcap_stat ps;
-			pcap_stats(pd, &ps);
-			printf("%d ps_recv, %d ps_drop, %d ps_ifdrop\n",
-			    ps.ps_recv, ps.ps_drop, ps.ps_ifdrop);
+			if (pcap_stats(pd, &ps) < 0) {
+				(void)fprintf(stderr, "pcap_stats: %s\n",
+				    pcap_geterr(pd));
+			} else {
+				printf("%d ps_recv, %d ps_drop, %d ps_ifdrop\n",
+				    ps.ps_recv, ps.ps_drop, ps.ps_ifdrop);
+			}
 		}
 	}
 	if (status == -2) {

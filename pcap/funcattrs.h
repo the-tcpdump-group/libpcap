@@ -306,6 +306,41 @@
 #endif
 
 /*
+ * PCAP_NONNULL(...), after a function declaration, means "the arguments
+ * whose ordinal numbers are listed are pointer arguments that must be
+ * non-null".
+ */
+#if __has_attribute(nonnull) \
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(3,3) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1)
+  /*
+   * Compiler with support for it, or GCC 3.3 and later, or some compiler
+   * asserting compatibility with GCC 3.3 and later, or IBM XL C 10.1
+   * and later (do any earlier versions of XL C support this?).
+   */
+  #define PCAP_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
+#else
+  #define PCAP_NONNULL(...)
+#endif
+
+/*
+ * PCAP_WARN_UNUSED_RESULT(...), after a function declaration, means
+ * "the return value of this function should always be used".
+ */
+#if __has_attribute(warn_unused_result) \
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(3,4) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1)
+  /*
+   * Compiler with support for it, or GCC 3.4 and later, or some compiler
+   * asserting compatibility with GCC 3.4 and later, or IBM XL C 10.1
+   * and later (do any earlier versions of XL C support this?).
+   */
+  #define PCAP_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#else
+  #define PCAP_WARN_UNUSED_RESULT
+#endif
+
+/*
  * PCAP_DEPRECATED(func, msg), after a function declaration, marks the
  * function as deprecated.
  *
