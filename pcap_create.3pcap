@@ -46,6 +46,10 @@ with 2.2 or later kernels, a
 argument of "any" or
 .B NULL
 can be used to capture packets from all interfaces.
+.I errbuf
+is a buffer large enough to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
 .PP
 The returned handle must be activated with
 .BR pcap_activate (3PCAP)
@@ -64,9 +68,5 @@ If
 is returned,
 .I errbuf
 is filled in with an appropriate error message.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
 .SH SEE ALSO
 .BR pcap (3PCAP)

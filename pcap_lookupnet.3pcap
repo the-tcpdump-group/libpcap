@@ -48,6 +48,10 @@ and
 are
 .B bpf_u_int32
 pointers.
+.I errbuf
+is a buffer large enough to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
 .SH RETURN VALUE
 .BR pcap_lookupnet ()
 returns
@@ -59,9 +63,5 @@ on failure. If
 is returned,
 .I errbuf
 is filled in with an appropriate error message.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
 .SH SEE ALSO
 .BR pcap (3PCAP)
