@@ -51,6 +51,14 @@ process calling
 because, for example, that process does not have sufficient privileges
 to open them for capturing; if so, those devices will not appear on the
 list.)
+.I alldevsp
+is a pointer to a
+.BR pcap_if_t *;
+.I errbuf
+is a buffer large enough to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
+.PP
 If
 .BR pcap_findalldevs ()
 succeeds, the pointer pointed to by
@@ -216,10 +224,6 @@ returned in that case. If
 is returned,
 .I errbuf
 is filled in with an appropriate error message.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
 .SH BACKWARD COMPATIBILITY
 .PP
 The

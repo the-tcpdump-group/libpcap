@@ -86,6 +86,11 @@ takes an additional
 .I precision
 argument as described above.
 Note that on Windows, that stream should be opened in binary mode.
+.PP
+.I errbuf
+is a buffer large enough to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
 .SH RETURN VALUE
 .BR pcap_open_offline (),
 .BR pcap_open_offline_with_tstamp_precision (),
@@ -102,10 +107,6 @@ If
 is returned,
 .I errbuf
 is filled in with an appropriate error message.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
 .SH BACKWARD COMPATIBILITY
 .BR pcap_open_offline_with_tstamp_precision ()
 and

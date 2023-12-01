@@ -62,6 +62,11 @@ specifies the packet buffer timeout, as a non-negative value, in
 milliseconds.  (See
 .BR pcap (3PCAP)
 for an explanation of the packet buffer timeout.)
+.PP
+.I errbuf
+is a buffer large enough to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
 .SH RETURN VALUE
 .BR pcap_open_live ()
 returns a
@@ -84,10 +89,6 @@ before calling
 and display the warning to the user if
 .I errbuf
 is no longer a zero-length string.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
 .SH SEE ALSO
 .BR pcap_create (3PCAP),
 .BR pcap_activate (3PCAP)
