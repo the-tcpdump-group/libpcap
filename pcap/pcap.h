@@ -399,7 +399,8 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_MMAP_32BIT	0x00000002U	/* map packet buffers with 32-bit addresses */
 
 PCAP_AVAILABLE_1_10
-PCAP_API int	pcap_init(unsigned int, char *);
+PCAP_API int	pcap_init(unsigned int, char *)
+	    PCAP_NONNULL(2) PCAP_WARN_UNUSED_RESULT;
 
 /*
  * We're deprecating pcap_lookupdev() for various reasons (not
@@ -411,43 +412,45 @@ PCAP_DEPRECATED("use 'pcap_findalldevs' and use the first device")
 PCAP_API char	*pcap_lookupdev(char *);
 
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
+PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *,
+	    char *) PCAP_NONNULL(4) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
-PCAP_API pcap_t	*pcap_create(const char *, char *);
+PCAP_API pcap_t	*pcap_create(const char *, char *) PCAP_NONNULL(2);
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_set_snaplen(pcap_t *, int);
+PCAP_API int	pcap_set_snaplen(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_set_promisc(pcap_t *, int);
+PCAP_API int	pcap_set_promisc(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_can_set_rfmon(pcap_t *);
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_set_rfmon(pcap_t *, int);
+PCAP_API int	pcap_set_rfmon(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_set_timeout(pcap_t *, int);
+PCAP_API int	pcap_set_timeout(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_2
-PCAP_API int	pcap_set_tstamp_type(pcap_t *, int);
+PCAP_API int	pcap_set_tstamp_type(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_5
-PCAP_API int	pcap_set_immediate_mode(pcap_t *, int);
+PCAP_API int	pcap_set_immediate_mode(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_set_buffer_size(pcap_t *, int);
+PCAP_API int	pcap_set_buffer_size(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_5
-PCAP_API int	pcap_set_tstamp_precision(pcap_t *, int);
+PCAP_API int	pcap_set_tstamp_precision(pcap_t *, int)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_5
-PCAP_API int	pcap_get_tstamp_precision(pcap_t *);
+PCAP_API int	pcap_get_tstamp_precision(pcap_t *) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
-PCAP_API int	pcap_activate(pcap_t *);
+PCAP_API int	pcap_activate(pcap_t *) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_2
 PCAP_API int	pcap_list_tstamp_types(pcap_t *, int **);
@@ -466,7 +469,7 @@ PCAP_API const char *pcap_tstamp_type_val_to_description(int);
 
 #ifdef __linux__
 PCAP_AVAILABLE_1_9
-PCAP_API int	pcap_set_protocol_linux(pcap_t *, int);
+PCAP_API int	pcap_set_protocol_linux(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 #endif
 
 /*
@@ -528,7 +531,8 @@ PCAP_API int	pcap_set_protocol_linux(pcap_t *, int);
 #define PCAP_TSTAMP_PRECISION_NANO	1	/* use timestamps with nanosecond precision */
 
 PCAP_AVAILABLE_0_4
-PCAP_API pcap_t	*pcap_open_live(const char *, int, int, int, char *);
+PCAP_API pcap_t	*pcap_open_live(const char *, int, int, int, char *)
+	    PCAP_NONNULL(5);
 
 PCAP_AVAILABLE_0_6
 PCAP_API pcap_t	*pcap_open_dead(int, int);
@@ -537,16 +541,18 @@ PCAP_AVAILABLE_1_5
 PCAP_API pcap_t	*pcap_open_dead_with_tstamp_precision(int, int, u_int);
 
 PCAP_AVAILABLE_1_5
-PCAP_API pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
+PCAP_API pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int,
+	    char *) PCAP_NONNULL(3);
 
 PCAP_AVAILABLE_0_4
-PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
+PCAP_API pcap_t	*pcap_open_offline(const char *, char *) PCAP_NONNULL(2);
 
 #ifdef _WIN32
   PCAP_AVAILABLE_1_5
-  PCAP_API pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int, char *);
+  PCAP_API pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int,
+	    char *) PCAP_NONNULL(3);
 
-  PCAP_API pcap_t  *pcap_hopen_offline(intptr_t, char *);
+  PCAP_API pcap_t  *pcap_hopen_offline(intptr_t, char *) PCAP_NONNULL(2);
   /*
    * If we're building libpcap, these are internal routines in savefile.c,
    * so we must not define them as macros.
@@ -568,20 +574,23 @@ PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
   #endif
 #else /*_WIN32*/
   PCAP_AVAILABLE_1_5
-  PCAP_API pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
+  PCAP_API pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *,
+	    u_int, char *) PCAP_NONNULL(3);
 
   PCAP_AVAILABLE_0_9
-  PCAP_API pcap_t	*pcap_fopen_offline(FILE *, char *);
+  PCAP_API pcap_t	*pcap_fopen_offline(FILE *, char *) PCAP_NONNULL(2);
 #endif /*_WIN32*/
 
 PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_close(pcap_t *);
 
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
+PCAP_API int	pcap_loop(pcap_t *, int, pcap_handler, u_char *)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *);
+PCAP_API int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_4
 PCAP_API const u_char *pcap_next(pcap_t *, struct pcap_pkthdr *);
@@ -593,25 +602,31 @@ PCAP_AVAILABLE_0_8
 PCAP_API void	pcap_breakloop(pcap_t *);
 
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *);
+PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_4
-PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *);
+PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *)
+	     PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_9
-PCAP_API int	pcap_setdirection(pcap_t *, pcap_direction_t);
+PCAP_API int	pcap_setdirection(pcap_t *, pcap_direction_t)
+	     PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_7
 PCAP_API int	pcap_getnonblock(pcap_t *, char *);
 
 PCAP_AVAILABLE_0_7
-PCAP_API int	pcap_setnonblock(pcap_t *, int, char *);
+PCAP_API int	pcap_setnonblock(pcap_t *, int, char *)
+	     PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_9
-PCAP_API int	pcap_inject(pcap_t *, const void *, size_t);
+PCAP_API int	pcap_inject(pcap_t *, const void *, size_t)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_8
-PCAP_API int	pcap_sendpacket(pcap_t *, const u_char *, int);
+PCAP_API int	pcap_sendpacket(pcap_t *, const u_char *, int)
+	    PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_0
 PCAP_API const char *pcap_statustostr(int);
@@ -627,12 +642,12 @@ PCAP_API void	pcap_perror(pcap_t *, const char *);
 
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
-	    bpf_u_int32);
+	    bpf_u_int32) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_5
 PCAP_DEPRECATED("use pcap_open_dead(), pcap_compile() and pcap_close()")
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
-	    const char *, int, bpf_u_int32);
+	    const char *, int, bpf_u_int32) PCAP_WARN_UNUSED_RESULT;
 
 /* XXX - this took two arguments in 0.4 and 0.5 */
 PCAP_AVAILABLE_0_6
@@ -652,7 +667,7 @@ PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_list_datalinks(pcap_t *, int **);
 
 PCAP_AVAILABLE_0_8
-PCAP_API int	pcap_set_datalink(pcap_t *, int);
+PCAP_API int	pcap_set_datalink(pcap_t *, int) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_8
 PCAP_API void	pcap_free_datalinks(int *);
@@ -759,7 +774,8 @@ PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 PCAP_AVAILABLE_0_7
-PCAP_API int	pcap_findalldevs(pcap_if_t **, char *);
+PCAP_API int	pcap_findalldevs(pcap_if_t **, char *)
+	    PCAP_NONNULL(2) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_0_7
 PCAP_API void	pcap_freealldevs(pcap_if_t *);
@@ -809,17 +825,19 @@ PCAP_API const char *pcap_lib_version(void);
     typedef struct _AirpcapHandle *PAirpcapHandle;
   #endif
 
-  PCAP_API int pcap_setbuff(pcap_t *p, int dim);
-  PCAP_API int pcap_setmode(pcap_t *p, int mode);
-  PCAP_API int pcap_setmintocopy(pcap_t *p, int size);
+  PCAP_API int pcap_setbuff(pcap_t *p, int dim) PCAP_WARN_UNUSED_RESULT;
+  PCAP_API int pcap_setmode(pcap_t *p, int mode) PCAP_WARN_UNUSED_RESULT;
+  PCAP_API int pcap_setmintocopy(pcap_t *p, int size) PCAP_WARN_UNUSED_RESULT;
 
   PCAP_API HANDLE pcap_getevent(pcap_t *p);
 
   PCAP_AVAILABLE_1_8
-  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t *);
+  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t *)
+	     PCAP_WARN_UNUSED_RESULT;
 
   PCAP_AVAILABLE_1_8
-  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t *);
+  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *,
+	    size_t *) PCAP_WARN_UNUSED_RESULT;
 
   PCAP_API pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
 
@@ -831,11 +849,13 @@ PCAP_API const char *pcap_lib_version(void);
 
   PCAP_API struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
 
-  PCAP_API int pcap_setuserbuffer(pcap_t *p, int size);
+  PCAP_API int pcap_setuserbuffer(pcap_t *p, int size) PCAP_WARN_UNUSED_RESULT;
 
-  PCAP_API int pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks);
+  PCAP_API int pcap_live_dump(pcap_t *p, char *filename, int maxsize,
+	    int maxpacks) PCAP_WARN_UNUSED_RESULT;
 
-  PCAP_API int pcap_live_dump_ended(pcap_t *p, int sync);
+  PCAP_API int pcap_live_dump_ended(pcap_t *p, int sync)
+	    PCAP_WARN_UNUSED_RESULT;
 
   PCAP_API int pcap_start_oem(char* err_str, int flags);
 
@@ -1115,15 +1135,18 @@ struct pcap_rmtauth
  */
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API pcap_t	*pcap_open(const char *source, int snaplen, int flags,
-	    int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
+	    int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
+	    PCAP_NONNULL(6);
 
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_createsrcstr(char *source, int type, const char *host,
-	    const char *port, const char *name, char *errbuf);
+	    const char *port, const char *name, char *errbuf)
+	    PCAP_NONNULL(6) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
-	    char *port, char *name, char *errbuf);
+	    char *port, char *name, char *errbuf)
+	    PCAP_NONNULL(6) PCAP_WARN_UNUSED_RESULT;
 
 /*
  * This routine can scan a directory for savefiles, list local capture
@@ -1146,7 +1169,8 @@ PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
  */
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_findalldevs_ex(const char *source,
-	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf);
+	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
+	    PCAP_NONNULL(4) PCAP_WARN_UNUSED_RESULT;
 
 /*
  * Sampling methods.
@@ -1228,19 +1252,22 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
-	    struct pcap_rmtauth *auth, char *errbuf);
+	    struct pcap_rmtauth *auth, char *errbuf)
+	    PCAP_NONNULL(6);
 
 PCAP_AVAILABLE_1_10_REMOTE
 PCAP_API SOCKET	pcap_remoteact_accept_ex(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
-	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf);
+	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf)
+	    PCAP_NONNULL(7);
 
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API int	pcap_remoteact_list(char *hostlist, char sep, int size,
-	    char *errbuf);
+	    char *errbuf) PCAP_NONNULL(4) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_9_REMOTE
-PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf);
+PCAP_API int	pcap_remoteact_close(const char *host, char *errbuf)
+	    PCAP_NONNULL(2) PCAP_WARN_UNUSED_RESULT;
 
 PCAP_AVAILABLE_1_9_REMOTE
 PCAP_API void	pcap_remoteact_cleanup(void);
