@@ -278,6 +278,24 @@
   #endif
 #endif
 
+#if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+  /*
+   * Clang appears to let you ignore a result without a warning by
+   * casting the function result to void, so we don't appear to
+   * need this for Clang.
+   */
+#elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,5)
+  /*
+   * GCC warns about unused return values if a function is marked as
+   * "warn about ignoring this function's return value".
+   */
+  #define DIAG_OFF_WARN_UNUSED_RESULT \
+    PCAP_DO_PRAGMA(GCC diagnostic push) \
+    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunused-result")
+  #define DIAG_ON_WARN_UNUSED_RESULT \
+    PCAP_DO_PRAGMA(GCC diagnostic pop)
+#endif
+
 /*
  * GCC needs this on AIX for longjmp().
  */
@@ -330,6 +348,12 @@
 #endif
 #ifndef DIAG_OFF_BISON_BYACC
 #define DIAG_OFF_BISON_BYACC
+#endif
+#ifndef DIAG_ON_WARN_UNUSED_RESULT
+#define DIAG_ON_WARN_UNUSED_RESULT
+#endif
+#ifndef DIAG_OFF_WARN_UNUSED_RESULT
+#define DIAG_OFF_WARN_UNUSED_RESULT
 #endif
 #ifndef PCAP_UNREACHABLE
 #define PCAP_UNREACHABLE
