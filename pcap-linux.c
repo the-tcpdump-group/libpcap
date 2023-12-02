@@ -947,9 +947,16 @@ static void pcap_breakloop_linux(pcap_t *handle)
 	struct pcap_linux *handlep = handle->priv;
 
 	uint64_t value = 1;
-	/* XXX - what if this fails? */
-	if (handlep->poll_breakloop_fd != -1)
+
+	if (handlep->poll_breakloop_fd != -1) {
+		/*
+		 * XXX - pcap_breakloop() doesn't have a return value,
+		 * so we can't indicate an error.
+		 */
+DIAG_OFF_WARN_UNUSED_RESULT
 		(void)write(handlep->poll_breakloop_fd, &value, sizeof(value));
+DIAG_ON_WARN_UNUSED_RESULT
+	}
 }
 
 /*
