@@ -29,21 +29,6 @@ print_cc_version
 # later warnings in the same matrix subset trigger an error.
 # shellcheck disable=SC2221,SC2222
 case `cc_id`/`os_id` in
-gcc-*/Linux-*)
-    # This warning is a bit odd.  It is steadily present in Cirrus CI, but not
-    # in Buildbot.  On my Linux system with the same exact distribution and GCC
-    # as Cirrus CI it reproduces only if GCC receives the "-g" flag:
-    # make CFLAGS=-g -- does not reproduce
-    # CFLAGS=-g make -- reproduces
-    # make -- reproduces
-    #
-    # pcap-linux.c:947:8: warning: ignoring return value of 'write', declared
-    # with attribute warn_unused_result [-Wunused-result]
-    #
-    # And even this way it does not make GCC exit with an error when it has
-    # reported the warning and has received the "-Werror" flag. So let's keep
-    # this block no-op for now.
-    ;;
 clang-*/NetBSD-*)
     # pcap-bpf.c:1044:18: warning: implicit conversion loses integer precision:
     # 'uint64_t' (aka 'unsigned long') to 'u_int' (aka 'unsigned int')
