@@ -55,7 +55,7 @@ for CC in $MATRIX_CC; do
             export IPV6
             for REMOTE in $MATRIX_REMOTE; do
                 export REMOTE
-                COUNT=`increment $COUNT`
+                COUNT=`increment "$COUNT"`
                 echo_magenta "===== SETUP $COUNT: CC=$CC CMAKE=$CMAKE IPV6=$IPV6 REMOTE=$REMOTE =====" >&2
                 # Run one build with setup environment variables: CC, CMAKE,
                 # IPV6 and REMOTE
