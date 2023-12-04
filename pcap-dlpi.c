@@ -160,11 +160,6 @@ static int dlrawdatareq(int, const u_char *, int);
 static int recv_ack(int, int, const char *, char *, char *, int *);
 static char *dlstrerror(char *, size_t, bpf_u_int32);
 static char *dlprim(char *, size_t, bpf_u_int32);
-#if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-#define GET_RELEASE_BUFSIZE	32
-static void get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
-    bpf_u_int32 *);
-#endif
 static int send_request(int, char *, int, char *, char *);
 #ifdef HAVE_HPUX9
 static int dlpi_kread(int, off_t, void *, u_int, char *);
@@ -528,10 +523,6 @@ pcap_activate_dlpi(pcap_t *p)
 	register dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
 	bpf_u_int32 ss;
-#ifdef HAVE_SOLARIS
-	char release[GET_RELEASE_BUFSIZE];
-	bpf_u_int32 osmajor, osminor, osmicro;
-#endif
 #endif
 	bpf_u_int32 buf[MAXDLBUF];
 
@@ -811,27 +802,6 @@ pcap_activate_dlpi(pcap_t *p)
 
 #ifdef HAVE_SYS_BUFMOD_H
 	ss = p->snapshot;
-
-	/*
-	** There is a bug in bufmod(7). When dealing with messages of
-	** less than snaplen size it strips data from the beginning not
-	** the end.
-	**
-	** This bug is fixed in 5.3.2. Also, there is a patch available.
-	** Ask for bugid 1149065.
-	*/
-#ifdef HAVE_SOLARIS
-	get_release(release, sizeof (release), &osmajor, &osminor, &osmicro);
-	if (osmajor == 5 && (osminor <= 2 || (osminor == 3 && osmicro < 2)) &&
-	    getenv("BUFMOD_FIXED") == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		"WARNING: bufmod is broken in SunOS %s; ignoring snaplen.",
-		    release);
-		ss = 0;
-		status = PCAP_WARNING;
-	}
-#endif
-
 	/* Push and configure bufmod. */
 	if (pcap_conf_bufmod(p, ss) != 0) {
 		status = PCAP_ERROR;
@@ -1565,33 +1535,6 @@ dlrawdatareq(int fd, const u_char *datap, int datalen)
 	return (putmsg(fd, &ctl, &data, 0));
 }
 #endif /* DL_HP_RAWDLS */
-
-#if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-static void
-get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
-    bpf_u_int32 *minorp, bpf_u_int32 *microp)
-{
-	char *cp;
-
-	*majorp = 0;
-	*minorp = 0;
-	*microp = 0;
-	if (sysinfo(SI_RELEASE, buf, bufsize) < 0) {
-		pcapint_strlcpy(buf, "?", bufsize);
-		return;
-	}
-	cp = buf;
-	if (!PCAP_ISDIGIT((unsigned char)*cp))
-		return;
-	*majorp = strtol(cp, &cp, 10);
-	if (*cp++ != '.')
-		return;
-	*minorp =  strtol(cp, &cp, 10);
-	if (*cp++ != '.')
-		return;
-	*microp =  strtol(cp, &cp, 10);
-}
-#endif
 
 #ifdef DL_HP_PPA_REQ
 /*
