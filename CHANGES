@@ -95,6 +95,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Update pcap-savefile man page to match the Internet-Draft for
         pcap.
       Fix CMake issues for target used by other projects.
+      Explain "any" device better in pcap_open_live(3PCAP).
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release

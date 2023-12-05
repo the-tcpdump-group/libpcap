@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_OPEN_LIVE 3PCAP "6 December 2017"
+.TH PCAP_OPEN_LIVE 3PCAP "5 December 2023"
 .SH NAME
 pcap_open_live \- open a device for capturing
 .SH SYNOPSIS
@@ -41,12 +41,15 @@ pcap_t *pcap_open_live(const char *device, int snaplen,
 is used to obtain a packet capture handle to look
 at packets on the network.
 .I device
-is a string that specifies the network device to open; on Linux systems
-with 2.2 or later kernels, a
+is a string that specifies the network device to open; on all supported Linux
+systems, as well as on recent versions of macOS and Solaris, a
 .I device
 argument of "any" or
 .B NULL
-can be used to capture packets from all interfaces.
+can be used to capture packets from all network interfaces.  The latter should
+not be confused with all available capture devices as seen by
+.BR pcap_findalldevs (3PCAP),
+which may also include D-Bus, USB etc.
 .PP
 .I snaplen
 specifies the snapshot length to be set on the handle.
