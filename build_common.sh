@@ -226,11 +226,12 @@ os_id() {
         : "${os_id_version:=`uname -v`}"
         echo "${os_id_version}.${os_id_release}"
         ;;
-    Darwin|NetBSD|OpenBSD|SunOS)
+    Darwin|OpenBSD|SunOS)
         echo "$os_id_release"
         ;;
-    FreeBSD|Linux)
+    FreeBSD|NetBSD|Linux)
         # Meaningful version is usually the substring before the first dash.
+        # Or the first underscore.
         echo "$os_id_release" | sed 's/^\([0-9\.]*\).*$/\1/'
         ;;
     Haiku)
