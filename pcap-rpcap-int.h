@@ -35,7 +35,7 @@
 #define __PCAP_RPCAP_INT_H__
 
 #include "pcap.h"
-#include "sockutils.h"	/* Needed for some structures (like SOCKET, sockaddr_in) which are used here */
+#include "sockutils.h"	/* Needed for some data types (such as PCAP_SOCKET, sockaddr_in) that are used here */
 
 /*
  * \file pcap-rpcap-int.h
@@ -70,6 +70,6 @@
  *                                                       *
  *********************************************************/
 void rpcap_createhdr(struct rpcap_header *header, uint8_t type, uint16_t value, uint32_t length);
-int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
+int rpcap_senderror(PCAP_SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 
 #endif

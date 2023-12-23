@@ -432,10 +432,10 @@ static int compare_addrs_to_try_by_status(const void *a, const void *b)
 	return addr_a->errtype - addr_b->errtype;
 }
 
-static SOCKET sock_create_socket(struct addrinfo *addrinfo, char *errbuf,
+static PCAP_SOCKET sock_create_socket(struct addrinfo *addrinfo, char *errbuf,
     int errbuflen)
 {
-	SOCKET sock;
+	PCAP_SOCKET sock;
 #ifdef SO_NOSIGPIPE
 	int on = 1;
 #endif
@@ -501,9 +501,10 @@ static SOCKET sock_create_socket(struct addrinfo *addrinfo, char *errbuf,
  * if everything is fine, INVALID_SOCKET if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
-SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen)
+PCAP_SOCKET sock_open(const char *host, struct addrinfo *addrinfo,
+    int server, int nconn, char *errbuf, int errbuflen)
 {
-	SOCKET sock;
+	PCAP_SOCKET sock;
 
 	/* This is a server socket */
 	if (server)
@@ -872,7 +873,7 @@ SOCKET sock_open(const char *host, struct addrinfo *addrinfo, int server, int nc
  * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
-int sock_close(SOCKET sock, char *errbuf, int errbuflen)
+int sock_close(PCAP_SOCKET sock, char *errbuf, int errbuflen)
 {
 	/*
 	 * SHUT_WR: subsequent calls to the send function are disallowed.
@@ -1212,8 +1213,8 @@ struct addrinfo *sock_initaddress(const char *host, const char *port,
  * '-2' if we got one of those errors.
  * For errors, an error message is returned in the 'errbuf' variable.
  */
-int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
-    char *errbuf, int errbuflen)
+int sock_send(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer,
+    size_t size, char *errbuf, int errbuflen)
 {
 	int remaining;
 	ssize_t nsent;
@@ -1416,7 +1417,7 @@ int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int to
  * The error message is returned in the 'errbuf' variable.
  */
 
-int sock_recv(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
+int sock_recv(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
     int flags, char *errbuf, int errbuflen)
 {
 	int recv_flags = 0;
@@ -1523,8 +1524,8 @@ int sock_recv(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
  *
  * Returns the size of the datagram on success or -1 on error.
  */
-int sock_recv_dgram(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
-    char *errbuf, int errbuflen)
+int sock_recv_dgram(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer,
+    size_t size, char *errbuf, int errbuflen)
 {
 	ssize_t nread;
 #ifndef _WIN32
@@ -1671,7 +1672,8 @@ int sock_recv_dgram(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
  * \return '0' if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
-int sock_discard(SOCKET sock, SSL *ssl, int size, char *errbuf, int errbuflen)
+int sock_discard(PCAP_SOCKET sock, SSL *ssl, int size, char *errbuf,
+    int errbuflen)
 {
 #define TEMP_BUF_SIZE 32768
 
@@ -1929,7 +1931,8 @@ int sock_cmpaddr(struct sockaddr_storage *first, struct sockaddr_storage *second
  * \warning If the socket is using a connectionless protocol, the address may not be available
  * until I/O occurs on the socket.
  */
-int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int portlen, int flags, char *errbuf, int errbuflen)
+int sock_getmyinfo(PCAP_SOCKET sock, char *address, int addrlen, char *port,
+    int portlen, int flags, char *errbuf, int errbuflen)
 {
 	struct sockaddr_storage mysockaddr;
 	socklen_t sockaddrlen;

@@ -127,7 +127,7 @@
   #include <sys/time.h>
 #endif /* _WIN32/MSDOS/UN*X */
 
-#include <pcap/socket.h>	/* for SOCKET, as the active-mode rpcap APIs use it */
+#include <pcap/socket.h>	/* for PCAP_SOCKET, as the active-mode rpcap APIs use it */
 
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap/bpf.h>
@@ -1250,14 +1250,14 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 #define RPCAP_HOSTLIST_SIZE 1024
 
 PCAP_AVAILABLE_1_9_REMOTE
-PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
-	    const char *hostlist, char *connectinghost,
+PCAP_API PCAP_SOCKET	pcap_remoteact_accept(const char *address,
+	    const char *port, const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, char *errbuf)
 	    PCAP_NONNULL(6);
 
 PCAP_AVAILABLE_1_10_REMOTE
-PCAP_API SOCKET	pcap_remoteact_accept_ex(const char *address, const char *port,
-	    const char *hostlist, char *connectinghost,
+PCAP_API PCAP_SOCKET	pcap_remoteact_accept_ex(const char *address,
+	    const char *port, const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf)
 	    PCAP_NONNULL(7);
 
