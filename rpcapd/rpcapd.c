@@ -74,7 +74,7 @@
 //
 struct listen_sock {
 	struct listen_sock *next;
-	SOCKET sock;
+	PCAP_SOCKET sock;
 };
 
 // Global variables
@@ -106,7 +106,7 @@ static void main_terminate(int sign);
 static void main_reread_config(int sign);
 #endif
 static void accept_connections(void);
-static void accept_connection(SOCKET listen_sock);
+static void accept_connection(PCAP_SOCKET listen_sock);
 #ifndef _WIN32
 static void main_reap_children(int sign);
 #endif
@@ -622,7 +622,7 @@ void main_startup(void)
 		for (tempaddrinfo = addrinfo; tempaddrinfo;
 		     tempaddrinfo = tempaddrinfo->ai_next)
 		{
-			SOCKET sock;
+			PCAP_SOCKET sock;
 			struct listen_sock *sock_info;
 
 			if ((sock = sock_open(NULL, tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
@@ -1123,7 +1123,7 @@ accept_connections(void)
 // fork "inherits" the parent stack.)
 //
 struct params_copy {
-	SOCKET sockctrl;
+	PCAP_SOCKET sockctrl;
 	char *hostlist;
 };
 #endif
@@ -1133,10 +1133,10 @@ struct params_copy {
 // worker process, on UN*X, to handle the connection.
 //
 static void
-accept_connection(SOCKET listen_sock)
+accept_connection(PCAP_SOCKET listen_sock)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
-	SOCKET sockctrl;			// keeps the socket ID for this control connection
+	PCAP_SOCKET sockctrl;			// keeps the socket ID for this control connection
 	struct sockaddr_storage from;		// generic sockaddr_storage variable
 	socklen_t fromlen;			// keeps the length of the sockaddr_storage variable
 
@@ -1330,7 +1330,7 @@ static void *
 main_active(void *ptr)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
-	SOCKET sockctrl;			// keeps the socket ID for this control connection
+	PCAP_SOCKET sockctrl;			// keeps the socket ID for this control connection
 	struct addrinfo hints;			// temporary struct to keep settings needed to open the new socket
 	struct addrinfo *addrinfo;		// keeps the addrinfo chain; required to open a new socket
 	struct active_pars *activepars;
