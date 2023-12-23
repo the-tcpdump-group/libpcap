@@ -95,7 +95,7 @@
 // Parameters for the service loop.
 struct daemon_slpars
 {
-	SOCKET sockctrl;	//!< SOCKET ID of the control connection
+	PCAP_SOCKET sockctrl;	//!< PCAP_SOCKET ID of the control connection
 	SSL *ssl;		//!< Optional SSL handler for the controlling sockets
 	int isactive;		//!< Not null if the daemon has to run in active mode
 	int nullAuthAllowed;	//!< '1' if we permit NULL authentication, '0' otherwise
@@ -110,8 +110,8 @@ struct daemon_slpars
 // value for a pthread_t on UN*X.
 //
 struct session {
-	SOCKET sockctrl;
-	SOCKET sockdata;
+	PCAP_SOCKET sockctrl;
+	PCAP_SOCKET sockdata;
 	SSL *ctrl_ssl, *data_ssl; // optional SSL handlers for sockctrl and sockdata.
 	uint8 protocol_version;
 	pcap_t *fp;
@@ -125,7 +125,7 @@ struct session {
 };
 
 // Locally defined functions
-static int daemon_msg_err(SOCKET sockctrl, SSL *, uint32 plen);
+static int daemon_msg_err(PCAP_SOCKET sockctrl, SSL *, uint32 plen);
 static int daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen);
 static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 
@@ -142,7 +142,7 @@ static int daemon_msg_endcap_req(uint8 ver, struct daemon_slpars *pars,
 
 static int daemon_msg_updatefilter_req(uint8 ver, struct daemon_slpars *pars,
     struct session *session, uint32 plen);
-static int daemon_unpackapplyfilter(SOCKET sockctrl, SSL *, struct session *session, uint32 *plenp, char *errbuf);
+static int daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *, struct session *session, uint32 *plenp, char *errbuf);
 
 static int daemon_msg_stats_req(uint8 ver, struct daemon_slpars *pars,
     struct session *session, uint32 plen, struct pcap_stat *stats,
@@ -159,9 +159,9 @@ static void *daemon_thrdatamain(void *ptr);
 static void noop_handler(int sign);
 #endif
 
-static int rpcapd_recv_msg_header(SOCKET sock, SSL *, struct rpcap_header *headerp);
-static int rpcapd_recv(SOCKET sock, SSL *, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
-static int rpcapd_discard(SOCKET sock, SSL *, uint32 len);
+static int rpcapd_recv_msg_header(PCAP_SOCKET sock, SSL *, struct rpcap_header *headerp);
+static int rpcapd_recv(PCAP_SOCKET sock, SSL *, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
+static int rpcapd_discard(PCAP_SOCKET sock, SSL *, uint32 len);
 static void session_close(struct session *);
 
 //
@@ -211,7 +211,7 @@ static int is_url(const char *source);
 #endif
 
 int
-daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
+daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
     int nullAuthAllowed, int uses_ssl)
 {
 	uint8 first_octet;
@@ -1138,7 +1138,7 @@ end:
  * This handles the RPCAP_MSG_ERR message.
  */
 static int
-daemon_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen)
+daemon_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char remote_errbuf[PCAP_ERRBUF_SIZE];
@@ -2179,7 +2179,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 
 	if (!serveropen_dp)
 	{
-		SOCKET socktemp;	// We need another socket, since we're going to accept() a connection
+		PCAP_SOCKET socktemp;	// We need another socket, since we're going to accept() a connection
 
 		// Connection creation
 		saddrlen = sizeof(struct sockaddr_storage);
@@ -2333,7 +2333,7 @@ daemon_msg_endcap_req(uint8 ver, struct daemon_slpars *pars,
 #define RPCAP_BPF_MAXINSNS	8192
 
 static int
-daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session, uint32 *plenp, char *errmsgbuf)
+daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *ctrl_ssl, struct session *session, uint32 *plenp, char *errmsgbuf)
 {
 	int status;
 	struct rpcap_filter filter;
@@ -2912,7 +2912,7 @@ void sleep_secs(int secs)
  * Read the header of a message.
  */
 static int
-rpcapd_recv_msg_header(SOCKET sock, SSL *ssl, struct rpcap_header *headerp)
+rpcapd_recv_msg_header(PCAP_SOCKET sock, SSL *ssl, struct rpcap_header *headerp)
 {
 	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -2944,7 +2944,7 @@ rpcapd_recv_msg_header(SOCKET sock, SSL *ssl, struct rpcap_header *headerp)
  * error.
  */
 static int
-rpcapd_recv(SOCKET sock, SSL *ssl, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf)
+rpcapd_recv(PCAP_SOCKET sock, SSL *ssl, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf)
 {
 	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -2973,7 +2973,7 @@ rpcapd_recv(SOCKET sock, SSL *ssl, char *buffer, size_t toread, uint32 *plen, ch
  * error.
  */
 static int
-rpcapd_discard(SOCKET sock, SSL *ssl, uint32 len)
+rpcapd_discard(PCAP_SOCKET sock, SSL *ssl, uint32 len)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 
