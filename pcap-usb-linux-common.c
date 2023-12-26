@@ -100,7 +100,7 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 				/*
 				 * Compute the end offset of the data
 				 * for this descriptor, i.e. the offset
-				 * of the byte after te data.  Clamp
+				 * of the byte after the data.  Clamp
 				 * the sum at UINT_MAX, so that it fits
 				 * in a u_int.
 				 */

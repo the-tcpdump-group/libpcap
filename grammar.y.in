@@ -435,7 +435,7 @@ prog:	  null expr
 	/*
 	 * I'm not sure we have a reason to use yynerrs, but it's
 	 * declared, and incremented, whether we need it or not,
-	 * which means tha Clang 15 will give a "used but not
+	 * which means that Clang 15 will give a "used but not
 	 * set" warning.  This should suppress the warning for
 	 * yynerrs without suppressing it for other variables.
 	 */
