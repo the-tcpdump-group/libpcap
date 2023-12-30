@@ -1187,6 +1187,10 @@ keyword became available in libpcap 1.8.0.
 The
 .B ifindex
 keyword became available in libpcap 1.10.0.
+.PP
+The \fBtcp-ae\fP, \fBtcp-res1\fP, \fBtcp-res2\fP, \fBtcp-res3\fP and \fBtcp-res\fP
+became available in libpcap 1.11. Also, \fBtcp[tcpflags]\fP was expanded to allow
+access to all 12 TCP header flags.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS
