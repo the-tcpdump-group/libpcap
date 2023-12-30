@@ -493,6 +493,10 @@ tcp-urg			{ yylval->h = 0x20; return NUM; }
 tcp-ece			{ yylval->h = 0x40; return NUM; }
 tcp-cwr			{ yylval->h = 0x80; return NUM; }
 tcp-ae			{ yylval->h = 0x100; return NUM; }
+tcp-res3		{ yylval->h = 0x200; return NUM; }
+tcp-res2		{ yylval->h = 0x400; return NUM; }
+tcp-res1		{ yylval->h = 0x800; return NUM; }
+tcp-res			{ yylval->h = 0xE00; return NUM; }
 [A-Za-z0-9]([-_.A-Za-z0-9]*[.A-Za-z0-9])? {
 			 yylval->s = sdup(yyextra, (char *)yytext); return ID; }
 "\\"[^ !()\n\t]+	{ yylval->s = sdup(yyextra, (char *)yytext + 1); return ID; }
