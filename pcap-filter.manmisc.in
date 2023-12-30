@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "12 February 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "28 March 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1030,10 +1030,15 @@ The following ICMPv6 type field values are available:
 .BR \%icmp6-multicastroutersolicit ,
 .BR \%icmp6-multicastrouterterm .
 .IP
-The following TCP flags field values are available: \fBtcp-fin\fP,
-\fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
-\fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
-\fBtcp-cwr\fP.
+The following TCP flags field values are available:
+\fBtcp-fin\fP, \fBtcp-syn\fP, \fBtcp-rst\fP,
+\fBtcp-push\fP, \fBtcp-ack\fP, \fBtcp-urg\fP,
+\fBtcp-ece\fP, \fBtcp-cwr\fP, \fBtcp-ae\fP,
+\fBtcp-res1\fP, \fBtcp-res2\fP, \fBtcp-res3\fP and
+\fBtcp-res\fP.
+Among these, \fBtcp-res\fP is special as it can be
+used to check when any of the reserved TCP header
+flags is non-zero.
 .LP
 Primitives may be combined using:
 .IP
