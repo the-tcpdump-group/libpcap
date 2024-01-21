@@ -1454,11 +1454,16 @@ opt_deadstores(opt_state_t *opt_state, register struct block *b)
 		if (last[atom] && !ATOMELEM(b->out_use, atom)) {
 			last[atom]->code = NOP;
 			/*
+			 * The store was removed as it's dead,
+			 * so the value stored into now has
+			 * an unknown value.
+			 */
+			vstore(0, &b->val[atom], VAL_UNKNOWN, 0);
+			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
 			opt_state->done = 0;
-			vstore(0, &b->val[atom], VAL_UNKNOWN, 0);
 		}
 }
 
