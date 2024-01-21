@@ -22,6 +22,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
       Deprecate pcap_compile_nopcap().
+      Optimizer fix from Archit Shah to recompute dominators after
+        moving code (#976); fixes #945 (although the resulting filter
+        isn't empty).
+      Optimizer fix from Archit Shah to mark value as unknown when store
+        of that value is deleted (#972); fixes #434, #436, #437, and
+        #1076.
     Savefiles:
       Reject pcap files where one of the reserved fields in the
         "link-layer type plus other stuff" is non-zero.
