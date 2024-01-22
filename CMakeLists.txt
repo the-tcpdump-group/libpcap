@@ -2792,6 +2792,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         # Microsoft's code generator.  We currently treat them as if
         # they might support GCC-style -W options.
         #
+        check_and_add_compiler_option(-W)
         check_and_add_compiler_option(-Wall)
         check_and_add_compiler_option(-Wcomma)
         # Warns about safeguards added in case the enums are extended
@@ -2801,6 +2802,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         check_and_add_compiler_option(-Wmissing-noreturn)
         check_and_add_compiler_option(-Wmissing-prototypes)
         check_and_add_compiler_option(-Wmissing-variable-declarations)
+        check_and_add_compiler_option(-Wnull-pointer-subtraction)
         check_and_add_compiler_option(-Wpointer-arith)
         check_and_add_compiler_option(-Wpointer-sign)
         check_and_add_compiler_option(-Wshadow)
@@ -2808,6 +2810,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         check_and_add_compiler_option(-Wsign-compare)
         check_and_add_compiler_option(-Wstrict-prototypes)
         check_and_add_compiler_option(-Wunreachable-code)
+        check_and_add_compiler_option(-Wunused-but-set-parameter)
+        check_and_add_compiler_option(-Wunused-but-set-variable)
         check_and_add_compiler_option(-Wunused-parameter)
         check_and_add_compiler_option(-Wused-but-marked-unused)
     endif()
