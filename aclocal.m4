@@ -848,8 +848,8 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wpointer-arith)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wpointer-sign)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshadow)
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshorten-64-to-32)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
 		    #
 		    # This can cause problems with ntohs(), ntohl(),
