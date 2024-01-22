@@ -850,11 +850,11 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 	}
 	s->k = a;
 	s->code = BPF_LD|BPF_IMM;
+	opt_state->done = 0;
 	/*
 	 * XXX - optimizer loop detection.
 	 */
 	opt_state->non_branch_movement_performed = 1;
-	opt_state->done = 0;
 }
 
 static inline struct slist *
@@ -910,12 +910,12 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		if (s->s.code == BPF_ST &&
 		    next->s.code == (BPF_LDX|BPF_MEM) &&
 		    s->s.k == next->s.k) {
+			opt_state->done = 0;
+			next->s.code = BPF_MISC|BPF_TAX;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
-			next->s.code = BPF_MISC|BPF_TAX;
 		}
 		/*
 		 * ld  #k	-->	ldx  #k
@@ -925,11 +925,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		    next->s.code == (BPF_MISC|BPF_TAX)) {
 			s->s.code = BPF_LDX|BPF_IMM;
 			next->s.code = BPF_MISC|BPF_TXA;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		/*
 		 * This is an ugly special case, but it happens
@@ -1008,11 +1008,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			s->s.code = NOP;
 			add->s.code = NOP;
 			tax->s.code = NOP;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 	}
 	/*
@@ -1042,11 +1042,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				 */
 				b->s.k += opt_state->vmap[val].const_val;
 				last->s.code = NOP;
+				opt_state->done = 0;
 				/*
 				 * XXX - optimizer loop detection.
 				 */
 				opt_state->non_branch_movement_performed = 1;
-				opt_state->done = 0;
 			} else if (b->s.k == 0) {
 				/*
 				 * If the X register isn't a constant,
@@ -1059,11 +1059,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				 */
 				last->s.code = NOP;
 				b->s.code = BPF_JMP|BPF_JEQ|BPF_X;
+				opt_state->done = 0;
 				/*
 				 * XXX - optimizer loop detection.
 				 */
 				opt_state->non_branch_movement_performed = 1;
-				opt_state->done = 0;
 			}
 		}
 		/*
@@ -1075,11 +1075,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K)) {
 			last->s.code = NOP;
 			b->s.k += last->s.k;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		/*
 		 * And, similarly, a constant AND can be simplified
@@ -1093,12 +1093,12 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			b->s.k = last->s.k;
 			b->s.code = BPF_JMP|BPF_K|BPF_JSET;
 			last->s.code = NOP;
+			opt_state->done = 0;
+			opt_not(b);
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
-			opt_not(b);
 		}
 	}
 	/*
@@ -1151,11 +1151,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			abort();
 		}
 		if (JF(b) != JT(b)) {
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		if (v)
 			JF(b) = JT(b);
