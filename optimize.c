@@ -1193,11 +1193,11 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 			s->code = BPF_LD|BPF_ABS|BPF_SIZE(s->code);
 			s->k += opt_state->vmap[v].const_val;
 			v = F(opt_state, s->code, s->k, 0L);
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		else
 			v = F(opt_state, s->code, s->k, v);
@@ -1324,13 +1324,13 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				    s->k > 31)
 					opt_error(opt_state,
 					    "shift by more than 31 bits");
+				opt_state->done = 0;
+				val[A_ATOM] =
+					F(opt_state, s->code, val[A_ATOM], K(s->k));
 				/*
 				 * XXX - optimizer loop detection.
 				 */
 				opt_state->non_branch_movement_performed = 1;
-				opt_state->done = 0;
-				val[A_ATOM] =
-					F(opt_state, s->code, val[A_ATOM], K(s->k));
 			}
 			break;
 		}
@@ -1372,11 +1372,11 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		if (alter && opt_state->vmap[v].is_const) {
 			s->code = BPF_LD|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
@@ -1390,11 +1390,11 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		if (alter && opt_state->vmap[v].is_const) {
 			s->code = BPF_LDX|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 		vstore(s, &val[X_ATOM], v, alter);
 		break;
@@ -1426,12 +1426,12 @@ deadstmt(opt_state_t *opt_state, register struct stmt *s, register struct stmt *
 	atom = atomdef(s);
 	if (atom >= 0) {
 		if (last[atom]) {
+			opt_state->done = 0;
+			last[atom]->code = NOP;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
-			last[atom]->code = NOP;
 		}
 		last[atom] = s;
 	}
@@ -1459,11 +1459,11 @@ opt_deadstores(opt_state_t *opt_state, register struct block *b)
 			 * an unknown value.
 			 */
 			vstore(0, &b->val[atom], VAL_UNKNOWN, 0);
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 }
 
@@ -1553,11 +1553,11 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
 		if (b->stmts != 0) {
 			b->stmts = 0;
+			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
 		}
 	} else {
 		opt_peep(opt_state, b);
@@ -1725,12 +1725,13 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 			 * Make this edge go to the block to
 			 * which the successor of that edge
 			 * goes.
-			 *
+			 */
+			opt_state->done = 0;
+			ep->succ = JT(ep->succ);
+			/*
 			 * XXX - optimizer loop detection.
 			 */
 			opt_state->non_branch_movement_performed = 1;
-			opt_state->done = 0;
-			ep->succ = JT(ep->succ);
 		}
 	}
 	/*
@@ -2195,11 +2196,11 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 	 */
 	int loop_count = 0;
 	for (;;) {
-		opt_state->done = 1;
 		/*
 		 * XXX - optimizer loop detection.
 		 */
 		opt_state->non_branch_movement_performed = 0;
+		opt_state->done = 1;
 		find_levels(opt_state, ic);
 		find_dom(opt_state, ic->root);
 		find_closure(opt_state, ic->root);
@@ -2270,7 +2271,6 @@ bpf_optimize(struct icode *ic, char *errbuf)
 
 	memset(&opt_state, 0, sizeof(opt_state));
 	opt_state.errbuf = errbuf;
-	opt_state.non_branch_movement_performed = 0;
 	if (setjmp(opt_state.top_ctx)) {
 		opt_cleanup(&opt_state);
 		return -1;
