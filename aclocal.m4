@@ -836,6 +836,9 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -W)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wcomma)
+		    # Warns about safeguards added in case the enums are
+		    # extended
+		    # AC_LBL_CHECK_COMPILER_OPT($1, -Wcovered-switch-default)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdocumentation)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wformat-nonliteral)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-noreturn)
@@ -846,14 +849,8 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wpointer-sign)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshadow)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshorten-64-to-32)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-but-set-parameter)
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-but-set-variable)
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-parameter)
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wused-but-marked-unused)
-		    # Warns about safeguards added in case the enums are
-		    # extended
-		    # AC_LBL_CHECK_COMPILER_OPT($1, -Wcovered-switch-default)
 		    #
 		    # This can cause problems with ntohs(), ntohl(),
 		    # htons(), and htonl() on some platforms, such
@@ -889,7 +886,10 @@ testme(unsigned short a)
 }
 		      ],
 		      [generates warnings from ntohs()])
-		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshorten-64-to-32)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-but-set-parameter)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-but-set-variable)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-parameter)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wused-but-marked-unused)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #
