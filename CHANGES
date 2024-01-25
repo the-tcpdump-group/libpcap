@@ -44,7 +44,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
       Autoconf: Update install-sh script to the latest available version.
-      Autoconf: Update config.{guess,sub}, timestamps 2024-01-01
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)
@@ -133,6 +132,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Cirrus CI: Add the "make releasecheck" command in the Linux task.
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
+      Autoconf: Update config.{guess,sub}, timestamps 2024-01-01
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
