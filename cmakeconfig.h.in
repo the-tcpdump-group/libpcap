@@ -105,9 +105,6 @@
 /* Define to 1 if you have the <net/bpf.h> header file. */
 #cmakedefine HAVE_NET_BPF_H 1
 
-/* Define to 1 if you have the <net/enet.h> header file. */
-#cmakedefine HAVE_NET_ENET_H 1
-
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #cmakedefine HAVE_NET_IF_MEDIA_H 1
 

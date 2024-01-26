@@ -733,7 +733,7 @@ else
 			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
-	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
+	AC_CHECK_HEADERS(net/pfilt.h)
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 	AC_CHECK_HEADERS(config/HaikuConfig.h)
@@ -769,11 +769,6 @@ else
 		# DEC OSF/1, Digital UNIX, Tru64 UNIX
 		#
 		V_PCAP=pf
-	elif test "$ac_cv_header_net_enet_h" = yes; then
-		#
-		# Stanford Enetfilter.
-		#
-		V_PCAP=enet
 	elif test "$ac_cv_header_net_nit_h" = yes; then
 		#
 		# SunOS 4.x STREAMS NIT.
@@ -970,13 +965,6 @@ dlpi)
 		#include <sys/types.h>
 		#include <sys/dlpi.h>
 	    ])
-	;;
-
-enet)
-	#
-	# Capture module
-	#
-	PLATFORM_C_SRC="pcap-enet.c"
 	;;
 
 haiku)

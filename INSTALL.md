@@ -283,7 +283,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-dos.c	    - removed in 2023, after libpcap 1.10
 	pcap-dpdk.c	    - DPDK device support
 	pcap-dpdk.h	    - DPDK device support
-	pcap-enet.c	    - enet support
 	pcap-hurd.c	    - GNU Hurd support
 	pcap-int.h	    - internal libpcap definitions
 	pcap-libdlpi.c	    - Data Link Provider Interface support for systems with libdlpi

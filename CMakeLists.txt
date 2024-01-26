@@ -1888,7 +1888,6 @@ else()
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
-        check_include_file(net/enet.h HAVE_NET_ENET_H)
         check_include_file(net/nit.h HAVE_NET_NIT_H)
         check_include_file(sys/net/nit.h HAVE_SYS_NET_NIT_H)
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
@@ -1913,11 +1912,6 @@ else()
             # DEC OSF/1, Digital UNIX, Tru64 UNIX
             #
             set(PCAP_TYPE pf)
-        elseif(HAVE_NET_ENET_H)
-            #
-            # Stanford Enetfilter.
-            #
-            set(PCAP_TYPE enet)
         elseif(HAVE_NET_NIT_H)
             #
             # SunOS 4.x STREAMS NIT.
