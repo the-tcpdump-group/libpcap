@@ -22,6 +22,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Packet filtering:
       Improve reporting of some invalid filter expressions.
       Return an error from pcap_compile() if the scanner fails to initialize.
+      Optimizer fix from Archit Shah to recompute dominators after
+        moving code (#976); fixes #945 (although the resulting filter
+        isn't empty).
+      Optimizer fix from Archit Shah to mark value as unknown when store
+        of that value is deleted (#972); fixes #143, #434, #436, #437,
+        and #1076.
     Linux:
       Properly return warnings.
       Don't use DLT_LINUX_SLL2 for anything other than the "any" device.
