@@ -594,10 +594,9 @@ pcap_activate_dlpi(pcap_t *p)
 	dlpassive(p->fd, p->errbuf);
 #endif
 	/*
-	** Bind (defer if using HP-UX 9 or HP-UX 10.20 or later, totally
-	** skip if using SINIX)
+	** Bind (defer if using HP-UX 9 or HP-UX 10.20 or later).
 	*/
-#if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20_OR_LATER) && !defined(sinix)
+#if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20_OR_LATER)
 #ifdef _AIX
 	/*
 	** AIX.
@@ -644,7 +643,7 @@ pcap_activate_dlpi(pcap_t *p)
 	}
 #else /* neither AIX nor HP-UX */
 	/*
-	** Not Sinix, and neither AIX nor HP-UX - Solaris, and any other
+	** Neither AIX nor HP-UX - Solaris, and any other
 	** OS using DLPI.
 	**/
 	if (dlbindreq(p->fd, 0, p->errbuf) < 0 ||
@@ -653,7 +652,7 @@ pcap_activate_dlpi(pcap_t *p)
 		goto bad;
 	}
 #endif /* AIX vs. HP-UX vs. other */
-#endif /* !HP-UX 9 and !HP-UX 10.20 or later and !SINIX */
+#endif /* !HP-UX 9 and !HP-UX 10.20 or later */
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
@@ -698,9 +697,9 @@ pcap_activate_dlpi(pcap_t *p)
 		/*
 		** Try to enable multicast (you would have thought
 		** promiscuous would be sufficient). (Skip if using
-		** HP-UX or SINIX) (Not necessary on send FD)
+		** HP-UX) (Not necessary on send FD)
 		*/
-#if !defined(__hpux) && !defined(sinix)
+#if !defined(__hpux)
 		retv = dlpromiscon(p, DL_PROMISC_MULTI);
 		if (retv < 0)
 			status = PCAP_WARNING;
@@ -708,10 +707,9 @@ pcap_activate_dlpi(pcap_t *p)
 	}
 	/*
 	** Try to enable SAP promiscuity (when not in promiscuous mode
-	** when using HP-UX, when not doing SunATM on Solaris, and never
-	** under SINIX) (Not necessary on send FD)
+	** when using HP-UX, when not doing SunATM on Solaris)
+	** (Not necessary on send FD)
 	*/
-#ifndef sinix
 #if defined(__hpux)
 	/* HP-UX - only do this when not in promiscuous mode */
 	if (!p->opt.promisc) {
@@ -719,7 +717,7 @@ pcap_activate_dlpi(pcap_t *p)
 	/* Solaris - don't do this on SunATM devices */
 	if (!isatm) {
 #else
-	/* Everything else (except for SINIX) - always do this */
+	/* Everything else - always do this. */
 	{
 #endif
 		retv = dlpromiscon(p, DL_PROMISC_SAP);
@@ -741,7 +739,6 @@ pcap_activate_dlpi(pcap_t *p)
 			}
 		}
 	}
-#endif /* sinix */
 
 	/*
 	** HP-UX 9, and HP-UX 10.20 or later, must bind after setting
