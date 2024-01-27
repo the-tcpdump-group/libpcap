@@ -298,7 +298,7 @@ pcap_nametonetaddr(const char *name)
 	 * getnetbyname() that uses thread-specific data, in which
 	 * case we're thread-safe (sufficiently recent FreeBSD,
 	 * sufficiently recent Darwin-based OS, sufficiently recent
-	 * HP-UX, sufficiently recent Tru64 UNIX), or we have the
+	 * HP-UX, or we have the
 	 * traditional getnetbyname() (everything else, including
 	 * current NetBSD and OpenBSD), in which case we're not
 	 * thread-safe.
@@ -448,14 +448,6 @@ pcap_nametoport(const char *name, int *port, int *proto)
 		*proto = IPPROTO_UDP;
 		return 1;
 	}
-#if defined(ultrix) || defined(__osf__)
-	/* Special hack in case NFS isn't in /etc/services */
-	if (strcmp(name, "nfs") == 0) {
-		*port = 2049;
-		*proto = PROTO_UNDEF;
-		return 1;
-	}
-#endif
 	return 0;
 }
 
@@ -547,7 +539,7 @@ pcap_nametoproto(const char *str)
 	 * getprotobyname() that uses thread-specific data, in which
 	 * case we're thread-safe (sufficiently recent FreeBSD,
 	 * sufficiently recent Darwin-based OS, sufficiently recent
-	 * HP-UX, sufficiently recent Tru64 UNIX, Windows), or we have
+	 * HP-UX, Windows), or we have
 	 * the traditional getprotobyname() (everything else, including
 	 * current NetBSD and OpenBSD), in which case we're not
 	 * thread-safe.

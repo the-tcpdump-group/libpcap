@@ -294,7 +294,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-netmap.h	    - netmap support
 	pcap-npf.c	    - Npcap capture support
 	pcap-null.c	    - dummy monitor support (allows offline use of libpcap)
-	pcap-pf.c	    - Ultrix and Digital/Tru64 UNIX Packet Filter support
 	pcap-rdmasniff.c    - RDMA/InfiniBand capture support
 	pcap-rdmasniff.h    - RDMA/InfiniBand capture support
 	pcap-rpcap.c	    - RPCAP protocol capture support

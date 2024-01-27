@@ -1887,7 +1887,6 @@ else()
                 check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
-        check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
         check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
@@ -1905,11 +1904,6 @@ else()
             # No prizes for guessing this one.
             #
             set(PCAP_TYPE linux)
-        elseif(HAVE_NET_PFILT_H)
-            #
-            # DEC OSF/1, Digital UNIX, Tru64 UNIX
-            #
-            set(PCAP_TYPE pf)
         elseif(HAVE_NET_RAW_H)
             #
             # IRIX snoop.
@@ -3052,16 +3046,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "IRIX" OR CMAKE_SYSTEM_NAME STREQUAL "IRIX64")
     #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
-    #
-    # DEC OSF/1, a/k/a Digital UNIX, a/k/a Tru64 UNIX.
-    # Use Tru64 UNIX conventions for man pages; they're the same as the
-    # System V conventions except that they use section 8 for
-    # administrative commands and daemons.
-    #
-    set(MAN_FILE_FORMATS 4)
-    set(MAN_MISC_INFO 5)
-    set(MAN_DEVICES 7)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
     #
     # SunOS 5.x.
@@ -3475,12 +3459,6 @@ if(NOT MSVC)
     # With the HP-UX linker, directories specified with -L are, by
     # default, added to the run-time search path, so we don't need to
     # supply them.
-    #
-    # For Tru64 UNIX, "-rpath" works with DEC's^WCompaq's^WHP's C
-    # compiler for Alpha, but isn't documented as working with GCC, and
-    # no GCC-compatible option is documented as working with the DEC
-    # compiler.  If anybody needs this on Tru64/Alpha, they're welcome
-    # to figure out a way to make it work.
     #
     # This must *not* depend on the compiler, as, on platforms where
     # there's a GCC-compatible compiler and a vendor compiler, we need

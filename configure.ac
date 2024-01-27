@@ -733,7 +733,6 @@ else
 			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
-	AC_CHECK_HEADERS(net/pfilt.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 	AC_CHECK_HEADERS(config/HaikuConfig.h)
 	AC_CHECK_HEADERS(hurd.h)
@@ -763,11 +762,6 @@ else
 		#
 		V_PCAP=linux
 		VALGRINDTEST_SRC=valgrindtest.c
-	elif test "$ac_cv_header_net_pfilt_h" = yes; then
-		#
-		# DEC OSF/1, Digital UNIX, Tru64 UNIX
-		#
-		V_PCAP=pf
 	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.
@@ -1111,13 +1105,6 @@ bpf)
 	else
 		AC_MSG_RESULT(no)
 	fi
-	;;
-
-pf)
-	#
-	# Capture module
-	#
-	PLATFORM_C_SRC="pcap-pf.c"
 	;;
 
 snoop)
@@ -2400,20 +2387,6 @@ linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	DYEXT="so"
 	;;
 
-osf*)
-	DYEXT="so"
-
-	#
-	# DEC OSF/1, a/k/a Digital UNIX, a/k/a Tru64 UNIX.
-	# Use Tru64 UNIX conventions for man pages; they're the same as
-	# the System V conventions except that they use section 8 for
-	# administrative commands and daemons.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
-	MAN_DEVICES=7
-	;;
-
 solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 
@@ -3111,12 +3084,6 @@ fi
 #
 # With the HP-UX linker, directories specified with -L are, by default,
 # added to the run-time search path, so we don't need to supply them.
-#
-# For Tru64 UNIX, "-rpath" works with DEC's^WCompaq's^WHP's C compiler
-# for Alpha, but isn't documented as working with GCC, and no GCC-
-# compatible option is documented as working with the DEC compiler.
-# If anybody needs this on Tru64/Alpha, they're welcome to figure out a
-# way to make it work.
 #
 # This must *not* depend on the compiler, as, on platforms where there's
 # a GCC-compatible compiler and a vendor compiler, we need to work with

@@ -326,7 +326,6 @@ EXTRA_DIST = \
 	pcap-netmap.h \
 	pcap-npf.c \
 	pcap-null.c \
-	pcap-pf.c \
 	pcap-rdmasniff.c \
 	pcap-rdmasniff.h \
 	pcap-rpcap.c \

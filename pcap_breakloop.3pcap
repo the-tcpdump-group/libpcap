@@ -84,7 +84,7 @@ If a non-zero packet buffer timeout is set on the
 and you are capturing on a network interface, the thread will be
 unblocked with the timeout expires.  This is not guaranteed to happen
 unless at least one packet has arrived; the only platforms on which it
-happens are macOS, the BSDs, Solaris 11, AIX, Tru64 UNIX, and Windows.
+happens are macOS, the BSDs, Solaris 11, AIX, and Windows.
 .PP
 If you want to ensure that the loop will eventually be unblocked on any
 other platforms, or unblocked when capturing on a device other than a

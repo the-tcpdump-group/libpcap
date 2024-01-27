@@ -321,22 +321,6 @@ those capability bits to be given to particular accounts and to cause
 those bits to be set on a user's initial processes when they log in, in
 which case you must have CAP_NET_RAW in order to capture.
 .TP
-.B Under ULTRIX and Digital UNIX/Tru64 UNIX:
-Any user may capture network traffic.
-However, no user (not even the super-user) can capture in promiscuous
-mode on an interface unless the super-user has enabled promiscuous-mode
-operation on that interface using
-.IR pfconfig (8),
-and no user (not even the super-user) can capture unicast traffic
-received by or sent by the machine on an interface unless the super-user
-has enabled copy-all-mode operation on that interface using
-.IR pfconfig ,
-so
-.I useful
-packet capture on an interface probably requires that either
-promiscuous-mode or copy-all-mode operation, or both modes of
-operation, be enabled on that interface.
-.TP
 .B Under BSD (this includes macOS):
 You must have read access to
 .I /dev/bpf*

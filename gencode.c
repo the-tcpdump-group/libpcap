@@ -6864,15 +6864,6 @@ stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
 			free(cpy);
 			break;
 		}
-#if defined(ultrix) || defined(__osf__)
-		/* Special hack in case NFS isn't in /etc/services */
-		if (strcmp(cpy, "nfs") == 0) {
-			val = 2049;
-			*proto = PROTO_UNDEF;
-			free(cpy);
-			break;
-		}
-#endif
 		bpf_set_error(cstate, "'%s' is not a valid port", cpy);
 		free(cpy);
 		longjmp(cstate->top_ctx, 1);

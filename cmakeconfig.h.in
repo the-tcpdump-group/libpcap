@@ -108,9 +108,6 @@
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #cmakedefine HAVE_NET_IF_MEDIA_H 1
 
-/* Define to 1 if you have the <net/pfilt.h> header file. */
-#cmakedefine HAVE_NET_PFILT_H 1
-
 /* Define to 1 if you have the <net/raw.h> header file. */
 #cmakedefine HAVE_NET_RAW_H 1
 

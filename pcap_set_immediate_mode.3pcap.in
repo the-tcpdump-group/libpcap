@@ -68,19 +68,6 @@ turned on by using a read timeout of 0 when opening the device (this
 will not provide immediate delivery of packets on other platforms, so
 don't assume it's sufficient);
 .IP
-on Digital UNIX/Tru64 UNIX, immediate mode must be turned on by doing a
-.B BIOCMBIC
-.BR ioctl (),
-as documented in
-.BR packetfilter (7),
-to clear the
-.B ENBATCH
-flag on the descriptor returned by
-.BR pcap_fileno (3PCAP),
-after
-.BR pcap_activate (3PCAP)
-is called;
-.IP
 on Windows, immediate mode must be turned on by calling
 .BR pcap_setmintocopy ()
 with a size of 0.
