@@ -292,7 +292,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-netfilter-linux.h - Linux netfilter support
 	pcap-netmap.c	    - netmap support
 	pcap-netmap.h	    - netmap support
-	pcap-nit.c	    - SunOS Network Interface Tap support
 	pcap-npf.c	    - Npcap capture support
 	pcap-null.c	    - dummy monitor support (allows offline use of libpcap)
 	pcap-pf.c	    - Ultrix and Digital/Tru64 UNIX Packet Filter support
@@ -307,7 +306,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-sita.html	    - SITA device capture documentation
 	pcap-snf.c	    - Myricom SNF device capture support
 	pcap-snf.h	    - Myricom SNF device capture support
-	pcap-snit.c	    - SunOS 4.x STREAMS-based Network Interface Tap support
 	pcap-snoop.c	    - IRIX Snoop network monitoring support
 	pcap-tc.c	    - TurboCap device capture support
 	pcap-tc.h	    - TurboCap device capture support

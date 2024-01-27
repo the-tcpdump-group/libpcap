@@ -1888,8 +1888,6 @@ else()
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
-        check_include_file(net/nit.h HAVE_NET_NIT_H)
-        check_include_file(sys/net/nit.h HAVE_SYS_NET_NIT_H)
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
         check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
@@ -1912,16 +1910,6 @@ else()
             # DEC OSF/1, Digital UNIX, Tru64 UNIX
             #
             set(PCAP_TYPE pf)
-        elseif(HAVE_NET_NIT_H)
-            #
-            # SunOS 4.x STREAMS NIT.
-            #
-            set(PCAP_TYPE snit)
-        elseif(HAVE_SYS_NET_NIT_H)
-            #
-            # Pre-SunOS 4.x non-STREAMS NIT.
-            #
-            set(PCAP_TYPE nit)
         elseif(HAVE_NET_RAW_H)
             #
             # IRIX snoop.

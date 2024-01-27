@@ -734,7 +734,6 @@ else
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
 	AC_CHECK_HEADERS(net/pfilt.h)
-	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 	AC_CHECK_HEADERS(config/HaikuConfig.h)
 	AC_CHECK_HEADERS(hurd.h)
@@ -769,16 +768,6 @@ else
 		# DEC OSF/1, Digital UNIX, Tru64 UNIX
 		#
 		V_PCAP=pf
-	elif test "$ac_cv_header_net_nit_h" = yes; then
-		#
-		# SunOS 4.x STREAMS NIT.
-		#
-		V_PCAP=snit
-	elif test "$ac_cv_header_sys_net_nit_h" = yes; then
-		#
-		# Pre-SunOS 4.x non-STREAMS NIT.
-		#
-		V_PCAP=nit
 	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.
@@ -1129,13 +1118,6 @@ pf)
 	# Capture module
 	#
 	PLATFORM_C_SRC="pcap-pf.c"
-	;;
-
-snit)
-	#
-	# Capture module
-	#
-	PLATFORM_C_SRC="pcap-snit.c"
 	;;
 
 snoop)

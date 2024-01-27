@@ -281,12 +281,6 @@ The time stamp type is set with
 Reading packets from a network interface may require that you have
 special privileges:
 .TP
-.B Under SunOS 3.x or 4.x with NIT or BPF:
-You must have read access to
-.I /dev/nit
-or
-.IR /dev/bpf* .
-.TP
 .B Under Solaris with DLPI:
 You must have read/write access to the network pseudo device, e.g.
 .IR /dev/le .

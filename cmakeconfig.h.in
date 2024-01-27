@@ -108,9 +108,6 @@
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #cmakedefine HAVE_NET_IF_MEDIA_H 1
 
-/* Define to 1 if you have the <net/nit.h> header file. */
-#cmakedefine HAVE_NET_NIT_H 1
-
 /* Define to 1 if you have the <net/pfilt.h> header file. */
 #cmakedefine HAVE_NET_PFILT_H 1
 
@@ -222,9 +219,6 @@
 
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #cmakedefine HAVE_SYS_IOCCOM_H 1
-
-/* Define to 1 if you have the <sys/net/nit.h> header file. */
-#cmakedefine HAVE_SYS_NET_NIT_H 1
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #cmakedefine HAVE_SYS_SOCKIO_H 1
