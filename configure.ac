@@ -269,7 +269,7 @@ AC_LBL_LIBRARY_NET
 
 #
 # Check for reentrant versions of getnetbyname_r(), as provided by
-# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# Linux (glibc), Solaris, and AIX (with three different APIs!).
 # If we don't find one, we just use getnetbyname(), which uses
 # thread-specific data on many platforms, but doesn't use it on
 # NetBSD or OpenBSD, and may not use it on older versions of other
@@ -301,7 +301,7 @@ AC_CHECK_DECL(getnetbyname_r,
 	    [
 		AC_MSG_RESULT(no)
 
-		AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
+		AC_MSG_CHECKING([for Solaris getnetbyname_r()])
 		AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		    [[#include <netdb.h>]],
 		    [[
@@ -312,8 +312,8 @@ AC_CHECK_DECL(getnetbyname_r,
 		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
-			    [define if we have the Solaris/IRIX getnetbyname_r()])
+			AC_DEFINE(HAVE_SOLARIS_GETNETBYNAME_R, 1,
+			    [define if we have the Solaris getnetbyname_r()])
 		    ],
 		    [
 			AC_MSG_RESULT(no)
@@ -341,7 +341,7 @@ AC_CHECK_DECL(getnetbyname_r,
 
 #
 # Check for reentrant versions of getprotobyname_r(), as provided by
-# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# Linux (glibc), Solaris, and AIX (with three different APIs!).
 # If we don't find one, we just use getprotobyname(), which uses
 # thread-specific data on many platforms, but doesn't use it on
 # NetBSD or OpenBSD, and may not use it on older versions of other
@@ -372,7 +372,7 @@ AC_CHECK_DECL(getprotobyname_r,
 	    [
 		AC_MSG_RESULT(no)
 
-		AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
+		AC_MSG_CHECKING([for Solaris getprotobyname_r()])
 		AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		    [[#include <netdb.h>]],
 		    [[
@@ -383,8 +383,8 @@ AC_CHECK_DECL(getprotobyname_r,
 		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
-			    [define if we have the Solaris/IRIX getprotobyname_r()])
+			AC_DEFINE(HAVE_SOLARIS_GETPROTOBYNAME_R, 1,
+			    [define if we have the Solaris getprotobyname_r()])
 		    ],
 		    [
 			AC_MSG_RESULT(no)
@@ -733,7 +733,7 @@ else
 			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
-	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
+	AC_CHECK_HEADERS(linux/socket.h sys/dlpi.h)
 	AC_CHECK_HEADERS(config/HaikuConfig.h)
 	AC_CHECK_HEADERS(hurd.h)
 
@@ -762,11 +762,6 @@ else
 		#
 		V_PCAP=linux
 		VALGRINDTEST_SRC=valgrindtest.c
-	elif test "$ac_cv_header_net_raw_h" = yes; then
-		#
-		# IRIX snoop.
-		#
-		V_PCAP=snoop
 	elif test "$ac_cv_header_sys_dlpi_h" = yes; then
 		#
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
@@ -1105,13 +1100,6 @@ bpf)
 	else
 		AC_MSG_RESULT(no)
 	fi
-	;;
-
-snoop)
-	#
-	# Capture module
-	#
-	PLATFORM_C_SRC="pcap-snoop.c"
 	;;
 
 hurd)
@@ -2368,16 +2356,6 @@ hpux*)
 
 	#
 	# Use System V conventions for man pages.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
-	;;
-
-irix*)
-	#
-	# Use IRIX conventions for man pages; they're the same as the
-	# System V conventions, except that they use section 8 for
-	# administrative commands and daemons.
 	#
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5

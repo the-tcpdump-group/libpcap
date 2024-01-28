@@ -273,9 +273,9 @@ pcap_nametonetaddr(const char *name)
 		 */
 		return 0;
 	}
-  #elif defined(HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+  #elif defined(HAVE_SOLARIS_GETNETBYNAME_R)
 	/*
-	 * We have Solaris's and IRIX's reentrant getnetbyname_r().
+	 * We have Solaris's reentrant getnetbyname_r().
 	 */
 	struct netent result_buf;
 	char buf[1024];	/* arbitrary size */
@@ -514,9 +514,9 @@ pcap_nametoproto(const char *str)
 		 */
 		return 0;
 	}
-  #elif defined(HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+  #elif defined(HAVE_SOLARIS_GETNETBYNAME_R)
 	/*
-	 * We have Solaris's and IRIX's reentrant getprotobyname_r().
+	 * We have Solaris's reentrant getprotobyname_r().
 	 */
 	struct protoent result_buf;
 	char buf[1024];	/* arbitrary size */

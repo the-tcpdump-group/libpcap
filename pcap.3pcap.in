@@ -309,10 +309,6 @@ command.
 You must be root or the application capturing packets must be installed
 setuid to root.
 .TP
-.B Under IRIX with snoop:
-You must be root or the application capturing packets must be installed
-setuid to root.
-.TP
 .B Under Linux:
 You must be root or the application capturing packets must be installed
 setuid to root, unless your distribution has a kernel

@@ -337,7 +337,6 @@ EXTRA_DIST = \
 	pcap-sita.html \
 	pcap-snf.c \
 	pcap-snf.h \
-	pcap-snoop.c \
 	pcap-tc.c \
 	pcap-tc.h \
 	pcap-usb-linux.c \

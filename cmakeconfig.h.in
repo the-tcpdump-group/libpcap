@@ -108,9 +108,6 @@
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #cmakedefine HAVE_NET_IF_MEDIA_H 1
 
-/* Define to 1 if you have the <net/raw.h> header file. */
-#cmakedefine HAVE_NET_RAW_H 1
-
 /* Use OpenSSL */
 #cmakedefine HAVE_OPENSSL 1
 
@@ -144,11 +141,11 @@
 /* target host supports Solaris "any" device */
 #cmakedefine HAVE_SOLARIS_ANY_DEVICE 1
 
-/* define if we have the Solaris/IRIX getnetbyname_r() */
-#cmakedefine HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1
+/* define if we have the Solaris getnetbyname_r() */
+#cmakedefine HAVE_SOLARIS_GETNETBYNAME_R 1
 
-/* define if we have the Solaris/IRIX getprotobyname_r() */
-#cmakedefine HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R 1
+/* define if we have the Solaris getprotobyname_r() */
+#cmakedefine HAVE_SOLARIS_GETPROTOBYNAME_R 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H 1

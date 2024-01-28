@@ -925,7 +925,7 @@ endif(WIN32)
 
 #
 # Check for reentrant versions of getnetbyname_r(), as provided by
-# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# Linux (glibc), Solaris, and AIX (with three different APIs!).
 # If we don't find one, we just use getnetbyname(), which uses
 # thread-specific data on many platforms, but doesn't use it on
 # NetBSD or OpenBSD, and may not use it on older versions of other
@@ -968,8 +968,8 @@ main(void)
     return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
-            HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
-        if(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+            HAVE_SOLARIS_GETNETBYNAME_R)
+        if(NOT HAVE_SOLARIS_GETNETBYNAME_R)
             check_c_source_compiles(
 "#include <netdb.h>
 
@@ -983,14 +983,14 @@ main(void)
 }
 "
                 HAVE_AIX_GETNETBYNAME_R)
-        endif(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+        endif(NOT HAVE_SOLARIS_GETNETBYNAME_R)
     endif(NOT HAVE_LINUX_GETNETBYNAME_R)
 endif(NETDB_H_DECLARES_GETNETBYNAME_R)
 cmake_pop_check_state()
 
 #
 # Check for reentrant versions of getprotobyname_r(), as provided by
-# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# Linux (glibc), Solaris, and AIX (with three different APIs!).
 # If we don't find one, we just use getprotobyname(), which uses
 # thread-specific data on many platforms, but doesn't use it on
 # NetBSD or OpenBSD, and may not use it on older versions of other
@@ -1032,8 +1032,8 @@ main(void)
     return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
-            HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
-        if(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+            HAVE_SOLARIS_GETPROTOBYNAME_R)
+        if(NOT HAVE_SOLARIS_GETPROTOBYNAME_R)
             check_c_source_compiles(
 "#include <netdb.h>
 
@@ -1047,7 +1047,7 @@ main(void)
 }
 "
                 HAVE_AIX_GETPROTOBYNAME_R)
-        endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+        endif(NOT HAVE_SOLARIS_GETPROTOBYNAME_R)
     endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
 endif(NETDB_H_DECLARES_GETPROTOBYNAME_R)
 cmake_pop_check_state()
@@ -1888,7 +1888,6 @@ else()
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
-        check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
         check_include_file(config/HaikuConfig.h HAVE_CONFIG_HAIKUCONFIG_H)
 
@@ -1904,11 +1903,6 @@ else()
             # No prizes for guessing this one.
             #
             set(PCAP_TYPE linux)
-        elseif(HAVE_NET_RAW_H)
-            #
-            # IRIX snoop.
-            #
-            set(PCAP_TYPE snoop)
         elseif(HAVE_SYS_DLPI_H)
             #
             # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
@@ -3036,14 +3030,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
     # Use System V conventions for man pages.
     #
     set(MAN_ADMIN_COMMANDS 1m)
-    set(MAN_FILE_FORMATS 4)
-    set(MAN_MISC_INFO 5)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "IRIX" OR CMAKE_SYSTEM_NAME STREQUAL "IRIX64")
-    #
-    # Use IRIX conventions for man pages; they're the same as the
-    # System V conventions, except that they use section 8 for
-    # administrative commands and daemons.
-    #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")

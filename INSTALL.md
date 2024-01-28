@@ -305,7 +305,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-sita.html	    - SITA device capture documentation
 	pcap-snf.c	    - Myricom SNF device capture support
 	pcap-snf.h	    - Myricom SNF device capture support
-	pcap-snoop.c	    - IRIX Snoop network monitoring support
 	pcap-tc.c	    - TurboCap device capture support
 	pcap-tc.h	    - TurboCap device capture support
 	pcap-types.h	    - header for OS-specific type includes

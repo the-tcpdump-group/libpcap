@@ -130,9 +130,6 @@ function(_lfs_check)
                                    "${_lfs_libs_tmp};${_lfs_ldflags_tmp}")
     endif()
 
-    if(NOT LFS_FOUND)  # IRIX stuff
-        _lfs_check_compiler_option(lfs_need_n32 "-n32" "" "")
-    endif()
     if(NOT LFS_FOUND)  # Linux and friends
         _lfs_check_compiler_option(lfs_need_file_offset_bits "" "-D_FILE_OFFSET_BITS=64" "")
     endif()
