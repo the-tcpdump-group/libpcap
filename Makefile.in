@@ -329,7 +329,6 @@ EXTRA_DIST = \
 	pcap-rdmasniff.c \
 	pcap-rdmasniff.h \
 	pcap-rpcap.c \
-	pcap-rpcap-int.h \
 	pcap-septel.c \
 	pcap-septel.h \
 	pcap-sita.h \
