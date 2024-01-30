@@ -3006,19 +3006,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
         set(LIBS_PRIVATE "${LIBS_PRIVATE} -lodm -lcfg")
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
-    if(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*9\.[0-9]*")
+    if(
+       CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*9\.[0-9]*"
+       OR CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*10\.[01]"
+    )
         #
         # HP-UX 9.x.
-        #
-        set(HAVE_HPUX9 TRUE)
-    elseif(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*10\.0")
-        #
         # HP-UX 10.0.
-        #
-    elseif(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*10\.1")
-        #
         # HP-UX 10.1.
         #
+        message(FATAL_ERROR \"HP-UX version must be 10.20 or later, not \${CMAKE_SYSTEM_VERSION}\")
     else()
         #
         # HP-UX 10.20 and later.

@@ -26,7 +26,7 @@
  */
 
 /*
- * Packet capture routine for DLPI under SunOS 5, HP-UX 9/10/11, and AIX.
+ * Packet capture routine for DLPI under SunOS 5, HP-UX 10/11, and AIX.
  *
  * Notes:
  *
@@ -81,9 +81,6 @@
 #ifdef HAVE_SYS_DLPI_EXT_H
 #include <sys/dlpi_ext.h>
 #endif
-#ifdef HAVE_HPUX9
-#include <sys/socket.h>
-#endif
 #ifdef DL_HP_PPA_REQ
 #include <sys/stat.h>
 #endif
@@ -92,13 +89,6 @@
 #include <sys/systeminfo.h>
 #endif
 
-#ifdef HAVE_HPUX9
-#include <net/if.h>
-#endif
-
-#ifdef HAVE_HPUX9
-#include <nlist.h>
-#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <memory.h>
@@ -161,9 +151,6 @@ static int recv_ack(int, int, const char *, char *, char *, int *);
 static char *dlstrerror(char *, size_t, bpf_u_int32);
 static char *dlprim(char *, size_t, bpf_u_int32);
 static int send_request(int, char *, int, char *, char *);
-#ifdef HAVE_HPUX9
-static int dlpi_kread(int, off_t, void *, u_int, char *);
-#endif
 #ifdef HAVE_DEV_DLPI
 static int get_dlpi_ppa(int, const char *, u_int, u_int *, char *);
 #endif
@@ -594,9 +581,8 @@ pcap_activate_dlpi(pcap_t *p)
 	dlpassive(p->fd, p->errbuf);
 #endif
 	/*
-	** Bind (defer if using HP-UX 9 or HP-UX 10.20 or later).
+	** Bind.
 	*/
-#if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20_OR_LATER)
 #ifdef _AIX
 	/*
 	** AIX.
@@ -622,25 +608,10 @@ pcap_activate_dlpi(pcap_t *p)
 		status = PCAP_ERROR;
 		goto bad;
 	}
-#elif defined(DL_HP_RAWDLS)
+#elif defined(HAVE_HPUX10_20_OR_LATER)
 	/*
-	** HP-UX 10.0x and 10.1x.
+	** Defer.
 	*/
-	if (dl_dohpuxbind(p->fd, p->errbuf) < 0) {
-		status = PCAP_ERROR;
-		goto bad;
-	}
-	if (pd->send_fd >= 0) {
-		/*
-		** XXX - if this fails, just close send_fd and
-		** set it to -1, so that you can't send but can
-		** still receive?
-		*/
-		if (dl_dohpuxbind(pd->send_fd, p->errbuf) < 0) {
-			status = PCAP_ERROR;
-			goto bad;
-		}
-	}
 #else /* neither AIX nor HP-UX */
 	/*
 	** Neither AIX nor HP-UX - Solaris, and any other
@@ -652,7 +623,6 @@ pcap_activate_dlpi(pcap_t *p)
 		goto bad;
 	}
 #endif /* AIX vs. HP-UX vs. other */
-#endif /* !HP-UX 9 and !HP-UX 10.20 or later */
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
@@ -741,17 +711,17 @@ pcap_activate_dlpi(pcap_t *p)
 	}
 
 	/*
-	** HP-UX 9, and HP-UX 10.20 or later, must bind after setting
+	** HP-UX 10.20 or later must bind after setting
 	** promiscuous options.
 	*/
-#if defined(HAVE_HPUX9) || defined(HAVE_HPUX10_20_OR_LATER)
+#if defined(HAVE_HPUX10_20_OR_LATER)
 	if (dl_dohpuxbind(p->fd, p->errbuf) < 0) {
 		status = PCAP_ERROR;
 		goto bad;
 	}
 	/*
 	** We don't set promiscuous mode on the send FD, but we'll defer
-	** binding it anyway, just to keep the HP-UX 9/10.20 or later
+	** binding it anyway, just to keep the HP-UX 10.20 or later
 	** code together.
 	*/
 	if (pd->send_fd >= 0) {
@@ -1752,99 +1722,6 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 	*ppa = ip->dl_ppa;
 	free(ppa_data_buf);
 	return (0);
-}
-#endif
-
-#ifdef HAVE_HPUX9
-/*
- * Under HP-UX 9, there is no good way to determine the ppa.
- * So punt and read it from /dev/kmem.
- */
-static struct nlist nl[] = {
-#define NL_IFNET 0
-	{ "ifnet" },
-	{ "" }
-};
-
-static char path_vmunix[] = "/hp-ux";
-
-/* Determine ppa number that specifies ifname */
-static int
-get_dlpi_ppa(register int fd, register const char *ifname, register u_int unit,
-    u_int *ppa, register char *ebuf)
-{
-	register const char *cp;
-	register int kd;
-	void *addr;
-	struct ifnet ifnet;
-	char if_name[sizeof(ifnet.if_name) + 1];
-
-	cp = strrchr(ifname, '/');
-	if (cp != NULL)
-		ifname = cp + 1;
-	if (nlist(path_vmunix, &nl) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "nlist %s failed",
-		    path_vmunix);
-		return (PCAP_ERROR);
-	}
-	if (nl[NL_IFNET].n_value == 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "couldn't find %s kernel symbol",
-		    nl[NL_IFNET].n_name);
-		return (PCAP_ERROR);
-	}
-	kd = open("/dev/kmem", O_RDONLY);
-	if (kd < 0) {
-		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "kmem open");
-		return (PCAP_ERROR);
-	}
-	if (dlpi_kread(kd, nl[NL_IFNET].n_value,
-	    &addr, sizeof(addr), ebuf) < 0) {
-		close(kd);
-		return (PCAP_ERROR);
-	}
-	for (; addr != NULL; addr = ifnet.if_next) {
-		if (dlpi_kread(kd, (off_t)addr,
-		    &ifnet, sizeof(ifnet), ebuf) < 0 ||
-		    dlpi_kread(kd, (off_t)ifnet.if_name,
-		    if_name, sizeof(ifnet.if_name), ebuf) < 0) {
-			(void)close(kd);
-			return (PCAP_ERROR);
-		}
-		if_name[sizeof(ifnet.if_name)] = '\0';
-		if (strcmp(if_name, ifname) == 0 && ifnet.if_unit == unit) {
-			*ppa = ifnet.if_index;
-			return (0);
-		}
-	}
-
-	snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't find %s", ifname);
-	return (PCAP_ERROR_NO_SUCH_DEVICE);
-}
-
-static int
-dlpi_kread(register int fd, register off_t addr,
-    register void *buf, register u_int len, register char *ebuf)
-{
-	register int cc;
-
-	if (lseek(fd, addr, SEEK_SET) < 0) {
-		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "lseek");
-		return (-1);
-	}
-	cc = read(fd, buf, len);
-	if (cc < 0) {
-		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "read");
-		return (-1);
-	} else if (cc != len) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "short read (%d != %d)", cc,
-		    len);
-		return (-1);
-	}
-	return (cc);
 }
 #endif
 

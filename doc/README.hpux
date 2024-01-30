@@ -116,40 +116,6 @@ And another message to tcpdump-workers@tcpdump.org, from Rick Jones:
   Another option is to upgrade to 11i as outbound promiscuous mode support
   is there in the base OS, no patches required.
 
-Another posting:
-
-	https://groups.google.com/groups?selm=7d6gvn%24b3%241%40ocean.cup.hp.com
-
-indicates that you need to install the optional STREAMS product to do
-captures on HP-UX 9.x:
-
-  Newsgroups: comp.sys.hp.hpux
-  Subject:  Re: tcpdump HP/UX 9.x
-  Date: 03/22/1999
-  From: Rick Jones <foo@bar.baz>
-
-  Dave Barr (barr@cis.ohio-state.edu) wrote:
-  : Has anyone ported tcpdump (or something similar) to HP/UX 9.x?
-
-  I'm reasonably confident that any port of tcpdump to 9.X would require
-  the (then optional) STREAMS product.  This would bring DLPI, which is
-  what one uses to access interfaces in promiscuous mode.
-
-  I'm not sure that HP even sells the 9.X STREAMS product any longer,
-  since HP-UX 9.X is off the pricelist (well, maybe 9.10 for the old 68K
-  devices).
-
-  Your best bet is to be up on 10.20 or better if that is at all
-  possible.  If your hardware is supported by it, I'd go with HP-UX 11.
-  If you want to see the system's own outbound traffic, you'll never get
-  that functionality on 9.X, but it might happen at some point for 10.20
-  and 11.X.
-
-  rick jones
-
-(as per other messages cited here, the ability to see the system's own
-outbound traffic did happen).
-
 Rick Jones reports that HP-UX 11i needs no patches for outbound
 promiscuous mode support.
 

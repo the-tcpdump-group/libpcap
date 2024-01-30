@@ -125,32 +125,22 @@ See [this file](doc/README.solaris.md) for more up to date
 Solaris-related information.
 
 ## HP-UX specifics
-If you use HP-UX, you must have at least version 9 and either the
+If you use HP-UX, you must have at least version 10.20 and either the
 version of `cc` that supports C99 (`cc -AC99`) or else use the GNU C
-compiler. You must also buy the optional streams package. If you don't
-have:
-
-    /usr/include/sys/dlpi.h
-    /usr/include/sys/dlpi_ext.h
-
-then you don't have the streams package. In addition, we believe you
-need to install the "9.X LAN and DLPI drivers cumulative" patch
-(PHNE_6855) to make the version 9 DLPI work with libpcap.
-
-The DLPI streams package is standard starting with HP-UX 10.
+compiler.  The required DLPI streams package is standard starting with
+HP-UX 10.
 
 The HP implementation of DLPI is a little bit eccentric. Unlike
 Solaris, you must attach `/dev/dlpi` instead of the specific `/dev/*`
 network pseudo device entry in order to capture packets. The PPA is
-based on the ifnet "index" number. Under HP-UX 9, it is necessary to
-read `/dev/kmem` and the kernel symbol file (`/hp-ux`). Under HP-UX 10,
+based on the ifnet "index" number.  Under HP-UX 10,
 DLPI can provide information for determining the PPA. It does not seem
 to be possible to trace the loopback interface. Unlike other DLPI
 implementations, PHYS implies MULTI and SAP and you get an error if you
 try to enable more than one promiscuous mode at a time.
 
-It is impossible to capture outbound packets on HP-UX 9.  To do so on
-HP-UX 10, you will, apparently, need a late "LAN products cumulative
+To capture outbound packets on HP-UX 10, you will, apparently, need a
+late "LAN products cumulative
 patch" (at one point, it was claimed that this would be PHNE_18173 for
 s700/10.20; at another point, it was claimed that the required patches
 were PHNE_20892, PHNE_20725 and PHCO_10947, or newer patches), and to do

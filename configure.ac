@@ -2303,35 +2303,8 @@ darwin*)
 	fi
 	;;
 
-hpux9*)
-	AC_DEFINE(HAVE_HPUX9,1,[on HP-UX 9.x])
-
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_ADMIN_COMMANDS=1m
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
-	;;
-
-hpux10.0*)
-
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_ADMIN_COMMANDS=1m
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
-	;;
-
-hpux10.1*)
-
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_ADMIN_COMMANDS=1m
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
+hpux9*|hpux10.[01]*)
+	AC_MSG_ERROR([HP-UX version must be 10.20 or later, not $host_os])
 	;;
 
 hpux*)
