@@ -141,6 +141,21 @@ lowest_set_bit(int mask)
 		abort();	/* mask is zero */
 	return (u_int)bit;
 }
+#elif defined(STRINGS_H_DECLARES_FFS)
+  /*
+   * A non-Windows OS that has <strings.h> and declares ffs() there (typically
+   * UN*X conforming to a sufficiently recent version of the Single UNIX
+   * Specification, but also Haiku).
+   */
+  #include <strings.h>
+  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
+#elif defined(__hpux)
+  /*
+   * HP-UX 11i v3, which declares ffs() in <string.h>, which we've already
+   * included.  Place this branch after the <strings.h> branch, in case a later
+   * release of HP-UX makes the declaration available via the standard header.
+   */
+  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
 #else
 /*
  * None of the above.
