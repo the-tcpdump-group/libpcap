@@ -198,7 +198,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	CONTRIBUTING.md	    - guidelines for contributing
 	CREDITS		    - people that have helped libpcap along
 	INSTALL.md	    - this file
-	LICENSE		    - the license under which tcpdump is distributed
+	LICENSE		    - the license under which libpcap is distributed
 	Makefile.in	    - compilation rules (input to the configure script)
 	README.md	    - description of distribution
 	doc/README.aix	    - notes on using libpcap on AIX
