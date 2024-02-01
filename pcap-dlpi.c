@@ -32,9 +32,6 @@
  *
  *    - The DLIOCRAW ioctl() is specific to SunOS.
  *
- *    - There is a bug in bufmod(7) such that setting the snapshot
- *      length results in data being left of the front of the packet.
- *
  *    - It might be desirable to use pfmod(7) to filter packets in the
  *      kernel when possible.
  *
