@@ -57,7 +57,7 @@
 #include "sf-pcap.h"
 
 /*
- * Setting O_BINARY on DOS/Windows is a bit tricky
+ * Setting O_BINARY on Windows is a bit tricky.
  */
 #if defined(_WIN32)
   #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
@@ -792,7 +792,7 @@ static pcap_dumper_t *
 pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 {
 
-#if defined(_WIN32) || defined(MSDOS)
+#if defined(_WIN32)
 	/*
 	 * If we're writing to the standard output, put it in binary
 	 * mode, as savefiles are binary files.
@@ -998,7 +998,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		}
 	}
 
-#if defined(_WIN32) || defined(MSDOS)
+#if defined(_WIN32)
 	/*
 	 * We turn off buffering.
 	 * XXX - why?  And why not on the standard output?

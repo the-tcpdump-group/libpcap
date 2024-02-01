@@ -270,7 +270,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-dbus.c	    - D-Bus capture support
 	pcap-dbus.h	    - D-Bus capture support
 	pcap-dlpi.c	    - Data Link Provider Interface support
-	pcap-dos.c	    - removed in 2023, after libpcap 1.10
 	pcap-dpdk.c	    - DPDK device support
 	pcap-dpdk.h	    - DPDK device support
 	pcap-hurd.c	    - GNU Hurd support

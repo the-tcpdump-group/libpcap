@@ -89,13 +89,8 @@ extern "C" {
 /* BSD style release date */
 #define BPF_RELEASE 199606
 
-#ifdef MSDOS /* must be 32-bit */
-typedef long          bpf_int32;
-typedef unsigned long bpf_u_int32;
-#else
 typedef	int bpf_int32;
 typedef	u_int bpf_u_int32;
-#endif
 
 /*
  * Alignment macros.  BPF_WORDALIGN rounds up to the next

@@ -55,7 +55,7 @@
  *
  * XXX - verify that we have at least C99 support on UN*Xes?
  *
- * What about MinGW or various DOS toolchains?  We're currently assuming
+ * What about MinGW?  We're currently assuming
  * sufficient C99 support there.
  */
 #if defined(_MSC_VER)

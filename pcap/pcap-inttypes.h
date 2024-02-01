@@ -37,7 +37,7 @@
  *
  * XXX - verify that we have at least C99 support on UN*Xes?
  *
- * What about MinGW or various DOS toolchains?  We're currently assuming
+ * What about MinGW?  We're currently assuming
  * sufficient C99 support there.
  */
 #if defined(_MSC_VER)
@@ -83,9 +83,6 @@
    * If the target is UN*X, we assume we have a C99-or-later development
    * environment, and thus have <inttypes.h> - and support for %zu in
    * the formatted printing functions.
-   *
-   * If the target is MS-DOS, we assume we have <inttypes.h> - and support
-   * for %zu in the formatted printing functions.
    *
    * I.e., assume we have <inttypes.h> and that it suffices.
    */

@@ -104,9 +104,6 @@
      */
     #define PCAP_API_DEF
   #endif
-#elif defined(MSDOS)
-  /* XXX - does this need special treatment? */
-  #define PCAP_API_DEF
 #else /* UN*X */
   #ifdef pcap_EXPORTS
     /*
@@ -142,7 +139,7 @@
      */
     #define PCAP_API_DEF
   #endif
-#endif /* _WIN32/MSDOS/UN*X */
+#endif /* _WIN32/UN*X */
 
 #define PCAP_API	PCAP_API_DEF extern
 

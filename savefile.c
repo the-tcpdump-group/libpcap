@@ -73,7 +73,7 @@ static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 #endif
 
 /*
- * Setting O_BINARY on DOS/Windows is a bit tricky
+ * Setting O_BINARY on Windows is a bit tricky.
  */
 #if defined(_WIN32)
   #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
@@ -359,7 +359,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 			    "The standard input is not open");
 			return (NULL);
 		}
-#if defined(_WIN32) || defined(MSDOS)
+#if defined(_WIN32)
 		/*
 		 * We're reading from the standard input, so put it in binary
 		 * mode, as savefiles are binary files.
@@ -375,8 +375,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		 * wraps fopen().
 		 *
 		 * "b" is supported as of C90, so *all* UN*Xes should
-		 * support it, even though it does nothing.  For MS-DOS,
-		 * we again need it.
+		 * support it, even though it does nothing.
 		 */
 		fp = pcapint_charset_fopen(fname, "rb");
 		if (fp == NULL) {
@@ -544,7 +543,7 @@ found:
 	/* Padding only needed for live capture fcode */
 	p->fddipad = 0;
 
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(_WIN32)
 	/*
 	 * You can do "select()" and "poll()" on plain files on most
 	 * platforms, and should be able to do so on pipes.

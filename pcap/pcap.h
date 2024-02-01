@@ -119,13 +119,10 @@
 #if defined(_WIN32)
   #include <winsock2.h>		/* u_int, u_char etc. */
   #include <io.h>		/* _get_osfhandle() */
-#elif defined(MSDOS)
-  #include <sys/types.h>	/* u_int, u_char etc. */
-  #include <sys/socket.h>
 #else /* UN*X */
   #include <sys/types.h>	/* u_int, u_char etc. */
   #include <sys/time.h>
-#endif /* _WIN32/MSDOS/UN*X */
+#endif /* _WIN32/UN*X */
 
 #include <pcap/socket.h>	/* for PCAP_SOCKET, as the active-mode rpcap APIs use it */
 
