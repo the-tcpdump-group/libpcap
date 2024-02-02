@@ -697,6 +697,10 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
     #
     # Most operating systems have getaddrinfo(), and the other routines
     # we may need, in the default searched libraries (e.g., libc).
+    #
+    # These are: AIX, FreeBSD, Linux, macOS, NetBSD, OpenBSD, Solaris
+    # since 11.4.
+    #
     # Check there first.
     #
     AC_CHECK_FUNC(getaddrinfo,,
@@ -705,8 +709,10 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	# Not found in the standard system libraries.
 	#
 	# In some versions of Solaris, we need to link with libsocket
-	# and libnsl, so check in libsocket and also link with liblnsl
+	# and libnsl, so check in libsocket and also link with libnsl
 	# when doing this test.
+	#
+	# These are: illumos, Solaris 9.x, 10.x, 11.x before 11.4.
 	#
 	# Linking with libsocket and libnsl will find all the routines
 	# we need.
