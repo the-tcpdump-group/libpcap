@@ -286,6 +286,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-dpdk.c	    - DPDK device support
 	pcap-dpdk.h	    - DPDK device support
 	pcap-enet.c	    - enet support
+	pcap-haiku.c	    - Haiku capture support
 	pcap-int.h	    - internal libpcap definitions
 	pcap-libdlpi.c	    - Data Link Provider Interface support for systems with libdlpi
 	pcap-linux.c	    - Linux packet socket support
