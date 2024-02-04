@@ -241,6 +241,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	grammar.y	    - filter string grammar
 	ieee80211.h	    - 802.11 definitions
 	install-sh	    - BSD style install script
+	instrument-functions.c - functions instrumentation calls for entry/exit
 	lbl/os-*.h	    - OS-dependent defines and prototypes
 	llc.h		    - 802.2 LLC SAP definitions
 	missing/*	    - replacements for missing library functions
