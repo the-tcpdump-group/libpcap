@@ -63,6 +63,9 @@
 /* on HP-UX 10.20 or later */
 #cmakedefine HAVE_HPUX10_20_OR_LATER 1
 
+/* Define to 1 if you have the <hurd.h> header file. */
+#cmakedefine HAVE_HURD_H 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H 1
 

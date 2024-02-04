@@ -1889,6 +1889,7 @@ else()
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
         check_include_file(config/HaikuConfig.h HAVE_CONFIG_HAIKUCONFIG_H)
+        check_include_file(hurd.h HAVE_HURD_H)
 
         if(BPF_H_DEFINES_BIOCSETIF)
             #
@@ -1912,6 +1913,11 @@ else()
             # Haiku.
             #
             set(PCAP_TYPE haiku)
+        elseif(HAVE_HURD_H)
+            #
+            # Hurd.
+            #
+            set(PCAP_TYPE hurd)
         else()
             #
             # We don't have any capture type we know about.
@@ -2097,6 +2103,15 @@ else(WIN32)
         # Check for some headers just in case.
         #
         check_include_files("net/if.h;net/if_dl.h;net/if_types.h" HAVE_NET_IF_TYPES_H)
+        set(PCAP_SRC pcap-${PCAP_TYPE}.c)
+    elseif(PCAP_TYPE STREQUAL "hurd")
+        #
+        # Check for some headers just in case.
+        #
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} rt)
+        set(LIBS "${LIBS} -lrt")
+        set(LIBS_STATIC "${LIBS_STATIC} -lrt")
+        set(LIBS_PRIVATE "${LIBS_PRIVATE} -lrt")
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
     elseif(PCAP_TYPE STREQUAL "null")
     else()
