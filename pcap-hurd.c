@@ -34,10 +34,13 @@ static struct bpf_insn filter[] = {
 	{ BPF_RET | BPF_K, 0, 0, MAXIMUM_SNAPLEN },
 };
 
-#define FILTER_COUNT (sizeof(filter) / sizeof(short))
+/* device_set_filter calls net_set_filter which uses CSPF_BYTES which counts in
+ * shorts, not elements, so using extra parenthesis to silence compilers which
+ * believe we are computing wrong here. */
+#define FILTER_COUNT (sizeof(filter) / (sizeof(short)))
 
 static int
-pcap_read_hurd(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+pcap_read_hurd(pcap_t *p, int cnt _U_, pcap_handler callback, u_char *user)
 {
 	struct net_rcv_msg *msg;
 	struct pcap_hurd *ph;
@@ -258,7 +261,7 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 }
 
 int
-pcapint_platform_finddevs(pcap_if_list_t *alldevsp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *alldevsp _U_, char *errbuf _U_)
 {
 	return 0;
 }
