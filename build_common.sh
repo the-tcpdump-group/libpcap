@@ -226,7 +226,7 @@ os_id() {
         : "${os_id_version:=`uname -v`}"
         echo "${os_id_version}.${os_id_release}"
         ;;
-    Darwin|OpenBSD|SunOS)
+    Darwin|GNU|OpenBSD|SunOS)
         echo "$os_id_release"
         ;;
     FreeBSD|NetBSD|Linux)
