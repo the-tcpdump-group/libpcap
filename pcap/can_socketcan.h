@@ -68,9 +68,7 @@ typedef struct {
  * it's CAN XL or not.
  */
 typedef struct {
-	uint16_t priority;
-	uint8_t vcid;
-	uint8_t reserved;
+	uint32_t priority_vcid;
 	uint8_t flags;
 	uint8_t sdu_type;
 	uint16_t payload_length;
