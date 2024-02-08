@@ -81,6 +81,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <limits.h>
+#include <endian.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -3818,7 +3819,6 @@ static int pcap_handle_packet_mmap(
 	unsigned char *bp;
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
-	pcap_can_socketcan_hdr *canhdr;
 	unsigned int snaplen = tp_snaplen;
 	struct utsname utsname;
 
@@ -3947,56 +3947,186 @@ static int pcap_handle_packet_mmap(
 		 * DLT_CAN_SOCKETCAN is expected to provide.
 		 */
 		if (sll->sll_hatype == ARPHRD_CAN) {
-			/*
-			 * DLT_CAN_SOCKETCAN is specified as having the
-			 * CAN ID and flags in network byte order, but
-			 * capturing on a CAN device provides it in host
-			 * byte order.  Convert it to network byte order.
-			 */
-			canhdr = (pcap_can_socketcan_hdr *)bp;
-			canhdr->can_id = htonl(canhdr->can_id);
+			pcap_can_socketcan_hdr *canhdr = (pcap_can_socketcan_hdr *)bp;
+			uint16_t protocol = ntohs(sll->sll_protocol);
 
 			/*
-			 * In addition, set the CANFD_FDF flag if
-			 * the protocol is LINUX_SLL_P_CANFD, as
-			 * the protocol field itself isn't in
-			 * the packet to indicate that it's a
-			 * CAN FD packet.
+			 * Check the protocol field from the sll header.
+			 * If it's one of the known CAN protocol types,
+			 * make sure the appropriate flags are set, so
+			 * that a program can tell what type of frame
+			 * it is.
+			 *
+			 * The two flags are:
+			 *
+			 *   CANFD_FDF, which is in the fd_flags field
+			 *   of the CAN classic/CAN FD header;
+			 *
+			 *   CANXL_XLF, which is in the flags field
+			 *   of the CAN XL header, which overlaps
+			 *   the payload_length field of the CAN
+			 *   classic/CAN FD header.
 			 */
-			uint16_t protocol = ntohs(sll->sll_protocol);
-			if (protocol == LINUX_SLL_P_CANFD) {
+			switch (protocol) {
+
+			case LINUX_SLL_P_CAN:
+				/*
+				 * CAN classic.
+				 *
+				 * Zero out the fd_flags and reserved
+				 * fields, in case they're uninitialized
+				 * crap, and clear the CANXL_XLF bit in
+				 * the payload_length field.
+				 *
+				 * This means that the CANFD_FDF flag isn't
+				 * set in the fd_flags field, and that
+				 * the CANXL_XLF bit isn't set in the
+				 * payload_length field, so this frame
+				 * will appear to be a CAN classic frame.
+				 */
+				canhdr->payload_length &= ~CANXL_XLF;
+				canhdr->fd_flags = 0;
+				canhdr->reserved1 = 0;
+				canhdr->reserved2 = 0;
+				break;
+
+			case LINUX_SLL_P_CANFD:
+				/*
+				 * Set CANFD_FDF in the fd_flags field,
+				 * and clear the CANXL_XLF bit in the
+				 * payload_length field, so this frame
+				 * will appear to be a CAN FD frame.
+				 */
+				canhdr->payload_length &= ~CANXL_XLF;
 				canhdr->fd_flags |= CANFD_FDF;
 
 				/*
-				 * Zero out all the unknown bits in
-				 * fd_flags and clear the reserved
-				 * fields, so that a program reading
-				 * this can assume that CANFD_FDF
-				 * is set because we set it, not
-				 * because some uninitialized crap
-				 * was provided in the fd_flags
-				 * field.
+				 * Zero out all the unknown bits in fd_flags
+				 * and clear the reserved fields, so that
+				 * a program reading this can assume that
+				 * CANFD_FDF is set because we set it, not
+				 * because some uninitialized crap was
+				 * provided in the fd_flags field.
 				 *
 				 * (At least some LINKTYPE_CAN_SOCKETCAN
-				 * files attached to Wireshark bugs
-				 * had uninitialized junk there, so it
-				 * does happen.)
+				 * files attached to Wireshark bugs had
+				 * uninitialized junk there, so it does
+				 * happen.)
 				 *
-				 * Update this if Linux adds more flag
-				 * bits to the fd_flags field or uses
-				 * either of the reserved fields for
-				 * FD frames.
+				 * Update this if Linux adds more flag bits
+				 * to the fd_flags field or uses either of
+				 * the reserved fields for FD frames.
 				 */
 				canhdr->fd_flags &= ~(CANFD_FDF|CANFD_ESI|CANFD_BRS);
 				canhdr->reserved1 = 0;
 				canhdr->reserved2 = 0;
+				break;
+
+			case LINUX_SLL_P_CANXL:
+				/*
+				 * CAN XL frame.
+				 *
+				 * Make sure the CANXL_XLF bit is set in
+				 * the payload_length field, so that
+				 * this frame will appear to be a
+				 * CAN XL frame.
+				 */
+				canhdr->payload_length |= CANXL_XLF;
+				break;
+			}
+
+			/*
+			 * Put multi-byte header fields in a byte-order
+			 *-independent format.
+			 */
+			if (canhdr->payload_length & CANXL_XLF) {
+				/*
+				 * This is a CAN XL frame.
+				 *
+				 * DLT_CAN_SOCKETCAN is specified as having
+				 * the Priority ID, payload length, and
+				 * Acceptance Field in little-endian byte
+				 * order, but capturing on a CAN device
+				 * provides them in host byte order.
+				 * Convert them to little-endian byte order.
+				 *
+				 * In addition, the first field of the
+				 * header is currently a 32-bit value,
+				 * the lower 11 bits of which are a
+				 * priority value, but there's a patch
+				 * pending to add a VCID field in the
+				 * upper 16 bits of the 32-bit value.
+				 * So, on a little-endian machine, the
+				 * first 16 bits would be the priority
+				 * and the next 16 bits would be the
+				 * VCID, and, on a big-endian machine,
+				 * the first 16 bits would be the VCID
+				 * and the next 16 bits would be the
+				 * priority.
+				 */
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+				/*
+				 * We're capturing on a little-endian
+				 * machine, so the header is already
+				 * in the correct format.
+				 */
+#elif __BYTE_ORDER == __BIG_ENDIAN
+				/*
+				 * We're capturing on a big-endian
+				 * machine, so the first bytes of
+				 * the header is a reserved field,
+				 * the next byte is the VCID, and
+				 * the next two bytes are the
+				 * priority, in big-endian order,
+				 * so they must be byte-swapped.
+				 */
+				pcap_can_socketcan_xl_hdr *canxl_hdr = (pcap_can_socketcan_xl_hdr *)bp;
+				uint16_t priority;
+				uint8_t vcid;
+				uint16_t payload_length;
+				uint32_t acceptance_field;
+
+				canxl_hdr->reserved = 0;
+				vcid = bp[1];
+				/* byte-swap priority */
+				priority = (bp[3] << 8) | bp[2];
+				canxl_hdr->vcid = vcid;
+				canxl_hdr->priority = priority;
+
+				/*
+				 * Byte-swap the payload length,
+				 * which is in bytes 6 and 7.
+				 */
+				payload_length = (bp[7] << 8) |
+						 (bp[8] << 0);
+				canxl_hdr->payload_length = payload_length;
+
+				/*
+				 * Byte-swap the acceptance field,
+				 * which is in bytes 8, 9, 10, and 11.
+				 *
+				 * XXX - is it just a 4-octet string,
+				 * not in any byte order?
+				 */
+				acceptance_field = (bp[11] << 24) |
+						   (bp[10] << 16) |
+						   (bp[9] << 8) |
+						   (bp[8] << 0);
+				canxl_hdr->acceptance_field = acceptance_field;
+#else
+#error "Unknown byte order"
+#endif
 			} else {
 				/*
-				 * Clear CANFD_FDF if it's set (probably
-				 * again meaning that this field is
-				 * uninitialized junk).
+				 * CAN or CAN FD frame.
+				 *
+				 * DLT_CAN_SOCKETCAN is specified as having
+				 * the CAN ID and flags in network byte
+				 * order, but capturing on a CAN device
+				 * provides it in host byte order.  Convert
+				 * it to network byte order.
 				 */
-				canhdr->fd_flags &= ~CANFD_FDF;
+				canhdr->can_id = htonl(canhdr->can_id);
 			}
 		}
 	}
