@@ -99,6 +99,7 @@
 #include <sys/eventfd.h>
 
 #include "pcap-int.h"
+#include "pcap-util.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 #include "pcap/can_socketcan.h"
@@ -4073,46 +4074,24 @@ static int pcap_handle_packet_mmap(
 #elif __BYTE_ORDER == __BIG_ENDIAN
 				/*
 				 * We're capturing on a big-endian
-				 * machine, so the first bytes of
-				 * the header is a reserved field,
-				 * the next byte is the VCID, and
-				 * the next two bytes are the
-				 * priority, in big-endian order,
-				 * so they must be byte-swapped.
+				 * machine, so we want to swap all
+				 * multi-byte values to little-endian.
 				 */
 				pcap_can_socketcan_xl_hdr *canxl_hdr = (pcap_can_socketcan_xl_hdr *)bp;
-				uint16_t priority;
-				uint8_t vcid;
-				uint16_t payload_length;
-				uint32_t acceptance_field;
 
-				canxl_hdr->reserved = 0;
-				vcid = bp[1];
-				/* byte-swap priority */
-				priority = (bp[3] << 8) | bp[2];
-				canxl_hdr->vcid = vcid;
-				canxl_hdr->priority = priority;
+				/* Byte-swap priority/VCID. */
+				canxl_hdr->priority_vcid = SWAPLONG(canxl_hdr->priority_vcid);
+
+				/* Byte-swap the payload length */
+				canxl_hdr->payload_length = SWAPSHORT(canxl_hdr->payload_length);
 
 				/*
-				 * Byte-swap the payload length,
-				 * which is in bytes 6 and 7.
-				 */
-				payload_length = (bp[7] << 8) |
-						 (bp[8] << 0);
-				canxl_hdr->payload_length = payload_length;
-
-				/*
-				 * Byte-swap the acceptance field,
-				 * which is in bytes 8, 9, 10, and 11.
+				 * Byte-swap the acceptance field.
 				 *
 				 * XXX - is it just a 4-octet string,
 				 * not in any byte order?
 				 */
-				acceptance_field = (bp[11] << 24) |
-						   (bp[10] << 16) |
-						   (bp[9] << 8) |
-						   (bp[8] << 0);
-				canxl_hdr->acceptance_field = acceptance_field;
+				canxl_hdr->acceptance_field = SWAPLONG(canxl_hdr->acceptance_field);
 #else
 #error "Unknown byte order"
 #endif
