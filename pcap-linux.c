@@ -4031,7 +4031,7 @@ static int pcap_handle_packet_mmap(
 				 * to the fd_flags field or uses either of
 				 * the reserved fields for FD frames.
 				 */
-				canhdr->fd_flags &= ~(CANFD_FDF|CANFD_ESI|CANFD_BRS);
+				canhdr->fd_flags &= (CANFD_FDF|CANFD_ESI|CANFD_BRS);
 				canhdr->reserved1 = 0;
 				canhdr->reserved2 = 0;
 				break;
