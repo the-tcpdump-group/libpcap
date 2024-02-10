@@ -930,4 +930,4 @@ depend:	$(GENERATED_C_SRC) $(GENHDR)
 	(cd testprogs; $(MAKE) depend)
 
 shellcheck:
-	shellcheck -f gcc -e SC2006 autogen.sh build.sh build_matrix.sh build_common.sh .ci-coverity-scan-build.sh
+	shellcheck -f gcc -e SC2006 autogen.sh build.sh build_matrix.sh build_common.sh mkdep .ci-coverity-scan-build.sh
