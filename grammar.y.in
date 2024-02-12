@@ -403,7 +403,7 @@ DIAG_OFF_BISON_BYACC
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
 %token	VLAN MPLS
-%token	PPPOED PPPOES GENEVE
+%token	PPPOED PPPOES GENEVE VXLAN
 %token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP
 %token  STP
 %token  IPX
@@ -700,6 +700,8 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| PPPOES		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, 0, 0))); }
 	| GENEVE pnum		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, $2, 1))); }
 	| GENEVE		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, 0, 0))); }
+	| VXLAN pnum		{ CHECK_PTR_VAL(($$ = gen_vxlan(cstate, $2, 1))); }
+	| VXLAN			{ CHECK_PTR_VAL(($$ = gen_vxlan(cstate, 0, 0))); }
 	| pfvar			{ $$ = $1; }
 	| pqual p80211		{ $$ = $2; }
 	| pllc			{ $$ = $1; }

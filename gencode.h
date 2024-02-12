@@ -357,6 +357,7 @@ struct block *gen_pppoed(compiler_state_t *);
 struct block *gen_pppoes(compiler_state_t *, bpf_u_int32, int);
 
 struct block *gen_geneve(compiler_state_t *, bpf_u_int32, int);
+struct block *gen_vxlan(compiler_state_t *, bpf_u_int32, int);
 
 struct block *gen_atmfield_code(compiler_state_t *, int, bpf_u_int32,
     int, int);
