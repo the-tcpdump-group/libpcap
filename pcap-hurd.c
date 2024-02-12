@@ -27,8 +27,10 @@ struct pcap_hurd {
 	struct pcap_stat stat;
 	device_t mach_dev;
 	mach_port_t rcv_port;
+	int filtering_in_kernel;
 };
 
+/* Accept all packets. */
 static struct bpf_insn filter[] = {
 	{ NETF_IN | NETF_OUT | NETF_BPF, 0, 0, 0 },
 	{ BPF_RET | BPF_K, 0, 0, MAXIMUM_SNAPLEN },
@@ -40,13 +42,86 @@ static struct bpf_insn filter[] = {
 #define FILTER_COUNT (sizeof(filter) / (sizeof(short)))
 
 static int
+PCAP_WARN_UNUSED_RESULT
+pcap_device_set_filter(pcap_t *p, filter_array_t filter_array,
+                       const mach_msg_type_number_t filter_count)
+{
+	kern_return_t kr;
+	struct pcap_hurd *ph = p->priv;
+	kr = device_set_filter(ph->mach_dev, ph->rcv_port,
+	                       MACH_MSG_TYPE_MAKE_SEND, 0,
+	                       filter_array, filter_count);
+	if (! kr)
+		return 0;
+	pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, errno,
+	    "device_set_filter");
+	return PCAP_ERROR;
+}
+
+static int
+pcap_setfilter_hurd(pcap_t *p, struct bpf_program *program)
+{
+	if (! program || pcapint_install_bpf_program(p, program) < 0) {
+		pcapint_strlcpy(p->errbuf, "setfilter: invalid program",
+		                sizeof(p->errbuf));
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * The bytecode is valid and the copy in p->fcode can be used for
+	 * userland filtering if kernel filtering does not work out.
+	 *
+	 * The kernel BPF implementation supports neither BPF_MOD nor BPF_XOR,
+	 * it also fails to reject unsupported bytecode properly, so the check
+	 * must be done here.
+	 */
+	struct pcap_hurd *ph = p->priv;
+	for (u_int i = 0; i < program->bf_len; i++) {
+		u_short	c = program->bf_insns[i].code;
+		if (BPF_CLASS(c) == BPF_ALU &&
+		    (BPF_OP(c) == BPF_MOD || BPF_OP(c) == BPF_XOR))
+			goto userland;
+	}
+
+	/*
+	 * The kernel takes an array of 16-bit Hurd network filter commands, no
+	 * more than NET_MAX_FILTER elements.  The first four commands form a
+	 * header that says "BPF bytecode follows", the rest is a binary copy
+	 * of 64-bit instructions of the required BPF bytecode.
+	 */
+	mach_msg_type_number_t cmdcount = 4 + 4 * program->bf_len;
+	if (cmdcount > NET_MAX_FILTER)
+		goto userland;
+
+	filter_t cmdbuffer[NET_MAX_FILTER];
+	memcpy(cmdbuffer, filter, sizeof(struct bpf_insn));
+	memcpy(cmdbuffer + 4, program->bf_insns,
+	       program->bf_len * sizeof(struct bpf_insn));
+	if (pcap_device_set_filter(p, cmdbuffer, cmdcount))
+		goto userland;
+	ph->filtering_in_kernel = 1;
+	return 0;
+
+userland:
+	/*
+	 * Could not install a new kernel filter for a reason, so replace any
+	 * previous kernel filter with one that accepts all packets and lets
+	 * userland filtering do the job.  If that fails too, something is
+	 * badly broken and even userland filtering would not work correctly,
+	 * so expose the failure.
+	 */
+	ph->filtering_in_kernel = 0;
+	return pcap_device_set_filter(p, (filter_array_t)filter, FILTER_COUNT);
+}
+
+static int
 pcap_read_hurd(pcap_t *p, int cnt _U_, pcap_handler callback, u_char *user)
 {
 	struct net_rcv_msg *msg;
 	struct pcap_hurd *ph;
 	struct pcap_pkthdr h;
 	struct timespec ts;
-	int ret, wirelen, caplen;
+	int wirelen, caplen;
 	u_char *pkt;
 	kern_return_t kr;
 
@@ -76,6 +151,12 @@ retry:
 	ph->stat.ps_recv++;
 
 	/* XXX Ethernet support only */
+	/*
+	 * wirelen calculation assumes the following:
+	 *   msg->packet_type.msgt_name == MACH_MSG_TYPE_BYTE
+	 *   msg->packet_type.msgt_size == 8
+	 *   msg->packet_type.msgt_number is a size in bytes
+	 */
 	wirelen = ETH_HLEN + msg->net_rcv_msg_packet_count
 		  - sizeof(struct packet_header);
 	pkt = p->buffer + offsetof(struct net_rcv_msg, packet)
@@ -83,10 +164,23 @@ retry:
 	memmove(pkt, p->buffer + offsetof(struct net_rcv_msg, header),
 		ETH_HLEN);
 
+	/*
+	 * It seems, kernel device filters treat the K in BPF_MOD as a Boolean:
+	 * so long as it is positive, the Mach message will contain the entire
+	 * packet and wirelen will be set accordingly.  Thus the caplen value
+	 * for the callback needs to be calculated for every packet no matter
+	 * which type of filtering is in effect.
+	 *
+	 * For the userland filtering this calculated value is not an input:
+	 * buflen always equals wirelen and a userland program can examine the
+	 * entire packet, same way as a kernel program.  It is not an output
+	 * either: pcapint_filter() returns either zero or MAXIMUM_SNAPLEN.
+	 * The same principle applies to kernel filtering.
+	 */
 	caplen = (wirelen > p->snapshot) ? p->snapshot : wirelen;
-	ret = bpf_filter(p->fcode.bf_insns, pkt, wirelen, caplen);
 
-	if (!ret)
+	if (! ph->filtering_in_kernel &&
+	    ! pcapint_filter(p->fcode.bf_insns, pkt, wirelen, wirelen))
 		return 0;
 
 	h.ts.tv_sec = ts.tv_sec;
@@ -200,16 +294,6 @@ pcap_activate_hurd(pcap_t *p)
 		goto error;
 	}
 
-	kr = device_set_filter(ph->mach_dev, ph->rcv_port,
-			       MACH_MSG_TYPE_MAKE_SEND, 0,
-			       (filter_array_t)filter, FILTER_COUNT);
-
-	if (kr) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "device_set_filter: %s",
-			 pcap_strerror(kr));
-		goto error;
-	}
-
 	p->bufsize = sizeof(struct net_rcv_msg);
 	p->buffer = malloc(p->bufsize);
 
@@ -239,7 +323,7 @@ pcap_activate_hurd(pcap_t *p)
 
 	p->read_op = pcap_read_hurd;
 	p->inject_op = pcap_inject_hurd;
-	p->setfilter_op = pcapint_install_bpf_program;
+	p->setfilter_op = pcap_setfilter_hurd;
 	p->stats_op = pcap_stats_hurd;
 
 	return 0;
