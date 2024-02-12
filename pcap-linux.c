@@ -4059,43 +4059,52 @@ static int pcap_handle_packet_mmap(
 				 * This is a CAN XL frame.
 				 *
 				 * DLT_CAN_SOCKETCAN is specified as having
-				 * the Priority ID, payload length, and
-				 * Acceptance Field in little-endian byte
-				 * order, but capturing on a CAN device
+				 * the Priority ID/VCID field in big--
+				 * endian byte order, and the payload length
+				 * and Acceptance Field in little-endian byte
+				 * order. but capturing on a CAN device
 				 * provides them in host byte order.
-				 * Convert them to little-endian byte order.
+				 * Convert them to the appropriate byte
+				 * orders.
 				 *
-				 * In addition, the first field of the
-				 * header is currently a 32-bit value,
-				 * the lower 11 bits of which are a
-				 * priority value, but there's a patch
-				 * pending to add a VCID field in the
-				 * upper 16 bits of the 32-bit value.
-				 * So, on a little-endian machine, the
-				 * first 16 bits would be the priority
-				 * and the next 16 bits would be the
-				 * VCID, and, on a big-endian machine,
-				 * the first 16 bits would be the VCID
-				 * and the next 16 bits would be the
-				 * priority.
-				 */
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-				/*
-				 * We're capturing on a little-endian
-				 * machine, so the header is already
-				 * in the correct format.
-				 */
-#elif __BYTE_ORDER == __BIG_ENDIAN
-				/*
-				 * We're capturing on a big-endian
-				 * machine, so we want to swap all
-				 * multi-byte values to little-endian.
+				 * The reason we put the first field
+				 * into big-endian byte order is that
+				 * older libpcap code, ignorant of
+				 * CAN XL, treated it as the CAN ID
+				 * field and put it into big-endian
+				 * byte order, and we don't want to
+				 * break code that understands CAN XL
+				 * headers, and treats that field as
+				 * being big-endian.
+				 *
+				 * The other fields are put in little-
+				 * endian byte order is that older
+				 * libpcap code, ignorant of CAN XL,
+				 * left those fields alone, and the
+				 * processors on which the CAN XL
+				 * frames were captured are likely
+				 * to be little-endian processors.
 				 */
 				pcap_can_socketcan_xl_hdr *canxl_hdr = (pcap_can_socketcan_xl_hdr *)bp;
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+				/*
+				 * We're capturing on a little-endian
+				 * machine, so we put the priority/VCID
+				 * field into big-endian byte order, and
+				 * leave the payload length and acceptance
+				 * field in little-endian byte order.
+				 */
 				/* Byte-swap priority/VCID. */
 				canxl_hdr->priority_vcid = SWAPLONG(canxl_hdr->priority_vcid);
-
+#elif __BYTE_ORDER == __BIG_ENDIAN
+				/*
+				 * We're capturing on a big-endian
+				 * machine, so we want to leave the
+				 * priority/VCID field alone, and byte-swap
+				 * the payload length and acceptance
+				 * fields to little-endian.
+				 */
 				/* Byte-swap the payload length */
 				canxl_hdr->payload_length = SWAPSHORT(canxl_hdr->payload_length);
 
