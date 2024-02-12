@@ -62,6 +62,7 @@ retry:
 	kr = mach_msg(&msg->msg_hdr, MACH_RCV_MSG | MACH_RCV_INTERRUPT, 0,
 		      p->bufsize, ph->rcv_port, MACH_MSG_TIMEOUT_NONE,
 		      MACH_PORT_NULL);
+	clock_gettime(CLOCK_REALTIME, &ts);
 
 	if (kr) {
 		if (kr == MACH_RCV_INTERRUPTED)
@@ -86,16 +87,13 @@ retry:
 	ret = bpf_filter(p->fcode.bf_insns, pkt, wirelen, caplen);
 
 	if (!ret)
-		goto out;
+		return 0;
 
-	clock_gettime(CLOCK_REALTIME, &ts);
 	h.ts.tv_sec = ts.tv_sec;
 	h.ts.tv_usec = ts.tv_nsec / 1000;
 	h.len = wirelen;
 	h.caplen = caplen;
 	callback(user, &h, pkt);
-
-out:
 	return 1;
 }
 
