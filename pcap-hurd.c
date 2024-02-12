@@ -260,10 +260,34 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 	return p;
 }
 
-int
-pcapint_platform_finddevs(pcap_if_list_t *alldevsp _U_, char *errbuf _U_)
+static int
+can_be_bound(const char *name)
 {
+	/*
+	 * On Hurd lo appears in the list of interfaces, but the call to
+	 * device_open() fails with: "(os/device) no such device".
+	 */
+	if (! strcmp(name, "lo"))
+		return 0;
+	return 1;
+}
+
+static int
+get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
+{
+	/*
+	 * This would apply to the loopback interface if it worked.  Ethernet
+	 * interfaces appear up and running regardless of the link status.
+	 */
+	*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 	return 0;
+}
+
+int
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+{
+	return pcapint_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	                                      get_if_flags);
 }
 
 /*
