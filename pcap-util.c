@@ -104,6 +104,80 @@ swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 }
 
 /*
+ * Linux cooked capture packets with a protocol type of LINUX_SLL_P_CAN or
+ * LINUX_SLL_P_CANFD have SocketCAN CAN classic/CAN FD headers in front
+ * of the payload,with the CAN ID being in the byte order of the host
+ * that wrote the packet, and Linux cooked capture packets with a protocol
+ * type of LINUX_SLL_P_CANXL have SocketCAN CAN XL headers in front of the
+ * payload with the protocol/VCID field, the payload length, and the
+ * acceptance field in the byte order of the host that wrote the packet.
+ *
+ * When reading a Linux cooked capture packet, we need to check for those
+ * packets and, if the byte order host that wrote the packet, as
+ * indicated by the byte order of the pcap file or pcapng section
+ * containing the packet, is the opposite of our byte oder, convert
+ * the header files to our byte order by byte-swapping them.
+ */
+static void
+swap_socketcan_header(uint16_t protocol, u_int caplen, u_int length,
+    u_char *buf)
+{
+	pcap_can_socketcan_hdr *hdrp;
+	pcap_can_socketcan_xl_hdr *xl_hdrp;
+
+	switch (protocol) {
+
+	case LINUX_SLL_P_CAN:
+	case LINUX_SLL_P_CANFD:
+		/*
+		 * CAN classic/CAN FD packet; fix up the packet's header
+		 * by byte-swapping the CAN ID field.
+		 */
+		hdrp = (pcap_can_socketcan_hdr *)buf;
+		if (caplen < (u_int) (offsetof(pcap_can_socketcan_hdr, can_id) + sizeof hdrp->can_id) ||
+		    length < (u_int) (offsetof(pcap_can_socketcan_hdr, can_id) + sizeof hdrp->can_id)) {
+			/* Not enough data to have the can_id field */
+			return;
+		}
+		hdrp->can_id = SWAPLONG(hdrp->can_id);
+		break;
+
+	case LINUX_SLL_P_CANXL:
+		/*
+		 * CAN XL packet; fix up the packet's header by
+		 * byte-swapping the priority/VCID field, the
+		 * payload length, and the acceptance field.
+		 */
+		xl_hdrp = (pcap_can_socketcan_xl_hdr *)buf;
+		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, priority_vcid) + sizeof xl_hdrp->priority_vcid) ||
+		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, priority_vcid) + sizeof xl_hdrp->priority_vcid)) {
+			/* Not enough data to have the priority_vcid field */
+			return;
+		}
+		xl_hdrp->priority_vcid = SWAPLONG(xl_hdrp->priority_vcid);
+		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, payload_length) + sizeof xl_hdrp->payload_length) ||
+		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, payload_length) + sizeof xl_hdrp->payload_length)) {
+			/* Not enough data to have the payload_length field */
+			return;
+		}
+		xl_hdrp->payload_length = SWAPSHORT(xl_hdrp->payload_length);
+		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, acceptance_field) + sizeof xl_hdrp->acceptance_field) ||
+		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, acceptance_field) + sizeof xl_hdrp->acceptance_field)) {
+			/* Not enough data to have the acceptance_field field */
+			return;
+		}
+		xl_hdrp->acceptance_field = SWAPLONG(xl_hdrp->acceptance_field);
+		break;
+
+	default:
+		/*
+		 * Not a CAN packet; nothing to do.
+		 */
+		break;
+	}
+}
+
+/*
  * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN or
  * LINUX_SLL_P_CANFD have SocketCAN headers in front of the payload,
  * with the CAN ID being in host byte order.
@@ -113,13 +187,11 @@ swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
  * wrote the file to this host's byte order.
  */
 static void
-swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
+swap_linux_sll_socketcan_header(const struct pcap_pkthdr *hdr, u_char *buf)
 {
 	u_int caplen = hdr->caplen;
 	u_int length = hdr->len;
 	struct sll_header *shdr = (struct sll_header *)buf;
-	uint16_t protocol;
-	pcap_can_socketcan_hdr *chdr;
 
 	if (caplen < (u_int) sizeof(struct sll_header) ||
 	    length < (u_int) sizeof(struct sll_header)) {
@@ -127,33 +199,24 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 		return;
 	}
 
-	protocol = EXTRACT_BE_U_2(&shdr->sll_protocol);
-	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
-		return;
-
 	/*
-	 * SocketCAN packet; fix up the packet's header.
+	 * Byte-swap what needs to be byte-swapped.
 	 */
-	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll_header));
-	if (caplen < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id) ||
-	    length < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id)) {
-		/* Not enough data to have the CAN ID */
-		return;
-	}
-	chdr->can_id = SWAPLONG(chdr->can_id);
+	swap_socketcan_header(EXTRACT_BE_U_2(&shdr->sll_protocol),
+	    caplen - (u_int) sizeof(struct sll_header),
+	    length - (u_int) sizeof(struct sll_header),
+	    buf + sizeof(struct sll_header));
 }
 
 /*
  * The same applies for DLT_LINUX_SLL2.
  */
 static void
-swap_linux_sll2_header(const struct pcap_pkthdr *hdr, u_char *buf)
+swap_linux_sll2_socketcan_header(const struct pcap_pkthdr *hdr, u_char *buf)
 {
 	u_int caplen = hdr->caplen;
 	u_int length = hdr->len;
 	struct sll2_header *shdr = (struct sll2_header *)buf;
-	uint16_t protocol;
-	pcap_can_socketcan_hdr *chdr;
 
 	if (caplen < (u_int) sizeof(struct sll2_header) ||
 	    length < (u_int) sizeof(struct sll2_header)) {
@@ -161,20 +224,13 @@ swap_linux_sll2_header(const struct pcap_pkthdr *hdr, u_char *buf)
 		return;
 	}
 
-	protocol = EXTRACT_BE_U_2(&shdr->sll2_protocol);
-	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
-		return;
-
 	/*
-	 * SocketCAN packet; fix up the packet's header.
+	 * Byte-swap what needs to be byte-swapped.
 	 */
-	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll2_header));
-	if (caplen < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id) ||
-	    length < (u_int) sizeof(struct sll2_header) + sizeof(chdr->can_id)) {
-		/* Not enough data to have the CAN ID */
-		return;
-	}
-	chdr->can_id = SWAPLONG(chdr->can_id);
+	swap_socketcan_header(EXTRACT_BE_U_2(&shdr->sll2_protocol),
+	    caplen - (u_int) sizeof(struct sll2_header),
+	    length - (u_int) sizeof(struct sll2_header),
+	    buf + sizeof(struct sll2_header));
 }
 
 /*
@@ -407,11 +463,11 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 		break;
 
 	case DLT_LINUX_SLL:
-		swap_linux_sll_header(hdr, data);
+		swap_linux_sll_socketcan_header(hdr, data);
 		break;
 
 	case DLT_LINUX_SLL2:
-		swap_linux_sll2_header(hdr, data);
+		swap_linux_sll2_socketcan_header(hdr, data);
 		break;
 
 	case DLT_USB_LINUX:
