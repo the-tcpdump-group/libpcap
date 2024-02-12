@@ -155,8 +155,12 @@ pcap_activate_hurd(pcap_t *p)
 	struct pcap_hurd *ph;
 	mach_port_t master;
 	kern_return_t kr;
+	int ret = PCAP_ERROR;
 
 	ph = p->priv;
+
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
 
 	/* Try devnode first */
 	master = file_name_lookup(p->opt.device, O_READ | O_WRITE, 0);
@@ -170,6 +174,8 @@ pcap_activate_hurd(pcap_t *p)
 		if (kr) {
 			snprintf(p->errbuf, sizeof(p->errbuf),
 				 "get_privileged_ports: %s", pcap_strerror(kr));
+			if (kr == EPERM)
+				ret = PCAP_ERROR_PERM_DENIED;
 			goto error;
 		}
 
@@ -182,6 +188,8 @@ pcap_activate_hurd(pcap_t *p)
 	if (kr) {
 		snprintf(p->errbuf, sizeof(p->errbuf), "device_open: %s",
 			 pcap_strerror(kr));
+		if (kr == ED_NO_SUCH_DEVICE) /* not ENODEV */
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto error;
 	}
 
@@ -240,7 +248,7 @@ pcap_activate_hurd(pcap_t *p)
 
 error:
 	pcap_cleanup_hurd(p);
-	return PCAP_ERROR;
+	return ret;
 }
 
 pcap_t *

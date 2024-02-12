@@ -45,6 +45,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Report non-existent devices correctly.
     Hurd:
       Support network capture devices too.
+      Fix a few device activation bugs.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)
