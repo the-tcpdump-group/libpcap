@@ -798,6 +798,20 @@ For example:
 filters IPv4 protocol encapsulated in Geneve with VNI 0xb. This will
 match both IPv4 directly encapsulated in Geneve as well as IPv4 contained
 inside an Ethernet frame.
+.IP "\fBvxlan \fI[vni]\fR"
+True if the packet is a VXLAN packet (UDP port 4789). If the optional
+\fIvni\fR is specified, only true if the packet has the specified
+\fIvni\fR.  Note that when the \fBvxlan\fR keyword is encountered in
+an expression, it changes the decoding offsets for the remainder of
+the expression on the assumption that the packet is a VXLAN packet.
+.IP
+For example:
+.in +.5i
+.nf
+\fBvxlan\fP 0x7 \fB&& ip6 \fR
+.fi
+.in -.5i
+filters IPv6 protocol encapsulated in VXLAN with VNI 0x7.
 .IP "\fBiso proto \fIprotocol\fR"
 True if the packet is an OSI packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names

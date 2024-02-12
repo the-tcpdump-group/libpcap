@@ -145,6 +145,7 @@ struct addrinfo {
 #endif
 
 #define GENEVE_PORT 6081
+#define VXLAN_PORT  4789
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -165,7 +166,7 @@ struct addrinfo {
 	(cs)->off_linkhdr.is_variable = (new_is_variable); \
 	(cs)->off_linkhdr.constant_part = (new_constant_part); \
 	(cs)->off_linkhdr.reg = (new_reg); \
-	(cs)->is_geneve = 0; \
+	(cs)->is_encap = 0; \
 }
 
 /*
@@ -351,12 +352,12 @@ struct _compiler_state {
 	 */
 	int is_atm;
 
-	/*
-	 * TRUE if "geneve" appeared in the filter; it causes us to
-	 * generate code that checks for a Geneve header and assume
-	 * that later filters apply to the encapsulated payload.
+	/* TRUE if "geneve" or "vxlan" appeared in the filter; it
+	 * causes us to generate code that checks for a Geneve or
+	 * VXLAN header respectively and assume that later filters
+	 * apply to the encapsulated payload.
 	 */
-	int is_geneve;
+	int is_encap;
 
 	/*
 	 * TRUE if we need variable length part of VLAN offset
@@ -589,7 +590,7 @@ static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
 static struct block *gen_len(compiler_state_t *, int, int);
 static struct block *gen_check_802_11_data_frame(compiler_state_t *);
-static struct block *gen_geneve_ll_check(compiler_state_t *cstate);
+static struct block *gen_encap_ll_check(compiler_state_t *cstate);
 
 static struct block *gen_ppi_dlt_check(compiler_state_t *);
 static struct block *gen_atmfield_code_internal(compiler_state_t *, int,
@@ -1189,9 +1190,9 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	cstate->off_payload = OFFSET_NOT_SET;
 
 	/*
-	 * And not Geneve.
+	 * And not encapsulated with either Geneve or VXLAN.
 	 */
-	cstate->is_geneve = 0;
+	cstate->is_encap = 0;
 
 	/*
 	 * No variable length VLAN offset by default
@@ -3161,8 +3162,8 @@ gen_prevlinkhdr_check(compiler_state_t *cstate)
 {
 	struct block *b0;
 
-	if (cstate->is_geneve)
-		return gen_geneve_ll_check(cstate);
+	if (cstate->is_encap)
+		return gen_encap_ll_check(cstate);
 
 	switch (cstate->prevlinktype) {
 
@@ -3218,8 +3219,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
 		/* Geneve has an EtherType regardless of whether there is an
-		 * L2 header. */
-		if (!cstate->is_geneve)
+		 * L2 header. VXLAN always has an EtherType. */
+		if (!cstate->is_encap)
 			b0 = gen_prevlinkhdr_check(cstate);
 		else
 			b0 = NULL;
@@ -9717,7 +9718,211 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 
 	gen_and(b0, b1);
 
-	cstate->is_geneve = 1;
+	cstate->is_encap = 1;
+
+	return b1;
+}
+
+/* Check that this is VXLAN and the VNI is correct if
+ * specified. Parameterized to handle both IPv4 and IPv6. */
+static struct block *
+gen_vxlan_check(compiler_state_t *cstate,
+    struct block *(*gen_portfn)(compiler_state_t *, u_int, int, int),
+    enum e_offrel offrel, bpf_u_int32 vni, int has_vni)
+{
+	struct block *b0, *b1;
+
+	b0 = gen_portfn(cstate, VXLAN_PORT, IPPROTO_UDP, Q_DST);
+
+	/* Check that the VXLAN header has the flag bits set
+	 * correctly. */
+	b1 = gen_cmp(cstate, offrel, 8, BPF_B, 0x08);
+	gen_and(b0, b1);
+	b0 = b1;
+
+	if (has_vni) {
+		if (vni > 0xffffff) {
+			bpf_error(cstate, "VXLAN VNI %u greater than maximum %u",
+			    vni, 0xffffff);
+		}
+		vni <<= 8; /* VNI is in the upper 3 bytes */
+		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
+	return b0;
+}
+
+/* The IPv4 and IPv6 VXLAN checks need to do two things:
+ * - Verify that this actually is VXLAN with the right VNI.
+ * - Place the IP header length (plus variable link prefix if
+ *   needed) into register A to be used later to compute
+ *   the inner packet offsets. */
+static struct block *
+gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
+{
+	struct block *b0, *b1;
+	struct slist *s, *s1;
+
+	b0 = gen_vxlan_check(cstate, gen_port, OR_TRAN_IPV4, vni, has_vni);
+
+	/* Load the IP header length into A. */
+	s = gen_loadx_iphdrlen(cstate);
+
+	s1 = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	sappend(s, s1);
+
+	/* Forcibly append these statements to the true condition
+	 * of the protocol check by creating a new block that is
+	 * always true and ANDing them. */
+	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
+	b1->stmts = s;
+	b1->s.k = 0;
+
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+static struct block *
+gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
+{
+	struct block *b0, *b1;
+	struct slist *s, *s1;
+
+	b0 = gen_vxlan_check(cstate, gen_port6, OR_TRAN_IPV6, vni, has_vni);
+
+	/* Load the IP header length. We need to account for a
+	 * variable length link prefix if there is one. */
+	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+	if (s) {
+		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s1->s.k = 40;
+		sappend(s, s1);
+
+		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
+		s1->s.k = 0;
+		sappend(s, s1);
+	} else {
+		s = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s->s.k = 40;
+	}
+
+	/* Forcibly append these statements to the true condition
+	 * of the protocol check by creating a new block that is
+	 * always true and ANDing them. */
+	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	sappend(s, s1);
+
+	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
+	b1->stmts = s;
+	b1->s.k = 0;
+
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+/* We need to store three values based on the VXLAN header:
+ * - The offset of the linktype.
+ * - The offset of the end of the VXLAN header.
+ * - The offset of the end of the encapsulated MAC header. */
+static struct slist *
+gen_vxlan_offsets(compiler_state_t *cstate)
+{
+	struct slist *s, *s1;
+
+	/* Calculate the offset of the VXLAN header itself. This
+	 * includes the IP header computed previously (including any
+	 * variable link prefix) and stored in A plus the fixed size
+	 * headers (fixed link prefix, MAC length, UDP header). */
+	s = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 8;
+
+	/* Add the VXLAN header length to its offset and store */
+	s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 8;
+	sappend(s, s1);
+
+	/* Push the link header. VXLAN packets always contain Ethernet
+	 * frames. */
+	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
+
+	s1 = new_stmt(cstate, BPF_ST);
+	s1->s.k = cstate->off_linkhdr.reg;
+	sappend(s, s1);
+
+	/* As the payload is an Ethernet packet, we can use the
+	 * EtherType of the payload directly as the linktype. */
+	s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 12;
+	sappend(s, s1);
+
+	cstate->off_linktype.reg = alloc_reg(cstate);
+	cstate->off_linktype.is_variable = 1;
+	cstate->off_linktype.constant_part = 0;
+
+	s1 = new_stmt(cstate, BPF_ST);
+	s1->s.k = cstate->off_linktype.reg;
+	sappend(s, s1);
+
+	/* Two bytes further is the end of the Ethernet header and the
+	 * start of the payload. */
+	s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 2;
+	sappend(s, s1);
+
+	/* Move the result to X. */
+	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	sappend(s, s1);
+
+	/* Store the final result of our linkpl calculation. */
+	cstate->off_linkpl.reg = alloc_reg(cstate);
+	cstate->off_linkpl.is_variable = 1;
+	cstate->off_linkpl.constant_part = 0;
+
+	s1 = new_stmt(cstate, BPF_STX);
+	s1->s.k = cstate->off_linkpl.reg;
+	sappend(s, s1);
+
+	cstate->off_nl = 0;
+
+	return s;
+}
+
+/* Check to see if this is a VXLAN packet. */
+struct block *
+gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
+{
+	struct block *b0, *b1;
+	struct slist *s;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	b0 = gen_vxlan4(cstate, vni, has_vni);
+	b1 = gen_vxlan6(cstate, vni, has_vni);
+
+	gen_or(b0, b1);
+	b0 = b1;
+
+	/* Later filters should act on the payload of the VXLAN frame,
+	 * update all of the header pointers. Attach this code so that
+	 * it gets executed in the event that the VXLAN filter matches. */
+	s = gen_vxlan_offsets(cstate);
+
+	b1 = gen_true(cstate);
+	sappend(s, b1->stmts);
+	b1->stmts = s;
+
+	gen_and(b0, b1);
+
+	cstate->is_encap = 1;
 
 	return b1;
 }
@@ -9725,7 +9930,7 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 /* Check that the encapsulated frame has a link layer header
  * for Ethernet filters. */
 static struct block *
-gen_geneve_ll_check(compiler_state_t *cstate)
+gen_encap_ll_check(compiler_state_t *cstate)
 {
 	struct block *b0;
 	struct slist *s, *s1;
