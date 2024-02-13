@@ -31,7 +31,6 @@
  */
 struct pcap_haiku {
 	struct pcap_stat	stat;
-	char	*device;	/* device name */
 };
 
 
@@ -125,7 +124,7 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 	if (pcapSocket < 0) {
 		return PCAP_ERROR;
 	}
-	prepare_request(&request, handlep->device);
+	prepare_request(&request, handle->opt.device);
 	if (ioctl(pcapSocket, SIOCGIFSTATS, &request, sizeof(struct ifreq)) < 0) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "pcap_stats");
@@ -144,10 +143,6 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 static int
 pcap_activate_haiku(pcap_t *handle)
 {
-	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
-
-	const char* device = handle->opt.device;
-
 	handle->read_op = pcap_read_haiku;
 	handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
 	handle->inject_op = pcap_inject_haiku;
@@ -167,13 +162,6 @@ pcap_activate_haiku(pcap_t *handle)
 	 */
 	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
 		handle->snapshot = MAXIMUM_SNAPLEN;
-
-	handlep->device	= strdup(device);
-	if (handlep->device == NULL) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-			errno, "strdup");
-		return PCAP_ERROR;
-	}
 
 	handle->bufsize = 65536;
 	// TODO: should be determined by interface MTU
