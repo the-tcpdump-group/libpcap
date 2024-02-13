@@ -57,10 +57,8 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	ssize_t bytesReceived;
 	do {
 		if (handle->break_loop) {
-			// Clear the break loop flag, and return -2 to indicate our
-			// reasoning
 			handle->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 
 		socklen_t fromLength = sizeof(from);
@@ -74,9 +72,9 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 			return 0;
 		}
 
-		snprintf(handle->errbuf, sizeof(handle->errbuf),
-			"recvfrom: %s", strerror(errno));
-		return -1;
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "recvfrom");
+		return PCAP_ERROR;
 	}
 
 	int32 captureLength = bytesReceived;
@@ -114,7 +112,7 @@ pcap_inject_haiku(pcap_t *handle, const void *buffer _U_, int size _U_)
 	// inject the packets
 	strlcpy(handle->errbuf, "Sending packets isn't supported yet",
 		PCAP_ERRBUF_SIZE);
-	return -1;
+	return PCAP_ERROR;
 }
 
 
@@ -125,14 +123,14 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 	struct ifreq request;
 	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (pcapSocket < 0) {
-		return -1;
+		return PCAP_ERROR;
 	}
 	prepare_request(&request, handlep->device);
 	if (ioctl(pcapSocket, SIOCGIFSTATS, &request, sizeof(struct ifreq)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "pcap_stats: %s",
-			strerror(errno));
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "pcap_stats");
 		close(pcapSocket);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	close(pcapSocket);
@@ -208,7 +206,7 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (pcapSocket < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-			"The networking stack doesn't seem to be available.\n");
+			"The networking stack doesn't seem to be available.");
 		return NULL;
 	}
 
@@ -223,7 +221,7 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 	// check if the interface exist
 	if (ioctl(pcapSocket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
 		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-			"Interface \"%s\" does not exist.\n", device);
+			"Interface \"%s\" does not exist.", device);
 		close(pcapSocket);
 		return NULL;
 	}
@@ -235,22 +233,23 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 
 	pcapSocket = socket(AF_LINK, SOCK_DGRAM, 0);
 	if (pcapSocket < 0) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "No link level: %s\n",
-			strerror(errno));
+		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
+		    errno, "No link level");
 		return NULL;
 	}
 
 	// start monitoring
 	if (ioctl(pcapSocket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "Cannot start monitoring: %s\n",
-			strerror(errno));
+		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
+		    errno, "Cannot start monitoring");
 		close(pcapSocket);
 		return NULL;
 	}
 
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE, "malloc: %s", strerror(errno));
+		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		close(pcapSocket);
 		return NULL;
 	}
