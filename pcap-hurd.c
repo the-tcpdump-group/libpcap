@@ -143,8 +143,8 @@ retry:
 		if (kr == MACH_RCV_INTERRUPTED)
 			goto retry;
 
-		snprintf(p->errbuf, sizeof(p->errbuf), "mach_msg: %s",
-			 pcap_strerror(kr));
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		    "mach_msg");
 		return PCAP_ERROR;
 	}
 
@@ -203,8 +203,8 @@ pcap_inject_hurd(pcap_t *p, const void *buf, int size)
 			  (io_buf_ptr_t)buf, size, &count);
 
 	if (kr) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "device_write: %s",
-			 pcap_strerror(kr));
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		    "device_write");
 		return -1;
 	}
 
@@ -264,8 +264,8 @@ pcap_activate_hurd(pcap_t *p)
 		kr = get_privileged_ports(NULL, &master);
 
 		if (kr) {
-			snprintf(p->errbuf, sizeof(p->errbuf),
-				 "get_privileged_ports: %s", pcap_strerror(kr));
+			pcapint_fmt_errmsg_for_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, kr, "get_privileged_ports");
 			if (kr == EPERM)
 				ret = PCAP_ERROR_PERM_DENIED;
 			goto error;
@@ -278,8 +278,8 @@ pcap_activate_hurd(pcap_t *p)
 	mach_port_deallocate(mach_task_self(), master);
 
 	if (kr) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "device_open: %s",
-			 pcap_strerror(kr));
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		    "device_open");
 		if (kr == ED_NO_SUCH_DEVICE) /* not ENODEV */
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto error;
@@ -289,8 +289,8 @@ pcap_activate_hurd(pcap_t *p)
 				&ph->rcv_port);
 
 	if (kr) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "mach_port_allocate: %s",
-			 pcap_strerror(kr));
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		    "mach_port_allocate");
 		goto error;
 	}
 
@@ -298,8 +298,8 @@ pcap_activate_hurd(pcap_t *p)
 	p->buffer = malloc(p->bufsize);
 
 	if (p->buffer == NULL) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "malloc: %s",
-			 pcap_strerror(errno));
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		goto error;
 	}
 
