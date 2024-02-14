@@ -143,6 +143,54 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 static int
 pcap_activate_haiku(pcap_t *handle)
 {
+	// TODO: handle promiscuous mode!
+
+	// we need a socket to talk to the networking stack
+	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (pcapSocket < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "The networking stack doesn't seem to be available.");
+		return PCAP_ERROR;
+	}
+
+	struct ifreq request;
+	if (!prepare_request(&request, handle->opt.device)) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "Interface name \"%s\" is too long.", handle->opt.device);
+		close(pcapSocket);
+		return PCAP_ERROR;
+	}
+
+	// check if the interface exist
+	if (ioctl(pcapSocket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "Interface \"%s\" does not exist.", handle->opt.device);
+		close(pcapSocket);
+		return PCAP_ERROR_NO_SUCH_DEVICE;
+	}
+
+	close(pcapSocket);
+	// no longer needed after this point
+
+	// get link level interface for this interface
+
+	pcapSocket = socket(AF_LINK, SOCK_DGRAM, 0);
+	if (pcapSocket < 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "No link level");
+		return PCAP_ERROR;
+	}
+
+	// start monitoring
+	if (ioctl(pcapSocket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Cannot start monitoring");
+		close(pcapSocket);
+		return PCAP_ERROR;
+	}
+
+	handle->selectable_fd = pcapSocket;
+	handle->fd = pcapSocket;
 	handle->read_op = pcap_read_haiku;
 	handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
 	handle->inject_op = pcap_inject_haiku;
@@ -171,6 +219,7 @@ pcap_activate_haiku(pcap_t *handle)
 	if (handle->buffer == NULL) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 			errno, "buffer malloc");
+		close(pcapSocket);
 		return PCAP_ERROR;
 	}
 
@@ -186,67 +235,15 @@ pcap_activate_haiku(pcap_t *handle)
 
 
 pcap_t *
-pcapint_create_interface(const char *device, char *errorBuffer)
+pcapint_create_interface(const char *device _U_, char *errorBuffer)
 {
-	// TODO: handle promiscuous mode!
-
-	// we need a socket to talk to the networking stack
-	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if (pcapSocket < 0) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-			"The networking stack doesn't seem to be available.");
-		return NULL;
-	}
-
-	struct ifreq request;
-	if (!prepare_request(&request, device)) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-			"Interface name \"%s\" is too long.", device);
-		close(pcapSocket);
-		return NULL;
-	}
-
-	// check if the interface exist
-	if (ioctl(pcapSocket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-			"Interface \"%s\" does not exist.", device);
-		close(pcapSocket);
-		return NULL;
-	}
-
-	close(pcapSocket);
-	// no longer needed after this point
-
-	// get link level interface for this interface
-
-	pcapSocket = socket(AF_LINK, SOCK_DGRAM, 0);
-	if (pcapSocket < 0) {
-		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
-		    errno, "No link level");
-		return NULL;
-	}
-
-	// start monitoring
-	if (ioctl(pcapSocket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
-		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
-		    errno, "Cannot start monitoring");
-		close(pcapSocket);
-		return NULL;
-	}
-
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
 		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
-		close(pcapSocket);
 		return NULL;
 	}
-
-	handle->selectable_fd = pcapSocket;
-	handle->fd = pcapSocket;
-
 	handle->activate_op = pcap_activate_haiku;
-
 	return handle;
 }
 
