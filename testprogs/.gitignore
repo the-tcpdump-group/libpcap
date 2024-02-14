@@ -2,6 +2,7 @@ Makefile
 *~
 *.dSYM
 *.o
+/activatetest
 valgrindtest
 capturetest
 can_set_rfmon_test
