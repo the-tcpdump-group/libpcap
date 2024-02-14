@@ -26,6 +26,7 @@ macro(add_test_executable _executable)
   add_dependencies(testprogs ${_executable})
 endmacro()
 
+add_test_executable(activatetest)
 add_test_executable(can_set_rfmon_test)
 add_test_executable(capturetest)
 add_test_executable(filtertest)

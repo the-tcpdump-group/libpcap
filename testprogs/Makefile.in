@@ -79,6 +79,7 @@ INSTALL_DATA = @INSTALL_DATA@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
 SRC = @VALGRINDTEST_SRC@ \
+	activatetest.c \
 	can_set_rfmon_test.c \
 	capturetest.c \
 	filtertest.c \
@@ -99,6 +100,9 @@ TAGFILES = \
 CLEANFILES = $(OBJ) $(TESTS)
 
 all: $(TESTS)
+
+activatetest: $(srcdir)/activatetest.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $< ../libpcap.a $(LIBS)
 
 capturetest: $(srcdir)/capturetest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/capturetest.c \
