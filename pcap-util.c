@@ -115,7 +115,7 @@ swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
  * When reading a Linux cooked capture packet, we need to check for those
  * packets and, if the byte order host that wrote the packet, as
  * indicated by the byte order of the pcap file or pcapng section
- * containing the packet, is the opposite of our byte oder, convert
+ * containing the packet, is the opposite of our byte order, convert
  * the header files to our byte order by byte-swapping them.
  */
 static void
