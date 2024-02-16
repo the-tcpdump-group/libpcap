@@ -189,6 +189,8 @@ pcap_activate_haiku(pcap_t *handle)
 		goto error;
 
 	// pcap_stats_haiku() will need a baseline for ps_ifdrop.
+	// At the time of this writing SIOCGIFSTATS returns EINVAL for AF_LINK
+	// sockets.
 	if (ioctl_ifreq(handle, handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS") < 0) {
 		// Detect a non-existent network interface at least at the
 		// first ioctl() use.
@@ -201,6 +203,36 @@ pcap_activate_haiku(pcap_t *handle)
 	// get link level interface for this interface
 	if ((handle->fd = dgram_socket(handle, AF_LINK)) < 0)
 		goto error;
+
+	// Derive a DLT from the interface type.
+	// At the time of this writing SIOCGIFTYPE cannot be used for this
+	// purpose: it returns EINVAL for AF_LINK sockets and sets ifr_type to
+	// 0 for AF_INET sockets.  Use the same method as Haiku ifconfig does
+	// (SIOCGIFADDR and AF_LINK).
+	if (ioctl_ifreq(handle, handle->fd, SIOCGIFADDR, "SIOCGIFADDR") < 0)
+		goto error;
+	struct sockaddr_dl *sdl = (struct sockaddr_dl *)&handlep->ifreq.ifr_addr;
+	if (sdl->sdl_family != AF_LINK) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "Got AF %d instead of AF_LINK for interface \"%s\".",
+		         sdl->sdl_family, handle->opt.device);
+		goto error;
+	}
+	switch (sdl->sdl_type) {
+	case IFT_ETHER:
+		// This includes tap (L2) mode tunnels too.
+		handle->linktype = DLT_EN10MB;
+		break;
+	case IFT_LOOP:
+	case IFT_TUNNEL: // This means tun (L3) mode tunnels only.
+		handle->linktype = DLT_RAW;
+		break;
+	default:
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "Unknown interface type 0x%0x for interface \"%s\".",
+		         sdl->sdl_type, handle->opt.device);
+		goto error;
+	}
 
 	// start monitoring
 	if (ioctl_ifreq(handle, handle->fd, SIOCSPACKETCAP, "SIOCSPACKETCAP") < 0)
@@ -240,8 +272,6 @@ pcap_activate_haiku(pcap_t *handle)
 	}
 
 	handle->offset = 0;
-	handle->linktype = DLT_EN10MB;
-	// TODO: check interface type!
 
 	return 0;
 error:
