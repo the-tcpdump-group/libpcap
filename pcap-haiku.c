@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 
 /*
@@ -56,6 +57,8 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 			(struct sockaddr*)&from, &fromLength);
 	} while (bytesReceived < 0 && errno == B_INTERRUPTED);
 
+	bigtime_t ts = real_time_clock_usecs();
+
 	if (bytesReceived < 0) {
 		if (errno == B_WOULD_BLOCK) {
 			// there is no packet for us
@@ -87,8 +90,8 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	struct pcap_pkthdr header;
 	header.caplen = captureLength;
 	header.len = bytesReceived;
-	header.ts.tv_usec = system_time() % 1000000;
-	header.ts.tv_sec = system_time() / 1000000;
+	header.ts.tv_usec = ts % 1000000;
+	header.ts.tv_sec = ts / 1000000;
 	// TODO: get timing from packet!!!
 
 	/* Call the user supplied callback function */
