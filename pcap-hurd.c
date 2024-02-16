@@ -180,8 +180,10 @@ retry:
 	caplen = (wirelen > p->snapshot) ? p->snapshot : wirelen;
 
 	if (! ph->filtering_in_kernel &&
-	    ! pcapint_filter(p->fcode.bf_insns, pkt, wirelen, wirelen))
+	    ! pcapint_filter(p->fcode.bf_insns, pkt, wirelen, wirelen)) {
+		ph->stat.ps_drop++;
 		return 0;
+	}
 
 	h.ts.tv_sec = ts.tv_sec;
 	h.ts.tv_usec = ts.tv_nsec / 1000;
