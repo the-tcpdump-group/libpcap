@@ -43,6 +43,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add a new test program for pcap_activate().
     Haiku:
       Report non-existent devices correctly.
+      Fix handling of packet statistics.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
