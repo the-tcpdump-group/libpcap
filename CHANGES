@@ -54,6 +54,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Address a few compiler warnings.  Fixes issue #1114.
       Fix various build problems.  Fixes issue #1114.
       Report non-existent devices correctly.
+      Fix handling of packet statistics.
     Windows:
       Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.

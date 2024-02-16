@@ -31,18 +31,9 @@
  */
 struct pcap_haiku {
 	struct pcap_stat	stat;
+	int aux_socket;
+	struct ifreq ifreq;
 };
-
-
-static int
-prepare_request(struct ifreq *request, const char* name)
-{
-	if (strlen(name) >= IF_NAMESIZE)
-		return 0;
-
-	strcpy(request->ifr_name, name);
-	return 1;
-}
 
 
 static int
@@ -76,7 +67,9 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 		return PCAP_ERROR;
 	}
 
-	int32 captureLength = bytesReceived;
+	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
+	handlep->stat.ps_recv++;
+	int32_t captureLength = bytesReceived;
 	if (captureLength > handle->snapshot)
 		captureLength = handle->snapshot;
 
@@ -85,6 +78,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 		if (pcapint_filter(handle->fcode.bf_insns, buffer, bytesReceived,
 				captureLength) == 0) {
 			// packet got rejected
+			handlep->stat.ps_drop++;
 			return 0;
 		}
 	}
@@ -104,6 +98,51 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 
 static int
+dgram_socket(pcap_t *handle, const int af)
+{
+	int ret = socket(af, SOCK_DGRAM, 0);
+	if (ret < 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return PCAP_ERROR;
+	}
+	return ret;
+}
+
+
+static int
+ioctl_ifreq(pcap_t *handle, const int fd, const unsigned long op,
+            const char *name)
+{
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	if (ioctl(fd, op, &handlep->ifreq,
+	    sizeof(struct ifreq)) < 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "%s", name);
+		return PCAP_ERROR;
+	}
+	return 0;
+}
+
+
+static void
+pcap_cleanup_haiku(pcap_t *handle)
+{
+	if (handle->fd >= 0) {
+		close(handle->fd);
+		handle->fd = -1;
+		handle->selectable_fd = -1;
+	}
+
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	if (handlep->aux_socket >= 0) {
+		close(handlep->aux_socket);
+		handlep->aux_socket = -1;
+	}
+}
+
+
+static int
 pcap_inject_haiku(pcap_t *handle, const void *buffer _U_, int size _U_)
 {
 	// we don't support injecting packets yet
@@ -119,23 +158,15 @@ static int
 pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
-	struct ifreq request;
-	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if (pcapSocket < 0) {
-		return PCAP_ERROR;
-	}
-	prepare_request(&request, handle->opt.device);
-	if (ioctl(pcapSocket, SIOCGIFSTATS, &request, sizeof(struct ifreq)) < 0) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "pcap_stats");
-		close(pcapSocket);
-		return PCAP_ERROR;
-	}
-
-	close(pcapSocket);
-	handlep->stat.ps_recv += request.ifr_stats.receive.packets;
-	handlep->stat.ps_drop += request.ifr_stats.receive.dropped;
 	*stats = handlep->stat;
+	// Now ps_recv and ps_drop are accurate, but ps_ifdrop still equals to
+	// the snapshot value from the activation time.
+	if (ioctl_ifreq(handle, handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS") < 0)
+		return PCAP_ERROR;
+	// The result is subject to wrapping around the 32-bit integer space,
+	// but that cannot be significantly improved as long as it has to fit
+	// into a 32-bit member of pcap_stats.
+	stats->ps_ifdrop = handlep->ifreq.ifr_stats.receive.dropped - stats->ps_ifdrop;
 	return 0;
 }
 
@@ -143,58 +174,39 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 static int
 pcap_activate_haiku(pcap_t *handle)
 {
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	int ret = PCAP_ERROR;
+
 	// TODO: handle promiscuous mode!
 
 	// we need a socket to talk to the networking stack
-	int pcapSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	if (pcapSocket < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		         "The networking stack doesn't seem to be available.");
-		return PCAP_ERROR;
-	}
+	if ((handlep->aux_socket = dgram_socket(handle, AF_INET)) < 0)
+		goto error;
 
-	struct ifreq request;
-	if (!prepare_request(&request, handle->opt.device)) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		         "Interface name \"%s\" is too long.", handle->opt.device);
-		close(pcapSocket);
-		return PCAP_ERROR;
+	// pcap_stats_haiku() will need a baseline for ps_ifdrop.
+	if (ioctl_ifreq(handle, handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS") < 0) {
+		// Detect a non-existent network interface at least at the
+		// first ioctl() use.
+		if (errno == EINVAL)
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		goto error;
 	}
-
-	// check if the interface exist
-	if (ioctl(pcapSocket, SIOCGIFINDEX, &request, sizeof(request)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		         "Interface \"%s\" does not exist.", handle->opt.device);
-		close(pcapSocket);
-		return PCAP_ERROR_NO_SUCH_DEVICE;
-	}
-
-	close(pcapSocket);
-	// no longer needed after this point
+	handlep->stat.ps_ifdrop = handlep->ifreq.ifr_stats.receive.dropped;
 
 	// get link level interface for this interface
-
-	pcapSocket = socket(AF_LINK, SOCK_DGRAM, 0);
-	if (pcapSocket < 0) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "No link level");
-		return PCAP_ERROR;
-	}
+	if ((handle->fd = dgram_socket(handle, AF_LINK)) < 0)
+		goto error;
 
 	// start monitoring
-	if (ioctl(pcapSocket, SIOCSPACKETCAP, &request, sizeof(struct ifreq)) < 0) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Cannot start monitoring");
-		close(pcapSocket);
-		return PCAP_ERROR;
-	}
+	if (ioctl_ifreq(handle, handle->fd, SIOCSPACKETCAP, "SIOCSPACKETCAP") < 0)
+		goto error;
 
-	handle->selectable_fd = pcapSocket;
-	handle->fd = pcapSocket;
+	handle->selectable_fd = handle->fd;
 	handle->read_op = pcap_read_haiku;
 	handle->setfilter_op = pcapint_install_bpf_program; /* no kernel filtering */
 	handle->inject_op = pcap_inject_haiku;
 	handle->stats_op = pcap_stats_haiku;
+	handle->cleanup_op = pcap_cleanup_haiku;
 
 	// use default hooks where possible
 	handle->getnonblock_op = pcapint_getnonblock_fd;
@@ -219,8 +231,7 @@ pcap_activate_haiku(pcap_t *handle)
 	if (handle->buffer == NULL) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 			errno, "buffer malloc");
-		close(pcapSocket);
-		return PCAP_ERROR;
+		goto error;
 	}
 
 	handle->offset = 0;
@@ -228,6 +239,9 @@ pcap_activate_haiku(pcap_t *handle)
 	// TODO: check interface type!
 
 	return 0;
+error:
+	pcap_cleanup_haiku(handle);
+	return ret;
 }
 
 
@@ -235,8 +249,14 @@ pcap_activate_haiku(pcap_t *handle)
 
 
 pcap_t *
-pcapint_create_interface(const char *device _U_, char *errorBuffer)
+pcapint_create_interface(const char *device, char *errorBuffer)
 {
+	if (strlen(device) >= IF_NAMESIZE) {
+		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
+		         "Interface name \"%s\" is too long.", device);
+		return NULL;
+	}
+
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
 		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
@@ -244,6 +264,11 @@ pcapint_create_interface(const char *device _U_, char *errorBuffer)
 		return NULL;
 	}
 	handle->activate_op = pcap_activate_haiku;
+
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	handlep->aux_socket = -1;
+	strcpy(handlep->ifreq.ifr_name, device);
+
 	return handle;
 }
 
