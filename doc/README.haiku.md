@@ -1,5 +1,8 @@
 # Compiling libpcap on Haiku
 
+Haiku R1/beta4 and earlier versions do not support packet capture on the
+loopback interface.
+
 ## 64-bit x86 R1/beta4
 
 * Autoconf 2.71 works.

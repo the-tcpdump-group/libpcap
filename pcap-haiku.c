@@ -223,8 +223,13 @@ pcap_activate_haiku(pcap_t *handle)
 		// This includes tap (L2) mode tunnels too.
 		handle->linktype = DLT_EN10MB;
 		break;
-	case IFT_LOOP:
+#ifdef IFT_TUNNEL
+	// R1/beta4 defines IFT_TUN instead, but because it does not support
+	// tunnel interfaces in the first place, the old macro would never
+	// match the interface type anyway.
 	case IFT_TUNNEL: // This means tun (L3) mode tunnels only.
+#endif
+	case IFT_LOOP:
 		handle->linktype = DLT_RAW;
 		break;
 	default:
@@ -307,11 +312,21 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 	return handle;
 }
 
+#if B_HAIKU_VERSION <= B_HAIKU_VERSION_1_BETA_4
+static int
+can_be_bound(const char *name)
+{
+	// The loopback interface allows to start a capture, which never
+	// receives any packets.
+	return strcmp(name, "loop");
+}
+#else
 static int
 can_be_bound(const char *name _U_)
 {
 	return 1;
 }
+#endif // B_HAIKU_VERSION
 
 static int
 get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
