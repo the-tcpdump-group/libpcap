@@ -34,6 +34,9 @@ struct pcap_haiku {
 	struct pcap_stat	stat;
 	int aux_socket;
 	struct ifreq ifreq;
+	// The original state of the promiscuous mode at the activation time,
+	// if the capture should be run in promiscuous mode.
+	int orig_promisc;
 };
 
 
@@ -138,6 +141,33 @@ ioctl_ifreq(const int fd, const unsigned long op, const char *name,
 }
 
 
+static int
+PCAP_WARN_UNUSED_RESULT
+get_promisc(pcap_t *handle)
+{
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	// SIOCGIFFLAGS would work fine for AF_LINK too.
+	if (ioctl_ifreq(handlep->aux_socket, SIOCGIFFLAGS, "SIOCGIFFLAGS",
+	                &handlep->ifreq, handle->errbuf) < 0)
+		return PCAP_ERROR;
+	return (handlep->ifreq.ifr_flags & IFF_PROMISC) != 0;
+}
+
+
+static int
+set_promisc(pcap_t *handle, const int enable)
+{
+	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
+	if (enable)
+		handlep->ifreq.ifr_flags |= IFF_PROMISC;
+	else
+		handlep->ifreq.ifr_flags &= ~IFF_PROMISC;
+	// SIOCSIFFLAGS works for AF_INET, but not for AF_LINK.
+	return ioctl_ifreq(handlep->aux_socket, SIOCSIFFLAGS, "SIOCSIFFLAGS",
+	                   &handlep->ifreq, handle->errbuf);
+}
+
+
 static void
 pcap_cleanup_haiku(pcap_t *handle)
 {
@@ -149,6 +179,14 @@ pcap_cleanup_haiku(pcap_t *handle)
 
 	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
 	if (handlep->aux_socket >= 0) {
+		// Closing the sockets has no effect on IFF_PROMISC, hence the
+		// need to restore the original state on one hand and the
+		// possibility of clash with other processes managing the same
+		// interface flag.  Unset promiscuous mode iff the activation
+		// function had set it and it is still set now.
+		if (handle->opt.promisc && ! handlep->orig_promisc &&
+		    get_promisc(handle))
+			(void)set_promisc(handle, 0);
 		close(handlep->aux_socket);
 		handlep->aux_socket = -1;
 	}
@@ -190,8 +228,6 @@ pcap_activate_haiku(pcap_t *handle)
 {
 	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
 	int ret = PCAP_ERROR;
-
-	// TODO: handle promiscuous mode!
 
 	// we need a socket to talk to the networking stack
 	if ((handlep->aux_socket = dgram_socket(AF_INET, handle->errbuf)) < 0)
@@ -290,6 +326,14 @@ pcap_activate_haiku(pcap_t *handle)
 
 	handle->offset = 0;
 
+	if (handle->opt.promisc) {
+		// Set promiscuous mode iff required, in any case remember the
+		// original state.
+		if ((handlep->orig_promisc = get_promisc(handle)) < 0)
+			goto error;
+		if (! handlep->orig_promisc && set_promisc(handle, 1) < 0)
+			return PCAP_WARNING_PROMISC_NOTSUP;
+	}
 	return 0;
 error:
 	pcap_cleanup_haiku(handle);

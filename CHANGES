@@ -47,6 +47,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix packet timestamping.
       Fix packet filtering with low snaplen.
       Improve connection status reporting.
+      Add support for promiscuous mode.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
