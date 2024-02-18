@@ -72,13 +72,21 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
 	handlep->stat.ps_recv++;
-	int32_t captureLength = bytesReceived;
-	if (captureLength > handle->snapshot)
-		captureLength = handle->snapshot;
+
+	if (bytesReceived > handle->bufsize) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		         "recvfrom() returned %ld, which exceeds the buffer size %u",
+		         bytesReceived, handle->bufsize);
+		return PCAP_ERROR;
+	}
+	bpf_u_int32 captureLength = (bpf_u_int32)bytesReceived;
 
 	// run the packet filter
 	if (handle->fcode.bf_insns) {
-		if (pcapint_filter(handle->fcode.bf_insns, buffer, bytesReceived,
+		// NB: pcapint_filter() for both length arguments takes the
+		// return value of recvfrom(), not the snapshot length of the
+		// pcap_t handle.
+		if (pcapint_filter(handle->fcode.bf_insns, buffer, captureLength,
 				captureLength) == 0) {
 			// packet got rejected
 			handlep->stat.ps_drop++;
@@ -88,8 +96,10 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 	// fill in pcap_header
 	struct pcap_pkthdr header;
-	header.caplen = captureLength;
-	header.len = bytesReceived;
+	header.caplen = captureLength <= (bpf_u_int32)handle->snapshot ?
+	                captureLength :
+	                (bpf_u_int32)handle->snapshot;
+	header.len = captureLength;
 	header.ts.tv_usec = ts % 1000000;
 	header.ts.tv_sec = ts / 1000000;
 	// TODO: get timing from packet!!!
