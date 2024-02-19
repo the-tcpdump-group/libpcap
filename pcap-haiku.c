@@ -112,12 +112,12 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 
 static int
 PCAP_WARN_UNUSED_RESULT
-dgram_socket(pcap_t *handle, const int af)
+dgram_socket(const int af, char *errbuf)
 {
 	int ret = socket(af, SOCK_DGRAM, 0);
 	if (ret < 0) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "socket");
 		return PCAP_ERROR;
 	}
 	return ret;
@@ -126,14 +126,12 @@ dgram_socket(pcap_t *handle, const int af)
 
 static int
 PCAP_WARN_UNUSED_RESULT
-ioctl_ifreq(pcap_t *handle, const int fd, const unsigned long op,
-            const char *name)
+ioctl_ifreq(const int fd, const unsigned long op, const char *name,
+             struct ifreq *ifreq, char *errbuf)
 {
-	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
-	if (ioctl(fd, op, &handlep->ifreq,
-	    sizeof(struct ifreq)) < 0) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "%s", name);
+	if (ioctl(fd, op, ifreq, sizeof(struct ifreq)) < 0) {
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "%s", name);
 		return PCAP_ERROR;
 	}
 	return 0;
@@ -176,7 +174,8 @@ pcap_stats_haiku(pcap_t *handle, struct pcap_stat *stats)
 	*stats = handlep->stat;
 	// Now ps_recv and ps_drop are accurate, but ps_ifdrop still equals to
 	// the snapshot value from the activation time.
-	if (ioctl_ifreq(handle, handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS") < 0)
+	if (ioctl_ifreq(handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS",
+	                &handlep->ifreq, handle->errbuf) < 0)
 		return PCAP_ERROR;
 	// The result is subject to wrapping around the 32-bit integer space,
 	// but that cannot be significantly improved as long as it has to fit
@@ -195,13 +194,14 @@ pcap_activate_haiku(pcap_t *handle)
 	// TODO: handle promiscuous mode!
 
 	// we need a socket to talk to the networking stack
-	if ((handlep->aux_socket = dgram_socket(handle, AF_INET)) < 0)
+	if ((handlep->aux_socket = dgram_socket(AF_INET, handle->errbuf)) < 0)
 		goto error;
 
 	// pcap_stats_haiku() will need a baseline for ps_ifdrop.
 	// At the time of this writing SIOCGIFSTATS returns EINVAL for AF_LINK
 	// sockets.
-	if (ioctl_ifreq(handle, handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS") < 0) {
+	if (ioctl_ifreq(handlep->aux_socket, SIOCGIFSTATS, "SIOCGIFSTATS",
+	                &handlep->ifreq, handle->errbuf) < 0) {
 		// Detect a non-existent network interface at least at the
 		// first ioctl() use.
 		if (errno == EINVAL)
@@ -211,7 +211,7 @@ pcap_activate_haiku(pcap_t *handle)
 	handlep->stat.ps_ifdrop = handlep->ifreq.ifr_stats.receive.dropped;
 
 	// get link level interface for this interface
-	if ((handle->fd = dgram_socket(handle, AF_LINK)) < 0)
+	if ((handle->fd = dgram_socket(AF_LINK, handle->errbuf)) < 0)
 		goto error;
 
 	// Derive a DLT from the interface type.
@@ -219,7 +219,8 @@ pcap_activate_haiku(pcap_t *handle)
 	// purpose: it returns EINVAL for AF_LINK sockets and sets ifr_type to
 	// 0 for AF_INET sockets.  Use the same method as Haiku ifconfig does
 	// (SIOCGIFADDR and AF_LINK).
-	if (ioctl_ifreq(handle, handle->fd, SIOCGIFADDR, "SIOCGIFADDR") < 0)
+	if (ioctl_ifreq(handle->fd, SIOCGIFADDR, "SIOCGIFADDR",
+	                &handlep->ifreq, handle->errbuf) < 0)
 		goto error;
 	struct sockaddr_dl *sdl = (struct sockaddr_dl *)&handlep->ifreq.ifr_addr;
 	if (sdl->sdl_family != AF_LINK) {
@@ -250,7 +251,8 @@ pcap_activate_haiku(pcap_t *handle)
 	}
 
 	// start monitoring
-	if (ioctl_ifreq(handle, handle->fd, SIOCSPACKETCAP, "SIOCSPACKETCAP") < 0)
+	if (ioctl_ifreq(handle->fd, SIOCSPACKETCAP, "SIOCSPACKETCAP",
+	                &handlep->ifreq, handle->errbuf) < 0)
 		goto error;
 
 	handle->selectable_fd = handle->fd;
@@ -295,17 +297,27 @@ error:
 }
 
 
+static int
+PCAP_WARN_UNUSED_RESULT
+validate_ifname(const char *device, char *errbuf)
+{
+	if (strlen(device) >= IF_NAMESIZE) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		         "Interface name \"%s\" is too long.", device);
+		return PCAP_ERROR;
+	}
+	return 0;
+}
+
+
 //	#pragma mark - pcap API
 
 
 pcap_t *
 pcapint_create_interface(const char *device, char *errorBuffer)
 {
-	if (strlen(device) >= IF_NAMESIZE) {
-		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
-		         "Interface name \"%s\" is too long.", device);
+	if (validate_ifname(device, errorBuffer) < 0)
 		return NULL;
-	}
 
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
@@ -339,17 +351,42 @@ can_be_bound(const char *name _U_)
 #endif // B_HAIKU_VERSION
 
 static int
-get_if_flags(const char *name _U_, bpf_u_int32 *flags, char *errbuf _U_)
+get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
-	/* TODO */
-	if (*flags & PCAP_IF_LOOPBACK) {
+	if (validate_ifname(name, errbuf) < 0)
+		return PCAP_ERROR;
+
+	if (*flags & PCAP_IF_LOOPBACK ||
+	    ! strncmp(name, "tun", strlen("tun")) ||
+	    ! strncmp(name, "tap", strlen("tap"))) {
 		/*
 		 * Loopback devices aren't wireless, and "connected"/
 		 * "disconnected" doesn't apply to them.
+		 *
+		 * Neither does it to tunnel interfaces.  A tun mode tunnel
+		 * can be identified by the IFT_TUNNEL value, but tap mode
+		 * tunnels and Ethernet interfaces both use IFT_ETHER, so let's
+		 * use the interface name prefix until there is a better
+		 * solution.
 		 */
 		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 		return (0);
 	}
+
+	int fd = dgram_socket(AF_LINK, errbuf);
+	if (fd < 0)
+		return PCAP_ERROR;
+	struct ifreq ifreq;
+	strcpy(ifreq.ifr_name, name);
+	if (ioctl_ifreq(fd, SIOCGIFFLAGS, "SIOCGIFFLAGS", &ifreq, errbuf) < 0) {
+		close(fd);
+		return PCAP_ERROR;
+	}
+	*flags |= (ifreq.ifr_flags & IFF_LINK) ?
+	          PCAP_IF_CONNECTION_STATUS_CONNECTED :
+	          PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+	close(fd);
+
 	return (0);
 }
 
