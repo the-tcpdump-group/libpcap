@@ -57,6 +57,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix handling of packet statistics.
       Fix packet timestamping.
       Fix packet filtering with low snaplen.
+      Improve connection status reporting.
     Windows:
       Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.
