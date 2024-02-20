@@ -15,6 +15,7 @@
 
 #include <sys/socket.h>
 #include <sys/sockio.h>
+#include <sys/utsname.h>
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -26,6 +27,15 @@
 #include <string.h>
 #include <unistd.h>
 
+
+// IFT_TUN was renamed to IFT_TUNNEL in the master branch after R1/beta4 (the
+// integer value didn't change).  Even though IFT_TUN is a no-op in versions
+// that define it, for the time being it is desirable to support compiling
+// libpcap on versions with the old macro and using it on later versions that
+// support tunnel interfaces.
+#ifndef IFT_TUNNEL
+#define IFT_TUNNEL IFT_TUN
+#endif
 
 /*
  * Private data for capturing on Haiku sockets.
@@ -264,16 +274,17 @@ pcap_activate_haiku(pcap_t *handle)
 	}
 	switch (sdl->sdl_type) {
 	case IFT_ETHER:
-		// This includes tap (L2) mode tunnels too.
+		// Ethernet on all versions, also tap (L2) mode tunnels on
+		// versions after R1/beta4.
 		handle->linktype = DLT_EN10MB;
 		break;
-#ifdef IFT_TUNNEL
-	// R1/beta4 defines IFT_TUN instead, but because it does not support
-	// tunnel interfaces in the first place, the old macro would never
-	// match the interface type anyway.
-	case IFT_TUNNEL: // This means tun (L3) mode tunnels only.
-#endif
+	case IFT_TUNNEL:
+		// Unused on R1/beta4 and earlier versions, tun (L3) mode
+		// tunnels on later versions.
 	case IFT_LOOP:
+		// The loopback interface on all versions.
+		// Both IFT_TUNNEL and IFT_LOOP prepended a dummy Ethernet
+		// header until hrev57585: https://dev.haiku-os.org/ticket/18801
 		handle->linktype = DLT_RAW;
 		break;
 	default:
@@ -353,11 +364,47 @@ validate_ifname(const char *device, char *errbuf)
 //	#pragma mark - pcap API
 
 
+static int
+can_be_bound(const char *name)
+{
+	if (strcmp(name, "loop") != 0)
+		return 1;
+
+	// In Haiku versions before hrev57010 the loopback interface allows to
+	// start a capture, but the capture never receives any packets.
+	//
+	// Since compiling libpcap on one Haiku version and using the binary on
+	// another seems to be commonplace, comparing B_HAIKU_VERSION at the
+	// compile time would not always work as intended.  Let's at least
+	// remove unsuitable well-known 64-bit versions (with or without
+	// updates) from the problem space at run time.
+	const char *badversions[] = {
+		"hrev56578", // R1/beta4
+		"hrev55182", // R1/beta3
+		"hrev54154", // R1/beta2
+		"hrev52295", // R1/beta1
+		"hrev44702", // R1/alpha4
+		NULL
+	};
+	struct utsname uts;
+	(void)uname(&uts);
+	for (const char **s = badversions; *s; s++)
+		if (! strncmp(uts.version, *s, strlen(*s)))
+			return 0;
+	return 1;
+}
+
+
 pcap_t *
 pcapint_create_interface(const char *device, char *errorBuffer)
 {
 	if (validate_ifname(device, errorBuffer) < 0)
 		return NULL;
+	if (! can_be_bound(device)) {
+		snprintf(errorBuffer, PCAP_ERRBUF_SIZE,
+		         "Interface \"%s\" does not support capturing traffic.", device);
+		return NULL;
+	}
 
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
 	if (handle == NULL) {
@@ -374,21 +421,6 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 	return handle;
 }
 
-#if B_HAIKU_VERSION <= B_HAIKU_VERSION_1_BETA_4
-static int
-can_be_bound(const char *name)
-{
-	// The loopback interface allows to start a capture, which never
-	// receives any packets.
-	return strcmp(name, "loop");
-}
-#else
-static int
-can_be_bound(const char *name _U_)
-{
-	return 1;
-}
-#endif // B_HAIKU_VERSION
 
 static int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
