@@ -1,7 +1,8 @@
 # Compiling libpcap on Haiku
 
 Haiku R1/beta4 and earlier versions do not support packet capture on the
-loopback interface.
+loopback interface.  In the master branch this works since hrev57585 and
+is expected to work in R1/beta5 when it becomes available.
 
 ## 64-bit x86 R1/beta4
 
