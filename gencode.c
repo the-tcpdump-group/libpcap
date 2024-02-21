@@ -9242,8 +9242,13 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 	switch (cstate->linktype) {
 
 	case DLT_EN10MB:
-	case DLT_NETANALYZER:
-	case DLT_NETANALYZER_TRANSPARENT:
+		/*
+		 * Newer version of the Linux kernel pass around
+		 * packets in which the VLAN tag has been removed
+		 * from the packet data and put into metadata.
+		 *
+		 * This requires special treatment.
+		 */
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
@@ -9265,10 +9270,24 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 			    has_vlan_tag);
 		break;
 
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
+		/*
+		 * These are either Ethernet packets with an additional
+		 * metadata header (the NetAnalyzer types), or 802.11
+		 * packets, possibly with an additional metadata header.
+		 *
+		 * For the first of those, the VLAN tag is in the normal
+		 * place, so the special-case handling above isn't
+		 * necessary.
+		 *
+		 * For the second of those, we don't do the special-case
+		 * handling for now.
+		 */
 		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, has_vlan_tag);
 		break;
 
