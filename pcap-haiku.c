@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 
 
 // IFT_TUN was renamed to IFT_TUNNEL in the master branch after R1/beta4 (the
@@ -56,20 +57,19 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 {
 	// Receive a single packet
 
-	u_char* buffer = handle->buffer + handle->offset;
-	struct sockaddr_dl from;
+	u_char* buffer = handle->buffer;
 	ssize_t bytesReceived;
 	do {
 		if (handle->break_loop) {
 			handle->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
-
-		socklen_t fromLength = sizeof(from);
 		bytesReceived = recvfrom(handle->fd, buffer, handle->bufsize, MSG_TRUNC,
-			(struct sockaddr*)&from, &fromLength);
+		                         NULL, NULL);
 	} while (bytesReceived < 0 && errno == B_INTERRUPTED);
 
+	// The kernel does not implement timestamping of network packets, so
+	// doing it ASAP in userland is the best that can be done.
 	bigtime_t ts = real_time_clock_usecs();
 
 	if (bytesReceived < 0) {
@@ -84,27 +84,36 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	}
 
 	struct pcap_haiku* handlep = (struct pcap_haiku*)handle->priv;
+	// BPF is 32-bit, which is more than sufficient for any realistic
+	// packet size.
+	if (bytesReceived > UINT32_MAX)
+		goto drop;
+	// At this point, if the recvfrom() call populated its struct sockaddr
+	// and socklen_t arguments, it would be the right time to drop packets
+	// that have .sa_family not valid for the current DLT.  But in the
+	// current master branch (hrev57588) this would erroneously drop some
+	// valid packets: recvfrom(), at least for tap mode tunnels, sets the
+	// address length to 0 for all incoming packets and sets .sa_len and
+	// .sa_family to 0 for packets that are broadcast or multicast.  So it
+	// cannot be done yet, if there is a good reason to do it in the first
+	// place.
 	handlep->stat.ps_recv++;
 
-	if (bytesReceived > handle->bufsize) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		         "recvfrom() returned %ld, which exceeds the buffer size %u",
-		         bytesReceived, handle->bufsize);
-		return PCAP_ERROR;
-	}
-	bpf_u_int32 captureLength = (bpf_u_int32)bytesReceived;
+	bpf_u_int32 wireLength = (bpf_u_int32)bytesReceived;
+	// As long as the buffer is large enough, the captured length is equal
+	// to the wire length, but let's get the lengths right anyway in case
+	// packets grow bigger or the buffer grows smaller in future and the
+	// MSG_TRUNC effect kicks in.
+	bpf_u_int32 captureLength =
+		wireLength <= handle->bufsize ? wireLength : handle->bufsize;
 
 	// run the packet filter
 	if (handle->fcode.bf_insns) {
-		// NB: pcapint_filter() for both length arguments takes the
-		// return value of recvfrom(), not the snapshot length of the
-		// pcap_t handle.
-		if (pcapint_filter(handle->fcode.bf_insns, buffer, captureLength,
-				captureLength) == 0) {
-			// packet got rejected
-			handlep->stat.ps_drop++;
-			return 0;
-		}
+		// NB: pcapint_filter() takes the wire length and the captured
+		// length, not the snapshot length of the pcap_t handle.
+		if (pcapint_filter(handle->fcode.bf_insns, buffer, wireLength,
+		                   captureLength) == 0)
+			goto drop;
 	}
 
 	// fill in pcap_header
@@ -112,14 +121,16 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	header.caplen = captureLength <= (bpf_u_int32)handle->snapshot ?
 	                captureLength :
 	                (bpf_u_int32)handle->snapshot;
-	header.len = captureLength;
+	header.len = wireLength;
 	header.ts.tv_usec = ts % 1000000;
 	header.ts.tv_sec = ts / 1000000;
-	// TODO: get timing from packet!!!
 
 	/* Call the user supplied callback function */
 	callback(userdata, &header, buffer);
 	return 1;
+drop:
+	handlep->stat.ps_drop++;
+	return 0;
 }
 
 
@@ -181,12 +192,6 @@ set_promisc(pcap_t *handle, const int enable)
 static void
 pcap_cleanup_haiku(pcap_t *handle)
 {
-	if (handle->fd >= 0) {
-		close(handle->fd);
-		handle->fd = -1;
-		handle->selectable_fd = -1;
-	}
-
 	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
 	if (handlep->aux_socket >= 0) {
 		// Closing the sockets has no effect on IFF_PROMISC, hence the
@@ -200,15 +205,15 @@ pcap_cleanup_haiku(pcap_t *handle)
 		close(handlep->aux_socket);
 		handlep->aux_socket = -1;
 	}
+	pcapint_cleanup_live_common(handle);
 }
 
 
 static int
 pcap_inject_haiku(pcap_t *handle, const void *buffer _U_, int size _U_)
 {
-	// we don't support injecting packets yet
-	// TODO: use the AF_LINK protocol (we need another socket for this) to
-	// inject the packets
+	// Haiku currently (hrev57588) does not support sending raw packets.
+	// https://dev.haiku-os.org/ticket/18810
 	strlcpy(handle->errbuf, "Sending packets isn't supported yet",
 		PCAP_ERRBUF_SIZE);
 	return PCAP_ERROR;
@@ -324,8 +329,26 @@ pcap_activate_haiku(pcap_t *handle)
 	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
 		handle->snapshot = MAXIMUM_SNAPLEN;
 
+	// Although it would be trivial to size the buffer at the kernel end of
+	// the capture socket using setsockopt() and SO_RCVBUF, there seems to
+	// be no point in doing so: setting the size low silently drops some
+	// packets in the kernel, setting it high does not result in a visible
+	// improvement.  Let's leave this buffer as it is until it is clear why
+	// it would need resizing.  Meanwhile pcap_set_buffer_size() will have
+	// no effect on Haiku.
+
+	// It would be wrong to size the buffer at the libpcap end of the
+	// capture socket to the interface MTU, which limits only outgoing
+	// packets and only at layer 3.  For example, an Ethernet interface
+	// with ifconfig/ioctl() MTU set to 1500 ordinarily sends layer 2
+	// packets as large as 1514 bytes and receives layer 2 packets as large
+	// as the NIC and the driver happen to accept (e.g. 9018 bytes for
+	// ipro1000).  This way, valid packets larger than the MTU can occur in
+	// a capture and will arrive truncated to pcap_read_haiku() if the
+	// buffer is not large enough.  So let's keep it large enough for most
+	// if not all practical use cases, then pcap_read_haiku() can handle
+	// the unlikely truncation as and if necessary.
 	handle->bufsize = 65536;
-	// TODO: should be determined by interface MTU
 
 	// allocate buffer for monitoring the device
 	handle->buffer = (u_char*)malloc(handle->bufsize);
@@ -334,8 +357,6 @@ pcap_activate_haiku(pcap_t *handle)
 			errno, "buffer malloc");
 		goto error;
 	}
-
-	handle->offset = 0;
 
 	if (handle->opt.promisc) {
 		// Set promiscuous mode iff required, in any case remember the
