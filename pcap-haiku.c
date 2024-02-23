@@ -432,11 +432,8 @@ pcapint_create_interface(const char *device, char *errorBuffer)
 	}
 
 	pcap_t* handle = PCAP_CREATE_COMMON(errorBuffer, struct pcap_haiku);
-	if (handle == NULL) {
-		pcapint_fmt_errmsg_for_errno(errorBuffer, PCAP_ERRBUF_SIZE,
-		    errno, "malloc");
+	if (handle == NULL)
 		return NULL;
-	}
 	handle->activate_op = pcap_activate_haiku;
 
 	struct pcap_haiku *handlep = (struct pcap_haiku *)handle->priv;
