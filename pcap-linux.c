@@ -4492,7 +4492,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 	/* Install kernel level filter if possible */
 
-#ifdef USHRT_MAX
 	if (handle->fcode.bf_len > USHRT_MAX) {
 		/*
 		 * fcode.len is an unsigned short for current kernel.
@@ -4504,9 +4503,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		fcode.len = 0;
 		fcode.filter = NULL;
 		can_filter_in_kernel = 0;
-	} else
-#endif /* USHRT_MAX */
-	{
+	} else {
 		/*
 		 * Oh joy, the Linux kernel uses struct sock_fprog instead
 		 * of struct bpf_program and of course the length field is
