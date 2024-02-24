@@ -32,6 +32,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Documentation:
       Document a standard format for writing out BPF filter programs.
       Explain "other addresses" in pcap_findalldevs(3PCAP).
+      Add a README.hurd.md file.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.

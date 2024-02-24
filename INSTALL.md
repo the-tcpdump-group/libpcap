@@ -195,6 +195,7 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	doc/README.dag	    - notes on using libpcap to capture on Endace DAG devices
 	doc/README.haiku.md - notes on using libpcap on Haiku
 	doc/README.hpux	    - notes on using libpcap on HP-UX
+	doc/README.hurd.md  - notes on using libpcap on GNU/Hurd
 	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
