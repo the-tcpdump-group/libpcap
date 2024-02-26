@@ -1164,8 +1164,12 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 		return (PCAP_ERROR);
 	}
 
-	ps->ps_recv = s.bs_recv;
-	ps->ps_drop = s.bs_drop;
+	/*
+	 * On illumos, NetBSD and Solaris these values are 64-bit, but struct
+	 * pcap_stat is what it is, so the integer precision loss is expected.
+	 */
+	ps->ps_recv = (u_int)s.bs_recv;
+	ps->ps_drop = (u_int)s.bs_drop;
 	ps->ps_ifdrop = 0;
 	return (0);
 }
