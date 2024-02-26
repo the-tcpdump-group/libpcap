@@ -564,7 +564,7 @@ void main_startup(void)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	struct addrinfo *addrinfo;		// keeps the addrinfo chain; required to open a new socket
-	int i;
+	u_int i;
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
 #else

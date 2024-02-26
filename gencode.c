@@ -600,7 +600,7 @@ static struct block *gen_msg_abbrev(compiler_state_t *, int type);
 static void
 initchunks(compiler_state_t *cstate)
 {
-	int i;
+	u_int i;
 
 	for (i = 0; i < NCHUNKS; i++) {
 		cstate->chunks[i].n_left = 0;
@@ -660,7 +660,7 @@ newchunk(compiler_state_t *cstate, size_t n)
 static void
 freechunks(compiler_state_t *cstate)
 {
-	int i;
+	u_int i;
 
 	for (i = 0; i < NCHUNKS; ++i)
 		if (cstate->chunks[i].m != NULL)
