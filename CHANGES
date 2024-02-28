@@ -143,6 +143,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
       Extend "make shellcheck" onto mkdep too.
       Add initial support for building with TinyCC.
+      Make NetBSD build warning-free.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.

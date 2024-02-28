@@ -1400,7 +1400,13 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			 */
 			pkthdr.ts.tv_usec = bhp->bh_tstamp.tv_usec/1000;
 #else
-			pkthdr.ts.tv_usec = bhp->bh_tstamp.tv_usec;
+			/*
+			 * On NetBSD the former (timeval.tv_usec) is an int via
+			 * suseconds_t and the latter (bpf_timeval.tv_usec) is
+			 * a long.  In any case, the value is supposed to be
+			 * within the [0 .. 999999] interval.
+			 */
+			pkthdr.ts.tv_usec = (suseconds_t)bhp->bh_tstamp.tv_usec;
 #endif
 #endif /* BIOCSTSTAMP */
 #ifdef PCAP_FDDIPAD
