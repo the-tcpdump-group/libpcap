@@ -29,11 +29,6 @@ print_cc_version
 # later warnings in the same matrix subset trigger an error.
 # shellcheck disable=SC2221,SC2222
 case `cc_id`/`os_id` in
-clang-*/NetBSD-*)
-    # pcap-bpf.c:1274:39: warning: implicit conversion loses integer precision:
-    # 'long' to 'suseconds_t' (aka 'int') [-Wshorten-64-to-32]
-    LIBPCAP_TAINTED=yes
-    ;;
 clang-*/SunOS-5.11)
     # (Solaris 11 and OpenIndiana)
     # fad-getad.c:266:52: warning: implicit conversion loses integer precision:

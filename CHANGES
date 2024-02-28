@@ -41,6 +41,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         HP-UX before 10.20, IRIX, {OSF/1, Digital Unix, Tru64 Unix}, SINIX,
         SunOS 3.x, 4.x and 5.x before 5.3.2, and Ultrix.
       Add a new test program for pcap_activate().
+      Make NetBSD build warning-free.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
