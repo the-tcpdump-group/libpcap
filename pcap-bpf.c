@@ -120,6 +120,7 @@ static int bpf_load(char *errbuf);
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stddef.h>
 
 #ifdef SIOCGIFMEDIA
 # include <net/if_media.h>
@@ -655,7 +656,7 @@ bpf_bind(int fd, const char *name, char *errbuf)
 	 */
 	if ((zonesep = strchr(name, '/')) != NULL) {
 		char *zname;
-		int  znamelen;
+		ptrdiff_t znamelen;
 
 		if (ifr.lifr_zoneid != GLOBAL_ZONEID) {
 			/*
