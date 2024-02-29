@@ -122,6 +122,19 @@
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
   #define DIAG_ON_DEPRECATION \
     PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * When Clang correctly detects an old-style function prototype after
+   * preprocessing, the warning can be irrelevant to this source tree because
+   * the prototype comes from a system header macro.
+   */
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(5,0)
+    #define DIAG_OFF_STRICT_PROTOTYPES \
+      PCAP_DO_PRAGMA(clang diagnostic push) \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wstrict-prototypes")
+    #define DIAG_ON_STRICT_PROTOTYPES \
+      PCAP_DO_PRAGMA(clang diagnostic pop)
+  #endif
 #elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
@@ -294,6 +307,11 @@
     PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunused-result")
   #define DIAG_ON_WARN_UNUSED_RESULT \
     PCAP_DO_PRAGMA(GCC diagnostic pop)
+
+  /*
+   * GCC does not currently generate any -Wstrict-prototypes warnings that
+   * would need silencing as is done for Clang above.
+   */
 #endif
 
 /*
@@ -354,6 +372,12 @@
 #endif
 #ifndef DIAG_OFF_WARN_UNUSED_RESULT
 #define DIAG_OFF_WARN_UNUSED_RESULT
+#endif
+#ifndef DIAG_OFF_STRICT_PROTOTYPES
+#define DIAG_OFF_STRICT_PROTOTYPES
+#endif
+#ifndef DIAG_ON_STRICT_PROTOTYPES
+#define DIAG_ON_STRICT_PROTOTYPES
 #endif
 #ifndef PCAP_UNREACHABLE
 #define PCAP_UNREACHABLE

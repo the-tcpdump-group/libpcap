@@ -397,7 +397,13 @@ int main(int argc, char *argv[])
 	sigaction(SIGCHLD, &action, NULL);
 	// Ignore SIGPIPE - we'll get EPIPE when trying to write to a closed
 	// connection, we don't want to get killed by a signal in that case
+#ifdef __illumos__
+	DIAG_OFF_STRICT_PROTOTYPES
+#endif /* __illumos__ */
 	signal(SIGPIPE, SIG_IGN);
+#ifdef __illumos__
+	DIAG_ON_STRICT_PROTOTYPES
+#endif /* __illumos__ */
 #endif
 
 # ifdef HAVE_OPENSSL
