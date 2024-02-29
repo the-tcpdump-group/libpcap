@@ -34,9 +34,6 @@ clang-*/SunOS-5.11)
     # fad-getad.c:266:52: warning: implicit conversion loses integer precision:
     #   'uint64_t'(aka 'unsigned long') to 'bpf_u_int32' (aka 'unsigned int')
     #   [-Wshorten-64-to-32]
-    # (OpenIndiana)
-    # rpcapd.c:393:18: warning: this function declaration is not a prototype
-    #   [-Wstrict-prototypes]
     [ "`uname -p`" = i386 ] && LIBPCAP_TAINTED=yes
     ;;
 suncc-5.1[45]/SunOS-5.11)
