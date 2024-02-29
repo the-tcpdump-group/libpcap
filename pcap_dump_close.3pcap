@@ -19,7 +19,7 @@
 .\"
 .TH PCAP_DUMP_CLOSE 3PCAP "3 January 2014"
 .SH NAME
-pcap_dump_close \- close a savefile being written to
+pcap_dump_close, pcap_dump_close1 \- close a savefile being written to
 .SH SYNOPSIS
 .nf
 .ft B
@@ -28,11 +28,18 @@ pcap_dump_close \- close a savefile being written to
 .LP
 .ft B
 void pcap_dump_close(pcap_dumper_t *p);
+int pcap_dump_close1(pcap_dumper_t *p);
 .ft
 .fi
 .SH DESCRIPTION
 .BR pcap_dump_close ()
 closes the ``savefile.''
+.SH RETURN VALUE
+Returns
+.B 0
+on success and
+.B PCAP_ERROR
+on failure.
 .SH SEE ALSO
 .BR pcap (3PCAP),
 .BR pcap_dump_open (3PCAP),

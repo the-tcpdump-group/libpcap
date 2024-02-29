@@ -745,6 +745,12 @@ sf_write_header(pcap_t *p, FILE *fp, int linktype, int snaplen)
 void
 pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 {
+	(void)pcap_dump1(user, h, sp);
+}
+
+int
+pcap_dump1(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+{
 	register FILE *f;
 	struct pcap_sf_pkthdr sf_hdr;
 
@@ -766,7 +772,7 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/fwrite.html
 	 */
 	if (ferror(f))
-		return;
+		return (-1);
 	/*
 	 * Better not try writing pcap files after
 	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
@@ -783,9 +789,14 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	 * way to set ferror() to prevent future writes from being
 	 * attempted, but it is better than nothing.
 	 */
-	if (fwrite(&sf_hdr, sizeof(sf_hdr), 1, f) == 1) {
-		(void)fwrite(sp, h->caplen, 1, f);
+	if (fwrite(&sf_hdr, 1, sizeof(sf_hdr), f) != sizeof(sf_hdr)) {
+		return (-1);
 	}
+	if (fwrite(sp, 1, h->caplen, f) != h->caplen) {
+		return (-1);
+	}
+
+	return (0);
 }
 
 static pcap_dumper_t *
@@ -1181,11 +1192,14 @@ pcap_dump_flush(pcap_dumper_t *p)
 void
 pcap_dump_close(pcap_dumper_t *p)
 {
+	(void)pcap_dump_close1(p);
+}
 
-#ifdef notyet
-	if (ferror((FILE *)p))
-		return-an-error;
-	/* XXX should check return from fclose() too */
-#endif
-	(void)fclose((FILE *)p);
+int
+pcap_dump_close1(pcap_dumper_t *p)
+{
+	if (fclose((FILE *)p) == EOF) {
+		return (-1);
+	}
+	return (0);
 }

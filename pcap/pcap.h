@@ -765,10 +765,17 @@ PCAP_AVAILABLE_0_8
 PCAP_API int	pcap_dump_flush(pcap_dumper_t *);
 
 PCAP_AVAILABLE_0_4
+PCAP_DEPRECATED("use 'pcap_dump_close1'")
 PCAP_API void	pcap_dump_close(pcap_dumper_t *);
+
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_dump_close1(pcap_dumper_t *);
 
 PCAP_AVAILABLE_0_4
 PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
+
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_dump1(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 PCAP_AVAILABLE_0_7
 PCAP_API int	pcap_findalldevs(pcap_if_t **, char *)

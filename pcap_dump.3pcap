@@ -19,7 +19,7 @@
 .\"
 .TH PCAP_DUMP 3PCAP "8 March 2015"
 .SH NAME
-pcap_dump \- write a packet to a capture file
+pcap_dump, pcap_dump1 \- write a packet to a capture file
 .SH SYNOPSIS
 .nf
 .ft B
@@ -28,6 +28,9 @@ pcap_dump \- write a packet to a capture file
 .LP
 .ft B
 void pcap_dump(u_char *user, struct pcap_pkthdr *h,
+    u_char *sp);
+.ti +8
+int pcap_dump1(u_char *user, struct pcap_pkthdr *h,
     u_char *sp);
 .ft
 .fi
@@ -45,5 +48,11 @@ parameter is of type
 .B pcap_dumper_t
 as returned by
 .BR pcap_dump_open ().
+.SH RETURN VALUE
+Returns
+.B 0
+on success and
+.B PCAP_ERROR
+on failure.
 .SH SEE ALSO
 .BR pcap (3PCAP)
