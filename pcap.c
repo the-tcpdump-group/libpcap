@@ -1024,7 +1024,7 @@ get_if_description(const char *name _U_)
  */
 pcap_if_t *
 pcapint_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
-    bpf_u_int32 if_flags, get_if_flags_func get_flags_func, char *errbuf)
+    uint64_t if_flags, get_if_flags_func get_flags_func, char *errbuf)
 {
 	bpf_u_int32 pcap_flags;
 
@@ -1081,7 +1081,7 @@ pcapint_find_or_add_if(pcap_if_list_t *devlistp, const char *name,
  */
 int
 pcapint_add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
-    bpf_u_int32 if_flags, get_if_flags_func get_flags_func,
+    uint64_t if_flags, get_if_flags_func get_flags_func,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
