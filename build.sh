@@ -29,13 +29,6 @@ print_cc_version
 # later warnings in the same matrix subset trigger an error.
 # shellcheck disable=SC2221,SC2222
 case `cc_id`/`os_id` in
-clang-*/SunOS-5.11)
-    # (Solaris 11 and OpenIndiana)
-    # fad-getad.c:266:52: warning: implicit conversion loses integer precision:
-    #   'uint64_t'(aka 'unsigned long') to 'bpf_u_int32' (aka 'unsigned int')
-    #   [-Wshorten-64-to-32]
-    [ "`uname -p`" = i386 ] && LIBPCAP_TAINTED=yes
-    ;;
 suncc-5.1[45]/SunOS-5.11)
     # "scanner.l", line 257: warning: statement not reached
     # (186 warnings for scanner.l)
