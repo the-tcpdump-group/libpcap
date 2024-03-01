@@ -20,6 +20,7 @@
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/if_types.h>
+#include <net/if_media.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -475,6 +476,12 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	*flags |= (ifreq.ifr_flags & IFF_LINK) ?
 	          PCAP_IF_CONNECTION_STATUS_CONNECTED :
 	          PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+	if (ioctl_ifreq(fd, SIOCGIFMEDIA, "SIOCGIFMEDIA", &ifreq, errbuf) < 0) {
+		close(fd);
+		return PCAP_ERROR;
+	}
+	if (IFM_TYPE(ifreq.ifr_media) == IFM_IEEE80211)
+		*flags |= PCAP_IF_WIRELESS;
 	close(fd);
 
 	return (0);
