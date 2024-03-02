@@ -37,9 +37,11 @@
 
 #include "pcap/compiler-tests.h"
 
-#if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8) || PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
+#if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8) || \
+    PCAP_IS_AT_LEAST_GNUC_VERSION(4,6) || \
+    PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
   /*
-   * Clang and GCC both support this way of putting pragmas into #defines.
+   * All these compilers support this way of putting pragmas into #defines.
    * We use it only if we have a compiler that supports it; see below
    * for the code that uses it and the #defines that control whether
    * that code is used.
@@ -209,6 +211,15 @@
     #define DIAG_ON_FORMAT_TRUNCATION \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
   #endif
+#elif PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
+  /*
+   * Sun C compiler version 5.5 (Studio version 8) and later supports "#pragma
+   * error_messages()".
+   */
+  #define DIAG_OFF_FLEX \
+    PCAP_DO_PRAGMA(error_messages(off,E_STATEMENT_NOT_REACHED))
+  #define DIAG_ON_FLEX \
+    PCAP_DO_PRAGMA(error_messages(default,E_STATEMENT_NOT_REACHED))
 #endif
 
 #ifdef YYBYACC
@@ -288,6 +299,12 @@
      */
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
+  #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
+    /*
+     * Same as for DIAG_OFF_FLEX above.
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      PCAP_DO_PRAGMA(error_messages(off,E_STATEMENT_NOT_REACHED))
   #endif
 #endif
 
