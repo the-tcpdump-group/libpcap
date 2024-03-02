@@ -144,6 +144,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Extend "make shellcheck" onto mkdep too.
       Add initial support for building with TinyCC.
       Make NetBSD build warning-free.
+      Make Sun C build warning-free.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.

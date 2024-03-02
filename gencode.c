@@ -5301,7 +5301,6 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 			 */
 			bpf_error(cstate,
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-			break;
 		case DLT_IP_OVER_FC:
 			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
 			break;
