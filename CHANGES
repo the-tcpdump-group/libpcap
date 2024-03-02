@@ -43,6 +43,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add a new test program for pcap_activate().
       Make NetBSD build warning-free.
       Make Sun C build warning-free.
+      Make FreeBSD, Linux and macOS builds warning-free.
       Fix propagation of cc_werr_cflags() output.
     Hurd:
       Support network capture devices too.

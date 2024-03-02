@@ -30,7 +30,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     filter[Size-1] = 0;
 
     if (pcap_compile(pkts, &bpf, filter, 1, PCAP_NETMASK_UNKNOWN) == 0) {
-        pcap_setfilter(pkts, &bpf);
+        if (pcap_setfilter(pkts, &bpf) < 0)
+            pcap_perror(pkts, "pcap_setfilter");
         pcap_close(pkts);
         pcap_freecode(&bpf);
     }
