@@ -608,7 +608,7 @@ build-rpcapd: libpcap.a
 # Test programs - not built by default, and not installed.
 #
 testprogs: FORCE libpcap.a
-	(cd testprogs; $(MAKE))
+	(cd testprogs; $(MAKE) CFLAGS="$(CFLAGS)")
 
 FORCE:
 
