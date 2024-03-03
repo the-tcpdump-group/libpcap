@@ -137,6 +137,12 @@
     #define DIAG_ON_STRICT_PROTOTYPES \
       PCAP_DO_PRAGMA(clang diagnostic pop)
   #endif
+
+  #define DIAG_OFF_DOCUMENTATION \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation")
+  #define DIAG_ON_DOCUMENTATION \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
 #elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
@@ -398,6 +404,12 @@
 #endif
 #ifndef DIAG_ON_STRICT_PROTOTYPES
 #define DIAG_ON_STRICT_PROTOTYPES
+#endif
+#ifndef DIAG_OFF_DOCUMENTATION
+#define DIAG_OFF_DOCUMENTATION
+#endif
+#ifndef DIAG_ON_DOCUMENTATION
+#define DIAG_ON_DOCUMENTATION
 #endif
 #ifndef PCAP_UNREACHABLE
 #define PCAP_UNREACHABLE
