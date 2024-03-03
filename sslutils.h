@@ -35,8 +35,14 @@
 
 #ifdef HAVE_OPENSSL
 #include "pcap/socket.h"  // for PCAP_SOCKET
+// If this is OpenSSL 1.0, at least one header may trigger a -Wdocumentation
+// in Clang, which should not be a problem of this header or a file that
+// includes it.
+#include "diag-control.h"
+DIAG_OFF_DOCUMENTATION
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+DIAG_ON_DOCUMENTATION
 
 /*
  * Utility functions
