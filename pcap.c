@@ -3733,12 +3733,16 @@ pcap_statustostr(int errnum)
 }
 
 /*
- * Not all systems have strerror().
+ * A long time ago the purpose of this function was to hide the difference
+ * between those Unix-like OSes that implemented strerror() and those that
+ * didn't.  All the currently supported OSes implement strerror(), which is in
+ * POSIX.1-2001, uniformly and that particular problem no longer exists.  But
+ * now they implement a few incompatible thread-safe variants of strerror(),
+ * and hiding that difference is the current purpose of this function.
  */
 const char *
 pcap_strerror(int errnum)
 {
-#ifdef HAVE_STRERROR
 #ifdef _WIN32
 	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
 	errno_t err = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
@@ -3746,19 +3750,76 @@ pcap_strerror(int errnum)
 	if (err != 0) /* err = 0 if successful */
 		pcapint_strlcpy(errbuf, "strerror_s() error", PCAP_ERRBUF_SIZE);
 	return (errbuf);
+#elif defined(HAVE_GNU_STRERROR_R)
+	/*
+	 * We have a GNU-style strerror_r(), which is *not* guaranteed to
+	 * do anything to the buffer handed to it, and which returns a
+	 * pointer to the error string, which may or may not be in
+	 * the buffer.
+	 *
+	 * It is, however, guaranteed to succeed.
+	 *
+	 * At the time of this writing this applies to the following cases,
+	 * each of which allows to use either the GNU implementation or the
+	 * POSIX implementation, and this source tree defines _GNU_SOURCE to
+	 * use the GNU implementation:
+	 * - Hurd
+	 * - Linux with GNU libc
+	 * - Linux with uClibc-ng
+	 */
+	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
+	return strerror_r(errnum, errbuf, PCAP_ERRBUF_SIZE);
+#elif defined(HAVE_POSIX_STRERROR_R)
+	/*
+	 * We have a POSIX-style strerror_r(), which is guaranteed to fill
+	 * in the buffer, but is not guaranteed to succeed.
+	 *
+	 * At the time of this writing this applies to the following cases:
+	 * - AIX 7
+	 * - FreeBSD
+	 * - Haiku
+	 * - HP-UX 11
+	 * - illumos
+	 * - Linux with musl libc
+	 * - macOS
+	 * - NetBSD
+	 * - OpenBSD
+	 * - Solaris 10 & 11
+	 */
+	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
+	int err = strerror_r(errnum, errbuf, PCAP_ERRBUF_SIZE);
+	switch (err) {
+	case EINVAL:
+		/*
+		 * UNIX 03 says this isn't guaranteed to produce a
+		 * fallback error message.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		         "Unknown error: %d", errnum);
+		break;
+	case ERANGE:
+		/*
+		 * UNIX 03 says this isn't guaranteed to produce a
+		 * fallback error message.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		         "Message for error %d is too long", errnum);
+		break;
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		         "strerror_r(%d, ...) unexpectedly returned %d",
+		         errnum, err);
+	}
+	return errbuf;
 #else
+	/*
+	 * At the time of this writing every supported OS implements strerror()
+	 * and at least one thread-safe variant thereof, so this is a very
+	 * unlikely last-resort branch.  Particular implementations of strerror()
+	 * may be thread-safe, but this is neither required nor guaranteed.
+	 */
 	return (strerror(errnum));
 #endif /* _WIN32 */
-#else
-	extern int sys_nerr;
-	extern const char *const sys_errlist[];
-	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
-
-	if ((unsigned int)errnum < sys_nerr)
-		return ((char *)sys_errlist[errnum]);
-	(void)snprintf(errbuf, sizeof errbuf, "Unknown error: %d", errnum);
-	return (errbuf);
-#endif
 }
 
 int
