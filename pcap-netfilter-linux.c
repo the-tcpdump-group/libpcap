@@ -35,10 +35,6 @@
 #include "pcap-int.h"
 #include "diag-control.h"
 
-#ifdef NEED_STRERROR_H
-#include "strerror.h"
-#endif
-
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>

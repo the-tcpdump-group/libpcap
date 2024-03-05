@@ -44,10 +44,6 @@
 
 #include "extract.h"
 
-#ifdef NEED_STRERROR_H
-#include "strerror.h"
-#endif
-
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
