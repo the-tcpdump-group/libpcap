@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_OPEN_LIVE 3PCAP "5 December 2023"
+.TH PCAP_OPEN_LIVE 3PCAP "4 March 2024"
 .SH NAME
 pcap_open_live \- open a device for capturing
 .SH SYNOPSIS
@@ -52,7 +52,10 @@ not be confused with all available capture devices as seen by
 which may also include D-Bus, USB etc.
 .PP
 .I snaplen
-specifies the snapshot length to be set on the handle.
+specifies the snapshot length to be set on the handle.  If the packet
+data should not be truncated at the end, a value of 262144 should be
+sufficient for most devices, but D-Bus devices require a value of 128Mb
+(128*1024*1024).
 .PP
 .I promisc
 specifies whether the interface is to be put into promiscuous mode.
