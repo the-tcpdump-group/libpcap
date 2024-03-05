@@ -286,11 +286,20 @@ typedef enum {
  * and 64-bit versions of libpcap, even if they're on the same platform,
  * should supply the appropriate version of "struct timeval", even if
  * that's not what the underlying packet capture mechanism supplies.
+ *
+ * caplen is the number of packet bytes available in the packet.
+ *
+ * len is the number of bytes that would have been available if
+ * the capture process had not discarded data at the end of the
+ * packet, either because a snapshot length less than the packet
+ * size was provided or because the mechanism used to capture
+ * the packet imposed a limit on the amount of packet data
+ * that is provided.
  */
 struct pcap_pkthdr {
 	struct timeval ts;	/* time stamp */
-	bpf_u_int32 caplen;	/* length of portion present */
-	bpf_u_int32 len;	/* length of this packet (off wire) */
+	bpf_u_int32 caplen;	/* length of portion present in data */
+	bpf_u_int32 len;	/* length of this packet prior to any slicing */
 };
 
 /*
