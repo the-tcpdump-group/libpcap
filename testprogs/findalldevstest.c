@@ -15,6 +15,28 @@
   #include <arpa/inet.h>
   #include <netdb.h>
   #include <unistd.h>
+
+  // Different OSes define ETHER_ADDR_LEN in different headers, if at all, so
+  // it would take an amount of conditionals similar to that in nametoaddr.c
+  // just to get the well-known constant from an OS (or not).  Keep it simple.
+  #ifndef ETHER_ADDR_LEN
+    #define ETHER_ADDR_LEN 6
+  #endif // ETHER_ADDR_LEN
+
+  // Linux defines and uses AF_PACKET.
+  // FreeBSD, Haiku, NetBSD and OpenBSD define and use AF_LINK.
+  // illumos defines both AF_PACKET and AF_LINK, and uses AF_LINK.
+  // Solaris 11 defines both AF_PACKET and AF_LINK, but uses neither.
+  // GNU/Hurd defines neither AF_PACKET nor AF_LINK.
+  #include <net/if.h>
+  #ifdef AF_PACKET
+    #include <netpacket/packet.h> // struct sockaddr_ll
+    #include <net/if_arp.h> // ARPHRD_ETHER
+  #endif // AF_PACKET
+  #ifdef AF_LINK
+    #include <net/if_dl.h> // struct sockaddr_dl
+    #include <net/if_types.h> // IFT_ETHER
+  #endif // AF_LINK
 #endif
 
 #include <pcap.h>
@@ -178,6 +200,22 @@ int main(int argc, char **argv)
   exit(exit_status);
 }
 
+#if defined(AF_PACKET) || defined(AF_LINK)
+static const char *
+mac_addr_str(const u_char addr[])
+{
+  static char buffer[] = "00:00:00:00:00:00";
+  const char *unmask = getenv("UNMASK_MAC_ADDRESSES");
+  if (!unmask || strcmp("yes", unmask))
+    snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:xx:xx:xx",
+             addr[0], addr[1], addr[2]);
+  else
+    snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:%02x:%02x:%02x",
+             addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+  return buffer;
+}
+#endif // defined(AF_PACKET) || defined(AF_LINK)
+
 static int ifprint(pcap_if_t *d)
 {
   pcap_addr_t *a;
@@ -272,6 +310,40 @@ static int ifprint(pcap_if_t *d)
                &((struct sockaddr_in *)(a->dstaddr))->sin_addr,
                ipv4_buf, sizeof ipv4_buf));
         break;
+
+#ifdef AF_PACKET
+      case AF_PACKET:
+        printf("\tAddress Family: AF_PACKET (%d)\n", a->addr->sa_family);
+        struct sockaddr_ll *sll = (struct sockaddr_ll *)a->addr;
+        printf("\t\tInterface Index: %u\n", sll->sll_ifindex);
+        printf("\t\tType: %d%s\n", sll->sll_hatype,
+               sll->sll_hatype == ARPHRD_ETHER ? " (ARPHRD_ETHER)" : "");
+        printf("\t\tLength: %u\n", sll->sll_halen);
+        if (sll->sll_hatype == ARPHRD_ETHER && sll->sll_halen == ETHER_ADDR_LEN)
+          printf("\t\tAddress: %s\n",
+                 mac_addr_str((const u_char *)sll->sll_addr));
+      break;
+#endif // AF_PACKET
+
+#ifdef AF_LINK
+      case AF_LINK:
+        printf("\tAddress Family: AF_LINK (%d)\n", a->addr->sa_family);
+        struct sockaddr_dl *sdl = (struct sockaddr_dl *)a->addr;
+        printf("\t\tInterface Index: %u\n", sdl->sdl_index);
+        printf("\t\tType: %u%s\n", sdl->sdl_type,
+               sdl->sdl_type == IFT_ETHER ? " (IFT_ETHER)" : "");
+        printf("\t\tLength: %u\n", sdl->sdl_alen);
+#ifdef __illumos__
+        // Could be a bug or a peculiarity of the API.
+        if (sdl->sdl_type == 0 && sdl->sdl_alen == ETHER_ADDR_LEN)
+#else
+        if (sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == ETHER_ADDR_LEN)
+#endif
+          printf("\t\tAddress: %s\n",
+                 mac_addr_str((const u_char *)sdl->sdl_data));
+      break;
+#endif // AF_LINK
+
 #ifdef INET6
       case AF_INET6:
         printf("\tAddress Family: AF_INET6 (%d)\n", a->addr->sa_family);
