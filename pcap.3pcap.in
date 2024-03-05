@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3PCAP "28 January 2024"
+.TH PCAP 3PCAP "4 March 2024"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -592,7 +592,8 @@ a
 .B bpf_u_int32
 giving the length of the packet, in bytes (which might be more than the
 number of bytes available from the capture, if the length of the packet
-is larger than the maximum number of bytes to capture).
+was larger than the snapshot length or than some limit imposed by the
+capture mechanism).
 .RE
 .PP
 The callback is also supplied a
@@ -603,15 +604,22 @@ pointer to the first
 .B struct pcap_pkthdr
 mentioned above)
 bytes of data from the packet.  This won't necessarily be the entire
-packet; to capture the entire packet, you will have to provide a value
-for
-.I snaplen
-in your call to
+packet; the default value used if
+.BR pcap_create ()
+and
+.BR pcap_activate ()
+are used to open a capture device, and no call to
 .BR pcap_set_snaplen ()
-that is sufficiently large to get all of the packet's data - a value of
-65535 should be sufficient on most if not all networks).  When reading
-from a ``savefile'', the snapshot length specified when the capture was
-performed will limit the amount of packet data available.
+is made before
+.BR pcap_activate ()
+is called, should be sufficient for that device.  However, if a smaller
+value is set with a call to
+.BR pcap_set_snaplen (),
+if the default isn't sufficient for that device, or if the mechanism
+used by libpcap to capture the traffic imposes a separate limit,
+some captured packets may not contain all the data sent or received.
+When reading from a ``savefile'', the snapshot length specified when the
+capture was performed will limit the amount of packet data available.
 .PP
 .BR pcap_next ()
 is passed an argument that points to a
