@@ -710,7 +710,6 @@ main(void)
 #
 # Now check for various system functions.
 #
-check_function_exists(strerror HAVE_STRERROR)
 check_function_exists(strerror_r HAVE_STRERROR_R)
 if(HAVE_STRERROR_R)
     #

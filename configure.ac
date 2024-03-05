@@ -161,7 +161,6 @@ haiku*)
 	;;
 esac
 
-AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNC(strerror_r,
     [
 	#
