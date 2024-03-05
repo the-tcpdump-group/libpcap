@@ -46,6 +46,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make Sun C build warning-free.
       Make FreeBSD, Linux and macOS builds warning-free.
       Fix propagation of cc_werr_cflags() output.
+      Print MAC addresses in findalldevstest.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
