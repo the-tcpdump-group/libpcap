@@ -23,6 +23,15 @@
 * CMake 3.23.1 works.
 * GCC 11.2.0 and Clang 14.0.3 work.
 
+## OpenIndiana 2023.10/AMD64
+
+* flex 2.6.4 and GNU Bison 3.7.6 work.
+* CMake 3.28.3 works.
+* GCC 13.2.0 and Clang 17.0.6 work.
+
+For reference, the tests were done using a system installed from
+`OI-hipster-minimal-20231027.iso` plus the `build-essential` package.
+
 ## OpenIndiana 2021.04/AMD64
 
 * flex 2.6.4 and GNU Bison 3.7.6 work.
