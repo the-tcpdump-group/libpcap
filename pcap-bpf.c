@@ -1865,19 +1865,9 @@ check_setif_failure(pcap_t *p _U_, int error)
 #endif
 
 /*
- * Default capture buffer size.
- * 32K isn't very much for modern machines with fast networks; we
- * pick .5M, as that's the maximum on at least some systems with BPF.
- *
- * However, on AIX 3.5, the larger buffer sized caused unrecoverable
- * read failures under stress, so we leave it as 32K; yet another
- * place where AIX's BPF is broken.
+ * We pick .5M, as that's the maximum on at least some systems with BPF.
  */
-#ifdef _AIX
-#define DEFAULT_BUFSIZE	32768
-#else
 #define DEFAULT_BUFSIZE	524288
-#endif
 
 static int
 pcap_activate_bpf(pcap_t *p)
