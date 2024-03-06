@@ -2791,6 +2791,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         check_and_add_compiler_option(-Wshorten-64-to-32)
         check_and_add_compiler_option(-Wsign-compare)
         check_and_add_compiler_option(-Wstrict-prototypes)
+        check_and_add_compiler_option(-Wundef)
         check_and_add_compiler_option(-Wunreachable-code)
         check_and_add_compiler_option(-Wunused-but-set-parameter)
         check_and_add_compiler_option(-Wunused-but-set-variable)
