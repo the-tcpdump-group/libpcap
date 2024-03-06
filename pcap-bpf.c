@@ -2331,27 +2331,6 @@ pcap_activate_bpf(pcap_t *p)
 		goto bad;
 	}
 #endif
-#if _BSDI_VERSION - 0 >= 199510
-	/* The SLIP and PPP link layer header changed in BSD/OS 2.1 */
-	switch (v) {
-
-	case DLT_SLIP:
-		v = DLT_SLIP_BSDOS;
-		break;
-
-	case DLT_PPP:
-		v = DLT_PPP_BSDOS;
-		break;
-
-	case 11:	/*DLT_FR*/
-		v = DLT_FRELAY;
-		break;
-
-	case 12:	/*DLT_C_HDLC*/
-		v = DLT_CHDLC;
-		break;
-	}
-#endif
 
 #ifdef BIOCGDLTLIST
 	/*
