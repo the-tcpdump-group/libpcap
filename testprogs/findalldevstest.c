@@ -200,29 +200,22 @@ int main(int argc, char **argv)
   exit(exit_status);
 }
 
-#if defined(AF_PACKET) || defined(AF_LINK)
-static const char *
-mac_addr_str(const u_char addr[])
+#if ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+static char *
+ether_ntop(const u_char addr[], char *buffer, size_t size, u_char mask)
 {
-  static char buffer[] = "00:00:00:00:00:00";
-  const char *unmask = getenv("UNMASK_MAC_ADDRESSES");
-  if (!unmask || strcmp("yes", unmask))
-    snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:xx:xx:xx",
+  if (mask)
+    snprintf(buffer, size, "%02x:%02x:%02x:xx:xx:xx",
              addr[0], addr[1], addr[2]);
   else
-    snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:%02x:%02x:%02x",
+    snprintf(buffer, size, "%02x:%02x:%02x:%02x:%02x:%02x",
              addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
   return buffer;
 }
-#endif // defined(AF_PACKET) || defined(AF_LINK)
+#endif // ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
 
 static int ifprint(pcap_if_t *d)
 {
-  pcap_addr_t *a;
-  char ipv4_buf[INET_ADDRSTRLEN];
-#ifdef INET6
-  char ipv6_buf[INET6_ADDRSTRLEN];
-#endif
   const char *sep;
   int status = 1; /* success */
 
@@ -281,19 +274,28 @@ static int ifprint(pcap_if_t *d)
       break;
     }
   }
-  sep = ", ";
   printf("\n");
 
-  for(a=d->addresses;a;a=a->next) {
-    if (a->addr != NULL)
+  const char *unmask = getenv("UNMASK_MAC_ADDRESSES");
+  if (unmask && strcmp("yes", unmask))
+    unmask = NULL;
+
+  for (pcap_addr_t *a = d->addresses; a; a=a->next) {
+    if (a->addr == NULL) {
+      fprintf(stderr, "\tWarning: a->addr is NULL, skipping this address.\n");
+      status = 0;
+    } else {
+#if ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+      char ether_buf[] = "00:00:00:00:00:00";
+#endif // ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
       switch(a->addr->sa_family) {
       case AF_INET:
         printf("\tAddress Family: AF_INET (%d)\n", a->addr->sa_family);
-        if (a->addr)
-          printf("\t\tAddress: %s\n",
-            inet_ntop(AF_INET,
-               &((struct sockaddr_in *)(a->addr))->sin_addr,
-               ipv4_buf, sizeof ipv4_buf));
+        char ipv4_buf[INET_ADDRSTRLEN];
+        printf("\t\tAddress: %s\n",
+          inet_ntop(AF_INET,
+             &((struct sockaddr_in *)(a->addr))->sin_addr,
+             ipv4_buf, sizeof ipv4_buf));
         if (a->netmask)
           printf("\t\tNetmask: %s\n",
             inet_ntop(AF_INET,
@@ -311,6 +313,7 @@ static int ifprint(pcap_if_t *d)
                ipv4_buf, sizeof ipv4_buf));
         break;
 
+#if ! defined(_WIN32)
 #ifdef AF_PACKET
       case AF_PACKET:
         printf("\tAddress Family: AF_PACKET (%d)\n", a->addr->sa_family);
@@ -321,7 +324,8 @@ static int ifprint(pcap_if_t *d)
         printf("\t\tLength: %u\n", sll->sll_halen);
         if (sll->sll_hatype == ARPHRD_ETHER && sll->sll_halen == ETHER_ADDR_LEN)
           printf("\t\tAddress: %s\n",
-                 mac_addr_str((const u_char *)sll->sll_addr));
+                 ether_ntop((const u_char *)sll->sll_addr,
+                            ether_buf, sizeof(ether_buf), ! unmask));
       break;
 #endif // AF_PACKET
 
@@ -338,20 +342,22 @@ static int ifprint(pcap_if_t *d)
         if (sdl->sdl_type == 0 && sdl->sdl_alen == ETHER_ADDR_LEN)
 #else
         if (sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == ETHER_ADDR_LEN)
-#endif
+#endif // __illumos__
           printf("\t\tAddress: %s\n",
-                 mac_addr_str((const u_char *)sdl->sdl_data));
+                 ether_ntop((const u_char *)sdl->sdl_data,
+                            ether_buf, sizeof(ether_buf), ! unmask));
       break;
 #endif // AF_LINK
+#endif // ! defined(_WIN32)
 
-#ifdef INET6
+#ifdef AF_INET6
       case AF_INET6:
         printf("\tAddress Family: AF_INET6 (%d)\n", a->addr->sa_family);
-        if (a->addr)
-          printf("\t\tAddress: %s\n",
-            inet_ntop(AF_INET6,
-               ((struct sockaddr_in6 *)(a->addr))->sin6_addr.s6_addr,
-               ipv6_buf, sizeof ipv6_buf));
+        char ipv6_buf[INET6_ADDRSTRLEN];
+        printf("\t\tAddress: %s\n",
+          inet_ntop(AF_INET6,
+             ((struct sockaddr_in6 *)(a->addr))->sin6_addr.s6_addr,
+             ipv6_buf, sizeof ipv6_buf));
         if (a->netmask)
           printf("\t\tNetmask: %s\n",
             inet_ntop(AF_INET6,
@@ -368,17 +374,13 @@ static int ifprint(pcap_if_t *d)
               ((struct sockaddr_in6 *)(a->dstaddr))->sin6_addr.s6_addr,
                ipv6_buf, sizeof ipv6_buf));
         break;
-#endif
+#endif // AF_INET6
       default:
         printf("\tAddress Family: Unknown (%d)\n", a->addr->sa_family);
         break;
-      }
-    else
-    {
-      fprintf(stderr, "\tWarning: a->addr is NULL, skipping this address.\n");
-      status = 0;
-    }
-  }
+      } // switch
+    } // if
+  } // for
   printf("\n");
   return status;
 }
