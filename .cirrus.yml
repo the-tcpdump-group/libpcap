@@ -16,10 +16,10 @@ freebsd_task:
   env:
     IGNORE_OSVERSION: yes
     MAKEFLAGS: -j 4
-    MATRIX_CC: clang15 gcc12
+    MATRIX_CC: clang17 gcc13
   script:
-    - pkg install -qy autoconf gcc12 llvm15
-    - pkg install -qy cmake git-tiny # for build_matrix.sh and build.sh
+    - pkg install -qy autoconf gcc13 llvm17
+    - pkg install -qy cmake-core git-tiny # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
 linux_task:
