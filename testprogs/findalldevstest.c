@@ -24,7 +24,7 @@
   #endif // ETHER_ADDR_LEN
 
   // Linux defines and uses AF_PACKET.
-  // FreeBSD, Haiku, NetBSD and OpenBSD define and use AF_LINK.
+  // AIX, FreeBSD, Haiku, macOS, NetBSD and OpenBSD define and use AF_LINK.
   // illumos defines both AF_PACKET and AF_LINK, and uses AF_LINK.
   // Solaris 11 defines both AF_PACKET and AF_LINK, but uses neither.
   // GNU/Hurd defines neither AF_PACKET nor AF_LINK.
@@ -34,7 +34,7 @@
     #include <net/if_arp.h> // ARPHRD_ETHER
   #endif // AF_PACKET
   #ifdef AF_LINK
-    #include <net/if_dl.h> // struct sockaddr_dl
+    #include <net/if_dl.h> // struct sockaddr_dl and LLADDR()
     #include <net/if_types.h> // IFT_ETHER
   #endif // AF_LINK
 #endif
@@ -344,7 +344,7 @@ static int ifprint(pcap_if_t *d)
         if (sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == ETHER_ADDR_LEN)
 #endif // __illumos__
           printf("\t\tAddress: %s\n",
-                 ether_ntop((const u_char *)sdl->sdl_data,
+                 ether_ntop((const u_char *)LLADDR(sdl),
                             ether_buf, sizeof(ether_buf), ! unmask));
       break;
 #endif // AF_LINK
