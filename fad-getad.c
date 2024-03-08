@@ -104,7 +104,6 @@
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 #define SA_LEN(addr)	((addr)->sa_len)
 #else /* HAVE_STRUCT_SOCKADDR_SA_LEN */
-#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
 static size_t
 get_sa_len(struct sockaddr *addr)
 {
@@ -130,9 +129,6 @@ get_sa_len(struct sockaddr *addr)
 	}
 }
 #define SA_LEN(addr)	(get_sa_len(addr))
-#else /* HAVE_STRUCT_SOCKADDR_STORAGE */
-#define SA_LEN(addr)	(sizeof (struct sockaddr))
-#endif /* HAVE_STRUCT_SOCKADDR_STORAGE */
 #endif /* HAVE_STRUCT_SOCKADDR_SA_LEN */
 #endif /* SA_LEN */
 

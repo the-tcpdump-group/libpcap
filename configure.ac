@@ -2401,15 +2401,6 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],,,
     ])
 
 #
-# Check to see if there's a sockaddr_storage structure.
-#
-AC_CHECK_TYPES(struct sockaddr_storage,,,
-    [
-	#include <sys/types.h>
-	#include <sys/socket.h>
-    ])
-
-#
 # Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
 # dl_module_id_1 member.
 #

@@ -1065,7 +1065,6 @@ if(WIN32)
 else(WIN32)
     set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
 endif(WIN32)
-check_type_size("struct sockaddr_storage" STRUCT_SOCKADDR_STORAGE)
 check_type_size("socklen_t" SOCKLEN_T)
 cmake_pop_check_state()
 
