@@ -52,6 +52,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a few device activation bugs.
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
+    Solaris:
+      Fix AF_LINK handling on illumos.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)

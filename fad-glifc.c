@@ -64,6 +64,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #endif
 
 /*
+ * Only Solaris 10 uses this file.
+ */
+
+/*
  * Get a list of all interfaces that are up and that we can open.
  * Returns -1 on error, 0 otherwise.
  * The list, as returned through "alldevsp", may be null if no interfaces

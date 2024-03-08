@@ -87,6 +87,10 @@ struct rtentry;		/* declarations in <net/if.h> */
  * We assume that a UNIX that doesn't have "getifaddrs()" and doesn't have
  * SIOCGLIFCONF, but has SIOCGIFCONF, uses "struct sockaddr" for the
  * address in an entry returned by SIOCGIFCONF.
+ *
+ * OSes that use this file are:
+ * - AIX 7 (SA_LEN() is not defined, HAVE_STRUCT_SOCKADDR_SA_LEN is defined)
+ * - HP-UX 11 (HAVE_STRUCT_SOCKADDR_SA_LEN is not defined)
  */
 #ifndef SA_LEN
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
