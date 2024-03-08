@@ -40,10 +40,7 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
-#endif
-#include <sys/time.h>				/* concession to AIX */
 
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
@@ -87,9 +84,7 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	struct lifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
-#ifdef HAVE_SOLARIS
 	char *p, *q;
-#endif
 	struct lifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
 	struct sockaddr *netmask, *broadaddr, *dstaddr;
 	int ret = 0;
@@ -299,7 +294,6 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		} else
 			dstaddr = NULL;
 
-#ifdef HAVE_SOLARIS
 		/*
 		 * If this entry has a colon followed by a number at
 		 * the end, it's a logical interface.  Those are just
@@ -325,7 +319,6 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 				*p = '\0';
 			}
 		}
-#endif
 
 		/*
 		 * Add information for this address to the list.
