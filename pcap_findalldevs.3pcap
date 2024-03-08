@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FINDALLDEVS 3PCAP "4 March 2024"
+.TH PCAP_FINDALLDEVS 3PCAP "8 March 2024"
 .SH NAME
 pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
 free that list
@@ -202,8 +202,8 @@ Namely, link-layer addresses, such as Ethernet MAC addresses, have the value
 .B AF_PACKET
 (on Linux) or
 .B AF_LINK
-(on FreeBSD, Haiku, illumos, NetBSD and OpenBSD) or are not returned at all
-(on GNU/Hurd and Solaris).
+(on AIX, FreeBSD, Haiku, illumos, macOS, NetBSD and OpenBSD) or are not
+returned at all (on GNU/Hurd and Solaris).
 .PP
 For IPv4 addresses, the
 .B "struct sockaddr"
