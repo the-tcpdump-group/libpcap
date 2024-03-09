@@ -337,12 +337,12 @@ static int ifprint(pcap_if_t *d)
         printf("\t\tType: %u%s\n", sdl->sdl_type,
                sdl->sdl_type == IFT_ETHER ? " (IFT_ETHER)" : "");
         printf("\t\tLength: %u\n", sdl->sdl_alen);
+        // On illumos sdl_type can be 0, see https://www.illumos.org/issues/16383
+        if ((sdl->sdl_type == IFT_ETHER
 #ifdef __illumos__
-        // Could be a bug or a peculiarity of the API.
-        if (sdl->sdl_type == 0 && sdl->sdl_alen == ETHER_ADDR_LEN)
-#else
-        if (sdl->sdl_type == IFT_ETHER && sdl->sdl_alen == ETHER_ADDR_LEN)
+             || sdl->sdl_type == 0
 #endif // __illumos__
+            ) && sdl->sdl_alen == ETHER_ADDR_LEN)
           printf("\t\tAddress: %s\n",
                  ether_ntop((const u_char *)LLADDR(sdl),
                             ether_buf, sizeof(ether_buf), ! unmask));
