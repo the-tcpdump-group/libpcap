@@ -1,10 +1,16 @@
-# Compiling libpcap on Haiku
+# Compiling and using libpcap on Haiku
 
 Haiku R1/beta4 and earlier versions do not support packet capture on the
 loopback interface.  In the master branch this works since hrev57585 and
 is expected to work in R1/beta5 when it becomes available.  Packet timestamping
-and filtering always occur in userland.  pcap_set_buffer_size() has no effect.
-pcap_setdirection() is not supported.
+and filtering always occur in userland.  Wireless monitor mode is not
+supported.
+[**pcap_set_buffer_size**](https://www.tcpdump.org/manpages/pcap_set_buffer_size.3pcap.html)(3PCAP)
+has no effect.
+[**pcap_setdirection**](https://www.tcpdump.org/manpages/pcap_setdirection.3pcap.html)(3PCAP)
+is not supported.
+[**pcap_inject**](https://www.tcpdump.org/manpages/pcap_inject.3pcap.html)(3PCAP)
+is not supported.
 
 ## 64-bit x86 R1/beta4
 
