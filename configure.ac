@@ -134,6 +134,11 @@ AC_PCAP_C___ATOMICS
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
+#
+# Find the size of time_t.
+#
+AC_CHECK_SIZEOF([time_t])
+
 dnl
 dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
 dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>

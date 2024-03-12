@@ -307,6 +307,9 @@
 /* target host supports RDMA sniffing */
 #cmakedefine PCAP_SUPPORT_RDMASNIFF 1
 
+/* The size of `time_t', as computed by sizeof. */
+#cmakedefine SIZEOF_TIME_T @SIZEOF_TIME_T@
+
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
 
