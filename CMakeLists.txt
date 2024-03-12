@@ -1251,6 +1251,14 @@ if(NOT WIN32)
   endif()
 endif()
 
+#
+# Find the size of time_t.
+#
+cmake_push_check_state()
+set(CMAKE_EXTRA_INCLUDE_FILES time.h)
+check_type_size("time_t" SIZEOF_TIME_T)
+cmake_pop_check_state()
+
 if(INET6)
     message(STATUS "Support IPv6")
 endif(INET6)
