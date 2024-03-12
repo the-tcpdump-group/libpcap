@@ -155,11 +155,6 @@ void pcap_set_column(int, yyscan_t);
 #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
 
-/* Workaround for AIX 4.3 */
-#if !defined(AI_NUMERICHOST)
-#define AI_NUMERICHOST 0x04
-#endif
-
 #endif /*INET6*/
 
 #include <pcap/namedb.h>
