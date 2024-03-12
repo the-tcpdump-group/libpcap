@@ -4158,16 +4158,23 @@ static int pcap_handle_packet_mmap(
 	 * but not in 2038.
 	 *
 	 * ts.tv_sec is a time_t, which is signed, and which
-	 * may be 32-bit or 64-bit.  Make sure it's not negative;
-	 * if so, report an error, as it means time_t is 32-bit
-	 * and we have a time stamp that doesn't fit.
+	 * may be 32-bit or 64-bit.  Pass it through; if we
+	 * have a 32-bit signed time_t, in which values >
+	 * 2^31-1 won't fit, then:
+	 *
+	 *    Writing the packet to a file will pass the bits
+	 *    through.  If the program reading the file can
+	 *    handle 32-bit unsigned time stamps, including
+	 *    any conversion to local time or UTC, it will
+	 *    properly handle the time stamps.
+	 *
+	 *    Reporting the packet time stamp may give
+	 *    an error or a pre-1970 time stamp on platforms
+	 *    with signed 32-bit time stamps, but that
+	 *    will happen even if it's captured on a
+	 *    platform with a 64-bit time_t.
 	 */
 	pcaphdr.ts.tv_sec = tp_sec;
-	if (pcaphdr.ts.tv_sec < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"packet timestamp doesn't fit in a 32-bit time_t");
-		return -1;
-	}
 	pcaphdr.ts.tv_usec = tp_usec;
 	pcaphdr.caplen = tp_snaplen;
 	pcaphdr.len = tp_len;
