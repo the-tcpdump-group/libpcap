@@ -155,6 +155,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Note that if pcap_findalldevs() fails it sets *alldevsp to NULL;
         there's no devices list to free.
       Explain "other addresses" in pcap_findalldevs(3PCAP).
+      Document pcap_lookupnet(3PCAP) a bit better.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release
