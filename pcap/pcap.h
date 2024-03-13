@@ -152,7 +152,7 @@ extern "C" {
  * Compatibility for systems that have a bpf.h that
  * predates the bpf typedefs for 64-bit support.
  */
-#if BPF_RELEASE - 0 < 199406
+#if ! defined(BPF_RELEASE) || BPF_RELEASE < 199406
 typedef	int bpf_int32;
 typedef	u_int bpf_u_int32;
 #endif
