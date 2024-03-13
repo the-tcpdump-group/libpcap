@@ -106,6 +106,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 project(pcap C)
 
 #
+# Export the size of void * as SIZEOF_VOID_P so that it can be
+# tested with #if.
+#
+set(SIZEOF_VOID_P "${CMAKE_SIZEOF_VOID_P}")
+
+#
 # Setting CMAKE_MACOSX_RPATH to FALSE causes the installed
 # libpcap.A.dylib to have just libpcap.A.dylib as the install
 # name;  Apple built libpcap with an install_name of /usr/lib/libpcap.A.dylib
