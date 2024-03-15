@@ -338,6 +338,3 @@
 
 /* Define for large files, on AIX-style hosts. */
 #cmakedefine _LARGE_FILES 1
-
-/* define on AIX to get certain functions */
-#cmakedefine _SUN 1

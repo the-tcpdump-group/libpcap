@@ -2041,9 +2041,6 @@ MAN_ADMIN_COMMANDS=8
 case "$host_os" in
 
 aix*)
-	dnl Workaround to enable certain features
-	AC_DEFINE(_SUN,1,[define on AIX to get certain functions])
-
 	#
 	# AIX makes it fun to build shared and static libraries,
 	# because they're *both* ".a" archive libraries.  We

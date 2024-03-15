@@ -3025,8 +3025,6 @@ set(MAN_FILE_FORMATS 5)
 set(MAN_MISC_INFO 7)
 set(MAN_ADMIN_COMMANDS 8)
 if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
-    # Workaround to enable certain features
-    set(_SUN TRUE)
     if(PCAP_TYPE STREQUAL "bpf")
         #
         # If we're using BPF, we need libodm and libcfg, as
