@@ -1,16 +1,6 @@
  TODO list for libpcap
 =======================
 
-Important stuff (to be done before the next release)
----------------
-
-General
-
-- The source files should be better documented. There is no official
-  design guideline for what is done where. There should be a common coding
-  style (okay, you can guess that by looking at the code) and a guide for
-  what needs to be documented.
-
 Less urgent items
 -----------------
 
@@ -23,6 +13,3 @@ Less urgent items
     "select()" and "poll()" don't work on BPF devices on most BSDs, and
     you can call "pcap_dispatch()" as the dispatch routine after putting
     the descriptor into non-blocking mode)
-  + too many functions. There are a lot of functions for everything which
-    violates the KISS principle. Why do we need pcap_strerror, pcap_perror
-    and pcap_geterr?
