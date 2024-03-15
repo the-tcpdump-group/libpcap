@@ -55,8 +55,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a few device activation bugs.
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
-    Solaris:
-      Fix AF_LINK handling on illumos.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.5 libpcap release (so far!)
@@ -103,6 +101,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Report {non-existent zone}/{interface} errors appropriately.
       Allow attaching to links owned by a non-global zone.  (Based on
         pull request #1202.)
+      Fix AF_LINK handling on illumos.
     macOS:
       Redid the availability macros to be closer to what Apple's doing
         in recent SDKs, including tagging pcap-namedb.h routines.
