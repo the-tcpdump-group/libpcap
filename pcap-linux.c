@@ -3963,6 +3963,7 @@ static int pcap_handle_packet_mmap(
 		 */
 		if (sll->sll_hatype == ARPHRD_CAN) {
 			pcap_can_socketcan_hdr *canhdr = (pcap_can_socketcan_hdr *)bp;
+			pcap_can_socketcan_xl_hdr *canxl_hdr = (pcap_can_socketcan_xl_hdr *)bp;
 			uint16_t protocol = ntohs(sll->sll_protocol);
 
 			/*
@@ -3972,81 +3973,64 @@ static int pcap_handle_packet_mmap(
 			 * that a program can tell what type of frame
 			 * it is.
 			 *
+			 * These operations should not have any effect
+			 * when reading proper CAN frames from Linux
+			 * CAN interfaces. Enforcing these bit values
+			 * ensures proper DLT_CAN_SOCKETCAN data even
+			 * with malformed PF_PACKET content.
+			 *
 			 * The two flags are:
 			 *
 			 *   CANFD_FDF, which is in the fd_flags field
-			 *   of the CAN classic/CAN FD header;
+			 *   of the CAN CC/CAN FD header;
 			 *
 			 *   CANXL_XLF, which is in the flags field
 			 *   of the CAN XL header, which overlaps
-			 *   the payload_length field of the CAN
-			 *   classic/CAN FD header.
+			 *   the payload_length field of the CAN CC/
+			 *   CAN FD header. Setting CANXL_XLF in the
+			 *   payload_length of CAN CC/FD frames would
+			 *   intentionally break the payload length.
 			 */
 			switch (protocol) {
 
 			case LINUX_SLL_P_CAN:
 				/*
-				 * CAN classic.
+				 * CAN CC frame (aka Classical CAN, CAN 2.0B)
 				 *
-				 * Zero out the fd_flags and reserved
-				 * fields, in case they're uninitialized
-				 * crap, and clear the CANXL_XLF bit in
-				 * the payload_length field.
-				 *
-				 * This means that the CANFD_FDF flag isn't
-				 * set in the fd_flags field, and that
-				 * the CANXL_XLF bit isn't set in the
-				 * payload_length field, so this frame
-				 * will appear to be a CAN classic frame.
+				 * Zero out the CAN FD and CAN XL flags
+				 * so that this frame will be identified
+				 * as a CAN CC frame.
 				 */
-				canhdr->payload_length &= ~CANXL_XLF;
-				canhdr->fd_flags = 0;
-				canhdr->reserved1 = 0;
-				canhdr->reserved2 = 0;
+				canxl_hdr->flags &= ~CANXL_XLF;
+				canhdr->fd_flags &= ~CANFD_FDF;
 				break;
 
 			case LINUX_SLL_P_CANFD:
 				/*
+				 * CAN FD frame
+				 *
 				 * Set CANFD_FDF in the fd_flags field,
 				 * and clear the CANXL_XLF bit in the
-				 * payload_length field, so this frame
-				 * will appear to be a CAN FD frame.
+				 * CAN XL flags field, so that this frame
+				 * will be identified as a CAN FD frame.
+				 *
+				 * The CANFD_FDF bit is not reliably
+				 * set by the Linux kernel. But setting
+				 * that bit for CAN FD is recommended.
 				 */
-				canhdr->payload_length &= ~CANXL_XLF;
+				canxl_hdr->flags &= ~CANXL_XLF;
 				canhdr->fd_flags |= CANFD_FDF;
-
-				/*
-				 * Zero out all the unknown bits in fd_flags
-				 * and clear the reserved fields, so that
-				 * a program reading this can assume that
-				 * CANFD_FDF is set because we set it, not
-				 * because some uninitialized crap was
-				 * provided in the fd_flags field.
-				 *
-				 * (At least some LINKTYPE_CAN_SOCKETCAN
-				 * files attached to Wireshark bugs had
-				 * uninitialized junk there, so it does
-				 * happen.)
-				 *
-				 * Update this if Linux adds more flag bits
-				 * to the fd_flags field or uses either of
-				 * the reserved fields for FD frames.
-				 */
-				canhdr->fd_flags &= (CANFD_FDF|CANFD_ESI|CANFD_BRS);
-				canhdr->reserved1 = 0;
-				canhdr->reserved2 = 0;
 				break;
 
 			case LINUX_SLL_P_CANXL:
 				/*
-				 * CAN XL frame.
+				 * CAN XL frame
 				 *
-				 * Make sure the CANXL_XLF bit is set in
-				 * the payload_length field, so that
-				 * this frame will appear to be a
-				 * CAN XL frame.
+				 * Set CANXL_XLF bit in the CAN XL flags
+				 * field, so that this frame will appear
+				 * to be a CAN XL frame.
 				 */
-				canhdr->payload_length |= CANXL_XLF;
+				canxl_hdr->flags |= CANXL_XLF;
 				break;
 			}
 
@@ -4054,7 +4038,7 @@ static int pcap_handle_packet_mmap(
 			 * Put multi-byte header fields in a byte-order
 			 *-independent format.
 			 */
-			if (canhdr->payload_length & CANXL_XLF) {
+			if (canxl_hdr->flags & CANXL_XLF) {
 				/*
 				 * This is a CAN XL frame.
 				 *
@@ -4085,7 +4069,6 @@ static int pcap_handle_packet_mmap(
 				 * frames were captured are likely
 				 * to be little-endian processors.
 				 */
-				pcap_can_socketcan_xl_hdr *canxl_hdr = (pcap_can_socketcan_xl_hdr *)bp;
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 				/*
@@ -4120,7 +4103,7 @@ static int pcap_handle_packet_mmap(
 #endif
 			} else {
 				/*
-				 * CAN or CAN FD frame.
+				 * CAN CC or CAN FD frame.
 				 *
 				 * DLT_CAN_SOCKETCAN is specified as having
 				 * the CAN ID and flags in network byte
