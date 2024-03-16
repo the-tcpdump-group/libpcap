@@ -53,7 +53,7 @@ to open them for capturing; if so, those devices will not appear on the
 list.)
 .I alldevsp
 is a pointer to a
-.BR pcap_if_t *;
+.BR "pcap_if_t *" ;
 .I errbuf
 is a buffer large enough to hold at least
 .B PCAP_ERRBUF_SIZE
