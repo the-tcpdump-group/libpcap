@@ -38,8 +38,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
-      autoconf: Add autogen.sh, remove configure and config.h.in and put
-        these generated files in the release tarball.
       Autoconf: Update install-sh script to the latest available version.
       Remove all remaining support for AOS (4.3BSD Unix), BSD/OS, DOS,
         HP-UX before 10.20, IRIX, {OSF/1, Digital Unix, Tru64 Unix}, SINIX,
@@ -174,6 +172,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         CMake.
       Use noreturn and __format__ with XL C 7.0 and later.
       Check for the same -W flags in autotools and CMake.
+      autoconf: Add autogen.sh, remove configure and config.h.in and put
+        these generated files in the release tarball.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
