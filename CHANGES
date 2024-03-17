@@ -116,6 +116,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         CMake.
       Use noreturn and __format__ with XL C 7.0 and later.
       Check for the same -W flags in autotools and CMake.
+      autoconf: Add autogen.sh, remove configure and config.h.in and put
+        these generated files in the release tarball.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
@@ -129,8 +131,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Update INSTALL.md.
       Note in man pages that errbuf arguments must point to an error
         buffer.
-      autoconf: Add autogen.sh, remove configure and config.h.in and put
-        these generated files in the release tarball.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release
