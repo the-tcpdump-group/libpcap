@@ -64,6 +64,7 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 	if (!hdr->data_flag && hdr->transfer_type == URB_ISOCHRONOUS &&
 	    hdr->event_type == URB_COMPLETE &&
 	    (hdr->endpoint_number & URB_TRANSFER_IN) &&
+	    hdr->ndesc <= USB_MAXDESC &&
 	    pkth->len == sizeof(pcap_usb_header_mmapped) +
 	                 (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len) {
 		usb_isodesc *descs;
@@ -115,28 +116,13 @@ fix_linux_usb_mmapped_length(struct pcap_pkthdr *pkth, const u_char *bp)
 		 * Now calculate the total length based on that data
 		 * length.
 		 *
-		 * First, make sure the total length of the ISO
-		 * descriptors fits in an unsigned int.  We know
-		 * that sizeof (usb_isodesc) is a small power-of-2
-		 * integer (16 bytes), so we just check whether
-		 * hdr->ndesc < (UINT_MAX + (uint64_t)1) / sizeof (usb_isodesc),
-		 * as that would mean that hdr->ndesc * sizeof (usb_isodesc)
-		 * is < (UINT_MAX + (uint64_t)1) and thus <= UINT_MAX.
-		 * ((UINT_MAX + (uint64_t)1) will probably be computed
-		 * at compile time with most C compilers.)
+		 * We've made sure that the number of descriptors is
+		 * <= USB_MAXDESC, so we know that the total size,
+		 * in bytes, of the desciptors fits in a 32-bit
+		 * integer.
 		 */
-		if (hdr->ndesc < (UINT_MAX + (uint64_t)1) / sizeof (usb_isodesc)) {
-			/*
-			 * It fits.
-			 */
-			pre_truncation_descriptors_len =
-			    hdr->ndesc * sizeof (usb_isodesc);
-		} else {
-			/*
-			 * It doesn't fit.
-			 */
-			pre_truncation_descriptors_len = UINT_MAX;
-		}
+		pre_truncation_descriptors_len =
+		    hdr->ndesc * sizeof (usb_isodesc);
 
 		/*
 		 * Now, add the length of the memory-mapped header and
