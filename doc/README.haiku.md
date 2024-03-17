@@ -4,13 +4,22 @@ Haiku R1/beta4 and earlier versions do not support packet capture on the
 loopback interface.  In the master branch this works since hrev57585 and
 is expected to work in R1/beta5 when it becomes available.  Packet timestamping
 and filtering always occur in userland.  Wireless monitor mode is not
-supported.
+supported.  The "any" pseudo-interface is not supported.
 [**pcap_set_buffer_size**](https://www.tcpdump.org/manpages/pcap_set_buffer_size.3pcap.html)(3PCAP)
 has no effect.
 [**pcap_setdirection**](https://www.tcpdump.org/manpages/pcap_setdirection.3pcap.html)(3PCAP)
 is not supported.
 [**pcap_inject**](https://www.tcpdump.org/manpages/pcap_inject.3pcap.html)(3PCAP)
 is not supported.
+
+The statistics reported by
+[**pcap_stats**](https://www.tcpdump.org/manpages/pcap_stats.3pcap.html)(3PCAP)
+on Haiku are as follows:
+* `ps_recv` is the number of packets successfully delivered by the kernel,
+  before libpcap applies a filter.
+* `ps_drop` is the number of packets rejected by the filter.
+* `ps_ifdrop` is the number of packets dropped by the network interface (as
+  seen via `SIOCGIFSTATS`) since the capture handle became active.
 
 ## 64-bit x86 R1/beta4
 
