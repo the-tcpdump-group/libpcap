@@ -6,10 +6,11 @@ Less urgent items
 
 - Better documentation and cleanup of the interface. I am seeing a few
   problems at the first glance which needs fixing:
-  + not very well suited for interactive programs (think ethereal). There
+  + not very well suited for interactive programs (think Wireshark). There
     should be a way for the application to get a file descriptor which it
     has to monitor and a callback in pcap which has to be called on
-    activity (XXX - "pcap_fileno()" handles the first part, although
-    "select()" and "poll()" don't work on BPF devices on most BSDs, and
-    you can call "pcap_dispatch()" as the dispatch routine after putting
-    the descriptor into non-blocking mode)
+    activity (XXX - "pcap_get_selectable_fd()" handles the first part -
+    although "select()" and "poll()" don't work on BPF devices on some
+    BSDs and don't work on older versions of other BSDs - and you can
+    call "pcap_dispatch()" as the dispatch routine after putting the
+    descriptor into non-blocking mode)
