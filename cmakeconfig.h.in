@@ -310,9 +310,6 @@
 /* The size of `void *', as computed by sizeof. */
 #cmakedefine SIZEOF_VOID_P @SIZEOF_VOID_P@
 
-/* Define to 1 if you have the ANSI C header files. */
-#cmakedefine STDC_HEADERS 1
-
 /* Define to 1 if strings.h declares `ffs' */
 #cmakedefine STRINGS_H_DECLARES_FFS 1
 
