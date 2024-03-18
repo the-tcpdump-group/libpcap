@@ -37,10 +37,10 @@
 #include <config.h>
 #endif
 
+#include "pcap/usb.h"
 #include "pcap-int.h"
 #include "pcap-usb-linux.h"
 #include "pcap-usb-linux-common.h"
-#include "pcap/usb.h"
 
 #include "extract.h"
 
@@ -717,14 +717,14 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 	pkth.caplen = sizeof(pcap_usb_header) + clen;
 	if (info.hdr->data_flag) {
 		/*
-		 * No data; just base the on-the-wire length on
+		 * No data; just base the original length on
 		 * info.hdr->data_len (so that it's >= the captured
 		 * length).
 		 */
 		pkth.len = sizeof(pcap_usb_header) + info.hdr->data_len;
 	} else {
 		/*
-		 * We got data; base the on-the-wire length on
+		 * We got data; base the original length on
 		 * info.hdr->urb_len, so that it includes data
 		 * discarded by the USB monitor device due to
 		 * its buffer being too small.
@@ -877,28 +877,47 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			pkth.caplen = sizeof(pcap_usb_header_mmapped) + clen;
 			if (hdr->data_flag) {
 				/*
-				 * No data; just base the on-the-wire length
+				 * No data; just base the original length
 				 * on hdr->data_len (so that it's >= the
-				 * captured length).
+				 * captured length).  Clamp the result
+				 * at UINT_MAX, so it fits in an unsigned
+				 * int.
 				 */
-				pkth.len = sizeof(pcap_usb_header_mmapped) +
-				    hdr->data_len;
+				pkth.len = u_int_sum(sizeof(pcap_usb_header_mmapped),
+				    hdr->data_len);
 			} else {
 				/*
-				 * We got data; base the on-the-wire length
-				 * on hdr->urb_len, so that it includes
-				 * data discarded by the USB monitor device
-				 * due to its buffer being too small.
+				 * We got data.
 				 */
-				pkth.len = sizeof(pcap_usb_header_mmapped) +
-				    (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len;
-
-				/*
-				 * Now clean it up if it's a completion
-				 * event for an incoming isochronous
-				 * transfer.
-				 */
-				fix_linux_usb_mmapped_length(&pkth, bp);
+				if (is_isochronous_transfer_completion(hdr)) {
+					/*
+					 * For isochronous transfer completion
+					 * events, hdr->urb_len doesn't take
+					 * into account the way the data is
+					 * put into the buffer, as it doesn't
+					 * count any padding between the
+					 * chunks of isochronous data, so
+					 * we have to calculate the amount
+					 * of data from the isochronous
+					 * descriptors.
+					 */
+					pkth.len = incoming_isochronous_transfer_completed_len(&pkth, bp);
+				} else {
+					/*
+					 * For everything else, the original
+					 * data length is just the length of
+					 * the memory-mapped Linux USB header
+					 * plus hdr->urb_len; we use
+					 * hdr->urb_len so that it includes
+					 * data discarded by the USB monitor
+					 * device due to its buffer being
+					 * too small.  Clamp the result at
+					 * UINT_MAX, so it fits in an
+					 * unsigned int.
+					 */
+					pkth.len = u_int_sum(sizeof(pcap_usb_header_mmapped),
+					    hdr->urb_len);
+				}
 			}
 			pkth.ts.tv_sec = (time_t)hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
