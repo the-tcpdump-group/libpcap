@@ -49,7 +49,3 @@
 
 extern void pcapint_post_process(int linktype, int swapped,
     struct pcap_pkthdr *hdr, u_char *data);
-
-extern void pcapint_fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr,
-    const u_char *data);
-
