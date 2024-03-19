@@ -845,6 +845,13 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	/*
 	 * Better not try writing pcap files after
 	 * 2106-02-07 06:28:15 UTC; switch to pcapng.
+	 * (And better not try writing pcap files with time stamps
+	 * that predate 1970-01-01 00:00:00 UTC; that's not supported.
+	 * You could try using pcapng with the if_tsoffset field in
+	 * the IDB for the interface(s) with packets with those time
+	 * stamps, but you may also have to get a link-layer type for
+	 * IBM Bisync or whatever link layer even older forms
+	 * of computer communication used.)
 	 */
 	sf_hdr.ts.tv_sec  = (bpf_u_int32)h->ts.tv_sec;
 	sf_hdr.ts.tv_usec = (bpf_u_int32)h->ts.tv_usec;
