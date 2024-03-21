@@ -2326,7 +2326,7 @@ pcap_activate_bpf(pcap_t *p)
 		goto bad;
 	}
 #endif
-#if _BSDI_VERSION - 0 >= 199510
+#if defined(_BSDI_VERSION) && _BSDI_VERSION >= 199510
 	/* The SLIP and PPP link layer header changed in BSD/OS 2.1 */
 	switch (v) {
 
