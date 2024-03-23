@@ -369,6 +369,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_CANTSET_TSTAMP_TYPE	-10	/* this device doesn't support setting the time stamp type */
 #define PCAP_ERROR_PROMISC_PERM_DENIED	-11	/* you don't have permission to capture in promiscuous mode */
 #define PCAP_ERROR_TSTAMP_PRECISION_NOTSUP -12  /* the requested time stamp precision is not supported */
+#define PCAP_WARNING_CONTROL_KEEPALIVE_NOTSUP -13 /* keepalive control is not supported */
 
 /*
  * Warning codes for the pcap API.
@@ -610,6 +611,9 @@ PCAP_API void	pcap_breakloop(pcap_t *);
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *)
 	    PCAP_WARN_UNUSED_RESULT;
+
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_set_control_keepalive(pcap_t *, int, int, int, int);
 
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *)
