@@ -66,9 +66,6 @@
 /* Define to 1 if you have the <hurd.h> header file. */
 #cmakedefine HAVE_HURD_H 1
 
-/* Define to 1 if you have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H 1
-
 /* if libdlpi exists */
 #cmakedefine HAVE_LIBDLPI 1
 
@@ -147,17 +144,8 @@
 /* define if we have the Solaris getprotobyname_r() */
 #cmakedefine HAVE_SOLARIS_GETPROTOBYNAME_R 1
 
-/* Define to 1 if you have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H 1
-
-/* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H 1
-
 /* Define to 1 if you have the <strings.h> header file. */
 #cmakedefine HAVE_STRINGS_H 1
-
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcat' function. */
 #cmakedefine HAVE_STRLCAT 1
