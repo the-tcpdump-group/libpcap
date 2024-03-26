@@ -93,7 +93,7 @@ static HANDLE state_change_event;		//!< event to signal that a state change shou
 #endif
 static volatile sig_atomic_t shutdown_server;	//!< '1' if the server is to shut down
 static volatile sig_atomic_t reread_config;	//!< '1' if the server is to re-read its configuration
-static int uses_ssl; //!< '1' to use TLS over the data socket
+static int uses_ssl;				//!< '1' to use TLS over TCP
 
 extern char *optarg;	// for getopt()
 
