@@ -186,12 +186,12 @@ main(void)
 	    [
 		# GNU-style
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_GNU_STRERROR_R,,
+		AC_DEFINE(HAVE_GNU_STRERROR_R, 1,
 		    [Define to 1 if you have a GNU-style `strerror_r' function.])
 	    ],
 	    [
 		AC_MSG_RESULT(no)
-		AC_DEFINE(HAVE_POSIX_STRERROR_R,,
+		AC_DEFINE(HAVE_POSIX_STRERROR_R, 1,
 		    [Define to 1 if you have a POSIX-style `strerror_r' function.])
 	    ])
     ],
@@ -256,7 +256,7 @@ if test "$ac_cv_func_ffs" = yes; then
 	#
 	AC_CHECK_DECL(ffs,
 	    [
-		AC_DEFINE(STRINGS_H_DECLARES_FFS,,
+		AC_DEFINE(STRINGS_H_DECLARES_FFS, 1,
 		    [Define to 1 if strings.h declares `ffs'])
 	    ],,
 	    [
@@ -435,7 +435,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	#
 	AC_CHECK_DECL(ether_hostton,
 	    [
-		AC_DEFINE(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON,,
+		AC_DEFINE(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON, 1,
 		    [Define to 1 if net/ethernet.h declares `ether_hostton'])
 	    ],,
 	    [
@@ -458,7 +458,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if netinet/ether.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -483,7 +483,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if sys/ethernet.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -510,7 +510,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(ARPA_INET_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(ARPA_INET_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if arpa/inet.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -538,7 +538,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if netinet/if_ether.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -1891,7 +1891,7 @@ return 0;
 		AC_MSG_NOTICE(OpenSSL not found)
 	fi
 
-	AC_DEFINE(ENABLE_REMOTE,,
+	AC_DEFINE(ENABLE_REMOTE, 1,
 	    [Define to 1 if remote packet capture is to be supported])
 	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
