@@ -93,9 +93,6 @@
 /* Define to 1 if you have the <linux/wireless.h> header file. */
 #cmakedefine HAVE_LINUX_WIRELESS_H 1
 
-/* Define to 1 if you have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H 1
-
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #cmakedefine HAVE_NETPACKET_PACKET_H 1
 
@@ -108,13 +105,13 @@
 /* Use OpenSSL */
 #cmakedefine HAVE_OPENSSL 1
 
-/* if there's an os_proto.h for this platform, to use additional prototypes */
+/* if there's an os-proto.h for this platform, to use additional prototypes */
 #cmakedefine HAVE_OS_PROTO_H 1
 
 /* Define to 1 if Packet32 API (Npcap driver) is available */
 #cmakedefine HAVE_PACKET32 1
 
-/* Define to 1 if NPcap's version.h is available */
+/* Define to 1 if Npcap's version.h is available */
 #cmakedefine HAVE_VERSION_H 1
 
 /* Define to 1 if you have a POSIX-style `strerror_r' function. */
@@ -195,9 +192,6 @@
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #cmakedefine HAVE_SYS_SOCKIO_H 1
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H 1
 
 /* define if you have the TurboCap API */
 #cmakedefine HAVE_TC_API 1
