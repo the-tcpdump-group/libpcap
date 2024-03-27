@@ -144,9 +144,6 @@
 /* define if we have the Solaris getprotobyname_r() */
 #cmakedefine HAVE_SOLARIS_GETPROTOBYNAME_R 1
 
-/* Define to 1 if you have the <strings.h> header file. */
-#cmakedefine HAVE_STRINGS_H 1
-
 /* Define to 1 if you have the `strlcat' function. */
 #cmakedefine HAVE_STRLCAT 1
 
