@@ -4,7 +4,7 @@
 #define _DEVICE_BPF_H_
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <fcntl.h>
