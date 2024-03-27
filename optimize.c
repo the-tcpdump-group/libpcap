@@ -21,9 +21,7 @@
  *  Optimization module for BPF code intermediate representation.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
 

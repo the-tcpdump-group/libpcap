@@ -21,9 +21,7 @@
  * pcap-common.c - common code for pcap and pcapng files
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
 

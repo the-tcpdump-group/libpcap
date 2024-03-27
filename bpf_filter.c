@@ -38,9 +38,7 @@
  *	@(#)bpf.c	7.5 (Berkeley) 7/15/91
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
