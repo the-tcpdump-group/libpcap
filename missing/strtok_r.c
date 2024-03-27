@@ -34,9 +34,7 @@
  * From: @(#)strtok.c	8.1 (Berkeley) 6/4/93
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "portability.h"
 
