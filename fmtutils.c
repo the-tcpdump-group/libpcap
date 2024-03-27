@@ -35,9 +35,7 @@
  * Utilities for message formatting used both by libpcap and rpcapd.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "ftmacros.h"
 

@@ -31,9 +31,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <errno.h>
 #include <limits.h> /* for INT_MAX */

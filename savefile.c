@@ -28,9 +28,7 @@
  * dependent values so we can print the dump file on any architecture.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
 #ifdef _WIN32

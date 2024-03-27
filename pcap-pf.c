@@ -22,9 +22,7 @@
  *	Extraction/creation by Jeffrey Mogul, DECWRL
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/time.h>

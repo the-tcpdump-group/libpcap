@@ -11,9 +11,7 @@
  * by pcap-[dlpi,libdlpi].c.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #ifndef DL_IPATM
 #define DL_IPATM	0x12	/* ATM Classical IP interface */

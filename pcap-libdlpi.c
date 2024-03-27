@@ -24,9 +24,7 @@
  * Packet capture routines for DLPI using libdlpi under SunOS 5.11.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/time.h>

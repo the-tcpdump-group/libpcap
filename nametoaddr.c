@@ -22,9 +22,7 @@
  * These functions are not time critical.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #ifdef DECNETLIB
 #include <sys/types.h>
