@@ -1033,12 +1033,7 @@ The following ICMPv6 type field values are available:
 The following TCP flags field values are available:
 \fBtcp-fin\fP, \fBtcp-syn\fP, \fBtcp-rst\fP,
 \fBtcp-push\fP, \fBtcp-ack\fP, \fBtcp-urg\fP,
-\fBtcp-ece\fP, \fBtcp-cwr\fP, \fBtcp-ae\fP,
-\fBtcp-res1\fP, \fBtcp-res2\fP, \fBtcp-res3\fP and
-\fBtcp-res\fP.
-Among these, \fBtcp-res\fP is special as it can be
-used to check when any of the reserved TCP header
-flags is non-zero.
+\fBtcp-ece\fP, \fBtcp-cwr\fP, and \fBtcp-ae\fP.
 .LP
 Primitives may be combined using:
 .IP
@@ -1188,8 +1183,8 @@ The
 .B ifindex
 keyword became available in libpcap 1.10.0.
 .PP
-The \fBtcp-ae\fP, \fBtcp-res1\fP, \fBtcp-res2\fP, \fBtcp-res3\fP and \fBtcp-res\fP
-became available in libpcap 1.11. Also, \fBtcp[tcpflags]\fP was expanded to allow
+The \fBtcp-ae\fP keyword became available in libpcap 1.11.
+Also, \fBtcp[tcpflags]\fP was expanded to allow
 access to all 12 TCP header flags.
 .SH SEE ALSO
 .BR pcap (3PCAP)
