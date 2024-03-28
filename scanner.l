@@ -276,6 +276,7 @@ rarp		return RARP;
 ip		return IP;
 sctp		return SCTP;
 tcp		return TCP;
+tcpflags	return TCPFLAGS;
 udp		return UDP;
 icmp		return ICMP;
 igmp		return IGMP;
@@ -483,7 +484,6 @@ icmp6-multicastrouteradvert     { yylval->h = 151; return NUM; }
 icmp6-multicastroutersolicit    { yylval->h = 152; return NUM; }
 icmp6-multicastrouterterm       { yylval->h = 153; return NUM; }
 
-tcpflags		{ yylval->h = 13; return NUM; }
 tcp-fin			{ yylval->h = 0x01; return NUM; }
 tcp-syn			{ yylval->h = 0x02; return NUM; }
 tcp-rst			{ yylval->h = 0x04; return NUM; }
@@ -492,6 +492,7 @@ tcp-ack			{ yylval->h = 0x10; return NUM; }
 tcp-urg			{ yylval->h = 0x20; return NUM; }
 tcp-ece			{ yylval->h = 0x40; return NUM; }
 tcp-cwr			{ yylval->h = 0x80; return NUM; }
+tcp-ae			{ yylval->h = 0x100; return NUM; }
 [A-Za-z0-9]([-_.A-Za-z0-9]*[.A-Za-z0-9])? {
 			 yylval->s = sdup(yyextra, (char *)yytext); return ID; }
 "\\"[^ !()\n\t]+	{ yylval->s = sdup(yyextra, (char *)yytext + 1); return ID; }
