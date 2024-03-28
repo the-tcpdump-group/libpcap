@@ -48,6 +48,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make FreeBSD, Linux and macOS builds warning-free.
       Fix propagation of cc_werr_cflags() output.
       Print MAC addresses in findalldevstest.
+      When necessary, trust the OS to implement ffs().
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
