@@ -1078,20 +1078,6 @@ else(WIN32)
 endif(WIN32)
 
 #
-# Do we have ffs(), and is it declared in <strings.h>?
-#
-check_function_exists(ffs HAVE_FFS)
-if(HAVE_FFS)
-    #
-    # OK, we have ffs().  Is it declared in <strings.h>?
-    #
-    # This test fails if we don't have <strings.h> or if we do
-    # but it doesn't declare ffs().
-    #
-    check_symbol_exists(ffs strings.h STRINGS_H_DECLARES_FFS)
-endif()
-
-#
 # This requires the libraries that we require, as ether_hostton might be
 # in one of those libraries.  That means we have to do this after
 # we check for those libraries.

@@ -244,27 +244,6 @@ if test $needstrtok_r = yes; then
 fi
 
 #
-# Do we have ffs(), and is it declared in <strings.h>?
-#
-AC_CHECK_FUNCS(ffs)
-if test "$ac_cv_func_ffs" = yes; then
-	#
-	# We have ffs(); is it declared in <strings.h>?
-	#
-	# This test fails if we don't have <strings.h> or if we do
-	# but it doesn't declare ffs().
-	#
-	AC_CHECK_DECL(ffs,
-	    [
-		AC_DEFINE(STRINGS_H_DECLARES_FFS, 1,
-		    [Define to 1 if strings.h declares `ffs'])
-	    ],,
-	    [
-#include <strings.h>
-	    ])
-fi
-
-#
 # Do this before checking for ether_hostton(), as it's a
 # "getaddrinfo()-ish function".
 #
