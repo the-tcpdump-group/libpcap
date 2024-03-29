@@ -37,6 +37,7 @@
 #include "pcap-int.h"
 #include "pcap-bt-linux.h"
 #include "pcap/bluetooth.h"
+#include "diag-control.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -370,7 +371,10 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 					sizeof pkth.ts);
 				break;
 		}
+		// for musl libc CMSG_NXTHDR()
+DIAG_OFF_SIGN_COMPARE
 		cmsg = CMSG_NXTHDR(&msg, cmsg);
+DIAG_ON_SIGN_COMPARE
 	}
 	switch (handle->direction) {
 

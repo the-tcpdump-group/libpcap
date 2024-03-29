@@ -41,6 +41,7 @@
 
 #include "pcap/bluetooth.h"
 #include "pcap-int.h"
+#include "diag-control.h"
 
 #include "pcap-bt-monitor-linux.h"
 
@@ -137,7 +138,10 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     pkth.caplen = (bpf_u_int32)(ret - sizeof(hdr) + sizeof(pcap_bluetooth_linux_monitor_header));
     pkth.len = pkth.caplen;
 
+    // for musl libc CMSG_NXTHDR()
+DIAG_OFF_SIGN_COMPARE
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+DIAG_ON_SIGN_COMPARE
         if (cmsg->cmsg_level != SOL_SOCKET) continue;
 
         if (cmsg->cmsg_type == SCM_TIMESTAMP) {

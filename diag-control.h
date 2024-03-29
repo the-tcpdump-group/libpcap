@@ -143,6 +143,12 @@
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation")
   #define DIAG_ON_DOCUMENTATION \
     PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  #define DIAG_OFF_SIGN_COMPARE \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare")
+  #define DIAG_ON_SIGN_COMPARE \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
 #elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
@@ -410,6 +416,12 @@
 #endif
 #ifndef DIAG_ON_DOCUMENTATION
 #define DIAG_ON_DOCUMENTATION
+#endif
+#ifndef DIAG_OFF_SIGN_COMPARE
+#define DIAG_OFF_SIGN_COMPARE
+#endif
+#ifndef DIAG_ON_SIGN_COMPARE
+#define DIAG_ON_SIGN_COMPARE
 #endif
 #ifndef PCAP_UNREACHABLE
 #define PCAP_UNREACHABLE
