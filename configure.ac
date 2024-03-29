@@ -2776,7 +2776,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 					    #include <bluetooth/hci.h>
 					]],
 					[[
-					    u_int i = HCI_CHANNEL_MONITOR;
+					    int i = HCI_CHANNEL_MONITOR;
 					]])],
 					[
 					    AC_MSG_RESULT(yes)

@@ -2385,7 +2385,7 @@ if(NOT DISABLE_BLUETOOTH)
 int
 main(void)
 {
-    u_int i = HCI_CHANNEL_MONITOR;
+    int i = HCI_CHANNEL_MONITOR;
     return 0;
 }
 "
