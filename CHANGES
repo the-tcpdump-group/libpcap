@@ -138,6 +138,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix propagation of cc_werr_cflags() output.
       Makefile.in(s): Fix the depend target.
       mkdep: Exit with a non-zero status if a command fails.
+      Fix HCI_CHANNEL_MONITOR detection with musl libc.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
