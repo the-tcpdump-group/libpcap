@@ -932,11 +932,6 @@ haiku)
 	# Capture module
 	#
 	PLATFORM_C_SRC="pcap-haiku.c"
-
-	#
-	# Just for the sake of it.
-	#
-	AC_CHECK_HEADERS(net/if.h net/if_dl.h net/if_types.h)
 	;;
 
 linux)

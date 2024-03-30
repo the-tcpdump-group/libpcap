@@ -2091,10 +2091,6 @@ else(WIN32)
             message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
         endif()
     elseif(PCAP_TYPE STREQUAL "haiku")
-        #
-        # Check for some headers just in case.
-        #
-        check_include_files("net/if.h;net/if_dl.h;net/if_types.h" HAVE_NET_IF_TYPES_H)
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
     elseif(PCAP_TYPE STREQUAL "hurd")
         #
