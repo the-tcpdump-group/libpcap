@@ -82,8 +82,7 @@ ENDOFTEXT
 * CMake 3.14.3 works.
 * Sun C 5.13 works, GCC 5.5.0 works.
 
-## Solaris 9/SPARC
+## Solaris 9
 
-* flex 2.5.35 and GNU Bison 3.0.2 work.
-* CMake 2.8.9 does not work.
-* Neither Sun C 5.8 nor Sun C 5.9 work, GCC 4.6.4 works.
+This version of this OS is not supported because the snprintf(3) implementation
+in its libc is not suitable.

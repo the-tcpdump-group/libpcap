@@ -239,4 +239,4 @@ where `{configuration}` can be "Release", "Debug", or "RelWithDebInfo".
 Building with MinGW
 -------------------
 
-(XXX - this should be added)
+MinGW is not supported because its snprintf(3) implementation is not suitable.

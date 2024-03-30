@@ -50,6 +50,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Print MAC addresses in findalldevstest.
       When necessary, trust the OS to implement ffs().
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
+      At build time require a proof of suitable snprintf(3) implementation in
+        libc (and document Solaris 9 and MinGW as unsupported because of that).
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

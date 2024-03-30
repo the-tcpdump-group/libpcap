@@ -208,12 +208,63 @@ main(void)
 AC_CHECK_FUNCS(vsyslog)
 
 #
-# Make sure we have vsnprintf() and snprintf(); we require them.
+# Require a proof of suitable snprintf(3), same as in tcpdump.
 #
-AC_CHECK_FUNC(vsnprintf,,
-    AC_MSG_ERROR([vsnprintf() is required but wasn't found]))
-AC_CHECK_FUNC(snprintf,,
-    AC_MSG_ERROR([snprintf() is required but wasn't found]))
+AC_MSG_CHECKING([whether snprintf is suitable])
+AC_RUN_IFELSE(
+    [
+        AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <string.h>
+#include <inttypes.h>
+#include <sys/types.h>
+
+int main()
+{
+  char buf[100];
+  uint64_t t = (uint64_t)1 << 32;
+
+  snprintf(buf, sizeof(buf), "%zu", sizeof(buf));
+  if (strncmp(buf, "100", sizeof(buf)))
+    return 1;
+
+  snprintf(buf, sizeof(buf), "%zd", -sizeof(buf));
+  if (strncmp(buf, "-100", sizeof(buf)))
+    return 2;
+
+  snprintf(buf, sizeof(buf), "%" PRId64, -t);
+  if (strncmp(buf, "-4294967296", sizeof(buf)))
+    return 3;
+
+  snprintf(buf, sizeof(buf), "0o%" PRIo64, t);
+  if (strncmp(buf, "0o40000000000", sizeof(buf)))
+    return 4;
+
+  snprintf(buf, sizeof(buf), "0x%" PRIx64, t);
+  if (strncmp(buf, "0x100000000", sizeof(buf)))
+    return 5;
+
+  snprintf(buf, sizeof(buf), "%" PRIu64, t);
+  if (strncmp(buf, "4294967296", sizeof(buf)))
+    return 6;
+
+  return 0;
+}
+        ]])
+    ],
+    [
+        AC_MSG_RESULT(yes)
+    ],
+    [
+        AC_MSG_RESULT(no)
+        AC_MSG_ERROR(
+[The snprintf(3) implementation in this libc is not suitable,
+libpcap would not work correctly even if it managed to compile.])
+    ],
+    [
+        AC_MSG_RESULT(not while cross-compiling)
+    ]
+)
 
 needasprintf=no
 AC_CHECK_FUNCS(vasprintf asprintf,,
