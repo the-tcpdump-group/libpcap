@@ -6,13 +6,10 @@ freebsd_task:
   name: freebsd-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   freebsd_instance:
-    matrix:
-      - image_family: freebsd-13-3
-        cpu: 2
-        memory: 2G
-      - image_family: freebsd-14-0
-        cpu: 2
-        memory: 2G
+  freebsd_instance:
+    cpu: 2
+    memory: 2G
+    image_family: freebsd-13-3
   env:
     IGNORE_OSVERSION: yes
     MAKEFLAGS: -j 4
