@@ -1016,7 +1016,7 @@ script or some other configuration script to check whether the libpcap
 .BR tcpdump (1),
 .BR tcpslice (1),
 .BR \%pcap-filter (@MAN_MISC_INFO@),
-.BR pfconfig (8),
+.BR bpf (@MAN_DEVICES@),
 .BR usermod (@MAN_ADMIN_COMMANDS@)
 .SH AUTHORS
 The original authors of libpcap are:

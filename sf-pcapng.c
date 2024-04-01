@@ -21,9 +21,7 @@
  * sf-pcapng.c - pcapng-file-format-specific code from savefile.c
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap/pcap-inttypes.h>
 

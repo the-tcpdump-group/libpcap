@@ -67,9 +67,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 /*
  * grammar.h requires gencode.h and sometimes breaks in a polluted namespace

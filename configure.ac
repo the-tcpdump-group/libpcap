@@ -125,7 +125,6 @@ AC_CHECK_SIZEOF([time_t],,[#include <time.h>])
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
-AC_C_INLINE
 AC_PCAP_C___ATOMICS
 
 #
@@ -187,12 +186,12 @@ main(void)
 	    [
 		# GNU-style
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_GNU_STRERROR_R,,
+		AC_DEFINE(HAVE_GNU_STRERROR_R, 1,
 		    [Define to 1 if you have a GNU-style `strerror_r' function.])
 	    ],
 	    [
 		AC_MSG_RESULT(no)
-		AC_DEFINE(HAVE_POSIX_STRERROR_R,,
+		AC_DEFINE(HAVE_POSIX_STRERROR_R, 1,
 		    [Define to 1 if you have a POSIX-style `strerror_r' function.])
 	    ])
     ],
@@ -242,27 +241,6 @@ AC_CHECK_FUNCS(strtok_r,,
 	[needstrtok_r=yes])
 if test $needstrtok_r = yes; then
 	AC_LIBOBJ([strtok_r])
-fi
-
-#
-# Do we have ffs(), and is it declared in <strings.h>?
-#
-AC_CHECK_FUNCS(ffs)
-if test "$ac_cv_func_ffs" = yes; then
-	#
-	# We have ffs(); is it declared in <strings.h>?
-	#
-	# This test fails if we don't have <strings.h> or if we do
-	# but it doesn't declare ffs().
-	#
-	AC_CHECK_DECL(ffs,
-	    [
-		AC_DEFINE(STRINGS_H_DECLARES_FFS,,
-		    [Define to 1 if strings.h declares `ffs'])
-	    ],,
-	    [
-#include <strings.h>
-	    ])
 fi
 
 #
@@ -436,7 +414,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	#
 	AC_CHECK_DECL(ether_hostton,
 	    [
-		AC_DEFINE(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON,,
+		AC_DEFINE(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON, 1,
 		    [Define to 1 if net/ethernet.h declares `ether_hostton'])
 	    ],,
 	    [
@@ -459,7 +437,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if netinet/ether.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -484,7 +462,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if sys/ethernet.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -511,7 +489,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(ARPA_INET_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(ARPA_INET_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if arpa/inet.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -539,7 +517,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		unset ac_cv_have_decl_ether_hostton
 		AC_CHECK_DECL(ether_hostton,
 		    [
-			AC_DEFINE(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON,,
+			AC_DEFINE(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON, 1,
 			    [Define to 1 if netinet/if_ether.h declares `ether_hostton'])
 		    ],,
 		    [
@@ -954,11 +932,6 @@ haiku)
 	# Capture module
 	#
 	PLATFORM_C_SRC="pcap-haiku.c"
-
-	#
-	# Just for the sake of it.
-	#
-	AC_CHECK_HEADERS(net/if.h net/if_dl.h net/if_types.h)
 	;;
 
 linux)
@@ -1892,7 +1865,7 @@ return 0;
 		AC_MSG_NOTICE(OpenSSL not found)
 	fi
 
-	AC_DEFINE(ENABLE_REMOTE,,
+	AC_DEFINE(ENABLE_REMOTE, 1,
 	    [Define to 1 if remote packet capture is to be supported])
 	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
@@ -2798,7 +2771,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 					    #include <bluetooth/hci.h>
 					]],
 					[[
-					    u_int i = HCI_CHANNEL_MONITOR;
+					    int i = HCI_CHANNEL_MONITOR;
 					]])],
 					[
 					    AC_MSG_RESULT(yes)

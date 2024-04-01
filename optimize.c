@@ -21,9 +21,7 @@
  *  Optimization module for BPF code intermediate representation.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
 
@@ -141,49 +139,15 @@ lowest_set_bit(int mask)
 		abort();	/* mask is zero */
 	return (u_int)bit;
 }
-#elif defined(STRINGS_H_DECLARES_FFS)
+#else
   /*
-   * A non-Windows OS that has <strings.h> and declares ffs() there (typically
-   * UN*X conforming to a sufficiently recent version of the Single UNIX
-   * Specification, but also Haiku).
+   * POSIX.1-2001 says ffs() is in <strings.h>.  Every supported non-Windows OS
+   * (including Linux with musl libc and uclibc-ng) has the header and (except
+   * HP-UX) declares the function there.  HP-UX declares the function in
+   * <string.h>, which has already been included.
    */
   #include <strings.h>
   #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
-#elif defined(__hpux)
-  /*
-   * HP-UX 11i v3, which declares ffs() in <string.h>, which we've already
-   * included.  Place this branch after the <strings.h> branch, in case a later
-   * release of HP-UX makes the declaration available via the standard header.
-   */
-  #define lowest_set_bit(mask)	((u_int)(ffs((mask)) - 1))
-#else
-/*
- * None of the above.
- * Use a perfect-hash-function-based function.
- */
-static u_int
-lowest_set_bit(int mask)
-{
-	unsigned int v = (unsigned int)mask;
-
-	static const u_int MultiplyDeBruijnBitPosition[32] = {
-		0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
-		31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
-	};
-
-	/*
-	 * We strip off all but the lowermost set bit (v & ~v),
-	 * and perform a minimal perfect hash on it to look up the
-	 * number of low-order zero bits in a table.
-	 *
-	 * See:
-	 *
-	 *	http://7ooo.mooo.com/text/ComputingTrailingZerosHOWTO.pdf
-	 *
-	 *	http://supertech.csail.mit.edu/papers/debruijn.pdf
-	 */
-	return (MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531U) >> 27]);
-}
 #endif
 
 /*

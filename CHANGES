@@ -48,6 +48,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make FreeBSD, Linux and macOS builds warning-free.
       Fix propagation of cc_werr_cflags() output.
       Print MAC addresses in findalldevstest.
+      When necessary, trust the OS to implement ffs().
+      Fix HCI_CHANNEL_MONITOR detection with musl libc.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
@@ -94,6 +96,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Properly report warnings about unknown ARPHRD_ types.
       Fix DLT_CAN_SOCKETCAN handling of CAN FD
       Add CAN XL support to DLT_CAN_SOCKETCAN
+      Clean up the code that sets the "real" ("original") length for
+        isochronous USB transfers.
     Solaris:
       Handle BPF returning ESRCH for unknown devices.
       List the "any" device if it's supported.

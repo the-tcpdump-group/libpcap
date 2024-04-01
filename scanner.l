@@ -1,8 +1,6 @@
 %top {
 /* Must come first for _LARGE_FILE_API on AIX. */
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 /*
  * Must come first to avoid warnings on Windows.

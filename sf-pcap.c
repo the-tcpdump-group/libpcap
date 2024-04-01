@@ -28,9 +28,7 @@
  * dependent values so we can print the dump file on any architecture.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
 #ifdef _WIN32
@@ -844,10 +842,17 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 		return;
 	/*
 	 * Better not try writing pcap files after
-	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
+	 * 2106-02-07 06:28:15 UTC; switch to pcapng.
+	 * (And better not try writing pcap files with time stamps
+	 * that predate 1970-01-01 00:00:00 UTC; that's not supported.
+	 * You could try using pcapng with the if_tsoffset field in
+	 * the IDB for the interface(s) with packets with those time
+	 * stamps, but you may also have to get a link-layer type for
+	 * IBM Bisync or whatever link layer even older forms
+	 * of computer communication used.)
 	 */
-	sf_hdr.ts.tv_sec  = (bpf_int32)h->ts.tv_sec;
-	sf_hdr.ts.tv_usec = (bpf_int32)h->ts.tv_usec;
+	sf_hdr.ts.tv_sec  = (bpf_u_int32)h->ts.tv_sec;
+	sf_hdr.ts.tv_usec = (bpf_u_int32)h->ts.tv_usec;
 	sf_hdr.caplen     = h->caplen;
 	sf_hdr.len        = h->len;
 	/*

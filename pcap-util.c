@@ -21,23 +21,21 @@
  * pcap-util.c - common code for various files
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <pcap-types.h>
+
+#include "pcap/can_socketcan.h"
+#include "pcap/sll.h"
+#include "pcap/usb.h"
+#include "pcap/nflog.h"
 
 #include "pcap-int.h"
 #include "extract.h"
 #include "pcap-usb-linux-common.h"
 
 #include "pcap-util.h"
-
 #include "pflog.h"
-#include "pcap/can_socketcan.h"
-#include "pcap/sll.h"
-#include "pcap/usb.h"
-#include "pcap/nflog.h"
 
 /*
  * Most versions of the DLT_PFLOG pseudo-header have UID and PID fields
@@ -484,6 +482,24 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 	}
 }
 
+static inline int
+packet_length_might_be_wrong(struct pcap_pkthdr *hdr,
+    const pcap_usb_header_mmapped *usb_hdr)
+{
+	uint32_t old_style_packet_length;
+
+	/*
+	 * Calculate the packet length the old way.
+	 * We know that the multiplication won't overflow, but
+	 * we don't know that the additions won't.  Calculate
+	 * it with no overflow checks, as that's how it
+	 * would have been calculated when it was captured.
+	 */
+	old_style_packet_length = iso_pseudo_header_len(usb_hdr) +
+	    usb_hdr->urb_len;
+	return (hdr->len == old_style_packet_length);
+}
+
 void
 pcapint_post_process(int linktype, int swapped, struct pcap_pkthdr *hdr,
     u_char *data)
@@ -491,40 +507,121 @@ pcapint_post_process(int linktype, int swapped, struct pcap_pkthdr *hdr,
 	if (swapped)
 		swap_pseudo_headers(linktype, hdr, data);
 
-	pcapint_fixup_pcap_pkthdr(linktype, hdr, data);
-}
-
-void
-pcapint_fixup_pcap_pkthdr(int linktype, struct pcap_pkthdr *hdr, const u_char *data)
-{
-	const pcap_usb_header_mmapped *usb_hdr;
-
-	usb_hdr = (const pcap_usb_header_mmapped *) data;
-	if (linktype == DLT_USB_LINUX_MMAPPED &&
-	    hdr->caplen >= sizeof (pcap_usb_header_mmapped)) {
+	/*
+	 * Is this a memory-mapped Linux USB capture?
+	 */
+	if (linktype == DLT_USB_LINUX_MMAPPED) {
 		/*
-		 * In older versions of libpcap, in memory-mapped captures,
-		 * the "on-the-bus length" for completion events for
-		 * incoming isochronous transfers was miscalculated; it
-		 * needed to be calculated based on the* offsets and lengths
-		 * in the descriptors, not on the raw URB length, but it
-		 * wasn't.
+		 * Yes.
+		 *
+		 * In older versions of libpcap, in memory-mapped Linux
+		 * USB captures, the original length of completion events
+		 * for incoming isochronous transfers was miscalculated;
+		 * it needed to be calculated based on the offsets and
+		 * lengths in the descriptors, not on the raw URB length,
+		 * but it wasn't.
 		 *
 		 * If this packet contains transferred data (yes, data_flag
-		 * is 0 if we *do* have data), and the total on-the-network
-		 * length is equal to the value calculated from the raw URB
-		 * length, then it might be one of those transfers.
+		 * is 0 if we *do* have data), it's a completion event
+		 * for an incoming isochronous transfer, and the
+		 * transfer length appears to have been calculated
+		 * from the raw URB length, fix it.
 		 *
-		 * We only do this if we have the full USB pseudo-header.
+		 * We only do this if we have the full USB pseudo-header,
+		 * because we will have to look at that header and at
+		 * all of the isochronous descriptors.
 		 */
-		if (!usb_hdr->data_flag &&
-		    hdr->len == sizeof(pcap_usb_header_mmapped) +
-		      (usb_hdr->ndesc * sizeof (usb_isodesc)) + usb_hdr->urb_len) {
+		if (hdr->caplen < sizeof (pcap_usb_header_mmapped)) {
 			/*
-			 * It might need fixing; fix it if it's a completion
-			 * event for an incoming isochronous transfer.
+			 * We don't have the full pseudo-header.
 			 */
-			fix_linux_usb_mmapped_length(hdr, data);
+			return;
+		}
+
+		const pcap_usb_header_mmapped *usb_hdr =
+		    (const pcap_usb_header_mmapped *) data;
+
+		/*
+		 * Make sure the number of descriptors is sane.
+		 *
+		 * The Linux binary USB monitor code limits the number of
+		 * isochronous descriptors to 128; if the number in the file
+		 * is larger than that, either 1) the file's been damaged
+		 * or 2) the file was produced after the number was raised
+		 * in the kernel.
+		 *
+		 * In case 1), the number can't be trusted, so don't rely on
+		 * it to attempt to fix the original length field in the pcap
+		 * or pcapng header.
+		 *
+		 * In case 2), the system was probably running a version of
+		 * libpcap that didn't miscalculate the original length, so
+		 * it probably doesn't need to be fixed.
+		 *
+		 * This avoids the possibility of the product of the number of
+		 * descriptors and the size of descriptors won't overflow an
+		 * unsigned 32-bit integer.
+		 */
+		if (usb_hdr->ndesc > USB_MAXDESC)
+			return;
+
+		if (!usb_hdr->data_flag &&
+		    is_isochronous_transfer_completion(usb_hdr) &&
+		    packet_length_might_be_wrong(hdr, usb_hdr)) {
+			u_int len;
+
+			/*
+			 * Make sure we have all of the descriptors,
+			 * as we will have to look at all of them.
+			 *
+			 * If not, we don't bother trying to fix
+			 * anything.
+			 */
+			if (hdr->caplen < iso_pseudo_header_len(usb_hdr))
+				return;
+
+			/*
+			 * Calculate what the length should have been.
+			 */
+			len = incoming_isochronous_transfer_completed_len(hdr,
+			    data);
+
+			/*
+			 * len is the smaller of UINT_MAX and the total
+			 * header plus data length.  That's guaranteed
+			 * to fit in a UINT_MAX.
+			 *
+			 * Don't reduce the original length to a value
+			 * below the captured length, however, as that
+			 * is bogus.
+			 */
+			if (len >= hdr->caplen)
+				hdr->len = len;
+
+			/*
+			 * If the captured length is greater than the
+			 * length, use the captured length.
+			 *
+			 * For completion events for incoming isochronous
+			 * transfers, it's based on data_len, which is
+			 * calculated the same way we calculated
+			 * pre_truncation_data_len above, except that
+			 * it has access to all the isochronous descriptors,
+			 * not just the ones that the kernel were able to
+			 * provide us or, for a capture file, that weren't
+			 * sliced off by a snapshot length.
+			 *
+			 * However, it might have been reduced by the USB
+			 * capture mechanism arbitrarily limiting the amount
+			 * of data it provides to userland, or by the libpcap
+			 * capture code limiting it to being no more than the
+			 * snapshot, so we don't want to just use it all the
+			 * time; we only do so to try to get a better estimate
+			 * of the actual length - and to make sure the
+			 * original length is always >= the captured length.
+			 */
+			if (hdr->caplen > hdr->len)
+				hdr->len = hdr->caplen;
 		}
 	}
 }

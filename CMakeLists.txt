@@ -576,8 +576,6 @@ set(PACKAGE_STRING "${LIBRARY_NAME} ${PACKAGE_VERSION}")
 # Project settings
 ######################################
 
-add_definitions(-DHAVE_CONFIG_H)
-
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${pcap_SOURCE_DIR}
@@ -655,13 +653,10 @@ include(CheckTypeSize)
 #
 # Header files.
 #
-check_include_file(inttypes.h HAVE_INTTYPES_H)
-check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 if(NOT HAVE_UNISTD_H)
     add_definitions(-DYY_NO_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)
-check_include_file(bitypes.h HAVE_SYS_BITYPES_H)
 if(NOT WIN32)
     check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
     check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
@@ -1081,20 +1076,6 @@ if(WIN32)
 else(WIN32)
     check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKADDR_SA_LEN)
 endif(WIN32)
-
-#
-# Do we have ffs(), and is it declared in <strings.h>?
-#
-check_function_exists(ffs HAVE_FFS)
-if(HAVE_FFS)
-    #
-    # OK, we have ffs().  Is it declared in <strings.h>?
-    #
-    # This test fails if we don't have <strings.h> or if we do
-    # but it doesn't declare ffs().
-    #
-    check_symbol_exists(ffs strings.h STRINGS_H_DECLARES_FFS)
-endif()
 
 #
 # This requires the libraries that we require, as ether_hostton might be
@@ -1770,7 +1751,6 @@ set(PROJECT_SOURCE_LIST_C
     nametoaddr.c
     optimize.c
     pcap-common.c
-    pcap-usb-linux-common.c
     pcap-util.c
     pcap.c
     savefile.c
@@ -2111,10 +2091,6 @@ else(WIN32)
             message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
         endif()
     elseif(PCAP_TYPE STREQUAL "haiku")
-        #
-        # Check for some headers just in case.
-        #
-        check_include_files("net/if.h;net/if_dl.h;net/if_types.h" HAVE_NET_IF_TYPES_H)
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
     elseif(PCAP_TYPE STREQUAL "hurd")
         #
@@ -2405,7 +2381,7 @@ if(NOT DISABLE_BLUETOOTH)
 int
 main(void)
 {
-    u_int i = HCI_CHANNEL_MONITOR;
+    int i = HCI_CHANNEL_MONITOR;
     return 0;
 }
 "

@@ -3,9 +3,7 @@
 /* XXX Hack not to include the Mach BPF interface */
 #define _DEVICE_BPF_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <fcntl.h>
 #include <hurd.h>
