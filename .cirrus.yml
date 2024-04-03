@@ -6,20 +6,15 @@ freebsd_task:
   name: freebsd-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   freebsd_instance:
-    matrix:
-      - image_family: freebsd-13-2
-        cpu: 2
-        memory: 2G
-      - image_family: freebsd-14-0
-        cpu: 2
-        memory: 2G
+    cpu: 1
+    memory: 2G
+    image_family: freebsd-13-3
   env:
     IGNORE_OSVERSION: yes
-    MAKEFLAGS: -j 4
-    MATRIX_CC: clang15 gcc12
+    MATRIX_CC: clang17 gcc13
   script:
-    - pkg install -qy autoconf gcc12 llvm15
-    - pkg install -qy cmake git-tiny # for build_matrix.sh and build.sh
+    - pkg install -qy autoconf gcc13 llvm17
+    - pkg install -qy cmake-core git-tiny # for build_matrix.sh and build.sh
     - ./build_matrix.sh
 
 linux_task:
@@ -27,24 +22,21 @@ linux_task:
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   container:
     image: ubuntu:22.04
-    cpu: 2
+    cpu: 1
     memory: 1G
   env:
     DEBIAN_FRONTEND: noninteractive
-    MAKEFLAGS: -j 3
-    MATRIX_CC: gcc clang-15
     LANG: C
   script:
     - apt-get -qy update >/dev/null
-    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
-    - apt-get -qy install flex bison autoconf make clang-15 gcc >/dev/null
-    - apt-get -qy install cmake git bc >/dev/null # for build_matrix.sh and build.sh
-    - apt list --installed 'lib*-dev'
+    - apt-get -qy install flex bison autoconf make gcc >/dev/null # for "./configure"
+    - apt-get -qy install cmake git >/dev/null # for "make releasecheck"
+    - apt-get -qy install shellcheck >/dev/null
     - ./autogen.sh
     - ./configure --quiet # build the Makefile
     - make releasecheck
     - make whitespacecheck
-    - ./build_matrix.sh
+    - make shellcheck
 
 macos_task:
   name: macos-aarch64
@@ -63,18 +55,18 @@ coverity_task:
   only_if: $CIRRUS_BRANCH == 'coverity_scan'
   container:
     image: ubuntu:22.04
-    cpu: 2
+    cpu: 1
     memory: 2G
   env:
     DEBIAN_FRONTEND: noninteractive
-    MAKEFLAGS: -j 3
     COVERITY_SCAN_PROJECT_NAME: $CIRRUS_REPO_FULL_NAME
     COVERITY_SCAN_TOKEN: ENCRYPTED[58bfbfcf624e5b7b85fb9df95dd0b3f9f93642824e6ae94616e4d345af4848580932a6ece02337fee112194b29ce6593]
-    COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote
+    COVERITY_SCAN_BUILD_COMMAND_PREPEND: ./configure --enable-remote --enable-optimizer-dbg --enable-yydebug
     COVERITY_SCAN_BUILD_COMMAND: make
+    LANG: C
   script:
     - apt-get -qy update >/dev/null
-    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev >/dev/null
+    - apt-get -qy install libdbus-1-dev libbluetooth-dev libnl-genl-3-dev libibverbs-dev libssl-dev >/dev/null
     - apt-get -qy install flex bison autoconf make gcc >/dev/null
     - apt-get -qy install git curl wget ruby rubygems ruby-json >/dev/null # for the coverity script
     - apt list --installed 'lib*-dev'
