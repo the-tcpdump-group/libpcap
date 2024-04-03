@@ -111,6 +111,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
       Autoconf: Update config.{guess,sub}, timestamps 2024-01-01
+      Autoconf: Update the install-sh script to the 2020-11-14.01 version.
       Compile with '-Wnull-pointer-subtraction',
         '-Wunused-but-set-parameter', and '-Wunused-but-set-variable' in
         devel mode if supported
@@ -118,7 +119,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         CMake.
       Use noreturn and __format__ with XL C 7.0 and later.
       Check for the same -W flags in autotools and CMake.
-      autoconf: Add autogen.sh, remove configure and config.h.in and put
+      Autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
     Documentation:
       Update and fix pcap-filter man page.
