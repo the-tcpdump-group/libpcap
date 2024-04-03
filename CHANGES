@@ -121,6 +121,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Check for the same -W flags in autotools and CMake.
       Autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
+      Autoconf: Get the size of a time_t.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
