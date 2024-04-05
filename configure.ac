@@ -2826,7 +2826,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 					]])],
 					[
 					    AC_MSG_RESULT(yes)
-					    AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
+					    AC_DEFINE(PCAP_SUPPORT_BT_MONITOR, 1,
 					      [target host supports Bluetooth Monitor])
 					    MODULE_C_SRC="$MODULE_C_SRC pcap-bt-monitor-linux.c"
 					],
@@ -3019,7 +3019,7 @@ if test "x$enable_rdma" != "xno"; then
 
 	if test "x$found_usable_libibverbs" = "xyes"
 	then
-		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
+		AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, 1, [target host supports RDMA sniffing])
 		MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
 		CFLAGS="$LIBIBVERBS_CFLAGS $CFLAGS"
 		ADDITIONAL_LIBS="$LIBIBVERBS_LIBS $ADDITIONAL_LIBS"
