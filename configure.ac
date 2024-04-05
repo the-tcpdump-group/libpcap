@@ -1124,7 +1124,7 @@ bpf)
 	if test -e /usr/include/inet/ipnet.h &&
 	    grep -q IPNET_ANY_LINK /usr/include/inet/ipnet.h; then
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SOLARIS_ANY_DEVICE, , [target host supports Solaris "any" device])
+		AC_DEFINE(HAVE_SOLARIS_ANY_DEVICE, 1, [target host supports Solaris "any" device])
 	else
 		AC_MSG_RESULT(no)
 	fi
