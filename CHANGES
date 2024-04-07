@@ -51,6 +51,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
       At build time require a proof of suitable snprintf(3) implementation in
         libc (and document Solaris 9 and MinGW as unsupported because of that).
+      Makefile.in: Update the .c.o build rule (Remove hacks for old SunOS 4).
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
