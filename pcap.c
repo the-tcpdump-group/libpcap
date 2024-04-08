@@ -3789,6 +3789,10 @@ pcap_strerror(int errnum)
 	static thread_local char errbuf[PCAP_ERRBUF_SIZE];
 	int err = strerror_r(errnum, errbuf, PCAP_ERRBUF_SIZE);
 	switch (err) {
+	case 0:
+		/* That worked. */
+		break;
+
 	case EINVAL:
 		/*
 		 * UNIX 03 says this isn't guaranteed to produce a
