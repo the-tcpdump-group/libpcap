@@ -123,6 +123,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         these generated files in the release tarball.
       Autoconf: Get the size of a time_t.
       Fix propagation of cc_werr_cflags() output.
+      Makefile.in(s): Fix the depend target.
+      mkdep: Exit with a non-zero status if a command fails.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
