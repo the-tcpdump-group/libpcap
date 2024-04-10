@@ -45,7 +45,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make NetBSD build warning-free.
       Make Sun C build warning-free.
       Make FreeBSD, Linux and macOS builds warning-free.
-      Fix propagation of cc_werr_cflags() output.
       Print MAC addresses in findalldevstest.
       When necessary, trust the OS to implement ffs().
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
@@ -182,6 +181,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
       Autoconf: Get the size of a time_t.
+      Fix propagation of cc_werr_cflags() output.
       Makefile.in(s): Fix the depend target.
       mkdep: Exit with a non-zero status if a command fails.
     Documentation:
