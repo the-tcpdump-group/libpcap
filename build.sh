@@ -134,21 +134,15 @@ else
 fi
 run_after_echo "$MAKE_BIN" install
 
-while read -r opts; do
-    # opts is meant to expand
-    # shellcheck disable=SC2086
-    run_after_echo "$PREFIX/bin/pcap-config" $opts
-done <<EOF
---help
---version
---cflags
---libs
---additional-libs
---libs --static
---additional-libs --static
---libs --static-pcap-only
---additional-libs --static-pcap-only
-EOF
+run_after_echo "$PREFIX/bin/pcap-config" --help
+run_after_echo "$PREFIX/bin/pcap-config" --version
+run_after_echo "$PREFIX/bin/pcap-config" --cflags
+run_after_echo "$PREFIX/bin/pcap-config" --libs
+run_after_echo "$PREFIX/bin/pcap-config" --additional-libs
+run_after_echo "$PREFIX/bin/pcap-config" --libs --static
+run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static
+run_after_echo "$PREFIX/bin/pcap-config" --libs --static-pcap-only
+run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static-pcap-only
 
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
