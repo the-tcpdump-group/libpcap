@@ -1912,13 +1912,14 @@ return 0;
 		ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $OPENSSL_LIBS_STATIC"
 		LIBS_PRIVATE="$LIBS_PRIVATE $OPENSSL_LIBS_PRIVATE"
 		REQUIRES_PRIVATE="$REQUIRES_PRIVATE $OPENSSL_REQUIRES_PRIVATE"
+		REMOTE_C_SRC="$REMOTE_C_SRC sslutils.c"
 	else
 		AC_MSG_NOTICE(OpenSSL not found)
 	fi
 
 	AC_DEFINE(ENABLE_REMOTE, 1,
 	    [Define to 1 if remote packet capture is to be supported])
-	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
+	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
