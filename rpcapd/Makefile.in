@@ -85,7 +85,7 @@ SRC =	daemon.c \
 	log.c \
 	rpcapd.c
 
-OBJ =	$(SRC:.c=.o) ../rpcap-protocol.o ../sockutils.o ../fmtutils.o ../sslutils.o
+OBJ =	$(SRC:.c=.o)
 PUBHDR =
 
 HDR = $(PUBHDR) log.h
