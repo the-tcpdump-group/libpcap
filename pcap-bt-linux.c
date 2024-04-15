@@ -340,12 +340,12 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 
 	/* ignore interrupt system call error */
 	do {
-		ret = recvmsg(handle->fd, &msg, 0);
 		if (handle->break_loop)
 		{
 			handle->break_loop = 0;
 			return -2;
 		}
+		ret = recvmsg(handle->fd, &msg, 0);
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
