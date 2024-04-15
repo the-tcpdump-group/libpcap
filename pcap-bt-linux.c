@@ -86,7 +86,7 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 			return 0;
 		pcapint_fmt_errmsg_for_errno(err_str, PCAP_ERRBUF_SIZE,
 		    errno, "Can't open raw Bluetooth socket");
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
@@ -94,7 +94,7 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	{
 		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
 			HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
-		ret = -1;
+		ret = PCAP_ERROR;
 		goto done;
 	}
 
@@ -112,7 +112,7 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	{
 		pcapint_fmt_errmsg_for_errno(err_str, PCAP_ERRBUF_SIZE,
 		    errno, "Can't get Bluetooth device list via ioctl");
-		ret = -1;
+		ret = PCAP_ERROR;
 		goto free;
 	}
 
@@ -133,7 +133,7 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 */
 		if (pcapint_add_dev(devlistp, dev_name, PCAP_IF_WIRELESS, dev_descr, err_str)  == NULL)
 		{
-			ret = -1;
+			ret = PCAP_ERROR;
 			break;
 		}
 	}
@@ -343,7 +343,7 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 		if (handle->break_loop)
 		{
 			handle->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 		ret = recvmsg(handle->fd, &msg, 0);
 	} while ((ret == -1) && (errno == EINTR));
@@ -355,7 +355,7 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 		}
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't receive packet");
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	pkth.caplen = (bpf_u_int32)ret;
