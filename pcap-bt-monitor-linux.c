@@ -83,7 +83,7 @@ bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
                 PCAP_IF_WIRELESS|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
                 "Bluetooth Linux Monitor", err_str) == NULL)
     {
-        ret = -1;
+        ret = PCAP_ERROR;
     }
 
     return ret;
@@ -120,7 +120,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
         if (handle->break_loop)
         {
             handle->break_loop = 0;
-            return -2;
+            return PCAP_ERROR_BREAK;
         }
         ret = recvmsg(handle->fd, &msg, 0);
     } while ((ret == -1) && (errno == EINTR));
@@ -132,7 +132,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
         }
         pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't receive packet");
-        return -1;
+        return PCAP_ERROR;
     }
 
     pkth.caplen = (bpf_u_int32)(ret - sizeof(hdr) + sizeof(pcap_bluetooth_linux_monitor_header));
@@ -165,7 +165,7 @@ bt_monitor_inject(pcap_t *handle, const void *buf _U_, int size _U_)
 {
     snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
         "Packet injection is not supported yet on Bluetooth monitor devices");
-    return -1;
+    return PCAP_ERROR;
 }
 
 static int
