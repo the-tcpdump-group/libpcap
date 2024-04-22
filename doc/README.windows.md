@@ -240,3 +240,8 @@ Building with MinGW
 -------------------
 
 MinGW is not supported because its snprintf(3) implementation is not suitable.
+
+Building with SSL/TLS support
+-----------------------------
+
+This is currently not implemented on Windows.
