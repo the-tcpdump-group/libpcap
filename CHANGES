@@ -19,6 +19,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
       Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
       Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
+      Rename LINKTYPE_IPMB_LINUX/DLT_IPMB_LINUX to
+        LINKTYPE_I2C_LINUX/DLT_I2C_LINUX, as it's really just an
+        encapsulation of I2C, and is also being used for HDMI DDC.
+        Keep DLT_IPMB_LINUX around as a #define for backwards
+        compatibility.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).

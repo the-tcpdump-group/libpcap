@@ -948,10 +948,18 @@
  */
 
 /*
- * IPMB with a Linux-specific pseudo-header; as requested by Alexey Neyman
+ * I2C with a Linux-specific pseudo-header; as requested by Alexey Neyman
  * <avn@pigeonpoint.com>.
  */
-#define DLT_IPMB_LINUX		209
+#define DLT_I2C_LINUX		209
+
+/*
+ * This was renamed as it's also used for other protocols, such as
+ * Display Data Channel as used by HDMI.
+ *
+ * We still define DLT_IPMB_LINUX for backwards source compatibility.
+ */
+#define DLT_IPMB_LINUX	DLT_I2C_LINUX
 
 /*
  * FlexRay automotive bus - http://www.flexray.com/ - as requested

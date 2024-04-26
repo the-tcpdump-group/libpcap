@@ -609,10 +609,25 @@
  */
 
 /*
- * IPMB with a Linux-specific pseudo-header; as requested by Alexey Neyman
+ * I2C with a Linux-specific pseudo-header; as requested by Alexey Neyman
  * <avn@pigeonpoint.com>.
+ *
+ * In the discussion, starting at
+ *
+ *	https://seclists.org/tcpdump/2007/q4/127
+ *
+ * the original idea that it was a link-layer type for I2C, but,
+ * as it was proposed as a way to capture IPMB-over-I2C, and
+ * the conclusion was that reserving it for IPMB-over-I2C meant
+ * that analyzers could just assume the traffic was IPMB.
+ *
+ * However, it was later used for HDMI DDC traffic, so there's
+ * no point in pretending that it's IPMB-only any more, so we
+ * renamed it to a name suggested earlier in the discussion,
+ * namely LINKTYPE_I2C_LINUX/DLT_I2C_LINUX, as the header was,
+ * at least originally, Linux-specific.
  */
-#define LINKTYPE_IPMB_LINUX	209
+#define LINKTYPE_I2C_LINUX	209
 
 /*
  * FlexRay automotive bus - http://www.flexray.com/ - as requested
