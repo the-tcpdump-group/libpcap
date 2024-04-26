@@ -959,7 +959,7 @@
  *
  * We still define DLT_IPMB_LINUX for backwards source compatibility.
  */
-#define DLT_IPMB_LINUX	DLT_I2C_LINUX
+#define DLT_IPMB_LINUX		209
 
 /*
  * FlexRay automotive bus - http://www.flexray.com/ - as requested
