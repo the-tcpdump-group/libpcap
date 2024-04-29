@@ -686,7 +686,7 @@ stou(const char *yytext_arg, YYSTYPE *yylval_arg, compiler_state_t *yyextra_arg)
 
 	default:
 		/* Should not happen */
-		bpf_set_error(yyextra_arg, "stoulen returned %d", ret);
+		bpf_set_error(yyextra_arg, "stoulen returned %d - this should not happen", ret);
 		return LEX_ERROR;
 	}
 }
