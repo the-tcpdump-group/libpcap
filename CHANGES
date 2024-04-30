@@ -75,13 +75,14 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Squelch compiler warning in grammar.c.
       Fix findalldevtest compilation if IPv6 isn't enabled.
       Rename helper routines for pcap modules to have names beginning with
-      pcapint_, to avoid namespace collisions for code linking statically
-      with libpcap.
+        pcapint_, to avoid namespace collisions for code linking statically
+        with libpcap.
       Avoid casting hack for the Windows cleanup-on-exit routine.
       Use %zu format for one case of printing a size_t.
       Fix some Coverity errors.
       Fix availabilities of some functions to match reality.
       pcap: make the seconds and microseconds/nanoseconds fields unsigned.
+      Remove the unused pcap-rpcap-int.h header file.
     Thread safety:
       Make some static variables thread-local; fixes issue #1174.
     Packet filtering:
@@ -104,6 +105,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add CAN XL support to DLT_CAN_SOCKETCAN
       Clean up the code that sets the "real" ("original") length for
         isochronous USB transfers.
+      Avoid unnecessary blocking on recvmsg() in the Bluetooth monitor and
+        Bluetoth modules.
     Solaris:
       Handle BPF returning ESRCH for unknown devices.
       List the "any" device if it's supported.
