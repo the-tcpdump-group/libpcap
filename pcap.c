@@ -413,6 +413,20 @@ pcap_stats_not_initialized(pcap_t *pcap, struct pcap_stat *ps _U_)
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
+static int
+pcap_set_control_keepalive_not_initialized(pcap_t *pcap, int enable _U_,
+        int keepcnt _U_, int keepidle _U_, int keepintvl _U_)
+{
+    if (pcap->activated) {
+        /* Not set by the module, so probably not supported */
+        return PCAP_WARNING_CONTROL_KEEPALIVE_NOTSUP;
+    }
+    /* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
+    (void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+        "This handle hasn't been activated yet");
+    return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
 #ifdef _WIN32
 static struct pcap_stat *
 pcap_stats_ex_not_initialized(pcap_t *pcap, int *pcap_stat_size _U_)
@@ -2446,6 +2460,7 @@ initialize_ops(pcap_t *p)
 	p->set_datalink_op = pcap_set_datalink_not_initialized;
 	p->getnonblock_op = pcap_getnonblock_not_initialized;
 	p->stats_op = pcap_stats_not_initialized;
+	p->set_control_keepalive_op = pcap_set_control_keepalive_not_initialized;
 #ifdef _WIN32
 	p->stats_ex_op = pcap_stats_ex_not_initialized;
 	p->setbuff_op = pcap_setbuff_not_initialized;
@@ -3737,6 +3752,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
+
+	case PCAP_WARNING_CONTROL_KEEPALIVE_NOTSUP:
+		return ("Keepalive control is not supported");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
@@ -3881,6 +3899,12 @@ int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
 	return (p->stats_op(p, ps));
+}
+
+int
+pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int keepintvl)
+{
+	return p->set_control_keepalive_op(p, enable, keepcnt, keepidle, keepintvl);
 }
 
 #ifdef _WIN32
