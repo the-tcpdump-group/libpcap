@@ -65,7 +65,7 @@
 
 #include "scanner.h"
 
-#if defined(linux)
+#if defined(__linux__)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
@@ -8506,7 +8506,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		b0 = gen_cmp(cstate, OR_LINKHDR, 4, BPF_W, ifindex);
 		break;
 	default:
-#if defined(linux)
+#if defined(__linux__)
 		/*
 		 * This is Linux; we require PF_PACKET support.
 		 * If this is a *live* capture, we can look at
@@ -8522,11 +8522,11 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		/* match ifindex */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
-#else /* defined(linux) */
+#else /* defined(__linux__) */
 		bpf_error(cstate, "ifindex not supported on %s",
 		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
-#endif /* defined(linux) */
+#endif /* defined(__linux__) */
 	}
 	return (b0);
 }
@@ -8656,7 +8656,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		 * with newer capture APIs, allowing it to be saved
 		 * in pcapng files.
 		 */
-#if defined(linux)
+#if defined(__linux__)
 		/*
 		 * This is Linux; we require PF_PACKET support.
 		 * If this is a *live* capture, we can look at
@@ -8676,11 +8676,11 @@ gen_inbound(compiler_state_t *cstate, int dir)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
-#else /* defined(linux) */
+#else /* defined(__linux__) */
 		bpf_error(cstate, "inbound/outbound not supported on %s",
 		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
-#endif /* defined(linux) */
+#endif /* defined(__linux__) */
 	}
 	return (b0);
 }
