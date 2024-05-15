@@ -88,6 +88,11 @@ suncc-5.1[45]/SunOS-5.11)
     # "./filtertest.c", line 281: warning: statement not reached
     LIBPCAP_TAINTED=yes
     ;;
+tcc-*/*)
+    # At least one warning is expected because TCC does not implement
+    # thread-local storage.
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac
