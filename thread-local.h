@@ -50,6 +50,9 @@
 #ifndef thread_local
   #if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
     #define thread_local _Thread_local
+  #elif defined __TINYC__
+    #define thread_local
+    #warning "Some libpcap calls will not be thread-safe."
   #elif defined _WIN32 && ( \
          defined _MSC_VER || \
          defined __ICL || \
