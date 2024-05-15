@@ -1644,7 +1644,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 		return (-1);
 	}
 	memset(&ifr, 0, sizeof(ifr));
-#ifdef linux
+#ifdef __linux__
 	/* XXX Work around Linux kernel bug */
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif
@@ -1675,7 +1675,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	sin4 = (struct sockaddr_in *)&ifr.ifr_addr;
 	*netp = sin4->sin_addr.s_addr;
 	memset(&ifr, 0, sizeof(ifr));
-#ifdef linux
+#ifdef __linux__
 	/* XXX Work around Linux kernel bug */
 	ifr.ifr_addr.sa_family = AF_INET;
 #endif

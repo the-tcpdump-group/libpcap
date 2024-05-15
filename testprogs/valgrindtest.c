@@ -70,7 +70,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_AIX) || defined(sun)
 /* OS with BPF - use BPF */
 #define USE_BPF
-#elif defined(linux)
+#elif defined(__linux__)
 /* Linux - use socket filters */
 #define USE_SOCKET_FILTERS
 #else
