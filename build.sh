@@ -29,6 +29,11 @@ print_cc_version
 # later warnings in the same matrix subset trigger an error.
 # shellcheck disable=SC2221,SC2222
 case `cc_id`/`os_id` in
+tcc-*/*)
+    # At least one warning is expected because TCC does not implement
+    # thread-local storage.
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac
