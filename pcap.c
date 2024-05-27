@@ -544,8 +544,8 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		**tstamp_typesp = PCAP_TSTAMP_HOST;
 		return (1);
 	} else {
-		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
-		    p->tstamp_type_count);
+		*tstamp_typesp = (int*)calloc(p->tstamp_type_count,
+					      sizeof(**tstamp_typesp));
 		if (*tstamp_typesp == NULL) {
 			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
@@ -3027,7 +3027,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		**dlt_buffer = p->linktype;
 		return (1);
 	} else {
-		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
+		*dlt_buffer = (int*)calloc(p->dlt_count, sizeof(**dlt_buffer));
 		if (*dlt_buffer == NULL) {
 			pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 			    errno, "malloc");
