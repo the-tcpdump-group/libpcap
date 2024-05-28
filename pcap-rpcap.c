@@ -296,7 +296,7 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *, pcap_t *p, size_t si
 #define SOLARIS_AF_INET6		26
 
 static int
-rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf)
+rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout, char *errbuf)
 {
 	/* Warning: we support only AF_INET and AF_INET6 */
 	switch (ntohs(sockaddrin->family))
@@ -308,7 +308,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		struct rpcap_sockaddr_in *sockaddrin_ipv4;
 		struct sockaddr_in *sockaddrout_ipv4;
 
-		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in));
+		(*sockaddrout) = (struct sockaddr *) malloc(sizeof(struct sockaddr_in));
 		if ((*sockaddrout) == NULL)
 		{
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
@@ -338,7 +338,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		struct rpcap_sockaddr_in6 *sockaddrin_ipv6;
 		struct sockaddr_in6 *sockaddrout_ipv6;
 
-		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in6));
+		(*sockaddrout) = (struct sockaddr *) malloc(sizeof(struct sockaddr_in6));
 		if ((*sockaddrout) == NULL)
 		{
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
@@ -2885,26 +2885,26 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 			addr->broadaddr = NULL;
 			addr->dstaddr = NULL;
 
-			if (rpcap_deseraddr(&ifaddr.addr,
-				(struct sockaddr_storage **) &addr->addr, errbuf) == -1)
+			if (rpcap_deseraddr(&ifaddr.addr, &addr->addr,
+				errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr(&ifaddr.netmask,
-				(struct sockaddr_storage **) &addr->netmask, errbuf) == -1)
+			if (rpcap_deseraddr(&ifaddr.netmask, &addr->netmask,
+				errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr(&ifaddr.broadaddr,
-				(struct sockaddr_storage **) &addr->broadaddr, errbuf) == -1)
+			if (rpcap_deseraddr(&ifaddr.broadaddr, &addr->broadaddr,
+				errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr(&ifaddr.dstaddr,
-				(struct sockaddr_storage **) &addr->dstaddr, errbuf) == -1)
+			if (rpcap_deseraddr(&ifaddr.dstaddr, &addr->dstaddr,
+				errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
