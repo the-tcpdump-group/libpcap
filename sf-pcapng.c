@@ -1487,7 +1487,7 @@ found:
 	}
 #ifdef _WIN32
 	/*
-	 * tv_sec and tv_used in the Windows struct timeval are both
+	 * tv_sec and tv_usec in the Windows struct timeval are both
 	 * longs.
 	 */
 	hdr->ts.tv_sec = (long)sec;
