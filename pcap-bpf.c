@@ -553,13 +553,13 @@ bpf_open(char *errbuf)
 		switch (errno) {
 
 		case ENOENT:
-			fd = PCAP_ERROR;
 			if (n == 1) {
 				/*
 				 * /dev/bpf0 doesn't exist, which
 				 * means we probably have no BPF
 				 * devices.
 				 */
+				fd = PCAP_ERROR_CAPTURE_NOTSUP;
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(there are no BPF devices)");
 			} else {
@@ -569,6 +569,7 @@ bpf_open(char *errbuf)
 				 * devices, but all the ones
 				 * that exist are busy.
 				 */
+				fd = PCAP_ERROR;
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(all BPF devices are busy)");
 			}

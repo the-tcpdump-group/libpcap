@@ -3737,6 +3737,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
+
+	case PCAP_ERROR_CAPTURE_NOTSUP:
+		return ("Packet capture is not supported on that device");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
