@@ -2352,6 +2352,16 @@ setup_socket(pcap_t *handle, int is_any_device)
 			status = PCAP_ERROR_PERM_DENIED;
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "Attempt to create packet socket failed - CAP_NET_RAW may be required");
+		} else if (errno == EAFNOSUPPORT) {
+			/*
+			 * PF_PACKET sockets not supported.
+			 * Perhaps we're running on the WSL1 module
+			 * in the Windows NT kernel rather than on
+			 * a real Linux kernel.
+			 */
+			status = PCAP_ERROR_CAPTURE_NOTSUP;
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "PF_PACKET sockets not supported - is this WSL1?");
 		} else {
 			/*
 			 * Other error.
