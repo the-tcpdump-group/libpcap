@@ -10,7 +10,7 @@ matrix:
   fast_finish: true
 
 install:
-  - cinst winflexbison
+  - choco install winflexbison
   - win_flex --version
   - win_bison --version
   - appveyor DownloadFile https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
