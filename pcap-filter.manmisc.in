@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "12 February 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "28 March 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1044,10 +1044,10 @@ The following ICMPv6 type field values are available:
 .BR \%icmp6-multicastroutersolicit ,
 .BR \%icmp6-multicastrouterterm .
 .IP
-The following TCP flags field values are available: \fBtcp-fin\fP,
-\fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
-\fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
-\fBtcp-cwr\fP.
+The following TCP flags field values are available:
+\fBtcp-fin\fP, \fBtcp-syn\fP, \fBtcp-rst\fP,
+\fBtcp-push\fP, \fBtcp-ack\fP, \fBtcp-urg\fP,
+\fBtcp-ece\fP, \fBtcp-cwr\fP, and \fBtcp-ae\fP.
 .LP
 Primitives may be combined using:
 .IP
@@ -1196,6 +1196,10 @@ keyword became available in libpcap 1.8.0.
 The
 .B ifindex
 keyword became available in libpcap 1.10.0.
+.PP
+The \fBtcp-ae\fP keyword became available in libpcap 1.11.
+Also, \fBtcp[tcpflags]\fP was expanded to allow
+access to all 12 TCP header flags.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS
