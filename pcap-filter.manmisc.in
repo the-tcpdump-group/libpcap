@@ -887,8 +887,8 @@ packet type then it changes the decoding offsets for the remainder of the
 expression on the assumption that the packet is a batman-adv packet. For compat
 \fIversion\fR 14 these are packet \fItype\fRs \fBunicast\fP, \fBbcast\fP,
 \fBunicast-frag\fP, \fBunicast-4addr\fP and \fBcoded\fP. For compat \fIversion\fR
-15 these are currently packet \fItype\fRs \fBbcast\fP, \fBcoded\fP, \fBunicast\fP,
-\fBunicast-frag\fP and \fBunicast-4addr\fP.
+15 these are currently packet \fItype\fRs \fBbcast\fP, \fBcoded\fP, \fBmcast\fP,
+\fBunicast\fP, \fBunicast-frag\fP and \fBunicast-4addr\fP.
 .IP "\fBiso proto \fIprotocol\fR"
 True if the packet is an OSI packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names

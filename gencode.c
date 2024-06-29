@@ -10197,9 +10197,165 @@ gen_batadv_offsets_v14(compiler_state_t *cstate, bpf_u_int32 type)
 }
 
 static void
-gen_batadv_offsets_v15(compiler_state_t *cstate, bpf_u_int32 type)
+gen_prepare_var_offset(compiler_state_t *cstate, bpf_abs_offset *off, struct slist *s)
+{
+	struct slist *s2;
+
+	if (!off->is_variable)
+		off->is_variable = 1;
+	if (off->reg == -1) {
+		off->reg = alloc_reg(cstate);
+
+		s2 = new_stmt(cstate, BPF_ALU|BPF_AND);
+		s2->s.k = 0;
+		s2 = new_stmt(cstate, BPF_ST);
+		s2->s.k = off->reg;
+		sappend(s, s2);
+	}
+}
+
+/**
+ * gen_batadv_loadx_tvlv_len_offset() - load offset to tvlv_len into X
+ * @cstate: our compiler state
+ * @bat_offset: our offset to the start of the batman-adv packet header
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ * @s: instructions list to append to
+ *
+ * Will load: X = bat_offset + field_offset. So that [X] in the packet will
+ * point to the most-significant byte of the tvlv_len in a batman-adv packet.
+ */
+static void
+gen_batadv_loadx_tvlv_len_offset(compiler_state_t *cstate,
+				 bpf_abs_offset *bat_offset,
+				 bpf_u_int32 field_offset, struct slist *s)
+{
+	struct slist *s2;
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2->s.k = bat_offset->reg;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s2->s.k = bat_offset->constant_part + field_offset;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s2->s.k = 0;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_loadx_tvlv_len() - load tvlv_len value into X
+ * @cstate: our compiler state
+ * @bat_offset: our offset to the start of the batman-adv packet header
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ * @s: instructions list to append to
+ *
+ * Loads the value of the 2 byte tvlv_len field in a given batman-adv packet
+ * header into the X register.
+ */
+static void
+gen_batadv_loadx_tvlv_len(compiler_state_t *cstate, bpf_abs_offset *bat_offset,
+			  bpf_u_int32 field_offset, struct slist *s)
+{
+	struct slist *s2;
+
+	/* load offset to tvlv_len field into X register */
+	gen_batadv_loadx_tvlv_len_offset(cstate, bat_offset, field_offset, s);
+
+	/* clear A register */
+	s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	/* load most significant byte of tvlv_len */
+	s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	/* multiply by 2^8 for real value of MSB, make room for LSB */
+	s2 = new_stmt(cstate, BPF_ALU|BPF_LSH|BPF_K);
+	s2->s.k = 8;
+	sappend(s, s2);
+
+	/* load least significant byte of tvlv_len */
+	s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
+	s2->s.k = 1;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s2->s.k = 0;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_offset_addx() - add X register to a variable offset
+ * @cstate: our compiler state
+ * @off: the (variable) offset to add to
+ * @s: instructions list to append to
+ *
+ * Adds the value from the X register to the given variable offset.
+ */
+static void
+gen_batadv_offset_addx(compiler_state_t *cstate, bpf_abs_offset *off,
+		       struct slist *s)
+{
+	struct slist *s2;
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ST);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_offsets_add_tvlv_len() - add tvlv_len to payload offsets
+ * @cstate: our compiler state
+ * @b0: instructions block to add to
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ *
+ * Adds the tvlv_len value from/in a batman-adv packet header to the offsets
+ * of cstate->off_linkpl and cstate->off_linktype.
+ *
+ * Return: The updated instructions block.
+ */
+static struct block *
+gen_batadv_offsets_add_tvlv_len(compiler_state_t *cstate, struct block *b0,
+				bpf_u_int32 field_offset)
+{
+	struct slist s;
+
+	s.next = NULL;
+
+	/* turn constant-only offsets into variable offsets as we need to add
+	 * variable offset values (tvlv_len) to them later */
+	gen_prepare_var_offset(cstate, &cstate->off_linkpl, &s);
+	gen_prepare_var_offset(cstate, &cstate->off_linktype, &s);
+
+	/* load tvlv_len into X register */
+	gen_batadv_loadx_tvlv_len(cstate, &cstate->off_linkpl, field_offset, &s);
+
+	gen_batadv_offset_addx(cstate, &cstate->off_linkpl, &s);
+	gen_batadv_offset_addx(cstate, &cstate->off_linktype, &s);
+
+	sappend(s.next, b0->head->stmts);
+	b0->head->stmts = s.next;
+
+	return b0;
+}
+
+static struct block *
+gen_batadv_offsets_v15(compiler_state_t *cstate, struct block *b0, bpf_u_int32 type)
 {
 	size_t offset;
+	bpf_u_int32 field_offset;
 
 	switch (type) {
 	case BATADV_BCAST:		/* 0x01 */
@@ -10207,6 +10363,13 @@ gen_batadv_offsets_v15(compiler_state_t *cstate, bpf_u_int32 type)
 		break;
 	case BATADV_CODED:		/* 0x02 */
 		offset = sizeof(struct batadv_coded_packet);
+		break;
+	case BATADV_MCAST:		/* 0x05 */
+		offset = sizeof(struct batadv_mcast_packet);
+		field_offset = (bpf_u_int32)offsetof(struct batadv_mcast_packet,
+						     tvlv_len);
+
+		b0 = gen_batadv_offsets_add_tvlv_len(cstate, b0, field_offset);
 		break;
 	case BATADV_UNICAST:		/* 0x40 */
 		offset = sizeof(struct batadv_unicast_packet);
@@ -10217,32 +10380,31 @@ gen_batadv_offsets_v15(compiler_state_t *cstate, bpf_u_int32 type)
 	case BATADV_UNICAST_4ADDR:	/* 0x42 */
 		offset = sizeof(struct batadv_unicast_4addr_packet);
 		break;
-	case BATADV_MCAST:		/* 0x05 */
-		/* unsupported for now, needs variable offset to
-		 * take tvlv_len into account
-		 */
-		/* fall through */
 	default:
 		offset = 0;
 	}
 
 	if (offset)
 		gen_batadv_push_offset(cstate, (u_int)offset);
+
+	return b0;
 }
 
-static void
-gen_batadv_offsets(compiler_state_t *cstate, bpf_u_int32 version, bpf_u_int32 type)
+static struct block *
+gen_batadv_offsets(compiler_state_t *cstate, struct block *b0, bpf_u_int32 version, bpf_u_int32 type)
 {
 	switch (version) {
 	case 14:
 		gen_batadv_offsets_v14(cstate, type);
 		break;
 	case 15:
-		gen_batadv_offsets_v15(cstate, type);
+		b0 = gen_batadv_offsets_v15(cstate, b0, type);
 		break;
 	default:
 		break;
 	}
+
+	return b0;
 }
 
 struct block *
@@ -10265,7 +10427,7 @@ gen_batadv(compiler_state_t *cstate, bpf_u_int32 version, int has_version,
 
 	if (has_type) {
 		b0 = gen_batadv_check_type(cstate, b0, version, type);
-		gen_batadv_offsets(cstate, version, type);
+		b0 = gen_batadv_offsets(cstate, b0, version, type);
 	}
 
 	return b0;

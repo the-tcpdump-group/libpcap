@@ -59,6 +59,14 @@ struct batadv_bcast_packet {
 	uint8_t orig[ETH_ALEN];
 };
 
+struct batadv_mcast_packet {
+	uint8_t packet_type;
+	uint8_t version;
+	uint8_t ttl;
+	uint8_t reserved;
+	uint8_t tvlv_len[2];	/* 2-byte integral value */
+};
+
 struct batadv_coded_packet {
 	uint8_t packet_type;
 	uint8_t version;
