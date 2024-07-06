@@ -549,7 +549,7 @@ option(YYDEBUG "Build parser debugging code" OFF)
 # for later use.
 
 # Get MAJOR, MINOR, PATCH & SUFFIX
-file(STRINGS ${pcap_SOURCE_DIR}/VERSION
+file(STRINGS ${pcap_SOURCE_DIR}/VERSION.txt
     PACKAGE_VERSION
     LIMIT_COUNT 1 # Read only the first line
 )
