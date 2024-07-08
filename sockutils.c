@@ -332,9 +332,6 @@ int sock_init(char *errbuf, int errbuflen)
 		{
 			if (errbuf)
 				snprintf(errbuf, errbuflen, "Failed to initialize Winsock\n");
-
-			WSACleanup();
-
 			return -1;
 		}
 	}
