@@ -1333,28 +1333,13 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->break_loop) {
 			p->bp = bp;
 			p->cc = (int)(ep - bp);
-			/*
-			 * ep is set based on the return value of read(),
-			 * but read() from a BPF device doesn't necessarily
-			 * return a value that's a multiple of the alignment
-			 * value for BPF_WORDALIGN().  However, whenever we
-			 * increment bp, we round up the increment value by
-			 * a value rounded up by BPF_WORDALIGN(), so we
-			 * could increment bp past ep after processing the
-			 * last packet in the buffer.
-			 *
-			 * We treat ep < bp as an indication that this
-			 * happened, and just set p->cc to 0.
-			 */
-			if (p->cc < 0)
-				p->cc = 0;
+
 			if (n == 0) {
 				p->break_loop = 0;
 				return (PCAP_ERROR_BREAK);
 			} else
 				return (n);
 		}
-
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
 		datap = bp + hdrlen;
@@ -1425,22 +1410,31 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			pkthdr.len = bhp->bh_datalen;
 #endif
 			(*callback)(user, &pkthdr, datap);
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			bp += min((long unsigned int)(ep - bp), BPF_WORDALIGN(caplen + hdrlen));
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
 				p->cc = (int)(ep - bp);
-				/*
-				 * See comment above about p->cc < 0.
-				 */
-				if (p->cc < 0)
-					p->cc = 0;
 				return (n);
 			}
 		} else {
-			/*
-			 * Skip this packet.
+            /*
+             * Skip this packet.
+             *
+			 * ep is set based on the return value of read(),
+			 * but read() from a BPF device doesn't necessarily
+			 * return a value that's a multiple of the alignment
+			 * value for BPF_WORDALIGN().  However, whenever we
+			 * increment bp, we round up the increment value by
+			 * a value rounded up by BPF_WORDALIGN(), so we
+			 * could increment bp past ep after processing the
+			 * last packet in the buffer.
+			 *
+             * To avoid subtraction involving a pointer past the
+             * end of an array (which is UB), we cap how far bp
+             * can be incremented so that it is always <= ep.
+             * When bp == ep, p->cc will be set to 0.
 			 */
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			bp += min((long unsigned int)(ep - bp), BPF_WORDALIGN(caplen + hdrlen));
 		}
 	}
 #undef bhp
