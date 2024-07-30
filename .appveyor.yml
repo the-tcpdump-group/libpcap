@@ -13,6 +13,8 @@ install:
   - choco install winflexbison
   - win_flex --version
   - win_bison --version
+  - appveyor DownloadFile https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+  - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
   - appveyor DownloadFile https://npcap.com/dist/npcap-sdk-1.13.zip
   - 7z x .\npcap-sdk-1.13.zip -oc:\projects\libpcap\Win32\npcap-sdk
   - appveyor DownloadFile https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu -FileName AirPcap_Devpack.zip
