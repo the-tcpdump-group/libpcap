@@ -361,6 +361,7 @@ pppoed		return PPPOED;
 pppoes		return PPPOES;
 geneve		return GENEVE;
 vxlan		return VXLAN;
+batadv		return BATADV;
 
 lane		return LANE;
 llc		return LLC;
