@@ -137,6 +137,8 @@ typedef unsigned char uint8;	/* 8-bit unsigned integer */
 typedef unsigned short uint16;	/* 16-bit unsigned integer */
 typedef unsigned int uint32;	/* 32-bit unsigned integer */
 typedef int int32;		/* 32-bit signed integer */
+#else
+#include <os/support/SupportDefs.h>
 #endif
 
 /* Common header for all the RPCAP messages */
