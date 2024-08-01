@@ -573,7 +573,7 @@ static int
 pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	PACKET Packet;
-	int cc;
+	u_int cc;
 	int n;
 	register u_char *bp, *ep;
 	u_char *datap;
@@ -683,6 +683,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	ep = bp + cc;
 	for (;;) {
 		register u_int caplen, hdrlen;
+		size_t packet_bytes;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -700,7 +701,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (PCAP_ERROR_BREAK);
 			} else {
 				p->bp = bp;
-				p->cc = (int) (ep - bp);
+				p->cc = (u_int) (ep - bp);
 				return (n);
 			}
 		}
@@ -710,6 +711,21 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
 		datap = bp + hdrlen;
+
+		/*
+		 * Compute the number of bytes for this packet in
+		 * the buffer.
+		 *
+		 * That's the sum of the header length and the packet
+		 * data length plus, if this is not the last packet,
+		 * the padding required to align the next packet on
+		 * the appropriate boundary.
+		 *
+		 * That means that it should be the minimum of the
+		 * number of bytes left in the buffer and the
+		 * rounded-up sum of the header and packet data lengths.
+		 */
+		packet_bytes = min((u_int)(ep - bp), Packet_WORDALIGN(caplen + hdrlen));
 
 		/*
 		 * Short-circuit evaluation: if using BPF filter
@@ -731,7 +747,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 				/* Discard all packets that are not '1 out of N' */
 				if (pw->samp_npkt != 0) {
-					bp += Packet_WORDALIGN(caplen + hdrlen);
+					bp += packet_bytes;
 					continue;
 				}
 				break;
@@ -746,7 +762,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 */
 				if (pkt_header->ts.tv_sec < pw->samp_time.tv_sec ||
 				   (pkt_header->ts.tv_sec == pw->samp_time.tv_sec && pkt_header->ts.tv_usec < pw->samp_time.tv_usec)) {
-					bp += Packet_WORDALIGN(caplen + hdrlen);
+					bp += packet_bytes;
 					continue;
 				}
 
@@ -768,17 +784,17 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			 * XXX A bpf_hdr matches a pcap_pkthdr.
 			 */
 			(*callback)(user, (struct pcap_pkthdr*)bp, datap);
-			bp += Packet_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = (int) (ep - bp);
+				p->cc = (u_int) (ep - bp);
 				return (n);
 			}
 		} else {
 			/*
 			 * Skip this packet.
 			 */
-			bp += Packet_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 		}
 	}
 #undef bhp

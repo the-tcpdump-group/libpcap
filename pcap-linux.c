@@ -187,7 +187,7 @@ struct pcap_linux {
 
 	char	*device;	/* device name */
 	int	filter_in_userland; /* must filter in userland */
-	int	blocks_to_filter_in_userland;
+	u_int	blocks_to_filter_in_userland;
 	int	must_do_on_close; /* stuff we must do when we close */
 	int	timeout;	/* timeout for buffering */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
@@ -3448,7 +3448,7 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
  * Get the status field of the ring buffer frame at a specified offset.
  */
 static inline u_int
-pcap_get_ring_frame_status(pcap_t *handle, int offset)
+pcap_get_ring_frame_status(pcap_t *handle, u_int offset)
 {
 	struct pcap_linux *handlep = handle->priv;
 	union thdr h;
@@ -4307,7 +4307,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * the one we've just processed.
 		 */
 		packet_mmap_release(h.h2);
-		if (handlep->blocks_to_filter_in_userland > 0) {
+		if (handlep->blocks_to_filter_in_userland != 0) {
 			handlep->blocks_to_filter_in_userland--;
 			if (handlep->blocks_to_filter_in_userland == 0) {
 				/*
@@ -4438,7 +4438,7 @@ again:
 			 * just processed.
 			 */
 			packet_mmap_v3_release(h.h3);
-			if (handlep->blocks_to_filter_in_userland > 0) {
+			if (handlep->blocks_to_filter_in_userland != 0) {
 				handlep->blocks_to_filter_in_userland--;
 				if (handlep->blocks_to_filter_in_userland == 0) {
 					/*
@@ -4480,7 +4480,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 	struct sock_fprog	fcode;
 	int			can_filter_in_kernel;
 	int			err = 0;
-	int			n, offset;
+	u_int			n, offset;
 
 	if (!handle)
 		return -1;
@@ -4663,11 +4663,13 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 	 * walk the ring backward and count the free blocks.
 	 */
 	offset = handle->offset;
-	if (--offset < 0)
-		offset = handle->cc - 1;
+	if (offset == 0)
+		offset = handle->cc;
+	offset--;
 	for (n=0; n < handle->cc; ++n) {
-		if (--offset < 0)
-			offset = handle->cc - 1;
+		if (offset == 0)
+			offset = handle->cc;
+		offset--;
 		if (pcap_get_ring_frame_status(handle, offset) != TP_STATUS_KERNEL)
 			break;
 	}

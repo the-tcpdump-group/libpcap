@@ -577,7 +577,7 @@ static int
 airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_airpcap *pa = p->priv;
-	int cc;
+	u_int cc;
 	int n;
 	register u_char *bp, *ep;
 	UINT bytes_read;
@@ -618,6 +618,13 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			    p_AirpcapGetLastError(pa->adapter));
 			return (-1);
 		}
+
+		/*
+		 * At this point, read_ret is guaranteed to be
+		 * >= 0 and < p->bufsize; p->bufsize is a u_int,
+		 * so its value is guaranteed to fit in cc, which
+		 * is also a u_int.
+		 */
 		cc = bytes_read;
 		bp = p->buffer;
 	} else
@@ -634,6 +641,7 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	ep = bp + cc;
 	for (;;) {
 		register u_int caplen, hdrlen;
+		size_t packet_bytes;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -651,7 +659,7 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (PCAP_ERROR_BREAK);
 			} else {
 				p->bp = bp;
-				p->cc = (int) (ep - bp);
+				p->cc = (u_int) (ep - bp);
 				return (n);
 			}
 		}
@@ -661,6 +669,22 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		caplen = bhp->Caplen;
 		hdrlen = bhp->Hdrlen;
 		datap = bp + hdrlen;
+
+		/*
+		 * Compute the number of bytes for this packet in
+		 * the buffer.
+		 *
+		 * That's the sum of the header length and the packet
+		 * data length plus, if this is not the last packet,
+		 * the padding required to align the next packet on
+		 * the appropriate boundary.
+		 *
+		 * That means that it should be the minimum of the
+		 * number of bytes left in the buffer and the
+		 * rounded-up sum of the header and packet data lengths.
+		 */
+		packet_bytes = min((u_int)(ep - bp), AIRPCAP_WORDALIGN(caplen + hdrlen));
+
 		/*
 		 * Short-circuit evaluation: if using BPF filter
 		 * in the AirPcap adapter, no need to do it now -
@@ -676,17 +700,17 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			pkthdr.caplen = caplen;
 			pkthdr.len = bhp->Originallen;
 			(*callback)(user, &pkthdr, datap);
-			bp += AIRPCAP_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = (int)(ep - bp);
+				p->cc = (u_int)(ep - bp);
 				return (n);
 			}
 		} else {
 			/*
 			 * Skip this packet.
 			 */
-			bp += AIRPCAP_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 		}
 	}
 #undef bhp

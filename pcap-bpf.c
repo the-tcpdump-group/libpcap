@@ -290,7 +290,7 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock)
  * buffer filled for a fresh BPF session.
  */
 static int
-pcap_next_zbuf_shm(pcap_t *p, ssize_t *cc)
+pcap_next_zbuf_shm(pcap_t *p, u_int *cc)
 {
 	struct pcap_bpf *pb = p->priv;
 	struct bpf_zbuf_header *bzh;
@@ -328,7 +328,7 @@ pcap_next_zbuf_shm(pcap_t *p, ssize_t *cc)
  * work.
  */
 static int
-pcap_next_zbuf(pcap_t *p, ssize_t *cc)
+pcap_next_zbuf(pcap_t *p, u_int *cc)
 {
 	struct pcap_bpf *pb = p->priv;
 	struct bpf_zbuf bz;
@@ -1178,15 +1178,12 @@ static int
 pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_bpf *pb = p->priv;
-	ssize_t cc;
+	u_int cc;
 	int n = 0;
 	register u_char *bp, *ep;
 	u_char *datap;
 #ifdef PCAP_FDDIPAD
 	register u_int pad;
-#endif
-#ifdef HAVE_ZEROCOPY_BPF
-	int i;
 #endif
 
  again:
@@ -1214,18 +1211,22 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 #ifdef HAVE_ZEROCOPY_BPF
 		if (pb->zerocopy) {
+			int next_zbuf_ret;
+
 			if (p->buffer != NULL)
 				pcap_ack_zbuf(p);
-			i = pcap_next_zbuf(p, &cc);
-			if (i == 0)
+			next_zbuf_ret = pcap_next_zbuf(p, &cc);
+			if (next_zbuf_ret == 0)
 				goto again;
-			if (i < 0)
-				return (PCAP_ERROR);
+			if (next_zbuf_ret < 0)
+				return (next_zbuf_ret);
 		} else
 #endif
 		{
-			cc = read(p->fd, p->buffer, p->bufsize);
-			if (cc < 0) {
+			ssize_t read_ret;
+
+			read_ret = read(p->fd, p->buffer, p->bufsize);
+			if (read_ret < 0) {
 				/* Don't choke when we get ptraced */
 				switch (errno) {
 
@@ -1302,6 +1303,14 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				    errno, "read");
 				return (PCAP_ERROR);
 			}
+
+			/*
+			 * At this point, read_ret is guaranteed to be
+			 * >= 0 and < p->bufsize; p->bufsize is a u_int,
+			 * so its value is guaranteed to fit in cc, which
+			 * is also a u_int.
+			 */
+			cc = (u_int)read_ret;
 		}
 		bp = p->buffer;
 	} else
@@ -1324,6 +1333,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 	while (bp < ep) {
 		register u_int caplen, hdrlen;
+		size_t packet_bytes;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -1337,22 +1347,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		if (p->break_loop) {
 			p->bp = bp;
-			p->cc = (int)(ep - bp);
-			/*
-			 * ep is set based on the return value of read(),
-			 * but read() from a BPF device doesn't necessarily
-			 * return a value that's a multiple of the alignment
-			 * value for BPF_WORDALIGN().  However, whenever we
-			 * increment bp, we round up the increment value by
-			 * a value rounded up by BPF_WORDALIGN(), so we
-			 * could increment bp past ep after processing the
-			 * last packet in the buffer.
-			 *
-			 * We treat ep < bp as an indication that this
-			 * happened, and just set p->cc to 0.
-			 */
-			if (p->cc < 0)
-				p->cc = 0;
+			p->cc = (u_int)(ep - bp);
 			if (n == 0) {
 				p->break_loop = 0;
 				return (PCAP_ERROR_BREAK);
@@ -1363,6 +1358,22 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
 		datap = bp + hdrlen;
+
+		/*
+		 * Compute the number of bytes for this packet in
+		 * the buffer.
+		 *
+		 * That's the sum of the header length and the packet
+		 * data length plus, if this is not the last packet,
+		 * the padding required to align the next packet on
+		 * the appropriate boundary.
+		 *
+		 * That means that it should be the minimum of the
+		 * number of bytes left in the buffer (ep - bp) and the
+		 * rounded-up sum of the header and packet data lengths.
+		 */
+		packet_bytes = min((u_int)(ep - bp), BPF_WORDALIGN(caplen + hdrlen));
+
 		/*
 		 * Short-circuit evaluation: if using BPF filter
 		 * in kernel, no need to do it now - we already know
@@ -1430,22 +1441,17 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			pkthdr.len = bhp->bh_datalen;
 #endif
 			(*callback)(user, &pkthdr, datap);
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = (int)(ep - bp);
-				/*
-				 * See comment above about p->cc < 0.
-				 */
-				if (p->cc < 0)
-					p->cc = 0;
+				p->cc = (u_int)(ep - bp);
 				return (n);
 			}
 		} else {
 			/*
 			 * Skip this packet.
 			 */
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			bp += packet_bytes;
 		}
 	}
 #undef bhp

@@ -86,7 +86,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	struct pcap_netfilter *handlep = handle->priv;
 	register u_char *bp, *ep;
 	int count = 0;
-	ssize_t len;
+	u_int cc;
 
 	/*
 	 * Has "pcap_breakloop()" been called?
@@ -100,8 +100,8 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		handle->break_loop = 0;
 		return PCAP_ERROR_BREAK;
 	}
-	len = handle->cc;
-	if (len == 0) {
+	cc = handle->cc;
+	if (cc == 0) {
 		/*
 		 * The buffer is empty; refill it.
 		 *
@@ -111,22 +111,31 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 * to set handle->break_loop (we ignore it on other
 		 * platforms as well).
 		 */
+		ssize_t read_ret;
+
 		do {
-			len = recv(handle->fd, handle->buffer, handle->bufsize, 0);
+			read_ret = recv(handle->fd, handle->buffer, handle->bufsize, 0);
 			if (handle->break_loop) {
 				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			}
-			if (len == -1 && errno == ENOBUFS)
+			if (read_ret == -1 && errno == ENOBUFS)
 				handlep->packets_nobufs++;
-		} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
+		} while ((read_ret == -1) && (errno == EINTR || errno == ENOBUFS));
 
-		if (len < 0) {
+		if (read_ret < 0) {
 			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "Can't receive packet");
 			return PCAP_ERROR;
 		}
 
+		/*
+		 * At this point, read_ret is guaranteed to be
+		 * >= 0 and < p->bufsize; p->bufsize is a u_int,
+		 * so its value is guaranteed to fit in cc, which
+		 * is also a u_int.
+		 */
+		cc = (u_int)read_ret;
 		bp = (unsigned char *)handle->buffer;
 	} else
 		bp = handle->bp;
@@ -137,7 +146,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	 * This assumes that a single buffer of message will have
 	 * <= INT_MAX packets, so the message count doesn't overflow.
 	 */
-	ep = bp + len;
+	ep = bp + cc;
 	while (bp < ep) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
 		uint32_t msg_len;
@@ -154,7 +163,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 */
 		if (handle->break_loop) {
 			handle->bp = bp;
-			handle->cc = (int)(ep - bp);
+			handle->cc = (u_int)(ep - bp);
 			if (count == 0) {
 				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
@@ -180,8 +189,8 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			break;
 		}
 
-		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %zd) (nlmsg_len: %u)", len, nlh->nlmsg_len);
+		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || cc < nlh->nlmsg_len) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %u) (nlmsg_len: %u)", cc, nlh->nlmsg_len);
 			return -1;
 		}
 
@@ -289,9 +298,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		bp += msg_len;
 		if (count >= max_packets && !PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 			handle->bp = bp;
-			handle->cc = (int)(ep - bp);
-			if (handle->cc < 0)
-				handle->cc = 0;
+			handle->cc = (u_int)(ep - bp);
 			return count;
 		}
 	}

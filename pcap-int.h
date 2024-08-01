@@ -240,7 +240,7 @@ struct pcap {
 	u_int bufsize;
 	u_char *buffer;
 	u_char *bp;
-	int cc;
+	u_int cc;
 
 	sig_atomic_t break_loop; /* flag set to force break from packet-reading loop */
 
@@ -267,7 +267,7 @@ struct pcap {
 	int snapshot;
 	int linktype;		/* Network linktype */
 	int linktype_ext;	/* Extended information stored in the linktype field of a file */
-	int offset;		/* offset for proper alignment */
+	u_int offset;		/* offset for proper alignment */
 	int activated;		/* true if the capture is really started */
 	int oldstyle;		/* if we're opening with pcap_open_live() */
 
