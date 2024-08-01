@@ -3658,7 +3658,7 @@ static int rpcap_discard(PCAP_SOCKET sock, SSL *ssl, uint32_t len, char *errbuf)
 static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t size)
 {
 	u_char *bp;
-	int cc;
+	u_int cc;
 	int bytes_read;
 
 	bp = p->bp;
@@ -3668,7 +3668,7 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t 
 	 * Loop until we have the amount of data requested or we get
 	 * an error or interrupt.
 	 */
-	while ((size_t)cc < size)
+	while (cc < size)
 	{
 		/*
 		 * We haven't read all of the packet header yet.
