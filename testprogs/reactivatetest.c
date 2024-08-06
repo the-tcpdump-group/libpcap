@@ -39,20 +39,22 @@ The Regents of the University of California.  All rights reserved.\n";
 static void PCAP_NORETURN error(PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(1,2);
 
 int
-main(void)
+main(int argc, char **argv)
 {
 	char ebuf[PCAP_ERRBUF_SIZE];
 	pcap_t *pd;
 	int status = 0;
 
-	pd = pcap_open_live("lo0", 65535, 0, 1000, ebuf);
+	if (argc != 2)
+		error("expecting exactly one command-line argument with the interface name");
+	char *ifname = argv[1];
+
+	pd = pcap_open_live(ifname, 65535, 0, 1000, ebuf);
 	if (pd == NULL) {
-		pd = pcap_open_live("lo", 65535, 0, 1000, ebuf);
-		if (pd == NULL) {
-			error("Neither lo0 nor lo could be opened: %s",
-			    ebuf);
-		}
+		error("pcap_open_live() failed: %s",
+		    ebuf);
 	}
+
 	status = pcap_activate(pd);
 	if (status != PCAP_ERROR_ACTIVATED) {
 		if (status == 0)

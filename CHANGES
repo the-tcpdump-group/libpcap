@@ -53,6 +53,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make Sun C build warning-free.
       Make FreeBSD, Linux and macOS builds warning-free.
       Print MAC addresses in findalldevstest.
+      Parameterize the interface name in reactivatetest.
       When necessary, trust the OS to implement ffs().
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
       At build time require a proof of suitable snprintf(3) implementation in
