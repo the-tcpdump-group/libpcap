@@ -142,6 +142,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Update INSTALL.md.
       Note in man pages that errbuf arguments must point to an error
         buffer.
+      Note that if pcap_findalldevs() fails it sets *alldevsp to NULL;
+        there's no devices list to free.
 
 Friday, April 7, 2023 / The Tcpdump Group
   Summary for 1.10.4 libpcap release
