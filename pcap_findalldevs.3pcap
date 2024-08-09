@@ -223,7 +223,11 @@ returned in that case. If
 .B PCAP_ERROR
 is returned,
 .I errbuf
-is filled in with an appropriate error message.
+is filled in with an appropriate error message,
+and the pointer pointed to by
+.I alldevsp
+is set to
+.BR NULL .
 .SH BACKWARD COMPATIBILITY
 .PP
 The
