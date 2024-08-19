@@ -4826,6 +4826,13 @@ pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth _USED_FOR_REMO
 #else
 		/* opening the folder */
 		unixdir= opendir(path);
+		if (unixdir == NULL) {
+			DIAG_OFF_FORMAT_TRUNCATION
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error when listing files: does folder '%s' exist?", path);
+			DIAG_ON_FORMAT_TRUNCATION
+			return (PCAP_ERROR);
+		}
 
 		/* get the first file into it */
 		filedata= readdir(unixdir);
@@ -4833,7 +4840,7 @@ pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth _USED_FOR_REMO
 		if (filedata == NULL) {
 			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Error when listing files: does folder '%s' exist?", path);
+			    "Error when listing files: does folder '%s' contain files?", path);
 			DIAG_ON_FORMAT_TRUNCATION
 			closedir(unixdir);
 			return (PCAP_ERROR);
