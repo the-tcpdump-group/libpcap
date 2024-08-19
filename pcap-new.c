@@ -230,6 +230,13 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 #else
 		/* opening the folder */
 		unixdir= opendir(path);
+		if (unixdir == NULL) {
+			DIAG_OFF_FORMAT_TRUNCATION
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error when listing files: does folder '%s' exist?", path);
+			DIAG_ON_FORMAT_TRUNCATION
+			return -1;
+		}
 
 		/* get the first file into it */
 		filedata= readdir(unixdir);
@@ -237,7 +244,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 		if (filedata == NULL)
 		{
 			DIAG_OFF_FORMAT_TRUNCATION
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error when listing files: does folder '%s' exist?", path);
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error when listing files: does folder '%s' contain files?", path);
 			DIAG_ON_FORMAT_TRUNCATION
 			closedir(unixdir);
 			return -1;
