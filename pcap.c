@@ -4829,18 +4829,19 @@ pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth _USED_FOR_REMO
 		if (unixdir == NULL) {
 			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Error when listing files: does folder '%s' exist?", path);
+			    "Error when listing files in '%s': %s", path, pcap_strerror(errno));
 			DIAG_ON_FORMAT_TRUNCATION
 			return (PCAP_ERROR);
 		}
 
 		/* get the first file into it */
+		errno = 0;
 		filedata= readdir(unixdir);
 
 		if (filedata == NULL) {
 			DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Error when listing files: does folder '%s' contain files?", path);
+			    "Error when listing files in '%s': %s", path, pcap_strerror(errno));
 			DIAG_ON_FORMAT_TRUNCATION
 			closedir(unixdir);
 			return (PCAP_ERROR);
