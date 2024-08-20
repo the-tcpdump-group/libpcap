@@ -83,6 +83,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         in some cases.
       Don't define SOCKET ourselves; instead, define PCAP_SOCKET as int
         on UN*Xes and as SOCKET on Windows.
+      Fix pcap_findalldevs_ex() not to crash if passed a file:// URL
+        with a path to a directory that cannot be opened.
     Savefiles:
       Handle DLT_/LINKTYPE_ mapping better, to handle some
         OpenBSD-specific link types better.
