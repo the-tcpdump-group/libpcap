@@ -887,7 +887,7 @@ PCAP_API const char *pcap_lib_version(void);
 #endif /* _WIN32/UN*X */
 
 /*
- * APIs.added in WinPcap for remote capture.
+ * APIs added in WinPcap for remote capture.
  *
  * They are present even if remote capture isn't enabled, as they
  * also support local capture, and as their absence may complicate
@@ -896,7 +896,7 @@ PCAP_API const char *pcap_lib_version(void);
  *
  *    https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Concepts/WeakLinking.html
  *
- * which are symbols in dynamically-linked shared libraries, declare in
+ * which are symbols in dynamically-linked shared libraries, declared in
  * such a fashion that if a program linked against a newer software
  * development kit (SDK), and using a symbol present in the OS version
  * for which that SDK is provided, is run on an older OS version that
