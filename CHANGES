@@ -72,7 +72,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.
       Don't call WSACleanup() when handling a failed WSAStartup().
-   BSD, macOS, AIX, Solaris 11, Linux:
+    BSD, macOS, AIX, Solaris 11, Linux:
       Add a new error PCAP_ERROR_CAPTURE_NOTSUP, for use if a capture
         mechanism is not present, in the hopes that, for example,
         attempts to capture on Windows Services for Linux 1, in which
