@@ -30,7 +30,7 @@
 .\"  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\"  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH RPCAPD @MAN_ADMIN_COMMANDS@ "20 January 2023"
+.TH RPCAPD @MAN_ADMIN_COMMANDS@ "21 August 2024"
 .SH NAME
 rpcapd \- capture daemon to be controlled by a remote libpcap application
 .SH SYNOPSIS
@@ -315,7 +315,7 @@ Require that SSL be used on connections.
 With SSL enabled, XXX - I'm not sure how *fetching* the list of
 compression mechanisms does anything to compression.
 .TP
-.BI \-S " ssl_keyfile"
+.BI \-K " ssl_keyfile"
 With SSL enabled, use
 .I ssl_keyfile
 as the SSL key file.
