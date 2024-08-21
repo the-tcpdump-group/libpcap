@@ -59,13 +59,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       At build time require a proof of suitable snprintf(3) implementation in
         libc (and document Solaris 9 and MinGW as unsupported because of that).
       Makefile.in: Update the .c.o build rule (Remove hacks for old SunOS 4).
-    BSD, macOS, AIX, Solaris 11, Linux:
-      Add a new error PCAP_ERROR_CAPTURE_NOTSUP, for use if a capture
-        mechanism is not present, in the hopes that, for example,
-        attempts to capture on Windows Services for Linux 1, in which
-        the NT kernel attempts to simulate Linux system calls but does
-        not support packet sockets, can get an error that better
-        indicates the underlying problem.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
@@ -146,6 +139,13 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix internal handling of "not supported" error codes from NPF.
       Work around a bug in Npcap 1.00 in case of driver version mismatch.
       Don't call WSACleanup() when handling a failed WSAStartup().
+    BSD, macOS, AIX, Solaris 11, Linux:
+      Add a new error PCAP_ERROR_CAPTURE_NOTSUP, for use if a capture
+        mechanism is not present, in the hopes that, for example,
+        attempts to capture on Windows Services for Linux 1, in which
+        the NT kernel attempts to simulate Linux system calls but does
+        not support packet sockets, can get an error that better
+        indicates the underlying problem.
     AirPcap:
       Format an error message if we run out of memory.
     nflog:
