@@ -199,7 +199,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
-	doc/README.sita	    - notes on using libpcap to capture on SITA devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
 	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
 	VERSION		    - version of this release
@@ -294,9 +293,6 @@ in `/usr/include/sys/dlpi.h`, and find the corresponding value.
 	pcap-rpcap.h	    - RPCAP protocol capture support
 	pcap-septel.c       - Intel/Septel device capture support
 	pcap-septel.h       - Intel/Septel device capture support
-	pcap-sita.c	    - SITA device capture support
-	pcap-sita.h	    - SITA device capture support
-	pcap-sita.html	    - SITA device capture documentation
 	pcap-snf.c	    - Myricom SNF device capture support
 	pcap-snf.h	    - Myricom SNF device capture support
 	pcap-tc.c	    - TurboCap device capture support

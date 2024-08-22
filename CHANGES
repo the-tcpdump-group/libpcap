@@ -7,6 +7,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Clean up DECnet address handling.
       struct pcap: Update buffer type from "void *" to "u_char *".
       Make pcap_strerror() more thread-safe.
+      Remove dead code that supported SITA ACN devices.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
