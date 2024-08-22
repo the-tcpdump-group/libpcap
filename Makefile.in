@@ -255,7 +255,6 @@ EXTRA_DIST = \
 	doc/README.solaris.md \
 	doc/README.windows.md \
 	CONTRIBUTING.md \
-	TODO \
 	VERSION \
 	aclocal.m4 \
 	autogen.sh \
