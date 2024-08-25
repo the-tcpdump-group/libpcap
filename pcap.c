@@ -35,8 +35,8 @@
 
 /*
  * Include this before including any system header files, as it
- * may do some #defines that cause those headerss to declare
- * more functions that it does by default.
+ * may do some #defines that cause those headers to declare
+ * more functions than they do by default.
  */
 #include "ftmacros.h"
 
