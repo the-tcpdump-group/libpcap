@@ -6,7 +6,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove an always-false pointer test from snf_read().
       Clean up DECnet address handling.
       struct pcap: Update buffer type from "void *" to "u_char *".
-      Make pcap_strerror() more thread-safe.
       Remove dead code that supported SITA ACN devices.
       Remove the TODO file.
     Link-layer types:
