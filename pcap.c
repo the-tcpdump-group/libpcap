@@ -33,6 +33,9 @@
 
 #include <config.h>
 
+/* Get the same variety of strerror_r() as Autoconf/CMake has detected. */
+#include "ftmacros.h"
+
 #include <pcap-types.h>
 #ifndef _WIN32
 #include <sys/param.h>
