@@ -31,9 +31,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Deprecate pcap_compile_nopcap().
       Add support for filtering packets encapsulated with VXLAN (pull
         request #1273).
-    Savefiles:
-      Reject pcap files where one of the reserved fields in the
-        "link-layer type plus other stuff" is non-zero.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
@@ -163,6 +160,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Treat if_tsoffset as signed in pcapng files, as the spec says.
       Don't try to fix the "real" length for isochronous USB
         transfers if the number of USB descriptors is too large.
+      Reject pcap files where one of the reserved fields in the
+        "link-layer type plus other stuff" is non-zero.
     Building and testing:
       Add a configure option to help debugging (--enable-instrument-functions)
       Improved tests and error reporting for uses of pkg-config, and
