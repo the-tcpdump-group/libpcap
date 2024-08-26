@@ -139,6 +139,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in(s): Fix the depend target.
       mkdep: Exit with a non-zero status if a command fails.
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
+      Extend "make shellcheck" onto mkdep too.
+      Add initial support for building with TinyCC.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
