@@ -3537,7 +3537,7 @@ static int rpcap_process_msg_header(PCAP_SOCKET sock, SSL *ssl, uint8_t expected
 
 /*
  * Read data from a message.
- * If we're trying to read more data that remains, puts an error
+ * If we're trying to read more data than remains, puts an error
  * message into errmsgbuf and returns -2.  Otherwise, tries to read
  * the data and, if that succeeds, subtracts the amount read from
  * the number of bytes of data that remains.
