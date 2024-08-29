@@ -136,7 +136,7 @@ static void printusage(FILE * f)
 	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
 	"  -p <port>       the port to bind to.\n"
 	"                  Default: binds to port " RPCAP_DEFAULT_NETPORT "\n\n"
-	"  -t <data port>: the port to use to transfer data.\n"
+	"  -t <data_port>: the port to use to transfer data.\n"
 	"                  Default: an unused port is chosen by the operating system\n\n"
 	"  -4              use only IPv4.\n"
 	"                  Default: use both IPv4 and IPv6 waiting sockets\n\n"
