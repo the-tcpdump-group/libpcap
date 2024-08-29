@@ -35,6 +35,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
         another incorporate-remote-capture project. (issue #1120)
+      rpcapd: Refine SSL options in printusage().
     Documentation:
       Document a standard format for writing out BPF filter programs.
       Add a README.hurd.md file.
