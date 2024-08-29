@@ -90,6 +90,8 @@ run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static
 run_after_echo "$PREFIX/bin/pcap-config" --libs --static-pcap-only
 run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static-pcap-only
 
+[ "$REMOTE" = yes ] && run_after_echo "$PREFIX/sbin/rpcapd" -h
+
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
