@@ -1,5 +1,5 @@
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.5 libpcap release (so far!)
+Friday, August 30, 2024 / The Tcpdump Group
+  Summary for 1.10.5 libpcap release
     Source code:
       Spell WirelessHART details properly.
       Mark pcap_vasprintf() as printf-like.
