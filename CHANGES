@@ -61,8 +61,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
 
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.5 libpcap release (so far!)
+Friday, August 30, 2024 / The Tcpdump Group
+  Summary for 1.10.5 libpcap release
     Source code:
       Spell WirelessHART details properly.
       Mark pcap_vasprintf() as printf-like.
@@ -100,8 +100,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         issues #1134 and #1205.
       Fix a file descriptor leak.
       Properly report warnings about unknown ARPHRD_ types.
-      Fix DLT_CAN_SOCKETCAN handling of CAN FD
-      Add CAN XL support to DLT_CAN_SOCKETCAN
+      Fix DLT_CAN_SOCKETCAN handling of CAN FD.
+      Add CAN XL support to DLT_CAN_SOCKETCAN.
       Clean up the code that sets the "real" ("original") length for
         isochronous USB transfers.
       Avoid unnecessary blocking on recvmsg() in the Bluetooth monitor and
@@ -149,12 +149,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make sure we don't overflow when rounding up the TLV length.
     rpcap:
       Handle routines removed in at least some OpenSSL libraries.
-      Clean up sock_initaddress() and its callers to avoid double frees
-        in some cases.
+      CVE-2023-7256: Clean up sock_initaddress() and its callers to avoid
+        double frees in some cases.
       Don't define SOCKET ourselves; instead, define PCAP_SOCKET as int
         on UN*Xes and as SOCKET on Windows.
-      Fix pcap_findalldevs_ex() not to crash if passed a file:// URL
-        with a path to a directory that cannot be opened.
+      CVE-2024-8006: Fix pcap_findalldevs_ex() not to crash if passed a
+        file:// URL with a path to a directory that cannot be opened.
     Savefiles:
       Handle DLT_/LINKTYPE_ mapping better, to handle some
         OpenBSD-specific link types better.
@@ -164,12 +164,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Reject pcap files where one of the reserved fields in the
         "link-layer type plus other stuff" is non-zero.
     Building and testing:
-      Add a configure option to help debugging (--enable-instrument-functions)
+      Add a configure option to help debugging (--enable-instrument-functions).
       Improved tests and error reporting for uses of pkg-config, and
-        improve help message
-      Fix Haiku build
+        improve help message.
+      Fix Haiku build.
       With CMake, install headers in CMAKE_INSTALL_INCLUDEDIR rather
-        than just include
+        than just include.
       Build libpcap.a before building test programs.
       Print address family numerically, as well as symbolically,
         in findalldevstest.
@@ -188,11 +188,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Cirrus CI: Add the "make releasecheck" command in the Linux task.
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
-      Autoconf: Update config.{guess,sub}, timestamps 2024-01-01
+      Autoconf: Update config.{guess,sub}, timestamps 2024-01-01.
       Autoconf: Update the install-sh script to the 2020-11-14.01 version.
       Compile with '-Wnull-pointer-subtraction',
         '-Wunused-but-set-parameter', and '-Wunused-but-set-variable' in
-        devel mode if supported
+        devel mode if supported.
       Don't ignore spaces between CMAKE_C_FLAGS and DPDK_C_FLAGS with
         CMake.
       Use noreturn and __format__ with XL C 7.0 and later.
@@ -206,6 +206,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix HCI_CHANNEL_MONITOR detection with musl libc.
       Extend "make shellcheck" onto mkdep too.
       Add initial support for building with TinyCC.
+      Address all known compiler warnings specific to illumos, Linux, NetBSD,
+        Solaris and Sun C; in CI expect warnings specific to TinyCC only.
     Documentation:
       Update and fix pcap-filter man page.
       Add a README.haiku.md file.
