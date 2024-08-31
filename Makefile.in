@@ -282,6 +282,7 @@ EXTRA_DIST = \
 	fad-glifc.c \
 	grammar.y.in \
 	install-sh \
+	instrument-functions.c \
 	libpcap.pc.in \
 	missing/asprintf.c \
 	missing/getopt.c \
