@@ -291,6 +291,7 @@ EXTRA_DIST = \
 	fad-glifc.c \
 	grammar.y.in \
 	install-sh \
+	instrument-functions.c \
 	lbl/os-aix4.h \
 	lbl/os-aix7.h \
 	lbl/os-hpux11.h \
