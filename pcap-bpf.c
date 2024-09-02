@@ -1876,6 +1876,12 @@ check_setif_failure(pcap_t *p _U_, int error)
 
 /*
  * We pick .5M, as that's the maximum on at least some systems with BPF.
+ * For reference, at the time of this writing sysctl(8) reports the following
+ * maximum buffer sizes.
+ * - FreeBSD 14.1: net.bpf.maxbufsize = 524288
+ * - macOS 12.6 (Darwin 21.6.0): debug.bpf_maxbufsize = 524288
+ * - NetBSD 10.0: net.bpf.maxbufsize = 1048576
+ * - OpenBSD 7.5: net.bpf.maxbufsize = 2097152
  */
 #define DEFAULT_BUFSIZE	524288
 
