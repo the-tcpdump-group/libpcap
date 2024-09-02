@@ -219,9 +219,7 @@ struct pcap_linux {
 /*
  * Prototypes for internal functions and methods.
  */
-static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(const char *);
-static int map_arphrd_to_dlt(pcap_t *, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int setup_socket(pcap_t *, int);
 static int setup_mmapped(pcap_t *);
@@ -231,7 +229,6 @@ static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
-static void pcap_cleanup_linux(pcap_t *);
 
 union thdr {
 	struct tpacket2_hdr		*h2;
