@@ -1367,7 +1367,7 @@ dlt_to_linktype(int dlt)
 	/*
 	 * These DLT_* codes have different values on different
 	 * platforms, so we assigned them LINKTYPE_* codes just
-	 * below the lower bound of the high matchig range;
+	 * below the lower bound of the high matching range;
 	 * those values should never be equal to any DLT_*
 	 * code, so that should avoid collisions.
 	 *
@@ -1519,7 +1519,7 @@ linktype_to_dlt(int linktype)
 	/*
 	 * These DLT_* codes have different values on different
 	 * platforms, so we assigned them LINKTYPE_* codes just
-	 * below the lower bound of the high matchig range;
+	 * below the lower bound of the high matching range;
 	 * those values should never be equal to any DLT_*
 	 * code, so that should avoid collisions.
 	 *
