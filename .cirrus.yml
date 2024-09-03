@@ -21,7 +21,7 @@ linux_task:
   name: linux-amd64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
   container:
-    image: ubuntu:22.04
+    image: ubuntu:24.04
     cpu: 1
     memory: 1G
   env:
@@ -54,7 +54,7 @@ coverity_task:
   name: Coverity Scan
   only_if: $CIRRUS_BRANCH == 'coverity_scan'
   container:
-    image: ubuntu:22.04
+    image: ubuntu:24.04
     cpu: 1
     memory: 2G
   env:
