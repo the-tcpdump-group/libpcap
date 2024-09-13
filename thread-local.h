@@ -62,7 +62,8 @@
   /* note that ICC (linux) and Clang are covered by __GNUC__ */
   #elif defined __GNUC__ || \
          defined __SUNPRO_C || \
-         defined __xlC__
+         defined __xlC__ || \
+         defined __hpux
     #define thread_local __thread
   #else
     #error "Cannot define thread_local"
