@@ -787,6 +787,8 @@ if (NOT CMAKE_CROSSCOMPILING)
     libpcap would not work correctly even if it managed to compile."
         )
     endif()
+else()
+    message(STATUS "Skipped SUITABLE_SNPRINTF because cross-compiling.")
 endif()
 
 check_function_exists(strlcpy HAVE_STRLCPY)
