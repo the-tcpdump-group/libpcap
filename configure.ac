@@ -112,6 +112,12 @@ if test "$ac_cv_prog_cc_c99" = "no"; then
 fi
 
 #
+# Try to arrange for large file support.
+#
+AC_SYS_LARGEFILE
+AC_FUNC_FSEEKO
+
+#
 # Get the size of a void *, to determine whether this is a 32-bit
 # or 64-bit build.
 #
@@ -127,12 +133,6 @@ AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_LBL_C_INLINE
 AC_PCAP_C___ATOMICS
-
-#
-# Try to arrange for large file support.
-#
-AC_SYS_LARGEFILE
-AC_FUNC_FSEEKO
 
 dnl
 dnl Even if <net/bpf.h> were, on all OSes that support BPF, fixed to
