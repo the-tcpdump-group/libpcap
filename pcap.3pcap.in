@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3PCAP "4 March 2024"
+.TH PCAP 3PCAP "18 September 2024"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -72,15 +72,7 @@ makes an attempt to check whether the string passed as an argument is a
 UTF-16LE string - note that this attempt is unsafe, as it may run past
 the end of the string - to handle
 .BR pcap_lookupdev ()
-returning a UTF-16LE string. Programs that don't call
-.BR pcap_init ()
-should, on Windows, call
-.BR pcap_wsockinit ()
-to initialize Winsock; this is not necessary if
-.BR pcap_init ()
-is called, as
-.BR pcap_init ()
-will initialize Winsock itself on Windows.
+returning a UTF-16LE string.
 .TP
 .B Routines
 .RS

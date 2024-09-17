@@ -221,8 +221,10 @@ main(int argc, char **argv)
 	struct bpf_program fcode;
 
 #ifdef _WIN32
-	if (pcap_wsockinit() != 0)
+	WSADATA wsaData;
+	if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData))
 		return 1;
+	atexit ((void(*)(void))WSACleanup);
 #endif /* _WIN32 */
 
 	dflag = 1;
