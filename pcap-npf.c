@@ -1080,9 +1080,6 @@ pcap_activate_npf(pcap_t *p)
 		}
 	}
 
-	/* Init Winsock if it hasn't already been initialized */
-	pcap_wsockinit();
-
 	pw->adapter = PacketOpenAdapter(p->opt.device);
 
 	if (pw->adapter == NULL)

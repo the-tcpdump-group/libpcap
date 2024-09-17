@@ -152,9 +152,10 @@ struct rtentry;		/* declarations in <net/if.h> */
  *
  * So we don't initialize Winsock in a DllMain() routine.
  *
- * pcap_init() should be called to initialize pcap on both UN*X and
- * Windows; it will initialize Winsock on Windows.  (It will also be
- * initialized as needed if pcap_init() hasn't been called.)
+ * Similarly, we cannot register an atexit() handler to call WSACleanup()
+ * because that handler will be run in the context of DllMain. Therefore, we
+ * call WSAStartup each time Winsock is needed and WSACleanup as soon as it is
+ * no longer needed.
  */
 
 /*
@@ -177,32 +178,7 @@ internal_wsockfini(void)
 static int
 internal_wsockinit(char *errbuf)
 {
-	WORD wVersionRequested;
-	WSADATA wsaData;
-	static int err = -1;
-	static int done = 0;
-	int status;
-
-	if (done)
-		return (err);
-
-	/*
-	 * Versions of Windows that don't support Winsock 2.2 are
-	 * too old for us.
-	 */
-	wVersionRequested = MAKEWORD(2, 2);
-	status = WSAStartup(wVersionRequested, &wsaData);
-	done = 1;
-	if (status != 0) {
-		if (errbuf != NULL) {
-			pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
-			    status, "WSAStartup() failed");
-		}
-		return (err);
-	}
-	atexit(internal_wsockfini);
-	err = 0;
-	return (err);
+	return 0;
 }
 
 /*
@@ -310,16 +286,6 @@ pcap_init(unsigned int opts, char *errbuf)
 		 */
 		return (0);
 	}
-
-#ifdef _WIN32
-	/*
-	 * Now set up Winsock.
-	 */
-	if (internal_wsockinit(errbuf) == -1) {
-		/* Failed. */
-		return (PCAP_ERROR);
-	}
-#endif
 
 	/*
 	 * We're done.
