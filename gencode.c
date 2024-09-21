@@ -726,6 +726,10 @@ int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
 {
+#ifdef _WIN32
+	int err;
+	WSADATA wsaData;
+#endif
 	compiler_state_t cstate;
 	const char * volatile xbuf = buf;
 	yyscan_t scanner = NULL;
@@ -743,9 +747,19 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		return (PCAP_ERROR);
 	}
 
-	if(0 != pcapint_sockinit()) {
+#ifdef _WIN32
+	/*
+	 * Initialize Winsock, asking for the latest version (2.2),
+	 * as we may be calling Winsock routines to translate
+	 * host names to addresses.
+	 */
+	err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (err != 0) {
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		    err, "Error calling WSAStartup()");
 		return (PCAP_ERROR);
 	}
+#endif
 
 #ifdef ENABLE_REMOTE
 	/*
@@ -869,7 +883,9 @@ quit:
 	 */
 	freechunks(&cstate);
 
-	pcapint_sockcleanup();
+#ifdef _WIN32
+	WSACleanup();
+#endif
 
 	return (rc);
 }

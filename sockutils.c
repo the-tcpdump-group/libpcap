@@ -325,13 +325,17 @@ int sock_init(char *errbuf, int errbuflen)
 {
 	if (sockcount == 0)
 	{
+		int errcode;
 		WSADATA wsaData;			/* helper variable needed to initialize Winsock */
 
-		if (WSAStartup(MAKEWORD(WINSOCK_MAJOR_VERSION,
-		    WINSOCK_MINOR_VERSION), &wsaData) != 0)
+		errcode = WSAStartup(MAKEWORD(WINSOCK_MAJOR_VERSION,
+		    WINSOCK_MINOR_VERSION), &wsaData);
+		if (errcode != 0)
 		{
-			if (errbuf)
-				snprintf(errbuf, errbuflen, "Failed to initialize Winsock\n");
+			if (errbuf) {
+				sock_fmterrmsg(errbuf, errbuflen, errcode,
+				    "WSAStartup() failed");
+			}
 			return -1;
 		}
 	}

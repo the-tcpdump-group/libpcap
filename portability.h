@@ -160,23 +160,6 @@ extern int pcapint_vasprintf(char **, PCAP_FORMAT_STRING(const char *), va_list 
 #include <winsock2.h>
 #endif /* _WIN32 */
 
-static inline int pcapint_sockinit(void)
-{
-#ifdef _WIN32
-  WSADATA wsaData;
-  return WSAStartup(MAKEWORD(2,2), &wsaData);
-#else
-  return 0;
-#endif /* _WIN32 */
-}
-
-static inline void pcapint_sockcleanup(void)
-{
-#ifdef _WIN32
-  WSACleanup();
-#endif /* _WIN32 */
-}
-
 #ifdef __cplusplus
 }
 #endif
