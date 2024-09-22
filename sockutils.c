@@ -69,8 +69,6 @@
    */
   #define WINSOCK_MAJOR_VERSION 2
   #define WINSOCK_MINOR_VERSION 2
-
-  static int sockcount = 0;	/*!< Variable that allows calling the WSAStartup() only one time */
 #endif
 
 /* Some minor differences between UNIX and Win32 */
@@ -302,12 +300,11 @@ static sock_errtype sock_geterrtype(int errcode)
 }
 
 /*
- * \brief This function initializes the socket mechanism if it hasn't
- * already been initialized or reinitializes it after it has been
- * cleaned up.
+ * \brief This function initializes the socket mechanism, if
+ * necessary.
  *
  * On UN*Xes, it doesn't need to do anything; on Windows, it needs to
- * initialize Winsock.
+ * call WSAStartup().
  *
  * \param errbuf: a pointer to an user-allocated buffer that will contain
  * the complete error message. This buffer has to be at least 'errbuflen'
@@ -323,24 +320,20 @@ static sock_errtype sock_geterrtype(int errcode)
 #ifdef _WIN32
 int sock_init(char *errbuf, int errbuflen)
 {
-	if (sockcount == 0)
-	{
-		int errcode;
-		WSADATA wsaData;			/* helper variable needed to initialize Winsock */
+	int errcode;
+	WSADATA wsaData;			/* helper variable needed to initialize Winsock */
 
-		errcode = WSAStartup(MAKEWORD(WINSOCK_MAJOR_VERSION,
-		    WINSOCK_MINOR_VERSION), &wsaData);
-		if (errcode != 0)
-		{
-			if (errbuf) {
-				sock_fmterrmsg(errbuf, errbuflen, errcode,
-				    "WSAStartup() failed");
-			}
-			return -1;
+	errcode = WSAStartup(MAKEWORD(WINSOCK_MAJOR_VERSION,
+	    WINSOCK_MINOR_VERSION), &wsaData);
+	if (errcode != 0)
+	{
+		if (errbuf) {
+			sock_fmterrmsg(errbuf, errbuflen, errcode,
+			    "WSAStartup() failed");
 		}
+		return -1;
 	}
 
-	sockcount++;
 	return 0;
 }
 #else
@@ -354,8 +347,7 @@ int sock_init(char *errbuf _U_, int errbuflen _U_)
 #endif
 
 /*
- * \brief This function cleans up the socket mechanism if we have no
- * sockets left open.
+ * \brief This function cleans up after a sock_init().
  *
  * On UN*Xes, it doesn't need to do anything; on Windows, it needs
  * to clean up Winsock.
@@ -365,10 +357,7 @@ int sock_init(char *errbuf _U_, int errbuflen _U_)
 void sock_cleanup(void)
 {
 #ifdef _WIN32
-	sockcount--;
-
-	if (sockcount == 0)
-		WSACleanup();
+	WSACleanup();
 #endif
 }
 
