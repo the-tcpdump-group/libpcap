@@ -97,6 +97,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         environment variable BUILD_YEAR2038 = yes (via autogen.sh)
       DPDK: don't enable it by default.
       Update Npcap SDK to 1.15.
+      autogen.sh: Allow to configure Autoconf warnings.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
