@@ -1311,8 +1311,9 @@
 
 // See DLT_DEBUG_ONLY
 #define LINKTYPE_DEBUG_ONLY	303
+#define LINKTYPE_DSA_TAG_GSW1XX	304
 
-#define LINKTYPE_HIGH_MATCHING_MAX	303		/* highest value in the "matching" range */
+#define LINKTYPE_HIGH_MATCHING_MAX	304		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
