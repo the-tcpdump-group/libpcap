@@ -457,12 +457,58 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 	}
 	bytes_read = readlink(pathstr, phydev_path, phydev_max_pathlen);
 	if (bytes_read == -1) {
-		if (errno == ENOENT || errno == EINVAL) {
+		if (errno == ENOENT) {
 			/*
-			 * Doesn't exist, or not a symlink; assume that
+			 * This either means that the directory
+			 * /sys/class/net/{device} exists but doesn't
+			 * have anything named "phy80211" in it,
+			 * in which case it's not a mac80211 device,
+			 * or that the directory doesn't exist,
+			 * in which case the device doesn't exist.
+			 *
+			 * Directly check whether the directory
+			 * exists.
+			 */
+			struct stat statb;
+
+			free(pathstr);
+			if (asprintf(&pathstr, "/sys/class/net/%s", device) == -1) {
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				    "%s: Can't generate path name string for /sys/class/net device",
+				    device);
+				return PCAP_ERROR;
+			}
+			if (stat(pathstr, &statb) == -1) {
+				if (errno == ENOENT) {
+					/*
+					 * No such device.
+					 */
+					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					    "%s: %s doesn't exist",
+					    device, pathstr);
+					free(pathstr);
+					return PCAP_ERROR_NO_SUCH_DEVICE;
+				}
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				    "%s: Can't stat %s: %s",
+				    device, pathstr, strerror(errno));
+				free(pathstr);
+				return PCAP_ERROR;
+			}
+
+			/*
+			 * Path to the directory that would contain
+			 * "phy80211" exists, but "phy80211" doesn't
+			 * exist; that means it's not a mac80211
+			 * device.
+			 */
+			return 0;
+		}
+		if (errno == EINVAL) {
+			/*
+			 * Exists, but it's not a symlink; assume that
 			 * means it's not a mac80211 device.
 			 */
-			free(pathstr);
 			return 0;
 		}
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
