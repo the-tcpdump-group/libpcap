@@ -57,6 +57,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         libc (and document Solaris 9 and MinGW as unsupported because of that).
       Makefile.in: Update the .c.o build rule (Remove hacks for old SunOS 4).
       CMake: Skip snprintf(3) tests when cross-compiling.
+      autogen.sh: Allow to configure Autoconf warnings.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

@@ -1,6 +1,7 @@
 # The internal git client reads CIRRUS_CLONE_DEPTH.
 env:
   CIRRUS_CLONE_DEPTH: 3
+  AUTOCONF_WARNINGS: no-obsolete
 
 freebsd_task:
   name: freebsd-amd64
