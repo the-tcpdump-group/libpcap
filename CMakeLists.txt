@@ -642,7 +642,7 @@ endif(USE_STATIC_RT)
 # is being done*.
 #
 # This is an inadequate definition, as people build for the same
-# operating system but a different instruciton set, e.g. building
+# operating system but a different instruction set, e.g. building
 # on an IA-32 or x86-64 Linux box for an Arm embedded Linux box,
 # or building Arm code on an IA-32 or x86-64 Windows box.
 #
