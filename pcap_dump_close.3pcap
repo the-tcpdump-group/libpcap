@@ -32,7 +32,7 @@ void pcap_dump_close(pcap_dumper_t *p);
 .fi
 .SH DESCRIPTION
 .BR pcap_dump_close ()
-closes the ``savefile.''
+closes the ``savefile''.
 .SH SEE ALSO
 .BR pcap (3PCAP),
 .BR pcap_dump_open (3PCAP),
