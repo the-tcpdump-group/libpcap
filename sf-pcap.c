@@ -107,7 +107,7 @@
  * read on systems with the same tv_sec size as the system on which
  * the file was written.
  *
- * THe fields are unsigned, as that's what the pcap draft specification
+ * The fields are unsigned, as that's what the pcap draft specification
  * says they are.  (That gives pcap a 68-year Y2.038K reprieve, although
  * in 2106 it runs out for good.  pcapng doesn't have that problem,
  * unless you pick a *really* high time stamp precision.)
