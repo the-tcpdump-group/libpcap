@@ -992,16 +992,6 @@ linux)
 	PLATFORM_C_SRC="pcap-linux.c"
 
 	#
-	# Do we have the wireless extensions?
-	#
-	AC_CHECK_HEADERS(linux/wireless.h, [], [],
-	[
-#include <sys/socket.h>
-#include <linux/if.h>
-#include <linux/types.h>
-	])
-
-	#
 	# Do we have libnl?
 	# We only want version 3.  Version 2 was, apparently,
 	# short-lived, and version 1 is source and binary
