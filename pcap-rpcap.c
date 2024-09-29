@@ -2343,9 +2343,10 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 {
 	int type;
 	int auth_result;
-	char userinfo[512];			/* 256 characters each for username and password */
+	char userinfo[PCAP_BUF_SIZE+1];
 	struct activehosts *activeconn;		/* active connection, if there is one */
 	int error;				/* 1 if rpcap_remoteact_getsock got an error */
+
 	userinfo[0] = '\0';
 
 	/*

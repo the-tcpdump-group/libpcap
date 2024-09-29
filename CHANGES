@@ -71,6 +71,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix check for mac80211 phydev.
     D-Bus:
       Fix message leak.
+    rpcap:
+      Fix a possible buffer overflow (Coverity CID 1619148).
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
