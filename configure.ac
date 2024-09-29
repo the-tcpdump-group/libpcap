@@ -1020,6 +1020,21 @@ linux)
 
 		if test x$pkg_config_found_libnl != xyes; then
 			#
+			# Check for libnl-tiny with pkg-config.
+			#
+			PKG_CHECK_MODULE(LIBNL, libnl-tiny,
+			    [
+				pkg_config_found_libnl=yes
+				V_INCLS="$V_INCLS $LIBNL_CFLAGS"
+				ADDITIONAL_LIBS="$LIBNL_LIBS $ADDITIONAL_LIBS"
+				ADDITIONAL_LIBS_STATIC="$LIBNL_LIBS_STATIC $ADDITIONAL_LIBS_STATIC"
+				REQUIRES_PRIVATE="libnl-tiny $REQUIRES_PRIVATE"
+				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+			    ])
+		fi
+
+		if test x$pkg_config_found_libnl != xyes; then
+			#
 			# OK, either we don't have pkg-config or there
 			# wasn't a .pc file for it; Check for it directly.
 			#
