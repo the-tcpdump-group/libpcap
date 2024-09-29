@@ -67,6 +67,10 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
+    Linux:
+      Fix check for mac80211 phydev.
+    D-Bus:
+      Fix message leak.
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
