@@ -499,6 +499,7 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 			 * exist; that means it's not a mac80211
 			 * device.
 			 */
+			free(pathstr);
 			return 0;
 		}
 		if (errno == EINVAL) {
@@ -506,6 +507,7 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 			 * Exists, but it's not a symlink; assume that
 			 * means it's not a mac80211 device.
 			 */
+			free(pathstr);
 			return 0;
 		}
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
