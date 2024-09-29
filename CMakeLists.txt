@@ -2069,6 +2069,10 @@ else(WIN32)
         # not supporting older versions of the Linux kernel;
         # let's drop support for older versions of libnl, too.
         #
+        # Due to lack of testing facilities this block does not
+        # include a branch for libnl-tiny with pkg-config, which
+        # is not consistent with Autoconf.
+        #
         if(BUILD_WITH_LIBNL)
             pkg_check_modules(LIBNL libnl-genl-3.0)
             if(LIBNL_FOUND)

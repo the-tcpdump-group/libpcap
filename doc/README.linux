@@ -11,6 +11,10 @@ is chosen, the monitor-mode APIs (as used by tcpdump's "-I" flag, and as
 will probably be used by other applications in the future) won't work
 properly on mac80211 devices.
 
+libnl-tiny can be used when libnl is not available.  This works using
+Autoconf only and requires the provided libnl-tiny to have sufficient
+pkg-config support.
+
 Linux's run-time linker allows shared libraries to be linked with other
 shared libraries, which means that if an older version of a shared
 library doesn't require routines from some other shared library, and a
