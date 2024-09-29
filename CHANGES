@@ -59,7 +59,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: Skip snprintf(3) tests when cross-compiling.
       autogen.sh: Allow to configure Autoconf warnings.
       autogen.sh: Delete all trailing blank lines at end of configure.
-      CMake: Fix libnl usage with pkg-config.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
@@ -70,6 +69,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
+      CMake: Fix libnl usage with pkg-config.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
