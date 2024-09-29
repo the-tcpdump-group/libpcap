@@ -93,9 +93,6 @@
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
 
-/* Define to 1 if you have the <linux/wireless.h> header file. */
-#cmakedefine HAVE_LINUX_WIRELESS_H 1
-
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H 1
 

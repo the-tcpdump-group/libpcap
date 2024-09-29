@@ -2026,12 +2026,6 @@ else(WIN32)
         cmake_pop_check_state()
     elseif(PCAP_TYPE STREQUAL "linux")
         #
-        # Do we have the wireless extensions?
-        # linux/wireless.h requires sys/socket.h.
-        #
-        check_include_files("sys/socket.h;linux/wireless.h" HAVE_LINUX_WIRELESS_H)
-
-        #
         # Do we have libnl?
         # We only want version 3.  Version 2 was, apparently,
         # short-lived, and version 1 is source and binary
