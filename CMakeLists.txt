@@ -2078,6 +2078,8 @@ else(WIN32)
         if(BUILD_WITH_LIBNL)
             pkg_check_modules(LIBNL libnl-genl-3.0)
             if(LIBNL_FOUND)
+                set(HAVE_LIBNL TRUE)
+                include_directories(${LIBNL_INCLUDE_DIRS})
                 set(PCAP_LINK_LIBRARIES ${LIBNL_LIBRARIES} ${PCAP_LINK_LIBRARIES})
 
                 #
