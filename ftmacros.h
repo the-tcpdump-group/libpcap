@@ -100,8 +100,12 @@
    * We don't limit this to, for example, Linux and Cygwin, because
    * this might, for example, be GNU/HURD or one of Debian's kFreeBSD
    * OSes ("GNU/FreeBSD").
+   *
+   * Avoid redefining, same as below.
    */
-  #define _GNU_SOURCE
+  #ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+  #endif
 
   /*
    * We turn on both _DEFAULT_SOURCE and _BSD_SOURCE to try to get
