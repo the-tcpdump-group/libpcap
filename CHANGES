@@ -2,6 +2,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
     Linux:
       Fix check for mac80211 phydev.
+      Don't create monitor-mode interface if we're capturing on one.
     D-Bus:
       Fix message leak.
     Building and testing:
