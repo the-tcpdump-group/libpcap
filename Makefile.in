@@ -119,8 +119,6 @@ PUBHDR = \
 	pcap/vlan.h
 
 HDR = $(PUBHDR) \
-	arcnet.h \
-	atmuni31.h \
 	diag-control.h \
 	ethertype.h \
 	extract.h \
@@ -130,7 +128,6 @@ HDR = $(PUBHDR) \
 	ieee80211.h \
 	llc.h \
 	nametoaddr.h \
-	nlpid.h \
 	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
@@ -144,7 +141,6 @@ HDR = $(PUBHDR) \
 	rpcap-protocol.h \
 	sf-pcap.h \
 	sf-pcapng.h \
-	sunatmpos.h \
 	thread-local.h \
 	varattrs.h
 

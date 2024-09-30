@@ -142,8 +142,6 @@ You can get around this by installing GCC.
 	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
 	VERSION		    - version of this release
 	aclocal.m4	    - autoconf macros
-	arcnet.h	    - ARCNET definitions
-	atmuni31.h	    - ATM Q.2931 definitions
 	autogen.sh	    - build configure and config.h.in (run this first)
 	bpf_dump.c	    - BPF program printing routines
 	bpf_filter.c	    - BPF filtering routines
@@ -179,7 +177,6 @@ You can get around this by installing GCC.
 	mkdep		    - construct Makefile dependency list
 	nametoaddr.c	    - hostname to address routines
 	nametoaddr.h	    - hostname to address prototypes
-	nlpid.h		    - OSI network layer protocol identifier definitions
 	optimize.c	    - BPF optimization routines
 	optimize.h	    - BPF optimization prototypes
 	pcap/bluetooth.h    - public definition of DLT_BLUETOOTH_HCI_H4_WITH_PHDR header
@@ -264,5 +261,4 @@ You can get around this by installing GCC.
 	sockutils.h	    - socket and name lookup API prototypes
 	sslutils.c	    - OpenSSL interface routines
 	sslutils.h	    - OpenSSL interface prototypes
-	sunatmpos.h	    - definitions for SunATM capturing
 	varattrs.h	    - variable attribute macros
