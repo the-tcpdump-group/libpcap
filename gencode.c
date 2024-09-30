@@ -46,17 +46,13 @@
 #include "extract.h"
 
 #include "ethertype.h"
-#include "nlpid.h"
 #include "llc.h"
 #include "gencode.h"
 #include "ieee80211.h"
-#include "atmuni31.h"
-#include "sunatmpos.h"
 #include "pflog.h"
 #include "ppp.h"
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
-#include "arcnet.h"
 #include "diag-control.h"
 
 #include "scanner.h"
@@ -144,6 +140,132 @@ struct addrinfo {
 
 #define GENEVE_PORT 6081
 #define VXLAN_PORT  4789
+
+
+/*
+ * from: NetBSD: if_arc.h,v 1.13 1999/11/19 20:41:19 thorpej Exp
+ */
+
+/* RFC 1051 */
+#define	ARCTYPE_IP_OLD		240	/* IP protocol */
+#define	ARCTYPE_ARP_OLD		241	/* address resolution protocol */
+
+/* RFC 1201 */
+#define	ARCTYPE_IP		212	/* IP protocol */
+#define	ARCTYPE_ARP		213	/* address resolution protocol */
+#define	ARCTYPE_REVARP		214	/* reverse addr resolution protocol */
+
+#define	ARCTYPE_ATALK		221	/* Appletalk */
+#define	ARCTYPE_BANIAN		247	/* Banyan Vines */
+#define	ARCTYPE_IPX		250	/* Novell IPX */
+
+#define ARCTYPE_INET6		0xc4	/* IPng */
+#define ARCTYPE_DIAGNOSE	0x80	/* as per ANSI/ATA 878.1 */
+
+
+/* Based on UNI3.1 standard by ATM Forum */
+
+/* ATM traffic types based on VPI=0 and (the following VCI */
+#define VCI_PPC			0x05	/* Point-to-point signal msg */
+#define VCI_BCC			0x02	/* Broadcast signal msg */
+#define VCI_OAMF4SC		0x03	/* Segment OAM F4 flow cell */
+#define VCI_OAMF4EC		0x04	/* End-to-end OAM F4 flow cell */
+#define VCI_METAC		0x01	/* Meta signal msg */
+#define VCI_ILMIC		0x10	/* ILMI msg */
+
+/* Q.2931 signalling messages */
+#define CALL_PROCEED		0x02	/* call proceeding */
+#define CONNECT			0x07	/* connect */
+#define CONNECT_ACK		0x0f	/* connect_ack */
+#define SETUP			0x05	/* setup */
+#define RELEASE			0x4d	/* release */
+#define RELEASE_DONE		0x5a	/* release_done */
+#define RESTART			0x46	/* restart */
+#define RESTART_ACK		0x4e	/* restart ack */
+#define STATUS			0x7d	/* status */
+#define STATUS_ENQ		0x75	/* status ack */
+#define ADD_PARTY		0x80	/* add party */
+#define ADD_PARTY_ACK		0x81	/* add party ack */
+#define ADD_PARTY_REJ		0x82	/* add party rej */
+#define DROP_PARTY		0x83	/* drop party */
+#define DROP_PARTY_ACK		0x84	/* drop party ack */
+
+/* Information Element Parameters in the signalling messages */
+#define CAUSE			0x08	/* cause */
+#define ENDPT_REF		0x54	/* endpoint reference */
+#define AAL_PARA		0x58	/* ATM adaptation layer parameters */
+#define TRAFF_DESCRIP		0x59	/* atm traffic descriptors */
+#define CONNECT_ID		0x5a	/* connection identifier */
+#define QOS_PARA		0x5c	/* quality of service parameters */
+#define B_HIGHER		0x5d	/* broadband higher layer information */
+#define B_BEARER		0x5e	/* broadband bearer capability */
+#define B_LOWER			0x5f	/* broadband lower information */
+#define CALLING_PARTY		0x6c	/* calling party number */
+#define CALLED_PARTY		0x70	/* called party number */
+
+#define Q2931			0x09
+
+/* Q.2931 signalling general messages format */
+#define PROTO_POS       0	/* offset of protocol discriminator */
+#define CALL_REF_POS    2	/* offset of call reference value */
+#define MSG_TYPE_POS    5	/* offset of message type */
+#define MSG_LEN_POS     7	/* offset of message length */
+#define IE_BEGIN_POS    9	/* offset of first information element */
+
+/* format of signalling messages */
+#define TYPE_POS	0
+#define LEN_POS		2
+#define FIELD_BEGIN_POS 4
+
+
+/* SunATM header for ATM packet */
+#define SUNATM_DIR_POS		0
+#define SUNATM_VPI_POS		1
+#define SUNATM_VCI_POS		2
+#define SUNATM_PKT_BEGIN_POS	4	/* Start of ATM packet */
+
+/* Protocol type values in the bottom for bits of the byte at SUNATM_DIR_POS. */
+#define PT_LANE		0x01	/* LANE */
+#define PT_LLC		0x02	/* LLC encapsulation */
+#define PT_ILMI		0x05	/* ILMI */
+#define PT_QSAAL	0x06	/* Q.SAAL */
+
+
+/* Types missing from some systems */
+
+/*
+ * Network layer protocol identifiers
+ */
+#ifndef ISO8473_CLNP
+#define ISO8473_CLNP		0x81
+#endif
+#ifndef	ISO9542_ESIS
+#define	ISO9542_ESIS		0x82
+#endif
+#ifndef ISO9542X25_ESIS
+#define ISO9542X25_ESIS		0x8a
+#endif
+#ifndef	ISO10589_ISIS
+#define	ISO10589_ISIS		0x83
+#endif
+
+#define ISIS_L1_LAN_IIH      15
+#define ISIS_L2_LAN_IIH      16
+#define ISIS_PTP_IIH         17
+#define ISIS_L1_LSP          18
+#define ISIS_L2_LSP          20
+#define ISIS_L1_CSNP         24
+#define ISIS_L2_CSNP         25
+#define ISIS_L1_PSNP         26
+#define ISIS_L2_PSNP         27
+
+#ifndef ISO8878A_CONS
+#define	ISO8878A_CONS		0x84
+#endif
+#ifndef	ISO10747_IDRP
+#define	ISO10747_IDRP		0x85
+#endif
+
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
