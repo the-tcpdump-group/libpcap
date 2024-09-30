@@ -584,6 +584,94 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
     const char *device, const char *mondevice);
 
 static int
+if_type_cb(struct nl_msg *msg, void* arg)
+{
+	struct nlmsghdr* ret_hdr = nlmsg_hdr(msg);
+	struct nlattr *tb_msg[NL80211_ATTR_MAX + 1];
+	int *type = (int*)arg;
+
+	struct genlmsghdr *gnlh = (struct genlmsghdr*) nlmsg_data(ret_hdr);
+
+	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb_msg[NL80211_ATTR_IFTYPE]) {
+		return NL_SKIP;
+	}
+
+	*type = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
+	return NL_STOP;
+}
+
+static int
+get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
+    const char *device, int *type)
+{
+	int ifindex;
+	struct nl_msg *msg;
+	int err;
+
+	ifindex = iface_get_id(sock_fd, device, handle->errbuf);
+	if (ifindex == -1)
+		return PCAP_ERROR;
+
+	struct nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, if_type_cb, (void*)type);
+
+	msg = nlmsg_alloc();
+	if (!msg) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: failed to allocate netlink msg", device);
+		return PCAP_ERROR;
+	}
+
+	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+		    0, NL80211_CMD_GET_INTERFACE, 0);
+	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
+
+	err = nl_send_auto_complete(state->nl_sock, msg);
+	if (err < 0) {
+		if (err == -NLE_FAILURE) {
+			/*
+			 * Device not available; our caller should just
+			 * keep trying.  (libnl 2.x maps ENFILE to
+			 * NLE_FAILURE; it can also map other errors
+			 * to that, but there's not much we can do
+			 * about that.)
+			 */
+			nlmsg_free(msg);
+			return 0;
+		} else {
+			/*
+			 * Real failure, not just "that device is not
+			 * available.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: nl_send_auto_complete failed getting interface type: %s",
+			    device, nl_geterror(-err));
+			nlmsg_free(msg);
+			return PCAP_ERROR;
+		}
+	}
+
+	nl_recvmsgs(state->nl_sock, cb);
+
+	/*
+	 * Success.
+	 */
+	nlmsg_free(msg);
+
+	return 1;
+
+nla_put_failure:
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    "%s: nl_put failed getting interface type",
+	    device);
+	nlmsg_free(msg);
+	return PCAP_ERROR;
+}
+
+static int
 add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
     const char *device, const char *mondevice)
 {
@@ -4858,18 +4946,40 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 	if (ret == 0)
 		return 0;	/* no error, but not mac80211 device */
 
-	/*
-	 * XXX - is this already a monN device?
-	 * If so, we're done.
-	 */
-
-	/*
-	 * OK, it's apparently a mac80211 device.
-	 * Try to find an unused monN device for it.
-	 */
 	ret = nl80211_init(handle, &nlstate, device);
 	if (ret != 0)
 		return ret;
+
+	/*
+	 * Is this already a monN device?
+	 * If so, we're done.
+	 */
+	int type;
+	ret = get_if_type(handle, sock_fd, &nlstate, device, &type);
+	if (ret <= 0) {
+		/*
+		 * < 0 is a Hard failure.  Just return ret; handle->errbuf
+		 * has already been set.
+		 *
+		 * 0 is "device not available"; the caller should retry later.
+		 */
+		nl80211_cleanup(&nlstate);
+		return ret;
+	}
+        if (type == NL80211_IFTYPE_MONITOR) {
+		/*
+		 * OK, it's already a monitor mode device; just use it.
+		 * There's no point in creating another monitor device
+		 * that will have to be cleaned up.
+		 */
+                nl80211_cleanup(&nlstate);
+                return ret;
+        }
+
+	/*
+	 * OK, it's apparently a mac80211 device but not a monitor device.
+	 * Try to find an unused monN device for it.
+	 */
 	for (n = 0; n < UINT_MAX; n++) {
 		/*
 		 * Try mon{n}.
