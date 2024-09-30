@@ -36,6 +36,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add a -t flag to rpcapd to specify the data channel port; from
         another incorporate-remote-capture project. (issue #1120)
       rpcapd: Refine SSL options in printusage().
+      Fix a possible buffer overflow (Coverity CID 1619148).
     Documentation:
       Document a standard format for writing out BPF filter programs.
       Add a README.hurd.md file.
@@ -71,8 +72,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix check for mac80211 phydev.
     D-Bus:
       Fix message leak.
-    rpcap:
-      Fix a possible buffer overflow (Coverity CID 1619148).
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
