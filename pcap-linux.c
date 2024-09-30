@@ -213,8 +213,7 @@ struct pcap_linux {
 /*
  * Stuff to do when we close.
  */
-#define MUST_CLEAR_RFMON	0x00000001	/* clear rfmon (monitor) mode */
-#define MUST_DELETE_MONIF	0x00000002	/* delete monitor-mode interface */
+#define MUST_DELETE_MONIF	0x00000001	/* delete monitor-mode interface */
 
 /*
  * Prototypes for internal functions and methods.
