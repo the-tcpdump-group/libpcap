@@ -109,7 +109,7 @@ snf_timestamp_to_timeval(const int64_t ts_nanosec, const int tstamp_precision)
 {
 	struct timeval tv;
 	long tv_nsec;
-        const static struct timeval zero_timeval;
+	static const struct timeval zero_timeval;
 
         if (ts_nanosec == 0)
                 return zero_timeval;
@@ -131,9 +131,9 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_snf *ps = p->priv;
 	struct pcap_pkthdr hdr;
-	int i, flags, err, caplen, n;
+	int err, caplen, n;
 	struct snf_recv_req req;
-	int nonblock, timeout;
+	int timeout;
 
 	/*
 	 * This can conceivably process more than INT_MAX packets,
@@ -203,10 +203,10 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
-static int
-snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
-{
 #ifdef SNF_HAVE_INJECT_API
+static int
+snf_inject(pcap_t *p, const void *buf, int size)
+{
 	struct pcap_snf *ps = p->priv;
 	int rc;
 	if (ps->snf_inj == NULL) {
@@ -227,12 +227,15 @@ snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 		    rc, "snf_inject_send");
 		return (-1);
 	}
+}
 #else
+static int
+snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 	pcapint_strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
 	    PCAP_ERRBUF_SIZE);
 	return (-1);
-#endif
 }
+#endif
 
 static int
 snf_activate(pcap_t* p)
@@ -342,7 +345,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	struct snf_ifaddrs *ifaddrs, *ifa;
 	char name[MAX_DESC_LENGTH];
 	char desc[MAX_DESC_LENGTH];
-	int ret, allports = 0, merge = 0;
+	int allports = 0, merge = 0;
 	const char *nr = NULL;
 
 	if (snf_init(SNF_VERSION_API)) {
@@ -399,9 +402,9 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * entry for the device, if they're not already in the
 		 * list of IP addresses for the device?
 		 */
-		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%u",
 			merge ? "Merge Bitmask Port " : "",
-			merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+			merge ? 1U << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
 		/*
 		 * Add the port to the bitmask.
 		 */
@@ -445,7 +448,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			/*
 			 * On Windows, fill in IP# from device name
 			 */
-                        ret = inet_pton(AF_INET, dev->name, &addr.sin_addr);
+			int ret = inet_pton(AF_INET, dev->name, &addr.sin_addr);
                         if (ret == 1) {
 				/*
 				 * Successful conversion of device name
@@ -464,7 +467,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				    "sinf_findalldevs inet_pton");
                                 return -1;
                         }
-#endif _WIN32
+#endif // _WIN32
 		}
 	}
 	snf_freeifaddrs(ifaddrs);
