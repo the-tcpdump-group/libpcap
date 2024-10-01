@@ -50,4 +50,5 @@ is returned on failure.
 These functions became available in libpcap release 1.2.1.
 .SH SEE ALSO
 .BR pcap (3PCAP),
+.BR pcap_list_tstamp_types (3PCAP),
 .BR pcap_tstamp_type_name_to_val (3PCAP)

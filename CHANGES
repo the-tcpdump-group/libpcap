@@ -41,6 +41,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Document a standard format for writing out BPF filter programs.
       Add a README.hurd.md file.
       Explain "any" device better in pcap_create(3PCAP).
+      Cross-reference some man pages better.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.

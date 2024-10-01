@@ -46,4 +46,5 @@ on failure.
 This function became available in libpcap release 1.2.1.
 .SH SEE ALSO
 .BR pcap (3PCAP),
+.BR pcap_set_tstamp_type (3PCAP),
 .BR pcap_tstamp_type_val_to_name (3PCAP)

@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-LINKTYPE @MAN_MISC_INFO@ "6 April 2020"
+.TH PCAP-LINKTYPE @MAN_MISC_INFO@ "1 October 2024"
 .SH NAME
 pcap-linktype \- link-layer header types supported by libpcap
 .SH DESCRIPTION
@@ -34,6 +34,21 @@ the network adapter or the network adapter driver generates from the
 802.11 headers.  The names for those values begin with
 .BR DLT_ ,
 so they are sometimes called "DLT_ values".
+.PP
+The
+.BR pcap_datalink_val_to_name (3PCAP)
+and
+.BR pcap_datalink_name_to_val (3PCAP)
+routines can be used to translate between
+.B DLT_
+values and names.  Some capture devices support more than one link-layer
+header type.  The
+.BR pcap_list_datalinks (3PCAP)
+routine can be used to retrieve the supported link-layer header types of
+a capture device and the
+.BR pcap_set_datalink (3PCAP)
+routine can be used to change the link-layer header type of a capture
+device.
 .PP
 The values stored in the link-layer header type field in the savefile
 header are, in most but not all cases, the same as the values returned

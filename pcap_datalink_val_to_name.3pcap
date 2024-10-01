@@ -73,4 +73,7 @@ would have to be called and, if it returned
 .BR NULL ,
 a default string would have to be constructed.
 .SH SEE ALSO
-.BR pcap (3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_datalink (3PCAP),
+.BR pcap_list_datalinks (3PCAP),
+.BR pcap_datalink_name_to_val (3PCAP)

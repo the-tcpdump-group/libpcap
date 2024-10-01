@@ -55,4 +55,6 @@ may be called with
 as an argument to fetch or display the error text.
 .SH SEE ALSO
 .BR pcap (3PCAP),
+.BR pcap_datalink (3PCAP),
+.BR pcap_list_datalinks (3PCAP),
 .BR pcap_datalink_name_to_val (3PCAP)

@@ -68,4 +68,7 @@ returns the link-layer header type on success and
 if called on a capture handle that has been created but not activated.
 .SH SEE ALSO
 .BR pcap (3PCAP),
+.BR pcap_datalink_val_to_name (3PCAP),
+.BR pcap_set_datalink (3PCAP),
+.BR pcap_list_datalinks (3PCAP),
 .BR pcap-linktype (@MAN_MISC_INFO@)
