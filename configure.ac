@@ -1565,11 +1565,7 @@ AS_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if no
 	snf_lib_dir=$withval
 ],[])
 
-ac_cv_lbl_snf_api=no
-if test "$with_snf" != no; then
-
-	AC_MSG_CHECKING(whether we have Myricom Sniffer API)
-
+if test "$want_snf" != no; then
 	# If necessary, set default paths for Sniffer headers and libraries.
 	if test -z "$snf_root"; then
 		snf_root=/opt/snf
@@ -1590,19 +1586,24 @@ if test "$with_snf" != no; then
 		fi
 	fi
 
-	if test -f "$snf_include_dir/snf.h"; then
+	AC_LBL_SAVE_CHECK_STATE
+	CFLAGS="$CFLAGS -I$snf_include_dir"
+	# Do not define a symbol.
+	AC_CHECK_HEADER(snf.h)
+	AC_LBL_RESTORE_CHECK_STATE
+
+	if test "$ac_cv_header_snf_h" = yes; then
 		# We found a header; make sure we can link with the library
 		AC_LBL_SAVE_CHECK_STATE
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		# Do not define a symbol.
 		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"])
 		AC_LBL_RESTORE_CHECK_STATE
-		if test "$ac_cv_lbl_snf_api" = no; then
-			AC_MSG_ERROR(SNF API cannot correctly be linked; check config.log)
-		fi
 	fi
 
 	if test "$ac_cv_lbl_snf_api" = yes; then
-		AC_MSG_RESULT([yes ($snf_root)])
+		AC_MSG_NOTICE([using Myricom SNF API headers from $snf_include_dir])
+		AC_MSG_NOTICE([using Myricom SNF API libraries from $snf_lib_dir])
 
 		V_INCLS="$V_INCLS -I$snf_include_dir"
 		ADDITIONAL_LIBS="$ADDITIONAL_LIBS -L$snf_lib_dir -lsnf"
@@ -1615,9 +1616,7 @@ if test "$with_snf" != no; then
 
 		AC_DEFINE(HAVE_SNF_API, 1, [define if you have the Myricom SNF API])
 	else
-		AC_MSG_RESULT(no)
-
-		if test "$want_snf" = yes; then
+		if test "$V_PCAP" = snf; then
 			# User requested "snf" capture type but
 			# we couldn't find the Sniffer API support.
 			AC_MSG_ERROR([Myricom Sniffer support requested with --with-pcap=snf, but the Sniffer headers weren't found at $snf_include_dir: make sure the Sniffer support is installed, specify a different path or paths if necessary, or don't request Sniffer support])
