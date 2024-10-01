@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-TSTAMP @MAN_MISC_INFO@ "14 July 2020"
+.TH PCAP-TSTAMP @MAN_MISC_INFO@ "1 October 2024"
 .SH NAME
 pcap-tstamp \- packet time stamps in libpcap
 .SH DESCRIPTION
@@ -172,7 +172,7 @@ The
 .BR pcap_set_tstamp_precision (3PCAP)
 routine can be used after a
 .BR pcap_create ()
-call and after a
+call and before a
 .BR pcap_activate ()
 call to specify the resolution of the time stamps to get for the device.
 If the hardware or software cannot supply a higher-resolution time
