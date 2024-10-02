@@ -808,7 +808,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: nl_wait_for_ack failed adding %s interface: %s",
+		    "%s: nl_wait_for_ack failed deleting %s interface: %s",
 		    device, mondevice, nl_geterror(-err));
 		nlmsg_free(msg);
 		return PCAP_ERROR;
