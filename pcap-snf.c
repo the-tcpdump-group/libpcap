@@ -349,8 +349,8 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	const char *nr = NULL;
 
 	if (snf_init(SNF_VERSION_API)) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "snf_getifaddrs: snf_init failed");
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "snf_init");
 		return (-1);
 	}
 
@@ -365,7 +365,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		merge = strtol(nr, NULL, 0);
 		if (errno) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"snf_getifaddrs: SNF_FLAGS is not a valid number");
+				"snf_findalldevs: SNF_FLAGS is not a valid number");
 			return (-1);
 		}
 		merge = merge & SNF_F_AGGREGATE_PORTMASK;
