@@ -82,20 +82,21 @@ downloaded from [here](https://cmake.org/download/).
 When you run the installer, you should choose to add CMake to the system
 `PATH` for all users and to create the desktop icon.
 
+Visual Studio 2017, 2019, and 2022 provide CMake, so you will not need
+to install CMake if you have installed one of those versions of Visual
+Studio or later.  They include built-in support for CMake-based projects
+as described
+[here](https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/). 
+
+For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
+installed; for Visual Studio 2019 and 2022, make sure "C++ CMake tools
+for Windows" is installed.
+
 CMake can also be installed as the Chocolatey package `cmake`:
 
 ```
 choco install -y cmake
 ```
-
-Visual Studio 2017 and later provide CMake, so you will not need to
-install CMake if you have installed Visual Studio 2017 or later.  They
-include built-in support for CMake-based projects as described
-[here](https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/).
-
-For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
-installed; for Visual Studio 2019, make sure "C++ CMake tools for
-Windows" is installed.
 
 ### winflexbison ###
 
@@ -148,7 +149,7 @@ with Control-S.
 Visual Studio will then re-run CMake.  If that completes without errors,
 you can build with CMake > "Build All".
 
-### Visual Studio 2019 ###
+### Visual Studio 2019 and 2022 ###
 
 Open the folder containing the libpcap source with Open > Folder.
 Visual Studio will run CMake; however, you will need to indicate where
@@ -217,6 +218,37 @@ Run the command
 
 ```
 cmake "-DPacket_ROOT={path-to-sdk}" -G "Visual Studio 16 2019" {platform} {path-to-libpcap-source}
+```
+
+`{path-to-sdk}` is the path of the directory containing the Npcap or
+WinPcap SDK.
+
+`{platform}` is `-A Win32` to build a 32-bit version of libpcap or `-A
+x64` to build a 64-bit version of libpcap.
+
+`{path-to-libpcap-source}` is the pathname of the top-level source
+directory for libpcap.
+
+Run the command
+
+```
+msbuild /m /nologo /p:Configuration={configuration} pcap.sln
+```
+
+where `{configuration}` can be "Release", "Debug", or "RelWithDebInfo".
+
+### Visual Studio 2022 ###
+
+Start the appropriate Native Tools command line prompt.
+
+Change to the directory into which you want to build libpcap, possibly
+after creating it first.  One choice is to create it as a subdirectory
+of the libpcap source directory.
+
+Run the command
+
+```
+cmake "-DPacket_ROOT={path-to-sdk}" -G "Visual Studio 17 2022" {platform} {path-to-libpcap-source}
 ```
 
 `{path-to-sdk}` is the path of the directory containing the Npcap or
