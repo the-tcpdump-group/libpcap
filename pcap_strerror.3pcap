@@ -41,4 +41,5 @@ every supported OS.
 This function was not thread-safe in libpcap before 1.8.1 on Windows and
 in libpcap before 1.10.5 on all other OSes.
 .SH SEE ALSO
-.BR pcap (3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_geterr (3PCAP)
