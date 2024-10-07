@@ -588,7 +588,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
  * There are no regular interfaces, just SNF interfaces.
  */
 int
-pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf _U_)
 {
 	return (0);
 }
@@ -597,7 +597,7 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
  * Attempts to open a regular interface fail.
  */
 pcap_t *
-pcapint_create_interface(const char *device, char *errbuf)
+pcapint_create_interface(const char *device _U_, char *errbuf)
 {
 	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "This version of libpcap only supports SNF cards");
