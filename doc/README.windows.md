@@ -86,7 +86,7 @@ Visual Studio 2017, 2019, and 2022 provide CMake, so you will not need
 to install CMake if you have installed one of those versions of Visual
 Studio or later.  They include built-in support for CMake-based projects
 as described
-[here](https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/). 
+[here](https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/).
 
 For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
 installed; for Visual Studio 2019 and 2022, make sure "C++ CMake tools
