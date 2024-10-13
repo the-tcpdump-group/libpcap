@@ -60,11 +60,6 @@
   #include <ntddndis.h>  /* MSVC/TDM-MinGW/MinGW64 */
 #endif
 
-#ifdef HAVE_DAG_API
-  #include <dagnew.h>
-  #include <dagapi.h>
-#endif /* HAVE_DAG_API */
-
 #include "diag-control.h"
 
 #include "pcap-airpcap.h"
@@ -91,10 +86,6 @@ struct pcap_win {
 	int nonblock;
 	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
 	int filtering_in_kernel;	/* using kernel filter */
-
-#ifdef HAVE_DAG_API
-	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
-#endif
 
 #ifdef ENABLE_REMOTE
 	int samp_npkt;			/* parameter needed for sampling, with '1 out of N' method has been requested */
@@ -802,196 +793,6 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
-#ifdef HAVE_DAG_API
-static int
-pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
-{
-	struct pcap_win *pw = p->priv;
-	PACKET Packet;
-	u_char *dp = NULL;
-	int	packet_len = 0, caplen = 0;
-	struct pcap_pkthdr	pcap_header;
-	u_char *endofbuf;
-	int n = 0;
-	dag_record_t *header;
-	unsigned erf_record_len;
-	ULONGLONG ts;
-	int cc;
-	unsigned swt;
-	unsigned dfp = pw->adapter->DagFastProcess;
-
-	cc = p->cc;
-	if (cc == 0) /* Get new packets only if we have processed all the ones of the previous read */
-	{
-		/*
-		 * Get new packets from the network.
-		 *
-		 * The PACKET structure had a bunch of extra stuff for
-		 * Windows 9x/Me, but the only interesting data in it
-		 * in the versions of Windows that we support is just
-		 * a copy of p->buffer, a copy of p->buflen, and the
-		 * actual number of bytes read returned from
-		 * PacketReceivePacket(), none of which has to be
-		 * retained from call to call, so we just keep one on
-		 * the stack.
-		 */
-		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
-		if (!PacketReceivePacket(pw->adapter, &Packet, TRUE)) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
-			return (-1);
-		}
-
-		cc = Packet.ulBytesReceived;
-		if(cc == 0)
-			/* The timeout has expired but we no packets arrived */
-			return (0);
-		header = (dag_record_t*)pw->adapter->DagBuffer;
-	}
-	else
-		header = (dag_record_t*)p->bp;
-
-	endofbuf = (char*)header + cc;
-
-	/*
-	 * This can conceivably process more than INT_MAX packets,
-	 * which would overflow the packet count, causing it either
-	 * to look like a negative number, and thus cause us to
-	 * return a value that looks like an error, or overflow
-	 * back into positive territory, and thus cause us to
-	 * return a too-low count.
-	 *
-	 * Therefore, if the packet count is unlimited, we clip
-	 * it at INT_MAX; this routine is not expected to
-	 * process packets indefinitely, so that's not an issue.
-	 */
-	if (PACKET_COUNT_IS_UNLIMITED(cnt))
-		cnt = INT_MAX;
-
-	/*
-	 * Cycle through the packets
-	 */
-	do
-	{
-		erf_record_len = SWAPS(header->rlen);
-		if((char*)header + erf_record_len > endofbuf)
-			break;
-
-		/* Increase the number of captured packets */
-		p->stat.ps_recv++;
-
-		/* Find the beginning of the packet */
-		dp = ((u_char *)header) + dag_record_size;
-
-		/* Determine actual packet len */
-		switch(header->type)
-		{
-		case TYPE_ATM:
-			packet_len = ATM_SNAPLEN;
-			caplen = ATM_SNAPLEN;
-			dp += 4;
-
-			break;
-
-		case TYPE_ETH:
-			swt = SWAPS(header->wlen);
-			packet_len = swt - (pw->dag_fcs_bits);
-			caplen = erf_record_len - dag_record_size - 2;
-			if (caplen > packet_len)
-			{
-				caplen = packet_len;
-			}
-			dp += 2;
-
-			break;
-
-		case TYPE_HDLC_POS:
-			swt = SWAPS(header->wlen);
-			packet_len = swt - (pw->dag_fcs_bits);
-			caplen = erf_record_len - dag_record_size;
-			if (caplen > packet_len)
-			{
-				caplen = packet_len;
-			}
-
-			break;
-		}
-
-		if(caplen > p->snapshot)
-			caplen = p->snapshot;
-
-		/*
-		 * Has "pcap_breakloop()" been called?
-		 * If so, return immediately - if we haven't read any
-		 * packets, clear the flag and return -2 to indicate
-		 * that we were told to break out of the loop, otherwise
-		 * leave the flag set, so that the *next* call will break
-		 * out of the loop without having read any packets, and
-		 * return the number of packets we've processed so far.
-		 */
-		if (p->break_loop)
-		{
-			if (n == 0)
-			{
-				p->break_loop = 0;
-				return (-2);
-			}
-			else
-			{
-				p->bp = (char*)header;
-				p->cc = endofbuf - (char*)header;
-				return (n);
-			}
-		}
-
-		if(!dfp)
-		{
-			/* convert between timestamp formats */
-			ts = header->ts;
-			pcap_header.ts.tv_sec = (int)(ts >> 32);
-			ts = (ts & 0xffffffffi64) * 1000000;
-			ts += 0x80000000; /* rounding */
-			pcap_header.ts.tv_usec = (int)(ts >> 32);
-			if (pcap_header.ts.tv_usec >= 1000000) {
-				pcap_header.ts.tv_usec -= 1000000;
-				pcap_header.ts.tv_sec++;
-			}
-		}
-
-		/* No underlying filtering system. We need to filter on our own */
-		if (p->fcode.bf_insns)
-		{
-			if (pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
-			{
-				/* Move to next packet */
-				header = (dag_record_t*)((char*)header + erf_record_len);
-				continue;
-			}
-		}
-
-		/* Fill the header for the user supplied callback function */
-		pcap_header.caplen = caplen;
-		pcap_header.len = packet_len;
-
-		/* Call the callback function */
-		(*callback)(user, &pcap_header, dp);
-
-		/* Move to next packet */
-		header = (dag_record_t*)((char*)header + erf_record_len);
-
-		/* Stop if the number of packets requested by user has been reached*/
-		if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt))
-		{
-			p->bp = (char*)header;
-			p->cc = endofbuf - (char*)header;
-			return (n);
-		}
-	}
-	while((u_char*)header < endofbuf);
-
-	return (1);
-}
-#endif /* HAVE_DAG_API */
-
 /* Send a packet to the network */
 static int
 pcap_inject_npf(pcap_t *p, const void *buf, int size)
@@ -1470,57 +1271,7 @@ pcap_activate_npf(pcap_t *p)
 			}
 		}
 	} else {
-		/*
-		 * Dag Card
-		 */
-#ifdef HAVE_DAG_API
-		/*
-		 * We have DAG support.
-		 */
-		LONG	status;
-		HKEY	dagkey;
-		DWORD	lptype;
-		DWORD	lpcbdata;
-		int		postype = 0;
-		char	keyname[512];
-
-		snprintf(keyname, sizeof(keyname), "%s\\CardParams\\%s",
-			"SYSTEM\\CurrentControlSet\\Services\\DAG",
-			strstr(_strlwr(p->opt.device), "dag"));
-		do
-		{
-			status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0, KEY_READ, &dagkey);
-			if(status != ERROR_SUCCESS)
-				break;
-
-			status = RegQueryValueEx(dagkey,
-				"PosType",
-				NULL,
-				&lptype,
-				(char*)&postype,
-				&lpcbdata);
-
-			if(status != ERROR_SUCCESS)
-			{
-				postype = 0;
-			}
-
-			RegCloseKey(dagkey);
-		}
-		while(FALSE);
-
-
-		p->snapshot = PacketSetSnapLen(pw->adapter, p->snapshot);
-
-		/* Set the length of the FCS associated to any packet. This value
-		 * will be subtracted to the packet length */
-		pw->dag_fcs_bits = pw->adapter->DagFcsLen;
-#else /* HAVE_DAG_API */
-		/*
-		 * No DAG support.
-		 */
 		goto bad;
-#endif /* HAVE_DAG_API */
 	}
 
 	/*
@@ -1559,22 +1310,9 @@ pcap_activate_npf(pcap_t *p)
 		}
 	}
 
-#ifdef HAVE_DAG_API
-	if(pw->adapter->Flags & INFO_FLAG_DAG_CARD)
-	{
-		/* install dag specific handlers for read and setfilter */
-		p->read_op = pcap_read_win32_dag;
-		p->setfilter_op = pcap_setfilter_win32_dag;
-	}
-	else
-	{
-#endif /* HAVE_DAG_API */
-		/* install traditional npf handlers for read and setfilter */
-		p->read_op = pcap_read_npf;
-		p->setfilter_op = pcap_setfilter_npf;
-#ifdef HAVE_DAG_API
-	}
-#endif /* HAVE_DAG_API */
+	/* install traditional npf handlers for read and setfilter */
+	p->read_op = pcap_read_npf;
+	p->setfilter_op = pcap_setfilter_npf;
 	p->setdirection_op = NULL;	/* Not implemented. */
 	    /* XXX - can this be implemented on some versions of Windows? */
 	p->inject_op = pcap_inject_npf;

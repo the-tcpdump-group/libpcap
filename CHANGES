@@ -9,6 +9,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove dead code that supported SITA ACN devices.
       Remove the TODO file.
       Merge four header files into gencode.c.
+      Remove DAG card support on Windows as Linux is the only
+        platform currently supported.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
