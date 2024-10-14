@@ -211,12 +211,6 @@ sf_live_dump_ended(pcap_t *p, int sync _U_)
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
 	return (-1);
 }
-
-static PAirpcapHandle
-sf_get_airpcap_handle(pcap_t *pcap _U_)
-{
-	return (NULL);
-}
 #endif
 
 static int
@@ -573,7 +567,6 @@ found:
 	p->setuserbuffer_op = sf_setuserbuffer;
 	p->live_dump_op = sf_live_dump;
 	p->live_dump_ended_op = sf_live_dump_ended;
-	p->get_airpcap_handle_op = sf_get_airpcap_handle;
 #endif
 
 	/*

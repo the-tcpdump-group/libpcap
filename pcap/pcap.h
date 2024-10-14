@@ -824,14 +824,6 @@ PCAP_API const char *pcap_lib_version(void);
 
   typedef struct pcap_send_queue pcap_send_queue;
 
-  /*!
-    \brief This typedef is a support for the pcap_get_airpcap_handle() function
-  */
-  #if !defined(AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_)
-    #define AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_
-    typedef struct _AirpcapHandle *PAirpcapHandle;
-  #endif
-
   PCAP_API int pcap_setbuff(pcap_t *p, int dim) PCAP_WARN_UNUSED_RESULT;
   PCAP_API int pcap_setmode(pcap_t *p, int mode) PCAP_WARN_UNUSED_RESULT;
   PCAP_API int pcap_setmintocopy(pcap_t *p, int size) PCAP_WARN_UNUSED_RESULT;
@@ -865,8 +857,6 @@ PCAP_API const char *pcap_lib_version(void);
 	    PCAP_WARN_UNUSED_RESULT;
 
   PCAP_API int pcap_start_oem(char* err_str, int flags);
-
-  PCAP_API PAirpcapHandle pcap_get_airpcap_handle(pcap_t *p);
 
   #define MODE_CAPT 0
   #define MODE_STAT 1
