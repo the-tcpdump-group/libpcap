@@ -231,8 +231,6 @@ You can get around this by installing GCC.
 	pcap-septel.h       - Intel/Septel device capture support
 	pcap-snf.c	    - Myricom SNF device capture support
 	pcap-snf.h	    - Myricom SNF device capture support
-	pcap-tc.c	    - TurboCap device capture support
-	pcap-tc.h	    - TurboCap device capture support
 	pcap-types.h	    - header for OS-specific type includes
 	pcap-usb-linux.c    - USB capture support for Linux
 	pcap-usb-linux.h    - USB capture support for Linux
