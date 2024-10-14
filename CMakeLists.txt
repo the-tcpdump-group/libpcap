@@ -540,8 +540,6 @@ set(SEPTEL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../septel" CACHE PATH "Path to dire
 
 option(DISABLE_SNF "Disable Myricom SNF support" OFF)
 
-option(DISABLE_TC "Disable Riverbed TurboCap support" OFF)
-
 #
 # Debugging options.
 #
@@ -2694,27 +2692,6 @@ if(NOT DISABLE_AIRPCAP)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-airpcap.c)
         set(HAVE_AIRPCAP_API TRUE)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AirPcap_LIBRARIES})
-    endif()
-endif()
-
-# Check for Riverbed TurboCap support.
-if(NOT DISABLE_TC)
-    #
-    # Try to find the TurboCap header file and library.
-    #
-    find_package(TC)
-
-    #
-    # Did we succeed?
-    #
-    if(TC_FOUND)
-        #
-        # Yes.
-        #
-        include_directories(AFTER ${TC_INCLUDE_DIRS})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
-        set(HAVE_TC_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${TC_LIBRARIES} ${CMAKE_USE_PTHREADS_INIT} stdc++)
     endif()
 endif()
 
