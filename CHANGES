@@ -15,6 +15,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove code related to Riverbed TurboCap card.
         Riverbed TurboCap hardware has reached EOA as of Jun 30 2014.
       Remove dead code that supported Septel devices.
+      Remove outdated code related to AirPcap HW.
+        The Riverbed AirPcap Product has reached End of Availability (EOA) as of December 31, 2017
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request

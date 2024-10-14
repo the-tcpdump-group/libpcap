@@ -62,8 +62,6 @@
 
 #include "diag-control.h"
 
-#include "pcap-airpcap.h"
-
 static int pcap_setfilter_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_npf(pcap_t *);
@@ -543,22 +541,6 @@ pcap_live_dump_ended_npf(pcap_t *p, int sync)
 	return (PacketIsDumpEnded(pw->adapter, (BOOLEAN)sync));
 }
 #endif /* HAVE_NPCAP_PACKET_API */
-
-#ifdef HAVE_AIRPCAP_API
-static PAirpcapHandle
-pcap_get_airpcap_handle_npf(pcap_t *p)
-{
-	struct pcap_win *pw = p->priv;
-
-	return (PacketGetAirPcapHandle(pw->adapter));
-}
-#else /* HAVE_AIRPCAP_API */
-static PAirpcapHandle
-pcap_get_airpcap_handle_npf(pcap_t *p _U_)
-{
-	return (NULL);
-}
-#endif /* HAVE_AIRPCAP_API */
 
 static int
 pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -1332,7 +1314,6 @@ pcap_activate_npf(pcap_t *p)
 	p->setuserbuffer_op = pcap_setuserbuffer_npf;
 	p->live_dump_op = pcap_live_dump_npf;
 	p->live_dump_ended_op = pcap_live_dump_ended_npf;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_npf;
 	p->cleanup_op = pcap_cleanup_npf;
 
 	/*
@@ -1901,31 +1882,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		return (0);
 	}
 
-#ifdef HAVE_AIRPCAP_API
-	/*
-	 * Airpcap.sys do not support the below 'OID_GEN_x' values.
-	 * Just set these flags (and none of the '*flags' entered with).
-	 */
-	if (PacketGetAirPcapHandle(adapter)) {
-		/*
-		 * Must be "up" and "running" if the above if succeeded.
-		 */
-		*flags = PCAP_IF_UP | PCAP_IF_RUNNING;
-
-		/*
-		 * An airpcap device is a wireless device (duh!)
-		 */
-		*flags |= PCAP_IF_WIRELESS;
-
-		/*
-		 * A "network association state" makes no sense for airpcap.
-		 */
-		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
-		PacketCloseAdapter(adapter);
-		return (0);
-	}
-#endif
-
 	/*
 	 * Get the hardware status, and derive "up" and "running" from
 	 * that.
@@ -2190,19 +2146,6 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	name = &AdaptersName[0];
 	while (*name != '\0') {
 		bpf_u_int32 flags = 0;
-
-#ifdef HAVE_AIRPCAP_API
-		/*
-		 * Is this an AirPcap device?
-		 * If so, ignore it; it'll get added later, by the
-		 * AirPcap code.
-		 */
-		if (device_is_airpcap(name, errbuf) == 1) {
-			name += strlen(name) + 1;
-			desc += strlen(desc) + 1;
-			continue;
-		}
-#endif
 
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		/*

@@ -194,8 +194,6 @@ You can get around this by installing GCC.
 	pcap/socket.h	    - IP sockets support for various OSes
 	pcap/usb.h	    - public definition of DLT_USB header
 	pcap/vlan.h	    - VLAN-specific definitions
-	pcap-airpcap.c	    - AirPcap device capture support
-	pcap-airpcap.h	    - AirPcap device capture support
 	pcap-bpf.c	    - BSD Packet Filter support
 	pcap-bpf.h	    - header for backwards compatibility
 	pcap-bt-linux.c	    - Bluetooth capture support for Linux

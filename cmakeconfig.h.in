@@ -15,9 +15,6 @@
 /* define if we have the AIX getprotobyname_r() */
 #cmakedefine HAVE_AIX_GETPROTOBYNAME_R 1
 
-/* define if you have the AirPcap API */
-#cmakedefine HAVE_AIRPCAP_API 1
-
 /* Define to 1 if you have the `asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
