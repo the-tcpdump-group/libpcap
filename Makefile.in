@@ -259,7 +259,6 @@ EXTRA_DIST = \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
-	cmake/Modules/FindAirPcap.cmake \
 	cmake/Modules/FindDAG.cmake \
 	cmake/Modules/Finddpdk.cmake \
 	cmake/Modules/FindFseeko.cmake \
@@ -289,8 +288,6 @@ EXTRA_DIST = \
 	mkdep \
 	nomkdep \
 	org.tcpdump.chmod_bpf.plist \
-	pcap-airpcap.c \
-	pcap-airpcap.h \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \

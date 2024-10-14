@@ -482,7 +482,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 set(dpdk_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for DPDK")
 if(WIN32)
     set(Packet_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
-    set(AirPcap_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for airpcap.dll")
 endif(WIN32)
 
 option(ENABLE_PROFILING "Enable code profiling" OFF)
@@ -2652,27 +2651,6 @@ if(NOT DISABLE_SNF)
         set(LIBS "${LIBS_STATIC} ${SNF_LIBS}")
         set(LIBS_STATIC "${LIBS_STATIC} ${SNF_LIBS_STATIC}")
         set(LIBS_PRIVATE "${LIBS_PRIVATE} ${SNF_LIBS_PRIVATE}")
-    endif()
-endif()
-
-# Check for Riverbed AirPcap support.
-if(NOT DISABLE_AIRPCAP)
-    #
-    # Try to find the AirPcap header file and library.
-    #
-    find_package(AirPcap)
-
-    #
-    # Did we succeed?
-    #
-    if(AirPcap_FOUND)
-        #
-        # Yes.
-        #
-        include_directories(AFTER ${AirPcap_INCLUDE_DIRS})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-airpcap.c)
-        set(HAVE_AIRPCAP_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AirPcap_LIBRARIES})
     endif()
 endif()
 

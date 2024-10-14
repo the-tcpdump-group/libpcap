@@ -118,10 +118,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-dpdk.h"
 #endif
 
-#ifdef HAVE_AIRPCAP_API
-#include "pcap-airpcap.h"
-#endif
-
 #ifdef ENABLE_REMOTE
 #include "pcap-rpcap.h"
 #endif
@@ -455,13 +451,6 @@ pcap_live_dump_ended_not_initialized(pcap_t *pcap, int sync _U_)
 	pcap_set_not_initialized_message(pcap);
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
-
-static PAirpcapHandle
-pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
-{
-	pcap_set_not_initialized_message(pcap);
-	return (NULL);
-}
 #endif
 
 /*
@@ -664,9 +653,6 @@ static struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_DPDK
 	{ pcap_dpdk_findalldevs, pcap_dpdk_create },
-#endif
-#ifdef HAVE_AIRPCAP_API
-	{ airpcap_findalldevs, airpcap_create },
 #endif
 	{ NULL, NULL }
 };
@@ -2411,7 +2397,6 @@ initialize_ops(pcap_t *p)
 	p->setuserbuffer_op = pcap_setuserbuffer_not_initialized;
 	p->live_dump_op = pcap_live_dump_not_initialized;
 	p->live_dump_ended_op = pcap_live_dump_ended_not_initialized;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
 #endif
 
 	/*
@@ -3958,14 +3943,10 @@ pcap_live_dump_ended(pcap_t *p, int sync)
 PAirpcapHandle
 pcap_get_airpcap_handle(pcap_t *p)
 {
-	PAirpcapHandle handle;
+	(void)snprintf(p->errbuf, sizeof(p->errbuf),
+		"AirPcap devices are no longer supported");
 
-	handle = p->get_airpcap_handle_op(p);
-	if (handle == NULL) {
-		(void)snprintf(p->errbuf, sizeof(p->errbuf),
-		    "This isn't an AirPcap device");
-	}
-	return (handle);
+	return (NULL);
 }
 #endif
 
@@ -4445,12 +4426,6 @@ pcap_live_dump_ended_dead(pcap_t *p, int sync _U_)
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
 	return (-1);
 }
-
-static PAirpcapHandle
-pcap_get_airpcap_handle_dead(pcap_t *p _U_)
-{
-	return (NULL);
-}
 #endif /* _WIN32 */
 
 static void
@@ -4508,7 +4483,6 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->setuserbuffer_op = pcap_setuserbuffer_dead;
 	p->live_dump_op = pcap_live_dump_dead;
 	p->live_dump_ended_op = pcap_live_dump_ended_dead;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
 #endif
 	p->breakloop_op = pcap_breakloop_dead;
 	p->cleanup_op = pcap_cleanup_dead;
