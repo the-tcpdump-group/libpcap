@@ -266,7 +266,6 @@ EXTRA_DIST = \
 	cmake/Modules/FindLFS.cmake \
 	cmake/Modules/FindPacket.cmake \
 	cmake/Modules/FindSNF.cmake \
-	cmake/Modules/FindTC.cmake \
 	cmake/have_siocglifconf.c \
 	config.guess \
 	config.sub \
@@ -325,8 +324,6 @@ EXTRA_DIST = \
 	pcap-septel.h \
 	pcap-snf.c \
 	pcap-snf.h \
-	pcap-tc.c \
-	pcap-tc.h \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	rpcap-protocol.c \
