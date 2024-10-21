@@ -337,7 +337,7 @@ static int
 dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_dag *pd = p->priv;
-	unsigned int processed = 0;
+	int processed = 0;
 	unsigned int nonblocking = pd->dag_flags & DAGF_NONBLOCK;
 	unsigned int num_ext_hdr = 0;
 	unsigned int ticks_per_second;
@@ -509,11 +509,13 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size;
 				}
+				/* FALLTHROUGH */
 			case ERF_TYPE_MC_ATM:
 				if ((header->type & 0x7f) == ERF_TYPE_MC_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 					dp+=4;
 				}
+				/* FALLTHROUGH */
 			case ERF_TYPE_MC_AAL5:
 				if ((header->type & 0x7f) == ERF_TYPE_MC_AAL5) {
 					packet_len = ntohs(header->wlen);
@@ -1414,7 +1416,7 @@ dag_get_datalink(pcap_t *p)
  * There are no regular interfaces, just DAG interfaces.
  */
 int
-pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
+pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf _U_)
 {
 	return (0);
 }
@@ -1423,7 +1425,7 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
  * Attempts to open a regular interface fail.
  */
 pcap_t *
-pcapint_create_interface(const char *device, char *errbuf)
+pcapint_create_interface(const char *device _U_, char *errbuf)
 {
 	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "This version of libpcap only supports DAG cards");
