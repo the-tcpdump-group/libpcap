@@ -38,7 +38,8 @@ and deallocates resources. This means that, for example, if
 .I p
 refers to a savefile that was opened with
 .BR pcap_dump_fopen (),
-the stream provided to that routine will be closed.
+the stream provided to that routine will be closed unless it is
+.BR stdout .
 .SH SEE ALSO
 .BR pcap (3PCAP),
 .BR pcap_dump_open (3PCAP),
