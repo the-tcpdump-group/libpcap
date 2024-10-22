@@ -1150,6 +1150,14 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	dag_card_inf_t *inf;
 	char *description;
 	int stream, rxstreams;
+	// A DAG card associates a link status with each physical port, but not
+	// with the data streams.  The number of ports is a matter of hardware,
+	// the number of streams and how each stream associates with zero or
+	// more ports is a matter of how the user configures the card.  In this
+	// context libpcap uses the streams only (i.e. "dag0" is a shorthand
+	// for "dag0:0"), thus the notion of link status does not apply to the
+	// resulting libpcap DAG capture devices.
+	const bpf_u_int32 flags = PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
@@ -1164,16 +1172,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			description = NULL;
 			if ((inf = dag_pciinfo(dagfd)))
 				description = dag_device_name(inf->device_code, 1);
-			/*
-			 * XXX - is there a way to determine whether
-			 * the card is plugged into a network or not?
-			 * If so, we should check that and set
-			 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
-			 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED.
-			 *
-			 * Also, are there notions of "up" and "running"?
-			 */
-			if (pcapint_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
+			if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
 				/*
 				 * Failure.
 				 */
@@ -1185,7 +1184,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					dag_detach_stream(dagfd, stream);
 
 					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
-					if (pcapint_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
+					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
 						/*
 						 * Failure.
 						 */

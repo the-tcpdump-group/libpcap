@@ -70,6 +70,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a few device activation bugs.
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
+    DAG:
+      Always set PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
