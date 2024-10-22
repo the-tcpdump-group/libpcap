@@ -1273,7 +1273,6 @@ dag_get_datalink(pcap_t *p)
 
 	p->linktype = 0;
 
-#ifdef HAVE_DAG_GET_STREAM_ERF_TYPES
 	/* Get list of possible ERF types for this card */
 	if (dag_get_stream_erf_types(p->fd, pd->dag_stream, types, 255) < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
@@ -1283,21 +1282,6 @@ dag_get_datalink(pcap_t *p)
 
 	while (types[index]) {
 
-#elif defined HAVE_DAG_GET_ERF_TYPES
-	/* Get list of possible ERF types for this card */
-	if (dag_get_erf_types(p->fd, types, 255) < 0) {
-		pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
-		    errno, "dag_get_erf_types");
-		return (-1);
-	}
-
-	while (types[index]) {
-#else
-	/* Check the type through a dagapi call. */
-	types[index] = dag_linktype(p->fd);
-
-	{
-#endif
 		switch((types[index] & 0x7f)) {
 
 		case ERF_TYPE_HDLC_POS:

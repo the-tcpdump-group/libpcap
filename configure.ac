@@ -1394,10 +1394,6 @@ if test "$want_dag" != no; then
 		    ],
 		    [AC_MSG_ERROR(DAG library lacks streams support)])
 		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
-		AC_CHECK_LIB([dag],[dag_get_erf_types], [
-			AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
-		AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
-			AC_DEFINE(HAVE_DAG_GET_STREAM_ERF_TYPES, 1, [define if you have dag_get_stream_erf_types()])])
 		AC_LBL_RESTORE_CHECK_STATE
 
 		#

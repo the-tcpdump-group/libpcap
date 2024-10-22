@@ -27,12 +27,6 @@
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
-/* define if you have dag_get_erf_types() */
-#cmakedefine HAVE_DAG_GET_ERF_TYPES 1
-
-/* define if you have dag_get_stream_erf_types() */
-#cmakedefine HAVE_DAG_GET_STREAM_ERF_TYPES 1
-
 /* define if you have large streams capable DAG API */
 #cmakedefine HAVE_DAG_LARGE_STREAMS_API 1
 

@@ -2603,8 +2603,6 @@ if(NOT DISABLE_DAG)
             message(FATAL_ERROR "DAG library lacks streams support")
         endif()
         check_function_exists(dag_attach_stream64 HAVE_DAG_LARGE_STREAMS_API)
-        check_function_exists(dag_get_erf_types HAVE_DAG_GET_ERF_TYPES)
-        check_function_exists(dag_get_stream_erf_types HAVE_DAG_GET_STREAM_ERF_TYPES)
         cmake_pop_check_state()
 
         include_directories(AFTER ${DAG_INCLUDE_DIRS})
