@@ -78,6 +78,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Don't create monitor-mode interface if we're capturing on one.
     D-Bus:
       Fix message leak.
+    Capture file writing:
+      Don't close the output stream if it's stdout, just flush it.
     Documentation:
       Explicitly document that closing a pcap_t for a savefile opened
         with pcap_fopen_offline() will close the standard I/O stream.

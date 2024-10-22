@@ -1261,11 +1261,16 @@ pcap_dump_flush(pcap_dumper_t *p)
 void
 pcap_dump_close(pcap_dumper_t *p)
 {
+	FILE *fp = (FILE *)p;
 
 #ifdef notyet
-	if (ferror((FILE *)p))
+	if (ferror(fp))
 		return-an-error;
-	/* XXX should check return from fclose() too */
+	/* XXX should check return from fflush()/fclose() too */
 #endif
-	(void)fclose((FILE *)p);
+	/* Don't close the standard output, but *do* flush it */
+	if (fp == stdout)
+		(void)fflush(fp);
+	else
+		(void)fclose(fp);
 }
