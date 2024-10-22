@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <endian.h>
 
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
@@ -98,10 +99,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #ifndef ERF_TYPE_COLOR_MC_HDLC_POS
 #define ERF_TYPE_COLOR_MC_HDLC_POS  17
-#endif
-
-#ifndef ERF_TYPE_AAL2
-#define ERF_TYPE_AAL2               18
 #endif
 
 #ifndef ERF_TYPE_COLOR_HASH_POS
@@ -190,9 +187,6 @@ typedef struct pcap_dag_node {
 
 static pcap_dag_node_t *pcap_dags = NULL;
 static int atexit_handler_installed = 0;
-static const unsigned short endian_test_word = 0x0100;
-
-#define IS_BIGENDIAN() (*((unsigned char *)&endian_test_word))
 
 #define MAX_DAG_PACKET 65536
 
@@ -673,11 +667,11 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/* convert between timestamp formats */
 			register unsigned long long ts;
 
-			if (IS_BIGENDIAN()) {
-				ts = SWAPLL(header->ts);
-			} else {
-				ts = header->ts;
-			}
+#if __BYTE_ORDER == __BIG_ENDIAN
+			ts = SWAPLL(header->ts);
+#else
+			ts = header->ts;
+#endif // __BYTE_ORDER
 
 			switch (p->opt.tstamp_precision) {
 			case PCAP_TSTAMP_PRECISION_NANO:
@@ -726,7 +720,7 @@ dag_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	pcapint_strlcpy(p->errbuf, "Sending packets isn't supported on DAG cards",
 	    PCAP_ERRBUF_SIZE);
-	return (-1);
+	return PCAP_ERROR;
 }
 
 /*
@@ -827,7 +821,7 @@ static int dag_activate(pcap_t* p)
 	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
 		ret = PCAP_ERROR;
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_attach_stream");
+		    errno, "dag_attach_stream64");
 		goto failclose;
 	}
 
@@ -846,7 +840,7 @@ static int dag_activate(pcap_t* p)
 				&mindata, &maxwait, &poll) < 0) {
 		ret = PCAP_ERROR;
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_get_stream_poll");
+		    errno, "dag_get_stream_poll64");
 		goto faildetach;
 	}
 
@@ -891,7 +885,7 @@ static int dag_activate(pcap_t* p)
 				mindata, &maxwait, &poll) < 0) {
 		ret = PCAP_ERROR;
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_set_stream_poll");
+		    errno, "dag_set_stream_poll64");
 		goto faildetach;
 	}
 
@@ -1133,7 +1127,7 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 		} else {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "reading stream drop attribute: %s",
 				 dag_config_strerror(dag_error));
-			return -1;
+			return PCAP_ERROR;
 		}
 	}
 
@@ -1159,12 +1153,12 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
-		snprintf(name, 12, "dag%d", c);
+		snprintf(name, sizeof(name), "dag%d", c);
 		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
 			(void) snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "dag: device name %s can't be parsed", name);
-			return (-1);
+			return PCAP_ERROR;
 		}
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
 			description = NULL;
@@ -1183,19 +1177,19 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				/*
 				 * Failure.
 				 */
-				return (-1);
+				return PCAP_ERROR;
 			}
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
 				if (0 == dag_attach_stream64(dagfd, stream, 0, 0)) {
 					dag_detach_stream(dagfd, stream);
 
-					snprintf(name,  10, "dag%d:%d", c, stream);
+					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
 					if (pcapint_add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 						/*
 						 * Failure.
 						 */
-						return (-1);
+						return PCAP_ERROR;
 					}
 
 					rxstreams--;
@@ -1234,13 +1228,13 @@ dag_setnonblock(pcap_t *p, int nonblock)
 	 * "pd->dag_flags".
 	 */
 	if (pcapint_setnonblock_fd(p, nonblock) < 0)
-		return (-1);
+		return PCAP_ERROR;
 
 	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_get_stream_poll");
-		return -1;
+		    errno, "dag_get_stream_poll64");
+		return PCAP_ERROR;
 	}
 
 	/* Amount of data to collect in Bytes before calling callbacks.
@@ -1255,8 +1249,8 @@ dag_setnonblock(pcap_t *p, int nonblock)
 	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_set_stream_poll");
-		return -1;
+		    errno, "dag_set_stream_poll64");
+		return PCAP_ERROR;
 	}
 
 	if (nonblock) {
