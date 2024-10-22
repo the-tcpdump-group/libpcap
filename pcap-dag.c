@@ -1181,8 +1181,16 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
 				if (0 == dag_attach_stream64(dagfd, stream, 0, 0)) {
+					// The Rx stream definitely exists and wasn't attached.
+					// Detach and proceed to the device registration below.
 					dag_detach_stream(dagfd, stream);
+				} else if (errno != EBUSY) {
+					// The Rx stream most likely does not exist.
+					continue;
+				}
 
+				// The Rx stream exists, whether already attached or not.
+				{
 					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
 					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
 						/*
@@ -1198,7 +1206,28 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				}
 			}
 			dag_close(dagfd);
-		}
+		} else if (errno == EACCES) {
+			// The device exists, but the current user privileges are not
+			// sufficient for dag_open().
+			if (! pcapint_add_dev(devlistp, name, flags, NULL, errbuf))
+				return PCAP_ERROR;
+			// Try enumerating the Rx streams using sysfs.  The file lists
+			// all streams (Rx and Tx) that have non-zero amount of buffer
+			// memory.
+			char sysfspath[PATH_MAX];
+			snprintf(sysfspath, sizeof(sysfspath), "/sys/devices/virtual/dag/%s/info", name);
+			FILE *info = fopen(sysfspath, "r");
+			if (info) {
+				char linebuf[1024];
+				while (fgets(linebuf, sizeof(linebuf), info))
+					if (1 == sscanf(linebuf, "Stream %u:", &stream) && stream % 2 == 0) {
+						snprintf(name,  sizeof(name), "dag%u:%u", c, stream);
+						if (! pcapint_add_dev(devlistp, name, flags, NULL, errbuf))
+							return PCAP_ERROR;
+					}
+				fclose(info);
+			}
+		} // errno == EACCES
 
 	}
 	return (0);
