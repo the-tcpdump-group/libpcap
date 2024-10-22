@@ -5,6 +5,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Don't create monitor-mode interface if we're capturing on one.
     D-Bus:
       Fix message leak.
+    Documentation:
+      Explicitly document that closing a pcap_t for a savefile opened
+        with pcap_fopen_offline() will close the standard I/O stream.
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
