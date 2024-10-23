@@ -526,7 +526,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					struct sunatm_hdr *sunatm = (struct sunatm_hdr *)dp;
 					unsigned long rawatm;
 
-					rawatm = ntohl(*((unsigned long *)dp));
+					rawatm = ntohl(*((uint32_t *)dp));
 					sunatm->vci = htons((rawatm >>  4) & 0xffff);
 					sunatm->vpi = (rawatm >> 20) & 0x00ff;
 					sunatm->flags = ((header->flags.iface & 1) ? 0x80 : 0x00) |
@@ -738,29 +738,19 @@ static int dag_activate(pcap_t* p)
 	char *s;
 	int n;
 	daginf_t* daginf;
-	char * newDev = NULL;
-	char * device = p->opt.device;
+	char device[DAGNAME_BUFSIZE];
 	int ret;
 	dag_size_t mindata;
 	struct timeval maxwait;
 	struct timeval poll;
 
-	if (device == NULL) {
+	if (p->opt.device == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
 		return PCAP_ERROR;
 	}
 
-	/* Initialize some components of the pcap structure. */
-	newDev = (char *)malloc(strlen(device) + 16);
-	if (newDev == NULL) {
-		ret = PCAP_ERROR;
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Can't allocate string for device name");
-		goto fail;
-	}
-
 	/* Parse input name to get dag device and stream number if provided */
-	if (dag_parse_name(device, newDev, strlen(device) + 16, &pd->dag_stream) < 0) {
+	if (dag_parse_name(p->opt.device, device, sizeof(device), &pd->dag_stream) < 0) {
 		/*
 		 * XXX - it'd be nice if this indicated what was wrong
 		 * with the name.  Does this reliably set errno?
@@ -772,7 +762,6 @@ static int dag_activate(pcap_t* p)
 		    errno, "dag_parse_name");
 		goto fail;
 	}
-	device = newDev;
 
 	if (pd->dag_stream%2) {
 		ret = PCAP_ERROR;
@@ -781,7 +770,7 @@ static int dag_activate(pcap_t* p)
 	}
 
 	/* setup device parameters */
-	if((pd->dag_ref = dag_config_init((char *)device)) == NULL) {
+	if((pd->dag_ref = dag_config_init(device)) == NULL) {
 		/*
 		 * XXX - does this reliably set errno?
 		 */
@@ -982,10 +971,6 @@ static int dag_activate(pcap_t* p)
 	 */
 	p->selectable_fd = -1;
 
-	if (newDev != NULL) {
-		free((char *)newDev);
-	}
-
 	p->read_op = dag_read;
 	p->inject_op = dag_inject;
 	p->setfilter_op = pcapint_install_bpf_program;
@@ -1023,9 +1008,6 @@ failclose:
 
 fail:
 	pcapint_cleanup_live_common(p);
-	if (newDev != NULL) {
-		free((char *)newDev);
-	}
 
 	return ret;
 }
