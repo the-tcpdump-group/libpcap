@@ -776,7 +776,7 @@ static int dag_activate(pcap_t* p)
 
 	if (pd->dag_stream%2) {
 		ret = PCAP_ERROR;
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: tx (odd numbered) streams not supported for capture", __func__);
 		goto fail;
 	}
 
