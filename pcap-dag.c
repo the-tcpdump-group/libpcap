@@ -9,26 +9,13 @@
 
 #include <config.h>
 
-#include <sys/param.h>			/* optionally get BSD define */
-
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <endian.h>
 
 #include "pcap-int.h"
 
-#include <netinet/in.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <endian.h>
-
-struct mbuf;		/* Squelch compiler warnings on some platforms for */
-struct rtentry;		/* declarations in <net/if.h> */
-#include <net/if.h>
-
-#include "dagnew.h"
 #include "dagapi.h"
 #include "dagpci.h"
 #include "dag_config_api.h"
