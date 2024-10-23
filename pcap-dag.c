@@ -1140,7 +1140,7 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 int
 dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	char name[12];	/* XXX - pick a size */
+	char name[DAGNAME_BUFSIZE];
 	int c;
 	char dagname[DAGNAME_BUFSIZE];
 	int dagstream;
