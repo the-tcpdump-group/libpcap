@@ -599,7 +599,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				/* jump the MC_HDLC_HEADER */
 				dp += 4;
-#ifdef DLT_MTP2_WITH_PHDR
 				if (p->linktype == DLT_MTP2_WITH_PHDR) {
 					/* Add the MTP2 Pseudo Header */
 					caplen += MTP2_HDR_LEN;
@@ -612,7 +611,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					memcpy(TempPkt+MTP2_HDR_LEN, dp, caplen);
 					dp = TempPkt;
 				}
-#endif
 				break;
 
 			case ERF_TYPE_IPV4:
