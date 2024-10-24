@@ -82,7 +82,7 @@ or
 to read dumped data from an existing open stream
 .IR fp ;
 this stream will be closed by a subsequent call to
-.B pcap_close (3PCAP)
+.BR pcap_close (3PCAP)
 unless it is
 .BR stdin .
 .BR pcap_fopen_offline_with_tstamp_precision ()
