@@ -27,9 +27,6 @@
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
-/* define if you have large streams capable DAG API */
-#cmakedefine HAVE_DAG_LARGE_STREAMS_API 1
-
 /* define if you have vdag_set_device_info() */
 #cmakedefine HAVE_DAG_VDAG 1
 

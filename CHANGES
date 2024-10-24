@@ -74,6 +74,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Always set PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE.
       In dag_findalldevs() handle known errors better.
       Trust dag_get_stream_erf_types() to be available.
+      Require the API to have 64-bit streams support.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)

@@ -1381,7 +1381,7 @@ if test "$want_dag" != no; then
 		# included if there's a found-action (arg 3).
 		AC_LBL_SAVE_CHECK_STATE
 		LDFLAGS="-L$dag_lib_dir"
-		AC_CHECK_LIB([dag], [dag_attach_stream],
+		AC_CHECK_LIB([dag], [dag_attach_stream64],
 		    [
 			#
 			# We assume that if we have libdag we have
@@ -1392,8 +1392,7 @@ if test "$want_dag" != no; then
 			ADDITIONAL_LIBS_STATIC="-L$dag_lib_dir $ADDITIONAL_LIBS_STATIC -ldag -ldagconf"
 			LIBS_PRIVATE="-L$dag_lib_dir $LIBS_PRIVATE -ldag -ldagconf"
 		    ],
-		    [AC_MSG_ERROR(DAG library lacks streams support)])
-		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
+		    [AC_MSG_ERROR(DAG library lacks 64-bit streams support)])
 		AC_LBL_RESTORE_CHECK_STATE
 
 		#
@@ -1401,22 +1400,19 @@ if test "$want_dag" != no; then
 		# as they're installed at the same time from the same
 		# package.
 		#
-		if test "$dag_large_streams" = 1; then
-			AC_DEFINE(HAVE_DAG_LARGE_STREAMS_API, 1, [define if you have large streams capable DAG API])
-			AC_LBL_SAVE_CHECK_STATE
-			LIBS="$LIBS -ldag -ldagconf"
-			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
-			AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
-			AC_LBL_RESTORE_CHECK_STATE
-			if test "$ac_dag_have_vdag" = 1; then
-				AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
-				if test "$ac_lbl_have_pthreads" != "found"; then
-					AC_MSG_ERROR([DAG requires pthreads, but we didn't find them])
-				fi
-				ADDITIONAL_LIBS="$ADDITIONAL_LIBS $PTHREAD_LIBS"
-				ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $PTHREAD_LIBS"
-				LIBS_PRIVATE="$LIBS_PRIVATE $PTHREAD_LIBS"
+		AC_LBL_SAVE_CHECK_STATE
+		LIBS="$LIBS -ldag -ldagconf"
+		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
+		AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
+		AC_LBL_RESTORE_CHECK_STATE
+		if test "$ac_dag_have_vdag" = 1; then
+			AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
+			if test "$ac_lbl_have_pthreads" != "found"; then
+				AC_MSG_ERROR([DAG requires pthreads, but we didn't find them])
 			fi
+			ADDITIONAL_LIBS="$ADDITIONAL_LIBS $PTHREAD_LIBS"
+			ADDITIONAL_LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $PTHREAD_LIBS"
+			LIBS_PRIVATE="$LIBS_PRIVATE $PTHREAD_LIBS"
 		fi
 
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])

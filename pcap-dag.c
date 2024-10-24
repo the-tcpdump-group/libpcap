@@ -31,99 +31,6 @@
 #define DAG_MAX_BOARDS 32
 #endif
 
-
-#ifndef ERF_TYPE_AAL5
-#define ERF_TYPE_AAL5               4
-#endif
-
-#ifndef ERF_TYPE_MC_HDLC
-#define ERF_TYPE_MC_HDLC            5
-#endif
-
-#ifndef ERF_TYPE_MC_RAW
-#define ERF_TYPE_MC_RAW             6
-#endif
-
-#ifndef ERF_TYPE_MC_ATM
-#define ERF_TYPE_MC_ATM             7
-#endif
-
-#ifndef ERF_TYPE_MC_RAW_CHANNEL
-#define ERF_TYPE_MC_RAW_CHANNEL     8
-#endif
-
-#ifndef ERF_TYPE_MC_AAL5
-#define ERF_TYPE_MC_AAL5            9
-#endif
-
-#ifndef ERF_TYPE_COLOR_HDLC_POS
-#define ERF_TYPE_COLOR_HDLC_POS     10
-#endif
-
-#ifndef ERF_TYPE_COLOR_ETH
-#define ERF_TYPE_COLOR_ETH          11
-#endif
-
-#ifndef ERF_TYPE_MC_AAL2
-#define ERF_TYPE_MC_AAL2            12
-#endif
-
-#ifndef ERF_TYPE_IP_COUNTER
-#define ERF_TYPE_IP_COUNTER         13
-#endif
-
-#ifndef ERF_TYPE_TCP_FLOW_COUNTER
-#define ERF_TYPE_TCP_FLOW_COUNTER   14
-#endif
-
-#ifndef ERF_TYPE_DSM_COLOR_HDLC_POS
-#define ERF_TYPE_DSM_COLOR_HDLC_POS 15
-#endif
-
-#ifndef ERF_TYPE_DSM_COLOR_ETH
-#define ERF_TYPE_DSM_COLOR_ETH      16
-#endif
-
-#ifndef ERF_TYPE_COLOR_MC_HDLC_POS
-#define ERF_TYPE_COLOR_MC_HDLC_POS  17
-#endif
-
-#ifndef ERF_TYPE_COLOR_HASH_POS
-#define ERF_TYPE_COLOR_HASH_POS     19
-#endif
-
-#ifndef ERF_TYPE_COLOR_HASH_ETH
-#define ERF_TYPE_COLOR_HASH_ETH     20
-#endif
-
-#ifndef ERF_TYPE_INFINIBAND
-#define ERF_TYPE_INFINIBAND         21
-#endif
-
-#ifndef ERF_TYPE_IPV4
-#define ERF_TYPE_IPV4               22
-#endif
-
-#ifndef ERF_TYPE_IPV6
-#define ERF_TYPE_IPV6               23
-#endif
-
-#ifndef ERF_TYPE_RAW_LINK
-#define ERF_TYPE_RAW_LINK           24
-#endif
-
-#ifndef ERF_TYPE_INFINIBAND_LINK
-#define ERF_TYPE_INFINIBAND_LINK    25
-#endif
-
-#ifndef ERF_TYPE_META
-#define ERF_TYPE_META               27
-#endif
-
-#ifndef ERF_TYPE_PAD
-#define ERF_TYPE_PAD                48
-#endif
-
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
 
@@ -178,13 +85,6 @@ static int atexit_handler_installed = 0;
 #define MAX_DAG_PACKET 65536
 
 static unsigned char TempPkt[MAX_DAG_PACKET];
-
-#ifndef HAVE_DAG_LARGE_STREAMS_API
-#define dag_attach_stream64(a, b, c, d) dag_attach_stream(a, b, c, d)
-#define dag_get_stream_poll64(a, b, c, d, e) dag_get_stream_poll(a, b, c, d, e)
-#define dag_set_stream_poll64(a, b, c, d, e) dag_set_stream_poll(a, b, c, d, e)
-#define dag_size_t uint32_t
-#endif
 
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
