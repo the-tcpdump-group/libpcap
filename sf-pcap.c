@@ -1223,7 +1223,7 @@ pcap_dump_ftell64(pcap_dumper_t *p)
 }
 #elif defined(_MSC_VER)
 /*
- * We have Visual Studio; we support only 2005 and later, so we have
+ * We have Visual Studio; we support only 2015 and later, so we have
  * _ftelli64().
  */
 int64_t
