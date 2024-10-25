@@ -13,6 +13,7 @@
 #include <string.h>
 #include <errno.h>
 #include <endian.h>
+#include <limits.h>
 
 #include "pcap-int.h"
 
@@ -62,7 +63,8 @@ struct pcap_dag {
 	u_char	*dag_mem_top;	/* DAG card current memory top pointer */
 	int	dag_fcs_bits;	/* Number of checksum bits from link layer */
 	int	dag_flags;	/* Flags */
-	int	dag_stream;	/* DAG stream number */
+	int	dag_devnum;	/* This is the N in "dagN" or "dagN:M". */
+	int	dag_stream;	/* And this is the M. */
 	int	dag_timeout;	/* timeout specified to pcap_open_live.
 				 * Same as in linux above, introduce
 				 * generally? */
@@ -624,26 +626,29 @@ static int dag_activate(pcap_t* p)
 	char *s;
 	int n;
 	daginf_t* daginf;
-	char device[DAGNAME_BUFSIZE];
+	char * device = p->opt.device;
 	int ret;
 	dag_size_t mindata;
 	struct timeval maxwait;
 	struct timeval poll;
 
-	/* Parse input name to get dag device and stream number if provided */
-	if (dag_parse_name(p->opt.device, device, sizeof(device), &pd->dag_stream) < 0) {
-		/*
-		 * XXX - it'd be nice if this indicated what was wrong
-		 * with the name.  Does this reliably set errno?
-		 * Should this return PCAP_ERROR_NO_SUCH_DEVICE in some
-		 * cases?
-		 */
-		ret = PCAP_ERROR;
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_parse_name");
+	/*
+	 * dag_create() has validated the device name syntax and stored the
+	 * parsed device and stream numbers to p->priv.  Validate these values
+	 * semantically.
+	 */
+	if (pd->dag_devnum >= DAG_MAX_BOARDS) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "DAG device number %d is too large", pd->dag_devnum);
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto fail;
 	}
-
+	if (pd->dag_stream >= DAG_STREAM_MAX) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "DAG stream number %d is too large", pd->dag_stream);
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		goto fail;
+	}
 	if (pd->dag_stream%2) {
 		/*
 		 * dag_findalldevs() does not return any Tx streams, so
@@ -924,12 +929,21 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	pcap_t *p;
 	long stream = 0;
 
+	/*
+	 * The nominal libpcap DAG device name format is either "dagN" or
+	 * "dagN:M", as returned from dag_findalldevs().
+	 *
+	 * First attempt the most basic syntax validation.  If the device string
+	 * does not look like a potentially valid DAG device name, reject it
+	 * silently to have pcap_create() try another capture source type.
+	 */
+	*is_ours = 0;
+
 	/* Does this look like a DAG device? */
 	cp = device;
 	/* Does it begin with "dag"? */
 	if (strncmp(cp, "dag", 3) != 0) {
 		/* Nope, doesn't begin with "dag" */
-		*is_ours = 0;
 		return NULL;
 	}
 	/* Yes - is "dag" followed by a number from 0 to DAG_MAX_BOARDS-1 */
@@ -942,25 +956,56 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 
 	if (cpend == cp || *cpend != '\0') {
 		/* Not followed by a number. */
-		*is_ours = 0;
 		return NULL;
 	}
 
-	if (devnum < 0 || devnum >= DAG_MAX_BOARDS) {
-		/* Followed by a non-valid number. */
-		*is_ours = 0;
-		return NULL;
-	}
-
-	if (stream <0 || stream >= DAG_STREAM_MAX) {
-		/* Followed by a non-valid stream number. */
-		*is_ours = 0;
-		return NULL;
-	}
-
-	/* OK, it's probably ours. */
+	/*
+	 * OK, it's probably ours, validate the syntax further.  From now on
+	 * reject the device string authoritatively with an error message to
+	 * have pcap_create() propagate the failure.  Validate the device and
+	 * stream number ranges loosely only.
+	 */
 	*is_ours = 1;
+	snprintf (ebuf, PCAP_ERRBUF_SIZE,
+	    "DAG device name \"%s\" is invalid", device);
 
+	if (devnum < 0 || devnum > INT_MAX) {
+		/* Followed by a non-valid number. */
+		return NULL;
+	}
+
+	if (stream < 0 || stream > INT_MAX) {
+		/* Followed by a non-valid stream number. */
+		return NULL;
+	}
+
+	/*
+	 * The syntax validation done so far is lax enough to accept some
+	 * device strings that are not actually acceptable in libpcap as
+	 * defined above.  The device strings that are acceptable in libpcap
+	 * are a strict subset of the device strings that are acceptable in
+	 * dag_parse_name(), thus using the latter for validation in libpcap
+	 * would not work reliably.  Instead from the detected device and
+	 * stream numbers produce the acceptable device string(s) and require
+	 * the input device string to match an acceptable string exactly.
+	 */
+	char buf[DAGNAME_BUFSIZE];
+	snprintf(buf, sizeof(buf), "dag%ld:%ld", devnum, stream);
+	char acceptable = ! strcmp(device, buf);
+	if (! acceptable && stream == 0) {
+		snprintf(buf, sizeof(buf), "dag%ld", devnum);
+		acceptable = ! strcmp(device, buf);
+	}
+	if (! acceptable)
+		return NULL;
+
+	/*
+	 * The device string syntax is acceptable, save the device and stream
+	 * numbers for dag_activate(), which will do semantic and run-time
+	 * validation and possibly reject the pcap_t using more specific error
+	 * codes.
+	 */
+	ebuf[0] = '\0';
 	p = PCAP_CREATE_COMMON(ebuf, struct pcap_dag);
 	if (p == NULL)
 		return NULL;
@@ -984,6 +1029,9 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 	p->tstamp_precision_count = 2;
+	struct pcap_dag *pd = p->priv;
+	pd->dag_devnum = (int)devnum;
+	pd->dag_stream = (int)stream;
 	return p;
 }
 
