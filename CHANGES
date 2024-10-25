@@ -77,6 +77,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Trust dag_get_stream_erf_types() to be available.
       Require the API to have 64-bit streams support.
       Make device descriptions more useful, make dagN conditional.
+      Use PCAP_ERROR_NO_SUCH_DEVICE more in dag_activate().
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)

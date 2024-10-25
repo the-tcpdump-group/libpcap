@@ -645,7 +645,12 @@ static int dag_activate(pcap_t* p)
 	}
 
 	if (pd->dag_stream%2) {
-		ret = PCAP_ERROR;
+		/*
+		 * dag_findalldevs() does not return any Tx streams, so
+		 * PCAP_ERROR_NO_SUCH_DEVICE is more consistent than
+		 * PCAP_ERROR_CAPTURE_NOTSUP.
+		 */
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: tx (odd numbered) streams not supported for capture", __func__);
 		goto fail;
 	}
@@ -687,6 +692,24 @@ static int dag_activate(pcap_t* p)
 
 	/* Open requested stream. Can fail if already locked or on error */
 	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
+		if (errno == ENOMEM) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s has no memory allocated to Rx stream %u",
+			    device, pd->dag_stream);
+			/*
+			 * dag_findalldevs() does not return streams that do
+			 * not have buffer memory, so PCAP_ERROR_NO_SUCH_DEVICE
+			 * is more consistent than PCAP_ERROR_CAPTURE_NOTSUP.
+			 */
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+			goto failclose;
+		} else if (errno == EINVAL) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s has no Rx stream %u",
+			    device, pd->dag_stream);
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+			goto failclose;
+		}
 		ret = PCAP_ERROR;
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_attach_stream64");
