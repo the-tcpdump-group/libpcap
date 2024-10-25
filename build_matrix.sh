@@ -41,7 +41,7 @@ if command -v valgrind >/dev/null 2>&1; then
     export VALGRIND_CMD
 fi
 
-run_after_echo git show --oneline -s
+run_after_echo git show --oneline -s | cat
 touch .devel
 for CC in $MATRIX_CC; do
     export CC
