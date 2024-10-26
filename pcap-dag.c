@@ -1126,6 +1126,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			// Do not add a shorthand device for stream 0 (dagN) yet -- the
 			// user can disable any stream in the card configuration.
 			const dag_card_inf_t * inf = dag_pciinfo(dagfd); // NULL is fine
+			// The count includes existing streams that have no buffer memory.
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			if (rxstreams < 0) {
 				pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
@@ -1133,17 +1134,22 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				goto failclose;
 			}
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
-				if (0 == dag_attach_stream64(dagfd, stream, 0, 0)) {
-					// The Rx stream definitely exists and wasn't attached.
-					// Detach and proceed to the device registration below.
-					dag_detach_stream(dagfd, stream);
-				} else if (errno != EBUSY) {
-					// The Rx stream most likely does not exist.
-					continue;
-				}
-
-				// The Rx stream exists, whether already attached or not.
-				{
+				/*
+				 * dag_attach_stream64() was used before to test if the
+				 * stream exists, but it is not the best tool for the
+				 * job because it tries to lock the stream exclusively.
+				 * If the stream is already locked by another process,
+				 * it fails with EBUSY, otherwise it creates a race
+				 * condition for other processes that may be trying to
+				 * lock the same stream at the same time.  Therefore
+				 * dag_get_stream_buffer_size64() seems to be a better
+				 * fit.
+				 */
+				dag_ssize_t bufsize = dag_get_stream_buffer_size64(dagfd, stream);
+				if (bufsize < 0)
+					continue; // Does not exist.
+				// Only streams with buffer memory are usable.
+				if (bufsize > 0) {
 					description = dag_device_description (c);
 					// a conditional shorthand device
 					if (stream == 0 &&
@@ -1156,12 +1162,9 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
 						goto failclose;
 					}
-
-					rxstreams--;
-					if(rxstreams <= 0) {
-						break;
-					}
 				}
+				if (--rxstreams <= 0)
+					break;
 			}
 			dag_close(dagfd);
 			dagfd = -1;
