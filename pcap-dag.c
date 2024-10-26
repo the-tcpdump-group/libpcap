@@ -902,9 +902,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	long stream = 0;
 
 	/* Does this look like a DAG device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
+	cp = device;
 	/* Does it begin with "dag"? */
 	if (strncmp(cp, "dag", 3) != 0) {
 		/* Nope, doesn't begin with "dag" */
