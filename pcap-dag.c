@@ -1102,10 +1102,7 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
 int
 dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	char name[DAGNAME_BUFSIZE];
 	int c;
-	char dagname[DAGNAME_BUFSIZE];
-	int dagstream;
 	int dagfd;
 	const char * description;
 	int stream, rxstreams;
@@ -1117,21 +1114,24 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	// for "dag0:0"), thus the notion of link status does not apply to the
 	// resulting libpcap DAG capture devices.
 	const bpf_u_int32 flags = PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+	FILE * sysfsinfo = NULL;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
+		char name[DAGNAME_BUFSIZE]; // libpcap device
 		snprintf(name, sizeof(name), "dag%d", c);
-		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
-		{
-			(void) snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "dag: device name %s can't be parsed", name);
-			return PCAP_ERROR;
-		}
+		char dagname[DAGNAME_BUFSIZE]; // DAG API device
+		snprintf(dagname, sizeof(dagname), "/dev/dag%d", c);
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
 			// Do not add a shorthand device for stream 0 (dagN) yet -- the
 			// user can disable any stream in the card configuration.
 			const dag_card_inf_t * inf = dag_pciinfo(dagfd); // NULL is fine
 			rxstreams = dag_rx_get_stream_count(dagfd);
+			if (rxstreams < 0) {
+				pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+				    errno, "dag_rx_get_stream_count");
+				goto failclose;
+			}
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
 				if (0 == dag_attach_stream64(dagfd, stream, 0, 0)) {
 					// The Rx stream definitely exists and wasn't attached.
@@ -1148,16 +1148,13 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					// a conditional shorthand device
 					if (stream == 0 &&
 					    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
-						return PCAP_ERROR;
+						goto failclose;
 					// and the stream device
 					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
 					description = dag_stream_long_description(stream,
 					    dag_get_stream_buffer_size64(dagfd, stream), inf);
 					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
-						/*
-						 * Failure.
-						 */
-						return PCAP_ERROR;
+						goto failclose;
 					}
 
 					rxstreams--;
@@ -1167,6 +1164,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				}
 			}
 			dag_close(dagfd);
+			dagfd = -1;
 		} else if (errno == EACCES) {
 			// The device exists, but the current user privileges are not
 			// sufficient for dag_open().
@@ -1176,29 +1174,36 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			// memory.
 			char sysfspath[PATH_MAX];
 			snprintf(sysfspath, sizeof(sysfspath), "/sys/devices/virtual/dag/%s/info", name);
-			FILE *info = fopen(sysfspath, "r");
-			if (info) {
+			if ((sysfsinfo = fopen(sysfspath, "r"))) {
 				char linebuf[1024];
-				while (fgets(linebuf, sizeof(linebuf), info))
+				while (fgets(linebuf, sizeof(linebuf), sysfsinfo))
 					if (1 == sscanf(linebuf, "Stream %u:", &stream) && stream % 2 == 0) {
 						// a conditional shorthand device
 						description = dag_device_description(c);
 						if (stream == 0 &&
 						    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
-							return PCAP_ERROR;
+							goto failclose;
 						// and the stream device
 						snprintf(name,  sizeof(name), "dag%u:%u", c, stream);
 						// TODO: Parse and describe the buffer size too.
 						description = dag_stream_short_description(stream);
 						if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
-							return PCAP_ERROR;
+							goto failclose;
 					}
-				fclose(info);
+				fclose(sysfsinfo);
+				sysfsinfo = NULL;
 			}
 		} // errno == EACCES
 
 	}
 	return (0);
+
+failclose:
+	if (dagfd >= 0)
+		dag_close(dagfd);
+	if (sysfsinfo)
+		fclose(sysfsinfo);
+	return PCAP_ERROR;
 }
 
 static int
