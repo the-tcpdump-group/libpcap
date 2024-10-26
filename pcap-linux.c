@@ -5031,6 +5031,7 @@ added:
 		/*
 		 * "atexit()" failed; don't put the interface
 		 * in rfmon mode, just give up.
+		 * handle->errbuf has already been filled.
 		 */
 		del_mon_if(handle, sock_fd, &nlstate, device,
 		    handlep->mondevice);

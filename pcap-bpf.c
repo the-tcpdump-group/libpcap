@@ -2084,9 +2084,8 @@ pcap_activate_bpf(pcap_t *p)
 				/*
 				 * "atexit()" failed; don't create the
 				 * interface, just give up.
+				 * p->errbuf has already been filled.
 				 */
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				     "atexit failed");
 				close(s);
 				status = PCAP_ERROR;
 				goto bad;
@@ -3220,6 +3219,7 @@ monitor_mode(pcap_t *p, int set)
 				/*
 				 * "atexit()" failed; don't put the interface
 				 * in monitor mode, just give up.
+				 * p->errbuf has already been filled.
 				 */
 				close(sock);
 				return (PCAP_ERROR);
