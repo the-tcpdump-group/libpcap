@@ -258,13 +258,8 @@ pcap_t *
 bt_monitor_create(const char *device, char *ebuf, int *is_ours)
 {
     pcap_t      *p;
-    const char  *cp;
 
-    cp = strrchr(device, '/');
-    if (cp == NULL)
-        cp = device;
-
-    if (strcmp(cp, INTERFACE_NAME) != 0) {
+    if (strcmp(device, INTERFACE_NAME) != 0) {
         *is_ours = 0;
         return NULL;
     }

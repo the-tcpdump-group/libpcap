@@ -729,9 +729,7 @@ netfilter_create(const char *device, char *ebuf, int *is_ours)
 	pcap_t *p;
 
 	/* Does this look like an netfilter device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
+	cp = device;
 
 	/* Does it begin with NFLOG_IFACE or NFQUEUE_IFACE? */
 	if (strncmp(cp, NFLOG_IFACE, sizeof NFLOG_IFACE - 1) == 0)

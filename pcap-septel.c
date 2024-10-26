@@ -215,14 +215,10 @@ static pcap_t *septel_activate(pcap_t* handle) {
 }
 
 pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
-	const char *cp;
 	pcap_t *p;
 
 	/* Does this look like the Septel device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
-	if (strcmp(cp, "septel") != 0) {
+	if (strcmp(device, "septel") != 0) {
 		/* Nope, it's not "septel" */
 		*is_ours = 0;
 		return NULL;

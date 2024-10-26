@@ -419,9 +419,7 @@ usb_create(const char *device, char *ebuf, int *is_ours)
 	pcap_t *p;
 
 	/* Does this look like a USB monitoring device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
+	cp = device;
 	/* Does it begin with USB_IFACE? */
 	if (strncmp(cp, USB_IFACE, sizeof USB_IFACE - 1) != 0) {
 		/* Nope, doesn't begin with USB_IFACE */

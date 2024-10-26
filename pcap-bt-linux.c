@@ -154,9 +154,7 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 	pcap_t *p;
 
 	/* Does this look like a Bluetooth device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
+	cp = device;
 	/* Does it begin with BT_IFACE? */
 	if (strncmp(cp, BT_IFACE, sizeof BT_IFACE - 1) != 0) {
 		/* Nope, doesn't begin with BT_IFACE */
