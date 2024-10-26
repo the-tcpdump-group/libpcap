@@ -609,10 +609,9 @@ dag_inject(pcap_t *p, const void *buf _U_, int size _U_)
 }
 
 /*
- *  Get a handle for a live capture from the given DAG device.  Passing a NULL
- *  device will result in a failure.  The promisc flag is ignored because DAG
- *  cards are always promiscuous.  The to_ms parameter is used in setting the
- *  API polling parameters.
+ *  Get a handle for a live capture from the given DAG device.  The promisc
+ *  flag is ignored because DAG cards are always promiscuous.  The to_ms
+ *  parameter is used in setting the API polling parameters.
  *
  *  snaplen is now also ignored, until we get per-stream slen support. Set
  *  slen with appropriate DAG tool BEFORE pcap_activate().
@@ -630,11 +629,6 @@ static int dag_activate(pcap_t* p)
 	dag_size_t mindata;
 	struct timeval maxwait;
 	struct timeval poll;
-
-	if (p->opt.device == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
-		return PCAP_ERROR;
-	}
 
 	/* Parse input name to get dag device and stream number if provided */
 	if (dag_parse_name(p->opt.device, device, sizeof(device), &pd->dag_stream) < 0) {
