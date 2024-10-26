@@ -1092,7 +1092,7 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
 	    stream,
 	    bufsize / 1024 / 1024,
 	    inf ? inf->bus_id : "N/A",
-	    inf ? dag_device_name(inf->device_code, 0) : "N/A");
+	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
 	return buf;
 }
 
