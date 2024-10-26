@@ -1345,7 +1345,7 @@ if test "$want_dag" != no; then
 
 	# If necessary, set default paths for DAG API headers and libraries.
 	if test -z "$dag_root"; then
-		dag_root=/usr/local
+		dag_root=/usr
 	fi
 
 	if test -z "$dag_include_dir"; then
@@ -1415,6 +1415,8 @@ if test "$want_dag" != no; then
 			LIBS_PRIVATE="$LIBS_PRIVATE $PTHREAD_LIBS"
 		fi
 
+		AC_MSG_NOTICE([using Endace DAG API headers from $dag_include_dir])
+		AC_MSG_NOTICE([using Endace DAG API libraries from $dag_lib_dir])
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
 	else
 		if test "$V_PCAP" = dag; then
@@ -1428,7 +1430,6 @@ if test "$want_dag" != no; then
 			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
 		fi
 	fi
-	CFLAGS="$save_CFLAGS"
 fi
 
 AC_ARG_WITH(septel,
