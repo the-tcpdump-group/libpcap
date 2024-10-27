@@ -390,7 +390,7 @@
  * 121 was reserved for Siemens HiPath HDLC on 2002-01-25, as
  * requested by Tomas Kukosa.
  *
- * On 2004-02-25, a FreeBSD checkin to sys/net/bpf.h was made that
+ * On 2004-02-25, a FreeBSD check in to sys/net/bpf.h was made that
  * assigned 121 as DLT_PFSYNC.  In current versions, its libpcap
  * does DLT_ <-> LINKTYPE_ mapping, mapping DLT_PFSYNC to a
  * LINKTYPE_PFSYNC value of 246, so it should write out DLT_PFSYNC
