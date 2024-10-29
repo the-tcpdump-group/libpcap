@@ -192,7 +192,7 @@ dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 		return 0;
 
 	/* check if we have any extension headers */
-	if ( (erf[8] & 0x80) == 0x00 )
+	if (! (erf[8] & ERF_TYPE_MORE_EXT))
 		return 0;
 
 	/* loop over the extension headers */
@@ -206,15 +206,15 @@ dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 		hdr_type = erf[(16 + (hdr_num * 8))];
 		hdr_num++;
 
-	} while ( hdr_type & 0x80 );
+	} while (hdr_type & ERF_TYPE_MORE_EXT);
 
 	return hdr_num;
 }
 
 /*
  *  Read at most max_packets from the capture stream and call the callback
- *  for each of them. Returns the number of packets handled, -1 if an
- *  error occurred, or -2 if we were told to break out of the loop.
+ *  for each of them. Returns the number of packets handled, PCAP_ERROR if an
+ *  error occurred, or PCAP_ERROR_BREAK if we were told to break out of the loop.
  */
 static int
 dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -234,11 +234,11 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->break_loop) {
 			/*
 			 * Yes - clear the flag that indicates that
-			 * it has, and return -2 to indicate that
+			 * it has, and return PCAP_ERROR_BREAK to indicate that
 			 * we were told to break out of the loop.
 			 */
 			p->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 
 		/* dag_advance_stream() will block (unless nonblock is called)
@@ -253,7 +253,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * is then responsible for efficiency.
 		 */
 		if ( NULL == (pd->dag_mem_top = dag_advance_stream(p->fd, pd->dag_stream, &(pd->dag_mem_bottom))) ) {
-		     return -1;
+		     return PCAP_ERROR;
 		}
 
 		if (nonblocking && (pd->dag_mem_top - pd->dag_mem_bottom < dag_record_size))
@@ -295,11 +295,11 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->break_loop) {
 			/*
 			 * Yes - clear the flag that indicates that
-			 * it has, and return -2 to indicate that
+			 * it has, and return PCAP_ERROR_BREAK to indicate that
 			 * we were told to break out of the loop.
 			 */
 			p->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 
 		rlen = ntohs(header->rlen);
@@ -307,7 +307,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		{
 			pcapint_strlcpy(p->errbuf, "dag_read: record too small",
 			    PCAP_ERRBUF_SIZE);
-			return -1;
+			return PCAP_ERROR;
 		}
 		pd->dag_mem_bottom += rlen;
 
@@ -329,7 +329,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		if ((header->type & 0x7f) == ERF_TYPE_PAD) {
+		if ((header->type & ERF_TYPE_MASK) == ERF_TYPE_PAD) {
 			continue;
 		}
 
@@ -1277,7 +1277,7 @@ dag_get_datalink(pcap_t *p)
 	if (p->dlt_list == NULL && (p->dlt_list = malloc(255*sizeof(*(p->dlt_list)))) == NULL) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "malloc");
-		return (-1);
+		return PCAP_ERROR;
 	}
 
 	p->linktype = 0;
@@ -1286,7 +1286,7 @@ dag_get_datalink(pcap_t *p)
 	if (dag_get_stream_erf_types(p->fd, pd->dag_stream, types, 255) < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "dag_get_stream_erf_types");
-		return (-1);
+		return PCAP_ERROR;
 	}
 
 	while (types[index]) {
