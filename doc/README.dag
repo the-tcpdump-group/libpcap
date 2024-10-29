@@ -106,7 +106,7 @@ a HDLC/PoS/PPP/Frame Relay link with 16 bit CRC/FCS, then set
 ERF_FCS_BITS=16.
 
 If you wish to create a pcap file that DOES contain the Ethernet FCS,
-specify the environment variable ERF_DONT_STRIP_FCS. This will cause
+specify the environment variable ERF_DONT_STRIP_FCS=1.  This will cause
 the existing FCS to be captured into the pcap file. Note some
 applications may incorrectly report capture errors or oversize packets
 when reading these files.

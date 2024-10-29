@@ -93,6 +93,30 @@ static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
 static int dag_setnonblock(pcap_t *p, int nonblock);
 
+// Environment variables that can control behaviour of this libpcap module.
+#define ENV_RX_FCS_BITS "ERF_FCS_BITS"
+#define ENV_RX_FCS_NOSTRIP "ERF_DONT_STRIP_FCS"
+
+/*
+ * Convert the return value of getenv() to an integer using matching stricter
+ * than atoi().  If the environment variable is not set, return the default
+ * value.  Otherwise return an integer in the interval [0, INT32_MAX] or -1 on
+ * error.
+ */
+static int32_t
+strtouint31(const char *str, const int32_t defaultval) {
+	if (! str)
+		return defaultval;
+	if (! str[0])
+		return -1;
+
+	char * endp;
+	unsigned long val = strtoul(str, &endp, 10);
+	if (*endp || val > INT32_MAX)
+		return -1;
+	return (int32_t)val;
+}
+
 static void
 delete_pcap_dag(const pcap_t *p)
 {
@@ -829,33 +853,45 @@ static int dag_activate(pcap_t* p)
 		p->linktype_ext = LT_FCS_DATALINK_EXT(0);
 	} else {
 		/*
-		 * Start out assuming it's 32 bits.
+		 * Assume Rx FCS length to be 32 bits unless the user has
+		 * requested a different value, in which case validate it well.
 		 */
-		pd->dag_fcs_bits = 32;
-
-		/* Allow an environment variable to override. */
-		if ((s = getenv("ERF_FCS_BITS")) != NULL) {
-			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
-				pd->dag_fcs_bits = n;
-			} else {
-				ret = PCAP_ERROR;
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "%s %s: bad ERF_FCS_BITS value (%d) in environment",
-				    __func__, device, n);
-				goto failstop;
-			}
+		s = getenv(ENV_RX_FCS_BITS);
+		switch ((n = strtouint31(s, 32))) {
+		case 0:
+		case 16:
+		case 32:
+			pd->dag_fcs_bits = n;
+			break;
+		default:
+			ret = PCAP_ERROR;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s %s: invalid %s value (%s) in environment",
+			    __func__, device, ENV_RX_FCS_BITS, s);
+			goto failstop;
 		}
 
 		/*
 		 * Did the user request that they not be stripped?
 		 */
-		if ((s = getenv("ERF_DONT_STRIP_FCS")) != NULL) {
+		s = getenv(ENV_RX_FCS_NOSTRIP);
+		switch ((n = strtouint31(s, 0))) {
+		case 0:
+			break;
+		case 1:
 			/* Yes.  Note the number of 16-bit words that will be
 			   supplied. */
 			p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
 
 			/* And don't strip them. */
 			pd->dag_fcs_bits = 0;
+			break;
+		default:
+			ret = PCAP_ERROR;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s %s: invalid %s value (%s) in environment",
+			    __func__, device, ENV_RX_FCS_NOSTRIP, s);
+			goto failstop;
 		}
 	}
 

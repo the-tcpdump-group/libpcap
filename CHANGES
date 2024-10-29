@@ -80,6 +80,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Use PCAP_ERROR_NO_SUCH_DEVICE more in dag_activate().
       Validate capture device names better.
       Enumerate streams without trying to lock them.
+      If the environment variable ERF_FCS_BITS is set, require it to be either
+        0 or 16 or 32.  Likewise for ERF_DONT_STRIP_FCS (either 0 or 1).
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
