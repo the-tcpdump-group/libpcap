@@ -305,8 +305,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		rlen = ntohs(header->rlen);
 		if (rlen < dag_record_size)
 		{
-			pcapint_strlcpy(p->errbuf, "dag_read: record too small",
-			    PCAP_ERRBUF_SIZE);
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: record too small", __func__);
 			return PCAP_ERROR;
 		}
 		pd->dag_mem_bottom += rlen;
@@ -840,7 +840,8 @@ static int dag_activate(pcap_t* p)
 			} else {
 				ret = PCAP_ERROR;
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment", device, n);
+				    "%s %s: bad ERF_FCS_BITS value (%d) in environment",
+				    __func__, device, n);
 				goto failstop;
 			}
 		}
