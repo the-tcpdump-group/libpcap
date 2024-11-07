@@ -649,7 +649,6 @@ static int dag_activate(pcap_t* p)
 	struct pcap_dag *pd = p->priv;
 	char *s;
 	int n;
-	daginf_t* daginf;
 	char * device = p->opt.device;
 	int ret;
 	dag_size_t mindata;
@@ -842,57 +841,45 @@ static int dag_activate(pcap_t* p)
 
 	/*
 	 * Find out how many FCS bits we should strip.
-	 * First, query the card to see if it strips the FCS.
+	 * Assume Rx FCS length to be 32 bits unless the user has
+	 * requested a different value, in which case validate it well.
 	 */
-	daginf = dag_info(p->fd);
-	if ((0x4200 == daginf->device_code) || (0x4230 == daginf->device_code))	{
-		/* DAG 4.2S and 4.23S already strip the FCS.  Stripping the final word again truncates the packet. */
+	s = getenv(ENV_RX_FCS_BITS);
+	switch ((n = strtouint31(s, 32))) {
+	case 0:
+	case 16:
+	case 32:
+		pd->dag_fcs_bits = n;
+		break;
+	default:
+		ret = PCAP_ERROR;
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s %s: invalid %s value (%s) in environment",
+		    __func__, device, ENV_RX_FCS_BITS, s);
+		goto failstop;
+	}
+
+	/*
+	 * Did the user request that they not be stripped?
+	 */
+	s = getenv(ENV_RX_FCS_NOSTRIP);
+	switch ((n = strtouint31(s, 0))) {
+	case 0:
+		break;
+	case 1:
+		/* Yes.  Note the number of 16-bit words that will be
+		   supplied. */
+		p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
+
+		/* And don't strip them. */
 		pd->dag_fcs_bits = 0;
-
-		/* Note that no FCS will be supplied. */
-		p->linktype_ext = LT_FCS_DATALINK_EXT(0);
-	} else {
-		/*
-		 * Assume Rx FCS length to be 32 bits unless the user has
-		 * requested a different value, in which case validate it well.
-		 */
-		s = getenv(ENV_RX_FCS_BITS);
-		switch ((n = strtouint31(s, 32))) {
-		case 0:
-		case 16:
-		case 32:
-			pd->dag_fcs_bits = n;
-			break;
-		default:
-			ret = PCAP_ERROR;
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s %s: invalid %s value (%s) in environment",
-			    __func__, device, ENV_RX_FCS_BITS, s);
-			goto failstop;
-		}
-
-		/*
-		 * Did the user request that they not be stripped?
-		 */
-		s = getenv(ENV_RX_FCS_NOSTRIP);
-		switch ((n = strtouint31(s, 0))) {
-		case 0:
-			break;
-		case 1:
-			/* Yes.  Note the number of 16-bit words that will be
-			   supplied. */
-			p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
-
-			/* And don't strip them. */
-			pd->dag_fcs_bits = 0;
-			break;
-		default:
-			ret = PCAP_ERROR;
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s %s: invalid %s value (%s) in environment",
-			    __func__, device, ENV_RX_FCS_NOSTRIP, s);
-			goto failstop;
-		}
+		break;
+	default:
+		ret = PCAP_ERROR;
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s %s: invalid %s value (%s) in environment",
+		    __func__, device, ENV_RX_FCS_NOSTRIP, s);
+		goto failstop;
 	}
 
 	pd->dag_timeout	= p->opt.timeout;
