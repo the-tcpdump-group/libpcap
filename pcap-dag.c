@@ -897,7 +897,6 @@ static int dag_activate(pcap_t* p)
 
 	pd->dag_timeout	= p->opt.timeout;
 
-	p->linktype = -1;
 	if (dag_get_datalink(p) < 0) {
 		ret = PCAP_ERROR;
 		goto failstop;
