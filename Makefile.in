@@ -247,7 +247,6 @@ EXTRA_DIST = \
 	doc/README.hurd.md \
 	doc/README.linux \
 	doc/README.macos \
-	doc/README.septel \
 	doc/README.solaris.md \
 	doc/README.windows.md \
 	CONTRIBUTING.md \
@@ -320,8 +319,6 @@ EXTRA_DIST = \
 	pcap-rdmasniff.c \
 	pcap-rdmasniff.h \
 	pcap-rpcap.c \
-	pcap-septel.c \
-	pcap-septel.h \
 	pcap-snf.c \
 	pcap-snf.h \
 	pcap-usb-linux.c \

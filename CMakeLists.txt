@@ -536,9 +536,6 @@ option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 option(DISABLE_DAG "Disable Endace DAG card support" OFF)
 option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
 
-option(DISABLE_SEPTEL "Disable Septel card support" OFF)
-set(SEPTEL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
-
 option(DISABLE_SNF "Disable Myricom SNF support" OFF)
 
 #
@@ -2631,28 +2628,6 @@ if(NOT DISABLE_DAG)
             set(ENABLE_DAG_TX TRUE)
         endif()
         message(STATUS "Endace DAG transmit support (EXPERIMENTAL): ${ENABLE_DAG_TX}")
-    endif()
-endif()
-
-# Check for Septel card support.
-set(PROJECT_EXTERNAL_OBJECT_LIST "")
-if(NOT DISABLE_SEPTEL)
-    #
-    # Do we have the msg.h header?
-    #
-    set(SEPTEL_INCLUDE_DIRS "${SEPTEL_ROOT}/INC")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${SEPTEL_INCLUDE_DIRS})
-    check_include_file(msg.h HAVE_INC_MSG_H)
-    cmake_pop_check_state()
-    if(HAVE_INC_MSG_H)
-        #
-        # Yes.
-        #
-        include_directories(AFTER ${SEPTEL_INCLUDE_DIRS})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-septel.c)
-        set(PROJECT_EXTERNAL_OBJECT_LIST ${PROJECT_EXTERNAL_OBJECT_LIST} "${SEPTEL_ROOT}/asciibin.o ${SEPTEL_ROOT}/bit2byte.o ${SEPTEL_ROOT}/confirm.o ${SEPTEL_ROOT}/fmtmsg.o ${SEPTEL_ROOT}/gct_unix.o ${SEPTEL_ROOT}/hqueue.o ${SEPTEL_ROOT}/ident.o ${SEPTEL_ROOT}/mem.o ${SEPTEL_ROOT}/pack.o ${SEPTEL_ROOT}/parse.o ${SEPTEL_ROOT}/pool.o ${SEPTEL_ROOT}/sdlsig.o ${SEPTEL_ROOT}/strtonum.o ${SEPTEL_ROOT}/timer.o ${SEPTEL_ROOT}/trace.o")
-        set(HAVE_SEPTEL_API TRUE)
     endif()
 endif()
 
