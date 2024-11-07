@@ -82,10 +82,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-dag.h"
 #endif /* HAVE_DAG_API */
 
-#ifdef HAVE_SEPTEL_API
-#include "pcap-septel.h"
-#endif /* HAVE_SEPTEL_API */
-
 #ifdef HAVE_SNF_API
 #include "pcap-snf.h"
 #endif /* HAVE_SNF_API */
@@ -645,9 +641,6 @@ static struct capture_source_type {
 } capture_source_types[] = {
 #ifdef HAVE_DAG_API
 	{ dag_findalldevs, dag_create },
-#endif
-#ifdef HAVE_SEPTEL_API
-	{ septel_findalldevs, septel_create },
 #endif
 #ifdef HAVE_SNF_API
 	{ snf_findalldevs, snf_create },
@@ -1578,9 +1571,6 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 	if (!device || strcmp(device, "any") == 0
 #ifdef HAVE_DAG_API
 	    || strstr(device, "dag") != NULL
-#endif
-#ifdef HAVE_SEPTEL_API
-	    || strstr(device, "septel") != NULL
 #endif
 #ifdef PCAP_SUPPORT_BT
 	    || strstr(device, "bluetooth") != NULL

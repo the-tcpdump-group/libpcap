@@ -105,9 +105,6 @@
 /* Define to 1 if you have a POSIX-style `strerror_r' function. */
 #cmakedefine HAVE_POSIX_STRERROR_R 1
 
-/* define if you have the Septel API */
-#cmakedefine HAVE_SEPTEL_API 1
-
 /* define if you have the Myricom SNF API */
 #cmakedefine HAVE_SNF_API 1
 

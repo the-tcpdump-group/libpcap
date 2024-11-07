@@ -1160,16 +1160,6 @@ dpdk)
 	xxx_only=yes
 	;;
 
-septel)
-	#
-	# --with-pcap=septel is the only way to get here, and it means
-	# "Septel support but nothing else"
-	#
-	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
-	PLATFORM_C_SRC="pcap-septel.c"
-	xxx_only=yes
-	;;
-
 snf)
 	#
 	# --with-pcap=snf is the only way to get here, and it means
@@ -1428,82 +1418,6 @@ if test "$want_dag" != no; then
 		if test "$want_dag" = yes; then
 			# User wanted DAG support but we couldn't find it.
 			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
-		fi
-	fi
-fi
-
-AC_ARG_WITH(septel,
-AS_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
-[
-	if test "$withval" = no
-	then
-		want_septel=no
-	elif test "$withval" = yes
-	then
-		want_septel=yes
-		septel_root=
-	else
-		want_septel=yes
-		septel_root=$withval
-	fi
-],[
-	if test "$V_PCAP" = septel; then
-		# User requested Septel-only libpcap, so we'd better have
-		# the Septel API.
-		want_septel=yes
-	elif test "$xxx_only" = yes; then
-		# User requested something-else-only pcap, so they don't
-		# want Septel support.
-		want_septel=no
-	else
-		#
-		# Use Septel API if present, otherwise don't
-		#
-		want_septel=ifpresent
-	fi
-])
-
-ac_cv_lbl_septel_api=no
-if test "$with_septel" != no; then
-
-	AC_MSG_CHECKING([whether we have Septel API headers])
-
-	# If necessary, set default paths for Septel API headers and libraries.
-	if test -z "$septel_root"; then
-		septel_root=$srcdir/../septel
-	fi
-
-	septel_tools_dir="$septel_root"
-	septel_include_dir="$septel_root/INC"
-
-	if test -r "$septel_include_dir/msg.h"; then
-		ac_cv_lbl_septel_api=yes
-	fi
-
-	if test "$ac_cv_lbl_septel_api" = yes; then
-		AC_MSG_RESULT([yes ($septel_include_dir)])
-
-		V_INCLS="$V_INCLS -I$septel_include_dir"
-		ADDLOBJS="$ADDLOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
-		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
-
-		if test "$V_PCAP" != septel ; then
-			 MODULE_C_SRC="$MODULE_C_SRC pcap-septel.c"
-		fi
-
-		AC_DEFINE(HAVE_SEPTEL_API, 1, [define if you have the Septel API])
-	else
-		AC_MSG_RESULT(no)
-
-		if test "$V_PCAP" = septel; then
-			# User requested "septel" capture type but
-			# we couldn't find the Septel API support.
-			AC_MSG_ERROR([Septel support requested with --with-pcap=septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
-		fi
-
-		if test "$want_septel" = yes; then
-			# User wanted Septel support but we couldn't find it.
-			AC_MSG_ERROR([Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
 		fi
 	fi
 fi

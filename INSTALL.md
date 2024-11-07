@@ -12,7 +12,6 @@ Platform-specific notes:
 
 Hardware-specific notes:
 * [Endace DAG](doc/README.dag.md)
-* [Intel Septel](doc/README.septel)
 
 Libpcap can be built either with the configure script and `make`, or
 with CMake and any build system supported by CMake.
@@ -137,7 +136,6 @@ You can get around this by installing GCC.
 	doc/README.hurd.md  - notes on using libpcap on GNU/Hurd
 	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
-	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
 	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
 	VERSION		    - version of this release
@@ -227,8 +225,6 @@ You can get around this by installing GCC.
 	pcap-rdmasniff.h    - RDMA/InfiniBand capture support
 	pcap-rpcap.c	    - RPCAP protocol capture support
 	pcap-rpcap.h	    - RPCAP protocol capture support
-	pcap-septel.c       - Intel/Septel device capture support
-	pcap-septel.h       - Intel/Septel device capture support
 	pcap-snf.c	    - Myricom SNF device capture support
 	pcap-snf.h	    - Myricom SNF device capture support
 	pcap-types.h	    - header for OS-specific type includes

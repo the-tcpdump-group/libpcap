@@ -14,6 +14,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix "tcpdump -i <n>" for something-only libpcap builds.
       Remove code related to Riverbed TurboCap card.
         Riverbed TurboCap hardware has reached EOA as of Jun 30 2014.
+      Remove dead code that supported Septel devices.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
