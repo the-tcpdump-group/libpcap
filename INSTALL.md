@@ -11,7 +11,7 @@ Platform-specific notes:
 * [Windows](doc/README.windows.md)
 
 Hardware-specific notes:
-* [Endace DAG](doc/README.dag)
+* [Endace DAG](doc/README.dag.md)
 * [Intel Septel](doc/README.septel)
 
 Libpcap can be built either with the configure script and `make`, or
@@ -131,7 +131,7 @@ You can get around this by installing GCC.
 	Makefile.in	    - compilation rules (input to the configure script)
 	README.md	    - description of distribution
 	doc/README.aix	    - notes on using libpcap on AIX
-	doc/README.dag	    - notes on using libpcap to capture on Endace DAG devices
+	doc/README.dag.md   - notes on using libpcap to capture on Endace DAG devices
 	doc/README.haiku.md - notes on using libpcap on Haiku
 	doc/README.hpux	    - notes on using libpcap on HP-UX
 	doc/README.hurd.md  - notes on using libpcap on GNU/Hurd

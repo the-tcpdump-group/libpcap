@@ -241,7 +241,7 @@ EXTRA_DIST = \
 	Makefile-devel-adds \
 	README.md \
 	doc/README.aix \
-	doc/README.dag \
+	doc/README.dag.md \
 	doc/README.haiku.md \
 	doc/README.hpux \
 	doc/README.hurd.md \
