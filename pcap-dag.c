@@ -335,8 +335,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 		pd->dag_mem_bottom += rlen;
 
+		uint8_t erf_type = header->type & ERF_TYPE_MASK;
+
 		/* Count lost packets. */
-		switch((header->type & 0x7f)) {
+		switch(erf_type) {
 			/* in these types the color value overwrites the lctr */
 		case ERF_TYPE_COLOR_HDLC_POS:
 		case ERF_TYPE_COLOR_ETH:
@@ -353,7 +355,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		if ((header->type & ERF_TYPE_MASK) == ERF_TYPE_PAD) {
+		if (erf_type == ERF_TYPE_PAD) {
 			continue;
 		}
 
@@ -376,7 +378,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->linktype == DLT_ERF) {
 			packet_len = ntohs(header->wlen) + dag_record_size;
 			caplen = rlen;
-			switch ((header->type & 0x7f)) {
+			switch (erf_type) {
 			case ERF_TYPE_MC_AAL5:
 			case ERF_TYPE_MC_ATM:
 			case ERF_TYPE_MC_HDLC:
@@ -409,22 +411,22 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/* Skip over extension headers */
 			dp += 8 * num_ext_hdr;
 
-			switch((header->type & 0x7f)) {
+			switch(erf_type) {
 			case ERF_TYPE_ATM:
 			case ERF_TYPE_AAL5:
-				if ((header->type & 0x7f) == ERF_TYPE_AAL5) {
+				if (erf_type == ERF_TYPE_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size;
 				}
 				/* FALLTHROUGH */
 			case ERF_TYPE_MC_ATM:
-				if ((header->type & 0x7f) == ERF_TYPE_MC_ATM) {
+				if (erf_type == ERF_TYPE_MC_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 					dp+=4;
 				}
 				/* FALLTHROUGH */
 			case ERF_TYPE_MC_AAL5:
-				if ((header->type & 0x7f) == ERF_TYPE_MC_AAL5) {
+				if (erf_type == ERF_TYPE_MC_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size - 4;
 					dp+=4;
@@ -432,7 +434,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				/* Skip over extension headers */
 				caplen -= (8 * num_ext_hdr);
 
-				if ((header->type & 0x7f) == ERF_TYPE_ATM) {
+				if (erf_type == ERF_TYPE_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 				}
 				if (p->linktype == DLT_SUNATM) {
@@ -1314,7 +1316,7 @@ dag_get_datalink(pcap_t *p)
 
 	while (types[index]) {
 
-		switch((types[index] & 0x7f)) {
+		switch((types[index] & ERF_TYPE_MASK)) {
 
 		case ERF_TYPE_HDLC_POS:
 		case ERF_TYPE_COLOR_HDLC_POS:
