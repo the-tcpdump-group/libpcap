@@ -1,5 +1,5 @@
 /*
- * pcap-dag.c: Packet capture interface for Endace DAG card.
+ * pcap-dag.h: Packet capture interface for Endace DAG card.
  *
  * The functionality of this code attempts to mimic that of pcap-linux as much
  * as possible.  This code is only needed when compiling in the DAG card code
