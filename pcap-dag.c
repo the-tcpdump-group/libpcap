@@ -571,9 +571,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		} /* ERF encapsulation */
 
-		if (caplen > p->snapshot)
-			caplen = p->snapshot;
-
 		/* Run the packet filter if there is one. */
 		if ((p->fcode.bf_insns == NULL) || pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
 
@@ -606,7 +603,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 
 			/* Fill in our own header data */
-			pcap_header.caplen = caplen;
+			pcap_header.caplen = min(caplen, p->snapshot);
 			pcap_header.len = packet_len;
 
 			/* Count the packet. */
