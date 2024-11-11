@@ -85,6 +85,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         0 or 16 or 32.  Likewise for ERF_DONT_STRIP_FCS (either 0 or 1).
       Remove FCS quirks specific to 4.2S and 4.23S.
       Fix packet filtering with low snaplen.
+    SNF:
+      Fix packet filtering with low snaplen.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
