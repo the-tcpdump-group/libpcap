@@ -571,7 +571,17 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		} /* ERF encapsulation */
 
-		/* Run the packet filter if there is one. */
+		/*
+		 * In this libpcap module the two length arguments of
+		 * pcapint_filter() (the wire length and the captured length)
+		 * can have different values.
+		 *
+		 * The wire length of this packet is packet_len, which is
+		 * derived from ERF wlen; the captured length of this packet
+		 * is caplen, which is derived from ERF rlen, which in turn
+		 * depends on the card/stream slen; the snapshot length
+		 * configured for this pcap handle is p->snapshot.
+		 */
 		if ((p->fcode.bf_insns == NULL) || pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
 
 			/* convert between timestamp formats */
