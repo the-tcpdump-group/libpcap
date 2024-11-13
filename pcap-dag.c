@@ -1119,12 +1119,16 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
     const dag_card_inf_t * inf)
 {
 	static char buf[256];
-	snprintf(buf, sizeof(buf),
-	    "Rx stream %u, size: %" PRIu64 " MiB, bus: %s, name: %s",
+	int done = snprintf(buf, sizeof(buf),
+	    "Rx stream %u, %" PRIu64 " MiB, %s",
 	    stream,
 	    bufsize / 1024 / 1024,
-	    inf ? inf->bus_id : "N/A",
 	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
+	if (inf->device_code != PCI_DEVICE_ID_VDAG)
+		snprintf(buf + done, sizeof(buf) - done,
+		    " rev %c at %s",
+		    (inf && inf->brd_rev < 26) ? ('A' + inf->brd_rev) : '?',
+		    inf ? inf->bus_id : "N/A");
 	return buf;
 }
 
