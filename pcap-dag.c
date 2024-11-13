@@ -71,6 +71,7 @@ struct pcap_dag {
 	dag_card_ref_t dag_ref; /* DAG Configuration/Status API card reference */
 	dag_component_t dag_root;	/* DAG CSAPI Root component */
 	attr_uuid_t drop_attr;  /* DAG Stream Drop Attribute handle, if available */
+	uint64_t drop_base;	// Rx stream drop counter initial value.
 	struct timeval required_select_timeout;
 				/* Timeout caller must use in event loops */
 };
@@ -758,7 +759,10 @@ static int dag_activate(pcap_t* p)
 	pd->dag_root = dag_config_get_root_component(pd->dag_ref);
 	if ( dag_component_get_subcomponent(pd->dag_root, kComponentStreamFeatures, 0) )
 	{
-		pd->drop_attr = dag_config_get_indexed_attribute_uuid(pd->dag_ref, kUint32AttributeStreamDropCount, pd->dag_stream/2);
+		pd->drop_attr = dag_config_get_indexed_attribute_uuid(pd->dag_ref, kUint32AttributeStreamDropCount, pd->dag_stream);
+		if (pd->drop_attr != kNullAttributeUuid)
+			pd->drop_base = dag_config_get_uint64_attribute(
+			    pd->dag_ref, pd->drop_attr);
 	}
 
 	/* Set up default poll parameters for stream
@@ -1070,7 +1074,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	struct pcap_dag *pd = p->priv;
-	uint32_t stream_drop;
+	uint64_t stream_drop;
 	dag_err_t dag_error;
 
 	/*
@@ -1084,8 +1088,8 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 		/* Note this counter is cleared at start of capture and will wrap at UINT_MAX.
 		 * The application is responsible for polling ps_drop frequently enough
 		 * to detect each wrap and integrate total drop with a wider counter */
-		if ((dag_error = dag_config_get_uint32_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop)) == kDagErrNone) {
-			pd->stat.ps_drop = stream_drop;
+		if ((dag_error = dag_config_get_uint64_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop)) == kDagErrNone) {
+			pd->stat.ps_drop = (u_int)(stream_drop - pd->drop_base);
 		} else {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "reading stream drop attribute: %s",
 				 dag_config_strerror(dag_error));
