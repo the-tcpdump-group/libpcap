@@ -24,14 +24,7 @@
 #ifdef _WIN32
   #include <ws2tcpip.h>
 #else
-  #include <sys/socket.h>
-
-  #ifdef __NetBSD__
-    #include <sys/param.h>
-  #endif
-
   #include <netinet/in.h>
-  #include <arpa/inet.h>
 #endif /* _WIN32 */
 
 #include <stdlib.h>
