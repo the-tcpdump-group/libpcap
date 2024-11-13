@@ -103,6 +103,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Building and testing:
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
+      CMake: Fix build with CMake 3.31.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
