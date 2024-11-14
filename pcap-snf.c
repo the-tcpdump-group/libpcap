@@ -170,7 +170,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			else {
 				pcapint_fmt_errmsg_for_errno(p->errbuf,
-				    PCAP_ERRBUF_SIZE, err, "snf_read");
+				    PCAP_ERRBUF_SIZE, err, "%s", __func__);
 				return PCAP_ERROR;
 			}
 		}
@@ -350,7 +350,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		merge = strtol(nr, NULL, 0);
 		if (errno) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"snf_findalldevs: SNF_FLAGS is not a valid number");
+				"%s: SNF_FLAGS is not a valid number", __func__);
 			return PCAP_ERROR;
 		}
 		merge = merge & SNF_F_AGGREGATE_PORTMASK;
@@ -410,7 +410,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			if (desc_str == NULL) {
 				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
-				    "snf_findalldevs strdup");
+				    "%s strdup", __func__);
 				return PCAP_ERROR;
 			}
 			free(dev->description);
@@ -449,7 +449,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				 */
 				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
-				    "sinf_findalldevs inet_pton");
+				    "%s inet_pton", __func__);
                                 return PCAP_ERROR;
                         }
 #endif // _WIN32
