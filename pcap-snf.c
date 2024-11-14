@@ -50,7 +50,7 @@ snf_pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	if ((rc = snf_ring_getstats(snfps->snf_ring, &stats))) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    rc, "snf_get_stats");
-		return -1;
+		return PCAP_ERROR;
 	}
 	ps->ps_recv = stats.ring_pkt_recv + stats.ring_pkt_overflow;
 	ps->ps_drop = stats.ring_pkt_overflow;
@@ -152,7 +152,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->break_loop) {
 			if (n == 0) {
 				p->break_loop = 0;
-				return (-2);
+				return PCAP_ERROR_BREAK;
 			} else {
 				return (n);
 			}
@@ -171,7 +171,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			else {
 				pcapint_fmt_errmsg_for_errno(p->errbuf,
 				    PCAP_ERRBUF_SIZE, err, "snf_read");
-				return -1;
+				return PCAP_ERROR;
 			}
 		}
 
@@ -215,7 +215,7 @@ snf_inject(pcap_t *p, const void *buf, int size)
 		if (rc) {
 			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    rc, "snf_inject_open");
-			return (-1);
+			return PCAP_ERROR;
 		}
 	}
 
@@ -226,7 +226,7 @@ snf_inject(pcap_t *p, const void *buf, int size)
 	else {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    rc, "snf_inject_send");
-		return (-1);
+		return PCAP_ERROR;
 	}
 }
 
@@ -234,7 +234,6 @@ static int
 snf_activate(pcap_t* p)
 {
 	struct pcap_snf *ps = p->priv;
-	char *device = p->opt.device;
 	const char *nr = NULL;
 	int err;
 	int flags = -1, ring_id = -1;
@@ -264,7 +263,7 @@ snf_activate(pcap_t* p)
 	if (err != 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_open failed");
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	if ((nr = getenv("SNF_PCAP_RING_ID")) && *nr) {
@@ -274,7 +273,7 @@ snf_activate(pcap_t* p)
 	if (err != 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_ring_open_id(ring=%d) failed", ring_id);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/*
@@ -297,7 +296,7 @@ snf_activate(pcap_t* p)
 	if (err != 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    err, "snf_start failed");
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/*
@@ -337,14 +336,14 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	if (snf_init(SNF_VERSION_API)) {
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "snf_init");
-		return (-1);
+		return PCAP_ERROR;
 	}
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
 	{
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "snf_getifaddrs");
-		return (-1);
+		return PCAP_ERROR;
 	}
 	if ((nr = getenv("SNF_FLAGS")) && *nr) {
 		errno = 0;
@@ -352,7 +351,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		if (errno) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				"snf_findalldevs: SNF_FLAGS is not a valid number");
-			return (-1);
+			return PCAP_ERROR;
 		}
 		merge = merge & SNF_F_AGGREGATE_PORTMASK;
 	}
@@ -412,7 +411,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "snf_findalldevs strdup");
-				return -1;
+				return PCAP_ERROR;
 			}
 			free(dev->description);
 			dev->description = desc_str;
@@ -429,7 +428,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			dev = pcapint_add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
 			    errbuf);
 			if (dev == NULL)
-				return -1;
+				return PCAP_ERROR;
 #ifdef _WIN32
 			/*
 			 * On Windows, fill in IP# from device name
@@ -443,7 +442,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				addr.sin_family = AF_INET;
 				if (pcapint_add_addr_to_dev(dev, &addr, sizeof(addr),
 				    NULL, 0, NULL, 0, NULL, 0, errbuf) == -1)
-					return -1;
+					return PCAP_ERROR;
                         } else if (ret == -1) {
 				/*
 				 * Error.
@@ -451,7 +450,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "sinf_findalldevs inet_pton");
-                                return -1;
+                                return PCAP_ERROR;
                         }
 #endif // _WIN32
 		}
@@ -479,7 +478,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		if (pcapint_add_dev(devlistp, name,
 		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, desc,
 		    errbuf) == NULL)
-			return (-1);
+			return PCAP_ERROR;
 		/*
 		 * XXX - should we give it a list of addresses with all
 		 * the addresses for all the ports?
