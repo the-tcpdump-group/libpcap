@@ -239,11 +239,6 @@ snf_activate(pcap_t* p)
 	int err;
 	int flags = -1, ring_id = -1;
 
-	if (device == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
-		return -1;
-	}
-
 	/* In Libpcap, we set pshared by default if NUM_RINGS is set to > 1.
 	 * Since libpcap isn't thread-safe */
 	if ((nr = getenv("SNF_FLAGS")) && *nr)
