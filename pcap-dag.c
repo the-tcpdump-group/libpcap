@@ -732,8 +732,8 @@ static int dag_activate(pcap_t* p)
 	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
 		if (errno == ENOMEM) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s has no memory allocated to Rx stream %u",
-			    device, pd->dag_stream);
+			    "dag%u has no memory allocated to Rx stream %u",
+			    pd->dag_devnum, pd->dag_stream);
 			/*
 			 * dag_findalldevs() does not return streams that do
 			 * not have buffer memory, so PCAP_ERROR_NO_SUCH_DEVICE
@@ -743,8 +743,8 @@ static int dag_activate(pcap_t* p)
 			goto failclose;
 		} else if (errno == EINVAL) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s has no Rx stream %u",
-			    device, pd->dag_stream);
+			    "dag%u has no Rx stream %u",
+			    pd->dag_devnum, pd->dag_stream);
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			goto failclose;
 		}
