@@ -1068,8 +1068,7 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
 pcap_t *
 pcapint_create_interface(const char *device, char *errbuf)
 {
-	snprintf(errbuf, PCAP_ERRBUF_SIZE,
-	    "This version of libpcap only supports DPDK");
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, PCAP_ENODEV_MESSAGE, "DPDK");
 	return NULL;
 }
 
