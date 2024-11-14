@@ -18,9 +18,6 @@
 #endif /* !_WIN32 */
 
 #include <snf.h>
-#if SNF_VERSION_API >= 0x0003
-#define SNF_HAVE_INJECT_API
-#endif
 
 #include "pcap-int.h"
 #include "pcap-snf.h"
@@ -31,9 +28,7 @@
 struct pcap_snf {
 	snf_handle_t snf_handle; /* opaque device handle */
 	snf_ring_t   snf_ring;   /* opaque device ring handle */
-#ifdef SNF_HAVE_INJECT_API
 	snf_inject_t snf_inj;    /* inject handle, if inject is used */
-#endif
 	int          snf_timeout;
 	int          snf_boardnum;
 };
@@ -68,10 +63,8 @@ snf_platform_cleanup(pcap_t *p)
 {
 	struct pcap_snf *ps = p->priv;
 
-#ifdef SNF_HAVE_INJECT_API
 	if (ps->snf_inj)
 		snf_inject_close(ps->snf_inj);
-#endif
 	snf_ring_close(ps->snf_ring);
 	snf_close(ps->snf_handle);
 	pcapint_cleanup_live_common(p);
@@ -212,7 +205,6 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
-#ifdef SNF_HAVE_INJECT_API
 static int
 snf_inject(pcap_t *p, const void *buf, int size)
 {
@@ -237,14 +229,6 @@ snf_inject(pcap_t *p, const void *buf, int size)
 		return (-1);
 	}
 }
-#else
-static int
-snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
-	pcapint_strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
-	    PCAP_ERRBUF_SIZE);
-	return (-1);
-}
-#endif
 
 static int
 snf_activate(pcap_t* p)
@@ -337,9 +321,7 @@ snf_activate(pcap_t* p)
 	p->setnonblock_op = snf_setnonblock;
 	p->stats_op = snf_pcap_stats;
 	p->cleanup_op = snf_platform_cleanup;
-#ifdef SNF_HAVE_INJECT_API
 	ps->snf_inj = NULL;
-#endif
 	return 0;
 }
 

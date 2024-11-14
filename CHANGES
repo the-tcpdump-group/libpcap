@@ -91,6 +91,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix ps_drop for stream drop counters.
     SNF:
       Fix packet filtering with low snaplen.
+      Require SNF_VERSION_API >= 0x0003.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
