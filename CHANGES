@@ -11,6 +11,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Merge four header files into gencode.c.
       Remove DAG card support on Windows as Linux is the only
         platform currently supported.
+      Fix "tcpdump -i <n>" for something-only libpcap builds.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request

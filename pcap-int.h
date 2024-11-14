@@ -413,6 +413,14 @@ int	pcapint_setnonblock_fd(pcap_t *p, int);
  * by pcap_create routines.
  */
 pcap_t	*pcapint_create_interface(const char *, char *);
+/*
+ * A format string for something-only libpcap builds, which use a stub
+ * implementation of pcapint_create_interface().  It contains the substring
+ * "No such device" (one of the standard descriptions of ENODEV) -- this way
+ * tcpdump can detect a particular error condition even though pcap_create()
+ * returns NULL for all errors.
+ */
+#define PCAP_ENODEV_MESSAGE "No such device (this build of libpcap supports %s devices only)."
 
 /*
  * This wrapper takes an error buffer pointer and a type to use for the
