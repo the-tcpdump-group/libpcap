@@ -2941,9 +2941,9 @@ if test "x$enable_bluetooth" != "xno" ; then
 			# Bluetooth sniffing.
 			#
 			if test "x$enable_bluetooth" = "xyes" ; then
-				AC_MSG_ERROR(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+				AC_MSG_ERROR(Bluetooth sniffing is not supported; install a Bluetooth devel library (libbluetooth-dev|bluez-libs-devel|bluez-dev|libbluetooth-devel|...) to enable it)
 			else
-				AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+				AC_MSG_NOTICE(Bluetooth sniffing is not supported; install a Bluetooth devel library (libbluetooth-dev|bluez-libs-devel|bluez-dev|libbluetooth-devel|...) to enable it)
 			fi
 		    ])
 		;;
