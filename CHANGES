@@ -89,6 +89,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove FCS quirks specific to 4.2S and 4.23S.
       Fix packet filtering with low snaplen.
       Fix ps_drop for stream drop counters.
+      Add experimental packet transmit support.
     SNF:
       Fix packet filtering with low snaplen.
       Require SNF_VERSION_API >= 0x0003.

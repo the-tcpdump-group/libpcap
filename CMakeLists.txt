@@ -534,6 +534,7 @@ endif(APPLE)
 option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
 option(DISABLE_DAG "Disable Endace DAG card support" OFF)
+option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
 set(SEPTEL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
@@ -2625,6 +2626,11 @@ if(NOT DISABLE_DAG)
             set(LIBS_STATIC "${LIBS_STATIC} ${CMAKE_THREAD_LIBS_INIT}")
             set(LIBS_PRIVATE "${LIBS_PRIVATE} ${CMAKE_THREAD_LIBS_INIT}")
         endif()
+
+        if(ENABLE_DAG_TX)
+            set(ENABLE_DAG_TX TRUE)
+        endif()
+        message(STATUS "Endace DAG transmit support (EXPERIMENTAL): ${ENABLE_DAG_TX}")
     endif()
 endif()
 

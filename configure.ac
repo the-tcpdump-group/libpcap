@@ -1418,6 +1418,17 @@ if test "$want_dag" != no; then
 		AC_MSG_NOTICE([using Endace DAG API headers from $dag_include_dir])
 		AC_MSG_NOTICE([using Endace DAG API libraries from $dag_lib_dir])
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
+
+		AC_MSG_CHECKING([whether to enable Endace DAG transmit support (EXPERIMENTAL)])
+		AC_ARG_ENABLE(dag-tx,
+			AS_HELP_STRING([--enable-dag-tx],
+				[enable Endace DAG transmit support (EXPERIMENTAL) @<:@default=no@:>@]
+			)
+		)
+		if test "$enable_dag_tx" = "yes"; then
+			AC_DEFINE(ENABLE_DAG_TX, 1, [Define to 1 if DAG transmit support is enabled])
+		fi
+		AC_MSG_RESULT(${enable_dag_tx-no})
 	else
 		if test "$V_PCAP" = dag; then
 			# User requested "dag" capture type but we couldn't

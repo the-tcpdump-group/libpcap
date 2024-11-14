@@ -88,7 +88,31 @@ buffer size is user configurable outside libpcap, typically 16-512MB.
 `pcap_get_selectable_fd()` is not supported, as DAG cards do not support
 `poll()`/`select()` methods.
 
-`pcap_inject()` and `pcap_sendpacket()` are not supported.
+`pcap_inject()` and `pcap_sendpacket()` are supported under certain conditions.
+Endace DAG transmit support in libpcap is an experimental feature, it has been
+tested for Ethernet only and is disabled by default.  To enable it, add
+`--enable-dag-tx` to the `configure` script arguments or `-DENABLE_DAG_TX=yes`
+to `cmake` arguments.
+
+The transmit support will work as expected if:
+* the packets are Ethernet frames w/o FCS (the usual in libpcap), and
+* the card's transmitting port is adding 32-bit FCS to outgoing Ethernet
+  frames (usually the default configuration).
+
+The DAG device may be configured to expect FCS in the packets supplied for
+sending and to strip it before adding a new FCS (usually the default
+configuration) or to expect the packets to have no FCS.  `pcap_activate()`
+automatically detects this configuration and subsequently `pcap_inject()`
+composes the Ethernet frame to match what the card is expecting.  If the card
+configuration changes after the call to `pcap_activate()`, things will break.
+
+To transmit packets from an interface (a port on the DAG card) other than the
+default 0 (port A), set the `ERF_TX_INTERFACE` environment variable to the
+number of the required interface before calling `pcap_activate()`.  For
+example, `ERF_TX_INTERFACE=1` uses port B.
+
+This feature has been tested on DAG 7.5G2 and DAG 9.2X2, other models may or
+may not work.
 
 ## Other considerations
 

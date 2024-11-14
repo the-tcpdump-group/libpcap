@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <endian.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include "pcap-int.h"
 
@@ -74,7 +75,17 @@ struct pcap_dag {
 	uint64_t drop_base;	// Rx stream drop counter initial value.
 	struct timeval required_select_timeout;
 				/* Timeout caller must use in event loops */
+	uint8_t	tx_iface;	// Tx interface number
+	uint8_t tx_align_bytes;	/* If necessary, add trailing padding to an
+				 * ERF record to make it a multiple of this
+				 * many bytes long.  DAG API calls this "ERF
+				 * record alignment". */
+	uint8_t terf_fcs_bytes;	// How many FCS bytes TERF is expecting.
 };
+
+#define ALIGN_BYTES_DEFAULT 8
+#define ALIGN_BYTES_9_2 16
+#define ALIGN_BYTES_MAX ALIGN_BYTES_9_2
 
 typedef struct pcap_dag_node {
 	struct pcap_dag_node *next;
@@ -89,6 +100,10 @@ static int atexit_handler_installed = 0;
 
 static unsigned char TempPkt[MAX_DAG_PACKET];
 
+#define TX_ONLY(stream) ((stream) % 2)
+#define RX_ONLY(stream) (! TX_ONLY(stream))
+#define RXTX_STR(stream) (TX_ONLY(stream) ? "Tx" : "Rx")
+
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
@@ -97,6 +112,7 @@ static int dag_setnonblock(pcap_t *p, int nonblock);
 // Environment variables that can control behaviour of this libpcap module.
 #define ENV_RX_FCS_BITS "ERF_FCS_BITS"
 #define ENV_RX_FCS_NOSTRIP "ERF_DONT_STRIP_FCS"
+#define ENV_TX_IFACE "ERF_TX_INTERFACE"
 
 /*
  * Convert the return value of getenv() to an integer using matching stricter
@@ -145,6 +161,15 @@ static void
 dag_platform_cleanup(pcap_t *p)
 {
 	struct pcap_dag *pd = p->priv;
+
+	/*
+	 * Before stopping a Tx stream wait until the stream buffer has been
+	 * drained, otherwise packets that have been buffered but have not yet
+	 * been transmitted will be lost.
+	 */
+	if (TX_ONLY(pd->dag_stream))
+		while (dag_get_stream_buffer_level64(p->fd, pd->dag_stream) > 0)
+			usleep (10000);
 
 	if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
 		fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
@@ -234,6 +259,53 @@ dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 	} while (hdr_type & ERF_TYPE_MORE_EXT);
 
 	return hdr_num;
+}
+
+static int
+dag_rxtx_mismatch(pcap_t *p)
+{
+	const struct pcap_dag *pd = p->priv;
+
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device %s is %s-only",
+	    p->opt.device,
+	    RXTX_STR(pd->dag_stream));
+	return PCAP_ERROR;
+}
+
+static int
+dag_read_notimpl(pcap_t *p, int cnt _U_, pcap_handler callback _U_, u_char *user _U_)
+{
+	return dag_rxtx_mismatch(p);
+}
+
+static int
+dag_getnonblock_fd_notimpl(pcap_t *p)
+{
+	return dag_rxtx_mismatch(p);
+}
+
+static int
+dag_stats_notimpl(pcap_t *p, struct pcap_stat *ps _U_)
+{
+	return dag_rxtx_mismatch(p);
+}
+
+static int
+dag_setnonblock_notimpl(pcap_t *p, int nonblock _U_)
+{
+	return dag_rxtx_mismatch(p);
+}
+
+static int
+dag_inject_notimpl(pcap_t *p, const void *buf _U_, int size _U_)
+{
+	return dag_rxtx_mismatch(p);
+}
+
+static int
+dag_install_bpf_program_notimpl(pcap_t *p, struct bpf_program *fp _U_)
+{
+	return dag_rxtx_mismatch(p);
 }
 
 /*
@@ -636,12 +708,190 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return processed;
 }
 
+/*
+ * The minimum number of bytes in a valid Ethernet packet from the beginning
+ * of the destination MAC address to the end of the payload, as far as DAG
+ * TERF and IEEE 802.3 are concerned.
+ */
+#define ETH_MINLEN_NOFCS 60
+
+// ...and the maximum, as far as DAG TERF is concerned.
+#define ETH_MAXLEN_NOFCS 9596
+
+/*
+ * The minimum number of bytes in a valid Ethernet header: the destination and
+ * the source MAC addresses, the EtherType.  (This does not take 802.1Q or
+ * Q-in-Q into account.)
+ */
+#define ETH_MINLEN_HDRONLY 14
+
+// Zero padding source (a bit oversized for ERF_TYPE_ETH purposes).
+static const uint8_t tx_pad[ETH_MINLEN_NOFCS + 4 + ALIGN_BYTES_MAX];
+
+/*
+ * Take an Ethernet frame, build an ERF record around it and feed the record
+ * into the [Tx-only] DAG stream.  The frame must not include FCS, which is
+ * usually the case for DLT_EN10MB in libpcap.
+ */
 static int
-dag_inject(pcap_t *p, const void *buf _U_, int size _U_)
+dag_inject(pcap_t *p, const void *packet, const int plen)
 {
-	pcapint_strlcpy(p->errbuf, "Sending packets isn't supported on DAG cards",
-	    PCAP_ERRBUF_SIZE);
+	struct pcap_dag *pd = p->priv;
+
+	if (plen <= ETH_MINLEN_HDRONLY || plen > ETH_MAXLEN_NOFCS) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "invalid packet size %d", plen);
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * sizeof(struct dag_record_t) cannot be used because it is much
+	 * greater than the specific ERF header in this buffer.
+	 */
+	const dag_size_t hlen = dag_record_size + 2;
+	/*
+	 * Some DAG hardware (e.g. 7.5G2) automatically pads outgoing Ethernet
+	 * frames that are shorter than the minimum length to make them long
+	 * enough.  Other DAG hardware (e.g. 9.2X2) rejects such frames.  Pad
+	 * the frame here if necessary and remove this difference from the
+	 * problem space.
+	 *
+	 * If the TERF is expecting Ethernet frames to have a non-zero number
+	 * of FCS bytes (typically in order to strip the FCS correctly before
+	 * further processing), append a dummy zero FCS of the expected size.
+	 */
+	const unsigned eth_pad_len = ETH_MINLEN_NOFCS
+	    - min(plen, ETH_MINLEN_NOFCS) + pd->terf_fcs_bytes;
+	const unsigned rlen = hlen + plen + eth_pad_len;
+	const unsigned erf_pad_len = rlen % pd->tx_align_bytes ?
+	    pd->tx_align_bytes - rlen % pd->tx_align_bytes :
+	    0;
+	dag_record_t header = {
+		.type = ERF_TYPE_ETH,
+		.flags.vlen = 1,
+		.rlen = htons(rlen + erf_pad_len),
+		.wlen = htons(plen + eth_pad_len),
+		// Silence a -Wmissing-field-initializers from old GCC.
+		.rec.eth = {0},
+	};
+	DAG_ERF_SET_IFACE(&header, pd->tx_iface);
+
+	/*
+	 * It is fine to feed less data than a complete ERF record at a time so
+	 * long as a complete and well-formed ERF record eventually makes it
+	 * into the buffer.  This simplifies the process when different parts
+	 * of the ERF record come from different memory locations.
+	 */
+	if (dag_tx_stream_copy_bytes64(p->fd, pd->dag_stream, (uint8_t *)&header, hlen) < 0 ||
+	    dag_tx_stream_copy_bytes64(p->fd, pd->dag_stream, (uint8_t *)packet, plen) < 0)
+		goto fail;
+	/*
+	 * Possibly pad to the minimum packet length and/or append a dummy FCS
+	 * and/or pad to the next multiple of the detected alignment unit.
+	 */
+	const unsigned pad_len = eth_pad_len + erf_pad_len;
+	if (pad_len &&
+	    dag_tx_stream_copy_bytes64(p->fd, pd->dag_stream, (uint8_t *)tx_pad, pad_len) < 0)
+		goto fail;
+	return plen;
+
+fail:
+	pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+	    errno, "dag_tx_stream_copy_bytes64 %s", p->opt.device);
 	return PCAP_ERROR;
+}
+
+static int
+dag_activate_tx(pcap_t *p)
+{
+	struct pcap_dag *pd = p->priv;
+
+	const char * env = getenv(ENV_TX_IFACE);
+	int32_t iface = strtouint31(env, 0);
+	if (iface < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: failed parsing %s value \"%s\"",
+		    __func__, ENV_TX_IFACE, env);
+		return PCAP_ERROR;
+	}
+	uint32_t ifcount = dag_config_get_interface_count(pd->dag_ref);
+	if ((uint32_t)iface >= ifcount) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: invalid %s value %u: this card has %u interface(s)",
+		    __func__, ENV_TX_IFACE, iface, ifcount);
+		return PCAP_ERROR;
+	}
+	pd->tx_iface = (uint8_t)iface;
+
+	// Read the TERF FCS size for later use by dag_inject().
+	dag_component_t cfg_comp = dag_component_get_subcomponent(
+	    pd->dag_root, kComponentTerf, 0);
+	if (! cfg_comp) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: dag_component_get_subcomponent",
+		    __func__);
+		return PCAP_ERROR;
+	}
+
+	attr_uuid_t cfg_uuid = dag_component_get_config_attribute_uuid(
+	    cfg_comp, kUint32AttributeTerfStripCrc);
+	if (cfg_uuid == kNullAttributeUuid) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: dag_component_get_config_attribute_uuid",
+		    __func__);
+		return PCAP_ERROR;
+	}
+
+	uint32_t cfg_uint32;
+	dag_err_t cfg_err = dag_config_get_uint32_attribute_ex(pd->dag_ref,
+	    cfg_uuid, &cfg_uint32);
+	if (cfg_err != kDagErrNone) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: dag_config_get_uint32_attribute_ex",
+		    __func__);
+		return PCAP_ERROR;
+	}
+
+	switch (cfg_uint32) {
+	case kTerfNoStrip:
+		pd->terf_fcs_bytes = 0;
+		break;
+	case kTerfStrip16:
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "TERF FCS is configured to 16 bits, is this Ethernet?");
+		return PCAP_ERROR;
+	case kTerfStrip32:
+		pd->terf_fcs_bytes = 4;
+		break;
+	default:
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "failed reading TERF FCS configuration");
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * TODO: It would be nice to verify that the Tx port is
+	 * configured for 32-bit Tx FCS, but it is not trivial to
+	 * tell the exact subcomponent that has the attribute.
+	 */
+
+	// Determine the correct alignment/padding size for the card.
+	const dag_card_inf_t *inf = dag_pciinfo(p->fd);
+	if (! inf) {
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "dag_pciinfo");
+		return PCAP_ERROR;
+	}
+	switch(inf->device_code) {
+	case PCI_DEVICE_ID_DAG9_2X2:
+	case PCI_DEVICE_ID_DAG9_2SX2:
+		pd->tx_align_bytes = ALIGN_BYTES_9_2;
+		break;
+	default:
+		pd->tx_align_bytes = ALIGN_BYTES_DEFAULT;
+	}
+
+	return 0;
 }
 
 /*
@@ -682,7 +932,8 @@ static int dag_activate(pcap_t* p)
 		ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto fail;
 	}
-	if (pd->dag_stream%2) {
+#ifndef ENABLE_DAG_TX
+	if (TX_ONLY(pd->dag_stream)) {
 		/*
 		 * dag_findalldevs() does not return any Tx streams, so
 		 * PCAP_ERROR_NO_SUCH_DEVICE is more consistent than
@@ -692,6 +943,7 @@ static int dag_activate(pcap_t* p)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: tx (odd numbered) streams not supported for capture", __func__);
 		goto fail;
 	}
+#endif // ENABLE_DAG_TX
 
 	/* setup device parameters */
 	if((pd->dag_ref = dag_config_init(device)) == NULL) {
@@ -732,8 +984,8 @@ static int dag_activate(pcap_t* p)
 	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
 		if (errno == ENOMEM) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "dag%u has no memory allocated to Rx stream %u",
-			    pd->dag_devnum, pd->dag_stream);
+			    "dag%u has no memory allocated to %s stream %u",
+			    pd->dag_devnum, RXTX_STR(pd->dag_stream), pd->dag_stream);
 			/*
 			 * dag_findalldevs() does not return streams that do
 			 * not have buffer memory, so PCAP_ERROR_NO_SUCH_DEVICE
@@ -743,8 +995,8 @@ static int dag_activate(pcap_t* p)
 			goto failclose;
 		} else if (errno == EINVAL) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "dag%u has no Rx stream %u",
-			    pd->dag_devnum, pd->dag_stream);
+			    "dag%u has no %s stream %u",
+			    pd->dag_devnum, RXTX_STR(pd->dag_stream), pd->dag_stream);
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			goto failclose;
 		}
@@ -895,6 +1147,11 @@ static int dag_activate(pcap_t* p)
 		goto failstop;
 	}
 
+	if (TX_ONLY(pd->dag_stream) && dag_activate_tx(p) < 0) {
+		ret = PCAP_ERROR;
+		goto failstop;
+	}
+
 	pd->dag_timeout	= p->opt.timeout;
 
 	if (dag_get_datalink(p) < 0) {
@@ -916,14 +1173,26 @@ static int dag_activate(pcap_t* p)
 	 */
 	p->selectable_fd = -1;
 
-	p->read_op = dag_read;
-	p->inject_op = dag_inject;
-	p->setfilter_op = pcapint_install_bpf_program;
+	p->read_op = RX_ONLY(pd->dag_stream) ?
+	    dag_read :
+	    dag_read_notimpl;
+	p->inject_op = TX_ONLY(pd->dag_stream) ?
+	    dag_inject :
+	    dag_inject_notimpl;
+	p->setfilter_op = RX_ONLY(pd->dag_stream) ?
+	    pcapint_install_bpf_program :
+	    dag_install_bpf_program_notimpl;
 	p->setdirection_op = NULL; /* Not implemented.*/
 	p->set_datalink_op = dag_set_datalink;
-	p->getnonblock_op = pcapint_getnonblock_fd;
-	p->setnonblock_op = dag_setnonblock;
-	p->stats_op = dag_stats;
+	p->getnonblock_op = RX_ONLY(pd->dag_stream) ?
+	    pcapint_getnonblock_fd :
+	    dag_getnonblock_fd_notimpl;
+	p->setnonblock_op = RX_ONLY(pd->dag_stream) ?
+	    dag_setnonblock :
+	    dag_setnonblock_notimpl;
+	p->stats_op = RX_ONLY(pd->dag_stream) ?
+	    dag_stats :
+	    dag_stats_notimpl;
 	p->cleanup_op = dag_platform_cleanup;
 	pd->stat.ps_drop = 0;
 	pd->stat.ps_recv = 0;
@@ -1114,7 +1383,7 @@ static const char *
 dag_stream_short_description(const unsigned stream)
 {
 	static char buf[128];
-	snprintf(buf, sizeof(buf), "Rx stream %u", stream);
+	snprintf(buf, sizeof(buf), "%s stream %u", RXTX_STR(stream), stream);
 	return buf;
 }
 
@@ -1124,7 +1393,8 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
 {
 	static char buf[256];
 	int done = snprintf(buf, sizeof(buf),
-	    "Rx stream %u, %" PRIu64 " MiB, %s",
+	    "%s stream %u, %" PRIu64 " MiB, %s",
+	    RXTX_STR(stream),
 	    stream,
 	    bufsize / 1024 / 1024,
 	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
@@ -1173,7 +1443,22 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				    errno, "dag_rx_get_stream_count");
 				goto failclose;
 			}
-			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
+			int txstreams = 0;
+#ifdef ENABLE_DAG_TX
+			txstreams = dag_tx_get_stream_count(dagfd);
+			if (txstreams < 0) {
+				pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+				    errno, "dag_tx_get_stream_count");
+				goto failclose;
+			}
+#endif // ENABLE_DAG_TX
+			for(stream = 0;
+			    stream < DAG_STREAM_MAX && (rxstreams > 0 || txstreams > 0);
+			    stream++) {
+#ifndef ENABLE_DAG_TX
+				if (TX_ONLY(stream))
+					continue;
+#endif // ENABLE_DAG_TX
 				/*
 				 * dag_attach_stream64() was used before to test if the
 				 * stream exists, but it is not the best tool for the
@@ -1203,8 +1488,10 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 						goto failclose;
 					}
 				}
-				if (--rxstreams <= 0)
-					break;
+				if (RX_ONLY(stream))
+					rxstreams--;
+				else
+					txstreams--;
 			}
 			dag_close(dagfd);
 			dagfd = -1;
@@ -1212,7 +1499,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			// The device exists, but the current user privileges are not
 			// sufficient for dag_open().
 			// Do not add a shorthand device for stream 0 yet -- same as above.
-			// Try enumerating the Rx streams using sysfs.  The file lists
+			// Try enumerating the streams using sysfs.  The file lists
 			// all streams (Rx and Tx) that have non-zero amount of buffer
 			// memory.
 			char sysfspath[PATH_MAX];
@@ -1220,7 +1507,11 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			if ((sysfsinfo = fopen(sysfspath, "r"))) {
 				char linebuf[1024];
 				while (fgets(linebuf, sizeof(linebuf), sysfsinfo))
-					if (1 == sscanf(linebuf, "Stream %u:", &stream) && stream % 2 == 0) {
+					if (1 == sscanf(linebuf, "Stream %u:", &stream)) {
+#ifndef ENABLE_DAG_TX
+						if (TX_ONLY(stream))
+							continue;
+#endif // ENABLE_DAG_TX
 						// a conditional shorthand device
 						description = dag_device_description(c);
 						if (stream == 0 &&
@@ -1309,6 +1600,15 @@ static int
 dag_get_datalink(pcap_t *p)
 {
 	struct pcap_dag *pd = p->priv;
+
+	/*
+	 * There seems to be no trivial way to tell which ERF type(s) a Tx
+	 * stream would accept.  Let's assume ERF_TYPE_ETH would work, which
+	 * in libpcap terms means using DLT_EN10MB.
+	 */
+	if (TX_ONLY(pd->dag_stream))
+		return (p->linktype = DLT_EN10MB);
+
 	int index=0, dlt_index=0;
 	uint8_t types[255];
 

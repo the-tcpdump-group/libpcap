@@ -30,6 +30,9 @@
 /* define if you have vdag_set_device_info() */
 #cmakedefine HAVE_DAG_VDAG 1
 
+/* Define to 1 if DAG transmit support is enabled */
+#cmakedefine ENABLE_DAG_TX 1
+
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #cmakedefine HAVE_DECL_ETHER_HOSTTON 1
 
