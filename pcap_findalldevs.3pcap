@@ -214,7 +214,9 @@ for IPv6 addresses, it can be interpreted as if it pointed to a
 For link-layer addresses, it can be interpreted as if it pointed to a
 .B "struct sockaddr_ll"
 (for
-.BR AF_PACKET )
+.BR AF_PACKET ,
+see
+.BR packet (7))
 or a
 .B "struct sockaddr_dl"
 (for
