@@ -387,9 +387,12 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * entry for the device, if they're not already in the
 		 * list of IP addresses for the device?
 		 */
-		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%u",
-			merge ? "Merge Bitmask Port " : "",
-			merge ? 1U << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+		(void)snprintf(desc, MAX_DESC_LENGTH,
+		    "Myricom %ssnf%u, Rx rings: %u, Tx handles: %u",
+		    merge ? "Merge Bitmask Port " : "",
+		    merge ? 1U << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum,
+		    ifa->snf_ifa_maxrings,
+		    ifa->snf_ifa_maxinject);
 		/*
 		 * Add the port to the bitmask.
 		 */
@@ -415,17 +418,24 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			}
 			free(dev->description);
 			dev->description = desc_str;
+			/*
+			 * dev->flags already has PCAP_IF_UP, PCAP_IF_RUNNING
+			 * and PCAP_IF_CONNECTION_STATUS_* mapped from the OS
+			 * network interface flags.
+			 */
 		} else {
 			/*
 			 * No.  Add an entry for it.
 			 *
-			 * XXX - is there a notion of "up" or "running",
-			 * and can we determine whether something's
-			 * plugged into the adapter and set
-			 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
-			 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
+			 * snf_ifaddrs includes the operational (i.e. link
+			 * detect), but not the administrative state of the
+			 * port.
 			 */
-			dev = pcapint_add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
+			const bpf_u_int32 flags =
+			    ifa->snf_ifa_link_state == SNF_LINK_UP ?
+			    PCAP_IF_CONNECTION_STATUS_CONNECTED :
+			    PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+			dev = pcapint_add_dev(devlistp, ifa->snf_ifa_name, flags, desc,
 			    errbuf);
 			if (dev == NULL)
 				return PCAP_ERROR;
