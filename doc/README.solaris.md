@@ -5,17 +5,17 @@
 * Neither illumos lex nor illumos yacc are suitable.
 * Solaris m4 and illumos m4 are suitable.
 
+## OmniOS r151052/AMD64
+
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake 3.30.5 works.
+* GCC 14.2.0 and Clang 19.1.2 work.
+
 ## OmniOS r151050/AMD64
 
 * flex 2.6.4 and GNU Bison 3.8.2 work.
 * CMake 3.30.1 works.
 * GCC 13.2.0 and Clang 18.1.8 work.
-
-## OmniOS r151048/AMD64
-
-* flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake 3.28.3 works.
-* GCC 13.2.0 and Clang 17.0.6 work.
 
 ## OmniOS r151046/AMD64
 
