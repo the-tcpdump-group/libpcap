@@ -116,10 +116,15 @@ may not work.
 
 ## Other considerations
 
-libpcap now does **not** set the card's hardware snaplen (`slen`).  This must
-now be set using `dagconfig`.  This is because the snaplen used to be shared
-between all of the streams of a DAG card.  Newer hardware implements snaplen as
-a per-stream parameter, but libpcap does not support that yet.
+libpcap neither checks nor sets DAG hardware snaplen (`slen`).  It is trivial
+to tell how many bytes of a captured packet data to return based on the length
+of the data and the configured snapshot length.  But it is not always possible
+to tell how much packet data to capture such that the amount of input to the
+packet filter program would be sufficient for correct filtering -- how deep the
+program tries to access into a captured packet data can be a function of both
+the program and the data.  Also on older hardware `slen` applies to the entire
+card rather than a particular Rx stream.  If necessary, use `dagconfig` to
+configure a custom `slen` value before activating the capture.
 
 DAG cards by default capture entire packets including the L2 CRC/FCS.  If the
 card is not configured to discard the CRC/FCS, this can confuse applications

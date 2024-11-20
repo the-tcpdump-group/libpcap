@@ -899,9 +899,6 @@ dag_activate_tx(pcap_t *p)
  *  flag is ignored because DAG cards are always promiscuous.  The to_ms
  *  parameter is used in setting the API polling parameters.
  *
- *  snaplen is now also ignored, until we get per-stream slen support. Set
- *  slen with appropriate DAG tool BEFORE pcap_activate().
- *
  *  See also pcap(3).
  */
 static int dag_activate(pcap_t* p)
@@ -1072,22 +1069,6 @@ static int dag_activate(pcap_t* p)
 		    errno, "dag_set_stream_poll64");
 		goto faildetach;
 	}
-
-        /* XXX Not calling dag_configure() to set slen; this is unsafe in
-	 * multi-stream environments as the gpp config is global.
-         * Once the firmware provides 'per-stream slen' this can be supported
-	 * again via the Config API without side-effects */
-#if 0
-	/* set the card snap length to the specified snaplen parameter */
-	/* This is a really bad idea, as different cards have different
-	 * valid slen ranges. Should fix in Config API. */
-	if (p->snapshot == 0 || p->snapshot > MAX_DAG_SNAPLEN) {
-		p->snapshot = MAX_DAG_SNAPLEN;
-	} else if (snaplen < MIN_DAG_SNAPLEN) {
-		p->snapshot = MIN_DAG_SNAPLEN;
-	}
-	/* snap len has to be a multiple of 4 */
-#endif
 
 	if(dag_start_stream(p->fd, pd->dag_stream) < 0) {
 		ret = PCAP_ERROR;
