@@ -130,7 +130,9 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 * the status to PCAP_IF_CONNECTION_STATUS_CONNECTED
 		 * or PCAP_IF_CONNECTION_STATUS_DISCONNECTED.
 		 */
-		if (pcapint_add_dev(devlistp, dev_name, PCAP_IF_WIRELESS, dev_descr, err_str)  == NULL)
+		if (pcapint_add_dev(devlistp, dev_name,
+		    PCAP_IF_WIRELESS | PCAP_IF_NO_INJECT,
+		    dev_descr, err_str)  == NULL)
 		{
 			ret = PCAP_ERROR;
 			break;
