@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_INJECT 3PCAP "23 November 2024"
+.TH PCAP_INJECT 3PCAP "28 January 2026"
 .SH NAME
 pcap_inject, pcap_sendpacket \- transmit a packet
 .SH SYNOPSIS
@@ -50,7 +50,10 @@ The same limitation applies to
 .BR \%pcap_create (3PCAP)
 and
 .BR \%pcap_activate (3PCAP).
-Note also that some devices might not support sending packets.
+Note also that some devices might not support sending packets.  See also the
+.B \%PCAP_IF_NO_INJECT
+device flag in
+.BR \%pcap_findalldevs (3PCAP).
 .PP
 Note that, on some platforms, the link-layer header of the packet that's
 sent might not be the same as the link-layer header of the packet

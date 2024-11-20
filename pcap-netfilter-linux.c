@@ -785,10 +785,12 @@ netfilter_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	 * XXX - what about "up" and "running"?
 	 */
 	if (pcapint_add_dev(devlistp, NFLOG_IFACE,
+	    PCAP_IF_NO_INJECT |
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    "Linux netfilter log (NFLOG) interface", err_str) == NULL)
 		return -1;
 	if (pcapint_add_dev(devlistp, NFQUEUE_IFACE,
+	    PCAP_IF_NO_INJECT |
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    "Linux netfilter queue (NFQUEUE) interface", err_str) == NULL)
 		return -1;
