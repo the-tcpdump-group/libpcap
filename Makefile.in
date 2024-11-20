@@ -247,6 +247,7 @@ EXTRA_DIST = \
 	doc/README.hurd.md \
 	doc/README.linux \
 	doc/README.macos \
+	doc/README.snf.md \
 	doc/README.solaris.md \
 	doc/README.windows.md \
 	CONTRIBUTING.md \

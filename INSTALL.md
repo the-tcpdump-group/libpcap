@@ -12,6 +12,7 @@ Platform-specific notes:
 
 Hardware-specific notes:
 * [Endace DAG](doc/README.dag.md)
+* [Myricom SNF](doc/README.snf.md)
 
 Libpcap can be built either with the configure script and `make`, or
 with CMake and any build system supported by CMake.
@@ -136,6 +137,7 @@ You can get around this by installing GCC.
 	doc/README.hurd.md  - notes on using libpcap on GNU/Hurd
 	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
+	doc/README.snf.md   - notes on using libpcap to capture on Myricom SNF devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
 	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
 	VERSION		    - version of this release
