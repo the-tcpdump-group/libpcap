@@ -1,4 +1,4 @@
-# Compiling and using libpcap with Endace DAG capture cards.
+# Compiling and using libpcap with Endace DAG capture cards
 
 ## How to build
 
@@ -11,7 +11,7 @@ support the DAG range of passive network monitoring cards from
    customers can download the DAG software distribution from
    [here](https://support.endace.com/).
 
-2. Configure libcap.  The `configure` script detects a typical DAG software
+2. Configure libpcap.  The `configure` script detects a typical DAG software
    installation automatically.  In case you need to use the DAG software
    distribution from a custom location, use the `--with-dag` option:
    ```
@@ -21,7 +21,8 @@ support the DAG range of passive network monitoring cards from
    `/var/src/dag`.  If the DAG software is correctly detected, `configure` will
    report:
    ```
-   checking whether we have DAG API... yes
+   configure: using Endace DAG API headers from /var/src/dag/include
+   configure: using Endace DAG API libraries from /var/src/dag/lib
    ```
    If `configure` reports that there is no DAG API, the directory may have been
    incorrectly specified or the DAG software was not built before configuring
@@ -43,56 +44,71 @@ options.
 
 ## Supported libpcap features
 
-`pcap_set_timeout()` is supported. `pcap_dispatch()` will return after `to_ms`
-milliseconds regardless of how many packets are received.  If `to_ms` is zero,
-`pcap_dispatch()` will block waiting for data indefinitely.
+[**pcap_set_timeout**](https://www.tcpdump.org/manpages/pcap_set_timeout.3pcap.html)(3PCAP)
+is supported.
+[**pcap_dispatch**](https://www.tcpdump.org/manpages/pcap_loop.3pcap.html)(3PCAP)
+will return after `to_ms` milliseconds regardless of how many packets are
+received.  If `to_ms` is zero, **pcap_dispatch**() will block waiting for data
+indefinitely.
 
-`pcap_dispatch()` will block on and process a minimum of 64kB of data (before
-filtering) for efficiency.  This can introduce high latencies on quiet
+**pcap_dispatch**() will block on and process a minimum of 64KiB of data
+(before filtering) for efficiency.  This can introduce high latencies on quiet
 interfaces unless a timeout value is set.  The timeout expiring will override
-the 64kB minimum causing `pcap_dispatch()` to process any available data and
+the 64KiB minimum causing **pcap_dispatch**() to process any available data and
 return.
 
-`pcap_setnonblock()` is supported.  When `nonblock` is set, `pcap_dispatch()`
-will check once for available data, process any data available up to `cnt`
-packets, then return immediately.
+[**pcap_setnonblock**](https://www.tcpdump.org/manpages/pcap_setnonblock.3pcap.html)(3PCAP)
+is supported.  When `nonblock` is set, **pcap_dispatch**() will check once for
+available data, process any data available up to `cnt` packets, then return
+immediately.
 
-`pcap_findalldevs()` is supported.  At the time of this writing all supported
-DAG cards implement capturing to multiple logical interfaces, called "streams".
-This can be data from different physical ports, or separated by filtering
-or load balancing mechanisms.  Receive (capture) streams on a given card have
-even numbers (0, 2, 4 etc.) and are available via `pcap_findalldevs()` as
-separate capture devices (`dag0:0`, `dag0:2`, `dag0:4` etc.).  `dag0:0` is
-the same as `dag0`.  Specifying transmit streams for capture is not supported.
+[**pcap_findalldevs**](https://www.tcpdump.org/manpages/pcap_findalldevs.3pcap.html)(3PCAP)
+is supported.  At the time of this writing all supported DAG cards implement
+capturing to multiple logical interfaces, called "streams".  This can be data
+from different physical ports, or separated by filtering or load balancing
+mechanisms.  Receive (capture) streams on a given card have even numbers (0, 2,
+4 etc.) and are available via **pcap_findalldevs**() as separate capture
+devices (`dag0:0`, `dag0:2`, `dag0:4` etc.).  `dag0:0` is the same as `dag0`.
+Specifying transmit streams for capture is not supported.
 
-`pcap_setfilter()` is supported, BPF programs run in userspace.
+[**pcap_setfilter**](https://www.tcpdump.org/manpages/pcap_setfilter.3pcap.html)(3PCAP)
+is supported, BPF programs run in userspace.
 
-`pcap_setdirection()` is not supported.  Only received traffic is captured.
-DAG cards normally do not have IP or link-layer addresses assigned as they are
-used to passively monitor links.
+[**pcap_setdirection**](https://www.tcpdump.org/manpages/pcap_setdirection.3pcap.html)(3PCAP)
+is not supported.  Only received traffic is captured.  DAG cards normally do
+not have IP or link-layer addresses assigned as they are used to passively
+monitor links.
 
-`pcap_set_promisc()` has no effect because DAG cards always capture packets in
-promiscuous mode.
+[**pcap_set_promisc**](https://www.tcpdump.org/manpages/pcap_set_promisc.3pcap.html)(3PCAP)
+has no effect because DAG cards always capture packets in promiscuous mode.
 
-`pcap_breakloop()` is supported.
+[**pcap_breakloop**](https://www.tcpdump.org/manpages/pcap_breakloop.3pcap.html)(3PCAP)
+is supported.
 
-`pcap_datalink()` and `pcap_list_datalinks()` are supported.  `pcap_activate()`
+[**pcap_datalink**](https://www.tcpdump.org/manpages/pcap_datalink.3pcap.html)(3PCAP)
+and
+[**pcap_list_datalinks**](https://www.tcpdump.org/manpages/pcap_list_datalinks.3pcap.html)(3PCAP)
+are supported.
+[**pcap_activate**](https://www.tcpdump.org/manpages/pcap_activate.3pcap.html)(3PCAP)
 attempts to set the correct datalink type automatically when the capture stream
 supports more than one type.
 
-`pcap_stats()` is supported.  `ps_drop` is the number of packets dropped due to
-Rx stream buffer overflow, this count is before filters are applied (it will
-include packets that would have been dropped by the filter).  The Rx stream
-buffer size is user configurable outside libpcap, typically 16-512MB.
+[**pcap_stats**](https://www.tcpdump.org/manpages/pcap_stats.3pcap.html)(3PCAP)
+is supported.  `ps_drop` is the number of packets dropped due to Rx stream
+buffer overflow, this count is before filters are applied (it will include
+packets that would have been dropped by the filter).  The Rx stream buffer size
+is user configurable outside libpcap, typically 16–512MiB.
 
-`pcap_get_selectable_fd()` is not supported, as DAG cards do not support
-`poll()`/`select()` methods.
+[**pcap_get_selectable_fd**](https://www.tcpdump.org/manpages/pcap_get_selectable_fd.3pcap.html)(3PCAP)
+is not supported, as DAG cards do not support `poll()`/`select()` methods.
 
-`pcap_inject()` and `pcap_sendpacket()` are supported under certain conditions.
-Endace DAG transmit support in libpcap is an experimental feature, it has been
-tested for Ethernet only and is disabled by default.  To enable it, add
-`--enable-dag-tx` to the `configure` script arguments or `-DENABLE_DAG_TX=yes`
-to `cmake` arguments.
+[**pcap_inject**](https://www.tcpdump.org/manpages/pcap_inject.3pcap.html)(3PCAP)
+and
+[**pcap_sendpacket**](https://www.tcpdump.org/manpages/pcap_inject.3pcap.html)(3PCAP)
+are supported under certain conditions.  Endace DAG transmit support in libpcap
+is an experimental feature, it has been tested for Ethernet only and is
+disabled by default.  To enable it, add `--enable-dag-tx` to `./configure`
+arguments or `-DENABLE_DAG_TX=yes` to `cmake` arguments.
 
 The transmit support will work as expected if:
 * the packets are Ethernet frames w/o FCS (the usual in libpcap), and
@@ -101,14 +117,14 @@ The transmit support will work as expected if:
 
 The DAG device may be configured to expect FCS in the packets supplied for
 sending and to strip it before adding a new FCS (usually the default
-configuration) or to expect the packets to have no FCS.  `pcap_activate()`
-automatically detects this configuration and subsequently `pcap_inject()`
+configuration) or to expect the packets to have no FCS.  **pcap_activate**()
+automatically detects this configuration and subsequently **pcap_inject**()
 composes the Ethernet frame to match what the card is expecting.  If the card
-configuration changes after the call to `pcap_activate()`, things will break.
+configuration changes after the call to **pcap_activate**(), things will break.
 
 To transmit packets from an interface (a port on the DAG card) other than the
 default 0 (port A), set the `ERF_TX_INTERFACE` environment variable to the
-number of the required interface before calling `pcap_activate()`.  For
+number of the required interface before calling **pcap_activate**().  For
 example, `ERF_TX_INTERFACE=1` uses port B.
 
 This feature has been tested on DAG 7.5G2 and DAG 9.2X2, other models may or
@@ -120,7 +136,7 @@ libpcap neither checks nor sets DAG hardware snaplen (`slen`).  It is trivial
 to tell how many bytes of a captured packet data to return based on the length
 of the data and the configured snapshot length.  But it is not always possible
 to tell how much packet data to capture such that the amount of input to the
-packet filter program would be sufficient for correct filtering -- how deep the
+packet filter program would be sufficient for correct filtering — how deep the
 program tries to access into a captured packet data can be a function of both
 the program and the data.  Also on older hardware `slen` applies to the entire
 card rather than a particular Rx stream.  If necessary, use `dagconfig` to
