@@ -1517,7 +1517,8 @@ bpf_odminit(char *errbuf)
 		if (odm_err_msg(odmerrno, &errstr) == -1)
 			errstr = "Unknown error";
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: odm_initialize failed: %s",
+		    "%s: odm_initialize failed: %s",
+		    __func__,
 		    errstr);
 		return (PCAP_ERROR);
 	}
@@ -1526,7 +1527,8 @@ bpf_odminit(char *errbuf)
 		if (odm_err_msg(odmerrno, &errstr) == -1)
 			errstr = "Unknown error";
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
+		    "%s: odm_lock of /etc/objrepos/config_lock failed: %s",
+		    __func__,
 		    errstr);
 		(void)odm_terminate();
 		return (PCAP_ERROR);
@@ -1545,7 +1547,8 @@ bpf_odmcleanup(char *errbuf)
 			if (odm_err_msg(odmerrno, &errstr) == -1)
 				errstr = "Unknown error";
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "bpf_load: odm_unlock failed: %s",
+			    "%s: odm_unlock failed: %s",
+			    __func__,
 			    errstr);
 		}
 		return (PCAP_ERROR);
@@ -1556,7 +1559,8 @@ bpf_odmcleanup(char *errbuf)
 			if (odm_err_msg(odmerrno, &errstr) == -1)
 				errstr = "Unknown error";
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "bpf_load: odm_terminate failed: %s",
+			    "%s: odm_terminate failed: %s",
+			    __func__,
 			    errstr);
 		}
 		return (PCAP_ERROR);
@@ -1590,7 +1594,7 @@ bpf_load(char *errbuf)
 	major = genmajor(BPF_NAME);
 	if (major == -1) {
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "bpf_load: genmajor failed");
+		    errno, "%s: genmajor failed", __func__);
 		(void)bpf_odmcleanup(NULL);
 		return (PCAP_ERROR);
 	}
@@ -1600,7 +1604,7 @@ bpf_load(char *errbuf)
 		minors = genminor("bpf", major, 0, BPF_MINORS, 1, 1);
 		if (!minors) {
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "bpf_load: genminor failed");
+			    errno, "%s: genminor failed", __func__);
 			(void)bpf_odmcleanup(NULL);
 			return (PCAP_ERROR);
 		}
@@ -1612,7 +1616,7 @@ bpf_load(char *errbuf)
 	rc = stat(BPF_NODE "0", &sbuf);
 	if (rc == -1 && errno != ENOENT) {
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "bpf_load: can't stat %s", BPF_NODE "0");
+		    errno, "%s: can't stat %s", __func__, BPF_NODE "0");
 		return (PCAP_ERROR);
 	}
 
@@ -1623,7 +1627,7 @@ bpf_load(char *errbuf)
 			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
 				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
-				    "bpf_load: can't mknod %s", buf);
+				    "%s: can't mknod %s", __func__, buf);
 				return (PCAP_ERROR);
 			}
 		}
@@ -1638,7 +1642,7 @@ bpf_load(char *errbuf)
 		/* Driver isn't loaded, load it now */
 		if (sysconfig(SYS_SINGLELOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) {
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "bpf_load: could not load driver");
+			    errno, "%s: could not load driver", __func__);
 			return (PCAP_ERROR);
 		}
 	}
@@ -1652,7 +1656,7 @@ bpf_load(char *errbuf)
 		cfg_bpf.devno = domakedev(major, i);
 		if (sysconfig(SYS_CFGKMOD, (void *)&cfg_km, sizeof(cfg_km)) == -1) {
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "bpf_load: could not configure driver");
+			    errno, "%s: could not configure driver", __func__);
 			return (PCAP_ERROR);
 		}
 	}
