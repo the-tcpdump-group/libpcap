@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_INJECT 3PCAP "5 March 2022"
+.TH PCAP_INJECT 3PCAP "23 November 2024"
 .SH NAME
 pcap_inject, pcap_sendpacket \- transmit a packet
 .SH SYNOPSIS
@@ -46,6 +46,10 @@ sending packets; as
 doesn't have a flag to indicate whether to open for capturing, sending,
 or capturing and sending, you cannot request an open that supports
 sending and be notified at open time whether sending will be possible.
+The same limitation applies to
+.BR \%pcap_create (3PCAP)
+and
+.BR \%pcap_activate (3PCAP).
 Note also that some devices might not support sending packets.
 .PP
 Note that, on some platforms, the link-layer header of the packet that's
