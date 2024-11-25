@@ -1412,7 +1412,7 @@ pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
  * Add an entry for the "any" device.
  */
 pcap_if_t *
-pcap_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
+pcapint_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
 {
 	static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 

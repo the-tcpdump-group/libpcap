@@ -3082,7 +3082,7 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Add the "any" device.
 	 */
-	if (pcap_add_any_dev(devlistp, errbuf) == NULL)
+	if (pcapint_add_any_dev(devlistp, errbuf) == NULL)
 		return (-1);
 #endif
 
