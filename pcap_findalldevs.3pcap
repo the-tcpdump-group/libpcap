@@ -223,7 +223,7 @@ or a
 .BR AF_LINK ).
 .PP
 The list of devices must be freed with
-.BR pcap_freealldevs (3PCAP),
+.BR pcap_freealldevs (),
 which frees the list pointed to by
 .IR alldevs .
 .SH RETURN VALUE
