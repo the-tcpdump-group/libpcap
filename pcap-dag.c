@@ -824,7 +824,28 @@ dag_activate_tx(pcap_t *p)
 	}
 	pd->tx_iface = (uint8_t)iface;
 
+	// Determine the correct alignment/padding size for the card.
+	const dag_card_inf_t *inf = dag_pciinfo(p->fd);
+	if (! inf) {
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "dag_pciinfo");
+		return PCAP_ERROR;
+	}
+	switch(inf->device_code) {
+	case PCI_DEVICE_ID_DAG9_2X2:
+	case PCI_DEVICE_ID_DAG9_2SX2:
+		pd->tx_align_bytes = ALIGN_BYTES_9_2;
+		break;
+	default:
+		pd->tx_align_bytes = ALIGN_BYTES_DEFAULT;
+	}
+
 	// Read the TERF FCS size for later use by dag_inject().
+	if (inf->device_code == PCI_DEVICE_ID_VDAG) {
+		// vDAG does not have a notion of FCS.
+		pd->terf_fcs_bytes = 0;
+		return 0;
+	}
 	dag_component_t cfg_comp = dag_component_get_subcomponent(
 	    pd->dag_root, kComponentTerf, 0);
 	if (! cfg_comp) {
@@ -875,22 +896,6 @@ dag_activate_tx(pcap_t *p)
 	 * configured for 32-bit Tx FCS, but it is not trivial to
 	 * tell the exact subcomponent that has the attribute.
 	 */
-
-	// Determine the correct alignment/padding size for the card.
-	const dag_card_inf_t *inf = dag_pciinfo(p->fd);
-	if (! inf) {
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_pciinfo");
-		return PCAP_ERROR;
-	}
-	switch(inf->device_code) {
-	case PCI_DEVICE_ID_DAG9_2X2:
-	case PCI_DEVICE_ID_DAG9_2SX2:
-		pd->tx_align_bytes = ALIGN_BYTES_9_2;
-		break;
-	default:
-		pd->tx_align_bytes = ALIGN_BYTES_DEFAULT;
-	}
 
 	return 0;
 }
