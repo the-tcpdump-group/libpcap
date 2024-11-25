@@ -262,11 +262,12 @@ dag_erf_ext_header_count(const uint8_t *erf, size_t len)
 }
 
 static int
-dag_rxtx_mismatch(pcap_t *p)
+dag_rxtx_mismatch(const char *func, pcap_t *p)
 {
 	const struct pcap_dag *pd = p->priv;
 
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device %s is %s-only",
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: device %s is %s-only",
+	    func,
 	    p->opt.device,
 	    RXTX_STR(pd->dag_stream));
 	return PCAP_ERROR;
@@ -275,37 +276,37 @@ dag_rxtx_mismatch(pcap_t *p)
 static int
 dag_read_notimpl(pcap_t *p, int cnt _U_, pcap_handler callback _U_, u_char *user _U_)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch(__func__, p);
 }
 
 static int
 dag_getnonblock_fd_notimpl(pcap_t *p)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch(__func__, p);
 }
 
 static int
 dag_stats_notimpl(pcap_t *p, struct pcap_stat *ps _U_)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch(__func__, p);
 }
 
 static int
 dag_setnonblock_notimpl(pcap_t *p, int nonblock _U_)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch( __func__, p);
 }
 
 static int
 dag_inject_notimpl(pcap_t *p, const void *buf _U_, int size _U_)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch(__func__, p);
 }
 
 static int
 dag_install_bpf_program_notimpl(pcap_t *p, struct bpf_program *fp _U_)
 {
-	return dag_rxtx_mismatch(p);
+	return dag_rxtx_mismatch(__func__, p);
 }
 
 /*
