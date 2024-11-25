@@ -54,7 +54,7 @@ which may also include D-Bus, USB etc.
 .I snaplen
 specifies the snapshot length to be set on the handle.  If the packet
 data should not be truncated at the end, a value of 262144 should be
-sufficient for most devices, but D-Bus devices require a value of 128MB
+sufficient for most devices, but D-Bus devices require a value of 128MiB
 (128*1024*1024).
 .PP
 .I promisc
