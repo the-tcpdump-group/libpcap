@@ -1736,7 +1736,7 @@ get_if_ioctl_socket(void)
 }
 
 /*
- * Get additional flags for a device, using SIOCGIFMEDIA.
+ * Get additional flags for a device, using SIOCETHTOOL.
  */
 static int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
