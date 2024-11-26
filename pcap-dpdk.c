@@ -1039,7 +1039,7 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 			// PCI addr
 			rte_eth_dev_get_name_by_port(i,pci_addr);
 			snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
-			if (pcapint_add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf)==NULL){
+			if (pcapint_add_dev(devlistp, dpdk_name, PCAP_IF_NO_INJECT, dpdk_desc, ebuf)==NULL){
 				ret = PCAP_ERROR;
 				break;
 			}

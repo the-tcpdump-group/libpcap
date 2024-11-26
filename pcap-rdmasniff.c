@@ -442,7 +442,9 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 * XXX - do the notions of "up", "running", or
 		 * "connected" apply here?
 		 */
-		if (!pcapint_add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
+		if (!pcapint_add_dev(devlistp, dev_list[i]->name,
+		    PCAP_IF_NO_INJECT,
+		    "RDMA sniffer", err_str)) {
 			ret = -1;
 			break;
 		}
