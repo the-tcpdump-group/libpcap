@@ -100,6 +100,7 @@
 
 #include "pcap-int.h"
 #include "pcap-util.h"
+#include "pcap-snf.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 #include "pcap/can_socketcan.h"
@@ -1743,7 +1744,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	int sock;
 	FILE *fh;
-	unsigned int arptype;
+	unsigned int arptype = ARPHRD_VOID;
 	struct ifreq ifr;
 	struct ethtool_value info;
 
@@ -1912,6 +1913,15 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 #endif
 
 	close(sock);
+
+#ifdef HAVE_SNF_API
+	// For "down" SNF devices the SNF API makes the flags more relevant.
+	if (arptype == ARPHRD_ETHER &&
+	    ! (*flags & PCAP_IF_UP) &&
+	    snf_get_if_flags(name, flags, errbuf) < 0)
+		return PCAP_ERROR;
+#endif // HAVE_SNF_API
+
 	return 0;
 }
 

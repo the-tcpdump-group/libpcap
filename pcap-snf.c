@@ -361,7 +361,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * Myricom SNF adapter ports may appear as regular
 		 * network interfaces, which would already have been
 		 * added to the list of adapters by pcapint_platform_finddevs()
-		 * if this isn't an SNF-only version of libpcap.
+		 * regardless of whether this build is SNF-only or not.
 		 *
 		 * Our create routine intercepts pcap_create() calls for
 		 * those interfaces and arranges that they will be
@@ -381,11 +381,6 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * Generate the description string.  If port aggregation
 		 * is set, use 2^{port number} as the unit number,
 		 * rather than {port number}.
-		 *
-		 * XXX - do entries in this list have IP addresses for
-		 * the port?  If so, should we add them to the
-		 * entry for the device, if they're not already in the
-		 * list of IP addresses for the device?
 		 */
 		(void)snprintf(desc, MAX_DESC_LENGTH,
 		    "Myricom %ssnf%u, Rx rings: %u, Tx handles: %u",
@@ -406,6 +401,14 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		if (dev != NULL) {
 			/*
 			 * Yes.  Update its description.
+			 *
+			 * This is the expected and the most likely result.
+			 * In this case the device's .flags already has the
+			 * PCAP_IF_UP and PCAP_IF_RUNNING bits mapped from the
+			 * regular network interface flags, as well as the
+			 * PCAP_IF_CONNECTION_STATUS bits mapped from the
+			 * current struct snf_ifaddrs; .addresses has already
+			 * been populated.
 			 */
 			char *desc_str;
 
@@ -418,15 +421,12 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			}
 			free(dev->description);
 			dev->description = desc_str;
-			/*
-			 * dev->flags already has PCAP_IF_UP, PCAP_IF_RUNNING
-			 * and PCAP_IF_CONNECTION_STATUS_* mapped from the OS
-			 * network interface flags.
-			 */
 		} else {
 			/*
 			 * No.  Add an entry for it.
 			 *
+			 * Possibly a race condition.  In this case the device
+			 * will still work, but will not have addresses, also
 			 * snf_ifaddrs includes the operational (i.e. link
 			 * detect), but not the administrative state of the
 			 * port.
@@ -498,42 +498,103 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	return 0;
 }
 
+/*
+ * If an SNF device exists for the given regular network interface name, copy
+ * its struct snf_ifaddrs to the provided pointer if the pointer is not NULL.
+ *
+ * Return:
+ * 0 if such SNF device does not exist
+ * 1 if such SNF device exists
+ * PCAP_ERROR on an SNF API error
+ */
+static int
+snf_device_exists(const char *device, struct snf_ifaddrs *out, char *errbuf)
+{
+	if (snf_init(SNF_VERSION_API)) {
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "snf_init");
+		return PCAP_ERROR;
+	}
+	struct snf_ifaddrs *ifaddrs;
+	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL) {
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "snf_getifaddrs");
+		return PCAP_ERROR;
+	}
+	int ret = 0;
+	for (struct snf_ifaddrs *ifa = ifaddrs; ifa; ifa = ifa->snf_ifa_next)
+		if (! strcmp(device, ifa->snf_ifa_name)) {
+			ret = 1;
+			if (out)
+				*out = *ifa;
+			break;
+		}
+	snf_freeifaddrs(ifaddrs);
+	return ret;
+}
+
+/*
+ * If an SNF device exists for the given regular network interface name,
+ * replace the PCAP_IF_CONNECTION_STATUS part of the provided flags with the
+ * link state from the SNF API.
+ *
+ * The matter is, for a regular network interface that is administratively
+ * down the operational (link) state appears -- at least on Linux -- down and
+ * an attempt to capture on the interface would fail with ENETDOWN.  The SNF
+ * API works differently: regardless of the administrative state it allows to
+ * use an SNF device and reports the same link state as the device's "link up"
+ * LED.
+ *
+ * Return:
+ * 0 if such SNF device does not exist
+ * 1 if such SNF device exists
+ * PCAP_ERROR on an SNF API error
+ */
+int
+snf_get_if_flags(const char *device, bpf_u_int32 *flags, char *errbuf)
+{
+	struct snf_ifaddrs ifa;
+	int exists = snf_device_exists(device, &ifa, errbuf);
+	if (exists <= 0)
+		return exists;
+
+	*flags &= ~PCAP_IF_CONNECTION_STATUS;
+	switch (ifa.snf_ifa_link_state) {
+	case SNF_LINK_UP:
+		*flags |= PCAP_IF_CONNECTION_STATUS_CONNECTED;
+		break;
+	case SNF_LINK_DOWN:
+		*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+		break;
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "invalid snf_ifa_link_state value %u",
+		    ifa.snf_ifa_link_state);
+		return PCAP_ERROR;
+	}
+	return 1;
+}
+
 pcap_t *
 snf_create(const char *device, char *ebuf, int *is_ours)
 {
 	pcap_t *p;
 	int boardnum = -1;
-	struct snf_ifaddrs *ifaddrs, *ifa;
-	size_t devlen;
+	struct snf_ifaddrs ifa;
 	struct pcap_snf *ps;
-
-	if (snf_init(SNF_VERSION_API)) {
-		/* Can't initialize the API, so no SNF devices */
-		*is_ours = 0;
-		return NULL;
-	}
 
 	/*
 	 * Match a given interface name to our list of interface names, from
 	 * which we can obtain the intended board number
 	 */
-	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL) {
-		/* Can't get SNF addresses */
+	int exists = snf_device_exists(device, &ifa, ebuf);
+	if (exists < 0) {
+		/* Can't use the API, so no SNF devices */
 		*is_ours = 0;
 		return NULL;
 	}
-	devlen = strlen(device) + 1;
-	ifa = ifaddrs;
-	while (ifa) {
-		if (strncmp(device, ifa->snf_ifa_name, devlen) == 0) {
-			boardnum = ifa->snf_ifa_boardnum;
-			break;
-		}
-		ifa = ifa->snf_ifa_next;
-	}
-	snf_freeifaddrs(ifaddrs);
 
-	if (ifa == NULL) {
+	if (! exists) {
 		/*
 		 * If we can't find the device by name, support the name "snfX"
 		 * and "snf10gX" where X is the board number.
@@ -582,10 +643,23 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 /*
  * There are no regular interfaces, just SNF interfaces.
  */
-int
-pcapint_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf _U_)
+static int
+can_be_bound(const char *name)
 {
-	return (0);
+	char dummy[PCAP_ERRBUF_SIZE];
+	return snf_device_exists(name, NULL, dummy) == 1;
+}
+
+/*
+ * Even though this is an SNF-only build, use the regular "findalldevs" code
+ * for device enumeration, but pick only network interfaces that correspond to
+ * SNF devices.  Use SNF-specific interpretation of device flags.
+ */
+int
+pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+{
+	return pcapint_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	    snf_get_if_flags);
 }
 
 /*

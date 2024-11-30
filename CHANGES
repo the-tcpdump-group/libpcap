@@ -95,6 +95,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix packet filtering with low snaplen.
       Require SNF_VERSION_API >= 0x0003.
       Improve device descriptions and flags.
+      Fill pcap_if_t in more consistently.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)

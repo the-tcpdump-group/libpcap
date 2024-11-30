@@ -1323,6 +1323,10 @@ pcapint_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 	/*
 	 * Add it to the list, in the appropriate location.
 	 * First, get the "figure of merit" for this interface.
+	 *
+	 * To have the list of devices ordered correctly, after adding a
+	 * device to the list the device flags value must not change (i.e. it
+	 * should be set correctly beforehand).
 	 */
 	this_figure_of_merit = get_figure_of_merit(curdev);
 
