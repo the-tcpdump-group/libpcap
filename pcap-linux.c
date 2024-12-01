@@ -103,6 +103,10 @@
   // Linux before 3.5
   #define ARPHRD_IEEE802154_MONITOR 805
 #endif
+#ifndef ARPHRD_IP6GRE
+  // Linux before 3.7
+  #define ARPHRD_IP6GRE 823
+#endif
 #ifndef ARPHRD_NETLINK
   // Linux before 3.11
   #define ARPHRD_NETLINK 824
@@ -1828,17 +1832,22 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				switch (arptype) {
 
 				case ARPHRD_LOOPBACK:
+				case ARPHRD_CAN:
+				case ARPHRD_TUNNEL:
+				case ARPHRD_TUNNEL6:
+				case ARPHRD_SIT:
+				case ARPHRD_IPGRE:
+				case ARPHRD_IP6GRE:
 					/*
 					 * These are types to which
 					 * "connected" and "disconnected"
 					 * don't apply, so don't bother
 					 * asking about it.
-					 *
-					 * XXX - add other types?
 					 */
 					close(sock);
 					fclose(fh);
 					free(pathstr);
+					*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 					return 0;
 
 				case ARPHRD_IRDA:
@@ -1886,13 +1895,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			/*
 			 * OK, this OS version or driver doesn't support
 			 * asking for this information.
-			 * XXX - distinguish between "this doesn't
-			 * support ethtool at all because it's not
-			 * that type of device" vs. "this doesn't
-			 * support ethtool even though it's that
-			 * type of device", and return "unknown".
 			 */
-			*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+			*flags |= PCAP_IF_CONNECTION_STATUS_UNKNOWN;
 			close(sock);
 			return 0;
 
