@@ -93,7 +93,36 @@
 #include <linux/ethtool.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
+
 #include <linux/if_arp.h>
+#ifndef ARPHRD_IEEE802154
+  // Linux before 2.6.31
+  #define ARPHRD_IEEE802154 804
+#endif
+#ifndef ARPHRD_IEEE802154_MONITOR
+  // Linux before 3.5
+  #define ARPHRD_IEEE802154_MONITOR 805
+#endif
+#ifndef ARPHRD_NETLINK
+  // Linux before 3.11
+  #define ARPHRD_NETLINK 824
+#endif
+#ifndef ARPHRD_6LOWPAN
+  // Linux before 3.14
+  #define ARPHRD_6LOWPAN 825
+#endif
+#ifndef ARPHRD_VSOCKMON
+  // Linux before 4.12
+  #define ARPHRD_VSOCKMON 826
+#endif
+#ifndef ARPHRD_LAPD
+  /*
+   * ARPHRD_LAPD is unofficial and randomly allocated, if reallocation
+   * is needed, please report it to <daniele@orlandi.com>
+   */
+  #define ARPHRD_LAPD 8445
+#endif
+
 #include <poll.h>
 #include <dirent.h>
 #include <sys/eventfd.h>
@@ -1816,15 +1845,9 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				case ARPHRD_IEEE80211:
 				case ARPHRD_IEEE80211_PRISM:
 				case ARPHRD_IEEE80211_RADIOTAP:
-#ifdef ARPHRD_IEEE802154
 				case ARPHRD_IEEE802154:
-#endif
-#ifdef ARPHRD_IEEE802154_MONITOR
 				case ARPHRD_IEEE802154_MONITOR:
-#endif
-#ifdef ARPHRD_6LOWPAN
 				case ARPHRD_6LOWPAN:
-#endif
 					/*
 					 * Various wireless types.
 					 */
@@ -2345,11 +2368,6 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		/* handlep->cooked = 1; */
 		break;
 
-	/* ARPHRD_LAPD is unofficial and randomly allocated, if reallocation
-	 * is needed, please report it to <daniele@orlandi.com> */
-#ifndef ARPHRD_LAPD
-#define ARPHRD_LAPD	8445
-#endif
 	case ARPHRD_LAPD:
 		/* Don't expect IP packet out of this interfaces... */
 		handle->linktype = DLT_LINUX_LAPD;
@@ -2363,16 +2381,10 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		handle->linktype = DLT_RAW;
 		break;
 
-#ifndef ARPHRD_IEEE802154
-#define ARPHRD_IEEE802154      804
-#endif
        case ARPHRD_IEEE802154:
                handle->linktype =  DLT_IEEE802_15_4_NOFCS;
                break;
 
-#ifndef ARPHRD_NETLINK
-#define ARPHRD_NETLINK	824
-#endif
 	case ARPHRD_NETLINK:
 		handle->linktype = DLT_NETLINK;
 		/*
@@ -2385,9 +2397,6 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		/* handlep->cooked = 1; */
 		break;
 
-#ifndef ARPHRD_VSOCKMON
-#define ARPHRD_VSOCKMON	826
-#endif
 	case ARPHRD_VSOCKMON:
 		handle->linktype = DLT_VSOCK;
 		break;
