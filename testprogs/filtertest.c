@@ -224,7 +224,6 @@ main(int argc, char **argv)
 	WSADATA wsaData;
 	if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData))
 		return 1;
-	atexit ((void(*)(void))WSACleanup);
 #endif /* _WIN32 */
 
 	dflag = 1;
@@ -358,6 +357,9 @@ main(int argc, char **argv)
 	free(cmdbuf);
 	pcap_freecode (&fcode);
 	pcap_close(pd);
+#ifdef _WIN32
+	WSACleanup();
+#endif
 	exit(0);
 }
 
