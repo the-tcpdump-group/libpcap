@@ -139,7 +139,11 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	}
 #endif /* __linux__ */
 	bzero(&ifr, sizeof(ifr));
-	strncpy(ifr.ifr_name, d->req.nr_name, sizeof(ifr.ifr_name));
+	/*
+	 * ifreq.ifr_name and nmreq.nr_name have the same size and both
+	 * contain a NUL-terminated string.
+	 */
+	(void)pcapint_strlcpy(ifr.ifr_name, d->req.nr_name, sizeof(ifr.ifr_name));
 	switch (what) {
 	case SIOCSIFFLAGS:
 		/*
