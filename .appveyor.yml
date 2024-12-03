@@ -27,18 +27,6 @@ environment:
   # For now, we disable the remote capture build there.
   #
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015"
-      SDK: WpdPack
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015 Win64"
-      SDK: WpdPack
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015"
-      SDK: npcap-sdk
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015 Win64"
-      SDK: npcap-sdk
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: WpdPack
@@ -71,6 +59,46 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: Win32
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: Win32
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: Win32
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: Win32
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: x64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
 
 build_script:
   #
