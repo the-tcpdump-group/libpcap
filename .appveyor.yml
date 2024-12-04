@@ -99,6 +99,11 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: ARM64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=NO
 
 build_script:
   #
