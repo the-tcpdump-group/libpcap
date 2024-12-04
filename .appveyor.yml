@@ -110,7 +110,7 @@ environment:
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
       REMOTE: -DENABLE_REMOTE=NO
-      # VS 2022, Npcap, 32-bit and 64-bit, with AirPcap, with remote
+      # VS 2022, Npcap, 32-bit and 64-bit x86, with AirPcap and remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
@@ -121,6 +121,13 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
+      # VS 2022, Npcap, 64-bit ARM, without AirPcap, without remote
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: ARM64
+      SDK: npcap-sdk
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+      REMOTE: -DENABLE_REMOTE=NO
 
 build_script:
   #
