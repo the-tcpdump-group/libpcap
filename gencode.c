@@ -725,7 +725,7 @@ gen_retblk(compiler_state_t *cstate, int v)
 		 */
 		return NULL;
 	}
-	return gen_retblk(cstate, v);
+	return gen_retblk_internal(cstate, v);
 }
 
 static inline PCAP_NORETURN_DEF void
