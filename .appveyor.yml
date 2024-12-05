@@ -46,9 +46,21 @@ environment:
       REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: Win32
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
       SDK: WpdPack
       REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: x64
+      SDK: WpdPack
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
@@ -56,9 +68,32 @@ environment:
       REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: Win32
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: x64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: ARM64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: ARM64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
@@ -69,6 +104,7 @@ environment:
       PLATFORM: Win32
       SDK: WpdPack
       REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
@@ -79,6 +115,7 @@ environment:
       PLATFORM: x64
       SDK: WpdPack
       REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
@@ -89,6 +126,7 @@ environment:
       PLATFORM: Win32
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
@@ -99,11 +137,18 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: ARM64
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=NO
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      GENERATOR: "Visual Studio 17 2022"
+      PLATFORM: ARM64
+      SDK: npcap-sdk
+      REMOTE: -DENABLE_REMOTE=YES
+      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
 
 build_script:
   #
@@ -114,6 +159,6 @@ build_script:
   - md build
   - cd build
   - cmake --version
-  - if NOT DEFINED PLATFORM cmake %REMOTE% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" ..
-  - if DEFINED PLATFORM cmake %REMOTE% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
+  - if NOT DEFINED PLATFORM cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" ..
+  - if DEFINED PLATFORM cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
   - msbuild /m /nologo /p:Configuration=Release pcap.sln
