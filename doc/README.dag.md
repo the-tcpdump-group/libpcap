@@ -128,7 +128,7 @@ number of the required interface before calling **pcap_activate**().  For
 example, `ERF_TX_INTERFACE=1` uses port B.
 
 This feature has been tested on DAG 7.5G2 and DAG 9.2X2, other models may or
-may not work.
+may not work.  It does not support vDAG devices.
 
 ## Other considerations
 

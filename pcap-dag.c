@@ -824,13 +824,20 @@ dag_activate_tx(pcap_t *p)
 	}
 	pd->tx_iface = (uint8_t)iface;
 
-	// Determine the correct alignment/padding size for the card.
 	const dag_card_inf_t *inf = dag_pciinfo(p->fd);
 	if (! inf) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_pciinfo");
 		return PCAP_ERROR;
 	}
+
+	if (inf->device_code == PCI_DEVICE_ID_VDAG) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "vDAG Tx streams are not supported");
+		return PCAP_ERROR;
+	}
+
+	// Determine the correct alignment/padding size for the card.
 	switch(inf->device_code) {
 	case PCI_DEVICE_ID_DAG9_2X2:
 	case PCI_DEVICE_ID_DAG9_2SX2:
@@ -841,11 +848,6 @@ dag_activate_tx(pcap_t *p)
 	}
 
 	// Read the TERF FCS size for later use by dag_inject().
-	if (inf->device_code == PCI_DEVICE_ID_VDAG) {
-		// vDAG does not have a notion of FCS.
-		pd->terf_fcs_bytes = 0;
-		return 0;
-	}
 	dag_component_t cfg_comp = dag_component_get_subcomponent(
 	    pd->dag_root, kComponentTerf, 0);
 	if (! cfg_comp) {
@@ -1461,7 +1463,8 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				if (bufsize < 0)
 					continue; // Does not exist.
 				// Only streams with buffer memory are usable.
-				if (bufsize > 0) {
+				if (bufsize > 0 &&
+				    (RX_ONLY(stream) || inf->device_code != PCI_DEVICE_ID_VDAG)) {
 					description = dag_device_description (c);
 					// a conditional shorthand device
 					if (stream == 0 &&
