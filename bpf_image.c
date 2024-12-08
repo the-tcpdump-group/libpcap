@@ -415,6 +415,10 @@ bpf_image(const struct bpf_insn *p, int n)
 		(void)snprintf(image, sizeof image,
 			      "(%03d) %-8s %-16s jt %d\tjf %d",
 			      n, op, operand, n + 1 + p->jt, n + 1 + p->jf);
+	} else if (! *operand) {
+		(void)snprintf(image, sizeof image,
+			      "(%03d) %-s",
+			      n, op);
 	} else {
 		(void)snprintf(image, sizeof image,
 			      "(%03d) %-8s %s",

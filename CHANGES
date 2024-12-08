@@ -40,6 +40,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Deprecate pcap_compile_nopcap().
       Add support for filtering packets encapsulated with VXLAN (pull
         request #1273).
+      Eliminate trailing space in bpf_image() result.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
