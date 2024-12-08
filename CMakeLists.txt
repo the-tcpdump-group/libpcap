@@ -652,11 +652,22 @@ endif(USE_STATIC_RT)
 # setting the target with th -A flag to CMake; that causes
 # CMAKE_GENERATOR_PLATFORM to be set to the target.  If
 # CMAKE_GENERATOR_PLATFORM is set, compare it with
-# CMAKE_HOST_SYSTEM_PROCESSOR and, if they're not equal, set
-# CMAKE_CROSSCOMPILING to TRUE.
+# CMAKE_HOST_SYSTEM_PROCESSOR and, if they're not equal or equivalent,
+# set CMAKE_CROSSCOMPILING to TRUE.
+#
+# "Equivalent" requires a special check for newer versions of the
+# Visual Studio generator, as, on x86-64, CMAKE_GENERATOR_PLATFORM
+# will be "x64" but CMAKE_HOST_SYSTEM_PROCESSOR will be "AMD64".
 #
 if (CMAKE_GENERATOR_PLATFORM AND
-    NOT CMAKE_GENERATOR_PLATFORM STREQUAL CMAKE_HOST_SYSTEM_PROCESSOR)
+    NOT (CMAKE_GENERATOR_PLATFORM STREQUAL CMAKE_HOST_SYSTEM_PROCESSOR OR
+         (CMAKE_GENERATOR_PLATFORM STREQUAL x64 AND
+          CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL AMD64)))
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
     set(CMAKE_CROSSCOMPILING TRUE)
 endif()
 
