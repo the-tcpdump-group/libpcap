@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "9 July 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "8 December 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -312,6 +312,13 @@ or
 Note that most of these example identifiers
 are also keywords and must be escaped via backslash (\\).
 Note that this primitive does not chase the protocol header chain.
+.IP "\fBcarp\fR, \fBvrrp\fR"
+Abbreviations for:
+.in +.5i
+.nf
+\fBip proto\fR 112
+.fi
+.in -.5i
 .IP "\fBicmp\fR"
 Abbreviation for:
 .in +.5i
@@ -319,12 +326,20 @@ Abbreviation for:
 \fBip proto\fR 1
 .fi
 .in -.5i
+.IP "\fBigmp\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip proto\fR 2
+.fi
+.in -.5i
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 (See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
 Note that the IPv6 variant of ICMP uses a different protocol number, named
 .B \%ipv6-icmp
-in AIX, FreeBSD, illumos, Linux, macOS, NetBSD, OpenBSD, Solaris and Windows.
+in AIX, FreeBSD, illumos, Haiku, GNU/Hurd, Linux, macOS, NetBSD, OpenBSD,
+Solaris and Windows.
 Note that this primitive does not chase the protocol header chain.
 .IP "\fBicmp6\fR"
 Abbreviation for:
@@ -1183,6 +1198,10 @@ icmp6[icmp6type] != icmp6-echo and icmp6[icmp6type] != icmp6-echoreply
 .fi
 .RE
 .SH BACKWARD COMPATIBILITY
+The
+.B carp
+keyword became available in libpcap 1.2.1.
+.PP
 The ICMPv6 type code names, as well as the
 .B tcp-ece
 and

@@ -37,8 +37,12 @@ COUNT=0
 export LIBPCAP_TAINTED
 export LIBPCAP_CMAKE_TAINTED
 if command -v valgrind >/dev/null 2>&1; then
-    VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1"
+    valgrind --version
+    VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1 --quiet"
     export VALGRIND_CMD
+    # With Valgrind filtertest takes significantly longer to complete.
+    FILTERTEST_TIMEOUT=5
+    export FILTERTEST_TIMEOUT
 fi
 
 run_after_echo git show --oneline -s | cat
