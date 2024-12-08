@@ -663,6 +663,11 @@ if (CMAKE_GENERATOR_PLATFORM AND
     NOT (CMAKE_GENERATOR_PLATFORM STREQUAL CMAKE_HOST_SYSTEM_PROCESSOR OR
          (CMAKE_GENERATOR_PLATFORM STREQUAL x64 AND
           CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL AMD64)))
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
     set(CMAKE_CROSSCOMPILING TRUE)
 endif()
 
