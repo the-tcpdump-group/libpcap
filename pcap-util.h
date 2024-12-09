@@ -21,6 +21,9 @@
  * pcap-util.h - common code for various files
  */
 
+#ifndef pcap_util_h
+#define pcap_util_h
+
 /*
  * We use the "receiver-makes-right" approach to byte order;
  * because time is at a premium when we are writing the file.
@@ -49,3 +52,5 @@
 
 extern void pcapint_post_process(int linktype, int swapped,
     struct pcap_pkthdr *hdr, u_char *data);
+
+#endif // pcap_util_h

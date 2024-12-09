@@ -47,6 +47,7 @@
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "diag-control.h"
+#include "pcap-util.h"
 
 #include "scanner.h"
 
@@ -2096,14 +2097,6 @@ gen_false(compiler_state_t *cstate)
 {
 	return gen_uncond(cstate, 0);
 }
-
-/*
- * Byte-swap a 32-bit number.
- * ("htonl()" or "ntohl()" won't work - we want to byte-swap even on
- * big-endian platforms.)
- */
-#define	SWAPLONG(y) \
-((((y)&0xff)<<24) | (((y)&0xff00)<<8) | (((y)&0xff0000)>>8) | (((y)>>24)&0xff))
 
 /*
  * Generate code to match a particular packet type.
