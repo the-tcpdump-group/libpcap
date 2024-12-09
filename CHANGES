@@ -79,6 +79,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a few device activation bugs.
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
+    Linux:
+      Refine connection status reporting.
     DAG:
       Always set PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE.
       In dag_findalldevs() handle known errors better.
