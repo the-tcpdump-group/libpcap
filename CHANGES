@@ -41,6 +41,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add support for filtering packets encapsulated with VXLAN (pull
         request #1273).
       Eliminate trailing space in bpf_image() result.
+      Fix DECnet packet filtering on big-endian hosts.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
