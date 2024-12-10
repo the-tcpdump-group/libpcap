@@ -471,7 +471,7 @@ int
 pcap_nametoproto(const char *str)
 {
 	struct protoent *p;
-  #if defined(HAVE_LINUX_GETNETBYNAME_R)
+  #if defined(HAVE_LINUX_GETPROTOBYNAME_R)
 	/*
 	 * We have Linux's reentrant getprotobyname_r().
 	 */
@@ -487,7 +487,7 @@ pcap_nametoproto(const char *str)
 		 */
 		return 0;
 	}
-  #elif defined(HAVE_SOLARIS_GETNETBYNAME_R)
+  #elif defined(HAVE_SOLARIS_GETPROTOBYNAME_R)
 	/*
 	 * We have Solaris's reentrant getprotobyname_r().
 	 */
@@ -495,7 +495,7 @@ pcap_nametoproto(const char *str)
 	char buf[1024];	/* arbitrary size */
 
 	p = getprotobyname_r(str, &result_buf, buf, (int)sizeof buf);
-  #elif defined(HAVE_AIX_GETNETBYNAME_R)
+  #elif defined(HAVE_AIX_GETPROTOBYNAME_R)
 	/*
 	 * We have AIX's reentrant getprotobyname_r().
 	 */
