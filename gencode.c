@@ -5043,32 +5043,51 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		abort();
 		/*NOTREACHED*/
 	}
+	/*
+	 * In a DECnet message inside an Ethernet frame the first two bytes
+	 * immediately after EtherType are the [litle-endian] DECnet message
+	 * length, which is irrelevant in this context.
+	 *
+	 * "pad = 1" means the third byte equals 0x81, thus it is the PLENGTH
+	 * 8-bit bitmap of the optional padding before the packet route header.
+	 * The bitmap always has bit 7 set to 1 and in this case has bits 0-6
+	 * (TOTAL-PAD-SEQUENCE-LENGTH) set to integer value 1.  The latter
+	 * means there aren't any PAD bytes after the bitmap, so the header
+	 * begins at the fourth byte.  "pad = 0" means bit 7 of the third byte
+	 * is set to 0, thus the header begins at the third byte.
+	 *
+	 * The header can be in several (as mentioned above) formats, all of
+	 * which begin with the FLAGS 8-bit bitmap, which always has bit 7
+	 * (PF, "pad field") set to 0 regardless of any padding present before
+	 * the header.  "Short header" means bits 0-2 of the bitmap encode the
+	 * integer value 2 (SFDP), and "long header" means value 6 (LFDP).
+	 *
+	 * For the DECnet address use SWAPSHORT(), which always swaps bytes,
+	 * because the wire encoding is little-endian and this function always
+	 * receives a big-endian address value.
+	 */
 	b0 = gen_linktype(cstate, ETHERTYPE_DN);
 	/* Check for pad = 1, long header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H,
-	    (bpf_u_int32)ntohs(0x0681), (bpf_u_int32)ntohs(0x07FF));
+	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
 	b1 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_lh,
-	    BPF_H, (bpf_u_int32)ntohs((u_short)addr));
+	    BPF_H, SWAPSHORT(addr));
 	gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, (bpf_u_int32)0x06,
-	    (bpf_u_int32)0x7);
+	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x06U, 0x07U);
 	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_lh, BPF_H,
-	    (bpf_u_int32)ntohs((u_short)addr));
+	    SWAPSHORT(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H,
-	    (bpf_u_int32)ntohs(0x0281), (bpf_u_int32)ntohs(0x07FF));
+	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
 	b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
-	    (bpf_u_int32)ntohs((u_short)addr));
+	    SWAPSHORT(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, (bpf_u_int32)0x02,
-	    (bpf_u_int32)0x7);
+	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
 	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
-	    (bpf_u_int32)ntohs((u_short)addr));
+	    SWAPSHORT(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
