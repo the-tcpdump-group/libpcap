@@ -29,15 +29,19 @@ environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
-      SDK: WpdPack
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      GENERATOR: "Visual Studio 15 2017 Win64"
+      PLATFORM: Win32
       SDK: WpdPack
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: x64
+      SDK: WpdPack
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: Win32
       SDK: npcap-sdk
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      GENERATOR: "Visual Studio 15 2017 Win64"
+      GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: x64
       SDK: npcap-sdk
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
@@ -159,6 +163,5 @@ build_script:
   - md build
   - cd build
   - cmake --version
-  - if NOT DEFINED PLATFORM cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" ..
-  - if DEFINED PLATFORM cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
+  - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
   - msbuild /m /nologo /p:Configuration=Release pcap.sln
