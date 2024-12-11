@@ -32,19 +32,23 @@ environment:
       # VS 2017, WinPcap, 32-bit and 64-bit x86, without AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: Win32
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      GENERATOR: "Visual Studio 15 2017 Win64"
+      GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: x64
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
       # VS 2017, Npcap, 32-bit and 64-bit x86, without AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: Win32
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      GENERATOR: "Visual Studio 15 2017 Win64"
+      GENERATOR: "Visual Studio 15 2017"
+      PLATFORM: x64
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
       # VS 2019, WinPcap, 32-bit and 64-bit x86, without AirPcap, without remote
@@ -153,7 +157,6 @@ build_script:
   # configuration stage
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - cmake --version
-  - if NOT DEFINED PLATFORM cmake %AIRPCAP% %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" ..
-  - if DEFINED PLATFORM cmake %AIRPCAP% %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
+  - cmake %AIRPCAP% %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
