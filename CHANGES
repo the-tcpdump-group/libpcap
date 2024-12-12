@@ -55,6 +55,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Cross-reference some man pages better.
       Actualize README.dag and make it Markdown.
       Add a README.snf.md file.
+      pcap-filter(7): Clarify Ethernet, IPv4 and IPv6.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.

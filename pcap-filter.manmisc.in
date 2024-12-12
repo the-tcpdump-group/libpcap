@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "9 July 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "12 December 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -178,7 +178,7 @@ True if the Ethernet destination address is \fIethernameaddr\fP.
 \fIethernameaddr\fP
 may be either a name from /etc/ethers or a numerical MAC address of the
 form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
-"xxxx.xxxx.xxxx", "xxxxxxxxxxxx", or various mixes of ':', '.', and '-',
+"xxxx.xxxx.xxxx" or "xxxxxxxxxxxx",
 where each "x" is a hex digit (0-9, a-f, or A-F).
 .IP "\fBether src \fIethernameaddr\fP"
 True if the Ethernet source address is \fIethernameaddr\fP.
@@ -291,18 +291,16 @@ True if the packet is an IPv4 packet (see
 .BR ip (4P))
 of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names recognized by
-.BR getprotobyname (3)
-(as in e.g. `\fBgetent\fR(1) protocols'), typically from an entry in
-.IR \%/etc/protocols ,
+.BR getprotobyname (3),
 for example:
 .BR ah ,
 .BR esp ,
 .B eigrp
-(only in Linux, FreeBSD, NetBSD, DragonFly BSD, and macOS),
+(only in Linux with glibc, FreeBSD, NetBSD, DragonFly BSD, and macOS),
 .BR icmp ,
 .BR igmp ,
 .B igrp
-(only in OpenBSD),
+(only in Haiku and OpenBSD),
 .BR pim ,
 .BR sctp ,
 .BR tcp ,
@@ -312,6 +310,29 @@ or
 Note that most of these example identifiers
 are also keywords and must be escaped via backslash (\\).
 Note that this primitive does not chase the protocol header chain.
+.IP
+Typically
+.BR getprotobyname (3)
+parses the
+.IR \%/etc/protocols
+file to translate protocol names to numbers, and the
+.B "getent protocols"
+command lists the protocols recognised by the function.  This is not entirely
+so in AIX (which does not have the command), Haiku (which has the file at
+.IR \%/system/data/network/protocols
+and does not have the command), on Linux with musl libc (which hard-codes the
+list of protocols) and on hosts that use a network database to resolve
+protocol names to numbers (see
+.BR nsswitch.conf (5)).
+If a protocol name fails to translate to a number, this version of libpcap
+will treat the filter expression as invalid.
+.IP "\fBcarp\fR, \fBvrrp\fR"
+Abbreviations for:
+.in +.5i
+.nf
+\fBip proto\fR 112
+.fi
+.in -.5i
 .IP "\fBicmp\fR"
 Abbreviation for:
 .in +.5i
@@ -319,12 +340,27 @@ Abbreviation for:
 \fBip proto\fR 1
 .fi
 .in -.5i
+.IP "\fBigmp\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip proto\fR 2
+.fi
+.in -.5i
+.IP "\fBigrp\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip proto\fR 9
+.fi
+.in -.5i
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 (See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
 Note that the IPv6 variant of ICMP uses a different protocol number, named
 .B \%ipv6-icmp
-in AIX, FreeBSD, illumos, Linux, macOS, NetBSD, OpenBSD, Solaris and Windows.
+in AIX, FreeBSD, illumos, Haiku, GNU/Hurd, Linux, macOS, NetBSD, OpenBSD,
+Solaris and Windows.
 Note that this primitive does not chase the protocol header chain.
 .IP "\fBicmp6\fR"
 Abbreviation for:
@@ -1183,6 +1219,10 @@ icmp6[icmp6type] != icmp6-echo and icmp6[icmp6type] != icmp6-echoreply
 .fi
 .RE
 .SH BACKWARD COMPATIBILITY
+The
+.B carp
+keyword became available in libpcap 1.2.1.
+.PP
 The ICMPv6 type code names, as well as the
 .B tcp-ece
 and
