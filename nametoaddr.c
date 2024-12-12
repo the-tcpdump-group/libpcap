@@ -500,7 +500,8 @@ pcap_nametoproto(const char *str)
 	 * We have AIX's reentrant getprotobyname_r().
 	 */
 	struct protoent result_buf;
-	struct protoent_data proto_data;
+	// "The structure must be zero-filled before it is used..." (OpenBSD).
+	struct protoent_data proto_data = {0};
 
 	if (getprotobyname_r(str, &result_buf, &proto_data) == -1)
 		p = NULL;
