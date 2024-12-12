@@ -1,0 +1,1093 @@
+#!/usr/bin/env perl
+
+# Usage:
+# <this file>               run all tests
+# <this file> <test label>  run only the test with the label (if any)
+#
+# Set FILTERTEST_TIMEOUT to override the default timeout.  Set to 0 to disable
+# the timeout completely.
+
+use integer;
+use strict;
+use warnings;
+use File::Basename qw(dirname);
+use File::Temp;
+
+my %valid_filters = (
+	empty => {
+		DLT => 'EN10MB',
+		expr => '',
+		unopt => <<~'EOF',
+			(000) ret      #262144
+			EOF
+	},
+	packet_length => {
+		DLT => 'RAW',
+		snaplen => 200,
+		expr => 'len >= 100 and len <= 200 and greater 100 and less 200',
+		opt => <<~'EOF',
+			(000) ld       #pktlen
+			(001) jge      #0x64            jt 2	jf 4
+			(002) jgt      #0xc8            jt 4	jf 3
+			(003) ret      #200
+			(004) ret      #0
+			EOF
+	}, # packet_length
+
+	link_aliases => {
+		DLT => 'EN10MB',
+		expr => <<~'EOF',
+			ether[0] == 0 or fddi[0] == 0 or link[0] == 0 or ppp[0] == 0 or
+			slip[0] == 0 or tr[0] == 0 or wlan[0] == 0
+			EOF
+		unopt => <<~'EOF',
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0x0
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) sub      x
+			(010) jeq      #0x0             jt 77	jf 11
+			(011) ld       #0x0
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ldb      [x + 0]
+			(015) st       M[3]
+			(016) ld       #0x0
+			(017) st       M[4]
+			(018) ldx      M[4]
+			(019) ld       M[3]
+			(020) sub      x
+			(021) jeq      #0x0             jt 77	jf 22
+			(022) ld       #0x0
+			(023) st       M[4]
+			(024) ldx      M[4]
+			(025) ldb      [x + 0]
+			(026) st       M[5]
+			(027) ld       #0x0
+			(028) st       M[6]
+			(029) ldx      M[6]
+			(030) ld       M[5]
+			(031) sub      x
+			(032) jeq      #0x0             jt 77	jf 33
+			(033) ld       #0x0
+			(034) st       M[6]
+			(035) ldx      M[6]
+			(036) ldb      [x + 0]
+			(037) st       M[7]
+			(038) ld       #0x0
+			(039) st       M[8]
+			(040) ldx      M[8]
+			(041) ld       M[7]
+			(042) sub      x
+			(043) jeq      #0x0             jt 77	jf 44
+			(044) ld       #0x0
+			(045) st       M[8]
+			(046) ldx      M[8]
+			(047) ldb      [x + 0]
+			(048) st       M[9]
+			(049) ld       #0x0
+			(050) st       M[10]
+			(051) ldx      M[10]
+			(052) ld       M[9]
+			(053) sub      x
+			(054) jeq      #0x0             jt 77	jf 55
+			(055) ld       #0x0
+			(056) st       M[10]
+			(057) ldx      M[10]
+			(058) ldb      [x + 0]
+			(059) st       M[11]
+			(060) ld       #0x0
+			(061) st       M[12]
+			(062) ldx      M[12]
+			(063) ld       M[11]
+			(064) sub      x
+			(065) jeq      #0x0             jt 77	jf 66
+			(066) ld       #0x0
+			(067) st       M[12]
+			(068) ldx      M[12]
+			(069) ldb      [x + 0]
+			(070) st       M[13]
+			(071) ld       #0x0
+			(072) st       M[14]
+			(073) ldx      M[14]
+			(074) ld       M[13]
+			(075) sub      x
+			(076) jeq      #0x0             jt 77	jf 78
+			(077) ret      #262144
+			(078) ret      #0
+			EOF
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # link_aliases
+	link_icmp => {
+		DLT => 'EN10MB',
+		snaplen => 16000,
+		expr => 'icmp[icmptype] != 0 or icmp[icmpcode] != 0',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [12]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [23]
+			(005) jeq      #0x1             jt 6	jf 22
+			(006) ldh      [20]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0x0
+			(009) st       M[0]
+			(010) ldxb     4*([14]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 14]
+			(015) st       M[1]
+			(016) ld       #0x0
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) sub      x
+			(021) jeq      #0x0             jt 22	jf 44
+			(022) ldh      [12]
+			(023) jeq      #0x800           jt 24	jf 45
+			(024) ldh      [12]
+			(025) jeq      #0x800           jt 26	jf 45
+			(026) ldb      [23]
+			(027) jeq      #0x1             jt 28	jf 45
+			(028) ldh      [20]
+			(029) jset     #0x1fff          jt 45	jf 30
+			(030) ld       #0x1
+			(031) st       M[2]
+			(032) ldxb     4*([14]&0xf)
+			(033) ld       M[2]
+			(034) add      x
+			(035) tax
+			(036) ldb      [x + 14]
+			(037) st       M[3]
+			(038) ld       #0x0
+			(039) st       M[4]
+			(040) ldx      M[4]
+			(041) ld       M[3]
+			(042) sub      x
+			(043) jeq      #0x0             jt 45	jf 44
+			(044) ret      #16000
+			(045) ret      #0
+			EOF
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 12
+			(002) ldb      [23]
+			(003) jeq      #0x1             jt 4	jf 12
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 12	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldb      [x + 14]
+			(008) jeq      #0x0             jt 9	jf 11
+			(009) ldb      [x + 15]
+			(010) jeq      #0x0             jt 12	jf 11
+			(011) ret      #16000
+			(012) ret      #0
+			EOF
+	}, # link_icmp
+	link_udp => {
+		DLT => 'RAW',
+		snaplen => 65535,
+		# The implementation is IPv4-only.
+		expr => 'udp[8:2] == 0xabcd',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 11
+			(003) ldb      [9]
+			(004) jeq      #0x11            jt 5	jf 11
+			(005) ldh      [6]
+			(006) jset     #0x1fff          jt 11	jf 7
+			(007) ldxb     4*([0]&0xf)
+			(008) ldh      [x + 8]
+			(009) jeq      #0xabcd          jt 10	jf 11
+			(010) ret      #65535
+			(011) ret      #0
+			EOF
+	}, # link_udp
+	link_tcp => {
+		DLT => 'RAW',
+		snaplen => 262144,
+		# The implementation is IPv4-only.
+		expr => 'tcp[tcpflags] == 0xFF',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 11
+			(003) ldb      [9]
+			(004) jeq      #0x6             jt 5	jf 11
+			(005) ldh      [6]
+			(006) jset     #0x1fff          jt 11	jf 7
+			(007) ldxb     4*([0]&0xf)
+			(008) ldb      [x + 13]
+			(009) jeq      #0xff            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			EOF
+	}, # link_tcp
+	sll2 => {
+		DLT => 'LINUX_SLL2',
+		snaplen => 65535,
+		expr => '(inbound && ifindex 7) || (outbound && ifindex 9)',
+		opt => <<~'EOF',
+			(000) ldb      [10]
+			(001) jeq      #0x4             jt 2	jf 4
+			(002) ld       [4]
+			(003) jeq      #0x9             jt 6	jf 7
+			(004) ld       [4]
+			(005) jeq      #0x7             jt 6	jf 7
+			(006) ret      #65535
+			(007) ret      #0
+			EOF
+	}, # sll2
+
+	ether_broadcast => {
+		DLT => 'EN10MB',
+		snaplen => 16000,
+		expr => 'broadcast || ether broadcast',
+		opt => <<~'EOF',
+			(000) ld       [2]
+			(001) jeq      #0xffffffff      jt 2	jf 5
+			(002) ldh      [0]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #16000
+			(005) ret      #0
+			EOF
+	}, # ether_broadcast
+	ether_multicast => {
+		DLT => 'EN10MB',
+		snaplen => 16000,
+		expr => 'multicast || ether multicast',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x1             jt 2	jf 3
+			(002) ret      #16000
+			(003) ret      #0
+			EOF
+	}, # ether_multicast
+	ether_host => {
+		DLT => 'EN10MB',
+		expr => <<~'EOF',
+			ether host ab:cd:ef:0:0:1 or
+			ether src host ab-cd-ef-00-00-02 or
+			ether src ab.cd.ef.00.00.02 or
+			ether dst host abcd.ef00.0003 or
+			ether dst abcdef000003
+			EOF
+		opt => <<~'EOF',
+			(000) ld       [8]
+			(001) jeq      #0xef000001      jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xabcd          jt 16	jf 4
+			(004) ld       [2]
+			(005) jeq      #0xef000001      jt 6	jf 8
+			(006) ldh      [0]
+			(007) jeq      #0xabcd          jt 16	jf 8
+			(008) ld       [8]
+			(009) jeq      #0xef000002      jt 10	jf 12
+			(010) ldh      [6]
+			(011) jeq      #0xabcd          jt 16	jf 12
+			(012) ld       [2]
+			(013) jeq      #0xef000003      jt 14	jf 17
+			(014) ldh      [0]
+			(015) jeq      #0xabcd          jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			EOF
+	}, # ether_host
+	ether_proto => {
+		DLT => 'EN10MB',
+		# The list does not include "ip6", which requires an IPv6-enabled build.
+		expr => <<~'EOF',
+			ether proto (
+				\aarp or \arp or \atalk or \decnet or \ip or \ipx or \iso or \lat or
+				loopback or \mopdl or \moprc or \netbeui or \rarp or \sca or \stp
+			)
+			EOF
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x80f3          jt 58	jf 2
+			(002) ldh      [12]
+			(003) jgt      #0x5dc           jt 8	jf 4
+			(004) ld       [18]
+			(005) jeq      #0x80f3          jt 6	jf 8
+			(006) ld       [14]
+			(007) jeq      #0xaaaa0300      jt 58	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 58	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x809b          jt 58	jf 12
+			(012) ldh      [12]
+			(013) jgt      #0x5dc           jt 18	jf 14
+			(014) ld       [18]
+			(015) jeq      #0x7809b         jt 16	jf 18
+			(016) ld       [14]
+			(017) jeq      #0xaaaa0308      jt 58	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x6003          jt 58	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x800           jt 58	jf 22
+			(022) ldh      [12]
+			(023) jeq      #0x8137          jt 58	jf 24
+			(024) ldh      [12]
+			(025) jgt      #0x5dc           jt 34	jf 26
+			(026) ld       [18]
+			(027) jeq      #0x8137          jt 28	jf 30
+			(028) ld       [14]
+			(029) jeq      #0xaaaa0300      jt 58	jf 30
+			(030) ldb      [14]
+			(031) jeq      #0xe0            jt 58	jf 32
+			(032) ldh      [14]
+			(033) jeq      #0xffff          jt 58	jf 34
+			(034) ldh      [12]
+			(035) jgt      #0x5dc           jt 38	jf 36
+			(036) ldh      [14]
+			(037) jeq      #0xfefe          jt 58	jf 38
+			(038) ldh      [12]
+			(039) jeq      #0x6004          jt 58	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x9000          jt 58	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x6001          jt 58	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x6002          jt 58	jf 46
+			(046) ldh      [12]
+			(047) jgt      #0x5dc           jt 50	jf 48
+			(048) ldh      [14]
+			(049) jeq      #0xf0f0          jt 58	jf 50
+			(050) ldh      [12]
+			(051) jeq      #0x8035          jt 58	jf 52
+			(052) ldh      [12]
+			(053) jeq      #0x6007          jt 58	jf 54
+			(054) ldh      [12]
+			(055) jgt      #0x5dc           jt 59	jf 56
+			(056) ldb      [14]
+			(057) jeq      #0x42            jt 58	jf 59
+			(058) ret      #262144
+			(059) ret      #0
+			EOF
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x80f3          jt 43	jf 2
+			(002) jgt      #0x5dc           jt 7	jf 3
+			(003) ld       [18]
+			(004) jeq      #0x80f3          jt 5	jf 7
+			(005) ld       [14]
+			(006) jeq      #0xaaaa0300      jt 43	jf 7
+			(007) ldh      [12]
+			(008) jeq      #0x806           jt 43	jf 9
+			(009) jeq      #0x809b          jt 43	jf 10
+			(010) jgt      #0x5dc           jt 15	jf 11
+			(011) ld       [18]
+			(012) jeq      #0x7809b         jt 13	jf 15
+			(013) ld       [14]
+			(014) jeq      #0xaaaa0308      jt 43	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x6003          jt 43	jf 17
+			(017) jeq      #0x800           jt 43	jf 18
+			(018) jeq      #0x8137          jt 43	jf 19
+			(019) jgt      #0x5dc           jt 29	jf 20
+			(020) ld       [18]
+			(021) jeq      #0x8137          jt 22	jf 24
+			(022) ld       [14]
+			(023) jeq      #0xaaaa0300      jt 43	jf 24
+			(024) ldb      [14]
+			(025) jeq      #0xe0            jt 43	jf 26
+			(026) ldh      [14]
+			(027) jeq      #0xffff          jt 43	jf 28
+			(028) jeq      #0xfefe          jt 43	jf 29
+			(029) ldh      [12]
+			(030) jeq      #0x6004          jt 43	jf 31
+			(031) jeq      #0x9000          jt 43	jf 32
+			(032) jeq      #0x6001          jt 43	jf 33
+			(033) jeq      #0x6002          jt 43	jf 34
+			(034) jgt      #0x5dc           jt 37	jf 35
+			(035) ldh      [14]
+			(036) jeq      #0xf0f0          jt 43	jf 37
+			(037) ldh      [12]
+			(038) jeq      #0x8035          jt 43	jf 39
+			(039) jeq      #0x6007          jt 43	jf 40
+			(040) jgt      #0x5dc           jt 44	jf 41
+			(041) ldb      [14]
+			(042) jeq      #0x42            jt 43	jf 44
+			(043) ret      #262144
+			(044) ret      #0
+			EOF
+	}, # ether_proto
+	ether_proto_abbrev => {
+		DLT => 'EN10MB',
+		# There is no abbreviation for "ether proto loopback".
+		expr => <<~'EOF',
+			aarp or arp or atalk or decnet or ip or ip6 or ipx or iso or
+			lat or mopdl or moprc or netbeui or rarp or sca or stp
+			EOF
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x80f3          jt 58	jf 2
+			(002) ldh      [12]
+			(003) jgt      #0x5dc           jt 8	jf 4
+			(004) ld       [18]
+			(005) jeq      #0x80f3          jt 6	jf 8
+			(006) ld       [14]
+			(007) jeq      #0xaaaa0300      jt 58	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 58	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x809b          jt 58	jf 12
+			(012) ldh      [12]
+			(013) jgt      #0x5dc           jt 18	jf 14
+			(014) ld       [18]
+			(015) jeq      #0x7809b         jt 16	jf 18
+			(016) ld       [14]
+			(017) jeq      #0xaaaa0308      jt 58	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x6003          jt 58	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x800           jt 58	jf 22
+			(022) ldh      [12]
+			(023) jeq      #0x86dd          jt 58	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x8137          jt 58	jf 26
+			(026) ldh      [12]
+			(027) jgt      #0x5dc           jt 36	jf 28
+			(028) ld       [18]
+			(029) jeq      #0x8137          jt 30	jf 32
+			(030) ld       [14]
+			(031) jeq      #0xaaaa0300      jt 58	jf 32
+			(032) ldb      [14]
+			(033) jeq      #0xe0            jt 58	jf 34
+			(034) ldh      [14]
+			(035) jeq      #0xffff          jt 58	jf 36
+			(036) ldh      [12]
+			(037) jgt      #0x5dc           jt 40	jf 38
+			(038) ldh      [14]
+			(039) jeq      #0xfefe          jt 58	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x6004          jt 58	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x6001          jt 58	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x6002          jt 58	jf 46
+			(046) ldh      [12]
+			(047) jgt      #0x5dc           jt 50	jf 48
+			(048) ldh      [14]
+			(049) jeq      #0xf0f0          jt 58	jf 50
+			(050) ldh      [12]
+			(051) jeq      #0x8035          jt 58	jf 52
+			(052) ldh      [12]
+			(053) jeq      #0x6007          jt 58	jf 54
+			(054) ldh      [12]
+			(055) jgt      #0x5dc           jt 59	jf 56
+			(056) ldb      [14]
+			(057) jeq      #0x42            jt 58	jf 59
+			(058) ret      #262144
+			(059) ret      #0
+			EOF
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x80f3          jt 43	jf 2
+			(002) jgt      #0x5dc           jt 7	jf 3
+			(003) ld       [18]
+			(004) jeq      #0x80f3          jt 5	jf 7
+			(005) ld       [14]
+			(006) jeq      #0xaaaa0300      jt 43	jf 7
+			(007) ldh      [12]
+			(008) jeq      #0x806           jt 43	jf 9
+			(009) jeq      #0x809b          jt 43	jf 10
+			(010) jgt      #0x5dc           jt 15	jf 11
+			(011) ld       [18]
+			(012) jeq      #0x7809b         jt 13	jf 15
+			(013) ld       [14]
+			(014) jeq      #0xaaaa0308      jt 43	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x6003          jt 43	jf 17
+			(017) jeq      #0x800           jt 43	jf 18
+			(018) jeq      #0x86dd          jt 43	jf 19
+			(019) jeq      #0x8137          jt 43	jf 20
+			(020) jgt      #0x5dc           jt 30	jf 21
+			(021) ld       [18]
+			(022) jeq      #0x8137          jt 23	jf 25
+			(023) ld       [14]
+			(024) jeq      #0xaaaa0300      jt 43	jf 25
+			(025) ldb      [14]
+			(026) jeq      #0xe0            jt 43	jf 27
+			(027) ldh      [14]
+			(028) jeq      #0xffff          jt 43	jf 29
+			(029) jeq      #0xfefe          jt 43	jf 30
+			(030) ldh      [12]
+			(031) jeq      #0x6004          jt 43	jf 32
+			(032) jeq      #0x6001          jt 43	jf 33
+			(033) jeq      #0x6002          jt 43	jf 34
+			(034) jgt      #0x5dc           jt 37	jf 35
+			(035) ldh      [14]
+			(036) jeq      #0xf0f0          jt 43	jf 37
+			(037) ldh      [12]
+			(038) jeq      #0x8035          jt 43	jf 39
+			(039) jeq      #0x6007          jt 43	jf 40
+			(040) jgt      #0x5dc           jt 44	jf 41
+			(041) ldb      [14]
+			(042) jeq      #0x42            jt 43	jf 44
+			(043) ret      #262144
+			(044) ret      #0
+			EOF
+	}, # ether_proto_abbrev
+
+	decnet => {
+		DLT => 'EN10MB',
+		expr => <<~'EOF',
+			decnet src 0.0 or 0.1023 or
+			decnet dst 63.0 or 63.1023 or
+			decnet host 50.764
+			EOF
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x6003          jt 2	jf 22
+			(002) ldb      [16]
+			(003) and      #0x7
+			(004) jeq      #0x2             jt 5	jf 7
+			(005) ldh      [19]
+			(006) jeq      #0x0             jt 132	jf 7
+			(007) ldh      [16]
+			(008) and      #0xff07
+			(009) jeq      #0x8102          jt 10	jf 12
+			(010) ldh      [20]
+			(011) jeq      #0x0             jt 132	jf 12
+			(012) ldb      [16]
+			(013) and      #0x7
+			(014) jeq      #0x6             jt 15	jf 17
+			(015) ldh      [31]
+			(016) jeq      #0x0             jt 132	jf 17
+			(017) ldh      [16]
+			(018) and      #0xff07
+			(019) jeq      #0x8106          jt 20	jf 22
+			(020) ldh      [32]
+			(021) jeq      #0x0             jt 132	jf 22
+			(022) ldh      [12]
+			(023) jeq      #0x6003          jt 24	jf 44
+			(024) ldb      [16]
+			(025) and      #0x7
+			(026) jeq      #0x2             jt 27	jf 29
+			(027) ldh      [19]
+			(028) jeq      #0xff03          jt 132	jf 29
+			(029) ldh      [16]
+			(030) and      #0xff07
+			(031) jeq      #0x8102          jt 32	jf 34
+			(032) ldh      [20]
+			(033) jeq      #0xff03          jt 132	jf 34
+			(034) ldb      [16]
+			(035) and      #0x7
+			(036) jeq      #0x6             jt 37	jf 39
+			(037) ldh      [31]
+			(038) jeq      #0xff03          jt 132	jf 39
+			(039) ldh      [16]
+			(040) and      #0xff07
+			(041) jeq      #0x8106          jt 42	jf 44
+			(042) ldh      [32]
+			(043) jeq      #0xff03          jt 132	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x6003          jt 46	jf 66
+			(046) ldb      [16]
+			(047) and      #0x7
+			(048) jeq      #0x2             jt 49	jf 51
+			(049) ldh      [17]
+			(050) jeq      #0xfc            jt 132	jf 51
+			(051) ldh      [16]
+			(052) and      #0xff07
+			(053) jeq      #0x8102          jt 54	jf 56
+			(054) ldh      [18]
+			(055) jeq      #0xfc            jt 132	jf 56
+			(056) ldb      [16]
+			(057) and      #0x7
+			(058) jeq      #0x6             jt 59	jf 61
+			(059) ldh      [23]
+			(060) jeq      #0xfc            jt 132	jf 61
+			(061) ldh      [16]
+			(062) and      #0xff07
+			(063) jeq      #0x8106          jt 64	jf 66
+			(064) ldh      [24]
+			(065) jeq      #0xfc            jt 132	jf 66
+			(066) ldh      [12]
+			(067) jeq      #0x6003          jt 68	jf 88
+			(068) ldb      [16]
+			(069) and      #0x7
+			(070) jeq      #0x2             jt 71	jf 73
+			(071) ldh      [17]
+			(072) jeq      #0xffff          jt 132	jf 73
+			(073) ldh      [16]
+			(074) and      #0xff07
+			(075) jeq      #0x8102          jt 76	jf 78
+			(076) ldh      [18]
+			(077) jeq      #0xffff          jt 132	jf 78
+			(078) ldb      [16]
+			(079) and      #0x7
+			(080) jeq      #0x6             jt 81	jf 83
+			(081) ldh      [23]
+			(082) jeq      #0xffff          jt 132	jf 83
+			(083) ldh      [16]
+			(084) and      #0xff07
+			(085) jeq      #0x8106          jt 86	jf 88
+			(086) ldh      [24]
+			(087) jeq      #0xffff          jt 132	jf 88
+			(088) ldh      [12]
+			(089) jeq      #0x6003          jt 90	jf 110
+			(090) ldb      [16]
+			(091) and      #0x7
+			(092) jeq      #0x2             jt 93	jf 95
+			(093) ldh      [19]
+			(094) jeq      #0xfcca          jt 132	jf 95
+			(095) ldh      [16]
+			(096) and      #0xff07
+			(097) jeq      #0x8102          jt 98	jf 100
+			(098) ldh      [20]
+			(099) jeq      #0xfcca          jt 132	jf 100
+			(100) ldb      [16]
+			(101) and      #0x7
+			(102) jeq      #0x6             jt 103	jf 105
+			(103) ldh      [31]
+			(104) jeq      #0xfcca          jt 132	jf 105
+			(105) ldh      [16]
+			(106) and      #0xff07
+			(107) jeq      #0x8106          jt 108	jf 110
+			(108) ldh      [32]
+			(109) jeq      #0xfcca          jt 132	jf 110
+			(110) ldh      [12]
+			(111) jeq      #0x6003          jt 112	jf 133
+			(112) ldb      [16]
+			(113) and      #0x7
+			(114) jeq      #0x2             jt 115	jf 117
+			(115) ldh      [17]
+			(116) jeq      #0xfcca          jt 132	jf 117
+			(117) ldh      [16]
+			(118) and      #0xff07
+			(119) jeq      #0x8102          jt 120	jf 122
+			(120) ldh      [18]
+			(121) jeq      #0xfcca          jt 132	jf 122
+			(122) ldb      [16]
+			(123) and      #0x7
+			(124) jeq      #0x6             jt 125	jf 127
+			(125) ldh      [23]
+			(126) jeq      #0xfcca          jt 132	jf 127
+			(127) ldh      [16]
+			(128) and      #0xff07
+			(129) jeq      #0x8106          jt 130	jf 133
+			(130) ldh      [24]
+			(131) jeq      #0xfcca          jt 132	jf 133
+			(132) ret      #262144
+			(133) ret      #0
+			EOF
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x6003          jt 2	jf 123
+			(002) ldb      [16]
+			(003) and      #0x7
+			(004) jeq      #0x2             jt 5	jf 7
+			(005) ldh      [19]
+			(006) jeq      #0x0             jt 122	jf 7
+			(007) ldh      [16]
+			(008) and      #0xff07
+			(009) jeq      #0x8102          jt 10	jf 12
+			(010) ldh      [20]
+			(011) jeq      #0x0             jt 122	jf 12
+			(012) ldb      [16]
+			(013) and      #0x7
+			(014) jeq      #0x6             jt 15	jf 17
+			(015) ldh      [31]
+			(016) jeq      #0x0             jt 122	jf 17
+			(017) ldh      [16]
+			(018) and      #0xff07
+			(019) jeq      #0x8106          jt 20	jf 22
+			(020) ldh      [32]
+			(021) jeq      #0x0             jt 122	jf 22
+			(022) ldb      [16]
+			(023) and      #0x7
+			(024) jeq      #0x2             jt 25	jf 27
+			(025) ldh      [19]
+			(026) jeq      #0xff03          jt 122	jf 27
+			(027) ldh      [16]
+			(028) and      #0xff07
+			(029) jeq      #0x8102          jt 30	jf 32
+			(030) ldh      [20]
+			(031) jeq      #0xff03          jt 122	jf 32
+			(032) ldb      [16]
+			(033) and      #0x7
+			(034) jeq      #0x6             jt 35	jf 37
+			(035) ldh      [31]
+			(036) jeq      #0xff03          jt 122	jf 37
+			(037) ldh      [16]
+			(038) and      #0xff07
+			(039) jeq      #0x8106          jt 40	jf 42
+			(040) ldh      [32]
+			(041) jeq      #0xff03          jt 122	jf 42
+			(042) ldb      [16]
+			(043) and      #0x7
+			(044) jeq      #0x2             jt 45	jf 47
+			(045) ldh      [17]
+			(046) jeq      #0xfc            jt 122	jf 47
+			(047) ldh      [16]
+			(048) and      #0xff07
+			(049) jeq      #0x8102          jt 50	jf 52
+			(050) ldh      [18]
+			(051) jeq      #0xfc            jt 122	jf 52
+			(052) ldb      [16]
+			(053) and      #0x7
+			(054) jeq      #0x6             jt 55	jf 57
+			(055) ldh      [23]
+			(056) jeq      #0xfc            jt 122	jf 57
+			(057) ldh      [16]
+			(058) and      #0xff07
+			(059) jeq      #0x8106          jt 60	jf 62
+			(060) ldh      [24]
+			(061) jeq      #0xfc            jt 122	jf 62
+			(062) ldb      [16]
+			(063) and      #0x7
+			(064) jeq      #0x2             jt 65	jf 67
+			(065) ldh      [17]
+			(066) jeq      #0xffff          jt 122	jf 67
+			(067) ldh      [16]
+			(068) and      #0xff07
+			(069) jeq      #0x8102          jt 70	jf 72
+			(070) ldh      [18]
+			(071) jeq      #0xffff          jt 122	jf 72
+			(072) ldb      [16]
+			(073) and      #0x7
+			(074) jeq      #0x6             jt 75	jf 77
+			(075) ldh      [23]
+			(076) jeq      #0xffff          jt 122	jf 77
+			(077) ldh      [16]
+			(078) and      #0xff07
+			(079) jeq      #0x8106          jt 80	jf 82
+			(080) ldh      [24]
+			(081) jeq      #0xffff          jt 122	jf 82
+			(082) ldb      [16]
+			(083) and      #0x7
+			(084) jeq      #0x2             jt 85	jf 87
+			(085) ldh      [19]
+			(086) jeq      #0xfcca          jt 122	jf 87
+			(087) ldh      [16]
+			(088) and      #0xff07
+			(089) jeq      #0x8102          jt 90	jf 92
+			(090) ldh      [20]
+			(091) jeq      #0xfcca          jt 122	jf 92
+			(092) ldb      [16]
+			(093) and      #0x7
+			(094) jeq      #0x6             jt 95	jf 97
+			(095) ldh      [31]
+			(096) jeq      #0xfcca          jt 122	jf 97
+			(097) ldh      [16]
+			(098) and      #0xff07
+			(099) jeq      #0x8106          jt 100	jf 102
+			(100) ldh      [32]
+			(101) jeq      #0xfcca          jt 122	jf 102
+			(102) ldb      [16]
+			(103) and      #0x7
+			(104) jeq      #0x2             jt 105	jf 107
+			(105) ldh      [17]
+			(106) jeq      #0xfcca          jt 122	jf 107
+			(107) ldh      [16]
+			(108) and      #0xff07
+			(109) jeq      #0x8102          jt 110	jf 112
+			(110) ldh      [18]
+			(111) jeq      #0xfcca          jt 122	jf 112
+			(112) ldb      [16]
+			(113) and      #0x7
+			(114) jeq      #0x6             jt 115	jf 117
+			(115) ldh      [23]
+			(116) jeq      #0xfcca          jt 122	jf 117
+			(117) ldh      [16]
+			(118) and      #0xff07
+			(119) jeq      #0x8106          jt 120	jf 123
+			(120) ldh      [24]
+			(121) jeq      #0xfcca          jt 122	jf 123
+			(122) ret      #262144
+			(123) ret      #0
+			EOF
+	}, # decnet
+
+	proto => {
+		DLT => 'EN10MB',
+		# This list uses the part of /etc/protocols (or an equivalent
+		# thereof) that seems to be common to all supported OSes.
+		expr => <<~'EOF',
+			proto (\ah or \esp or \icmp or \igmp or
+			\pim or \tcp or \udp)
+			EOF
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ldb      [23]
+			(003) jeq      #0x33            jt 16	jf 10
+			(004) jeq      #0x86dd          jt 5	jf 17
+			(005) ldb      [20]
+			(006) jeq      #0x33            jt 16	jf 7
+			(007) jeq      #0x2c            jt 8	jf 10
+			(008) ldb      [54]
+			(009) jeq      #0x33            jt 16	jf 10
+			(010) jeq      #0x32            jt 16	jf 11
+			(011) jeq      #0x1             jt 16	jf 12
+			(012) jeq      #0x2             jt 16	jf 13
+			(013) jeq      #0x67            jt 16	jf 14
+			(014) jeq      #0x6             jt 16	jf 15
+			(015) jeq      #0x11            jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			EOF
+	}, # ip_proto
+	ip_proto_abbrev => {
+		DLT => 'EN10MB',
+		# This list uses libpcap filter keywords.
+		expr => 'carp or icmp or igmp or vrrp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 7
+			(002) ldb      [23]
+			(003) jeq      #0x70            jt 6	jf 4
+			(004) jeq      #0x1             jt 6	jf 5
+			(005) jeq      #0x2             jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # ip_proto_abbrev
+	proto_abbrev => {
+		DLT => 'RAW',
+		# This list uses libpcap filter keywords.
+		expr => 'ah or esp or pim or sctp or tcp or udp',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 5
+			(003) ldb      [9]
+			(004) jeq      #0x33            jt 18	jf 13
+			(005) ldb      [0]
+			(006) and      #0xf0
+			(007) jeq      #0x60            jt 8	jf 19
+			(008) ldb      [6]
+			(009) jeq      #0x33            jt 18	jf 10
+			(010) jeq      #0x2c            jt 11	jf 13
+			(011) ldb      [40]
+			(012) jeq      #0x33            jt 18	jf 13
+			(013) jeq      #0x32            jt 18	jf 14
+			(014) jeq      #0x67            jt 18	jf 15
+			(015) jeq      #0x84            jt 18	jf 16
+			(016) jeq      #0x6             jt 18	jf 17
+			(017) jeq      #0x11            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # proto_abbrev
+
+	icmp_types => {
+		'DLT' => 'EN10MB',
+		expr => <<~'EOF',
+			0 == icmp-echoreply &&
+			3 == icmp-unreach &&
+			4 == icmp-sourcequench &&
+			5 == icmp-redirect &&
+			8 == icmp-echo &&
+			9 == icmp-routeradvert &&
+			10 == icmp-routersolicit &&
+			11 == icmp-timxceed &&
+			12 == icmp-paramprob &&
+			13 == icmp-tstamp &&
+			14 == icmp-tstampreply &&
+			15 == icmp-ireq &&
+			16 == icmp-ireqreply &&
+			17 == icmp-maskreq &&
+			18 == icmp-maskreply
+			EOF
+		opt => <<~'EOF',
+			(000) ret      #262144
+			EOF
+	}, # icmp_types
+
+	tcp_flags => {
+		'DLT' => 'EN10MB',
+		expr => <<~'EOF',
+			0x01 == tcp-fin &&
+			0x02 == tcp-syn &&
+			0x04 == tcp-rst &&
+			0x08 == tcp-push &&
+			0x10 == tcp-ack &&
+			0x20 == tcp-urg &&
+			0x40 == tcp-ece &&
+			0x80 == tcp-cwr
+			EOF
+		opt => <<~'EOF',
+			(000) ret      #262144
+			EOF
+	}, # tcp_flags
+);
+
+my %invalid_filters = (
+	ether_host => {
+		DLT => 'EN10MB',
+		expr => 'ether ab:cd:ef:0g:00:00',
+	},
+	wlan_type => {
+		DLT => 'EN10MB',
+		expr => 'type data',
+	},
+	decnet_area => {
+		DLT => 'EN10MB',
+		expr => 'decnet host 64.120',
+	},
+	decnet_node => {
+		DLT => 'EN10MB',
+		expr => 'decnet host 17.1024',
+	},
+	ip_host => {
+		DLT => 'RAW',
+		expr => 'ip host 256.256.256.256',
+	},
+	udp_port => {
+		DLT => 'IPV4',
+		expr => 'udp port 70000',
+	},
+);
+
+# On all platforms where timeout(1) is available it exits with status 124
+# if the command timed out.
+use constant TIMED_OUT => 124;
+my $tmpdir = File::Temp->newdir(); # Unlinks automatically.
+my $filename_expected = $tmpdir . '/expected.txt';
+my $filename_stdout = $tmpdir . '/stdout.txt';
+my $filename_filter = $tmpdir . '/filter.txt';
+my $skippedcount = 0;
+my $failedcount = 0;
+my $passedcount = 0;
+my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
+	$^O eq 'hpux' ? '-c' :
+	'-u';
+# Every test in this file uses an expression that under normal conditions takes
+# well under one second to process, so if a filtertest invocation is taking
+# longer, it is likely a regression.
+my $test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
+	$ENV{FILTERTEST_TIMEOUT} : 1;
+my $timeout_bin = defined $ENV{TIMEOUT_BIN} ? $ENV{TIMEOUT_BIN} :
+	'timeout';
+my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
+	dirname ($0) . '/filtertest';
+my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
+
+# This is a simpler version of the PHP function.
+sub file_put_contents {
+	my ($filename, $contents) = @_;
+	open (my $fh, '>', $filename) || die "failed opening '$filename'";
+	print $fh $contents;
+	close ($fh) || die "failed closing '$filename'";
+}
+
+# This is the same format as in tcpdump/tests/TESTrun.
+sub print_result {
+	printf "    %-40s: %s\n", @_;
+}
+
+# In this libpcap version a working filtertest, if invoked without arguments,
+# prints to stderr and exits with status 1.
+my $r = system ("$filtertest >/dev/null 2>&1") >> 8;
+if ($r != 1) {
+	# Make it easier to see what the problem is.
+	system $filtertest;
+	print "Error: $filtertest is not usable\n";
+	exit 2;
+}
+
+# Sort the keys, otherwise the order will be random and outputs of two
+# invocations will be difficult to compare.
+foreach my $testname (sort keys %valid_filters) {
+	my $test = $valid_filters{$testname};
+	if (! defined $test->{unopt} && ! defined $test->{opt}) {
+		die "Internal error: test '$testname' has no expected outputs";
+	}
+	foreach ('unopt', 'opt') {
+		defined $test->{$_} || next;
+		my $label = "valid_${testname}_${_}";
+		defined $only_one && $only_one ne $label && next;
+		# BSD timeout(1) does not implement --verbose.
+		my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
+		push @args, $filtertest;
+		defined $test->{snaplen} && push @args, ('-s', $test->{snaplen});
+		$_ eq 'unopt' && push @args, '-O';
+		# Write the filter expression to a file because the version of
+		# system() that takes a list does not support redirecting stdout,
+		# and the version of system() that takes a string does not escape
+		# special characters in the filter expression, which becomes
+		# invalid shell syntax.
+		file_put_contents $filename_filter, $test->{expr};
+		push @args, (
+			'-F',
+			$filename_filter,
+			$test->{DLT},
+			">$filename_stdout",
+		);
+		$r = system (join ' ', @args) >> 8;
+		if ($r == TIMED_OUT) {
+			$failedcount++;
+			print_result $label, 'failed (filtertest timeout)';
+			next;
+		}
+		if ($r) {
+			$failedcount++;
+			print_result $label, 'failed (filtertest error)';
+			next;
+		}
+		file_put_contents $filename_expected, $test->{$_};
+		if (system "diff $diff_flags $filename_expected $filename_stdout 2>&1") {
+			$failedcount++;
+			print_result $label, 'failed (diff error)';
+			next;
+		}
+		$passedcount++;
+		print_result $label, 'passed';
+	}
+}
+
+foreach my $testname (sort keys %invalid_filters) {
+	my $label = "invalid_${testname}";
+	defined $only_one && $only_one ne $label && next;
+	my $test = $invalid_filters{$testname};
+	my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
+	push @args, $filtertest;
+	file_put_contents $filename_filter, $test->{expr};
+	push @args, (
+		'-F',
+		$filename_filter,
+		$test->{DLT},
+		'2>/dev/null',
+	);
+	$r = system (join ' ', @args) >> 8;
+	if ($r == 0) {
+		$failedcount++;
+		print_result $label, 'failed (no filtertest error)';
+		next;
+	}
+	if ($r == TIMED_OUT) {
+		$failedcount++;
+		print_result $label, 'failed (filtertest timeout)';
+		next;
+	}
+	if ($r != 1) {
+		$failedcount++;
+		print_result $label, "failed (filtertest status $r)";
+		next;
+	}
+	$passedcount++;
+	print_result $label, 'passed';
+}
+
+print "------------------------------------------------\n";
+printf "%4u tests skipped\n", $skippedcount;
+printf "%4u tests failed\n", $failedcount;
+printf "%4u tests passed\n", $passedcount;
+
+$failedcount eq 0 || exit 1

@@ -763,6 +763,9 @@ distclean: clean
 	(cd rpcapd; $(MAKE) distclean)
 	(cd testprogs; $(MAKE) distclean)
 
+check: testprogs
+	$(srcdir)/testprogs/TESTrun
+
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
 

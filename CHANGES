@@ -77,6 +77,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       autogen.sh: Delete all trailing blank lines at end of configure.
       Autoconf: Add support for libnl-tiny with pkg-config.
       Autoconf: Fix building of something-only libpcap.
+      CI: Implement "make check".
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
