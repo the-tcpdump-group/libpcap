@@ -11,7 +11,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Merge four header files into gencode.c.
       Remove DAG card support on Windows as Linux is the only
         platform currently supported.
-      Fix "tcpdump -i <n>" for something-only libpcap builds.
       Remove code related to Riverbed TurboCap card.
         Riverbed TurboCap hardware has reached EOA as of Jun 30 2014.
       Remove dead code that supported Septel devices.
@@ -105,6 +104,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.6 libpcap release (so far!)
+    Source code:
+      Fix "tcpdump -i <n>" for something-only libpcap builds.
+      Remove some unneeded includes.
+    Packet filtering:
+      Make the chunk allocator's alignment more general and
+        platform-independent.
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
@@ -119,6 +124,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in: Include instrument-functions.c in the release tarball.
       CMake: Fix libnl usage with pkg-config.
       CMake: Fix build with CMake 3.31.
+      CI: Report CMake version in builds.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
