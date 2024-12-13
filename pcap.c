@@ -4222,10 +4222,23 @@ pcapint_load_code(const char *name)
 	return hModule;
 }
 
-pcap_funcptr_t
+/*
+ * Casting from FARPROC, which is the type of the return value of
+ * GetProcAddress(), to a function pointer gets a C4191 warning
+ * from Visual Studio 2022.
+ *
+ * Casting FARPROC to void * and returning the result, and then
+ * casting the void * to a function pointer, doesn't get the
+ * same warning.
+ *
+ * Given that, and given that the equivalent UN*X API, dlsym(),
+ * returns a void *, we have pcapint_find_function() return
+ * a void *.
+ */
+void *
 pcapint_find_function(pcap_code_handle_t code, const char *func)
 {
-	return (GetProcAddress(code, func));
+	return ((void *)GetProcAddress(code, func));
 }
 #endif
 

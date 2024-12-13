@@ -536,10 +536,9 @@ FILE	*pcapint_charset_fopen(const char *path, const char *mode);
  */
 #ifdef _WIN32
 #define pcap_code_handle_t	HMODULE
-#define pcap_funcptr_t		FARPROC
 
 pcap_code_handle_t	pcapint_load_code(const char *);
-pcap_funcptr_t		pcapint_find_function(pcap_code_handle_t, const char *);
+void			*pcapint_find_function(pcap_code_handle_t, const char *);
 #endif
 
 /*
