@@ -29,22 +29,31 @@ environment:
   # For now, we disable the remote capture build there.
   #
   matrix:
+      # MinGW
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "MinGW Makefiles"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
       MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
+      # VS 2015, WinPcap, 32-bit and 64-bit, no AirPcap, no remote
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GENERATOR: "Visual Studio 14 2015"
+      SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      # VS 2015, Npcap, 32-bit and 64-bit, no AirPcap, no remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
       SDK: npcap-sdk
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      # VS 2017, WinPcap, 32-bit and 64-bit, no AirPcap, no remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: WpdPack
@@ -53,6 +62,7 @@ environment:
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      # VS 2017, Npcap, 32-bit and 64-bit, no AirPcap, no remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: npcap-sdk
@@ -61,9 +71,7 @@ environment:
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      GENERATOR: "Visual Studio 15 2017 Win64"
-      SDK: npcap-sdk
+      # VS 2019, WinPcap, 32-bit and 64-bit, no AirPcap, no remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
@@ -74,21 +82,23 @@ environment:
       PLATFORM: x64
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      # VS 2019, Npcap, 32-bit and 64-bit, no AirPcap, no remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      GENERATOR: "Visual Studio 16 2019"
+      PLATFORM: x64
+      SDK: npcap-sdk
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+      # VS 2019, Npcap, 32-bit and 64-bit, AirPcap and remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=YES
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      GENERATOR: "Visual Studio 16 2019"
-      PLATFORM: x64
-      SDK: npcap-sdk
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
