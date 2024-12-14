@@ -29,6 +29,7 @@ environment:
   # For now, we disable the remote capture build there.
   #
   matrix:
+      # VS 2017, WinPcap, 32-bit and 64-bit, without AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: WpdPack
@@ -37,7 +38,7 @@ environment:
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2017, Npcap, 32-bit and 64-bit, no AirPcap, no remote
+      # VS 2017, Npcap, 32-bit and 64-bit, without AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: npcap-sdk
@@ -46,74 +47,79 @@ environment:
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2019, WinPcap, 32-bit and 64-bit, no AirPcap, no remote
+      # VS 2019, WinPcap, 32-bit and 64-bit, without AirPcap, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2019, Npcap, 32-bit and 64-bit, no AirPcap, no remote
+      REMOTE: -DENABLE_REMOTE=NO
+      # VS 2019, Npcap, 32-bit and 64-bit, without AirPcap, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2019, Npcap, 32-bit and 64-bit, AirPcap and remote
+      REMOTE: -DENABLE_REMOTE=NO
+      # VS 2019, Npcap, 32-bit and 64-bit, with AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
       SDK: npcap-sdk
-      REMOTE: -DENABLE_REMOTE=YES
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: x64
       SDK: npcap-sdk
-      REMOTE: -DENABLE_REMOTE=YES
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
+      # VS 2022, WinPcap, 32-bit and 64-bit, without AirPcap, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
       SDK: WpdPack
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2022, Npcap, 32-bit and 64-bit, no AirPcap, no remote
+      REMOTE: -DENABLE_REMOTE=NO
+      # VS 2022, Npcap, 32-bit and 64-bit, without AirPcap, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
+      REMOTE: -DENABLE_REMOTE=NO
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
       SDK: npcap-sdk
       AIRPCAP: -DDISABLE_AIRPCAP=YES
-      # VS 2022, Npcap, 32-bit and 64-bit, AirPcap and remote
+      REMOTE: -DENABLE_REMOTE=NO
+      # VS 2022, Npcap, 32-bit and 64-bit, with AirPcap, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: Win32
       SDK: npcap-sdk
-      REMOTE: -DENABLE_REMOTE=YES
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win32\bin
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
       PLATFORM: x64
       SDK: npcap-sdk
-      REMOTE: -DENABLE_REMOTE=YES
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
 
 build_script:
