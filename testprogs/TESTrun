@@ -13,6 +13,26 @@ use warnings;
 use File::Basename qw(dirname);
 use File::Temp;
 
+# Parse config.h into a hash for later use.
+my %config = ();
+my $re_define_uint = qr/^#define ([0-9_A-Z]+) ([0-9]+)$/;
+my $re_define_str = qr/^#define ([0-9_A-Z]+) "(.+)"$/;
+my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} :
+	dirname ($0) . '/../config.h';
+open (my $fh, '<', $config_h) || die "failed opening '$config_h'";
+while (<$fh>) {
+	$config{$1} = $2 if /$re_define_uint/ || /$re_define_str/;
+}
+close ($fh) || die "failed closing '$config_h'";
+
+sub ipv6_disabled {
+	return (defined $config{INET6} && $config{INET6}) ? '' : 'IPv6 syntax disabled';
+}
+
+sub ipv6_enabled {
+	return (defined $config{INET6} && $config{INET6}) ? 'IPv6 syntax enabled' : '';
+}
+
 my %valid_filters = (
 	empty => {
 		DLT => 'EN10MB',
@@ -196,6 +216,22 @@ my %valid_filters = (
 			(012) ret      #0
 			EOF
 	}, # link_icmp
+	link_icmp6 => {
+		DLT => 'IPV6',
+		snaplen => 10000,
+		expr => 'icmp6[icmp6type] != 0 or icmp6[icmp6code] != 0',
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) ldb      [6]
+			(002) jeq      #0x3a            jt 3	jf 8
+			(003) ldb      [40]
+			(004) jeq      #0x0             jt 5	jf 7
+			(005) ldb      [41]
+			(006) jeq      #0x0             jt 8	jf 7
+			(007) ret      #10000
+			(008) ret      #0
+			EOF
+	}, # link_icmp6
 	link_udp => {
 		DLT => 'RAW',
 		snaplen => 65535,
@@ -814,6 +850,27 @@ my %valid_filters = (
 			EOF
 	}, # decnet
 
+	ip6_proto => {
+		DLT => 'EN10MB',
+		# This list uses a part of /etc/protocols (or an equivalent
+		# thereof) that seems to be common to all supported OSes.
+		expr => 'ip6 proto \ah or \esp or \pim or \tcp or \udp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x33            jt 11	jf 4
+			(004) jeq      #0x2c            jt 5	jf 7
+			(005) ldb      [54]
+			(006) jeq      #0x33            jt 11	jf 7
+			(007) jeq      #0x32            jt 11	jf 8
+			(008) jeq      #0x67            jt 11	jf 9
+			(009) jeq      #0x6             jt 11	jf 10
+			(010) jeq      #0x11            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			EOF
+	}, # ip6_proto
 	proto => {
 		DLT => 'EN10MB',
 		# This list uses the part of /etc/protocols (or an equivalent
@@ -843,6 +900,109 @@ my %valid_filters = (
 			(017) ret      #0
 			EOF
 	}, # ip_proto
+	host => {
+		skip => ipv6_disabled(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => <<~'EOF',
+			host 10.0.0.1 or src host 10.0.0.2 or dst host 10.0.0.3 or
+			host fe80::1:2:03ff:fe04:0506 or src host fe80::1:2:03ff:fe04:0507 or
+			dst host fe80::1:2:03ff:fe04:0508
+			EOF
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 9
+			(003) ld       [12]
+			(004) jeq      #0xa000001       jt 44	jf 5
+			(005) jeq      #0xa000002       jt 44	jf 6
+			(006) ld       [16]
+			(007) jeq      #0xa000001       jt 44	jf 8
+			(008) jeq      #0xa000003       jt 44	jf 45
+			(009) ldb      [0]
+			(010) and      #0xf0
+			(011) jeq      #0x60            jt 12	jf 45
+			(012) ld       [8]
+			(013) jeq      #0xfe800000      jt 14	jf 20
+			(014) ld       [12]
+			(015) jeq      #0x1             jt 16	jf 20
+			(016) ld       [16]
+			(017) jeq      #0x203ff         jt 18	jf 20
+			(018) ld       [20]
+			(019) jeq      #0xfe040506      jt 44	jf 20
+			(020) ld       [24]
+			(021) jeq      #0xfe800000      jt 22	jf 28
+			(022) ld       [28]
+			(023) jeq      #0x1             jt 24	jf 28
+			(024) ld       [32]
+			(025) jeq      #0x203ff         jt 26	jf 28
+			(026) ld       [36]
+			(027) jeq      #0xfe040506      jt 44	jf 28
+			(028) ld       [8]
+			(029) jeq      #0xfe800000      jt 30	jf 36
+			(030) ld       [12]
+			(031) jeq      #0x1             jt 32	jf 36
+			(032) ld       [16]
+			(033) jeq      #0x203ff         jt 34	jf 36
+			(034) ld       [20]
+			(035) jeq      #0xfe040507      jt 44	jf 36
+			(036) ld       [24]
+			(037) jeq      #0xfe800000      jt 38	jf 45
+			(038) ld       [28]
+			(039) jeq      #0x1             jt 40	jf 45
+			(040) ld       [32]
+			(041) jeq      #0x203ff         jt 42	jf 45
+			(042) ld       [36]
+			(043) jeq      #0xfe040508      jt 44	jf 45
+			(044) ret      #2000
+			(045) ret      #0
+			EOF
+	}, # host
+	net => {
+		skip => ipv6_disabled(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => <<~'EOF',
+			net 192.168.0.0/16 or (src net 10.0.1.0/24 and dst net 10.0.2.0/24) or
+			net fe80::/64 or (src net 2a00::/11 and dst net ff00::/8)
+			EOF
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 15
+			(003) ld       [12]
+			(004) and      #0xffff0000
+			(005) jeq      #0xc0a80000      jt 32	jf 6
+			(006) ld       [16]
+			(007) and      #0xffff0000
+			(008) jeq      #0xc0a80000      jt 32	jf 9
+			(009) ld       [12]
+			(010) and      #0xffffff00
+			(011) jeq      #0xa000100       jt 12	jf 33
+			(012) ld       [16]
+			(013) and      #0xffffff00
+			(014) jeq      #0xa000200       jt 32	jf 33
+			(015) ldb      [0]
+			(016) and      #0xf0
+			(017) jeq      #0x60            jt 18	jf 33
+			(018) ld       [8]
+			(019) jeq      #0xfe800000      jt 20	jf 22
+			(020) ld       [12]
+			(021) jeq      #0x0             jt 32	jf 22
+			(022) ld       [24]
+			(023) jeq      #0xfe800000      jt 24	jf 26
+			(024) ld       [28]
+			(025) jeq      #0x0             jt 32	jf 26
+			(026) ld       [8]
+			(027) and      #0xffe00000
+			(028) jeq      #0x2a000000      jt 29	jf 33
+			(029) ld       [24]
+			(030) and      #0xff000000
+			(031) jeq      #0xff000000      jt 32	jf 33
+			(032) ret      #2000
+			(033) ret      #0
+			EOF
+	}, # net
 	ip_proto_abbrev => {
 		DLT => 'EN10MB',
 		# This list uses libpcap filter keywords.
@@ -858,6 +1018,21 @@ my %valid_filters = (
 			(007) ret      #0
 			EOF
 	}, # ip_proto_abbrev
+	ip6_proto_abbrev => {
+		DLT => 'EN10MB',
+		expr => 'icmp6',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x3a            jt 7	jf 4
+			(004) jeq      #0x2c            jt 5	jf 8
+			(005) ldb      [54]
+			(006) jeq      #0x3a            jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			EOF
+	}, # ip6_proto_abbrev
 	proto_abbrev => {
 		DLT => 'RAW',
 		# This list uses libpcap filter keywords.
@@ -886,6 +1061,89 @@ my %valid_filters = (
 			EOF
 	}, # proto_abbrev
 
+	ip6_host => {
+		skip => ipv6_disabled(),
+		DLT => 'IPV6',
+		expr => <<~'EOF',
+			ip6 src host fe80::1122:33ff:fe44:5566 or
+			dst host fe80::7788:99ff:feaa:bbcc or host ::1
+			EOF
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) ld       [8]
+			(002) jeq      #0xfe800000      jt 3	jf 9
+			(003) ld       [12]
+			(004) jeq      #0x0             jt 5	jf 9
+			(005) ld       [16]
+			(006) jeq      #0x112233ff      jt 7	jf 9
+			(007) ld       [20]
+			(008) jeq      #0xfe445566      jt 33	jf 9
+			(009) ld       [24]
+			(010) jeq      #0xfe800000      jt 11	jf 17
+			(011) ld       [28]
+			(012) jeq      #0x0             jt 13	jf 17
+			(013) ld       [32]
+			(014) jeq      #0x778899ff      jt 15	jf 17
+			(015) ld       [36]
+			(016) jeq      #0xfeaabbcc      jt 33	jf 17
+			(017) ld       [8]
+			(018) jeq      #0x0             jt 19	jf 25
+			(019) ld       [12]
+			(020) jeq      #0x0             jt 21	jf 25
+			(021) ld       [16]
+			(022) jeq      #0x0             jt 23	jf 25
+			(023) ld       [20]
+			(024) jeq      #0x1             jt 33	jf 25
+			(025) ld       [24]
+			(026) jeq      #0x0             jt 27	jf 34
+			(027) ld       [28]
+			(028) jeq      #0x0             jt 29	jf 34
+			(029) ld       [32]
+			(030) jeq      #0x0             jt 31	jf 34
+			(031) ld       [36]
+			(032) jeq      #0x1             jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			EOF
+	}, # ip6_host
+	ip6_net => {
+		skip => ipv6_disabled(),
+		DLT => 'IPV6',
+		expr => <<~'EOF',
+			(ip6 src net 2000::/3 and dst net ff00::/8) or
+			ip6 net fe80::/10
+			EOF
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) ld       [8]
+			(002) and      #0xe0000000
+			(003) jeq      #0x20000000      jt 4	jf 7
+			(004) ld       [24]
+			(005) and      #0xff000000
+			(006) jeq      #0xff000000      jt 13	jf 7
+			(007) ld       [8]
+			(008) and      #0xffc00000
+			(009) jeq      #0xfe800000      jt 13	jf 10
+			(010) ld       [24]
+			(011) and      #0xffc00000
+			(012) jeq      #0xfe800000      jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			EOF
+	}, # ip6_net
+	ip6_multicast => {
+		DLT => 'IPV6',
+		expr => 'ip6 multicast',
+		unopt => <<~'EOF',
+			(000) ld       #0x0
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldb      [24]
+			(003) jeq      #0xff            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # ip6_multicast
+
 	icmp_types => {
 		'DLT' => 'EN10MB',
 		expr => <<~'EOF',
@@ -909,6 +1167,44 @@ my %valid_filters = (
 			(000) ret      #262144
 			EOF
 	}, # icmp_types
+	icmp6_types => {
+		'DLT' => 'IPV6',
+		expr => <<~'EOF',
+			1 == icmp6-destinationunreach &&
+			2 == icmp6-packettoobig &&
+			3 == icmp6-timeexceeded &&
+			4 == icmp6-parameterproblem &&
+			128 == icmp6-echo &&
+			129 == icmp6-echoreply &&
+			130 == icmp6-multicastlistenerquery &&
+			131 == icmp6-multicastlistenerreportv1 &&
+			132 == icmp6-multicastlistenerdone &&
+			133 == icmp6-routersolicit &&
+			134 == icmp6-routeradvert &&
+			135 == icmp6-neighborsolicit &&
+			136 == icmp6-neighboradvert &&
+			137 == icmp6-redirect &&
+			138 == icmp6-routerrenum &&
+			139 == icmp6-nodeinformationquery &&
+			140 == icmp6-nodeinformationresponse &&
+			141 == icmp6-ineighbordiscoverysolicit &&
+			142 == icmp6-ineighbordiscoveryadvert &&
+			143 == icmp6-multicastlistenerreportv2 &&
+			144 == icmp6-homeagentdiscoveryrequest &&
+			145 == icmp6-homeagentdiscoveryreply &&
+			146 == icmp6-mobileprefixsolicit &&
+			147 == icmp6-mobileprefixadvert &&
+			148 == icmp6-certpathsolicit &&
+			149 == icmp6-certpathadvert &&
+			151 == icmp6-multicastrouteradvert &&
+			152 == icmp6-multicastroutersolicit &&
+			153 == icmp6-multicastrouterterm
+			EOF
+		opt => <<~'EOF',
+			(000) ret      #262144
+			EOF
+	}, # icmp6_types
+
 
 	tcp_flags => {
 		'DLT' => 'EN10MB',
@@ -948,6 +1244,32 @@ my %invalid_filters = (
 	ip_host => {
 		DLT => 'RAW',
 		expr => 'ip host 256.256.256.256',
+	},
+	ip6_host_toolong => {
+		DLT => 'RAW',
+		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
+	},
+	ip6_host_nonhex => {
+		DLT => 'RAW',
+		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
+	},
+	ip6_host_disabled => {
+		skip => ipv6_enabled,
+		DLT => 'RAW',
+		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
+	},
+	ip6_net_prefix => {
+		DLT => 'RAW',
+		expr => 'ip6 net fe80:0:0:0:0:0:0:0:0/64',
+	},
+	ip6_net_masklen => {
+		DLT => 'RAW',
+		expr => 'ip6 net fe80:0:0:0:0:0:0:0/129',
+	},
+	ip6_net_disabled => {
+		skip => ipv6_enabled,
+		DLT => 'RAW',
+		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
 	},
 	udp_port => {
 		DLT => 'IPV4',
@@ -1013,6 +1335,11 @@ foreach my $testname (sort keys %valid_filters) {
 		defined $test->{$_} || next;
 		my $label = "valid_${testname}_${_}";
 		defined $only_one && $only_one ne $label && next;
+		if (defined $test->{skip} && $test->{skip} ne '') {
+			$skippedcount++;
+			print_result $label, "skipped ($test->{skip})";
+			next;
+		}
 		# BSD timeout(1) does not implement --verbose.
 		my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
 		push @args, $filtertest;
@@ -1056,6 +1383,11 @@ foreach my $testname (sort keys %invalid_filters) {
 	my $label = "invalid_${testname}";
 	defined $only_one && $only_one ne $label && next;
 	my $test = $invalid_filters{$testname};
+	if (defined $test->{skip} && $test->{skip} ne '') {
+		$skippedcount++;
+		print_result $label, "skipped ($test->{skip})";
+		next;
+	}
 	my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
 	push @args, $filtertest;
 	file_put_contents $filename_filter, $test->{expr};
