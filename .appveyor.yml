@@ -56,7 +56,7 @@ environment:
       PLATFORM: x64
       SDK: WpdPack
       REMOTE: -DENABLE_REMOTE=NO
-      # VS 2019, Npcap, 32-bit and 64-bit x86, with remote
+      # VS 2019, Winpcap, 32-bit and 64-bit x86, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: Win32
