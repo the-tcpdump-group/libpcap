@@ -131,8 +131,10 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: Fix libnl usage with pkg-config.
       CMake: Fix build with CMake 3.31.
       CI: Report CMake version in builds.
-      CI: Visual Studio 2022 builds added, Visual Studio 2015 bilds
-        dropped.
+      CI: Visual Studio 2022 builds added, including ARM64 builds;
+        Visual Studio 2015 builds dropped.
+      Don't build with sslutils.c if we don't have a TLS library.
+      Build on Windows with a newer version of OpenSSL.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
