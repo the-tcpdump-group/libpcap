@@ -72,12 +72,16 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       At build time require a proof of suitable snprintf(3) implementation in
         libc (and document Solaris 9 and MinGW as unsupported because of that).
       Makefile.in: Update the .c.o build rule (Remove hacks for old SunOS 4).
-      CMake: Skip snprintf(3) tests when cross-compiling.
+      CMake: Skip snprintf(3) tests when cross-compiling; test whether
+        check_c_source_runs() with a trivial program and, if it doesn't
+        work, don't run tests that use it.
       autogen.sh: Allow to configure Autoconf warnings.
       autogen.sh: Delete all trailing blank lines at end of configure.
       Autoconf: Add support for libnl-tiny with pkg-config.
       Autoconf: Fix building of something-only libpcap.
       CI: Implement "make check".
+      Fix autotools and CMake issues with snprintf test and sanitizers.
+        Fixes issue #1396.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
