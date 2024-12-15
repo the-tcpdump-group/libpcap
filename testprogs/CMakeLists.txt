@@ -54,3 +54,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
    CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_subdirectory(fuzz)
 endif()
+
+if(NOT WIN32)
+  add_test_executable(our_timeout)
+endif()

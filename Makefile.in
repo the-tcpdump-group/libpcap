@@ -366,6 +366,7 @@ EXTRA_DIST = \
 	testprogs/fuzz/onefile.c \
 	testprogs/nonblocktest.c \
 	testprogs/opentest.c \
+	testprogs/our_timeout.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
 	testprogs/threadsignaltest.c \

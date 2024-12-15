@@ -1296,7 +1296,7 @@ my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
 my $test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
 	$ENV{FILTERTEST_TIMEOUT} : 1;
 my $timeout_bin = defined $ENV{TIMEOUT_BIN} ? $ENV{TIMEOUT_BIN} :
-	'timeout';
+	dirname ($0) . '/our_timeout';
 my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
 	dirname ($0) . '/filtertest';
 my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
@@ -1341,6 +1341,7 @@ foreach my $testname (sort keys %valid_filters) {
 			next;
 		}
 		# BSD timeout(1) does not implement --verbose.
+		# XXX - we use our own timeout command.
 		my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
 		push @args, $filtertest;
 		defined $test->{snaplen} && push @args, ('-s', $test->{snaplen});

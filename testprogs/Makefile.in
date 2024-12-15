@@ -93,9 +93,9 @@ TESTS = $(SRC:.c=)
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) $(TESTS)
+CLEANFILES = $(OBJ) $(TESTS) our_timeout
 
-all: $(TESTS)
+all: $(TESTS) our_timeout
 
 # illumos make is the only known supported make that would expand "$<" below
 # into "../libpcap.a" instead of "$(srcdir)/xxxxxxxx.c ../libpcap.a".
@@ -155,6 +155,13 @@ valgrindtest: $(srcdir)/valgrindtest.c ../libpcap.a
 writecaptest: $(srcdir)/writecaptest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/writecaptest.c \
 	    ../libpcap.a $(LIBS)
+
+#
+# Our own version of the timeout program, based on OpenBSD's but purged
+# of code that won't compile and run on all POSIX systems.
+#
+our_timeout: $(srcdir)/our_timeout.c
+	$(CC) $(FULL_CFLAGS) -o $@ $(srcdir)/our_timeout.c
 
 clean:
 	rm -f $(CLEANFILES)

@@ -102,6 +102,8 @@ if [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
+    TIMEOUT_BIN="run/our_timeout"
+    export TIMEOUT_BIN
     FILTERTEST_BIN="$VALGRIND_CMD run/filtertest"
     export FILTERTEST_BIN
     CONFIG_H='./config.h'
