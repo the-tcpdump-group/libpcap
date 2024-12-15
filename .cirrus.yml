@@ -52,7 +52,10 @@ macos_task:
   script:
     - brew update >/dev/null
     - brew install openssl@3 coreutils
-    - ./build_matrix.sh
+    # Run a wrapper that sets the environment variables for Homebrew
+    # and then runs build_matrix.sh, so we can find commands installed
+    # as part of coreutils, including timeout.
+    - ./build_matrix_macos.sh
 
 coverity_task:
   name: Coverity Scan
