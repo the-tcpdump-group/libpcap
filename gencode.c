@@ -7276,6 +7276,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 {
 	register int nlen, mlen;
 	bpf_u_int32 n, m;
+	uint64_t m64;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -7303,14 +7304,8 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 		/* Convert mask len to mask */
 		if (masklen > 32)
 			bpf_error(cstate, "mask length must be <= 32");
-		if (masklen == 0) {
-			/*
-			 * X << 32 is not guaranteed by C to be 0; it's
-			 * undefined.
-			 */
-			m = 0;
-		} else
-			m = 0xffffffff << (32 - masklen);
+		m64 = UINT64_C(0xffffffff) << (32 - masklen);
+		m = (bpf_u_int32)m64;
 		if ((n & ~m) != 0)
 			bpf_error(cstate, "non-network bits set in \"%s/%d\"",
 			    s1, masklen);
