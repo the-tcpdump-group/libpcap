@@ -46,12 +46,9 @@ macos_task:
     image: ghcr.io/cirruslabs/macos-runner:sonoma # last 3 versions of Xcode
   env:
     MAKEFLAGS: '-j 4' # macOS VMs run on 4 cores
-    # When GNU coreutils package is installed, Autoconf defaults to GNU
-    # install instead of the macOS install, so use the latter explicitly.
-    INSTALL: /usr/bin/install
   script:
     - brew update >/dev/null
-    - brew install openssl@3 coreutils
+    - brew install openssl@3
     - ./build_matrix.sh
 
 coverity_task:

@@ -4,8 +4,15 @@
 # <this file>               run all tests
 # <this file> <test label>  run only the test with the label (if any)
 #
-# Set FILTERTEST_TIMEOUT to override the default timeout.  Set to 0 to disable
-# the timeout completely.
+# Set FILTERTEST_TIMEOUT to 0 to disable the timeout completely or to any other
+# value to override the default timeout.  The timeout applies to every test.
+# If TIMEOUT_BIN is not set, the timeout applies iff the default "timeout"
+# binary works.  If it is set (on macOS there is no default "timeout" and the
+# binary from GNU coreutils package may be available as "gtimeout" only), the
+# custom binary must work.
+#
+# FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
+# (required for MATRIX_CMAKE=yes).
 
 use integer;
 use strict;
@@ -1290,13 +1297,31 @@ my $passedcount = 0;
 my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
 	$^O eq 'hpux' ? '-c' :
 	'-u';
+
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking
-# longer, it is likely a regression.
+# longer, it is likely a regression.  Or an invocation via Valgrind, which
+# demands a sensible host-specific override of the timeout value.
 my $test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
 	$ENV{FILTERTEST_TIMEOUT} : 1;
-my $timeout_bin = defined $ENV{TIMEOUT_BIN} ? $ENV{TIMEOUT_BIN} :
-	'timeout';
+
+my $timeout_bin = undef;
+if ($test_timeout eq '0') {
+	print "INFO: Not using a test timeout (FILTERTEST_TIMEOUT=0).\n";
+} elsif (defined $ENV{TIMEOUT_BIN}) {
+	$timeout_bin = $ENV{TIMEOUT_BIN};
+	if (system ($timeout_bin, '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
+		print STDERR "ERROR: TIMEOUT_BIN='$timeout_bin' is not usable.\n";
+		exit 1;
+	}
+	print "INFO: Using a test timeout of $test_timeout (TIMEOUT_BIN='$timeout_bin').\n";
+} elsif (system ('timeout', '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
+	print "WARNING: Not using a test timeout (the default 'timeout' is not usable).\n";
+} else {
+	$timeout_bin = 'timeout';
+	printf "INFO: Using a test timeout of %s.\n", $test_timeout;
+}
+
 my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
 	dirname ($0) . '/filtertest';
 my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
@@ -1320,7 +1345,7 @@ my $r = system ("$filtertest >/dev/null 2>&1") >> 8;
 if ($r != 1) {
 	# Make it easier to see what the problem is.
 	system $filtertest;
-	print "Error: $filtertest is not usable\n";
+	print STDERR "ERROR: $filtertest is not usable\n";
 	exit 2;
 }
 
@@ -1341,7 +1366,7 @@ foreach my $testname (sort keys %valid_filters) {
 			next;
 		}
 		# BSD timeout(1) does not implement --verbose.
-		my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
+		my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
 		push @args, $filtertest;
 		defined $test->{snaplen} && push @args, ('-s', $test->{snaplen});
 		$_ eq 'unopt' && push @args, '-O';
@@ -1388,7 +1413,7 @@ foreach my $testname (sort keys %invalid_filters) {
 		print_result $label, "skipped ($test->{skip})";
 		next;
 	}
-	my @args = $test_timeout eq '0' ? () : ($timeout_bin, $test_timeout);
+	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
 	push @args, $filtertest;
 	file_put_contents $filename_filter, $test->{expr};
 	push @args, (
