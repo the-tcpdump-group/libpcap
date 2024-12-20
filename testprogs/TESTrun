@@ -586,6 +586,280 @@ my %valid_filters = (
 			EOF
 	}, # ether_proto_abbrev
 
+	pppoed => {
+		snaplen => 200,
+		DLT => 'EN10MB',
+		expr => 'pppoed',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8863          jt 2	jf 3
+			(002) ret      #200
+			(003) ret      #0
+			EOF
+	}, # pppoed
+	pppoes_nullary => {
+		snaplen => 200,
+		DLT => 'EN10MB',
+		expr => 'pppoes',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8864          jt 2	jf 3
+			(002) ret      #200
+			(003) ret      #0
+			EOF
+	}, # pppoes_nullary
+	pppoes_unary => {
+		snaplen => 200,
+		DLT => 'EN10MB',
+		expr => 'pppoes 1234',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8864          jt 2	jf 6
+			(002) ld       [14]
+			(003) and      #0xffff
+			(004) jeq      #0x4d2           jt 5	jf 6
+			(005) ret      #200
+			(006) ret      #0
+			EOF
+	}, # pppoes_unary
+
+	llc => {
+		snaplen => 200,
+		DLT => 'EN10MB',
+		expr => 'llc',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 4	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #0
+			(005) ret      #200
+			EOF
+	}, # llc_nullary
+	llc_i => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc i',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 6	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 6	jf 4
+			(004) ldb      [16]
+			(005) jset     #0x1             jt 6	jf 7
+			(006) ret      #0
+			(007) ret      #100
+			EOF
+	}, # llc_i
+	llc_s => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc s',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0x3
+			(006) jeq      #0x1             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_s
+	llc_u => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc u',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0x3
+			(006) jeq      #0x3             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_u
+	llc_rr => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc rr',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xf
+			(006) jeq      #0x1             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_rr
+	llc_rnr => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc rnr',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xf
+			(006) jeq      #0x5             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_rnr
+	llc_rej => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc rej',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xf
+			(006) jeq      #0x9             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_rej
+	llc_ui => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc ui',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0x3             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_ui
+	llc_ua => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc ua',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0x63            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_ua
+	llc_disc => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc disc',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0x43            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_disc
+	llc_dm => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc dm',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0xf             jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_dm
+	llc_sabme => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc sabme',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0x6f            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_sabme
+	llc_test => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc test',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0xe3            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_test
+	llc_xid => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc xid',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0xaf            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_xid
+	llc_frmr => {
+		snaplen => 100,
+		DLT => 'EN10MB',
+		expr => 'llc frmr',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 8	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xffff          jt 8	jf 4
+			(004) ldb      [16]
+			(005) and      #0xef
+			(006) jeq      #0x87            jt 7	jf 8
+			(007) ret      #100
+			(008) ret      #0
+			EOF
+	}, # llc_frmr
+
 	decnet => {
 		DLT => 'EN10MB',
 		expr => <<~'EOF',
@@ -856,6 +1130,19 @@ my %valid_filters = (
 			(123) ret      #0
 			EOF
 	}, # decnet
+
+	ip_multicast => {
+		snaplen => 1000,
+		DLT => 'IPV4',
+		expr => 'ip multicast',
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) ldb      [16]
+			(002) jge      #0xe0            jt 3	jf 4
+			(003) ret      #1000
+			(004) ret      #0
+			EOF
+	}, # ip_multicast
 
 	ip6_proto => {
 		DLT => 'EN10MB',
@@ -1239,6 +1526,14 @@ my %invalid_filters = (
 	wlan_type => {
 		DLT => 'EN10MB',
 		expr => 'type data',
+	},
+	pppoed_unary => {
+		DLT => 'EN10MB',
+		expr => 'pppoed 1234',
+	},
+	llc_noneth => {
+		DLT => 'RAW',
+		expr => 'llc',
 	},
 	decnet_area => {
 		DLT => 'EN10MB',
