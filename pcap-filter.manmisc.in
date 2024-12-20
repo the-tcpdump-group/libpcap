@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "12 December 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "20 December 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -570,6 +570,9 @@ Unnumbered Acknowledgment (UA) U PDUs
 \fBdisc\fR
 Disconnect (DISC) U PDUs
 .TP
+\fBdm\fR
+Disconnected Mode (DM) U PDUs
+.TP
 \fBsabme\fR
 Set Asynchronous Balanced Mode Extended (SABME) U PDUs
 .TP
@@ -911,6 +914,21 @@ Connect Ack, Release, or Release Done message.
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 on a meta signaling circuit and is a Q.2931 Setup, Call Proceeding, Connect,
 Release, or Release Done message.
+.IP \fBfisu\fP
+True if the packet is a Fill-In Signal Unit (FISU) MTP2 packet.
+.IP \fBlssu\fP
+True if the packet is a Link Status Signal Unit (LSSU) MTP2 packet.
+.IP \fBmsu\fP
+True if the packet is a Message Signal Unit (MSU) MTP2 packet.
+.IP "\fBhfisu\fR, \fBhlssu\fR, \fBhmsu\fR"
+Same as
+.BR fisu ,
+.B lssu
+and
+.B msu
+respectively, but only if the MTP2 link uses the extended sequence numbers
+encoding specified for high speed signalling links (HSL) in ITU-T
+Recommendation Q.703 Annex A.
 .IP  "\fIexpr1 relop expr2\fR"
 True if the relation holds.  \fIRelop\fR is one of
 .RB { > ,
@@ -1019,7 +1037,17 @@ The expression
 `\fBip[\fP6:2\fB] &\fP 0x1fff \fB=\fP 0'
 catches only unfragmented IPv4 datagrams and frag zero of fragmented
 IPv4 datagrams.
-This check is implicitly applied to the \fBtcp\fP and \fBudp\fP
+This check is implicitly applied to the
+.BR tcp ,
+.BR udp ,
+.BR icmp ,
+.BR sctp ,
+.BR igmp ,
+.BR pim ,
+.BR igrp ,
+.BR vrrp
+and
+.BR carp
 index operations.
 For instance, \fBtcp[\fP0\fB]\fP always means the first
 byte of the TCP \fIheader\fP, and never means the first byte of an
