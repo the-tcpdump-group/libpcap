@@ -25,7 +25,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: Fix build with CMake 3.31.
       CI: Report CMake version in builds.
       CI: Visual Studio 2022 builds added, including ARM64 builds;
-        Visual Studio 2015 bilds dropped.
+        Visual Studio 2015 builds dropped.
       Don't build with sslutils.c if we don't have a TLS library.
       Build on Windows with a newer version of OpenSSL.
       CMake: generalize handling of non-x86 Windows architectures.
