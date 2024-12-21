@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "20 December 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "21 December 2024"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -498,17 +498,23 @@ Abbreviations for:
 .fi
 .in -.5i
 where \fIprotocol\fR is one of the above protocols.
-.IP "\fBlat\fR, \fBmoprc\fR, \fBmopdl\fR"
+.IP "\fBlat\fR, \fBmopdl\fR, \fBmoprc\fR, \fBsca\fR"
 Abbreviations for:
 .in +.5i
 .nf
 \fBether proto \\\fIprotocol\fR
 .fi
 .in -.5i
-where \fIprotocol\fR is one of the above protocols.
-Note that not all applications using
-.BR pcap (3PCAP)
-currently know how to parse these protocols.
+where \fIprotocol\fR is one of the above protocols, all of which originated
+at DEC, but are not the same as DECnet.  Namely,
+.B lat
+is Local Area Transport (LAT),
+.B mopdl
+is DNA Dump/Load (MOP),
+.B moprc
+is DNA Remote Console (MOP) and
+.B sca
+is System Communication Architecture (SCA).
 .IP "\fBdecnet src \fIdecnetaddr\fR"
 True if the DECnet source address is
 .IR decnetaddr ,
