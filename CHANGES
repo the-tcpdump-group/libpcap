@@ -5,6 +5,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove some unneeded includes.
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
+      gencode: Fix an undefined behavior in gen_mcode().
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
