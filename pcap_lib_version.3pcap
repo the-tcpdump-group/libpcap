@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LIB_VERSION 3PCAP "3 January 2014"
+.TH PCAP_LIB_VERSION 3PCAP "22 December 2024"
 .SH NAME
 pcap_lib_version \- get the version information for libpcap
 .SH SYNOPSIS
@@ -33,7 +33,41 @@ const char *pcap_lib_version(void);
 .SH DESCRIPTION
 .BR pcap_lib_version ()
 returns a pointer to a string giving information about the version of
-the libpcap library being used; note that it contains more information
-than just a version number.
+the libpcap library being used.  The string begins with the words "libpcap
+version".  Then follows the version, which consists of three dot-separated
+numbers and the optional "-PRE-GIT" suffix to indicate a development
+snapshot, same as in the output of
+.B "pcap-config --version"
+in sufficiently recent libpcap releases.  After the version often follows
+additional text to indicate particular features.  For example:
+.IP "an old release, on any OS"
+.RS
+.nf
+.B
+libpcap version 1.5.3
+.fi
+.RE
+.IP "a newer release on a Linux host"
+.RS
+.nf
+.B
+libpcap version 1.10.4 (with TPACKET_V3)
+.fi
+.RE
+.IP "the same, built with DAG support only"
+.RS
+.nf
+.B
+libpcap version 1.10.4 (DAG-only)
+.fi
+.RE
+.IP "a development snapshot on a FreeBSD host"
+.RS
+.nf
+.B
+libpcap version 1.11.0-PRE-GIT (with zerocopy support)
+.fi
+.RE
 .SH SEE ALSO
+.BR pcap\-config (1),
 .BR pcap (3PCAP)
