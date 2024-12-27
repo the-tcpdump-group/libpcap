@@ -3685,9 +3685,15 @@ pcap_set_datalink_bpf(pcap_t *p _U_, int dlt _U_)
 const char *
 pcap_lib_version(void)
 {
-#ifdef HAVE_ZEROCOPY_BPF
-	return (PCAP_VERSION_STRING " (with zerocopy support)");
+	return (PCAP_VERSION_STRING
+#if defined(HAVE_ZEROCOPY_BPF) && defined(PCAP_SUPPORT_NETMAP)
+		" (with zerocopy and netmap support)"
+#elif defined(HAVE_ZEROCOPY_BPF)
+		" (with zerocopy support)"
+#elif defined(PCAP_SUPPORT_NETMAP)
+		" (with netmap support)"
 #else
-	return (PCAP_VERSION_STRING);
+		""
 #endif
+	);
 }

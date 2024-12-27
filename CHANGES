@@ -10,6 +10,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
       Clean up code that computes the length of a netmask.
+      Mind netmap support in pcap_lib_version().
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
