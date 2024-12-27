@@ -17,6 +17,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove outdated code related to AirPcap HW.
         The Riverbed AirPcap Product has reached End of Availability
         (EOA) as of December 31, 2017
+      Mind netmap support in pcap_lib_version().
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
