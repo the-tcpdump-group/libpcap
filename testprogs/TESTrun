@@ -295,6 +295,77 @@ my %valid_filters = (
 			EOF
 	}, # sll2
 
+	mtp2_fisu => {
+		DLT => 'MTP2',
+		expr => 'fisu',
+		opt => <<~'EOF',
+			(000) ldb      [2]
+			(001) jset     #0x3f            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_fisu
+	mtp2_lssu => {
+		DLT => 'MTP2',
+		expr => 'lssu',
+		opt => <<~'EOF',
+			(000) ldb      [2]
+			(001) and      #0x3f
+			(002) jgt      #0x0             jt 3	jf 7
+			(003) ldb      [2]
+			(004) and      #0x3f
+			(005) jgt      #0x2             jt 7	jf 6
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # mtp2_lssu
+	mtp2_msu => {
+		DLT => 'MTP2',
+		expr => 'msu',
+		opt => <<~'EOF',
+			(000) ldb      [2]
+			(001) and      #0x3f
+			(002) jgt      #0x2             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp2_msu
+	mtp2_hfisu => {
+		DLT => 'MTP2',
+		expr => 'hfisu',
+		opt => <<~'EOF',
+			(000) ldh      [4]
+			(001) jset     #0xff80          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_hfisu
+	mtp2_hlssu => {
+		DLT => 'MTP2',
+		expr => 'hlssu',
+		opt => <<~'EOF',
+			(000) ldh      [4]
+			(001) and      #0xff80
+			(002) jgt      #0x0             jt 3	jf 7
+			(003) ldh      [4]
+			(004) and      #0xff80
+			(005) jgt      #0x100           jt 7	jf 6
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # mtp2_hlssu
+	mtp2_hmsu => {
+		DLT => 'MTP2',
+		expr => 'hmsu',
+		opt => <<~'EOF',
+			(000) ldh      [4]
+			(001) and      #0xff80
+			(002) jgt      #0x100           jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp2_hmsu
+
 	ether_broadcast => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
@@ -1522,6 +1593,10 @@ my %invalid_filters = (
 	ether_host => {
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
+	},
+	mtp2_on_mtp3 => {
+		DLT => 'MTP3',
+		expr => 'fisu',
 	},
 	wlan_type => {
 		DLT => 'EN10MB',
