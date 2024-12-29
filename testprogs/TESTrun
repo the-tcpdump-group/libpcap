@@ -330,6 +330,49 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp2_msu
+	mtp2_sio => {
+		DLT => 'MTP2',
+		expr => 'sio 0xd2',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jeq      #0xd2            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_sio
+	mtp3_dpc => {
+		DLT => 'MTP2',
+		expr => 'dpc 0x31d6',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jeq      #0xd6310000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_dpc
+	mtp3_opc => {
+		DLT => 'MTP2',
+		expr => 'opc 0x3b35',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0x40cd0e        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_opc
+	mtp3_sls => {
+		DLT => 'MTP2',
+		expr => 'sls 3',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jeq      #0x30            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_sls
 	mtp2_hfisu => {
 		DLT => 'MTP2',
 		expr => 'hfisu',
@@ -365,6 +408,49 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp2_hmsu
+	mtp2_hsio => {
+		DLT => 'MTP2',
+		expr => 'hsio 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jeq      #0x41            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_hsio
+	mtp3_hdpc => {
+		DLT => 'MTP2',
+		expr => 'hdpc 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jeq      #0xb50a0000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hdpc
+	mtp3_hopc => {
+		DLT => 'MTP2',
+		expr => 'hopc 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0x80ae0e        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hopc
+	mtp3_hsls => {
+		DLT => 'MTP2',
+		expr => 'hsls 5',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jeq      #0x50            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hsls
 
 	ether_broadcast => {
 		DLT => 'EN10MB',
@@ -1597,6 +1683,38 @@ my %invalid_filters = (
 	mtp2_on_mtp3 => {
 		DLT => 'MTP3',
 		expr => 'fisu',
+	},
+	mtp2_sio => {
+		DLT => 'MTP2',
+		expr => 'sio 256',
+	},
+	mtp2_dpc => {
+		DLT => 'MTP2',
+		expr => 'dpc 16384',
+	},
+	mtp2_opc => {
+		DLT => 'MTP2',
+		expr => 'opc 16384',
+	},
+	mtp2_sls => {
+		DLT => 'MTP2',
+		expr => 'sls 16',
+	},
+	mtp2_hsio => {
+		DLT => 'MTP2',
+		expr => 'hsio 256',
+	},
+	mtp2_hdpc => {
+		DLT => 'MTP2',
+		expr => 'hdpc 16384',
+	},
+	mtp2_hopc => {
+		DLT => 'MTP2',
+		expr => 'hopc 16384',
+	},
+	mtp2_hsls => {
+		DLT => 'MTP2',
+		expr => 'hsls 16',
 	},
 	wlan_type => {
 		DLT => 'EN10MB',
