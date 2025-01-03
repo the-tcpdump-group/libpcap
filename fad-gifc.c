@@ -238,14 +238,6 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 			break;
 
 		/*
-		 * Skip entries that begin with "dummy".
-		 * XXX - what are these?  Is this Linux-specific?
-		 * Are there platforms on which we shouldn't do this?
-		 */
-		if (strncmp(ifrp->ifr_name, "dummy", 5) == 0)
-			continue;
-
-		/*
 		 * Can we capture on this device?
 		 */
 		if (!(*check_usable)(ifrp->ifr_name)) {
