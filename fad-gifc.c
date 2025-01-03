@@ -250,7 +250,7 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		/*
 		 * Get the flags for this interface.
 		 */
-		strncpy(ifrflags.ifr_name, ifrp->ifr_name,
+		pcapint_strlcpy(ifrflags.ifr_name, ifrp->ifr_name,
 		    sizeof(ifrflags.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
 			if (errno == ENXIO)
@@ -266,7 +266,7 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		/*
 		 * Get the netmask for this address on this interface.
 		 */
-		strncpy(ifrnetmask.ifr_name, ifrp->ifr_name,
+		pcapint_strlcpy(ifrnetmask.ifr_name, ifrp->ifr_name,
 		    sizeof(ifrnetmask.ifr_name));
 		memcpy(&ifrnetmask.ifr_addr, &ifrp->ifr_addr,
 		    sizeof(ifrnetmask.ifr_addr));
@@ -296,7 +296,7 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		 * interface (if any).
 		 */
 		if (ifrflags.ifr_flags & IFF_BROADCAST) {
-			strncpy(ifrbroadaddr.ifr_name, ifrp->ifr_name,
+			pcapint_strlcpy(ifrbroadaddr.ifr_name, ifrp->ifr_name,
 			    sizeof(ifrbroadaddr.ifr_name));
 			memcpy(&ifrbroadaddr.ifr_addr, &ifrp->ifr_addr,
 			    sizeof(ifrbroadaddr.ifr_addr));
@@ -335,7 +335,7 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		 * interface (if any).
 		 */
 		if (ifrflags.ifr_flags & IFF_POINTOPOINT) {
-			strncpy(ifrdstaddr.ifr_name, ifrp->ifr_name,
+			pcapint_strlcpy(ifrdstaddr.ifr_name, ifrp->ifr_name,
 			    sizeof(ifrdstaddr.ifr_name));
 			memcpy(&ifrdstaddr.ifr_addr, &ifrp->ifr_addr,
 			    sizeof(ifrdstaddr.ifr_addr));
