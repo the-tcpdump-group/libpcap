@@ -212,7 +212,7 @@ pcap_inject_haiku(pcap_t *handle, const void *buffer _U_, int size _U_)
 {
 	// Haiku currently (hrev57588) does not support sending raw packets.
 	// https://dev.haiku-os.org/ticket/18810
-	strlcpy(handle->errbuf, "Sending packets isn't supported yet",
+	pcapint_strlcpy(handle->errbuf, "Sending packets isn't supported yet",
 		PCAP_ERRBUF_SIZE);
 	return PCAP_ERROR;
 }
