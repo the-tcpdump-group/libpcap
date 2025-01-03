@@ -40,8 +40,6 @@
 #include <sys/socket.h>
 #include <sys/sockio.h>
 
-struct mbuf;		/* Squelch compiler warnings on some platforms for */
-struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
 #include <netinet/in.h>
 
