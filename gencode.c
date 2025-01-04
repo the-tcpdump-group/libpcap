@@ -33,6 +33,7 @@
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "pcap-int.h"
 
@@ -10148,6 +10149,8 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 			bpf_error(cstate, "'vpi' supported only on raw ATM");
 		if (cstate->off_vpi == OFFSET_NOT_SET)
 			abort();
+		if (jvalue > UINT8_MAX)
+			bpf_error(cstate, "VPI value %u > %u", jvalue, UINT8_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
@@ -10157,6 +10160,8 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 			bpf_error(cstate, "'vci' supported only on raw ATM");
 		if (cstate->off_vci == OFFSET_NOT_SET)
 			abort();
+		if (jvalue > UINT16_MAX)
+			bpf_error(cstate, "VCI value %u > %u", jvalue, UINT16_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
