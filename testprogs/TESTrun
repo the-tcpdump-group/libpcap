@@ -452,6 +452,173 @@ my %valid_filters = (
 			EOF
 	}, # mtp3_hsls
 
+	atm_vpi => {
+		DLT => 'SUNATM',
+		expr => 'vpi 10',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vpi
+	atm_vci => {
+		DLT => 'SUNATM',
+		expr => 'vci 20',
+		opt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0x14            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vci
+	atm_lane => {
+		DLT => 'SUNATM',
+		expr => 'lane',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x1             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # atm_lane
+	atm_oamf4sc => {
+		DLT => 'SUNATM',
+		expr => 'oamf4sc',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x3             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_oamf4sc
+	atm_oamf4ec => {
+		DLT => 'SUNATM',
+		expr => 'oamf4ec',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x4             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_oamf4ec
+	atm_oamf4 => {
+		DLT => 'SUNATM',
+		expr => 'oamf4',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 6
+			(002) ldh      [2]
+			(003) jeq      #0x3             jt 5	jf 4
+			(004) jeq      #0x4             jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			EOF
+	}, # atm_oamf4
+	atm_oam => {
+		DLT => 'SUNATM',
+		expr => 'oam',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 6
+			(002) ldh      [2]
+			(003) jeq      #0x3             jt 5	jf 4
+			(004) jeq      #0x4             jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			EOF
+	}, # atm_oam
+	atm_metac => {
+		DLT => 'SUNATM',
+		expr => 'metac',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x1             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_metac
+	atm_bcc => {
+		DLT => 'SUNATM',
+		expr => 'bcc',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x2             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_bcc
+	atm_sc => {
+		DLT => 'SUNATM',
+		expr => 'sc',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x5             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_sc
+	atm_ilmic => {
+		DLT => 'SUNATM',
+		expr => 'ilmic',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0x10            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_ilmic
+	atm_connectmsg => {
+		DLT => 'SUNATM',
+		expr => 'connectmsg',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 12
+			(002) ldh      [2]
+			(003) jeq      #0x5             jt 4	jf 12
+			(004) ldb      [9]
+			(005) jeq      #0x5a            jt 11	jf 6
+			(006) jeq      #0x4d            jt 11	jf 7
+			(007) jeq      #0xf             jt 11	jf 8
+			(008) jeq      #0x7             jt 11	jf 9
+			(009) jeq      #0x5             jt 11	jf 10
+			(010) jeq      #0x2             jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			EOF
+	}, # atm_connectmsg
+	atm_metaconnect => {
+		DLT => 'SUNATM',
+		expr => 'metaconnect',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 11
+			(002) ldh      [2]
+			(003) jeq      #0x1             jt 4	jf 11
+			(004) ldb      [9]
+			(005) jeq      #0x5a            jt 10	jf 6
+			(006) jeq      #0x4d            jt 10	jf 7
+			(007) jeq      #0x7             jt 10	jf 8
+			(008) jeq      #0x5             jt 10	jf 9
+			(009) jeq      #0x2             jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			EOF
+	}, # atm_metaconnect
+
 	ether_broadcast => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
@@ -1288,6 +1455,219 @@ my %valid_filters = (
 			EOF
 	}, # decnet
 
+	abbrev_clnp => {
+		DLT => 'EN10MB',
+		expr => 'clnp',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x81            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # abbrev_clnp
+	abbrev_esis => {
+		DLT => 'EN10MB',
+		expr => 'esis',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x82            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # abbrev_esis
+	abbrev_isis => {
+		DLT => 'EN10MB',
+		expr => 'isis',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # abbrev_isis
+	iso_proto_clnp => {
+		DLT => 'EN10MB',
+		expr => 'iso proto \clnp',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x81            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # iso_proto_clnp
+	iso_proto_esis => {
+		DLT => 'EN10MB',
+		expr => 'iso proto \esis',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x82            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # iso_proto_esis
+	iso_proto_isis => {
+		DLT => 'EN10MB',
+		expr => 'iso proto \isis',
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 7	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 7
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # iso_proto_isis
+	isis_l1 => {
+		DLT => 'EN10MB',
+		expr => 'l1',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 13	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 13
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 13
+			(006) ldb      [21]
+			(007) jeq      #0x1a            jt 12	jf 8
+			(008) jeq      #0x18            jt 12	jf 9
+			(009) jeq      #0x12            jt 12	jf 10
+			(010) jeq      #0xf             jt 12	jf 11
+			(011) jeq      #0x11            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			EOF
+	}, # isis_l1
+	isis_l2 => {
+		DLT => 'EN10MB',
+		expr => 'l2',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 13	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 13
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 13
+			(006) ldb      [21]
+			(007) jeq      #0x1b            jt 12	jf 8
+			(008) jeq      #0x19            jt 12	jf 9
+			(009) jeq      #0x14            jt 12	jf 10
+			(010) jeq      #0x10            jt 12	jf 11
+			(011) jeq      #0x11            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			EOF
+	}, # isis_l2
+	isis_iih => {
+		DLT => 'EN10MB',
+		expr => 'iih',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 11	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 11
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 11
+			(006) ldb      [21]
+			(007) jeq      #0x11            jt 10	jf 8
+			(008) jeq      #0xf             jt 10	jf 9
+			(009) jeq      #0x10            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			EOF
+	}, # isis_iih
+	isis_lsp => {
+		DLT => 'EN10MB',
+		expr => 'lsp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 10	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 10
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 10
+			(006) ldb      [21]
+			(007) jeq      #0x12            jt 9	jf 8
+			(008) jeq      #0x14            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # isis_lsp
+	isis_snp => {
+		DLT => 'EN10MB',
+		expr => 'snp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 12	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 12
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 12
+			(006) ldb      [21]
+			(007) jeq      #0x1b            jt 11	jf 8
+			(008) jeq      #0x1a            jt 11	jf 9
+			(009) jeq      #0x18            jt 11	jf 10
+			(010) jeq      #0x19            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			EOF
+	}, # isis_snp
+	isis_csnp => {
+		DLT => 'EN10MB',
+		expr => 'csnp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 10	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 10
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 10
+			(006) ldb      [21]
+			(007) jeq      #0x18            jt 9	jf 8
+			(008) jeq      #0x19            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # isis_csnp
+	isis_psnp => {
+		DLT => 'EN10MB',
+		expr => 'psnp',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 10	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0xfefe          jt 4	jf 10
+			(004) ldb      [17]
+			(005) jeq      #0x83            jt 6	jf 10
+			(006) ldb      [21]
+			(007) jeq      #0x1a            jt 9	jf 8
+			(008) jeq      #0x1b            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # isis_psnp
+
 	ip_multicast => {
 		snaplen => 1000,
 		DLT => 'IPV4',
@@ -1715,6 +2095,14 @@ my %invalid_filters = (
 	mtp2_hsls => {
 		DLT => 'MTP2',
 		expr => 'hsls 16',
+	},
+	atm_vpi => {
+		DLT => 'SUNATM',
+		expr => 'vpi 256',
+	},
+	atm_vci => {
+		DLT => 'SUNATM',
+		expr => 'vci 65536',
 	},
 	wlan_type => {
 		DLT => 'EN10MB',
