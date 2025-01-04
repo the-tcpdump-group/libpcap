@@ -320,7 +320,7 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 {
 	int status;
 	char dname[100];
-	char *cp;
+	char *cp, *cq;
 	int fd;
 #ifdef HAVE_DEV_DLPI
 	u_int unit;
@@ -337,6 +337,32 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 		pcapint_strlcpy(dname, name, sizeof(dname));
 	else
 		pcapint_strlcpy(dname, cp + 1, sizeof(dname));
+
+	/*
+	 * If this name has a colon followed by a number at
+	 * the end, it's a logical interface.  Those are just
+	 * the way you assign multiple IP addresses to a real
+	 * interface, so an entry for a logical interface should
+	 * be treated like the entry for the real interface;
+	 * we do that by stripping off the ":" and the number.
+	 */
+	cp = strchr(dname, ':');
+	if (cp != NULL) {
+		/*
+		 * We have a ":"; is it followed by a number?
+		 */
+		cq = cp + 1;
+		while (PCAP_ISDIGIT(*cq))
+			cq++;
+		if (*cq == '\0') {
+			/*
+			 * All digits after the ":" until the end.
+			 * Strip off the ":" and everything after
+			 * it.
+			 */
+			*cp = '\0';
+		}
+	}
 
 	/*
 	 * Split the device name into a device type name and a unit number;
@@ -398,6 +424,32 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	else
 		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
 		    name);
+
+	/*
+	 * If this name has a colon followed by a number at
+	 * the end, it's a logical interface.  Those are just
+	 * the way you assign multiple IP addresses to a real
+	 * interface, so an entry for a logical interface should
+	 * be treated like the entry for the real interface;
+	 * we do that by stripping off the ":" and the number.
+	 */
+	cp = strchr(dname, ':');
+	if (cp != NULL) {
+		/*
+		 * We have a ":"; is it followed by a number?
+		 */
+		cq = cp + 1;
+		while (PCAP_ISDIGIT(*cq))
+			cq++;
+		if (*cq == '\0') {
+			/*
+			 * All digits after the ":" until the end.
+			 * Strip off the ":" and everything after
+			 * it.
+			 */
+			*cp = '\0';
+		}
+	}
 
 	/*
 	 * Get the unit number, and a pointer to the end of the device
