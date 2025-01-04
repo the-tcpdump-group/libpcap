@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "29 December 2024"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "4 January 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -888,10 +888,10 @@ on the assumption that the packet is either a LANE emulated Ethernet
 packet or a LANE LE Control packet.  If \fBlane\fR isn't specified, the
 tests are done under the assumption that the packet is an
 LLC-encapsulated packet.
-.IP \fBoamf4s\fP
+.IP \fBoamf4sc\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 a segment OAM F4 flow cell (VPI=0 & VCI=3).
-.IP \fBoamf4e\fP
+.IP \fBoamf4ec\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 an end-to-end OAM F4 flow cell (VPI=0 & VCI=4).
 .IP \fBoamf4\fP
