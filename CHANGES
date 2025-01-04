@@ -12,6 +12,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
+    Solaris:
+      Fix not to ignore logical interfaces in fad-gifc.c and
+        fad-glifc.c.
     D-Bus:
       Fix message leak.
     Capture file writing:
@@ -83,8 +86,6 @@ Friday, August 30, 2024 / The Tcpdump Group
       Allow attaching to links owned by a non-global zone.  (Based on
         pull request #1202.)
       Fix AF_LINK handling on illumos.
-      Fix not to ignore logical interfaces in fad-gifc.c and
-        fad-glifc.c.
     macOS:
       Redid the availability macros to be closer to what Apple's doing
         in recent SDKs, including tagging pcap-namedb.h routines.
