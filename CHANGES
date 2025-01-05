@@ -12,6 +12,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
+    FreeBSD:
+      Fix detection and enablng of zero-copy supporrt.
+      Fix errors in the zero-copy code.
     Solaris:
       Fix not to ignore logical interfaces in fad-gifc.c and
         fad-glifc.c.
