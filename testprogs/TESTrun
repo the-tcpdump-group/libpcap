@@ -909,6 +909,510 @@ my %valid_filters = (
 			(044) ret      #0
 			EOF
 	}, # ether_proto_abbrev
+	wlan_ra => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan ra 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x8             jt 2	jf 7
+			(002) ld       [6]
+			(003) jeq      #0x56789abc      jt 4	jf 7
+			(004) ldh      [4]
+			(005) jeq      #0x1234          jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # wlan_ra
+	wlan_ta => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan ta 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x8             jt 2	jf 15
+			(002) and      #0xc
+			(003) jeq      #0x4             jt 4	jf 10
+			(004) ldb      [0]
+			(005) and      #0xf0
+			(006) jeq      #0xc0            jt 15	jf 7
+			(007) ldb      [0]
+			(008) and      #0xf0
+			(009) jeq      #0xd0            jt 15	jf 10
+			(010) ld       [12]
+			(011) jeq      #0x56789abc      jt 12	jf 15
+			(012) ldh      [10]
+			(013) jeq      #0x1234          jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # wlan_ta
+	wlan_addr1 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan addr1 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ld       [6]
+			(001) jeq      #0x56789abc      jt 2	jf 5
+			(002) ldh      [4]
+			(003) jeq      #0x1234          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # wlan_addr1
+	wlan_addr2 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan addr2 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xc
+			(002) jeq      #0x4             jt 3	jf 9
+			(003) ldb      [0]
+			(004) and      #0xf0
+			(005) jeq      #0xc0            jt 14	jf 6
+			(006) ldb      [0]
+			(007) and      #0xf0
+			(008) jeq      #0xd0            jt 14	jf 9
+			(009) ld       [12]
+			(010) jeq      #0x56789abc      jt 11	jf 14
+			(011) ldh      [10]
+			(012) jeq      #0x1234          jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			EOF
+	}, # wlan_addr2
+	wlan_addr3 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan addr3 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xc
+			(002) jeq      #0x4             jt 8	jf 3
+			(003) ld       [18]
+			(004) jeq      #0x56789abc      jt 5	jf 8
+			(005) ldh      [16]
+			(006) jeq      #0x1234          jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			EOF
+	}, # wlan_addr3
+	wlan_addr4 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan addr4 12:34:56:78:9a:bc',
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) and      #0x3
+			(002) jeq      #0x3             jt 3	jf 8
+			(003) ld       [26]
+			(004) jeq      #0x56789abc      jt 5	jf 8
+			(005) ldh      [24]
+			(006) jeq      #0x1234          jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			EOF
+	}, # wlan_addr4
+	type_mgt => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0xc             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # type_mgt
+	type_mgt_subtype_assoc_req => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype assoc-req',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0xfc            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # type_mgt_subtype_assoc_req
+	type_mgt_subtype_assoc_resp => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype assoc-resp',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x10            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_assoc_resp
+	type_mgt_subtype_reassoc_req => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype reassoc-req',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x20            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_reassoc_req
+	type_mgt_subtype_reassoc_resp => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype reassoc-resp',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x30            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_reassoc_resp
+	type_mgt_subtype_probe_req => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype probe-req',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x40            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_probe_req
+	type_mgt_subtype_probe_resp => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype probe-resp',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x50            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_probe_resp
+	type_mgt_subtype_beacon => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype beacon',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x80            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_beacon
+	type_mgt_subtype_atim => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype atim',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x90            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_atim
+	type_mgt_subtype_disassoc => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype disassoc',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xa0            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_disassoc
+	type_mgt_subtype_auth => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype auth',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xb0            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_auth
+	type_mgt_subtype_deauth => {
+		DLT => 'IEEE802_11',
+		expr => 'type mgt subtype deauth',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xc0            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_mgt_subtype_deauth
+	type_ctl => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xc
+			(002) jeq      #0x4             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl
+	type_ctl_subtype_bar => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype bar',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x84            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_bar
+	type_ctl_subtype_ba => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype ba',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x94            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_ba
+	type_ctl_subtype_ps_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype ps-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xa4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_ps_poll
+	type_ctl_subtype_rts => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype rts',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xb4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_rts
+	type_ctl_subtype_cts => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype cts',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xc4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_cts
+	type_ctl_subtype_ack => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype ack',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xd4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_ack
+	type_ctl_subtype_cf_end => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype cf-end',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xe4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_cf_end
+	type_ctl_subtype_cf_end_ack => {
+		DLT => 'IEEE802_11',
+		expr => 'type ctl subtype cf-end-ack',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xf4            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_ctl_subtype_cf_end_ack
+	type_data => {
+		DLT => 'IEEE802_11',
+		expr => 'type data',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xc
+			(002) jeq      #0x8             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data
+	type_data_subtype_data => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype data',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x8             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_data
+	type_data_subtype_data_cf_ack => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype data-cf-ack',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x18            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_data_cf_ack
+	type_data_subtype_data_cf_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype data-cf-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x28            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_data_cf_poll
+	type_data_subtype_data_cf_ack_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype data-cf-ack-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x38            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_data_cf_ack_poll
+	type_data_subtype_null => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype null',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x48            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_null
+	type_data_subtype_cf_ack => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype cf-ack',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x58            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_cf_ack
+	type_data_subtype_cf_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype cf-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x68            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_cf_poll
+	type_data_subtype_cf_ack_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype cf-ack-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x78            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_cf_ack_poll
+	type_data_subtype_qos_data => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-data',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x88            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_data
+	type_data_subtype_qos_data_cf_ack => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-data-cf-ack',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0x98            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_data_cf_ack
+	type_data_subtype_qos_data_cf_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-data-cf-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xa8            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_data_cf_poll
+	type_data_subtype_qos_data_cf_ack_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-data-cf-ack-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xb8            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_data_cf_ack_poll
+	type_data_subtype_qos => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xc8            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos
+	type_data_subtype_qos_cf_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-cf-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xe8            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_cf_poll
+	type_data_subtype_qos_cf_ack_poll => {
+		DLT => 'IEEE802_11',
+		expr => 'type data subtype qos-cf-ack-poll',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xfc
+			(002) jeq      #0xf8            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # type_data_subtype_qos_cf_ack_poll
 
 	pppoed => {
 		snaplen => 200,
