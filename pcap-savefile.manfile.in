@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "16 Aug 2023"
+.TH PCAP-SAVEFILE @MAN_FILE_FORMATS@ "6 Jan 2025"
 .SH NAME
 pcap-savefile \- libpcap savefile format
 .SH DESCRIPTION
@@ -86,10 +86,10 @@ seconds and nanoseconds rather than seconds and microseconds.
 Following this are:
 .IP
 A 2-byte file format major version number; the current version number is
-2.
+2 (big-endian 0x00 0x02 or little-endian 0x02 0x00).
 .IP
 A 2-byte file format minor version number; the current version number is
-4.
+4 (big-endian 0x00 0x04 or little-endian 0x04 0x00).
 .IP
 A 4-byte not used - SHOULD be filled with 0 by pcap file writers, and MUST
 be ignored by pcap file readers.  This value was documented by some older
