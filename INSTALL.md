@@ -255,4 +255,5 @@ You can get around this by installing GCC.
 	sockutils.h	    - socket and name lookup API prototypes
 	sslutils.c	    - OpenSSL interface routines
 	sslutils.h	    - OpenSSL interface prototypes
+	thread-local.h	    - header for some thread-safe support
 	varattrs.h	    - variable attribute macros
