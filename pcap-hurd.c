@@ -39,6 +39,13 @@ static struct bpf_insn filter[] = {
  * believe we are computing wrong here. */
 #define FILTER_COUNT (sizeof(filter) / (sizeof(short)))
 
+/*
+ * strerror() on GNU/Hurd maps Mach error messages to strings,
+ * so we can use pcapint_fmt_errmsg_for_errno() to format
+ * messages for them.
+ */
+#define pcapint_fmt_errmsg_for_kern_return_t	pcapint_fmt_errmsg_for_errno
+
 static int
 PCAP_WARN_UNUSED_RESULT
 pcap_device_set_filter(pcap_t *p, filter_array_t filter_array,
@@ -51,7 +58,7 @@ pcap_device_set_filter(pcap_t *p, filter_array_t filter_array,
 	                       filter_array, filter_count);
 	if (! kr)
 		return 0;
-	pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, errno,
+	pcapint_fmt_errmsg_for_kern_return_t(p->errbuf, PCAP_ERRBUF_SIZE, kr,
 	    "device_set_filter");
 	return PCAP_ERROR;
 }
@@ -141,7 +148,7 @@ retry:
 		if (kr == MACH_RCV_INTERRUPTED)
 			goto retry;
 
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		pcapint_fmt_errmsg_for_kern_return_t(p->errbuf, PCAP_ERRBUF_SIZE, kr,
 		    "mach_msg");
 		return PCAP_ERROR;
 	}
@@ -203,7 +210,7 @@ pcap_inject_hurd(pcap_t *p, const void *buf, int size)
 			  (io_buf_ptr_t)buf, size, &count);
 
 	if (kr) {
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		pcapint_fmt_errmsg_for_kern_return_t(p->errbuf, PCAP_ERRBUF_SIZE, kr,
 		    "device_write");
 		return -1;
 	}
@@ -264,7 +271,7 @@ pcap_activate_hurd(pcap_t *p)
 		kr = get_privileged_ports(NULL, &master);
 
 		if (kr) {
-			pcapint_fmt_errmsg_for_errno(p->errbuf,
+			pcapint_fmt_errmsg_for_kern_return_t(p->errbuf,
 			    PCAP_ERRBUF_SIZE, kr, "get_privileged_ports");
 			if (kr == EPERM)
 				ret = PCAP_ERROR_PERM_DENIED;
@@ -278,7 +285,7 @@ pcap_activate_hurd(pcap_t *p)
 	mach_port_deallocate(mach_task_self(), master);
 
 	if (kr) {
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		pcapint_fmt_errmsg_for_kern_return_t(p->errbuf, PCAP_ERRBUF_SIZE, kr,
 		    "device_open");
 		if (kr == ED_NO_SUCH_DEVICE) /* not ENODEV */
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
@@ -289,7 +296,7 @@ pcap_activate_hurd(pcap_t *p)
 				&ph->rcv_port);
 
 	if (kr) {
-		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE, kr,
+		pcapint_fmt_errmsg_for_kern_return_t(p->errbuf, PCAP_ERRBUF_SIZE, kr,
 		    "mach_port_allocate");
 		goto error;
 	}
