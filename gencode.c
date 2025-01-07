@@ -9118,7 +9118,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	sjeq->s.jf = b_vid->stmts;
 	sappend(s, sjeq);
 
-	s2 = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+	s2 = new_stmt(cstate, BPF_LD|BPF_H|BPF_ABS);
 	s2->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
 	sappend(s, s2);
 	sjeq->s.jt = s2;
