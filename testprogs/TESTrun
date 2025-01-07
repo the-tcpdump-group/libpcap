@@ -46,6 +46,27 @@ sub broken_igrp {
 		'';
 }
 
+# In valid_filters the top-level keys are test names.  When possible, a test
+# name should be easy to relate with the main filter expression, for example,
+# ip_multicast for "ip multicast" etc.  However, because in Perl hashes the
+# keys are not ordered, sometimes the easiest way to group the tests in the
+# alphabetically-sorted output is to use an artificial prefix, for example,
+# mtp2_ for "fisu", "lssu", "msu" etc.  The top-level values are in turn
+# hashes, where the keys have the following meaning:
+#
+# * DLT (mandatory, string): the name of the DLT to use for the test
+# * snaplen (optional, int): the snapshot length to use for the test
+# * expr (mandatory, string): the filter expression
+# * opt (optional, [multi-line] string): the expected optimised bytecode
+# * unopt (optional, [multi-line] string): the expected unoptimised bytecode
+# * aliases (optional, array of strings): each string is a filter expression
+#   and must produce exactly the same bytecode as "expr" (applies to "opt" and
+#   "unopt" separately)
+# * skip (optional, string): if defined and is not equal to an empty string,
+#   causes the test to skip using the string as the reason
+#
+# At least one of "opt" and "unopt" must be defined in each test.
+
 my %valid_filters = (
 	empty => {
 		DLT => 'EN10MB',
@@ -82,7 +103,7 @@ my %valid_filters = (
 			EOF
 	}, # less
 
-	index_link_byte => {
+	link_index_byte => {
 		DLT => 'EN10MB',
 		expr => 'link[5] == 0x12',
 		aliases => [
@@ -105,8 +126,8 @@ my %valid_filters = (
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
-	}, # index_link_byte
-	index_link_halfword => {
+	}, # link_index_byte
+	link_index_halfword => {
 		DLT => 'EN10MB',
 		expr => 'link[7:2] == 0x1234',
 		aliases => [
@@ -123,8 +144,8 @@ my %valid_filters = (
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
-	}, # index_link_halfword
-	index_link_word => {
+	}, # link_index_halfword
+	link_index_word => {
 		DLT => 'EN10MB',
 		expr => 'link[10:4] == 0x12345678',
 		aliases => [
@@ -141,9 +162,9 @@ my %valid_filters = (
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
-	}, # index_link_word
+	}, # link_index_word
 
-	index_icmp_icmptype => {
+	icmp_index_icmptype => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
 		# Verify that the named offset resolves to the same constant and that the
@@ -163,8 +184,8 @@ my %valid_filters = (
 			(009) ret      #16000
 			(010) ret      #0
 			EOF
-	}, # index_icmp_icmptype
-	index_icmp_icmpcode => {
+	}, # icmp_index_icmptype
+	icmp_index_icmpcode => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
 		# Same as for icmp[icmptype] above.
@@ -183,8 +204,8 @@ my %valid_filters = (
 			(009) ret      #16000
 			(010) ret      #0
 			EOF
-	}, # index_icmp_icmpcode
-	index_icmp6_icmp6type => {
+	}, # icmp_index_icmpcode
+	icmp6_index_icmp6type => {
 		DLT => 'IPV6',
 		snaplen => 10000,
 		# Same as for icmp[icmptype] above.
@@ -199,8 +220,8 @@ my %valid_filters = (
 			(005) ret      #10000
 			(006) ret      #0
 			EOF
-	}, # index_icmp6_icmp6type
-	index_icmp6_icmp6code => {
+	}, # icmp6_index_icmp6type
+	icmp6_index_icmp6code => {
 		DLT => 'IPV6',
 		snaplen => 10000,
 		# Same as for icmp[icmptype] above.
@@ -215,8 +236,8 @@ my %valid_filters = (
 			(005) ret      #10000
 			(006) ret      #0
 			EOF
-	}, # index_icmp6_icmp6code
-	link_udp => {
+	}, # icmp6_index_icmp6code
+	udp_index_halfword => {
 		DLT => 'RAW',
 		snaplen => 65535,
 		# The implementation is IPv4-only.
@@ -235,8 +256,8 @@ my %valid_filters = (
 			(010) ret      #65535
 			(011) ret      #0
 			EOF
-	}, # link_udp
-	link_tcp => {
+	}, # udp_index_halfword
+	tcp_index_byte => {
 		DLT => 'RAW',
 		snaplen => 262144,
 		# Same as for icmp[icmptype] above.
@@ -257,7 +278,7 @@ my %valid_filters = (
 			(010) ret      #262144
 			(011) ret      #0
 			EOF
-	}, # link_tcp
+	}, # tcp_index_byte
 	sll2 => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
@@ -723,7 +744,7 @@ my %valid_filters = (
 	}, # ether_proto_ip
 	ether_proto_ip6 => {
 		DLT => 'EN10MB',
-		skip => ipv6_disabled,
+		skip => ipv6_disabled(),
 		expr => 'ether proto \ip6',
 		unopt => <<~'EOF',
 			(000) ldh      [12]
@@ -2172,7 +2193,6 @@ my %valid_filters = (
 			EOF
 	}, # proto
 	ip_host => {
-		skip => ipv6_disabled(),
 		# For this and some other single-stack qualifiers below use DLT_RAW to
 		# verify that the bytecode does not try to match the other protocol too.
 		DLT => 'RAW',
@@ -2195,7 +2215,6 @@ my %valid_filters = (
 			EOF
 	}, # host
 	ip_src_host => {
-		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		snaplen => 2000,
 		expr => 'ip src host 10.0.0.2',
@@ -2215,7 +2234,6 @@ my %valid_filters = (
 			EOF
 	}, # ip_src_host
 	ip_dst_host => {
-		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		snaplen => 2000,
 		expr => 'ip dst host 172.17.89.30',
@@ -2335,7 +2353,7 @@ my %valid_filters = (
 		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
 		# from all other supported OSes.  Skip the test until it is
 		# clear how to resolve this discrepancy.
-		skip => broken_igrp,
+		skip => broken_igrp(),
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
@@ -2651,7 +2669,7 @@ my %valid_filters = (
 	}, # ip6_multicast
 
 	icmp_types => {
-		'DLT' => 'EN10MB',
+		DLT => 'EN10MB',
 		expr => <<~'EOF',
 			0 == icmp-echoreply &&
 			3 == icmp-unreach &&
@@ -2674,7 +2692,7 @@ my %valid_filters = (
 			EOF
 	}, # icmp_types
 	icmp6_types => {
-		'DLT' => 'IPV6',
+		DLT => 'IPV6',
 		expr => <<~'EOF',
 			1 == icmp6-destinationunreach &&
 			2 == icmp6-packettoobig &&
@@ -2713,7 +2731,7 @@ my %valid_filters = (
 
 
 	tcp_flags => {
-		'DLT' => 'EN10MB',
+		DLT => 'EN10MB',
 		expr => <<~'EOF',
 			0x01 == tcp-fin &&
 			0x02 == tcp-syn &&
@@ -2812,7 +2830,7 @@ my %invalid_filters = (
 		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
 	},
 	ip6_host_disabled => {
-		skip => ipv6_enabled,
+		skip => ipv6_enabled(),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
 	},
@@ -2825,7 +2843,7 @@ my %invalid_filters = (
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/129',
 	},
 	ip6_net_disabled => {
-		skip => ipv6_enabled,
+		skip => ipv6_enabled(),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
 	},
