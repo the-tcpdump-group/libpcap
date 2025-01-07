@@ -354,6 +354,13 @@ Abbreviation for:
 \fBip proto\fR 9
 .fi
 .in -.5i
+.IP "\fBeigrp\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBip proto\fR 88
+.fi
+.in -.5i
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 (See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
@@ -1015,6 +1022,7 @@ is one of
 .BR atalk ,
 .BR carp ,
 .BR decnet ,
+.BR eigrp ,
 .BR ether ,
 .BR fddi ,
 .BR icmp ,
@@ -1075,6 +1083,7 @@ This check is implicitly applied to the
 .BR igmp ,
 .BR pim ,
 .BR igrp ,
+.BR eigrp ,
 .BR vrrp
 and
 .BR carp
