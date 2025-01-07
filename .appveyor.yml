@@ -168,4 +168,4 @@ build_script:
   - cd build
   - cmake --version
   - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
-  - msbuild /m /nologo /p:Configuration=Release pcap.sln
+  - msbuild /m /nologo /p:Configuration=Release /p:WarningLevel=4 pcap.sln
