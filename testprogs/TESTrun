@@ -40,8 +40,10 @@ sub ipv6_enabled {
 	return (defined $config{INET6} && $config{INET6}) ? 'IPv6 syntax enabled' : '';
 }
 
-sub is_freebsd {
-	return $^O eq 'freebsd' ? 'running on FreeBSD' : '';
+sub broken_igrp {
+	return $^O eq 'freebsd' ? 'running on FreeBSD' :
+		$^O eq 'darwin' ? 'running on macOS' :
+		'';
 }
 
 my %valid_filters = (
@@ -2333,7 +2335,7 @@ my %valid_filters = (
 		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
 		# from all other supported OSes.  Skip the test until it is
 		# clear how to resolve this discrepancy.
-		skip => is_freebsd,
+		skip => broken_igrp,
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
