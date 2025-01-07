@@ -5,6 +5,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         reported by Harrison Green.
     Source code:
       Deprecate bpf_filter().
+    Packet filtering:
+      Initialize the scratch memory store to 0.
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.

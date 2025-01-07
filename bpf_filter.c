@@ -94,7 +94,6 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 {
 	register uint32_t A, X;
 	register bpf_u_int32 k;
-	uint32_t mem[BPF_MEMWORDS];
 
 	if (pc == 0)
 		/*
@@ -103,6 +102,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 		return (u_int)-1;
 	A = 0;
 	X = 0;
+	uint32_t mem[BPF_MEMWORDS] = {0};
 	--pc;
 	for (;;) {
 		++pc;
