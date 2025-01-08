@@ -1639,11 +1639,11 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
-                /*
-                 * the only BPF-interesting FRF.16 frames are non-control frames;
-                 * Frame Relay has a variable length link-layer
-                 * so lets start with offset 4 for now and increments later on (FIXME);
-                 */
+		/*
+		 * the only BPF-interesting FRF.16 frames are non-control frames;
+		 * Frame Relay has a variable length link-layer
+		 * so lets start with offset 4 for now and increments later on (FIXME);
+		 */
 	case DLT_MFR:
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 0;
@@ -1673,17 +1673,17 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
-        case DLT_JUNIPER_MFR:
-        case DLT_JUNIPER_MLFR:
-        case DLT_JUNIPER_MLPPP:
-        case DLT_JUNIPER_PPP:
-        case DLT_JUNIPER_CHDLC:
-        case DLT_JUNIPER_FRELAY:
+	case DLT_JUNIPER_MFR:
+	case DLT_JUNIPER_MLFR:
+	case DLT_JUNIPER_MLPPP:
+	case DLT_JUNIPER_PPP:
+	case DLT_JUNIPER_CHDLC:
+	case DLT_JUNIPER_FRELAY:
 		cstate->off_linktype.constant_part = 4;
 		cstate->off_linkpl.constant_part = 4;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-                break;
+		break;
 
 	case DLT_JUNIPER_ATM1:
 		cstate->off_linktype.constant_part = 4;		/* in reality variable between 4-8 */
