@@ -80,7 +80,7 @@ my %valid_filters = (
 		DLT => 'RAW',
 		snaplen => 200,
 		expr => 'greater 100',
-		aliases => ['len >= 100'],
+		aliases => ['len >= 100', 'length >= 100'],
 		# Only the optimized bytecode is equivalent!
 		opt => <<~'EOF',
 			(000) ld       #pktlen
@@ -93,7 +93,7 @@ my %valid_filters = (
 		DLT => 'RAW',
 		snaplen => 200,
 		expr => 'less 200',
-		aliases => ['len <= 200'],
+		aliases => ['len <= 200', 'length <= 200'],
 		# Only the optimized bytecode is equivalent!
 		opt => <<~'EOF',
 			(000) ld       #pktlen
@@ -279,21 +279,61 @@ my %valid_filters = (
 			(011) ret      #0
 			EOF
 	}, # tcp_index_byte
-	sll2 => {
+	linux_sll2_inbound => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
-		expr => '(inbound && ifindex 7) || (outbound && ifindex 9)',
-		opt => <<~'EOF',
+		expr => 'inbound',
+		unopt => <<~'EOF',
 			(000) ldb      [10]
-			(001) jeq      #0x4             jt 2	jf 4
-			(002) ld       [4]
-			(003) jeq      #0x9             jt 6	jf 7
-			(004) ld       [4]
-			(005) jeq      #0x7             jt 6	jf 7
-			(006) ret      #65535
-			(007) ret      #0
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #65535
 			EOF
-	}, # sll2
+	}, # linux_sll2_inbound
+	linux_sll2_outbound => {
+		DLT => 'LINUX_SLL2',
+		snaplen => 65535,
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #65535
+			(003) ret      #0
+			EOF
+	}, # linux_sll2_outbound
+	linux_sll2_ifindex => {
+		DLT => 'LINUX_SLL2',
+		snaplen => 65535,
+		expr => 'ifindex 7',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) jeq      #0x7             jt 2	jf 3
+			(002) ret      #65535
+			(003) ret      #0
+			EOF
+	}, # linux_sll2_ifindex
+	slip_inbound => {
+		DLT => 'SLIP',
+		snaplen => 100,
+		expr => 'inbound',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #100
+			(003) ret      #0
+			EOF
+	}, # slip_inbound
+	slip_outbound => {
+		DLT => 'SLIP',
+		snaplen => 100,
+		expr => 'outbound',
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #100
+			EOF
+	}, # slip_outbound
 
 	mtp2_fisu => {
 		DLT => 'MTP2',
@@ -889,6 +929,99 @@ my %valid_filters = (
 			EOF
 	}, # ether_proto_stp
 
+	wlan_host => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan host 12:34:56:78:9a:bc',
+		aliases => [
+			'wlan src or dst host 12:34:56:78:9a:bc',
+			'wlan src or dst 12:34:56:78:9a:bc',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 33	jf 2
+			(002) jset     #0x8             jt 3	jf 24
+			(003) ldb      [1]
+			(004) jset     #0x2             jt 5	jf 14
+			(005) jset     #0x1             jt 6	jf 10
+			(006) ld       [26]
+			(007) jeq      #0x56789abc      jt 8	jf 20
+			(008) ldh      [24]
+			(009) jeq      #0x1234          jt 32	jf 20
+			(010) ld       [18]
+			(011) jeq      #0x56789abc      jt 12	jf 28
+			(012) ldh      [16]
+			(013) jeq      #0x1234          jt 32	jf 28
+			(014) ld       [12]
+			(015) jeq      #0x56789abc      jt 16	jf 18
+			(016) ldh      [10]
+			(017) jeq      #0x1234          jt 32	jf 18
+			(018) ldb      [1]
+			(019) jset     #0x1             jt 20	jf 28
+			(020) ld       [18]
+			(021) jeq      #0x56789abc      jt 22	jf 33
+			(022) ldh      [16]
+			(023) jeq      #0x1234          jt 32	jf 33
+			(024) ld       [12]
+			(025) jeq      #0x56789abc      jt 26	jf 28
+			(026) ldh      [10]
+			(027) jeq      #0x1234          jt 32	jf 28
+			(028) ld       [6]
+			(029) jeq      #0x56789abc      jt 30	jf 33
+			(030) ldh      [4]
+			(031) jeq      #0x1234          jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
+			EOF
+	}, # wlan_host
+	wlan_src_host => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan src host 12:34:56:78:9a:bc',
+		aliases => ['wlan src 12:34:56:78:9a:bc'],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 19	jf 2
+			(002) jset     #0x8             jt 3	jf 14
+			(003) ldb      [1]
+			(004) jset     #0x2             jt 5	jf 14
+			(005) jset     #0x1             jt 6	jf 10
+			(006) ld       [26]
+			(007) jeq      #0x56789abc      jt 8	jf 19
+			(008) ldh      [24]
+			(009) jeq      #0x1234          jt 18	jf 19
+			(010) ld       [18]
+			(011) jeq      #0x56789abc      jt 12	jf 19
+			(012) ldh      [16]
+			(013) jeq      #0x1234          jt 18	jf 19
+			(014) ld       [12]
+			(015) jeq      #0x56789abc      jt 16	jf 19
+			(016) ldh      [10]
+			(017) jeq      #0x1234          jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # wlan_src_host
+	wlan_dst_host => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dst host 12:34:56:78:9a:bc',
+		aliases => ['wlan dst 12:34:56:78:9a:bc'],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 14	jf 2
+			(002) jset     #0x8             jt 3	jf 9
+			(003) ldb      [1]
+			(004) jset     #0x1             jt 5	jf 9
+			(005) ld       [18]
+			(006) jeq      #0x56789abc      jt 7	jf 14
+			(007) ldh      [16]
+			(008) jeq      #0x1234          jt 13	jf 14
+			(009) ld       [6]
+			(010) jeq      #0x56789abc      jt 11	jf 14
+			(011) ldh      [4]
+			(012) jeq      #0x1234          jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			EOF
+	}, # wlan_dst_host
 	wlan_ra => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan ra 12:34:56:78:9a:bc',
@@ -988,10 +1121,14 @@ my %valid_filters = (
 			(008) ret      #0
 			EOF
 	}, # wlan_addr4
-	type_mgt => {
+	wlan_type_mgt => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt',
-		aliases => ['wlan type mgt'],
+		expr => 'wlan type mgt',
+		aliases => [
+			'type mgt',
+			'wlan type 0',
+			'type 0',
+		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
 			(001) jset     #0xc             jt 2	jf 3
@@ -999,13 +1136,19 @@ my %valid_filters = (
 			(003) ret      #262144
 			EOF
 	}, # type_mgt
-	type_mgt_subtype_assoc_req => {
+	wlan_subtype_assoc_req => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype assoc-req',
+		expr => 'wlan subtype assoc-req',
 		aliases => [
 			'subtype assoc-req',
 			'wlan type mgt subtype assoc-req',
-			'wlan subtype assoc-req',
+			'type mgt subtype assoc-req',
+			'wlan type 0 subtype assoc-req',
+			'type 0 subtype assoc-req',
+			'wlan type mgt subtype 0x00',
+			'type mgt subtype 0x00',
+			'wlan type 0 subtype 0x00',
+			'type 0 subtype 0x00',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1013,14 +1156,20 @@ my %valid_filters = (
 			(002) ret      #0
 			(003) ret      #262144
 			EOF
-	}, # type_mgt_subtype_assoc_req
-	type_mgt_subtype_assoc_resp => {
+	}, # wlan_type_mgt_subtype_assoc_req
+	wlan_subtype_assoc_resp => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype assoc-resp',
+		expr => 'wlan subtype assoc-resp',
 		aliases => [
 			'subtype assoc-resp',
 			'wlan type mgt subtype assoc-resp',
-			'wlan subtype assoc-resp',
+			'type mgt subtype assoc-resp',
+			'wlan type 0 subtype assoc-resp',
+			'type 0 subtype assoc-resp',
+			'wlan type mgt subtype 0x10',
+			'type mgt subtype 0x10',
+			'wlan type 0 subtype 0x10',
+			'type 0 subtype 0x10',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1029,14 +1178,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_assoc_resp
-	type_mgt_subtype_reassoc_req => {
+	}, # wlan_subtype_assoc_resp
+	wlan_subtype_reassoc_req => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype reassoc-req',
+		expr => 'wlan subtype reassoc-req',
 		aliases => [
 			'subtype reassoc-req',
 			'wlan type mgt subtype reassoc-req',
-			'wlan subtype reassoc-req',
+			'type mgt subtype reassoc-req',
+			'wlan type 0 subtype reassoc-req',
+			'type 0 subtype reassoc-req',
+			'wlan type mgt subtype 0x20',
+			'type mgt subtype 0x20',
+			'wlan type 0 subtype 0x20',
+			'type 0 subtype 0x20',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1045,14 +1200,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_reassoc_req
-	type_mgt_subtype_reassoc_resp => {
+	}, # wlan_subtype_reassoc_req
+	wlan_subtype_reassoc_resp => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype reassoc-resp',
+		expr => 'wlan subtype reassoc-resp',
 		aliases => [
 			'subtype reassoc-resp',
 			'wlan type mgt subtype reassoc-resp',
-			'wlan subtype reassoc-resp',
+			'type mgt subtype reassoc-resp',
+			'wlan type 0 subtype reassoc-resp',
+			'type 0 subtype reassoc-resp',
+			'wlan type mgt subtype 0x30',
+			'type mgt subtype 0x30',
+			'wlan type 0 subtype 0x30',
+			'type 0 subtype 0x30',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1061,14 +1222,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_reassoc_resp
-	type_mgt_subtype_probe_req => {
+	}, # wlan_mgt_subtype_reassoc_resp
+	wlan_subtype_probe_req => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype probe-req',
+		expr => 'wlan subtype probe-req',
 		aliases => [
 			'subtype probe-req',
 			'wlan type mgt subtype probe-req',
-			'wlan subtype probe-req',
+			'type mgt subtype probe-req',
+			'wlan type 0 subtype probe-req',
+			'type 0 subtype probe-req',
+			'wlan type mgt subtype 0x40',
+			'type mgt subtype 0x40',
+			'wlan type 0 subtype 0x40',
+			'type 0 subtype 0x40',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1077,14 +1244,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_probe_req
-	type_mgt_subtype_probe_resp => {
+	}, # wlan_subtype_probe_req
+	wlan_subtype_probe_resp => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype probe-resp',
+		expr => 'wlan subtype probe-resp',
 		aliases => [
 			'subtype probe-resp',
 			'wlan type mgt subtype probe-resp',
-			'wlan subtype probe-resp',
+			'type mgt subtype probe-resp',
+			'wlan type 0 subtype probe-resp',
+			'type 0 subtype probe-resp',
+			'wlan type mgt subtype 0x50',
+			'type mgt subtype 0x50',
+			'wlan type 0 subtype 0x50',
+			'type 0 subtype 0x50',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1093,14 +1266,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_probe_resp
-	type_mgt_subtype_beacon => {
+	}, # wlan_subtype_probe_resp
+	wlan_subtype_beacon => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype beacon',
+		expr => 'wlan subtype beacon',
 		aliases => [
 			'subtype beacon',
 			'wlan type mgt subtype beacon',
-			'wlan subtype beacon',
+			'type mgt subtype beacon',
+			'wlan type 0 subtype beacon',
+			'type 0 subtype beacon',
+			'wlan type mgt subtype 0x80',
+			'type mgt subtype 0x80',
+			'wlan type 0 subtype 0x80',
+			'type 0 subtype 0x80',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1109,14 +1288,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_beacon
-	type_mgt_subtype_atim => {
+	}, # wlan_subtype_beacon
+	wlan_subtype_atim => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype atim',
+		expr => 'wlan subtype atim',
 		aliases => [
 			'subtype atim',
 			'wlan type mgt subtype atim',
-			'wlan subtype atim',
+			'type mgt subtype atim',
+			'wlan type 0 subtype atim',
+			'type 0 subtype atim',
+			'wlan type mgt subtype 0x90',
+			'type mgt subtype 0x90',
+			'wlan type 0 subtype 0x90',
+			'type 0 subtype 0x90',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1125,14 +1310,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_atim
-	type_mgt_subtype_disassoc => {
+	}, # wlan_subtype_atim
+	wlan_subtype_disassoc => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype disassoc',
+		expr => 'wlan subtype disassoc',
 		aliases => [
 			'subtype disassoc',
 			'wlan type mgt subtype disassoc',
-			'wlan subtype disassoc',
+			'type mgt subtype disassoc',
+			'wlan type 0 subtype disassoc',
+			'type 0 subtype disassoc',
+			'wlan type mgt subtype 0xa0',
+			'type mgt subtype 0xa0',
+			'wlan type 0 subtype 0xa0',
+			'type 0 subtype 0xa0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1141,14 +1332,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_disassoc
-	type_mgt_subtype_auth => {
+	}, # wlan_subtype_disassoc
+	wlan_subtype_auth => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype auth',
+		expr => 'wlan subtype auth',
 		aliases => [
 			'subtype auth',
 			'wlan type mgt subtype auth',
-			'wlan subtype auth',
+			'type mgt subtype auth',
+			'wlan type 0 subtype auth',
+			'type 0 subtype auth',
+			'wlan type mgt subtype 0xb0',
+			'type mgt subtype 0xb0',
+			'wlan type 0 subtype 0xb0',
+			'type 0 subtype 0xb0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1157,14 +1354,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_auth
-	type_mgt_subtype_deauth => {
+	}, # wlan_subtype_auth
+	wlan_subtype_deauth => {
 		DLT => 'IEEE802_11',
-		expr => 'type mgt subtype deauth',
+		expr => 'wlan subtype deauth',
 		aliases => [
 			'subtype deauth',
 			'wlan type mgt subtype deauth',
-			'wlan subtype deauth',
+			'type mgt subtype deauth',
+			'wlan type 0 subtype deauth',
+			'type 0 subtype deauth',
+			'wlan type mgt subtype 0xc0',
+			'type mgt subtype 0xc0',
+			'wlan type 0 subtype 0xc0',
+			'type 0 subtype 0xc0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1173,11 +1376,15 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_mgt_subtype_deauth
-	type_ctl => {
+	}, # wlan_subtype_deauth
+	wlan_type_ctl => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl',
-		aliases => ['wlan type ctl'],
+		expr => 'wlan type ctl',
+		aliases => [
+			'type ctl',
+			'wlan type 4',
+			'type 4',
+		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
 			(001) and      #0xc
@@ -1186,13 +1393,19 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # type_ctl
-	type_ctl_subtype_bar => {
+	wlan_subtype_bar => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype bar',
+		expr => 'wlan subtype bar',
 		aliases => [
 			'subtype bar',
 			'wlan type ctl subtype bar',
-			'wlan subtype bar',
+			'type ctl subtype bar',
+			'wlan type 4 subtype bar',
+			'type 4 subtype bar',
+			'wlan type ctl subtype 0x80',
+			'type ctl subtype 0x80',
+			'wlan type 4 subtype 0x80',
+			'type 4 subtype 0x80',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1201,14 +1414,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_bar
-	type_ctl_subtype_ba => {
+	}, # wlan_subtype_bar
+	wlan_subtype_ba => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype ba',
+		expr => 'wlan subtype ba',
 		aliases => [
 			'subtype ba',
 			'wlan type ctl subtype ba',
-			'wlan subtype ba',
+			'type ctl subtype ba',
+			'wlan type 4 subtype ba',
+			'type 4 subtype ba',
+			'wlan type ctl subtype 0x90',
+			'type ctl subtype 0x90',
+			'wlan type 4 subtype 0x90',
+			'type 4 subtype 0x90',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1217,14 +1436,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_ba
-	type_ctl_subtype_ps_poll => {
+	}, # wlan_subtype_ba
+	wlan_subtype_ps_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype ps-poll',
+		expr => 'wlan subtype ps-poll',
 		aliases => [
 			'subtype ps-poll',
 			'wlan type ctl subtype ps-poll',
-			'wlan subtype ps-poll',
+			'type ctl subtype ps-poll',
+			'wlan type 4 subtype ps-poll',
+			'type 4 subtype ps-poll',
+			'wlan type ctl subtype 0xa0',
+			'type ctl subtype 0xa0',
+			'wlan type 4 subtype 0xa0',
+			'type 4 subtype 0xa0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1233,14 +1458,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_ps_poll
-	type_ctl_subtype_rts => {
+	}, # wlan_subtype_ps_poll
+	wlan_subtype_rts => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype rts',
+		expr => 'wlan subtype rts',
 		aliases => [
 			'subtype rts',
 			'wlan type ctl subtype rts',
-			'wlan subtype rts',
+			'type ctl subtype rts',
+			'wlan type 4 subtype rts',
+			'type 4 subtype rts',
+			'wlan type ctl subtype 0xb0',
+			'type ctl subtype 0xb0',
+			'wlan type 4 subtype 0xb0',
+			'type 4 subtype 0xb0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1249,14 +1480,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_rts
-	type_ctl_subtype_cts => {
+	}, # wlan_subtype_rts
+	wlan_subtype_cts => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype cts',
+		expr => 'wlan subtype cts',
 		aliases => [
 			'subtype cts',
 			'wlan type ctl subtype cts',
-			'wlan subtype cts',
+			'type ctl subtype cts',
+			'wlan type 4 subtype cts',
+			'type 4 subtype cts',
+			'wlan type ctl subtype 0xc0',
+			'type ctl subtype 0xc0',
+			'wlan type 4 subtype 0xc0',
+			'type 4 subtype 0xc0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1265,14 +1502,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_cts
-	type_ctl_subtype_ack => {
+	}, # wlan_subtype_cts
+	wlan_subtype_ack => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype ack',
+		expr => 'wlan subtype ack',
 		aliases => [
 			'subtype ack',
 			'wlan type ctl subtype ack',
-			'wlan subtype ack',
+			'type ctl subtype ack',
+			'wlan type 4 subtype ack',
+			'type 4 subtype ack',
+			'wlan type ctl subtype 0xd0',
+			'type ctl subtype 0xd0',
+			'wlan type 4 subtype 0xd0',
+			'type 4 subtype 0xd0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1281,14 +1524,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_ack
-	type_ctl_subtype_cf_end => {
+	}, # wlan_subtype_ack
+	wlan_subtype_cf_end => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype cf-end',
+		expr => 'wlan subtype cf-end',
 		aliases => [
 			'subtype cf-end',
 			'wlan type ctl subtype cf-end',
-			'wlan subtype cf-end',
+			'type ctl subtype cf-end',
+			'wlan type 4 subtype cf-end',
+			'type 4 subtype cf-end',
+			'wlan type ctl subtype 0xe0',
+			'type ctl subtype 0xe0',
+			'wlan type 4 subtype 0xe0',
+			'type 4 subtype 0xe0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1297,14 +1546,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_cf_end
-	type_ctl_subtype_cf_end_ack => {
+	}, # wlan_subtype_cf_end
+	wlan_subtype_cf_end_ack => {
 		DLT => 'IEEE802_11',
-		expr => 'type ctl subtype cf-end-ack',
+		expr => 'wlan subtype cf-end-ack',
 		aliases => [
 			'subtype cf-end-ack',
 			'wlan type ctl subtype cf-end-ack',
-			'wlan subtype cf-end-ack',
+			'type ctl subtype cf-end-ack',
+			'wlan type 4 subtype cf-end-ack',
+			'type 4 subtype cf-end-ack',
+			'wlan type ctl subtype 0xf0',
+			'type ctl subtype 0xf0',
+			'wlan type 4 subtype 0xf0',
+			'type 4 subtype 0xf0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1313,11 +1568,15 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_ctl_subtype_cf_end_ack
-	type_data => {
+	}, # wlan_subtype_cf_end_ack
+	wlan_type_data => {
 		DLT => 'IEEE802_11',
-		expr => 'type data',
-		aliases => ['wlan type data'],
+		expr => 'wlan type data',
+		aliases => [
+			'type data',
+			'wlan type 8',
+			'type 8',
+		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
 			(001) and      #0xc
@@ -1325,14 +1584,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data
-	type_data_subtype_data => {
+	}, # wlan_type_data
+	wlan_subtype_data => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype data',
+		expr => 'wlan subtype data',
 		aliases => [
 			'subtype data',
 			'wlan type data subtype data',
-			'wlan subtype data',
+			'type data subtype data',
+			'wlan type 8 subtype data',
+			'type 8 subtype data',
+			'wlan type data subtype 0x00',
+			'type data subtype 0x00',
+			'wlan type 8 subtype 0x00',
+			'type 8 subtype 0x00',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1341,14 +1606,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_data
-	type_data_subtype_data_cf_ack => {
+	}, # wlan_subtype_data
+	wlan_subtype_data_cf_ack => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype data-cf-ack',
+		expr => 'wlan subtype data-cf-ack',
 		aliases => [
 			'subtype data-cf-ack',
 			'wlan type data subtype data-cf-ack',
-			'wlan subtype data-cf-ack',
+			'type data subtype data-cf-ack',
+			'wlan type 8 subtype data-cf-ack',
+			'type 8 subtype data-cf-ack',
+			'wlan type data subtype 0x10',
+			'type data subtype 0x10',
+			'wlan type 8 subtype 0x10',
+			'type 8 subtype 0x10',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1357,14 +1628,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_data_cf_ack
-	type_data_subtype_data_cf_poll => {
+	}, # wlan_subtype_data_cf_ack
+	wlan_subtype_data_cf_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype data-cf-poll',
+		expr => 'wlan subtype data-cf-poll',
 		aliases => [
 			'subtype data-cf-poll',
 			'wlan type data subtype data-cf-poll',
-			'wlan subtype data-cf-poll',
+			'type data subtype data-cf-poll',
+			'wlan type 8 subtype data-cf-poll',
+			'type 8 subtype data-cf-poll',
+			'wlan type data subtype 0x20',
+			'type data subtype 0x20',
+			'wlan type 8 subtype 0x20',
+			'type 8 subtype 0x20',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1373,14 +1650,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_data_cf_poll
-	type_data_subtype_data_cf_ack_poll => {
+	}, # wlan_subtype_data_cf_poll
+	wlan_subtype_data_cf_ack_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype data-cf-ack-poll',
+		expr => 'wlan subtype data-cf-ack-poll',
 		aliases => [
 			'subtype data-cf-ack-poll',
 			'wlan type data subtype data-cf-ack-poll',
-			'wlan subtype data-cf-ack-poll',
+			'type data subtype data-cf-ack-poll',
+			'wlan type 8 subtype data-cf-ack-poll',
+			'type 8 subtype data-cf-ack-poll',
+			'wlan type data subtype 0x30',
+			'type data subtype 0x30',
+			'wlan type 8 subtype 0x30',
+			'type 8 subtype 0x30',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1389,14 +1672,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_data_cf_ack_poll
-	type_data_subtype_null => {
+	}, # wlan_subtype_data_cf_ack_poll
+	wlan_subtype_null => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype null',
+		expr => 'wlan subtype null',
 		aliases => [
 			'subtype null',
 			'wlan type data subtype null',
-			'wlan subtype null',
+			'type data subtype null',
+			'wlan type 8 subtype null',
+			'type 8 subtype null',
+			'wlan type data subtype 0x40',
+			'type data subtype 0x40',
+			'wlan type 8 subtype 0x40',
+			'type 8 subtype 0x40',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1405,14 +1694,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_null
-	type_data_subtype_cf_ack => {
+	}, # wlan_subtype_null
+	wlan_subtype_cf_ack => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype cf-ack',
+		expr => 'wlan subtype cf-ack',
 		aliases => [
 			'subtype cf-ack',
 			'wlan type data subtype cf-ack',
-			'wlan subtype cf-ack',
+			'type data subtype cf-ack',
+			'wlan type 8 subtype cf-ack',
+			'type 8 subtype cf-ack',
+			'wlan type data subtype 0x50',
+			'type data subtype 0x50',
+			'wlan type 8 subtype 0x50',
+			'type 8 subtype 0x50',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1421,14 +1716,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_cf_ack
-	type_data_subtype_cf_poll => {
+	}, # wlan_subtype_cf_ack
+	wlan_subtype_cf_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype cf-poll',
+		expr => 'wlan subtype cf-poll',
 		aliases => [
 			'subtype cf-poll',
 			'wlan type data subtype cf-poll',
-			'wlan subtype cf-poll',
+			'type data subtype cf-poll',
+			'wlan type 8 subtype cf-poll',
+			'type 8 subtype cf-poll',
+			'wlan type data subtype 0x60',
+			'type data subtype 0x60',
+			'wlan type 8 subtype 0x60',
+			'type 8 subtype 0x60',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1437,14 +1738,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_cf_poll
-	type_data_subtype_cf_ack_poll => {
+	}, # wlan_subtype_cf_poll
+	wlan_subtype_cf_ack_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype cf-ack-poll',
+		expr => 'wlan subtype cf-ack-poll',
 		aliases => [
 			'subtype cf-ack-poll',
 			'wlan type data subtype cf-ack-poll',
-			'wlan subtype cf-ack-poll',
+			'type data subtype cf-ack-poll',
+			'wlan type 8 subtype cf-ack-poll',
+			'type 8 subtype cf-ack-poll',
+			'wlan type data subtype 0x70',
+			'type data subtype 0x70',
+			'wlan type 8 subtype 0x70',
+			'type 8 subtype 0x70',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1453,14 +1760,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_cf_ack_poll
-	type_data_subtype_qos_data => {
+	}, # wlan_subtype_cf_ack_poll
+	wlan_subtype_qos_data => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-data',
+		expr => 'wlan subtype qos-data',
 		aliases => [
 			'subtype qos-data',
 			'wlan type data subtype qos-data',
-			'wlan subtype qos-data',
+			'type data subtype qos-data',
+			'wlan type 8 subtype qos-data',
+			'type 8 subtype qos-data',
+			'wlan type data subtype 0x80',
+			'type data subtype 0x80',
+			'wlan type 8 subtype 0x80',
+			'type 8 subtype 0x80',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1469,14 +1782,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_data
-	type_data_subtype_qos_data_cf_ack => {
+	}, # wlan_subtype_qos_data
+	wlan_subtype_qos_data_cf_ack => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-data-cf-ack',
+		expr => 'wlan subtype qos-data-cf-ack',
 		aliases => [
 			'subtype qos-data-cf-ack',
 			'wlan type data subtype qos-data-cf-ack',
-			'wlan subtype qos-data-cf-ack',
+			'type data subtype qos-data-cf-ack',
+			'wlan type 8 subtype qos-data-cf-ack',
+			'type 8 subtype qos-data-cf-ack',
+			'wlan type data subtype 0x90',
+			'type data subtype 0x90',
+			'wlan type 8 subtype 0x90',
+			'type 8 subtype 0x90',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1485,14 +1804,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_data_cf_ack
-	type_data_subtype_qos_data_cf_poll => {
+	}, # wlan_subtype_qos_data_cf_ack
+	wlan_subtype_qos_data_cf_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-data-cf-poll',
+		expr => 'wlan subtype qos-data-cf-poll',
 		aliases => [
 			'subtype qos-data-cf-poll',
 			'wlan type data subtype qos-data-cf-poll',
-			'wlan subtype qos-data-cf-poll',
+			'type data subtype qos-data-cf-poll',
+			'wlan type 8 subtype qos-data-cf-poll',
+			'type 8 subtype qos-data-cf-poll',
+			'wlan type data subtype 0xa0',
+			'type data subtype 0xa0',
+			'wlan type 8 subtype 0xa0',
+			'type 8 subtype 0xa0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1501,14 +1826,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_data_cf_poll
-	type_data_subtype_qos_data_cf_ack_poll => {
+	}, # wlan_subtype_qos_data_cf_poll
+	wlan_subtype_qos_data_cf_ack_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-data-cf-ack-poll',
+		expr => 'wlan subtype qos-data-cf-ack-poll',
 		aliases => [
 			'subtype qos-data-cf-ack-poll',
 			'wlan type data subtype qos-data-cf-ack-poll',
-			'wlan subtype qos-data-cf-ack-poll',
+			'type data subtype qos-data-cf-ack-poll',
+			'wlan type 8 subtype qos-data-cf-ack-poll',
+			'type 8 subtype qos-data-cf-ack-poll',
+			'wlan type data subtype 0xb0',
+			'type data subtype 0xb0',
+			'wlan type 8 subtype 0xb0',
+			'type 8 subtype 0xb0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1517,14 +1848,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_data_cf_ack_poll
-	type_data_subtype_qos => {
+	}, # wlan_subtype_qos_data_cf_ack_poll
+	wlan_subtype_qos => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos',
+		expr => 'wlan subtype qos',
 		aliases => [
 			'subtype qos',
 			'wlan type data subtype qos',
-			'wlan subtype qos',
+			'type data subtype qos',
+			'wlan type 8 subtype qos',
+			'type 8 subtype qos',
+			'wlan type data subtype 0xc0',
+			'type data subtype 0xc0',
+			'wlan type 8 subtype 0xc0',
+			'type 8 subtype 0xc0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1533,14 +1870,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos
-	type_data_subtype_qos_cf_poll => {
+	}, # wlan_subtype_qos
+	wlan_subtype_qos_cf_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-cf-poll',
+		expr => 'wlan subtype qos-cf-poll',
 		aliases => [
 			'subtype qos-cf-poll',
 			'wlan type data subtype qos-cf-poll',
-			'wlan subtype qos-cf-poll',
+			'type data subtype qos-cf-poll',
+			'wlan type 8 subtype qos-cf-poll',
+			'type 8 subtype qos-cf-poll',
+			'wlan type data subtype 0xe0',
+			'type data subtype 0xe0',
+			'wlan type 8 subtype 0xe0',
+			'type 8 subtype 0xe0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1549,14 +1892,20 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_cf_poll
-	type_data_subtype_qos_cf_ack_poll => {
+	}, # wlan_subtype_qos_cf_poll
+	wlan_subtype_qos_cf_ack_poll => {
 		DLT => 'IEEE802_11',
-		expr => 'type data subtype qos-cf-ack-poll',
+		expr => 'wlan subtype qos-cf-ack-poll',
 		aliases => [
 			'subtype qos-cf-ack-poll',
 			'wlan type data subtype qos-cf-ack-poll',
-			'wlan subtype qos-cf-ack-poll',
+			'type data subtype qos-cf-ack-poll',
+			'wlan type 8 subtype qos-cf-ack-poll',
+			'type 8 subtype qos-cf-ack-poll',
+			'wlan type data subtype 0xf0',
+			'type data subtype 0xf0',
+			'wlan type 8 subtype 0xf0',
+			'type 8 subtype 0xf0',
 		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
@@ -1565,7 +1914,83 @@ my %valid_filters = (
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
-	}, # type_data_subtype_qos_cf_ack_poll
+	}, # wlan_subtype_qos_cf_ack_poll
+	wlan_type_reserved => {
+		DLT => 'IEEE802_11',
+		# Reserved frame type, no name.
+		expr => 'wlan type 12',
+		aliases => ['type 12'],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) and      #0xc
+			(002) jeq      #0xc             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # wlan_type_reserved
+	wlan_dir_nods => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir nods',
+		aliases => [
+			'wlan dir 0',
+			'dir nods',
+			'dir 0',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jset     #0x3             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # wlan_dir_nods
+	wlan_dir_tods => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir tods',
+		aliases => [
+			'wlan dir 1',
+			'dir tods',
+			'dir 1',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) and      #0x3
+			(002) jeq      #0x1             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # wlan_dir_tods
+	wlan_dir_fromds => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir fromds',
+		aliases => [
+			'wlan dir 2',
+			'dir fromds',
+			'dir 2',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) and      #0x3
+			(002) jeq      #0x2             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # wlan_dir_fromds
+	wlan_dir_dstods => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir dstods',
+		aliases => [
+			'wlan dir 3',
+			'dir dstods',
+			'dir 3',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) and      #0x3
+			(002) jeq      #0x3             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # wlan_dir_dstods
 
 	pppoed => {
 		snaplen => 200,
@@ -1972,7 +2397,7 @@ my %valid_filters = (
 	iso_proto_esis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \esis',
-		aliases => ['esis'],
+		aliases => ['esis', 'es-is'],
 		unopt => <<~'EOF',
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -1987,7 +2412,7 @@ my %valid_filters = (
 	iso_proto_isis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \isis',
-		aliases => ['isis'],
+		aliases => ['isis', 'is-is'],
 		unopt => <<~'EOF',
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -2753,6 +3178,10 @@ my %invalid_filters = (
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
 	},
+	pppoes_value => {
+		DLT => 'EN10MB',
+		expr => 'pppoes 65536',
+	},
 	mtp2_on_mtp3 => {
 		DLT => 'MTP3',
 		expr => 'fisu',
@@ -2797,9 +3226,32 @@ my %invalid_filters = (
 		DLT => 'SUNATM',
 		expr => 'vci 65536',
 	},
-	wlan_type => {
+	wlan_on_eth => {
 		DLT => 'EN10MB',
 		expr => 'type data',
+	},
+	wlan_type => {
+		DLT => 'IEEE802_11',
+		# Type value out of range.
+		expr => 'wlan type 16',
+	},
+	wlan_subtype => {
+		DLT => 'IEEE802_11',
+		# Invalid syntax (numeric subtype is ambiguous and requires a type).
+		expr => 'wlan subtype 0',
+	},
+	wlan_type_subtype => {
+		DLT => 'IEEE802_11',
+		# Subtype value out of range.
+		expr => 'wlan type 0 subtype 0xff',
+	},
+	wlan_dir_invalid1 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir abc',
+	},
+	wlan_dir_invalid2 => {
+		DLT => 'IEEE802_11',
+		expr => 'wlan dir 4',
 	},
 	pppoed_unary => {
 		DLT => 'EN10MB',
