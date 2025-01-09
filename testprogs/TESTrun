@@ -3173,135 +3173,173 @@ my %valid_filters = (
 	}, # tcp_flags
 );
 
+# * DLT and expr: same as in valid_filters above
+# * errstr (mandatory, string): a substring that must appear in standard error
+#   from filtertest (this verifies that the reason for rejecting the expression
+#   is what the test expects, rather than some unrelated cause).
 my %invalid_filters = (
 	ether_host => {
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
+		errstr => 'bogus ethernet address',
 	},
 	pppoes_value => {
 		DLT => 'EN10MB',
 		expr => 'pppoes 65536',
+		errstr => 'greater than maximum',
 	},
 	mtp2_on_mtp3 => {
 		DLT => 'MTP3',
 		expr => 'fisu',
+		errstr => 'supported only on MTP2',
 	},
 	mtp2_sio => {
 		DLT => 'MTP2',
 		expr => 'sio 256',
+		errstr => 'too big',
 	},
 	mtp2_dpc => {
 		DLT => 'MTP2',
 		expr => 'dpc 16384',
+		errstr => 'too big',
 	},
 	mtp2_opc => {
 		DLT => 'MTP2',
 		expr => 'opc 16384',
+		errstr => 'too big',
 	},
 	mtp2_sls => {
 		DLT => 'MTP2',
 		expr => 'sls 16',
+		errstr => 'too big',
 	},
 	mtp2_hsio => {
 		DLT => 'MTP2',
 		expr => 'hsio 256',
+		errstr => 'too big',
 	},
 	mtp2_hdpc => {
 		DLT => 'MTP2',
 		expr => 'hdpc 16384',
+		errstr => 'too big',
 	},
 	mtp2_hopc => {
 		DLT => 'MTP2',
 		expr => 'hopc 16384',
+		errstr => 'too big',
 	},
 	mtp2_hsls => {
 		DLT => 'MTP2',
 		expr => 'hsls 16',
+		errstr => 'too big',
 	},
 	atm_vpi => {
 		DLT => 'SUNATM',
 		expr => 'vpi 256',
+		errstr => 'VPI value',
 	},
 	atm_vci => {
 		DLT => 'SUNATM',
 		expr => 'vci 65536',
+		errstr => 'VCI value',
 	},
 	wlan_on_eth => {
 		DLT => 'EN10MB',
 		expr => 'type data',
+		errstr => '802.11 link-layer types supported only on 802.11',
 	},
 	wlan_type => {
 		DLT => 'IEEE802_11',
 		# Type value out of range.
 		expr => 'wlan type 16',
+		errstr => 'invalid 802.11 type value',
 	},
 	wlan_subtype => {
 		DLT => 'IEEE802_11',
 		# Invalid syntax (numeric subtype is ambiguous and requires a type).
 		expr => 'wlan subtype 0',
+		errstr => 'syntax error',
 	},
 	wlan_type_subtype => {
 		DLT => 'IEEE802_11',
 		# Subtype value out of range.
 		expr => 'wlan type 0 subtype 0xff',
+		errstr => 'invalid 802.11 subtype value',
 	},
 	wlan_dir_invalid1 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan dir abc',
+		errstr => 'unknown 802.11 direction',
 	},
 	wlan_dir_invalid2 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan dir 4',
+		errstr => 'invalid 802.11 direction',
 	},
 	pppoed_unary => {
 		DLT => 'EN10MB',
 		expr => 'pppoed 1234',
+		errstr => 'syntax error',
 	},
 	llc_noneth => {
 		DLT => 'RAW',
 		expr => 'llc',
+		errstr => 'not supported',
 	},
 	decnet_area => {
 		DLT => 'EN10MB',
 		expr => 'decnet host 64.120',
+		errstr => 'invalid DECnet address',
 	},
 	decnet_node => {
 		DLT => 'EN10MB',
 		expr => 'decnet host 17.1024',
+		errstr => 'invalid DECnet address',
 	},
 	ip_host => {
 		DLT => 'RAW',
 		expr => 'ip host 256.256.256.256',
+		errstr => 'invalid IPv4 address',
 	},
 	ip6_host_toolong => {
+		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
+		errstr => 'syntax error',
 	},
 	ip6_host_nonhex => {
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
+		errstr => 'unknown host',
 	},
 	ip6_host_disabled => {
 		skip => ipv6_enabled(),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
+		errstr => 'not supported',
 	},
 	ip6_net_prefix => {
+		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0:0/64',
+		errstr => 'syntax error',
 	},
 	ip6_net_masklen => {
+		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/129',
+		errstr => 'mask length must be <= 128',
 	},
 	ip6_net_disabled => {
 		skip => ipv6_enabled(),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
+		errstr => 'not supported',
 	},
 	udp_port => {
 		DLT => 'IPV4',
 		expr => 'udp port 70000',
+		errstr => 'illegal port number',
 	},
 );
 
@@ -3353,6 +3391,20 @@ sub file_put_contents {
 	open (my $fh, '>', $filename) || die "failed opening '$filename'";
 	print $fh $contents;
 	close ($fh) || die "failed closing '$filename'";
+}
+
+sub string_in_file {
+	my ($string, $filename) = @_;
+	my $ret = 0;
+	open (my $fh, '<', $filename) || die "failed opening '$filename'";
+	while (<$fh>) {
+		if (-1 != index $_, $string) {
+			$ret = 1;
+			last;
+		}
+	}
+	close ($fh) || die "failed closing '$filename'";
+	return $ret;
 }
 
 # This is the same format as in tcpdump/tests/TESTrun.
@@ -3440,6 +3492,9 @@ foreach my $testname (sort keys %invalid_filters) {
 	my $label = "invalid_${testname}";
 	defined $only_one && $only_one ne $label && next;
 	my $test = $invalid_filters{$testname};
+	if (! defined $test->{errstr}) {
+		die "Internal error: test '$label' does not define errstr.";
+	}
 	if (defined $test->{skip} && $test->{skip} ne '') {
 		$skippedcount++;
 		print_result $label, "skipped ($test->{skip})";
@@ -3452,7 +3507,7 @@ foreach my $testname (sort keys %invalid_filters) {
 		'-F',
 		$filename_filter,
 		$test->{DLT},
-		'2>/dev/null',
+		"2>$filename_stdout",
 	);
 	$r = system (join ' ', @args) >> 8;
 	if ($r == 0) {
@@ -3468,6 +3523,11 @@ foreach my $testname (sort keys %invalid_filters) {
 	if ($r != 1) {
 		$failedcount++;
 		print_result $label, "failed (filtertest status $r)";
+		next;
+	}
+	if (! string_in_file $test->{errstr}, $filename_stdout) {
+		$failedcount++;
+		print_result $label, "failed (error string mismatch)";
 		next;
 	}
 	$passedcount++;
