@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "4 January 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "8 January 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -692,15 +692,21 @@ True if the fourth IEEE 802.11 address, if present, is
 .IR ehost .
 The fourth address field is only used for
 WDS (Wireless Distribution System) frames.
-.IP "\fBtype \fIwlan_type\fR"
+.IP "\fBwlan type \fIwlan_type\fR"
 True if the IEEE 802.11 frame type matches the specified \fIwlan_type\fR.
 Valid \fIwlan_type\fRs are:
 \fBmgt\fP,
 \fBctl\fP
 and \fBdata\fP.
-.IP "\fBtype \fIwlan_type \fBsubtype \fIwlan_subtype\fR"
+The
+.B wlan
+keyword is optional.
+.IP "\fBwlan type \fIwlan_type \fBsubtype \fIwlan_subtype\fR"
 True if the IEEE 802.11 frame type matches the specified \fIwlan_type\fR
 and frame subtype matches the specified \fIwlan_subtype\fR.
+The
+.B wlan
+keyword is optional.
 .IP
 If the specified \fIwlan_type\fR is \fBmgt\fP,
 then valid \fIwlan_subtype\fRs are:
@@ -745,10 +751,13 @@ then valid \fIwlan_subtype\fRs are:
 .B \%qos-cf-poll
 and
 .BR \%qos-cf-ack-poll .
-.IP "\fBsubtype \fIwlan_subtype\fR"
+.IP "\fBwlan subtype \fIwlan_subtype\fR"
 True if the IEEE 802.11 frame subtype matches the specified \fIwlan_subtype\fR
 and frame has the type to which the specified \fIwlan_subtype\fR belongs.
-.IP "\fBdir \fIdirection\fR"
+The
+.B wlan
+keyword is optional.
+.IP "\fBwlan dir \fIdirection\fR"
 True if the IEEE 802.11 frame direction matches the specified
 .IR direction .
 Valid directions are:
@@ -757,6 +766,9 @@ Valid directions are:
 .BR fromds ,
 .BR dstods ,
 or a numeric value.
+The
+.B wlan
+keyword is optional.
 .IP "\fBvlan \fI[vlan_id]\fR"
 True if the packet is an IEEE 802.1Q VLAN packet.
 If the optional \fIvlan_id\fR is specified, only true if the packet has the specified

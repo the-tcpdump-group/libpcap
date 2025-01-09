@@ -44,6 +44,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Eliminate trailing space in bpf_image() result.
       Fix DECnet packet filtering on big-endian hosts.
       Require "vpi" and "vci" values to be within valid ranges.
+      Initialize the scratch memory store to 0.
+      Require "[wlan] dir" integer value to be within range.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
