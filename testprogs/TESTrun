@@ -374,6 +374,7 @@ my %valid_filters = (
 	mtp2_sio => {
 		DLT => 'MTP2',
 		expr => 'sio 0xd2',
+		aliases => ['sio = 0xd2', 'sio == 0xd2'],
 		unopt => <<~'EOF',
 			(000) ldb      [3]
 			(001) jeq      #0xd2            jt 2	jf 3
@@ -381,9 +382,60 @@ my %valid_filters = (
 			(003) ret      #0
 			EOF
 	}, # mtp2_sio
+	mtp2_sio_gt => {
+		DLT => 'MTP2',
+		expr => 'sio > 0xa1',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jgt      #0xa1            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_sio_gt
+	mtp2_sio_ge => {
+		DLT => 'MTP2',
+		expr => 'sio >= 0xa2',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jge      #0xa2            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_sio_ge
+	mtp2_sio_le => {
+		DLT => 'MTP2',
+		expr => 'sio <= 0xa3',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jgt      #0xa3            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_sio_le
+	mtp2_sio_lt => {
+		DLT => 'MTP2',
+		expr => 'sio < 0xa4',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jge      #0xa4            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_sio_lt
+	mtp2_sio_ne => {
+		DLT => 'MTP2',
+		expr => 'sio != 0xa5',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jeq      #0xa5            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_sio_ne
 	mtp3_dpc => {
 		DLT => 'MTP2',
 		expr => 'dpc 0x31d6',
+		aliases => ['dpc = 0x31d6', 'dpc == 0x31d6'],
 		unopt => <<~'EOF',
 			(000) ld       [4]
 			(001) and      #0xff3f0000
@@ -392,9 +444,65 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_dpc
+	mtp3_dpc_gt => {
+		DLT => 'MTP2',
+		expr => 'dpc > 0x1273',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jgt      #0x73120000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_dpc_gt
+	mtp3_dpc_ge => {
+		DLT => 'MTP2',
+		expr => 'dpc >= 0x1273',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jge      #0x73120000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_dpc_ge
+	mtp3_dpc_le => {
+		DLT => 'MTP2',
+		expr => 'dpc <= 0x1273',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jgt      #0x73120000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_dpc_le
+	mtp3_dpc_lt => {
+		DLT => 'MTP2',
+		expr => 'dpc < 0x1273',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jge      #0x73120000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_dpc_lt
+	mtp3_dpc_ne => {
+		DLT => 'MTP2',
+		expr => 'dpc != 0x1273',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jeq      #0x73120000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_dpc_ne
 	mtp3_opc => {
 		DLT => 'MTP2',
 		expr => 'opc 0x3b35',
+		aliases => ['opc = 0x3b35', 'opc == 0x3b35'],
 		unopt => <<~'EOF',
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
@@ -403,9 +511,65 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_opc
+	mtp3_opc_gt => {
+		DLT => 'MTP2',
+		expr => 'opc > 0x607',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jgt      #0xc08101        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_opc_gt
+	mtp3_opc_ge => {
+		DLT => 'MTP2',
+		expr => 'opc >= 0x607',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jge      #0xc08101        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_opc_ge
+	mtp3_opc_le => {
+		DLT => 'MTP2',
+		expr => 'opc <= 0x607',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jgt      #0xc08101        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_opc_le
+	mtp3_opc_lt => {
+		DLT => 'MTP2',
+		expr => 'opc < 0x607',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jge      #0xc08101        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_opc_lt
+	mtp3_opc_ne => {
+		DLT => 'MTP2',
+		expr => 'opc != 0x607',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0xc08101        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_opc_ne
 	mtp3_sls => {
 		DLT => 'MTP2',
 		expr => 'sls 3',
+		aliases => ['sls = 3', 'sls == 3'],
 		unopt => <<~'EOF',
 			(000) ldb      [7]
 			(001) and      #0xf0
@@ -414,6 +578,61 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_sls
+	mtp3_sls_gt => {
+		DLT => 'MTP2',
+		expr => 'sls > 1',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jgt      #0x10            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_sls_gt
+	mtp3_sls_ge => {
+		DLT => 'MTP2',
+		expr => 'sls >= 2',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jge      #0x20            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_sls_ge
+	mtp3_sls_le => {
+		DLT => 'MTP2',
+		expr => 'sls <= 4',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jgt      #0x40            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_sls_le
+	mtp3_sls_lt => {
+		DLT => 'MTP2',
+		expr => 'sls < 5',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jge      #0x50            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_sls_lt
+	mtp3_sls_ne => {
+		DLT => 'MTP2',
+		expr => 'sls != 8',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jeq      #0x80            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_sls_ne
 	mtp2_hfisu => {
 		DLT => 'MTP2',
 		expr => 'hfisu',
@@ -452,6 +671,7 @@ my %valid_filters = (
 	mtp2_hsio => {
 		DLT => 'MTP2',
 		expr => 'hsio 0x41',
+		aliases => ['hsio = 0x41', 'hsio == 0x41'],
 		unopt => <<~'EOF',
 			(000) ldb      [6]
 			(001) jeq      #0x41            jt 2	jf 3
@@ -459,9 +679,60 @@ my %valid_filters = (
 			(003) ret      #0
 			EOF
 	}, # mtp2_hsio
+	mtp2_hsio_gt => {
+		DLT => 'MTP2',
+		expr => 'hsio > 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jgt      #0x41            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_hsio_gt
+	mtp2_hsio_ge => {
+		DLT => 'MTP2',
+		expr => 'hsio >= 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jge      #0x41            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mtp2_hsio_ge
+	mtp2_hsio_le => {
+		DLT => 'MTP2',
+		expr => 'hsio <= 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jgt      #0x41            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_hsio_le
+	mtp2_hsio_lt => {
+		DLT => 'MTP2',
+		expr => 'hsio < 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jge      #0x41            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_hsio_lt
+	mtp2_hsio_ne => {
+		DLT => 'MTP2',
+		expr => 'hsio != 0x41',
+		unopt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jeq      #0x41            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # mtp2_hsio_ne
 	mtp3_hdpc => {
 		DLT => 'MTP2',
 		expr => 'hdpc 0x0ab5',
+		aliases => ['hdpc = 0x0ab5', 'hdpc == 0x0ab5'],
 		unopt => <<~'EOF',
 			(000) ld       [7]
 			(001) and      #0xff3f0000
@@ -470,9 +741,65 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_hdpc
+	mtp3_hdpc_gt => {
+		DLT => 'MTP2',
+		expr => 'hdpc > 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jgt      #0xb50a0000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hdpc_gt
+	mtp3_hdpc_ge => {
+		DLT => 'MTP2',
+		expr => 'hdpc >= 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jge      #0xb50a0000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hdpc_ge
+	mtp3_hdpc_le => {
+		DLT => 'MTP2',
+		expr => 'hdpc <= 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jgt      #0xb50a0000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hdpc_le
+	mtp3_hdpc_lt => {
+		DLT => 'MTP2',
+		expr => 'hdpc < 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jge      #0xb50a0000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hdpc_lt
+	mtp3_hdpc_ne => {
+		DLT => 'MTP2',
+		expr => 'hdpc != 0x0ab5',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jeq      #0xb50a0000      jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hdpc_ne
 	mtp3_hopc => {
 		DLT => 'MTP2',
 		expr => 'hopc 0x3aba',
+		aliases => ['hopc = 0x3aba', 'hopc == 0x3aba'],
 		unopt => <<~'EOF',
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
@@ -481,9 +808,65 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_hopc
+	mtp3_hopc_gt => {
+		DLT => 'MTP2',
+		expr => 'hopc > 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jgt      #0x80ae0e        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hopc_gt
+	mtp3_hopc_ge => {
+		DLT => 'MTP2',
+		expr => 'hopc >= 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jge      #0x80ae0e        jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hopc_ge
+	mtp3_hopc_le => {
+		DLT => 'MTP2',
+		expr => 'hopc <= 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jgt      #0x80ae0e        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hopc_le
+	mtp3_hopc_lt => {
+		DLT => 'MTP2',
+		expr => 'hopc < 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jge      #0x80ae0e        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hopc_lt
+	mtp3_hopc_ne => {
+		DLT => 'MTP2',
+		expr => 'hopc != 0x3aba',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0x80ae0e        jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hopc_ne
 	mtp3_hsls => {
 		DLT => 'MTP2',
 		expr => 'hsls 5',
+		aliases => ['hsls = 5', 'hsls == 5'],
 		unopt => <<~'EOF',
 			(000) ldb      [10]
 			(001) and      #0xf0
@@ -492,27 +875,184 @@ my %valid_filters = (
 			(004) ret      #0
 			EOF
 	}, # mtp3_hsls
+	mtp3_hsls_gt => {
+		DLT => 'MTP2',
+		expr => 'hsls > 6',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jgt      #0x60            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hsls_gt
+	mtp3_hsls_ge => {
+		DLT => 'MTP2',
+		expr => 'hsls >= 7',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jge      #0x70            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # mtp3_hsls_ge
+	mtp3_hsls_le => {
+		DLT => 'MTP2',
+		expr => 'hsls <= 8',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jgt      #0x80            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hsls_le
+	mtp3_hsls_lt => {
+		DLT => 'MTP2',
+		expr => 'hsls < 9',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jge      #0x90            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hsls_lt
+	mtp3_hsls_ne => {
+		DLT => 'MTP2',
+		expr => 'hsls != 10',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jeq      #0xa0            jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
+			EOF
+	}, # mtp3_hsls_ne
 
 	atm_vpi => {
 		DLT => 'SUNATM',
 		expr => 'vpi 10',
-		opt => <<~'EOF',
+		aliases => ['vpi = 10', 'vpi == 10'],
+		unopt => <<~'EOF',
 			(000) ldb      [1]
 			(001) jeq      #0xa             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
 	}, # atm_vpi
+	atm_vpi_gt => {
+		DLT => 'SUNATM',
+		expr => 'vpi > 100',
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jgt      #0x64            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vpi_gt
+	atm_vpi_ge => {
+		DLT => 'SUNATM',
+		expr => 'vpi >= 101',
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jge      #0x65            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vpi_ge
+	atm_vpi_le => {
+		DLT => 'SUNATM',
+		expr => 'vpi <= 102',
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jgt      #0x66            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vpi_le
+	atm_vpi_lt => {
+		DLT => 'SUNATM',
+		expr => 'vpi < 103',
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jge      #0x67            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vpi_lt
+	atm_vpi_ne => {
+		DLT => 'SUNATM',
+		expr => 'vpi != 104',
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x68            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vpi_ne
 	atm_vci => {
 		DLT => 'SUNATM',
 		expr => 'vci 20',
-		opt => <<~'EOF',
+		aliases => ['vci = 20', 'vci == 20'],
+		unopt => <<~'EOF',
 			(000) ldh      [2]
 			(001) jeq      #0x14            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
 	}, # atm_vci
+	atm_vci_gt => {
+		DLT => 'SUNATM',
+		expr => 'vci > 20001',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jgt      #0x4e21          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vci_gt
+	atm_vci_ge => {
+		DLT => 'SUNATM',
+		expr => 'vci >= 20002',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jge      #0x4e22          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # atm_vci_ge
+	atm_vci_le => {
+		DLT => 'SUNATM',
+		expr => 'vci <= 20003',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jgt      #0x4e23          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vci_le
+	atm_vci_lt => {
+		DLT => 'SUNATM',
+		expr => 'vci < 20004',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jge      #0x4e24          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vci_lt
+	atm_vci_ne => {
+		DLT => 'SUNATM',
+		expr => 'vci != 20005',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0x4e25          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # atm_vci_ne
 	atm_lane => {
 		DLT => 'SUNATM',
 		expr => 'lane',
