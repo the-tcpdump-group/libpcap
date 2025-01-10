@@ -3154,7 +3154,6 @@ my %valid_filters = (
 			EOF
 	}, # icmp6_types
 
-
 	tcp_flags => {
 		DLT => 'EN10MB',
 		expr => <<~'EOF',
@@ -3171,6 +3170,1083 @@ my %valid_filters = (
 			(000) ret      #262144
 			EOF
 	}, # tcp_flags
+
+	# In the tests below "smtp" depends on getaddrinfo().
+	tcp_port => {
+		DLT=> 'EN10MB',
+		expr => 'tcp port 25',
+		aliases => [
+			'tcp port smtp',
+			'tcp src or dst port 25',
+			'tcp src or dst port smtp',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 19
+			(004) ldh      [54]
+			(005) jeq      #0x19            jt 18	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x19            jt 18	jf 19
+			(008) jeq      #0x800           jt 9	jf 19
+			(009) ldb      [23]
+			(010) jeq      #0x6             jt 11	jf 19
+			(011) ldh      [20]
+			(012) jset     #0x1fff          jt 19	jf 13
+			(013) ldxb     4*([14]&0xf)
+			(014) ldh      [x + 14]
+			(015) jeq      #0x19            jt 18	jf 16
+			(016) ldh      [x + 16]
+			(017) jeq      #0x19            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # tcp_port
+	tcp_src_port => {
+		DLT=> 'EN10MB',
+		expr => 'tcp src port 25',
+		aliases => ['tcp src port smtp'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [54]
+			(005) jeq      #0x19            jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jeq      #0x19            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # tcp_src_port
+	tcp_dst_port => {
+		DLT=> 'EN10MB',
+		expr => 'tcp dst port 25',
+		aliases => ['tcp dst port smtp'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [56]
+			(005) jeq      #0x19            jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jeq      #0x19            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # tcp_dst_port
+	tcp_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'tcp portrange 25-53',
+		aliases => [
+			'tcp portrange 25-domain',
+			'tcp portrange smtp-53',
+			'tcp portrange smtp-domain',
+			'tcp portrange 53-25',
+			'tcp portrange domain-25',
+			'tcp portrange 53-smtp',
+			'tcp portrange domain-smtp',
+			'tcp src or dst portrange 25-53',
+			'tcp src or dst portrange 25-domain',
+			'tcp src or dst portrange smtp-53',
+			'tcp src or dst portrange smtp-domain',
+			'tcp src or dst portrange 53-25',
+			'tcp src or dst portrange domain-25',
+			'tcp src or dst portrange 53-smtp',
+			'tcp src or dst portrange domain-smtp',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 6	jf 7
+			(006) jgt      #0x35            jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x19            jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x6             jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x19            jt 17	jf 18
+			(017) jgt      #0x35            jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x19            jt 20	jf 22
+			(020) jgt      #0x35            jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # tcp_portrange
+	tcp_src_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'tcp src portrange 25-53',
+		aliases => [
+			'tcp src portrange 25-domain',
+			'tcp src portrange smtp-53',
+			'tcp src portrange smtp-domain',
+			'tcp src portrange 53-25',
+			'tcp src portrange domain-25',
+			'tcp src portrange 53-smtp',
+			'tcp src portrange domain-smtp',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x19            jt 14	jf 16
+			(014) jgt      #0x35            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # tcp_src_portrange
+	tcp_dst_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'tcp dst portrange 25-53',
+		aliases => [
+			'tcp dst portrange 25-domain',
+			'tcp dst portrange smtp-53',
+			'tcp dst portrange smtp-domain',
+			'tcp dst portrange 53-25',
+			'tcp dst portrange domain-25',
+			'tcp dst portrange 53-smtp',
+			'tcp dst portrange domain-smtp',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x19            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x19            jt 14	jf 16
+			(014) jgt      #0x35            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # tcp_dst_portrange
+	tcp_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'tcp portrange 25-25',
+		# "25" is a valid port range, but "smtp" is not.
+		aliases => [
+			'tcp portrange 25-smtp',
+			'tcp portrange smtp-25',
+			'tcp portrange smtp-smtp',
+			'tcp portrange 25',
+			'tcp src or dst portrange 25-25',
+			'tcp src or dst portrange 25-smtp',
+			'tcp src or dst portrange smtp-25',
+			'tcp src or dst portrange smtp-smtp',
+			'tcp src or dst portrange 25',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 6	jf 7
+			(006) jgt      #0x19            jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x19            jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x6             jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x19            jt 17	jf 18
+			(017) jgt      #0x19            jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x19            jt 20	jf 22
+			(020) jgt      #0x19            jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # tcp_portrange_degenerate
+	tcp_src_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'tcp src portrange 25-25',
+		aliases => [
+			'tcp src portrange 25-smtp',
+			'tcp src portrange smtp-25',
+			'tcp src portrange smtp-smtp',
+			'tcp src portrange 25',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x19            jt 14	jf 16
+			(014) jgt      #0x19            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # tcp_src_portrange_degenerate
+	tcp_dst_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'tcp dst portrange 25-25',
+		aliases => [
+			'tcp dst portrange 25-smtp',
+			'tcp dst portrange smtp-25',
+			'tcp dst portrange smtp-smtp',
+			'tcp dst portrange 25',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x19            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x6             jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x19            jt 14	jf 16
+			(014) jgt      #0x19            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # tcp_dst_portrange_degenerate
+	# In the tests below "domain" depends on getaddrinfo().
+	udp_port => {
+		DLT=> 'EN10MB',
+		expr => 'udp port 53',
+		aliases => [
+			'udp port domain',
+			'udp src or dst port 53',
+			'udp src or dst port domain',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 19
+			(004) ldh      [54]
+			(005) jeq      #0x35            jt 18	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x35            jt 18	jf 19
+			(008) jeq      #0x800           jt 9	jf 19
+			(009) ldb      [23]
+			(010) jeq      #0x11            jt 11	jf 19
+			(011) ldh      [20]
+			(012) jset     #0x1fff          jt 19	jf 13
+			(013) ldxb     4*([14]&0xf)
+			(014) ldh      [x + 14]
+			(015) jeq      #0x35            jt 18	jf 16
+			(016) ldh      [x + 16]
+			(017) jeq      #0x35            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # udp_port
+	udp_src_port => {
+		DLT=> 'EN10MB',
+		expr => 'udp src port 53',
+		aliases => ['udp src port domain'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [54]
+			(005) jeq      #0x35            jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jeq      #0x35            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # udp_src_port
+	udp_dst_port => {
+		DLT=> 'EN10MB',
+		expr => 'udp dst port 53',
+		aliases => ['udp dst port domain'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [56]
+			(005) jeq      #0x35            jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jeq      #0x35            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # udp_dst_port
+	udp_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'udp portrange 67-68',
+		aliases => [
+			'udp portrange 67-bootpc',
+			'udp portrange bootps-68',
+			'udp portrange bootps-bootpc',
+			'udp portrange 68-67',
+			'udp portrange bootpc-67',
+			'udp portrange 68-bootps',
+			'udp portrange bootpc-bootps',
+			'udp src or dst portrange 67-68',
+			'udp src or dst portrange 67-bootpc',
+			'udp src or dst portrange bootps-68',
+			'udp src or dst portrange bootps-bootpc',
+			'udp src or dst portrange 68-67',
+			'udp src or dst portrange bootpc-67',
+			'udp src or dst portrange 68-bootps',
+			'udp src or dst portrange bootpc-bootps',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x43            jt 6	jf 7
+			(006) jgt      #0x44            jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x43            jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x11            jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x43            jt 17	jf 18
+			(017) jgt      #0x44            jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x43            jt 20	jf 22
+			(020) jgt      #0x44            jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # udp_portrange
+	udp_src_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'udp src portrange 67-68',
+		aliases => [
+			'udp src portrange 67-bootpc',
+			'udp src portrange bootps-68',
+			'udp src portrange bootps-bootpc',
+			'udp src portrange 68-67',
+			'udp src portrange bootpc-67',
+			'udp src portrange 68-bootps',
+			'udp src portrange bootpc-bootps',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x43            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x43            jt 14	jf 16
+			(014) jgt      #0x44            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # udp_src_portrange
+	udp_dst_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'udp dst portrange 67-68',
+		aliases => [
+			'udp dst portrange 67-bootpc',
+			'udp dst portrange bootps-68',
+			'udp dst portrange bootps-bootpc',
+			'udp dst portrange 68-67',
+			'udp dst portrange bootpc-67',
+			'udp dst portrange 68-bootps',
+			'udp dst portrange bootpc-bootps',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x43            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x43            jt 14	jf 16
+			(014) jgt      #0x44            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # udp_dst_portrange
+	udp_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'udp portrange 53-53',
+		# "53" is a valid port range, but "domain" is not.
+		aliases => [
+			'udp portrange 53-domain',
+			'udp portrange domain-53',
+			'udp portrange domain-domain',
+			'udp portrange 53',
+			'udp src or dst portrange 53-53',
+			'udp src or dst portrange 53-domain',
+			'udp src or dst portrange domain-53',
+			'udp src or dst portrange domain-domain',
+			'udp src or dst portrange 53',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x35            jt 6	jf 7
+			(006) jgt      #0x35            jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x35            jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x11            jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x35            jt 17	jf 18
+			(017) jgt      #0x35            jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x35            jt 20	jf 22
+			(020) jgt      #0x35            jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # udp_portrange_degenerate
+	udp_src_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'udp src portrange 53-53',
+		aliases => [
+			'udp src portrange 53-domain',
+			'udp src portrange domain-53',
+			'udp src portrange domain-domain',
+			'udp src portrange 53',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x35            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x35            jt 14	jf 16
+			(014) jgt      #0x35            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # udp_src_portrange_degenerate
+	udp_dst_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'udp dst portrange 53-53',
+		aliases => [
+			'udp dst portrange 53-domain',
+			'udp dst portrange domain-53',
+			'udp dst portrange domain-domain',
+			'udp dst portrange 53',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x35            jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x11            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x35            jt 14	jf 16
+			(014) jgt      #0x35            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # udp_dst_portrange_degenerate
+	# SCTP tests below do not use service names because the translation is
+	# currently broken and may not have a suitable /etc/services contents
+	# in all supported environments after the bug fix.
+	sctp_port => {
+		DLT=> 'EN10MB',
+		expr => 'sctp port 5672',
+		aliases => ['sctp src or dst port 5672'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 19
+			(004) ldh      [54]
+			(005) jeq      #0x1628          jt 18	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x1628          jt 18	jf 19
+			(008) jeq      #0x800           jt 9	jf 19
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 11	jf 19
+			(011) ldh      [20]
+			(012) jset     #0x1fff          jt 19	jf 13
+			(013) ldxb     4*([14]&0xf)
+			(014) ldh      [x + 14]
+			(015) jeq      #0x1628          jt 18	jf 16
+			(016) ldh      [x + 16]
+			(017) jeq      #0x1628          jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # sctp_port
+	sctp_src_port => {
+		DLT=> 'EN10MB',
+		expr => 'sctp src port 5672',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 15
+			(004) ldh      [54]
+			(005) jeq      #0x1628          jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jeq      #0x1628          jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # sctp_src_port
+	sctp_dst_port => {
+		DLT=> 'EN10MB',
+		expr => 'sctp dst port 5672',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 15
+			(004) ldh      [56]
+			(005) jeq      #0x1628          jt 14	jf 15
+			(006) jeq      #0x800           jt 7	jf 15
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 15
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 15	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jeq      #0x1628          jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			EOF
+	}, # sctp_dst_port
+	sctp_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'sctp portrange 1-1023',
+		aliases => [
+			'sctp portrange 1023-1',
+			'sctp src or dst portrange 1-1023',
+			'sctp src or dst portrange 1023-1',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x1             jt 6	jf 7
+			(006) jgt      #0x3ff           jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x1             jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x84            jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x1             jt 17	jf 18
+			(017) jgt      #0x3ff           jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x1             jt 20	jf 22
+			(020) jgt      #0x3ff           jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # sctp_portrange
+	sctp_src_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'sctp src portrange 1-1023',
+		aliases => ['sctp src portrange 1023-1'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x1             jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x1             jt 14	jf 16
+			(014) jgt      #0x3ff           jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # sctp_src_portrange
+	sctp_dst_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'sctp dst portrange 1-1023',
+		aliases => ['sctp dst portrange 1023-1'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x1             jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x1             jt 14	jf 16
+			(014) jgt      #0x3ff           jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # sctp_dst_portrange
+	sctp_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'sctp portrange 5672-5672',
+		aliases => [
+			'sctp portrange 5672',
+			'sctp src or dst portrange 5672-5672',
+			'sctp src or dst portrange 5672',
+		],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 22
+			(004) ldh      [54]
+			(005) jge      #0x1628          jt 6	jf 7
+			(006) jgt      #0x1628          jt 7	jf 21
+			(007) ldh      [56]
+			(008) jge      #0x1628          jt 20	jf 22
+			(009) jeq      #0x800           jt 10	jf 22
+			(010) ldb      [23]
+			(011) jeq      #0x84            jt 12	jf 22
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 22	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x1628          jt 17	jf 18
+			(017) jgt      #0x1628          jt 18	jf 21
+			(018) ldh      [x + 16]
+			(019) jge      #0x1628          jt 20	jf 22
+			(020) jgt      #0x1628          jt 22	jf 21
+			(021) ret      #262144
+			(022) ret      #0
+			EOF
+	}, # sctp_portrange_degenerate
+	sctp_src_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'sctp src portrange 5672-5672',
+		aliases => ['sctp src portrange 5672'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 16
+			(004) ldh      [54]
+			(005) jge      #0x1628          jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 14]
+			(013) jge      #0x1628          jt 14	jf 16
+			(014) jgt      #0x1628          jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # sctp_src_portrange_degenerate
+	sctp_dst_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'sctp dst portrange 5672-5672',
+		aliases => ['sctp dst portrange 5672'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 16
+			(004) ldh      [56]
+			(005) jge      #0x1628          jt 14	jf 16
+			(006) jeq      #0x800           jt 7	jf 16
+			(007) ldb      [23]
+			(008) jeq      #0x84            jt 9	jf 16
+			(009) ldh      [20]
+			(010) jset     #0x1fff          jt 16	jf 11
+			(011) ldxb     4*([14]&0xf)
+			(012) ldh      [x + 16]
+			(013) jge      #0x1628          jt 14	jf 16
+			(014) jgt      #0x1628          jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # sctp_dst_portrange_degenerate
+	port => {
+		DLT=> 'EN10MB',
+		expr => 'port 7',
+		# Do not try a service name due to SCTP.
+		alias => ['src or dst port 7'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 10
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 23
+			(006) ldh      [54]
+			(007) jeq      #0x7             jt 22	jf 8
+			(008) ldh      [56]
+			(009) jeq      #0x7             jt 22	jf 23
+			(010) jeq      #0x800           jt 11	jf 23
+			(011) ldb      [23]
+			(012) jeq      #0x84            jt 15	jf 13
+			(013) jeq      #0x6             jt 15	jf 14
+			(014) jeq      #0x11            jt 15	jf 23
+			(015) ldh      [20]
+			(016) jset     #0x1fff          jt 23	jf 17
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 14]
+			(019) jeq      #0x7             jt 22	jf 20
+			(020) ldh      [x + 16]
+			(021) jeq      #0x7             jt 22	jf 23
+			(022) ret      #262144
+			(023) ret      #0
+			EOF
+	}, # port
+	src_port => {
+		DLT=> 'EN10MB',
+		expr => 'src port 7',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 19
+			(006) ldh      [54]
+			(007) jeq      #0x7             jt 18	jf 19
+			(008) jeq      #0x800           jt 9	jf 19
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 19
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 19	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 14]
+			(017) jeq      #0x7             jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # src_port
+	dst_port => {
+		DLT=> 'EN10MB',
+		expr => 'dst port 7',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 19
+			(006) ldh      [56]
+			(007) jeq      #0x7             jt 18	jf 19
+			(008) jeq      #0x800           jt 9	jf 19
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 19
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 19	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 16]
+			(017) jeq      #0x7             jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			EOF
+	}, # dst_port
+	portrange => {
+		DLT=> 'EN10MB',
+		expr => 'portrange 1-1023',
+		aliases => ['portrange 1023-1'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 11
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 26
+			(006) ldh      [54]
+			(007) jge      #0x1             jt 8	jf 9
+			(008) jgt      #0x3ff           jt 9	jf 25
+			(009) ldh      [56]
+			(010) jge      #0x1             jt 24	jf 26
+			(011) jeq      #0x800           jt 12	jf 26
+			(012) ldb      [23]
+			(013) jeq      #0x84            jt 16	jf 14
+			(014) jeq      #0x6             jt 16	jf 15
+			(015) jeq      #0x11            jt 16	jf 26
+			(016) ldh      [20]
+			(017) jset     #0x1fff          jt 26	jf 18
+			(018) ldxb     4*([14]&0xf)
+			(019) ldh      [x + 14]
+			(020) jge      #0x1             jt 21	jf 22
+			(021) jgt      #0x3ff           jt 22	jf 25
+			(022) ldh      [x + 16]
+			(023) jge      #0x1             jt 24	jf 26
+			(024) jgt      #0x3ff           jt 26	jf 25
+			(025) ret      #262144
+			(026) ret      #0
+			EOF
+	}, # portrange
+	src_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'src portrange 1-1023',
+		aliases => ['src portrange 1023-1'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 20
+			(006) ldh      [54]
+			(007) jge      #0x1             jt 18	jf 20
+			(008) jeq      #0x800           jt 9	jf 20
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 20
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 20	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 14]
+			(017) jge      #0x1             jt 18	jf 20
+			(018) jgt      #0x3ff           jt 20	jf 19
+			(019) ret      #262144
+			(020) ret      #0
+			EOF
+	}, # src_portrange
+	dst_portrange => {
+		DLT=> 'EN10MB',
+		expr => 'dst portrange 1-1023',
+		aliases => ['dst portrange 1023-1'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 20
+			(006) ldh      [56]
+			(007) jge      #0x1             jt 18	jf 20
+			(008) jeq      #0x800           jt 9	jf 20
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 20
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 20	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 16]
+			(017) jge      #0x1             jt 18	jf 20
+			(018) jgt      #0x3ff           jt 20	jf 19
+			(019) ret      #262144
+			(020) ret      #0
+			EOF
+	}, # dst_portrange
+	portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'portrange 1812-1812',
+		aliases => ['portrange 1812'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 11
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 26
+			(006) ldh      [54]
+			(007) jge      #0x714           jt 8	jf 9
+			(008) jgt      #0x714           jt 9	jf 25
+			(009) ldh      [56]
+			(010) jge      #0x714           jt 24	jf 26
+			(011) jeq      #0x800           jt 12	jf 26
+			(012) ldb      [23]
+			(013) jeq      #0x84            jt 16	jf 14
+			(014) jeq      #0x6             jt 16	jf 15
+			(015) jeq      #0x11            jt 16	jf 26
+			(016) ldh      [20]
+			(017) jset     #0x1fff          jt 26	jf 18
+			(018) ldxb     4*([14]&0xf)
+			(019) ldh      [x + 14]
+			(020) jge      #0x714           jt 21	jf 22
+			(021) jgt      #0x714           jt 22	jf 25
+			(022) ldh      [x + 16]
+			(023) jge      #0x714           jt 24	jf 26
+			(024) jgt      #0x714           jt 26	jf 25
+			(025) ret      #262144
+			(026) ret      #0
+			EOF
+	}, # portrange_degenerate
+	src_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'src portrange 1812-1812',
+		aliases => ['src portrange 1812'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 20
+			(006) ldh      [54]
+			(007) jge      #0x714           jt 18	jf 20
+			(008) jeq      #0x800           jt 9	jf 20
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 20
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 20	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 14]
+			(017) jge      #0x714           jt 18	jf 20
+			(018) jgt      #0x714           jt 20	jf 19
+			(019) ret      #262144
+			(020) ret      #0
+			EOF
+	}, # src_portrange_degenerate
+	dst_portrange_degenerate => {
+		DLT=> 'EN10MB',
+		expr => 'dst portrange 1812-1812',
+		aliases => ['dst portrange 1812'],
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 6	jf 4
+			(004) jeq      #0x6             jt 6	jf 5
+			(005) jeq      #0x11            jt 6	jf 20
+			(006) ldh      [56]
+			(007) jge      #0x714           jt 18	jf 20
+			(008) jeq      #0x800           jt 9	jf 20
+			(009) ldb      [23]
+			(010) jeq      #0x84            jt 13	jf 11
+			(011) jeq      #0x6             jt 13	jf 12
+			(012) jeq      #0x11            jt 13	jf 20
+			(013) ldh      [20]
+			(014) jset     #0x1fff          jt 20	jf 15
+			(015) ldxb     4*([14]&0xf)
+			(016) ldh      [x + 16]
+			(017) jge      #0x714           jt 18	jf 20
+			(018) jgt      #0x714           jt 20	jf 19
+			(019) ret      #262144
+			(020) ret      #0
+			EOF
+	}, # dst_portrange_degenerate
 );
 
 # * DLT and expr: same as in valid_filters above
@@ -3336,9 +4412,49 @@ my %invalid_filters = (
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
 		errstr => 'not supported',
 	},
+	tcp_port => {
+		DLT => 'IPV4',
+		expr => 'tcp port 70000',
+		errstr => 'illegal port number',
+	},
 	udp_port => {
 		DLT => 'IPV4',
 		expr => 'udp port 70000',
+		errstr => 'illegal port number',
+	},
+	sctp_port => {
+		DLT => 'IPV4',
+		expr => 'sctp port 70000',
+		errstr => 'illegal port number',
+	},
+	tcp_portrange1 => {
+		DLT => 'IPV4',
+		expr => 'tcp portrange 1-70000',
+		errstr => 'illegal port number',
+	},
+	tcp_portrange2 => {
+		DLT => 'IPV4',
+		expr => 'tcp portrange 23-',
+		errstr => 'syntax error',
+	},
+	tcp_portrange3 => {
+		DLT => 'IPV4',
+		expr => 'tcp portrange -512',
+		errstr => 'syntax error',
+	},
+	tcp_portrange4 => {
+		DLT => 'IPV4',
+		expr => 'tcp portrange 70000',
+		errstr => 'illegal port number',
+	},
+	udp_portrange => {
+		DLT => 'IPV4',
+		expr => 'udp portrange 70000-1',
+		errstr => 'illegal port number',
+	},
+	sctp_portrange => {
+		DLT => 'IPV4',
+		expr => 'sctp portrange 70000-80000',
 		errstr => 'illegal port number',
 	},
 );
