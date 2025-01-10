@@ -46,6 +46,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "vpi" and "vci" values to be within valid ranges.
       Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.
+      Fix the != comparison for ATM and MTP field values.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from

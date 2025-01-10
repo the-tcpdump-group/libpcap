@@ -1284,7 +1284,7 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	b = new_block(cstate, JMP(jtype));
 	b->stmts = s;
 	b->s.k = v;
-	if (reverse && (jtype == BPF_JGT || jtype == BPF_JGE))
+	if (reverse)
 		gen_not(b);
 	return b;
 }
