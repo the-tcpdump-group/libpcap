@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "8 January 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "13 January 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -883,14 +883,49 @@ Abbreviations for:
 where \fIprotocol\fR is one of the above protocols.
 .IP "\fBl1\fR, \fBl2\fR, \fBiih\fR, \fBlsp\fR, \fBsnp\fR, \fBcsnp\fR, \fBpsnp\fR"
 Abbreviations for IS-IS PDU types.
-.IP "\fBvpi\fP \fIn\fR"
-True if the packet is an ATM packet, for SunATM on Solaris, with a
-virtual path identifier of
-.IR n .
-.IP "\fBvci\fP \fIn\fR"
-True if the packet is an ATM packet, for SunATM on Solaris, with a
-virtual channel identifier of
-.IR n .
+.IP "\fIatmfield relop val\fR"
+True if the packet is an ATM packet, for SunATM on Solaris, and the relation
+holds.
+.I atmfield
+is one of
+.RB { vpi ,
+.BR vci };
+.I relop
+is one of
+.RB { > ,
+.BR < ,
+.BR >= ,
+.BR <= ,
+.BR = ,
+.BR == ,
+.BR != }
+(where
+.B =
+means the same as
+.BR == );
+.I val
+is an integer.
+.B vpi
+and
+.B vci
+stand for the virtual path identifier (VPI) and the virtual channel
+identifier (VCI) fields respectively.
+.IP "\fIatmfield\fP \fIval\fR"
+Abbreviation for
+.in +.5i
+.nf
+\fIatmfield\fR == \fIval\fR
+.fi
+.in -.5i
+in the expression above.
+.IP "\fIatmfield\fP (\fIval1\fR \fBor\fP ... \fBor\fP \fIvalN\fR)"
+Abbreviation for
+.in +.5i
+.nf
+(\fIatmfield\fP == \fIval1\fP \fBor\fP ... \fBor\fP \fIatmfield\fP == \fIvalN\fR)
+.fi
+.in -.5i
+in the expression above.
 .IP \fBlane\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 an ATM LANE packet.
@@ -938,26 +973,56 @@ True if the packet is a Fill-In Signal Unit (FISU) MTP2 packet.
 True if the packet is a Link Status Signal Unit (LSSU) MTP2 packet.
 .IP \fBmsu\fP
 True if the packet is a Message Signal Unit (MSU) MTP2 packet.
-.IP "\fBsio\fP \fIval\fR"
-True if the packet has the Service Information Octet (SIO) field of the MTP2
-MSU header set to the value
-.IR val .
-Note that this keyword does not test whether the packet is an MSU packet.
-.IP "\fBdpc\fP \fIval\fR"
-True if the packet has the Destination Point Code (DPC) field of the MTP3
-standard routing label set to the value
-.IR val .
-Note that this keyword does not test whether the packet is an MTP3 packet.
-.IP "\fBopc\fP \fIval\fR"
-True if the packet has the Originating Point Code (OPC) field of the MTP3
-standard routing label set to the value
-.IR val .
-Note that this keyword does not test whether the packet is an MTP3 packet.
-.IP "\fBsls\fP \fIval\fR"
-True if the packet has the Signalling Link Selection (SLS) field of the MTP3
-standard routing label set to the value
-.IR val .
-Note that this keyword does not test whether the packet is an MTP3 packet.
+.IP "\fImtpfield relop val\fR"
+True if the relation holds.
+.I mtpfield
+is one of
+.RB { sio ,
+.BR dpc ,
+.BR opc ,
+.BR sls };
+.I relop
+is one of
+.RB { > ,
+.BR < ,
+.BR >= ,
+.BR <= ,
+.BR = ,
+.BR == ,
+.BR != }
+(where
+.B =
+means the same as
+.BR == );
+.I val
+is an integer.
+.B sio
+stands for the Service Information Octet (SIO) field of the MTP2 MSU header;
+note that this keyword does not test whether the packet is an MSU packet.
+.BR dpc ,
+.B opc
+and
+.B sls
+stand for the Destination Point Code (DPC), Originating Point Code (OPC) and
+Signalling Link Selection (SLS) fields respectively of the MTP3 standard
+routing label; note that these keywords do not test whether the packet is an
+MTP3 packet.
+.IP "\fImtpfield\fP \fIval\fR"
+Abbreviation for
+.in +.5i
+.nf
+\fImtpfield\fR == \fIval\fR
+.fi
+.in -.5i
+in the expression above.
+.IP "\fImtpfield\fP (\fIval1\fR \fBor\fP ... \fBor\fP \fIvalN\fR)"
+Abbreviation for
+.in +.5i
+.nf
+(\fImtpfield\fP == \fIval1\fP \fBor\fP ... \fBor\fP \fImtpfield\fP == \fIvalN\fR)
+.fi
+.in -.5i
+in the expression above.
 .IP "\fBhfisu\fR, \fBhlssu\fR, \fBhmsu\fR, \fBhsio\fR, \fBhdpc\fR, \fBhopc\fR, \fBhsls\fP"
 Same as
 .BR fisu ,
