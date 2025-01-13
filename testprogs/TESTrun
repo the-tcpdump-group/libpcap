@@ -374,8 +374,13 @@ my %valid_filters = (
 	mtp2_sio => {
 		DLT => 'MTP2',
 		expr => 'sio 0xd2',
-		aliases => ['sio = 0xd2', 'sio == 0xd2'],
-		unopt => <<~'EOF',
+		aliases => [
+			'sio = 0xd2',
+			'sio == 0xd2',
+			'sio (0xd2)',
+			'sio (0xd2 or 0xd2)',
+		],
+		opt => <<~'EOF',
 			(000) ldb      [3]
 			(001) jeq      #0xd2            jt 2	jf 3
 			(002) ret      #262144
@@ -432,11 +437,28 @@ my %valid_filters = (
 			(003) ret      #262144
 			EOF
 	}, # mtp2_sio_ne
+	mtp2_sio_nary => {
+		DLT => 'MTP2',
+		expr => 'sio (73 or 74 or 75)',
+		opt => <<~'EOF',
+			(000) ldb      [3]
+			(001) jeq      #0x49            jt 4	jf 2
+			(002) jeq      #0x4a            jt 4	jf 3
+			(003) jeq      #0x4b            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # mtp2_sio_nary
 	mtp3_dpc => {
 		DLT => 'MTP2',
 		expr => 'dpc 0x31d6',
-		aliases => ['dpc = 0x31d6', 'dpc == 0x31d6'],
-		unopt => <<~'EOF',
+		aliases => [
+			'dpc = 0x31d6',
+			'dpc == 0x31d6',
+			'dpc (0x31d6)',
+			'dpc (0x31d6 or 0x31d6)',
+		],
+		opt => <<~'EOF',
 			(000) ld       [4]
 			(001) and      #0xff3f0000
 			(002) jeq      #0xd6310000      jt 3	jf 4
@@ -499,11 +521,33 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_dpc_ne
+	mtp2_dpc_nary => {
+		DLT => 'MTP2',
+		expr => 'dpc (0x1274 or 0x1275 or 0x1276)',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xff3f0000
+			(002) jeq      #0x74120000      jt 9	jf 3
+			(003) ld       [4]
+			(004) and      #0xff3f0000
+			(005) jeq      #0x75120000      jt 9	jf 6
+			(006) ld       [4]
+			(007) and      #0xff3f0000
+			(008) jeq      #0x76120000      jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp2_dpc_nary
 	mtp3_opc => {
 		DLT => 'MTP2',
 		expr => 'opc 0x3b35',
-		aliases => ['opc = 0x3b35', 'opc == 0x3b35'],
-		unopt => <<~'EOF',
+		aliases => [
+			'opc = 0x3b35',
+			'opc == 0x3b35',
+			'opc (0x3b35)',
+			'opc (0x3b35 or 0x3b35)',
+		],
+		opt => <<~'EOF',
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x40cd0e        jt 3	jf 4
@@ -566,11 +610,33 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_opc_ne
+	mtp2_opc_nary => {
+		DLT => 'MTP2',
+		expr => 'opc (0x608 or 0x609 or 0x60a)',
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0x8201          jt 9	jf 3
+			(003) ld       [4]
+			(004) and      #0xc0ff0f
+			(005) jeq      #0x408201        jt 9	jf 6
+			(006) ld       [4]
+			(007) and      #0xc0ff0f
+			(008) jeq      #0x808201        jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp2_opc_nary
 	mtp3_sls => {
 		DLT => 'MTP2',
 		expr => 'sls 3',
-		aliases => ['sls = 3', 'sls == 3'],
-		unopt => <<~'EOF',
+		aliases => [
+			'sls = 3',
+			'sls == 3',
+			'sls (3)',
+			'sls (3 or 3)',
+		],
+		opt => <<~'EOF',
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jeq      #0x30            jt 3	jf 4
@@ -633,6 +699,23 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_sls_ne
+	mtp3_sls_nary => {
+		DLT => 'MTP2',
+		expr => 'sls (3 or 4 or 5)',
+		unopt => <<~'EOF',
+			(000) ldb      [7]
+			(001) and      #0xf0
+			(002) jeq      #0x30            jt 9	jf 3
+			(003) ldb      [7]
+			(004) and      #0xf0
+			(005) jeq      #0x40            jt 9	jf 6
+			(006) ldb      [7]
+			(007) and      #0xf0
+			(008) jeq      #0x50            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp3_sls_nary
 	mtp2_hfisu => {
 		DLT => 'MTP2',
 		expr => 'hfisu',
@@ -671,8 +754,13 @@ my %valid_filters = (
 	mtp2_hsio => {
 		DLT => 'MTP2',
 		expr => 'hsio 0x41',
-		aliases => ['hsio = 0x41', 'hsio == 0x41'],
-		unopt => <<~'EOF',
+		aliases => [
+			'hsio = 0x41',
+			'hsio == 0x41',
+			'hsio (0x41)',
+			'hsio (0x41 or 0x41)',
+		],
+		opt => <<~'EOF',
 			(000) ldb      [6]
 			(001) jeq      #0x41            jt 2	jf 3
 			(002) ret      #262144
@@ -729,11 +817,28 @@ my %valid_filters = (
 			(003) ret      #262144
 			EOF
 	}, # mtp2_hsio_ne
+	mtp3_hsio_nary => {
+		DLT => 'MTP2',
+		expr => 'hsio (0x42 or 0x43 or 0x44)',
+		opt => <<~'EOF',
+			(000) ldb      [6]
+			(001) jeq      #0x42            jt 4	jf 2
+			(002) jeq      #0x43            jt 4	jf 3
+			(003) jeq      #0x44            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # mtp3_hsio_nary
 	mtp3_hdpc => {
 		DLT => 'MTP2',
 		expr => 'hdpc 0x0ab5',
-		aliases => ['hdpc = 0x0ab5', 'hdpc == 0x0ab5'],
-		unopt => <<~'EOF',
+		aliases => [
+			'hdpc = 0x0ab5',
+			'hdpc == 0x0ab5',
+			'hdpc (0x0ab5)',
+			'hdpc (0x0ab5 or 0x0ab5)',
+		],
+		opt => <<~'EOF',
 			(000) ld       [7]
 			(001) and      #0xff3f0000
 			(002) jeq      #0xb50a0000      jt 3	jf 4
@@ -796,11 +901,33 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_hdpc_ne
+	mtp3_hdpc_nary => {
+		DLT => 'MTP2',
+		expr => 'hdpc (0x0ab6 or 0x0ab7 or 0x0ab8)',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xff3f0000
+			(002) jeq      #0xb60a0000      jt 9	jf 3
+			(003) ld       [7]
+			(004) and      #0xff3f0000
+			(005) jeq      #0xb70a0000      jt 9	jf 6
+			(006) ld       [7]
+			(007) and      #0xff3f0000
+			(008) jeq      #0xb80a0000      jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp3_hdpc_nary
 	mtp3_hopc => {
 		DLT => 'MTP2',
 		expr => 'hopc 0x3aba',
-		aliases => ['hopc = 0x3aba', 'hopc == 0x3aba'],
-		unopt => <<~'EOF',
+		aliases => [
+			'hopc = 0x3aba',
+			'hopc == 0x3aba',
+			'hopc (0x3aba)',
+			'hopc (0x3aba or 0x3aba)',
+		],
+		opt => <<~'EOF',
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x80ae0e        jt 3	jf 4
@@ -863,11 +990,33 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_hopc_ne
+	mtp3_hopc_nary => {
+		DLT => 'MTP2',
+		expr => 'hopc (9000 or 10000 or 9001)',
+		unopt => <<~'EOF',
+			(000) ld       [7]
+			(001) and      #0xc0ff0f
+			(002) jeq      #0xca08          jt 9	jf 3
+			(003) ld       [7]
+			(004) and      #0xc0ff0f
+			(005) jeq      #0xc409          jt 9	jf 6
+			(006) ld       [7]
+			(007) and      #0xc0ff0f
+			(008) jeq      #0x40ca08        jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp3_hopc_nary
 	mtp3_hsls => {
 		DLT => 'MTP2',
 		expr => 'hsls 5',
-		aliases => ['hsls = 5', 'hsls == 5'],
-		unopt => <<~'EOF',
+		aliases => [
+			'hsls = 5',
+			'hsls == 5',
+			'hsls (5)',
+			'hsls (5 or 5)',
+		],
+		opt => <<~'EOF',
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jeq      #0x50            jt 3	jf 4
@@ -930,12 +1079,34 @@ my %valid_filters = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_hsls_ne
+	mtp3_hsls_nary => {
+		DLT => 'MTP2',
+		expr => 'hsls (13 or 12 or 11)',
+		unopt => <<~'EOF',
+			(000) ldb      [10]
+			(001) and      #0xf0
+			(002) jeq      #0xd0            jt 9	jf 3
+			(003) ldb      [10]
+			(004) and      #0xf0
+			(005) jeq      #0xc0            jt 9	jf 6
+			(006) ldb      [10]
+			(007) and      #0xf0
+			(008) jeq      #0xb0            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # mtp3_hsls_nary
 
 	atm_vpi => {
 		DLT => 'SUNATM',
 		expr => 'vpi 10',
-		aliases => ['vpi = 10', 'vpi == 10'],
-		unopt => <<~'EOF',
+		aliases => [
+			'vpi = 10',
+			'vpi == 10',
+			'vpi (10)',
+			'vpi (10 or 10)',
+		],
+		opt => <<~'EOF',
 			(000) ldb      [1]
 			(001) jeq      #0xa             jt 2	jf 3
 			(002) ret      #262144
@@ -992,11 +1163,30 @@ my %valid_filters = (
 			(003) ret      #262144
 			EOF
 	}, # atm_vpi_ne
+	atm_vpi_nary => {
+		DLT => 'SUNATM',
+		expr => 'vpi (105 or 0x7a or 0311)',
+		# The bytecode preserves the order of values, hence no aliases for the
+		# permutations.
+		opt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x69            jt 4	jf 2
+			(002) jeq      #0x7a            jt 4	jf 3
+			(003) jeq      #0xc9            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_vpi_nary
 	atm_vci => {
 		DLT => 'SUNATM',
 		expr => 'vci 20',
-		aliases => ['vci = 20', 'vci == 20'],
-		unopt => <<~'EOF',
+		aliases => [
+			'vci = 20',
+			'vci == 20',
+			'vci (20)',
+			'vci (20 or 20)',
+		],
+		opt => <<~'EOF',
 			(000) ldh      [2]
 			(001) jeq      #0x14            jt 2	jf 3
 			(002) ret      #262144
@@ -1053,6 +1243,18 @@ my %valid_filters = (
 			(003) ret      #262144
 			EOF
 	}, # atm_vci_ne
+	atm_vci_nary => {
+		DLT => 'SUNATM',
+		expr => 'vci (10 or 0xdb or 0700)',
+		opt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0xa             jt 4	jf 2
+			(002) jeq      #0xdb            jt 4	jf 3
+			(003) jeq      #0x1c0           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # atm_vci_nary
 	atm_lane => {
 		DLT => 'SUNATM',
 		expr => 'lane',
