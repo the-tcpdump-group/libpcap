@@ -5336,6 +5336,7 @@ my $results_printed = 0;
 use constant CHAR_SKIPPED => 'S';
 use constant CHAR_PASSED => '.';
 use constant CHAR_FAILED => 'F';
+use constant CHAR_TIMED_OUT => 'T';
 
 sub print_result_char {
 	print shift;
@@ -5418,7 +5419,7 @@ foreach my $testname (sort keys %valid_filters) {
 			$r = system (join ' ', @args) >> 8;
 			if ($r == TIMED_OUT) {
 				$failed{$eq_label} = {reason => 'filtertest timeout'};
-				print_result_char CHAR_FAILED;
+				print_result_char CHAR_TIMED_OUT;
 				next;
 			}
 			if ($r) {
@@ -5476,7 +5477,7 @@ foreach my $testname (sort keys %invalid_filters) {
 	}
 	if ($r == TIMED_OUT) {
 		$failed{$label} = {reason => 'filtertest timeout'};
-		print_result_char CHAR_FAILED;
+		print_result_char CHAR_TIMED_OUT;
 		next;
 	}
 	if ($r != 1) {
