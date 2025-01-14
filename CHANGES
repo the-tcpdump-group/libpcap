@@ -127,6 +127,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
+      IEEE 802.11: Fix three undefined behaviors in grammar.y.
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
