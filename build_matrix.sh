@@ -22,6 +22,9 @@
 # Some OSes have native make without parallel jobs support and sometimes have
 # GNU Make available as "gmake".
 : "${MAKE_BIN:=make}"
+# Custom path to Valgrind (default: use "valgrind" if available).  Set to
+# "false" to avoid using Valgrind on a slow host.
+: "${VALGRIND_BIN:=valgrind}"
 # It calls the build.sh script which runs one build with setup environment
 # variables: CC, CMAKE, IPV6 and REMOTE.
 
@@ -36,9 +39,8 @@ fi
 COUNT=0
 export LIBPCAP_TAINTED
 export LIBPCAP_CMAKE_TAINTED
-if command -v valgrind >/dev/null 2>&1; then
-    valgrind --version
-    VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1 --quiet"
+if "$VALGRIND_BIN" --version >/dev/null 2>&1; then
+    VALGRIND_CMD="$VALGRIND_BIN --leak-check=full --error-exitcode=1 --quiet"
     export VALGRIND_CMD
     # With Valgrind filtertest takes significantly longer to complete.
     : "${FILTERTEST_TIMEOUT:=5}"
