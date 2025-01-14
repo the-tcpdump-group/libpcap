@@ -14,7 +14,6 @@
 # FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
 # (required for MATRIX_CMAKE=yes).
 
-use integer;
 use strict;
 use warnings;
 use File::Basename qw(dirname);
@@ -5208,8 +5207,7 @@ my $tmpdir = File::Temp->newdir(); # Unlinks automatically.
 my $filename_expected = $tmpdir . '/expected.txt';
 my $filename_stdout = $tmpdir . '/stdout.txt';
 my $filename_filter = $tmpdir . '/filter.txt';
-my $skippedcount = 0;
-my $failedcount = 0;
+my $filename_diags = $tmpdir . '/diags.txt';
 my $passedcount = 0;
 my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
 	$^O eq 'hpux' ? '-c' :
@@ -5251,6 +5249,16 @@ sub file_put_contents {
 	close ($fh) || die "failed closing '$filename'";
 }
 
+# Idem.
+sub file_get_contents {
+	my $filename = shift;
+	open (my $fh, '<', $filename) || die "failed opening '$filename'";
+	my $ret = '';
+	$ret .= $_ while (<$fh>);
+	close ($fh) || die "failed closing '$filename'";
+	return $ret;
+}
+
 sub string_in_file {
 	my ($string, $filename) = @_;
 	my $ret = 0;
@@ -5280,6 +5288,81 @@ if ($r != 1) {
 	exit 2;
 }
 
+sub valid_test_label {
+	my ($name, $type) = @_;
+	return "valid_${name}_${type}";
+}
+
+sub valid_alias_label {
+	my ($label, $index) = @_;
+	return "${label} (alias ${index})";
+}
+
+sub invalid_test_label {
+	my $name = shift;
+	return "invalid_${name}";
+}
+
+my $results_to_print = 0;
+foreach my $testname (keys %valid_filters) {
+	my $test = $valid_filters{$testname};
+	foreach ('unopt', 'opt') {
+		defined $test->{$_} || next;
+		my $label = valid_test_label $testname, $_;
+		defined $only_one && $only_one ne $label && next;
+		$results_to_print++;
+		$results_to_print += 1 + $test->{aliases}->$#* if defined $test->{aliases};
+	}
+}
+foreach my $testname (keys %invalid_filters) {
+	my $label = invalid_test_label $testname;
+	defined $only_one && $only_one ne $label && next;
+	$results_to_print++;
+}
+if (! $results_to_print) {
+	die "ERROR: Unknown test case '${only_one}'" if defined $only_one;
+	die 'Internal error: no tests defined to run!'
+}
+
+# <-------------------------- MAXCOLS -------------------------->
+# ............................................ 0000 / 0000 (000%)
+#                          $max_result_digits >----< >----<
+# <--------- $max_results_per_line ---------->
+use constant MAXCOLS => 80;
+my $max_result_digits = 1 + int (log ($results_to_print) / log (10));
+my $max_results_per_line = MAXCOLS - 11 - 2 * $max_result_digits;
+my $results_printed = 0;
+# The characters and the subroutine implement a subset of PHPUnit output format.
+use constant CHAR_SKIPPED => 'S';
+use constant CHAR_PASSED => '.';
+use constant CHAR_FAILED => 'F';
+
+sub print_result_char {
+	print shift;
+	if (++$results_printed > $results_to_print) {
+		die "Internal error: unexpected results after 100%!";
+	}
+	my $results_dangling = $results_printed % $max_results_per_line;
+	if ($results_dangling) {
+		return if $results_printed < $results_to_print;
+		# Complete the dangling line to keep the progress column aligned.
+		print ' ' for (1 .. $max_results_per_line - $results_dangling);
+	}
+	printf " %*u / %*u (%3u%%)\n",
+		$max_result_digits,
+		$results_printed,
+		$max_result_digits,
+		$results_to_print,
+		100 * $results_printed / $results_to_print;
+}
+
+# key: test label, value: reason for skipping
+my %skipped;
+# key: test label, value: hash of
+# * reason (mandatory, string)
+# * details (optional, [multi-line] string)
+my %failed;
+
 # Sort the keys, otherwise the order will be random and outputs of two
 # invocations will be difficult to compare.
 foreach my $testname (sort keys %valid_filters) {
@@ -5289,11 +5372,17 @@ foreach my $testname (sort keys %valid_filters) {
 	}
 	foreach ('unopt', 'opt') {
 		defined $test->{$_} || next;
-		my $label = "valid_${testname}_${_}";
+		my $label = valid_test_label $testname, $_;
 		defined $only_one && $only_one ne $label && next;
 		if (defined $test->{skip} && $test->{skip} ne '') {
-			$skippedcount++;
-			print_result $label, "skipped ($test->{skip})";
+			$skipped{$label} = $test->{skip};
+			print_result_char CHAR_SKIPPED;
+			if (defined $test->{aliases}) {
+				foreach my $i (0 .. $test->{aliases}->$#*) {
+					$skipped{"${label} (alias ${i})"} = $test->{skip};
+					print_result_char CHAR_SKIPPED;
+				}
+			}
 			next;
 		}
 		# BSD timeout(1) does not implement --verbose.
@@ -5311,51 +5400,59 @@ foreach my $testname (sort keys %valid_filters) {
 			$filename_filter,
 			$test->{DLT},
 			">$filename_stdout",
+			"2>&1"
 		);
 		file_put_contents $filename_expected, $test->{$_};
 		my @equivalents = ({label => $label, expr => $test->{expr}});
 		if (defined $test->{aliases}) {
 			foreach my $i (0 .. $test->{aliases}->$#*) {
 				push @equivalents, {
-					label => "${label} (alias ${i})",
+					label => valid_alias_label ($label, $i),
 					expr => $test->{aliases}[$i],
 				};
 			}
 		}
 		foreach (@equivalents) {
 			file_put_contents $filename_filter, $_->{expr};
+			my $eq_label = $_->{label};
 			$r = system (join ' ', @args) >> 8;
 			if ($r == TIMED_OUT) {
-				$failedcount++;
-				print_result $_->{label}, 'failed (filtertest timeout)';
+				$failed{$eq_label} = {reason => 'filtertest timeout'};
+				print_result_char CHAR_FAILED;
 				next;
 			}
 			if ($r) {
-				$failedcount++;
-				print_result $_->{label}, 'failed (filtertest error)';
+				$failed{$eq_label} = {
+					reason => 'filtertest error',
+					details => file_get_contents $filename_stdout,
+				};
+				print_result_char CHAR_FAILED;
 				next;
 			}
-			if (system "diff $diff_flags $filename_expected $filename_stdout 2>&1") {
-				$failedcount++;
-				print_result $_->{label}, 'failed (diff error)';
+			if (system "diff $diff_flags $filename_expected $filename_stdout >$filename_diags 2>&1") {
+				$failed{$eq_label} = {
+					reason => 'diff error',
+					details => file_get_contents $filename_diags,
+				};
+				print_result_char CHAR_FAILED;
 				next;
 			}
 			$passedcount++;
-			print_result $_->{label}, 'passed';
+			print_result_char CHAR_PASSED;
 		}
 	}
 }
 
 foreach my $testname (sort keys %invalid_filters) {
-	my $label = "invalid_${testname}";
+	my $label = invalid_test_label $testname;
 	defined $only_one && $only_one ne $label && next;
 	my $test = $invalid_filters{$testname};
 	if (! defined $test->{errstr}) {
 		die "Internal error: test '$label' does not define errstr.";
 	}
 	if (defined $test->{skip} && $test->{skip} ne '') {
-		$skippedcount++;
-		print_result $label, "skipped ($test->{skip})";
+		$skipped{$label} = $test->{skip};
+		print_result_char CHAR_SKIPPED;
 		next;
 	}
 	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
@@ -5365,36 +5462,59 @@ foreach my $testname (sort keys %invalid_filters) {
 		'-F',
 		$filename_filter,
 		$test->{DLT},
-		"2>$filename_stdout",
+		">$filename_stdout",
+		"2>&1",
 	);
 	$r = system (join ' ', @args) >> 8;
 	if ($r == 0) {
-		$failedcount++;
-		print_result $label, 'failed (no filtertest error)';
+		$failed{$label} = {
+			reason => 'no filtertest error',
+			details => file_get_contents $filename_stdout,
+		};
+		print_result_char CHAR_FAILED;
 		next;
 	}
 	if ($r == TIMED_OUT) {
-		$failedcount++;
-		print_result $label, 'failed (filtertest timeout)';
+		$failed{$label} = {reason => 'filtertest timeout'};
+		print_result_char CHAR_FAILED;
 		next;
 	}
 	if ($r != 1) {
-		$failedcount++;
-		print_result $label, "failed (filtertest status $r)";
+		$failed{$label} = {
+			reason => "filtertest status $r",
+			details => file_get_contents $filename_stdout,
+		};
+		print_result_char CHAR_FAILED;
 		next;
 	}
 	if (! string_in_file $test->{errstr}, $filename_stdout) {
-		$failedcount++;
-		print_result $label, "failed (error string mismatch)";
+		$failed{$label} = {
+			reason => 'error string mismatch',
+			details => file_get_contents $filename_stdout,
+		};
+		print_result_char CHAR_FAILED;
 		next;
 	}
 	$passedcount++;
-	print_result $label, 'passed';
+	print_result_char CHAR_PASSED;
 }
 
+print "\n";
+if (%skipped) {
+	print "Skipped tests:\n";
+	print_result $_, $skipped{$_} foreach (sort keys %skipped);
+	print "\n";
+}
+if (%failed) {
+	print "Failed tests:\n";
+	foreach (sort keys %failed) {
+		print_result $_, $failed{$_}{reason};
+		print $failed{$_}{details} if defined $failed{$_}{details};
+	}
+	print "\n";
+}
 print "------------------------------------------------\n";
-printf "%4u tests skipped\n", $skippedcount;
-printf "%4u tests failed\n", $failedcount;
+printf "%4u tests skipped\n", scalar %skipped;
+printf "%4u tests failed\n", scalar %failed;
 printf "%4u tests passed\n", $passedcount;
-
-$failedcount eq 0 || exit 1
+scalar %failed eq 0 || exit 1
