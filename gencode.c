@@ -9369,7 +9369,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 	 * Check for a VLAN packet, and then change the offsets to point
 	 * to the type and data fields within the VLAN packet.  Just
 	 * increment the offsets, so that we can support a hierarchy, e.g.
-	 * "vlan 300 && vlan 200" to capture VLAN 200 encapsulated within
+	 * "vlan 100 && vlan 200" to capture VLAN 200 encapsulated within
 	 * VLAN 100.
 	 *
 	 * XXX - this is a bit of a kludge.  If we were to split the
