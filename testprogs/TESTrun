@@ -1,5 +1,31 @@
 #!/usr/bin/env perl
 
+# Copyright (c) 2024 The Tcpdump Group
+# All rights reserved.
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 # Usage:
 # <this file>               run all tests
 # <this file> <test label>  run only the test with the label (if any)
@@ -14,6 +40,8 @@
 # FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
 # (required for MATRIX_CMAKE=yes).
 
+require 5.26.1; # Ubuntu 18.04
+use sigtrap qw(die normal-signals);
 use strict;
 use warnings;
 use File::Basename qw(dirname);
@@ -5203,7 +5231,7 @@ my %invalid_filters = (
 # On all platforms where timeout(1) is available it exits with status 124
 # if the command timed out.
 use constant TIMED_OUT => 124;
-my $tmpdir = File::Temp->newdir(); # Unlinks automatically.
+my $tmpdir = File::Temp->newdir ('libpcap_tests_XXXXXXXX', TMPDIR => 1); # Unlinks automatically.
 my $filename_expected = $tmpdir . '/expected.txt';
 my $filename_stdout = $tmpdir . '/stdout.txt';
 my $filename_filter = $tmpdir . '/filter.txt';
