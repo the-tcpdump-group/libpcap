@@ -306,6 +306,28 @@ my %valid_filters = (
 			(011) ret      #0
 			EOF
 	}, # tcp_index_byte
+	linux_sll_inbound => {
+		DLT => 'LINUX_SLL',
+		snaplen => 65535,
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldh      [0]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #65535
+			EOF
+	}, # linux_sll_inbound
+	linux_sll_outbound => {
+		DLT => 'LINUX_SLL',
+		snaplen => 65535,
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldh      [0]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #65535
+			(003) ret      #0
+			EOF
+	}, # linux_sll_outbound
 	linux_sll2_inbound => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
@@ -361,6 +383,28 @@ my %valid_filters = (
 			(003) ret      #100
 			EOF
 	}, # slip_outbound
+	ipnet_inbound => {
+		DLT => 'IPNET',
+		snaplen => 1000,
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #1000
+			(003) ret      #0
+			EOF
+	}, # ipnet_inbound
+	ipnet_outbound => {
+		DLT => 'IPNET',
+		snaplen => 1000,
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #1000
+			(003) ret      #0
+			EOF
+	}, # ipnet_outbound
 
 	mtp2_fisu => {
 		DLT => 'MTP2',
@@ -1697,6 +1741,126 @@ my %valid_filters = (
 			(005) ret      #0
 			EOF
 	}, # ether_proto_stp
+
+	vlan_eth_nullary => {
+		DLT => 'EN10MB',
+		expr => 'vlan',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # vlan_eth_nullary
+	vlan_eth_unary => {
+		DLT => 'EN10MB',
+		expr => 'vlan 4095',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 8
+			(004) ldh      [14]
+			(005) and      #0xfff
+			(006) jeq      #0xfff           jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			EOF
+	}, # vlan_eth_unary
+	vlan_and_vlan_eth => {
+		DLT => 'EN10MB',
+		expr => 'vlan and vlan',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 9
+			(004) ldh      [16]
+			(005) jeq      #0x8100          jt 8	jf 6
+			(006) jeq      #0x88a8          jt 8	jf 7
+			(007) jeq      #0x9100          jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			EOF
+	}, # vlan_and_vlan_eth
+	vlan_netanalyzer_nullary => {
+		DLT => 'NETANALYZER',
+		expr => 'vlan',
+		opt => <<~'EOF',
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # vlan_netanalyzer_nullary
+	vlan_netanalyzer_unary => {
+		DLT => 'NETANALYZER',
+		expr => 'vlan 10',
+		opt => <<~'EOF',
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 8
+			(004) ldh      [18]
+			(005) and      #0xfff
+			(006) jeq      #0xa             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			EOF
+	}, # vlan_netanalyzer_unary
+
+	mpls_eth_nullary => {
+		DLT => 'EN10MB',
+		expr => 'mpls',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8847          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # mpls_eth_nullary
+	mpls_eth_unary => {
+		DLT => 'EN10MB',
+		expr => 'mpls 100',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8847          jt 2	jf 6
+			(002) ld       [14]
+			(003) and      #0xfffff000
+			(004) jeq      #0x64000         jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			EOF
+	}, # mpls_eth_unary
+	mpls_and_mpls_eth => {
+		DLT => 'EN10MB',
+		expr => 'mpls and mpls',
+		opt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x8847          jt 2	jf 5
+			(002) ldb      [16]
+			(003) jset     #0x1             jt 5	jf 4
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # mpls_and_mpls_eth
+	mpls_ppp_unary => {
+		DLT => 'PPP',
+		expr => 'mpls 100',
+		opt => <<~'EOF',
+			(000) ldh      [2]
+			(001) jeq      #0x281           jt 2	jf 6
+			(002) ld       [4]
+			(003) and      #0xfffff000
+			(004) jeq      #0x64000         jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			EOF
+	}, # mpls_ppp_unary
 
 	wlan_host => {
 		DLT => 'IEEE802_11',
@@ -3940,6 +4104,20 @@ my %valid_filters = (
 			EOF
 	}, # tcp_flags
 
+	named_offsets => {
+		DLT => 'EN10MB',
+		expr => <<~'EOF',
+			icmptype == 0 &&
+			icmpcode == 1 &&
+			icmp6type == 0 &&
+			icmp6code == 1 &&
+			tcpflags == 13
+			EOF
+		opt => <<~'EOF',
+			(000) ret      #262144
+			EOF
+	}, # offsets
+
 	# In the tests below "smtp" depends on getaddrinfo().
 	tcp_port => {
 		DLT=> 'EN10MB',
@@ -5225,6 +5403,31 @@ my %invalid_filters = (
 		DLT => 'IPV4',
 		expr => 'sctp portrange 70000-80000',
 		errstr => 'illegal port number',
+	},
+	vlan_not_supported => {
+		DLT => 'RAW',
+		expr => 'vlan',
+		errstr => 'no VLAN support',
+	},
+	vlan_invalid_id1 => {
+		DLT => 'EN10MB',
+		expr => 'vlan 4096',
+		errstr => 'greater than maximum',
+	},
+	vlan_invalid_id2 => {
+		DLT => 'EN10MB',
+		expr => 'vlan any',
+		errstr => 'syntax error',
+	},
+	mpls_not_supported => {
+		DLT => 'RAW',
+		expr => 'mpls',
+		errstr => 'no MPLS support',
+	},
+	mpls_invalid_id => {
+		DLT => 'EN10MB',
+		expr => 'mpls 1048576',
+		errstr => 'greater than maximum',
 	},
 );
 
