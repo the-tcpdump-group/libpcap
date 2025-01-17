@@ -39,13 +39,25 @@
 #
 # FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
 # (required for MATRIX_CMAKE=yes).
+#
+# TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
 
 require 5.26.1; # Ubuntu 18.04
 use sigtrap qw(die normal-signals);
 use strict;
-use warnings;
+use warnings FATAL => qw(uninitialized);
 use File::Basename qw(dirname);
 use File::Temp;
+
+BEGIN {
+	use Config;
+	use FindBin;
+	require $FindBin::RealBin . '/TEST' . ($Config{useithreads} ? 'mt' : 'st') . '.pm';
+}
+
+# When using threads, STDOUT becomes line-buffered on TTYs, which is not good
+# for interactive progress monitoring.
+STDOUT->autoflush (1) if $Config{useithreads} && -t STDOUT;
 
 # Parse config.h into a hash for later use.
 my %config = ();
@@ -73,13 +85,14 @@ sub broken_igrp {
 		'';
 }
 
-# In valid_filters the top-level keys are test names.  When possible, a test
-# name should be easy to relate with the main filter expression, for example,
-# ip_multicast for "ip multicast" etc.  However, because in Perl hashes the
-# keys are not ordered, sometimes the easiest way to group the tests in the
-# alphabetically-sorted output is to use an artificial prefix, for example,
-# mtp2_ for "fisu", "lssu", "msu" etc.  The top-level values are in turn
-# hashes, where the keys have the following meaning:
+# In accept_blocks the top-level keys are test block names.  Each test block
+# defines one or more tests.  When possible, a test block name should be easy
+# to relate with the main filter expression, for example, ip_multicast for
+# "ip multicast" etc.  However, because in Perl hashes the keys are not ordered,
+# sometimes the easiest way to group the tests in the alphabetically-sorted
+# output is to use an artificial prefix, for example, mtp2_ for "fisu", "lssu",
+# "msu" etc.  The top-level values are in turn hashes, where the keys have the
+# following meaning:
 #
 # * DLT (mandatory, string): the name of the DLT to use for the test
 # * snaplen (optional, int): the snapshot length to use for the test
@@ -92,9 +105,9 @@ sub broken_igrp {
 # * skip (optional, string): if defined and is not equal to an empty string,
 #   causes the test to skip using the string as the reason
 #
-# At least one of "opt" and "unopt" must be defined in each test.
+# At least one of "opt" and "unopt" must be defined in each accept test block.
 
-my %valid_filters = (
+my %accept_blocks = (
 	empty => {
 		DLT => 'EN10MB',
 		expr => '',
@@ -5196,11 +5209,11 @@ my %valid_filters = (
 	}, # dst_portrange_degenerate
 );
 
-# * DLT and expr: same as in valid_filters above
+# * DLT, expr and skip: same as in accept_blocks above
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
 #   is what the test expects, rather than some unrelated cause).
-my %invalid_filters = (
+my %reject_tests = (
 	ether_host => {
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
@@ -5434,12 +5447,17 @@ my %invalid_filters = (
 # On all platforms where timeout(1) is available it exits with status 124
 # if the command timed out.
 use constant TIMED_OUT => 124;
-my $tmpdir = File::Temp->newdir ('libpcap_tests_XXXXXXXX', TMPDIR => 1); # Unlinks automatically.
-my $filename_expected = $tmpdir . '/expected.txt';
-my $filename_stdout = $tmpdir . '/stdout.txt';
-my $filename_filter = $tmpdir . '/filter.txt';
-my $filename_diags = $tmpdir . '/diags.txt';
-my $passedcount = 0;
+
+my $tmpdir = File::Temp->newdir ('libpcap_TESTrun_XXXXXXXX', TMPDIR => 1); # Unlinks automatically.
+my $filename_expected = 'expected.txt';
+my $filename_stdout = 'stdout.txt';
+my $filename_filter = 'filter.txt';
+my $filename_diags = 'diags.txt';
+
+sub mytmpfile {
+	return sprintf '%s/%s-%s', $tmpdir, my_tmp_id, shift;
+}
+
 my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
 	$^O eq 'hpux' ? '-c' :
 	'-u';
@@ -5471,6 +5489,17 @@ if ($test_timeout eq '0') {
 my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
 	dirname ($0) . '/filtertest';
 my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
+
+my $njobs;
+if (! defined $ENV{TESTRUN_JOBS}) {
+	$njobs = 1;
+} elsif ($ENV{TESTRUN_JOBS} =~ /^\d+\z/) {
+	$njobs = int ($ENV{TESTRUN_JOBS});
+} else {
+	$njobs = 0;
+}
+die "ERROR: '$ENV{TESTRUN_JOBS}' is not a valid value for TESTRUN_JOBS" if ! $njobs;
+set_njobs ($njobs);
 
 # This is a simpler version of the PHP function.
 sub file_put_contents {
@@ -5534,26 +5563,215 @@ sub invalid_test_label {
 	return "invalid_${name}";
 }
 
-my $results_to_print = 0;
-foreach my $testname (keys %valid_filters) {
-	my $test = $valid_filters{$testname};
-	foreach ('unopt', 'opt') {
-		defined $test->{$_} || next;
-		my $label = valid_test_label $testname, $_;
+# The characters are inspired by PHPUnit format, but are not exactly the same.
+use constant {
+	CHAR_SKIPPED => 'S',
+	CHAR_PASSED => '.',
+	CHAR_FAILED => 'F',
+	CHAR_TIMED_OUT => 'T',
+};
+
+sub run_accept_test {
+	my %test = @_;
+	# BSD timeout(1) does not implement --verbose.
+	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
+	push @args, $filtertest;
+	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
+	push @args, '-O' unless $test{optimize};
+	# Write the filter expression to a file because the version of
+	# system() that takes a list does not support redirecting stdout,
+	# and the version of system() that takes a string does not escape
+	# special characters in the filter expression, which becomes
+	# invalid shell syntax.
+	file_put_contents mytmpfile ($filename_filter), $test{expr};
+	file_put_contents mytmpfile ($filename_expected), $test{expected};
+	push @args, (
+		'-F',
+		mytmpfile ($filename_filter),
+		$test{DLT},
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1"
+	);
+	$r = system (join ' ', @args) >> 8;
+
+	return {
+		char => CHAR_TIMED_OUT,
+		failure => {reason => 'filtertest timeout'}
+	} if $r == TIMED_OUT;
+
+	return {
+		char => CHAR_FAILED,
+		failure => {
+			reason => 'filtertest error',
+			details => file_get_contents mytmpfile $filename_stdout
+		}
+	} if $r;
+
+	return {
+		char => CHAR_FAILED,
+		failure => {
+			reason => 'diff error',
+			details => file_get_contents mytmpfile $filename_diags
+		}
+	} if system sprintf "diff $diff_flags %s %s >%s 2>&1",
+		mytmpfile ($filename_expected),
+		mytmpfile ($filename_stdout),
+		mytmpfile ($filename_diags);
+
+	return {char => CHAR_PASSED};
+}
+
+sub run_reject_test {
+	my %test = @_;
+	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
+	push @args, $filtertest;
+	file_put_contents mytmpfile ($filename_filter), $test{expr};
+	push @args, (
+		'-F',
+		mytmpfile ($filename_filter),
+		$test{DLT},
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1",
+	);
+	$r = system (join ' ', @args) >> 8;
+
+	return {
+		char => CHAR_FAILED,
+		failure => {
+			reason => 'no filtertest error',
+			details => file_get_contents mytmpfile $filename_stdout
+		}
+	} if $r == 0;
+
+	return {
+		char => CHAR_TIMED_OUT,
+		failure => {reason => 'filtertest timeout'}
+	} if $r == TIMED_OUT;
+
+	return {
+		char => CHAR_FAILED,
+		failure => {
+			reason => "filtertest status $r",
+			details => file_get_contents mytmpfile $filename_stdout
+		}
+	} if $r != 1;
+
+	return {
+		char => CHAR_FAILED,
+		failure => {
+			reason => 'error string mismatch',
+			details => file_get_contents mytmpfile $filename_stdout
+		}
+	}	if ! string_in_file ($test{expected}, mytmpfile $filename_stdout);
+
+	return {char => CHAR_PASSED};
+}
+
+sub run_skip_test {
+	my %test = @_;
+	return {
+		char => CHAR_SKIPPED,
+		skip => $test{skip},
+	};
+}
+
+# Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
+# hashes will make it difficult to compare outputs of two invocations.
+# Validate all accept test blocks and all reject tests, decide if this is a
+# "run all tests" or a "run only this specific test or test block" invocation
+# and produce the required test(s) using appropriate permutations of the main
+# expression, any aliases and the bytecode version (optimized/unoptimized).
+#
+# The resulting flat ordered list of tests includes all skipped tests at their
+# original positions, this makes it simple to distribute the tests and to
+# collect the results preserving the ordering.
+my @ready_to_run;
+foreach my $testname (sort keys %accept_blocks) {
+	my $test = $accept_blocks{$testname};
+	foreach ('DLT', 'expr') {
+		if (! defined $test->{$_}) {
+			die "Internal error: accept test block '$testname' does not define key '$_'";
+		}
+	}
+	if (! defined $test->{unopt} && ! defined $test->{opt}) {
+		die "Internal error: accept test block '$testname' defines neither 'unopt' nor 'opt'";
+	}
+	foreach my $optunopt ('unopt', 'opt') {
+		defined $test->{$optunopt} || next;
+		my $label = valid_test_label $testname, $optunopt;
 		defined $only_one && $only_one ne $label && next;
-		$results_to_print++;
-		$results_to_print += 1 + $test->{aliases}->$#* if defined $test->{aliases};
+
+		if (defined $test->{skip} && $test->{skip} ne '') {
+			push @ready_to_run, {
+				label => $label,
+				func => \&run_skip_test,
+				skip => $test->{skip},
+			};
+			if (defined $test->{aliases}) {
+				foreach my $i (0 .. $test->{aliases}->$#*) {
+					push @ready_to_run, {
+						label => valid_alias_label ($label, $i),
+						func => \&run_skip_test,
+						skip => $test->{skip},
+					};
+				}
+			}
+		} else {
+			my $main = {
+				label => $label,
+				func => \&run_accept_test,
+				snaplen => defined $test->{snaplen} ? $test->{snaplen} : undef,
+				optimize => int ($optunopt eq 'opt'),
+				expected => $test->{$optunopt},
+			};
+			$main->{$_} = $test->{$_} foreach ('DLT', 'expr');
+			push @ready_to_run, $main;
+			if (defined $test->{aliases}) {
+				foreach my $i (0 .. $test->{aliases}->$#*) {
+					my $alias = {
+						label => valid_alias_label ($label, $i),
+						expr => $test->{aliases}[$i],
+					};
+					$alias->{$_} = $main->{$_} foreach ('DLT', 'func', 'optimize', 'expected', 'snaplen');
+					push @ready_to_run, $alias;
+				}
+			}
+		}
 	}
 }
-foreach my $testname (keys %invalid_filters) {
+foreach my $testname (sort keys %reject_tests) {
+	my $test = $reject_tests{$testname};
+	foreach ('DLT', 'expr', 'errstr') {
+		if (! defined $test->{$_}) {
+			die "Internal error: reject test '$testname' does not define key '$_'";
+		}
+	}
 	my $label = invalid_test_label $testname;
 	defined $only_one && $only_one ne $label && next;
-	$results_to_print++;
+
+	if (defined $test->{skip} && $test->{skip} ne '') {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_skip_test,
+			skip => $test->{skip},
+		};
+	} else {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_reject_test,
+			DLT => $test->{DLT},
+			expr => $test->{expr},
+			expected => $test->{errstr},
+		};
+	}
 }
+
+my $results_to_print = scalar @ready_to_run;
 if (! $results_to_print) {
 	die "ERROR: Unknown test case '${only_one}'" if defined $only_one;
 	die 'Internal error: no tests defined to run!'
 }
+start_tests (@ready_to_run);
 
 # <-------------------------- MAXCOLS -------------------------->
 # ............................................ 0000 / 0000 (000%)
@@ -5563,12 +5781,8 @@ use constant MAXCOLS => 80;
 my $max_result_digits = 1 + int (log ($results_to_print) / log (10));
 my $max_results_per_line = MAXCOLS - 11 - 2 * $max_result_digits;
 my $results_printed = 0;
-# The characters and the subroutine implement a subset of PHPUnit output format.
-use constant CHAR_SKIPPED => 'S';
-use constant CHAR_PASSED => '.';
-use constant CHAR_FAILED => 'F';
-use constant CHAR_TIMED_OUT => 'T';
 
+# Produce a results map in PHPUnit output format.
 sub print_result_char {
 	print shift;
 	if (++$results_printed > $results_to_print) {
@@ -5586,6 +5800,9 @@ sub print_result_char {
 		$max_result_digits,
 		$results_to_print,
 		100 * $results_printed / $results_to_print;
+	# When using threads, STDOUT becomes block-buffered on pipes, which is
+	# not good for CI progress monitoring.
+	STDOUT->flush if $Config{useithreads} && ! -t STDOUT;
 }
 
 # key: test label, value: reason for skipping
@@ -5594,150 +5811,31 @@ my %skipped;
 # * reason (mandatory, string)
 # * details (optional, [multi-line] string)
 my %failed;
+my $passedcount = 0;
 
-# Sort the keys, otherwise the order will be random and outputs of two
-# invocations will be difficult to compare.
-foreach my $testname (sort keys %valid_filters) {
-	my $test = $valid_filters{$testname};
-	if (! defined $test->{unopt} && ! defined $test->{opt}) {
-		die "Internal error: test '$testname' has no expected outputs";
+# Ordering of the results is the same as ordering of the tests.  Print the
+# results map immediately and buffer any skipped/failed test details for the
+# post-map diagnostics.
+while (defined (my $result = get_next_result)) {
+	print_result_char ($result->{char});
+	if (defined $result->{skip}) {
+		$skipped{$result->{label}} = $result->{skip};
+	} elsif (defined $result->{failure}) {
+		$failed{$result->{label}} = $result->{failure};
+	} else {
+		$passedcount++;
 	}
-	foreach ('unopt', 'opt') {
-		defined $test->{$_} || next;
-		my $label = valid_test_label $testname, $_;
-		defined $only_one && $only_one ne $label && next;
-		if (defined $test->{skip} && $test->{skip} ne '') {
-			$skipped{$label} = $test->{skip};
-			print_result_char CHAR_SKIPPED;
-			if (defined $test->{aliases}) {
-				foreach my $i (0 .. $test->{aliases}->$#*) {
-					$skipped{"${label} (alias ${i})"} = $test->{skip};
-					print_result_char CHAR_SKIPPED;
-				}
-			}
-			next;
-		}
-		# BSD timeout(1) does not implement --verbose.
-		my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-		push @args, $filtertest;
-		defined $test->{snaplen} && push @args, ('-s', $test->{snaplen});
-		$_ eq 'unopt' && push @args, '-O';
-		# Write the filter expression to a file because the version of
-		# system() that takes a list does not support redirecting stdout,
-		# and the version of system() that takes a string does not escape
-		# special characters in the filter expression, which becomes
-		# invalid shell syntax.
-		push @args, (
-			'-F',
-			$filename_filter,
-			$test->{DLT},
-			">$filename_stdout",
-			"2>&1"
-		);
-		file_put_contents $filename_expected, $test->{$_};
-		my @equivalents = ({label => $label, expr => $test->{expr}});
-		if (defined $test->{aliases}) {
-			foreach my $i (0 .. $test->{aliases}->$#*) {
-				push @equivalents, {
-					label => valid_alias_label ($label, $i),
-					expr => $test->{aliases}[$i],
-				};
-			}
-		}
-		foreach (@equivalents) {
-			file_put_contents $filename_filter, $_->{expr};
-			my $eq_label = $_->{label};
-			$r = system (join ' ', @args) >> 8;
-			if ($r == TIMED_OUT) {
-				$failed{$eq_label} = {reason => 'filtertest timeout'};
-				print_result_char CHAR_TIMED_OUT;
-				next;
-			}
-			if ($r) {
-				$failed{$eq_label} = {
-					reason => 'filtertest error',
-					details => file_get_contents $filename_stdout,
-				};
-				print_result_char CHAR_FAILED;
-				next;
-			}
-			if (system "diff $diff_flags $filename_expected $filename_stdout >$filename_diags 2>&1") {
-				$failed{$eq_label} = {
-					reason => 'diff error',
-					details => file_get_contents $filename_diags,
-				};
-				print_result_char CHAR_FAILED;
-				next;
-			}
-			$passedcount++;
-			print_result_char CHAR_PASSED;
-		}
-	}
-}
-
-foreach my $testname (sort keys %invalid_filters) {
-	my $label = invalid_test_label $testname;
-	defined $only_one && $only_one ne $label && next;
-	my $test = $invalid_filters{$testname};
-	if (! defined $test->{errstr}) {
-		die "Internal error: test '$label' does not define errstr.";
-	}
-	if (defined $test->{skip} && $test->{skip} ne '') {
-		$skipped{$label} = $test->{skip};
-		print_result_char CHAR_SKIPPED;
-		next;
-	}
-	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-	push @args, $filtertest;
-	file_put_contents $filename_filter, $test->{expr};
-	push @args, (
-		'-F',
-		$filename_filter,
-		$test->{DLT},
-		">$filename_stdout",
-		"2>&1",
-	);
-	$r = system (join ' ', @args) >> 8;
-	if ($r == 0) {
-		$failed{$label} = {
-			reason => 'no filtertest error',
-			details => file_get_contents $filename_stdout,
-		};
-		print_result_char CHAR_FAILED;
-		next;
-	}
-	if ($r == TIMED_OUT) {
-		$failed{$label} = {reason => 'filtertest timeout'};
-		print_result_char CHAR_TIMED_OUT;
-		next;
-	}
-	if ($r != 1) {
-		$failed{$label} = {
-			reason => "filtertest status $r",
-			details => file_get_contents $filename_stdout,
-		};
-		print_result_char CHAR_FAILED;
-		next;
-	}
-	if (! string_in_file $test->{errstr}, $filename_stdout) {
-		$failed{$label} = {
-			reason => 'error string mismatch',
-			details => file_get_contents $filename_stdout,
-		};
-		print_result_char CHAR_FAILED;
-		next;
-	}
-	$passedcount++;
-	print_result_char CHAR_PASSED;
 }
 
 print "\n";
+my $exit_status = 0;
 if (%skipped) {
 	print "Skipped tests:\n";
 	print_result $_, $skipped{$_} foreach (sort keys %skipped);
 	print "\n";
 }
 if (%failed) {
+	$exit_status = 1;
 	print "Failed tests:\n";
 	foreach (sort keys %failed) {
 		print_result $_, $failed{$_}{reason};
@@ -5749,4 +5847,14 @@ print "------------------------------------------------\n";
 printf "%4u tests skipped\n", scalar %skipped;
 printf "%4u tests failed\n", scalar %failed;
 printf "%4u tests passed\n", $passedcount;
-scalar %failed eq 0 || exit 1
+
+if (scalar %skipped + scalar %failed + $passedcount != $results_to_print) {
+	printf STDERR "Internal error: statistics bug (%u + %u + %u != %u)\n",
+		scalar %skipped,
+		scalar %failed,
+		$passedcount,
+		$results_to_print;
+	$exit_status = 2;
+}
+
+exit $exit_status;
