@@ -104,8 +104,12 @@
 
 #include "diag-control.h"
 
+#include "batadv_packet.h"
+#include "batadv_legacy_packet.h"
+
 #include "gencode.h"
 #include <pcap/namedb.h>
+
 #include "nametoaddr.h"
 
 #include "thread-local.h"
@@ -560,6 +564,7 @@ PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "moprc", ETHERTYPE_MOPRC },
 	{ "rarp", ETHERTYPE_REVARP },
 	{ "sca", ETHERTYPE_SCA },
+	{ "batadv", ETHERTYPE_BATMAN },
 	{ (char *)0, 0 }
 };
 
@@ -591,6 +596,61 @@ int
 pcap_nametollc(const char *s)
 {
 	struct eproto *p = llc_db;
+
+	while (p->s != 0) {
+		if (strcmp(p->s, s) == 0)
+			return p->p;
+		p += 1;
+	}
+	return PROTO_UNDEF;
+}
+
+/* Static data base of batman-adv v14 packet type values. */
+static struct eproto batadv_type_db_v14[] = {
+	{ "iv-ogm",		BATADV_LEGACY_IV_OGM },
+	{ "icmp",		BATADV_LEGACY_ICMP },
+	{ "unicast",		BATADV_LEGACY_UNICAST },
+	{ "bcast",		BATADV_LEGACY_BCAST },
+	{ "vis",		BATADV_LEGACY_VIS },
+	{ "unicast-frag",	BATADV_LEGACY_UNICAST_FRAG },
+	{ "tt-query",		BATADV_LEGACY_TT_QUERY },
+	{ "roam-adv",		BATADV_LEGACY_ROAM_ADV },
+	{ "unicast-4addr",	BATADV_LEGACY_UNICAST_4ADDR },
+	{ "coded",		BATADV_LEGACY_CODED },
+	{ (char *)0, 0 }
+};
+
+int pcap_nametobatadvtype_v14(const char *s)
+{
+	struct eproto *p = batadv_type_db_v14;
+
+	while (p->s != 0) {
+		if (strcmp(p->s, s) == 0)
+			return p->p;
+		p += 1;
+	}
+	return PROTO_UNDEF;
+}
+
+/* Static data base of batman-adv v15 packet type values. */
+static struct eproto batadv_type_db_v15[] = {
+	{ "iv-ogm",		BATADV_IV_OGM },
+	{ "bcast",		BATADV_BCAST },
+	{ "coded",		BATADV_CODED },
+	{ "elp",		BATADV_ELP },
+	{ "ogm2",		BATADV_OGM2 },
+	{ "mcast",		BATADV_MCAST },
+	{ "unicast",		BATADV_UNICAST },
+	{ "unicast-frag",	BATADV_UNICAST_FRAG },
+	{ "unicast-4addr",	BATADV_UNICAST_4ADDR },
+	{ "icmp",		BATADV_ICMP },
+	{ "unicast-tvlv",	BATADV_UNICAST_TVLV },
+	{ (char *)0, 0 }
+};
+
+int pcap_nametobatadvtype_v15(const char *s)
+{
+	struct eproto *p = batadv_type_db_v15;
 
 	while (p->s != 0) {
 		if (strcmp(p->s, s) == 0)

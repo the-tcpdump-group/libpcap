@@ -49,6 +49,9 @@
 #ifndef ETHERTYPE_TRAIL
 #define ETHERTYPE_TRAIL		0x1000
 #endif
+#ifndef ETHERTYPE_BATMAN
+#define ETHERTYPE_BATMAN	0x4305 /* B.A.T.M.A.N. Advanced */
+#endif
 #ifndef	ETHERTYPE_MOPDL
 #define ETHERTYPE_MOPDL		0x6001
 #endif
