@@ -350,6 +350,9 @@ EXTRA_DIST = \
 	scanner.l \
 	testprogs/CMakeLists.txt \
 	testprogs/Makefile.in \
+	testprogs/TESTrun \
+	testprogs/TESTmt.pm \
+	testprogs/TESTst.pm \
 	testprogs/activatetest.c \
 	testprogs/can_set_rfmon_test.c \
 	testprogs/capturetest.c \
