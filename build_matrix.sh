@@ -47,6 +47,15 @@ if "$VALGRIND_BIN" --version >/dev/null 2>&1; then
     export FILTERTEST_TIMEOUT
 fi
 
+if [ "$CIRRUS_CI" = true ]; then
+    case `os_id` in
+    Linux-*)
+        # Load the usbmon kernel module on Linux for USB capture.
+        # findalldevstest should show the usbmonX interfaces.
+        sudo modprobe usbmon;;
+    esac
+fi
+
 run_after_echo git show --oneline -s | cat
 touch .devel
 for CC in $MATRIX_CC; do
