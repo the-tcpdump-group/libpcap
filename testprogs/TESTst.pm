@@ -13,7 +13,7 @@ sub my_tmp_id {
 sub set_njobs {
 	print "INFO: This Perl does not support threads.\n";
 	my $njobs = shift;
-	die sprintf "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
+	die "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
 }
 
 sub start_tests {
