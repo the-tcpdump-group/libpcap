@@ -837,6 +837,8 @@ releasecheck: releasetar
 	./configure --enable-remote --quiet --prefix="$$INSTALL_DIR" && \
 	echo '[$@] $$ $(MAKE) -s all testprogs' && \
 	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s check' && \
+	$(MAKE) -s check >/dev/null && \
 	echo '[$@] $$ $(MAKE) -s install' && \
 	$(MAKE) -s install && \
 	cd .. && \
@@ -857,6 +859,8 @@ releasecheck: releasetar
 	    .. && \
 	echo '[$@] $$ $(MAKE) -s all testprogs' && \
 	$(MAKE) -s all testprogs && \
+	echo '[$@] $$ $(MAKE) -s check' && \
+	$(MAKE) -s check >/dev/null && \
 	echo '[$@] $$ $(MAKE) -s install' && \
 	$(MAKE) -s install && \
 	cd ../.. && \

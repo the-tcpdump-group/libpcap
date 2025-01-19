@@ -3585,3 +3585,19 @@ configure_file(
 
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+#
+# libpcap tests
+# We try to find the Perl interpreter and, if we do, we have the check
+# rule run testprogs/TESTrun with it, because just trying to run the TESTrun
+# script as a command won't work on Windows.
+#
+find_program(PERL perl)
+if(PERL)
+    message(STATUS "Found perl at ${PERL}")
+    add_custom_target(check
+        COMMAND ${PERL} ${CMAKE_SOURCE_DIR}/testprogs/TESTrun
+        DEPENDS testprogs)
+else()
+    message(STATUS "Didn't find perl")
+endif()
