@@ -232,9 +232,7 @@ May be qualified with \fBsrc\fR or \fBdst\fR.
 True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
 destination port value of \fIportnamenum\fP.
 The \fIportnamenum\fP can be a number or a name used in /etc/services (see
-.BR tcp (4P)
-and
-.BR udp (4P)).
+.BR services (5)).
 If a name is used, both the port
 number and protocol are checked.
 If a number or ambiguous name is used,
@@ -287,9 +285,7 @@ This is equivalent to:
 .fi
 .in -.5i
 .IP "\fBip proto \fIprotocol\fR"
-True if the packet is an IPv4 packet (see
-.BR ip (4P))
-of protocol type \fIprotocol\fP.
+True if the packet is an IPv4 packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names recognized by
 .BR getprotobyname (3),
 for example:
