@@ -104,8 +104,6 @@ if [ "$CMAKE" = no ]; then
 else
     FILTERTEST_BIN="$VALGRIND_CMD run/filtertest"
     export FILTERTEST_BIN
-    CONFIG_H='./config.h'
-    export CONFIG_H
     run_after_echo ../testprogs/TESTrun
     run_after_echo $VALGRIND_CMD run/findalldevstest
 fi

@@ -38,7 +38,9 @@
 # custom binary must work.
 #
 # FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
-# (required for MATRIX_CMAKE=yes).
+# if the current working directory is not the directory where the build output
+# files go to.  Otherwise by default this script finds the files for both
+# Autoconf and CMake, both in-tree and out-of-tree builds.
 #
 # TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
 
@@ -46,7 +48,6 @@ require 5.26.1; # Ubuntu 18.04
 use sigtrap qw(die normal-signals);
 use strict;
 use warnings FATAL => qw(uninitialized);
-use File::Basename qw(dirname);
 use File::Temp;
 
 BEGIN {
@@ -63,8 +64,7 @@ STDOUT->autoflush (1) if $Config{useithreads} && -t STDOUT;
 my %config = ();
 my $re_define_uint = qr/^#define ([0-9_A-Z]+) ([0-9]+)$/;
 my $re_define_str = qr/^#define ([0-9_A-Z]+) "(.+)"$/;
-my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} :
-	dirname ($0) . '/../config.h';
+my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 open (my $fh, '<', $config_h) || die "failed opening '$config_h'";
 while (<$fh>) {
 	$config{$1} = $2 if /$re_define_uint/ || /$re_define_str/;
@@ -5487,7 +5487,8 @@ if ($test_timeout eq '0') {
 }
 
 my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
-	dirname ($0) . '/filtertest';
+	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? 'run/filtertest' :
+	'testprogs/filtertest';
 my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
 
 my $njobs;
