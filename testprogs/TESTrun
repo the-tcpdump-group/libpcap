@@ -85,6 +85,14 @@ sub broken_igrp {
 		'';
 }
 
+sub is_linux {
+	return $^O eq 'linux' ? 'running on Linux' : '';
+}
+
+sub is_not_linux {
+	return $^O eq 'linux' ? '' : 'not running on Linux';
+}
+
 # In accept_blocks the top-level keys are test block names.  Each test block
 # defines one or more tests.  When possible, a test block name should be easy
 # to relate with the main filter expression, for example, ip_multicast for
@@ -418,6 +426,94 @@ my %accept_blocks = (
 			(003) ret      #0
 			EOF
 	}, # ipnet_outbound
+	pflog_inbound => {
+		DLT => 'PFLOG',
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldb      [60]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # pflog_inbound
+	pflog_outbound => {
+		DLT => 'PFLOG',
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldb      [60]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # pflog_outbound
+	ppp_pppd_inbound => {
+		DLT => 'PPP_PPPD',
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # ppp_pppd_inbound
+	ppp_pppd_oubound => {
+		DLT => 'PPP_PPPD',
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # ppp_pppd_oubound
+	juniper_mfr_inbound => {
+		DLT => 'JUNIPER_MFR',
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) and      #0x1
+			(002) jeq      #0x1             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # juniper_mfr_inbound
+	juniper_mfr_outbound => {
+		DLT => 'JUNIPER_MFR',
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldb      [3]
+			(001) and      #0x1
+			(002) jeq      #0x0             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			EOF
+	}, # juniper_mfr_outbound
+	# The two tests below represent the current Linux-specific implementation,
+	# which is not consistent in which function -- pcap_compile() or
+	# pcap_setfilter() -- and under which conditions patches the bytecode for
+	# specific keywords.  So this behaviour may change in future.
+	linux_skf_ad_inbound => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		expr => 'inbound',
+		unopt => <<~'EOF',
+			(000) ldh      [type]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			EOF
+	}, # linux_skf_ad_inbound
+	linux_skf_ad_outbound => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		expr => 'outbound',
+		unopt => <<~'EOF',
+			(000) ldh      [type]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # linux_skf_ad_inbound
 
 	mtp2_fisu => {
 		DLT => 'MTP2',
@@ -5441,6 +5537,18 @@ my %reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'mpls 1048576',
 		errstr => 'greater than maximum',
+	},
+	inbound_not_supported => {
+		skip => is_linux(),
+		DLT => 'EN10MB',
+		expr => 'inbound',
+		errstr => 'inbound/outbound not supported',
+	},
+	outbound_not_supported => {
+		skip => is_linux(),
+		DLT => 'EN10MB',
+		expr => 'outbound',
+		errstr => 'inbound/outbound not supported',
 	},
 );
 
