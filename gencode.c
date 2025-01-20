@@ -261,6 +261,9 @@ struct addrinfo {
 #define	ISO10747_IDRP		0x85
 #endif
 
+// Same as in tcpdump/print-sl.c.
+#define SLIPDIR_IN 0
+#define SLIPDIR_OUT 1
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -8706,7 +8709,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 }
 
 /*
- * Filter on inbound (dir == 0) or outbound (dir == 1) traffic.
+ * Filter on inbound (outbound == 0) or outbound (outbound == 1) traffic.
  * Outbound traffic is sent by this machine, while inbound traffic is
  * sent by a remote machine (and may include packets destined for a
  * unicast or multicast link-layer address we are not subscribing to).
@@ -8715,7 +8718,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
  * better accomplished using a higher-layer filter.
  */
 struct block *
-gen_inbound(compiler_state_t *cstate, int dir)
+gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 {
 	register struct block *b0;
 
@@ -8734,23 +8737,18 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		b0 = gen_relation_internal(cstate, BPF_JEQ,
 			  gen_load_internal(cstate, Q_LINK, gen_loadi_internal(cstate, 0), 1),
 			  gen_loadi_internal(cstate, 0),
-			  dir);
+			  outbound ? SLIPDIR_OUT : SLIPDIR_IN);
 		break;
 
 	case DLT_IPNET:
-		if (dir) {
-			/* match outgoing packets */
-			b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, IPNET_OUTBOUND);
-		} else {
-			/* match incoming packets */
-			b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, IPNET_INBOUND);
-		}
+		b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H,
+		    outbound ? IPNET_OUTBOUND : IPNET_INBOUND);
 		break;
 
 	case DLT_LINUX_SLL:
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_H, LINUX_SLL_OUTGOING);
-		if (!dir) {
+		if (! outbound) {
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
@@ -8759,7 +8757,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	case DLT_LINUX_SLL2:
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 10, BPF_B, LINUX_SLL_OUTGOING);
-		if (!dir) {
+		if (! outbound) {
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
@@ -8767,51 +8765,38 @@ gen_inbound(compiler_state_t *cstate, int dir)
 
 	case DLT_PFLOG:
 		b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, dir), BPF_B,
-		    ((dir == 0) ? PF_IN : PF_OUT));
+		    outbound ? PF_OUT : PF_IN);
 		break;
 
 	case DLT_PPP_PPPD:
-		if (dir) {
-			/* match outgoing packets */
-			b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, PPP_PPPD_OUT);
-		} else {
-			/* match incoming packets */
-			b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, PPP_PPPD_IN);
-		}
+		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, outbound ? PPP_PPPD_OUT : PPP_PPPD_IN);
 		break;
 
-        case DLT_JUNIPER_MFR:
-        case DLT_JUNIPER_MLFR:
-        case DLT_JUNIPER_MLPPP:
+	case DLT_JUNIPER_MFR:
+	case DLT_JUNIPER_MLFR:
+	case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_PPPOE_ATM:
-        case DLT_JUNIPER_GGSN:
-        case DLT_JUNIPER_ES:
-        case DLT_JUNIPER_MONITOR:
-        case DLT_JUNIPER_SERVICES:
-        case DLT_JUNIPER_ETHER:
-        case DLT_JUNIPER_PPP:
-        case DLT_JUNIPER_FRELAY:
-        case DLT_JUNIPER_CHDLC:
-        case DLT_JUNIPER_VP:
-        case DLT_JUNIPER_ST:
-        case DLT_JUNIPER_ISM:
-        case DLT_JUNIPER_VS:
-        case DLT_JUNIPER_SRX_E2E:
-        case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_GGSN:
+	case DLT_JUNIPER_ES:
+	case DLT_JUNIPER_MONITOR:
+	case DLT_JUNIPER_SERVICES:
+	case DLT_JUNIPER_ETHER:
+	case DLT_JUNIPER_PPP:
+	case DLT_JUNIPER_FRELAY:
+	case DLT_JUNIPER_CHDLC:
+	case DLT_JUNIPER_VP:
+	case DLT_JUNIPER_ST:
+	case DLT_JUNIPER_ISM:
+	case DLT_JUNIPER_VS:
+	case DLT_JUNIPER_SRX_E2E:
+	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
-
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
-		if (dir) {
-			/* match outgoing packets */
-			b0 = gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, 0, 0x01);
-		} else {
-			/* match incoming packets */
-			b0 = gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, 1, 0x01);
-		}
+		b0 = gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, outbound ? 0 : 1, 0x01);
 		break;
 
 	default:
@@ -8846,7 +8831,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
 		             PACKET_OUTGOING);
-		if (!dir) {
+		if (! outbound) {
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
