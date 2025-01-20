@@ -47,7 +47,28 @@
 use sigtrap qw(die normal-signals);
 use strict;
 use warnings FATAL => qw(uninitialized);
-use File::Temp qw(tempdir);
+require $FindBin::RealBin . '/TESTlib.pm';
+# TESTlib.pm
+use subs qw(
+	file_get_contents
+	file_put_contents
+	get_diff_flags
+	init_tmpdir
+	mytmpfile
+	read_config_h
+	result_failed
+	result_passed
+	result_skipped
+	result_timed_out
+	run_skip_test
+	skip_config_def1
+	skip_config_have_decl
+	skip_config_undef
+	skip_os
+	skip_os_not
+	string_in_file
+	test_and_report
+);
 
 BEGIN {
 	require 5.8.4; # Solaris 10
@@ -65,54 +86,9 @@ BEGIN {
 
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
 
-# When using threads, STDOUT becomes line-buffered on TTYs, which is not good
-# for interactive progress monitoring.
-STDOUT->autoflush (1) if $Config{useithreads} && -t STDOUT;
-
-# Parse config.h into a hash for later use.
-my %config = ();
-my $re_define_uint = qr/^#define ([0-9_A-Z]+) ([0-9]+)$/;
-my $re_define_str = qr/^#define ([0-9_A-Z]+) "(.+)"$/;
 my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
-open (my $fh, '<', $config_h) || die "failed opening '$config_h'";
-while (<$fh>) {
-	$config{$1} = $2 if /$re_define_uint/ || /$re_define_str/;
-}
-close ($fh) || die "failed closing '$config_h'";
-
-sub ipv6_disabled {
-	return (defined $config{INET6} && $config{INET6}) ? '' : 'IPv6 syntax disabled';
-}
-
-sub ipv6_enabled {
-	return (defined $config{INET6} && $config{INET6}) ? 'IPv6 syntax enabled' : '';
-}
-
-sub broken_igrp {
-	return $^O eq 'freebsd' ? 'running on FreeBSD' :
-		$^O eq 'darwin' ? 'running on macOS' :
-		'';
-}
-
-sub is_linux {
-	return $^O eq 'linux' ? 'running on Linux' : '';
-}
-
-sub is_not_linux {
-	return $^O eq 'linux' ? '' : 'not running on Linux';
-}
-
-sub have_decl {
-	my ($name, $value) = @_;
-	$name = 'HAVE_DECL_' . $name;
-	# "Unlike the other ‘AC_CHECK_*S’ macros, when a symbol is not declared,
-	# HAVE_DECL_symbol is defined to ‘0’ instead of leaving HAVE_DECL_symbol
-	# undeclared." -- GNU Autoconf manual.
-	#
-	# (This requires the CMake leg to do the same for the same symbol.)
-	die "no $name in $config_h" unless defined $config{$name};
-	return int ($config{$name}) == $value ? "$name=$value" : '';
-}
+# Enable all shared skip functions to be able to declare the tests below.
+read_config_h ($config_h);
 
 # In accept_blocks the top-level keys are test block names.  Each test block
 # defines one or more tests.  When possible, a test block name should be easy
@@ -513,7 +489,7 @@ my %accept_blocks = (
 			',
 	}, # juniper_mfr_outbound
 	inbound_linuxext => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'inbound',
@@ -525,7 +501,7 @@ my %accept_blocks = (
 			',
 	}, # inbound_linuxext
 	outbound_linuxext => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'outbound',
@@ -537,7 +513,7 @@ my %accept_blocks = (
 			',
 	}, # outbound_linuxext
 	ifindex_linuxext => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'ifindex 10',
@@ -1943,7 +1919,7 @@ my %accept_blocks = (
 	}, # ether_proto_ip
 	ether_proto_ip6 => {
 		DLT => 'EN10MB',
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		expr => 'ether proto \ip6',
 		unopt => '
 			(000) ldh      [12]
@@ -2159,7 +2135,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_netanalyzer_unary
 	vlan_eth_linuxext_nullary => {
-		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
+		skip => (skip_os_not ('linux') or skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan',
@@ -2175,7 +2151,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_eth_linuxext_nullary
 	vlan_eth_linuxext_unary => {
-		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
+		skip => (skip_os_not ('linux') or skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan 10',
@@ -2198,7 +2174,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_eth_linuxext_unary
 	vlan_and_vlan_eth_linuxext => {
-		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
+		skip => (skip_os_not ('linux') or skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan and vlan',
@@ -4357,7 +4333,7 @@ my %accept_blocks = (
 		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
 		# from all other supported OSes.  Skip the test until it is
 		# clear how to resolve this discrepancy.
-		skip => broken_igrp(),
+		skip => (skip_os ('freebsd') or skip_os ('darwin')),
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
@@ -4520,7 +4496,7 @@ my %accept_blocks = (
 	}, # udp
 
 	ip6_host => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host ::1',
 		aliases => [
@@ -4555,7 +4531,7 @@ my %accept_blocks = (
 			',
 	}, # ip6_host
 	ip6_src_host => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 src host fe80::1122:33ff:fe44:5566',
 		aliases => [
@@ -4580,7 +4556,7 @@ my %accept_blocks = (
 			',
 	}, # ip6_src_host
 	ip6_dst_host => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 dst host fe80::7788:99ff:feaa:bbcc',
 		aliases => [
@@ -4605,7 +4581,7 @@ my %accept_blocks = (
 			',
 	}, # ip6_dst_host
 	ip6_net => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80::/10',
 		aliases => [
@@ -4628,7 +4604,7 @@ my %accept_blocks = (
 			',
 	}, # ip6_net
 	ip6_src_net => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 src net 2000::/3',
 		aliases => ['src net 2000::/3'],
@@ -4644,7 +4620,7 @@ my %accept_blocks = (
 			',
 	}, # ip6_src_net
 	ip6_dst_net => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 dst net ff00::/8',
 		aliases => ['dst net ff00::/8'],
@@ -6226,7 +6202,7 @@ my %reject_tests = (
 		errstr => 'invalid IPv4 address',
 	},
 	ip6_host_toolong => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => 'syntax error',
@@ -6250,25 +6226,25 @@ my %reject_tests = (
 #		errstr => 'unknown host',
 #	},
 	ip6_host_disabled => {
-		skip => ipv6_enabled(),
+		skip => skip_config_def1 ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
 		errstr => 'not supported',
 	},
 	ip6_net_prefix => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0:0/64',
 		errstr => 'syntax error',
 	},
 	ip6_net_masklen => {
-		skip => ipv6_disabled(),
+		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/129',
 		errstr => 'mask length must be <= 128',
 	},
 	ip6_net_disabled => {
-		skip => ipv6_enabled(),
+		skip => skip_config_def1 ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
 		errstr => 'not supported',
@@ -6344,37 +6320,37 @@ my %reject_tests = (
 		errstr => 'greater than maximum',
 	},
 	inbound_not_supported_linux => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		DLT => 'EN10MB',
 		expr => 'inbound',
 		errstr => 'not a live capture',
 	},
 	outbound_not_supported_linux => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		DLT => 'EN10MB',
 		expr => 'outbound',
 		errstr => 'not a live capture',
 	},
 	ifindex_not_supported_linux => {
-		skip => is_not_linux(),
+		skip => skip_os_not ('linux'),
 		DLT => 'LINUX_SLL',
 		expr => 'ifindex 1',
 		errstr => 'not a live capture',
 	},
 	inbound_not_supported_other => {
-		skip => is_linux(),
+		skip => skip_os ('linux'),
 		DLT => 'EN10MB',
 		expr => 'inbound',
 		errstr => 'not supported',
 	},
 	outbound_not_supported_other => {
-		skip => is_linux(),
+		skip => skip_os ('linux'),
 		DLT => 'EN10MB',
 		expr => 'outbound',
 		errstr => 'not supported',
 	},
 	ifindex_not_supported_other => {
-		skip => is_linux(),
+		skip => skip_os ('linux'),
 		DLT => 'EN10MB',
 		expr => 'ifindex 1',
 		errstr => 'not supported',
@@ -6420,24 +6396,12 @@ use constant TIMED_OUT => 124;
 # conditions.
 use constant EX_DATAERR => 65;
 
-# No File::Temp->newdir() in Perl 5.8.4.
-my $tmpdir = tempdir (
-	'libpcap_TESTrun_XXXXXXXX',
-	TMPDIR => 1,
-	CLEANUP => 1
-);
 my $filename_expected = 'expected.txt';
 my $filename_stdout = 'stdout.txt';
 my $filename_filter = 'filter.txt';
 my $filename_diags = 'diags.txt';
 
-sub mytmpfile {
-	return sprintf '%s/%s-%s', $tmpdir, my_tmp_id, shift;
-}
-
-my $diff_flags = defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
-	$^O eq 'hpux' ? '-c' :
-	'-u';
+my $diff_flags = get_diff_flags;
 
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking
@@ -6468,54 +6432,6 @@ my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
 	'testprogs/filtertest';
 my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
 
-my $njobs;
-if (! defined $ENV{TESTRUN_JOBS}) {
-	$njobs = 1;
-} elsif ($ENV{TESTRUN_JOBS} =~ /^\d+\z/) {
-	$njobs = int ($ENV{TESTRUN_JOBS});
-} else {
-	$njobs = 0;
-}
-die "ERROR: '$ENV{TESTRUN_JOBS}' is not a valid value for TESTRUN_JOBS" if ! $njobs;
-set_njobs ($njobs);
-
-# This is a simpler version of the PHP function.
-sub file_put_contents {
-	my ($filename, $contents) = @_;
-	open (my $fh, '>', $filename) || die "failed opening '$filename'";
-	print $fh $contents;
-	close ($fh) || die "failed closing '$filename'";
-}
-
-# Idem.
-sub file_get_contents {
-	my $filename = shift;
-	open (my $fh, '<', $filename) || die "failed opening '$filename'";
-	my $ret = '';
-	$ret .= $_ while (<$fh>);
-	close ($fh) || die "failed closing '$filename'";
-	return $ret;
-}
-
-sub string_in_file {
-	my ($string, $filename) = @_;
-	my $ret = 0;
-	open (my $fh, '<', $filename) || die "failed opening '$filename'";
-	while (<$fh>) {
-		if (-1 != index $_, $string) {
-			$ret = 1;
-			last;
-		}
-	}
-	close ($fh) || die "failed closing '$filename'";
-	return $ret;
-}
-
-# This is the same format as in tcpdump/tests/TESTrun.
-sub print_result {
-	printf "    %-40s: %s\n", @_;
-}
-
 # In this libpcap version "filtertest -h" prints to stdout and exits normally.
 if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
 	# Make it easier to see what the problem is.
@@ -6544,41 +6460,24 @@ sub reject_test_label {
 	return "reject_${name}";
 }
 
-# The characters are inspired by PHPUnit format, but are not exactly the same.
-use constant {
-	CHAR_SKIPPED => 'S',
-	CHAR_PASSED => '.',
-	CHAR_FAILED => 'F',
-	CHAR_TIMED_OUT => 'T',
-};
-
 sub validate_stdout_test {
 	my $r = system (join ' ', @_) >> 8;
-	return {
-		char => CHAR_TIMED_OUT,
-		failure => {reason => 'filtertest timeout'}
-	} if $r == TIMED_OUT;
+	return result_timed_out 'filtertest timeout' if $r == TIMED_OUT;
 
-	return {
-		char => CHAR_FAILED,
-		failure => {
-			reason => 'filtertest error',
-			details => file_get_contents mytmpfile $filename_stdout
-		}
-	} if $r;
+	return result_failed (
+		'filtertest error',
+		file_get_contents mytmpfile $filename_stdout
+	) if $r;
 
-	return {
-		char => CHAR_FAILED,
-		failure => {
-			reason => 'diff error',
-			details => file_get_contents mytmpfile $filename_diags
-		}
-	} if system sprintf "diff $diff_flags %s %s >%s 2>&1",
+	return result_failed (
+		'diff error',
+		file_get_contents mytmpfile $filename_diags
+	) if system sprintf "diff $diff_flags %s %s >%s 2>&1",
 		mytmpfile ($filename_expected),
 		mytmpfile ($filename_stdout),
 		mytmpfile ($filename_diags);
 
-	return {char => CHAR_PASSED};
+	return result_passed;
 }
 
 sub common_filtertest_args {
@@ -6642,44 +6541,24 @@ sub run_reject_test {
 	);
 	my $r = system (join ' ', @args) >> 8;
 
-	return {
-		char => CHAR_FAILED,
-		failure => {
-			reason => 'no filtertest error',
-			details => file_get_contents mytmpfile $filename_stdout
-		}
-	} if $r == 0;
+	return result_failed (
+		'no filtertest error',
+		file_get_contents mytmpfile $filename_stdout
+	) if $r == 0;
 
-	return {
-		char => CHAR_TIMED_OUT,
-		failure => {reason => 'filtertest timeout'}
-	} if $r == TIMED_OUT;
+	return result_timed_out 'filtertest timeout' if $r == TIMED_OUT;
 
-	return {
-		char => CHAR_FAILED,
-		failure => {
-			reason => "filtertest status $r",
-			details => file_get_contents mytmpfile $filename_stdout
-		}
-	} if $r != EX_DATAERR;
+	return result_failed (
+		"filtertest status $r",
+		file_get_contents mytmpfile $filename_stdout
+	) if $r != EX_DATAERR;
 
-	return {
-		char => CHAR_FAILED,
-		failure => {
-			reason => 'error string mismatch',
-			details => file_get_contents mytmpfile $filename_stdout
-		}
-	}	if ! string_in_file ($test->{expected}, mytmpfile $filename_stdout);
+	return result_failed (
+		'error string mismatch',
+		file_get_contents mytmpfile $filename_stdout
+	) if ! string_in_file ($test->{expected}, mytmpfile $filename_stdout);
 
-	return {char => CHAR_PASSED};
-}
-
-sub run_skip_test {
-	my $test = shift;
-	return {
-		char => CHAR_SKIPPED,
-		skip => $test->{skip},
-	};
+	return result_passed;
 }
 
 # Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
@@ -6805,99 +6684,9 @@ foreach my $testname (sort keys %reject_tests) {
 	}
 }
 
-my $results_to_print = scalar @ready_to_run;
-if (! $results_to_print) {
+if (! scalar @ready_to_run) {
 	die "ERROR: Unknown test case '${only_one}'" if defined $only_one;
 	die 'Internal error: no tests defined to run!'
 }
-start_tests (@ready_to_run);
-
-# <-------------------------- MAXCOLS -------------------------->
-# ............................................ 0000 / 0000 (000%)
-#                          $max_result_digits >----< >----<
-# <--------- $max_results_per_line ---------->
-use constant MAXCOLS => 80;
-my $max_result_digits = 1 + int (log ($results_to_print) / log (10));
-my $max_results_per_line = MAXCOLS - 11 - 2 * $max_result_digits;
-my $results_printed = 0;
-
-# Produce a results map in PHPUnit output format.
-sub print_result_char {
-	print shift;
-	if (++$results_printed > $results_to_print) {
-		die "Internal error: unexpected results after 100%!";
-	}
-	my $results_dangling = $results_printed % $max_results_per_line;
-	if ($results_dangling) {
-		return if $results_printed < $results_to_print;
-		# Complete the dangling line to keep the progress column aligned.
-		print ' ' for (1 .. $max_results_per_line - $results_dangling);
-	}
-	printf " %*u / %*u (%3u%%)\n",
-		$max_result_digits,
-		$results_printed,
-		$max_result_digits,
-		$results_to_print,
-		100 * $results_printed / $results_to_print;
-	# When using threads, STDOUT becomes block-buffered on pipes, which is
-	# not good for CI progress monitoring.
-	STDOUT->flush if $Config{useithreads} && ! -t STDOUT;
-}
-
-# key: test label, value: reason for skipping
-my %skipped;
-# key: test label, value: hash of
-# * reason (mandatory, string)
-# * details (optional, [multi-line] string)
-my %failed;
-my $passedcount = 0;
-
-# Ordering of the results is the same as ordering of the tests.  Print the
-# results map immediately and buffer any skipped/failed test details for the
-# post-map diagnostics.
-while (defined (my $result = get_next_result)) {
-	print_result_char ($result->{char});
-	if (defined $result->{skip}) {
-		$skipped{$result->{label}} = $result->{skip};
-	} elsif (defined $result->{failure}) {
-		$failed{$result->{label}} = $result->{failure};
-	} else {
-		$passedcount++;
-	}
-}
-
-print "\n";
-my $exit_status = 0;
-if (%skipped) {
-	print "Skipped tests:\n";
-	print_result $_, $skipped{$_} foreach (sort keys %skipped);
-	print "\n";
-}
-if (%failed) {
-	$exit_status = 1;
-	print "Failed tests:\n";
-	foreach (sort keys %failed) {
-		print_result $_, $failed{$_}{reason};
-		print $failed{$_}{details} if defined $failed{$_}{details};
-	}
-	print "\n";
-}
-
-# scalar (%hash) returns incorrect value on Perl 5.8.4.
-my $skippedcount = scalar keys %skipped;
-my $failedcount = scalar keys %failed;
-print "------------------------------------------------\n";
-printf "%4u tests skipped\n", $skippedcount;
-printf "%4u tests failed\n", $failedcount;
-printf "%4u tests passed\n", $passedcount;
-
-if ($skippedcount + $failedcount + $passedcount != $results_to_print) {
-	printf STDERR "Internal error: statistics bug (%u + %u + %u != %u)\n",
-		$skippedcount,
-		$failedcount,
-		$passedcount,
-		$results_to_print;
-	$exit_status = 2;
-}
-
-exit $exit_status;
+init_tmpdir 'libpcap_TESTrun';
+exit test_and_report @ready_to_run;

@@ -3,6 +3,8 @@ use strict;
 use warnings FATAL => qw(uninitialized);
 use threads;
 use Thread::Queue;
+# TESTlib.pm
+use subs qw(get_njobs);
 
 # TESTrun helper functions (multithreaded implementation).
 
@@ -15,11 +17,6 @@ my $next_to_dequeue;
 
 sub my_tmp_id {
 	return $tmpid;
-}
-
-sub set_njobs {
-	$njobs = shift;
-	print "INFO: This Perl supports threads, using $njobs tester thread(s).\n";
 }
 
 # Iterate over the list of tests, pick tests that belong to the current job,
@@ -40,6 +37,8 @@ sub tester_thread_func {
 }
 
 sub start_tests {
+	$njobs = get_njobs;
+	print "INFO: This Perl supports threads, using $njobs tester thread(s).\n";
 	@tests = @_;
 	for (0 .. $njobs - 1) {
 		$result_queues[$_] = Thread::Queue->new;

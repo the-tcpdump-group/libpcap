@@ -351,6 +351,7 @@ EXTRA_DIST = \
 	testprogs/CMakeLists.txt \
 	testprogs/Makefile.in \
 	testprogs/TESTrun \
+	testprogs/TESTlib.pm \
 	testprogs/TESTmt.pm \
 	testprogs/TESTst.pm \
 	testprogs/activatetest.c \

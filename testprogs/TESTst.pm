@@ -1,6 +1,8 @@
 require 5.8.4; # Solaris 10
 use strict;
 use warnings FATAL => qw(uninitialized);
+# TESTlib.pm
+use subs qw(get_njobs);
 
 # TESTrun helper functions (single-threaded implementation).
 
@@ -10,13 +12,10 @@ sub my_tmp_id {
 	return 'main';
 }
 
-sub set_njobs {
-	print "INFO: This Perl does not support threads.\n";
-	my $njobs = shift;
-	die "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
-}
-
 sub start_tests {
+	print "INFO: This Perl does not support threads.\n";
+	my $njobs = get_njobs;
+	die "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
 	@tests = @_;
 }
 
