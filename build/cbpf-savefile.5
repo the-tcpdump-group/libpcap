@@ -1,0 +1,259 @@
+.\" Copyright (c) 2022
+.\"	The TCPDUMP project.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that: (1) source code distributions
+.\" retain the above copyright notice and this paragraph in its entirety, (2)
+.\" distributions including binary code include the above copyright notice and
+.\" this paragraph in its entirety in the documentation or other materials
+.\" provided with the distribution.
+.\" THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+.\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.TH CBPF-SAVEFILE 5 "17 July 2022"
+.SH NAME
+cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 6)
+.SH DESCRIPTION
+This man page discusses a file format for cBPF, which is the "classic" (and
+for a long time the only) Berkeley Packet Filter.  It does
+.B NOT
+apply to the newer "extended" variety of BPF (eBPF).
+.LP
+The main purpose of this file format is to store BPF bytecode, most commonly
+compiled from a BPF filter expression (see
+.BR \%pcap-filter (7)
+for the filter syntax description) using libpcap.  Besides that, the format
+allows to encode some information about the context in which the compilation
+was done.  This meta-data can make it easier to reproduce the compilation
+later if required.  cBPF savefile design is based on the file format proposed
+by C.S. Peron in 2005.
+.LP
+Unless stated otherwise, in the following specification integer fields are
+big-endian unsigned, string fields do not use NUL character for termination
+or padding.
+
+.SH FILE FORMAT
+A savefile consists of a fixed-size header and a variable-size body as
+follows:
+.LP
+.nf
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0xA1     |      0xB2     |     0xC3      |     0xCB      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      'c'      |      'B'      |     'P'       |     'F'       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   MajorVer=1  |    MinorVer   |             Flags             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                            SnapLen                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         LinkTypeValue         |       InstructionCount=n      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                         instruction 1                         |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                         instruction 2                         |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+~                                                               ~
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                         instruction n                         |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+|                   optional trailing TLV space                 |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+.fi
+.LP
+The first four octets contain a fixed signature, also known as
+a magic number, to make it easy to identify the file type automatically.
+The next four octets contain the ASCII string "cBPF" to provide a hint for
+manual identification.
+
+.SS MajorVer and MinorVer
+Contain the major and the minor version numbers of this format respectively.
+The current major version is 1 and the current minor version is 0.  Format
+changes that do not impact compatibility (e.g., new TLV types or flags)
+increment the minor version only.  Other format changes increment the major
+version and reset the minor version to 0.  All format versions have the first
+part of the header up to and including MinorVer identical.
+
+.SS Flags
+.nf
+ b15 b14 b13 b12 b11 b10 b09 b08 b07 b06 b05 b04 b03 b02 b01 b00
++---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+|                       reserved                |CPX|COP|XOR|MOD|
++---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+.fi
+
+MOD, XOR, COP and CPX: if set to 1, in this BPF dialect
+.BR BPF_MOD ,
+.BR BPF_XOR ,
+.B BPF_COP
+and
+.B BPF_COPX
+respectively are valid instructions.  For the current list of OSes that
+support
+.B BPF_MOD
+and
+.B BPF_XOR
+in the kernel see the
+.B %
+and
+.B ^
+binary operators in
+.BR \%pcap-filter (7).
+.B BPF_COP
+and
+.B BPF_COPX
+are implemented in NetBSD kernel.
+.LP
+Note that the fact an instruction is valid in a BPF dialect does not always
+mean the compiled bytecode in the savefile contains the instruction.  In other
+words, the purpose of the flags above is not to provide a digest of the file
+contents, but to enable conclusive automatic verification of the bytecode if
+required by the use case.
+
+
+.SS SnapLen
+Contains the snapshot length used for the compilation, usually this is the
+.I snaplen
+input argument to
+.BR pcap_open_dead (3PCAP)
+or
+.BR pcap_set_snaplen (3PCAP).
+
+.SS LinkTypeValue
+Contains the link-layer header type value used for the compilation, usually
+this is either the
+.I linktype
+input argument to
+.BR pcap_open_dead ()
+or the
+.I dlt
+input argument to
+.BR pcap_set_datalink (3PCAP)
+or the value(s) returned by
+.BR pcap_datalink (3PCAP)
+and
+.BR pcap_list_datalinks (3PCAP).
+Although these functions take and return link-layer header type values via the
+.B int
+C type, by convention only the low 16 bits are in use.
+
+.SS InstructionCount
+This is the last field of the fixed header in major version 1, it contains the
+number of bytecode instructions following the header.  By convention, valid
+BPF bytecode always ends with a
+.B ret
+instruction, so in a valid savefile this field value is at least 1.
+
+.PP
+The file format thus far minimizes the overhead for software that uses the BPF
+bytecode.  If there is any data after the last instruction, it is the trailing
+TLV space, which mostly contains meta-data for human interpretation.  It
+contains TLVs in the format specified below.
+
+.SH INSTRUCTION FORMAT
+.LP
+.nf
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             opcode            |       jt      |       jf      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                               k                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+.fi
+.LP
+This is the traditional encoding of a BPF instruction (a 4-tuple of
+integers).  Note that usually the endianness depends on the machine, but in
+this format it is fixed.  Some opcodes interpret k as a signed integer.
+
+.SH TLV FORMAT
+.LP
+.nf
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|              Type             |            Length=m           |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+~                        Value (m octets)                       ~
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+.fi
+.LP
+All TLVs are optional.  Every TLV may appear in the same savefile at most
+once.  Length value does not include Type and Length.  Code points for Type
+and the associated Length constraints are defined below.
+
+.SS EOF TLV
+Allows to mark the end of TLV space (hence of the savefile) explicitly to make it
+clear that the file is not truncated.  If this TLV is present in the TLV
+space, it may appear the last only.
+.LP
+Type is 0, Length is 0, Value is empty.
+
+.SS LinkTypeName TLV
+Allows to record the input argument to
+.BR pcap_datalink_name_to_val (3PCAP)
+if the latter was used to translate a DLT name into LinkTypeValue (the same
+name can sometimes produce different values in different contexts).
+.LP
+Type is 1, Length is variable, Value contains an ASCII string.
+
+.SS Filter TLV
+Allows to record the filter expression that was compiled into the
+bytecode, usually this is the
+.I str
+input argument to
+.BR pcap_compile (3PCAP).
+.LP
+Type is 2, Length is variable, Value contains an ASCII string.
+
+.SS OptReq TLV
+Allows to record whether optimization was requested for the compilation or
+not, usually this is the
+.I optimize
+input argument to
+.BR pcap_compile ().
+Note that some link-layer header types and filter keywords disable the
+optimization automatically in libpcap.
+.LP
+Type is 3, Length is 1, Value contains 1 or 0.
+
+.SS Netmask TLV
+Allows to record the value of
+.I netmask
+input argument to
+.BR pcap_compile ().
+.LP
+Type is 4, Length is 4, Value contains a 32-bit IPv4 netmask.
+
+.SS Comment TLV
+Allows to record a free-form text, for example, the name and version of the
+program that generated the file.
+.LP
+Type is 5, Length is variable, Value contains a UTF-8 string.
+
+.SS Timestamp TLV
+Allows to record when the compilation was performed.
+.LP
+Type is 6, Length is 8, Value contains a 64-bit Unix timestamp.
+
+.SH SOFTWARE SUPPORT
+BPF Exam at
+.I \%https://www.tcpdump.org/bpfexam/
+can produce a cBPF savefile from user input.
+
+.SH SEE ALSO
+.BR \%pcap-savefile (5)
