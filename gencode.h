@@ -341,7 +341,7 @@ struct block *gen_byteop(compiler_state_t *, int, int, bpf_u_int32);
 struct block *gen_broadcast(compiler_state_t *, int);
 struct block *gen_multicast(compiler_state_t *, int);
 struct block *gen_ifindex(compiler_state_t *, int);
-struct block *gen_inbound_outbound(compiler_state_t *, int);
+struct block *gen_inbound_outbound(compiler_state_t *, const int);
 
 struct block *gen_llc(compiler_state_t *);
 struct block *gen_llc_i(compiler_state_t *);
