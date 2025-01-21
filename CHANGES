@@ -47,6 +47,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.
       Fix the != comparison for ATM and MTP field values.
+      Deprecate bpf_filter().
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
