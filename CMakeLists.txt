@@ -609,6 +609,7 @@ include_directories(
 include(CheckFunctionExists)
 include(CMakePushCheckState)
 include(CheckSymbolExists)
+include(CheckIncludeFile)
 
 if(WIN32)
 
@@ -626,8 +627,11 @@ if(WIN32)
         #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES ${Packet_LIBRARIES})
+        set(CMAKE_REQUIRED_INCLUDES ${Packet_INCLUDE_DIRS})
         check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
         check_function_exists(PacketGetTimestampModes HAVE_PACKET_GET_TIMESTAMP_MODES)
+        check_function_exists(PacketGetInfo HAVE_PACKET_GET_INFO)
+        check_include_file(npcap-bpf.h HAVE_NPCAP_BPF_H)
         cmake_pop_check_state()
     endif(Packet_FOUND)
 
@@ -694,7 +698,6 @@ endif()
 #   Detect available platform features
 ###################################################################
 
-include(CheckIncludeFile)
 include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
