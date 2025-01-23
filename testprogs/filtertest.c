@@ -362,6 +362,7 @@ main(int argc, char **argv)
 #ifdef LINUX_BPF_EXT
 	if (lflag) {
 		pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+		pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
 	}
 #endif
 

@@ -490,12 +490,9 @@ my %accept_blocks = (
 			(004) ret      #0
 			EOF
 	}, # juniper_mfr_outbound
-	# The two tests below represent the current Linux-specific implementation,
-	# which is not consistent in which function -- pcap_compile() or
-	# pcap_setfilter() -- and under which conditions patches the bytecode for
-	# specific keywords.  So this behaviour may change in future.
-	linux_skf_ad_inbound => {
+	inbound_linuxext => {
 		skip => is_not_linux(),
+		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'inbound',
 		unopt => <<~'EOF',
@@ -504,9 +501,10 @@ my %accept_blocks = (
 			(002) ret      #0
 			(003) ret      #262144
 			EOF
-	}, # linux_skf_ad_inbound
-	linux_skf_ad_outbound => {
+	}, # inbound_linuxext
+	outbound_linuxext => {
 		skip => is_not_linux(),
+		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'outbound',
 		unopt => <<~'EOF',
@@ -515,7 +513,19 @@ my %accept_blocks = (
 			(002) ret      #262144
 			(003) ret      #0
 			EOF
-	}, # linux_skf_ad_inbound
+	}, # outbound_linuxext
+	ifindex_linuxext => {
+		skip => is_not_linux(),
+		linuxext => 1,
+		DLT => 'EN10MB',
+		expr => 'ifindex 10',
+		unopt => <<~'EOF',
+			(000) ld       [ifidx]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # ifindex_linuxext
 
 	mtp2_fisu => {
 		DLT => 'MTP2',
@@ -5776,17 +5786,41 @@ my %reject_tests = (
 		expr => 'mpls 1048576',
 		errstr => 'greater than maximum',
 	},
-	inbound_not_supported => {
+	inbound_not_supported_linux => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		expr => 'inbound',
+		errstr => 'not a live capture',
+	},
+	outbound_not_supported_linux => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		expr => 'outbound',
+		errstr => 'not a live capture',
+	},
+	ifindex_not_supported_linux => {
+		skip => is_not_linux(),
+		DLT => 'LINUX_SLL',
+		expr => 'ifindex 1',
+		errstr => 'not a live capture',
+	},
+	inbound_not_supported_other => {
 		skip => is_linux(),
 		DLT => 'EN10MB',
 		expr => 'inbound',
-		errstr => 'inbound/outbound not supported',
+		errstr => 'not supported',
 	},
-	outbound_not_supported => {
+	outbound_not_supported_other => {
 		skip => is_linux(),
 		DLT => 'EN10MB',
 		expr => 'outbound',
-		errstr => 'inbound/outbound not supported',
+		errstr => 'not supported',
+	},
+	ifindex_not_supported_other => {
+		skip => is_linux(),
+		DLT => 'EN10MB',
+		expr => 'ifindex 1',
+		errstr => 'not supported',
 	},
 );
 

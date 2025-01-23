@@ -8662,6 +8662,25 @@ gen_multicast(compiler_state_t *cstate, int proto)
 	/*NOTREACHED*/
 }
 
+#ifdef __linux__
+/*
+ * This is Linux; we require PF_PACKET support.  If this is a *live* capture,
+ * we can look at special meta-data in the filter expression; otherwise we
+ * can't because it is either a savefile (rfile != NULL) or a pcap_t created
+ * using pcap_open_dead() (rfile == NULL).  Thus check for a flag that
+ * pcap_activate() conditionally sets.
+ */
+static void
+require_basic_bpf_extensions(compiler_state_t *cstate, const char *keyword)
+{
+	if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_BASIC_HANDLING)
+		return;
+	bpf_error(cstate, "%s not supported on %s (not a live capture)",
+	    keyword,
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+}
+#endif // __linux__
+
 struct block *
 gen_ifindex(compiler_state_t *cstate, int ifindex)
 {
@@ -8684,18 +8703,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		break;
 	default:
 #if defined(__linux__)
-		/*
-		 * This is Linux; we require PF_PACKET support.
-		 * If this is a *live* capture, we can look at
-		 * special meta-data in the filter expression;
-		 * if it's a savefile, we can't.
-		 */
-		if (cstate->bpf_pcap->rfile != NULL) {
-			/* We have a FILE *, so this is a savefile */
-			bpf_error(cstate, "ifindex not supported on %s when reading savefiles",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-			/*NOTREACHED*/
-		}
+		require_basic_bpf_extensions(cstate, "ifindex");
 		/* match ifindex */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
@@ -8816,18 +8824,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 		 * in pcapng files.
 		 */
 #if defined(__linux__)
-		/*
-		 * This is Linux; we require PF_PACKET support.
-		 * If this is a *live* capture, we can look at
-		 * special meta-data in the filter expression;
-		 * if it's a savefile, we can't.
-		 */
-		if (cstate->bpf_pcap->rfile != NULL) {
-			/* We have a FILE *, so this is a savefile */
-			bpf_error(cstate, "inbound/outbound not supported on %s when reading savefiles",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-			/*NOTREACHED*/
-		}
+		require_basic_bpf_extensions(cstate, outbound ? "outbound" : "inbound");
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
 		             PACKET_OUTGOING);

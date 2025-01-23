@@ -368,6 +368,12 @@ struct pcap {
  * BPF code generation flags.
  */
 #define BPF_SPECIAL_VLAN_HANDLING	0x00000001	/* special VLAN handling for Linux */
+/*
+ * Special handling of packet type and ifindex, which are some of the auxiliary
+ * data items available in Linux >= 2.6.27.  Disregard protocol and netlink
+ * attributes for now.
+ */
+#define BPF_SPECIAL_BASIC_HANDLING	0x00000002
 
 /*
  * User data structure for the one-shot callback used for pcap_next()

@@ -48,6 +48,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "[wlan] dir" integer value to be within range.
       Fix the != comparison for ATM and MTP field values.
       Deprecate bpf_filter().
+      Require a live capture for all Linux BPF extensions.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from

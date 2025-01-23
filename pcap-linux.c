@@ -2762,7 +2762,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	handle->fd = sock_fd;
 
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#ifdef SO_BPF_EXTENSIONS
 	/*
 	 * Can we generate special code for VLAN checks?
 	 * (XXX - what if we need the special code but it's not supported
@@ -2770,14 +2770,23 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
 	    &bpf_extensions, &len) == 0) {
+		/*
+		 * This is a live capture with some BPF extensions support,
+		 * so indicate that at least the auxiliary data items from
+		 * Linux 2.6.27 are available (this concerns SKF_AD_PKTTYPE
+		 * and SKF_AD_IFINDEX in the first place).
+		 */
+		handle->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+#ifdef SKF_AD_VLAN_TAG_PRESENT
 		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
 			/*
 			 * Yes, we can.  Request that we do so.
 			 */
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
+#endif // SKF_AD_VLAN_TAG_PRESENT
 	}
-#endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
+#endif // SO_BPF_EXTENSIONS
 
 	return status;
 }
