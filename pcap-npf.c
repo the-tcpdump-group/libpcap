@@ -1031,6 +1031,10 @@ pcap_activate_npf(pcap_t *p)
 	int status = 0;
 	struct bpf_insn total_insn;
 	struct bpf_program total_prog;
+#ifdef HAVE_PACKET_GET_INFO
+	char oid_data_buf[PACKET_OID_DATA_LENGTH(sizeof(ULONG))] = {0};
+	PACKET_OID_DATA *oid_data_arg = (PACKET_OID_DATA *)oid_data_buf;
+#endif
 
 	if (p->opt.rfmon) {
 		/*
@@ -1289,6 +1293,23 @@ pcap_activate_npf(pcap_t *p)
 		break;
 	}
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
+
+#if defined(HAVE_PACKET_GET_INFO) && defined(NPF_GETINFO_BPFEXT) && defined(SKF_AD_VLAN_TAG_PRESENT)
+
+	/* Can we generate special code for VLAN checks? */
+	oid_data_arg->Oid = NPF_GETINFO_BPFEXT;
+	oid_data_arg->Length = sizeof(ULONG);
+	if (PacketGetInfo(pw->adapter, oid_data_arg)) {
+		if (*((ULONG *)oid_data_arg->Data) >= SKF_AD_VLAN_TAG_PRESENT) {
+			/* Yes, we can.  Request that we do so. */
+			p->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+		}
+	}
+	else {
+		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+		    GetLastError(), "Error calling PacketGetInfo");
+	}
+#endif /* HAVE_PACKET_GET_INFO */
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of

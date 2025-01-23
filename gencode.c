@@ -69,6 +69,10 @@
 #endif
 
 #ifdef _WIN32
+  #ifdef HAVE_NPCAP_BPF_H
+    /* Defines BPF extensions for Npcap */
+    #include <npcap-bpf.h>
+  #endif
   #ifdef INET6
     #if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 /* IPv6 address */
