@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SETFILTER 3PCAP "5 March 2022"
+.TH PCAP_SETFILTER 3PCAP "24 January 2025"
 .SH NAME
 pcap_setfilter \- set the filter
 .SH SYNOPSIS
@@ -38,6 +38,20 @@ is a pointer to a
 .I bpf_program
 struct, usually the result of a call to
 .BR \%pcap_compile (3PCAP).
+.PP
+If the calls to
+.BR \%pcap_compile ()
+and
+.BR \%pcap_setfilter ()
+use the same
+.B pcap_t
+handle, packet filtering should either work correctly or fail correctly
+without additional efforts.  Otherwise the filter program must have been
+compiled for the same link-layer header type as the one used by the
+.B pcap_t
+handle; also on Linux the filter must not use BPF extensions, see
+.BR pcap_compile ()
+for more information.
 .SH RETURN VALUE
 .BR pcap_setfilter ()
 returns
