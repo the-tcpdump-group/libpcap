@@ -89,6 +89,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CI: Implement "make check".
       Fix autotools and CMake issues with snprintf test and sanitizers.
         Fixes issue #1396.
+      filtertest: Add "-l" flag to use Linux BPF extensions.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

@@ -112,6 +112,8 @@ sub is_not_linux {
 #   "unopt" separately)
 # * skip (optional, string): if defined and is not equal to an empty string,
 #   causes the test to skip using the string as the reason
+# * linuxext (optional, int): if defined and is equal to 1, use Linux BPF
+#   extensions.
 #
 # At least one of "opt" and "unopt" must be defined in each accept test block.
 
@@ -1921,6 +1923,70 @@ my %accept_blocks = (
 			(008) ret      #0
 			EOF
 	}, # vlan_netanalyzer_unary
+	vlan_eth_linuxext_nullary => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		linuxext => 1,
+		expr => 'vlan',
+		opt => <<~'EOF',
+			(000) ldb      [vlanp]
+			(001) jeq      #0x1             jt 6	jf 2
+			(002) ldh      [12]
+			(003) jeq      #0x8100          jt 6	jf 4
+			(004) jeq      #0x88a8          jt 6	jf 5
+			(005) jeq      #0x9100          jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			EOF
+	}, # vlan_eth_linuxext_nullary
+	vlan_eth_linuxext_unary => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		linuxext => 1,
+		expr => 'vlan 10',
+		opt => <<~'EOF',
+			(000) ldb      [vlanp]
+			(001) jeq      #0x1             jt 6	jf 2
+			(002) ldh      [12]
+			(003) jeq      #0x8100          jt 6	jf 4
+			(004) jeq      #0x88a8          jt 6	jf 5
+			(005) jeq      #0x9100          jt 6	jf 14
+			(006) ldb      [vlanp]
+			(007) jeq      #0x1             jt 8	jf 10
+			(008) ldh      [vlan_tci]
+			(009) ja       11
+			(010) ldh      [14]
+			(011) and      #0xfff
+			(012) jeq      #0xa             jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			EOF
+	}, # vlan_eth_linuxext_unary
+	vlan_and_vlan_eth_linuxext => {
+		skip => is_not_linux(),
+		DLT => 'EN10MB',
+		linuxext => 1,
+		expr => 'vlan and vlan',
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) st       M[1]
+			(002) ldb      [vlanp]
+			(003) jeq      #0x1             jt 10	jf 4
+			(004) ld       #0x4
+			(005) st       M[1]
+			(006) ldh      [12]
+			(007) jeq      #0x8100          jt 10	jf 8
+			(008) jeq      #0x88a8          jt 10	jf 9
+			(009) jeq      #0x9100          jt 10	jf 16
+			(010) ldx      M[1]
+			(011) ldh      [x + 12]
+			(012) jeq      #0x8100          jt 15	jf 13
+			(013) jeq      #0x88a8          jt 15	jf 14
+			(014) jeq      #0x9100          jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			EOF
+	}, # vlan_and_vlan_eth_linuxext
 
 	mpls_eth_nullary => {
 		DLT => 'EN10MB',
@@ -5859,6 +5925,7 @@ sub run_accept_test {
 	push @args, $filtertest;
 	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
 	push @args, '-O' unless $test{optimize};
+	push @args, '-l' if $test{linuxext};
 	# Write the filter expression to a file because the version of
 	# system() that takes a list does not support redirecting stdout,
 	# and the version of system() that takes a string does not escape
@@ -6003,6 +6070,7 @@ foreach my $testname (sort keys %accept_blocks) {
 				func => \&run_accept_test,
 				snaplen => defined $test->{snaplen} ? $test->{snaplen} : undef,
 				optimize => int ($optunopt eq 'opt'),
+				linuxext => defined $test->{linuxext} && $test->{linuxext} == 1,
 				expected => $test->{$optunopt},
 			};
 			$main->{$_} = $test->{$_} foreach ('DLT', 'expr');
@@ -6013,7 +6081,7 @@ foreach my $testname (sort keys %accept_blocks) {
 						label => valid_alias_label ($label, $i),
 						expr => $test->{aliases}[$i],
 					};
-					$alias->{$_} = $main->{$_} foreach ('DLT', 'func', 'optimize', 'expected', 'snaplen');
+					$alias->{$_} = $main->{$_} foreach ('DLT', 'func', 'optimize', 'expected', 'snaplen', 'linuxext');
 					push @ready_to_run, $alias;
 				}
 			}

@@ -69,6 +69,20 @@ PCAP_API void pcap_set_optimizer_debug(int);
 PCAP_API void pcap_set_print_dot_graph(int);
 #endif
 
+#ifdef __linux__
+#include <linux/filter.h>
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+/*
+ * pcap-int.h is a private header and should not be included by programs that
+ * use libpcap.  This test program uses a special hack because it is the
+ * simplest way to test internal code paths that otherwise would require
+ * elevated privileges.  Do not do this in normal code.
+ */
+#include <pcap-int.h>
+#define LINUX_BPF_EXT
+#endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#endif // __linux__
+
 static char *program_name;
 
 /* Forwards */
@@ -212,6 +226,9 @@ main(int argc, char **argv)
 #endif
 	char *infile;
 	int Oflag;
+#ifdef LINUX_BPF_EXT
+	int lflag = 0;
+#endif
 	int snaplen;
 	char *p;
 	int dlt;
@@ -241,7 +258,7 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "dF:gm:Os:")) != -1) {
+	while ((op = getopt(argc, argv, "dF:gm:Os:l")) != -1) {
 		switch (op) {
 
 		case 'd':
@@ -301,6 +318,15 @@ main(int argc, char **argv)
 			break;
 		}
 
+		case 'l':
+#ifdef LINUX_BPF_EXT
+			// Enable Linux BPF extensions.
+			lflag = 1;
+			break;
+#else
+			error("libpcap and filtertest built without Linux BPF extensions");
+#endif
+
 		default:
 			usage();
 			/* NOTREACHED */
@@ -332,6 +358,12 @@ main(int argc, char **argv)
 	pd = pcap_open_dead(dlt, snaplen);
 	if (pd == NULL)
 		error("Can't open fake pcap_t");
+
+#ifdef LINUX_BPF_EXT
+	if (lflag) {
+		pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+	}
+#endif
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error("%s", pcap_geterr(pd));
@@ -369,11 +401,15 @@ usage(void)
 	(void)fprintf(stderr, "%s, with %s\n", program_name,
 	    pcap_lib_version());
 	(void)fprintf(stderr,
+	    "Usage: %s [-d"
 #ifdef BDEBUG
-	    "Usage: %s [-dgO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
-#else
-	    "Usage: %s [-dO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
+	    "g"
 #endif
+	    "O"
+#ifdef LINUX_BPF_EXT
+	    "l"
+#endif
+	    "] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
 	    program_name);
 	exit(1);
 }
