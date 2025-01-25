@@ -5687,11 +5687,14 @@ my %reject_tests = (
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => 'syntax error',
 	},
-	ip6_host_nonhex => {
-		DLT => 'RAW',
-		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
-		errstr => 'unknown host',
-	},
+# This test has been flaky because it depends on an external effect (DNS
+# lookup), which sometimes times out.  Let's disable it until there is a good
+# way to address it.
+#	ip6_host_nonhex => {
+#		DLT => 'RAW',
+#		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
+#		errstr => 'unknown host',
+#	},
 	ip6_host_disabled => {
 		skip => ipv6_enabled(),
 		DLT => 'RAW',
