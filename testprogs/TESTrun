@@ -3316,12 +3316,11 @@ my %accept_blocks = (
 		expr => 'pppoes 1234',
 		unopt => <<~'EOF',
 			(000) ldh      [12]
-			(001) jeq      #0x8864          jt 2	jf 6
-			(002) ld       [14]
-			(003) and      #0xffff
-			(004) jeq      #0x4d2           jt 5	jf 6
-			(005) ret      #200
-			(006) ret      #0
+			(001) jeq      #0x8864          jt 2	jf 5
+			(002) ldh      [16]
+			(003) jeq      #0x4d2           jt 4	jf 5
+			(004) ret      #200
+			(005) ret      #0
 			EOF
 	}, # pppoes_unary
 
