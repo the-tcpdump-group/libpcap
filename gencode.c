@@ -9550,6 +9550,19 @@ gen_pppoed(compiler_state_t *cstate)
 	return gen_linktype(cstate, ETHERTYPE_PPPOED);
 }
 
+/*
+ * RFC 2516 Section 4:
+ *
+ * The Ethernet payload for PPPoE is as follows:
+ *
+ *                      1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |  VER  | TYPE  |      CODE     |          SESSION_ID           |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |            LENGTH             |           payload             ~
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
 struct block *
 gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 {
@@ -9569,11 +9582,11 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (has_sess_num) {
-		if (sess_num > 0x0000ffff) {
+		if (sess_num > UINT16_MAX) {
 			bpf_error(cstate, "PPPoE session number %u greater than maximum %u",
-			    sess_num, 0x0000ffff);
+			    sess_num, UINT16_MAX);
 		}
-		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, sess_num, 0x0000ffff);
+		b1 = gen_cmp(cstate, OR_LINKPL, 2, BPF_H, sess_num);
 		gen_and(b0, b1);
 		b0 = b1;
 	}
