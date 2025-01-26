@@ -110,19 +110,6 @@ extern int pcapint_utf_8_mode;
 extern int pcapint_mmap_32bit;
 
 /*
- * Swap byte ordering of unsigned long long timestamp on a big endian
- * machine.
- */
-#define SWAPLL(ull)  ((ull & 0xff00000000000000ULL) >> 56) | \
-                      ((ull & 0x00ff000000000000ULL) >> 40) | \
-                      ((ull & 0x0000ff0000000000ULL) >> 24) | \
-                      ((ull & 0x000000ff00000000ULL) >> 8)  | \
-                      ((ull & 0x00000000ff000000ULL) << 8)  | \
-                      ((ull & 0x0000000000ff0000ULL) << 24) | \
-                      ((ull & 0x000000000000ff00ULL) << 40) | \
-                      ((ull & 0x00000000000000ffULL) << 56)
-
-/*
  * Maximum snapshot length.
  *
  * Somewhat arbitrary, but chosen to be:
