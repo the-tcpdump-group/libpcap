@@ -1584,11 +1584,165 @@ my %accept_blocks = (
 			EOF
 	}, # atm_metaconnect
 
+	# Do not permutate all possible aliases for "link", just the ones that
+	# obviously make sense for the DLT.
+	arcnet_broadcast_multicast => {
+		DLT => 'ARCNET',
+		expr => 'broadcast',
+		aliases => [
+			'multicast',
+			'link broadcast',
+			'link multicast',
+		],
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # arcnet_broadcast_multicast
+	fddi_broadcast => {
+		DLT => 'FDDI',
+		expr => 'broadcast',
+		aliases => [
+			'fddi broadcast',
+			'link broadcast',
+		],
+		unopt => <<~'EOF',
+			(000) ld       [3]
+			(001) jeq      #0xffffffff      jt 2	jf 5
+			(002) ldh      [1]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # fddi_broadcast
+	fddi_multicast => {
+		DLT => 'FDDI',
+		expr => 'multicast',
+		aliases => [
+			'fddi multicast',
+			'link multicast',
+		],
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jset     #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # fddi_multicast
+	ieee802_broadcast => {
+		DLT => 'IEEE802',
+		expr => 'broadcast',
+		aliases => [
+			'tr broadcast',
+			'link broadcast',
+		],
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) jeq      #0xffffffff      jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # ieee802_broadcast
+	ieee802_multicast => {
+		DLT => 'IEEE802',
+		expr => 'multicast',
+		aliases => [
+			'tr multicast',
+			'link multicast',
+		],
+		unopt => <<~'EOF',
+			(000) ldb      [2]
+			(001) jset     #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # ieee802_multicast
+	ieee802_11_broadcast => {
+		DLT => 'IEEE802_11',
+		expr => 'broadcast',
+		aliases => [
+			'wlan broadcast',
+			'ether broadcast',
+			'link broadcast',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 14	jf 2
+			(002) jset     #0x8             jt 3	jf 9
+			(003) ldb      [1]
+			(004) jset     #0x1             jt 5	jf 9
+			(005) ld       [18]
+			(006) jeq      #0xffffffff      jt 7	jf 14
+			(007) ldh      [16]
+			(008) jeq      #0xffff          jt 13	jf 14
+			(009) ld       [6]
+			(010) jeq      #0xffffffff      jt 11	jf 14
+			(011) ldh      [4]
+			(012) jeq      #0xffff          jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			EOF
+	}, # ieee802_11_broadcast
+	ieee802_11_multicast => {
+		DLT => 'IEEE802_11',
+		expr => 'multicast',
+		aliases => [
+			'wlan multicast',
+			'ether multicast',
+			'link multicast',
+		],
+		opt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 10	jf 2
+			(002) jset     #0x8             jt 3	jf 7
+			(003) ldb      [1]
+			(004) jset     #0x1             jt 5	jf 7
+			(005) ldb      [16]
+			(006) jset     #0x1             jt 9	jf 10
+			(007) ldb      [4]
+			(008) jset     #0x1             jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			EOF
+	}, # ieee802_11_multicast
+	ip_over_fc_broadcast => {
+		DLT => 'IP_OVER_FC',
+		expr => 'broadcast',
+		aliases => ['link broadcast'],
+		unopt => <<~'EOF',
+			(000) ld       [4]
+			(001) jeq      #0xffffffff      jt 2	jf 5
+			(002) ldh      [2]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # ip_over_fc_broadcast
+	ip_over_fc_multicast => {
+		DLT => 'IP_OVER_FC',
+		expr => 'multicast',
+		aliases => ['link multicast'],
+		opt => <<~'EOF',
+			(000) ldb      [2]
+			(001) jset     #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # ip_over_fc_multicast
+
+
 	ether_broadcast => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
-		expr => 'ether broadcast',
-		aliases => ['broadcast'],
+		expr => 'broadcast',
+		aliases => [
+			'ether broadcast',
+			'link broadcast',
+		],
 		opt => <<~'EOF',
 			(000) ld       [2]
 			(001) jeq      #0xffffffff      jt 2	jf 5
@@ -1601,8 +1755,11 @@ my %accept_blocks = (
 	ether_multicast => {
 		DLT => 'EN10MB',
 		snaplen => 16000,
-		expr => 'ether multicast',
-		aliases => ['multicast'],
+		expr => 'multicast',
+		aliases => [
+			'ether multicast',
+			'link multicast',
+		],
 		opt => <<~'EOF',
 			(000) ldb      [0]
 			(001) jset     #0x1             jt 2	jf 3
@@ -5920,6 +6077,16 @@ my %reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => 'syntax error',
+	},
+	broadcast_not_supported => {
+		DLT => 'SLIP',
+		expr => 'broadcast',
+		errstr => 'not a broadcast link',
+	},
+	multicast_not_supported => {
+		DLT => 'SLIP',
+		expr => 'multicast',
+		errstr => 'link-layer multicast filters supported only on',
 	},
 # This test has been flaky because it depends on an external effect (DNS
 # lookup), which sometimes times out.  Let's disable it until there is a good
