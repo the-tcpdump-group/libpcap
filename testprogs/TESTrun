@@ -1611,6 +1611,10 @@ my %accept_blocks = (
 	ether_host => {
 		DLT => 'EN10MB',
 		expr => 'ether host ab:cd:ef:0:0:1',
+		aliases => [
+			'ether src or dst host ab.CD.ef.0.0.1',
+			'ether src or dst Ab.cD.ef.00.0.01',
+		],
 		opt => <<~'EOF',
 			(000) ld       [8]
 			(001) jeq      #0xef000001      jt 2	jf 4
