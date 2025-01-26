@@ -7422,14 +7422,14 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	nlen = __pcap_atoin(s1, &n);
+	nlen = pcapint_atoin(s1, &n);
 	if (nlen < 0)
 		bpf_error(cstate, "invalid IPv4 address '%s'", s1);
 	/* Promote short ipaddr */
 	n <<= 32 - nlen;
 
 	if (s2 != NULL) {
-		mlen = __pcap_atoin(s2, &m);
+		mlen = pcapint_atoin(s2, &m);
 		if (mlen < 0)
 			bpf_error(cstate, "invalid IPv4 address '%s'", s2);
 		/* Promote short ipaddr */
@@ -7497,7 +7497,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
 		 * for a valid DECnet address.
 		 */
-		vlen = __pcap_atodn(s, &v);
+		vlen = pcapint_atodn(s, &v);
 		if (vlen == 0)
 			bpf_error(cstate, "invalid DECnet address '%s'", s);
 	} else {
@@ -7506,7 +7506,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 * {N}.{N}.{N}.{N}, all of which potentially stand for a valid
 		 * IPv4 address.
 		 */
-		vlen = __pcap_atoin(s, &v);
+		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
 			bpf_error(cstate, "invalid IPv4 address '%s'", s);
 	}

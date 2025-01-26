@@ -601,8 +601,8 @@ pcap_nametollc(const char *s)
 }
 
 /* Hex digit to 8-bit unsigned integer. */
-static inline u_char
-xdtoi(u_char c)
+u_char
+pcapint_xdtoi(const u_char c)
 {
 	if (c >= '0' && c <= '9')
 		return (u_char)(c - '0');
@@ -613,7 +613,7 @@ xdtoi(u_char c)
 }
 
 int
-__pcap_atoin(const char *s, bpf_u_int32 *addr)
+pcapint_atoin(const char *s, bpf_u_int32 *addr)
 {
 	u_int n;
 	int len;
@@ -649,7 +649,7 @@ __pcap_atoin(const char *s, bpf_u_int32 *addr)
  * normal addressing purposes, but either can appear on the wire.
  */
 int
-__pcap_atodn(const char *s, bpf_u_int32 *addr)
+pcapint_atodn(const char *s, bpf_u_int32 *addr)
 {
 #define AREASHIFT 10
 #define AREAMASK 0176000
@@ -753,10 +753,10 @@ pcap_ether_aton(const char *s)
 	while (*s) {
 		if (*s == ':' || *s == '.' || *s == '-')
 			s += 1;
-		d = xdtoi(*s++);
+		d = pcapint_xdtoi(*s++);
 		if (PCAP_ISXDIGIT(*s)) {
 			d <<= 4;
-			d |= xdtoi(*s++);
+			d |= pcapint_xdtoi(*s++);
 		}
 		*ep++ = d;
 	}
