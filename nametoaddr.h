@@ -31,6 +31,9 @@
  * SUCH DAMAGE.
  */
 
+#ifndef nametoaddr_h_
+#define nametoaddr_h_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,9 +42,12 @@ extern "C" {
  * Routines used for name-or-address-string-to-address resolution
  * that are *not* exported to code using libpcap.
  */
-int __pcap_atodn(const char *, bpf_u_int32 *);
-int __pcap_atoin(const char *, bpf_u_int32 *);
+extern int pcapint_atodn(const char *, bpf_u_int32 *);
+extern int pcapint_atoin(const char *, bpf_u_int32 *);
+extern u_char pcapint_xdtoi(const u_char);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif // nametoaddr_h_
