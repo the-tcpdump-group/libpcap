@@ -44,6 +44,7 @@ extern "C" {
  */
 extern int pcapint_atodn(const char *, bpf_u_int32 *);
 extern int pcapint_atoin(const char *, bpf_u_int32 *);
+extern int pcapint_atoan(const char *, uint8_t *);
 extern u_char pcapint_xdtoi(const u_char);
 
 #ifdef __cplusplus

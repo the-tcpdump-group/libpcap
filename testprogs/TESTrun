@@ -1593,6 +1593,7 @@ my %accept_blocks = (
 			'multicast',
 			'link broadcast',
 			'link multicast',
+			'link dst $00',
 		],
 		unopt => <<~'EOF',
 			(000) ldb      [1]
@@ -1601,6 +1602,47 @@ my %accept_blocks = (
 			(003) ret      #0
 			EOF
 	}, # arcnet_broadcast_multicast
+	arcnet_host => {
+		DLT => 'ARCNET',
+		expr => 'link host $0e',
+		aliases => [
+			'link src or dst host $0e',
+			'link src or dst $0e',
+			'link host $e',
+			'link src or dst host $e',
+			'link src or dst $e',
+		],
+		unopt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0xe             jt 4	jf 2
+			(002) ldb      [1]
+			(003) jeq      #0xe             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			EOF
+	}, # arcnet_host
+	arcnet_src_host => {
+		DLT => 'ARCNET',
+		expr => 'link src host $8c',
+		aliases => ['link src $8c'],
+		unopt => <<~'EOF',
+			(000) ldb      [0]
+			(001) jeq      #0x8c            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # arcnet_src_host
+	arcnet_dst_host => {
+		DLT => 'ARCNET',
+		expr => 'link dst host $a4',
+		aliases => ['link dst $a4'],
+		unopt => <<~'EOF',
+			(000) ldb      [1]
+			(001) jeq      #0xa4            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			EOF
+	}, # arcnet_dst_host
 	fddi_broadcast => {
 		DLT => 'FDDI',
 		expr => 'broadcast',
@@ -5942,6 +5984,26 @@ my %apply_blocks = (
 		expr => 'sls != 9',
 		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
+	link_host_c0_on_arcnet => {
+		savefile => 'bacnet-arcnet-linux.pcap',
+		expr => 'link host $c0',
+		results => [65535, 65535, 0, 65535, 65535, 65535, 65535, 65535, 65535, 0],
+	},
+	link_src_host_c0_on_arcnet => {
+		savefile => 'bacnet-arcnet-linux.pcap',
+		expr => 'link src host $c0',
+		results => [65535, 65535, 0, 65535, 0, 65535, 0, 65535, 0, 0],
+	},
+	link_dst_host_c0_on_arcnet => {
+		savefile => 'bacnet-arcnet-linux.pcap',
+		expr => 'link dst host $c0',
+		results => [0, 0, 0, 0, 65535, 0, 65535, 0, 65535, 0],
+	},
+	link_host_not_c0_on_arcnet => {
+		savefile => 'bacnet-arcnet-linux.pcap',
+		expr => 'link host not $c0',
+		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 65535],
+	},
 );
 
 # * DLT, expr and skip: same as in accept_blocks above
@@ -6225,6 +6287,26 @@ my %reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'ifindex 1',
 		errstr => 'not supported',
+	},
+	arcnet_address1 => {
+		DLT => 'ARCNET',
+		expr => 'link host $123',
+		errstr => 'syntax error',
+	},
+	arcnet_address2 => {
+		DLT => 'ARCNET',
+		expr => 'link host $x',
+		errstr => 'syntax error',
+	},
+	arcnet_address3 => {
+		DLT => 'ARCNET',
+		expr => 'link host $',
+		errstr => 'syntax error',
+	},
+	arcnet_address4 => {
+		DLT => 'ARCNET',
+		expr => 'link host 120',
+		errstr => 'illegal link layer address',
 	},
 );
 

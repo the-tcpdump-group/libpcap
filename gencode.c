@@ -663,7 +663,7 @@ static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, bpf_u_int32, u_int, u_int);
 #endif
-static struct block *gen_ahostop(compiler_state_t *, const u_char *, int);
+static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_ehostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_fhostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_thostop(compiler_state_t *, const u_char *, int);
@@ -8390,8 +8390,6 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	return b;
 }
 
-static const u_char abroadcast[] = { 0x0 };
-
 struct block *
 gen_broadcast(compiler_state_t *cstate, int proto)
 {
@@ -8413,7 +8411,8 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		switch (cstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
-			return gen_ahostop(cstate, abroadcast, Q_DST);
+			// ARCnet broadcast is [8-bit] destination address 0.
+			return gen_ahostop(cstate, 0, Q_DST);
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -8498,8 +8497,8 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		switch (cstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
-			/* all ARCnet multicasts use the same address */
-			return gen_ahostop(cstate, abroadcast, Q_DST);
+			// ARCnet multicast is the same as broadcast.
+			return gen_ahostop(cstate, 0, Q_DST);
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -9053,11 +9052,10 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 	return (b0);
 }
 
+// Process an ARCnet host address string.
 struct block *
 gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 {
-	struct block *b;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -9071,13 +9069,16 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 	case DLT_ARCNET_LINUX:
 		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
 		    q.proto == Q_LINK) {
-			cstate->e = pcap_ether_aton(s);
-			if (cstate->e == NULL)
-				bpf_error(cstate, "malloc");
-			b = gen_ahostop(cstate, cstate->e, (int)q.dir);
-			free(cstate->e);
-			cstate->e = NULL;
-			return (b);
+			uint8_t addr;
+			/*
+			 * The lexer currently defines the address format in a
+			 * way that makes this error condition never true.
+			 * Let's check it anyway in case this part of the lexer
+			 * changes in future.
+			 */
+			if (! pcapint_atoan(s, &addr))
+			    bpf_error(cstate, "invalid ARCnet address '%s'", s);
+			return gen_ahostop(cstate, addr, (int)q.dir);
 		} else
 			bpf_error(cstate, "ARCnet address used in non-arc expression");
 		/*NOTREACHED*/
@@ -9088,18 +9089,25 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 	}
 }
 
+// Compare an ARCnet host address with the given value.
 static struct block *
-gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
+gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
 {
 	register struct block *b0, *b1;
 
 	switch (dir) {
-	/* src comes first, different from Ethernet */
+	/*
+	 * ARCnet is different from Ethernet: the source address comes before
+	 * the destination address, each is one byte long.  This holds for all
+	 * three "buffer formats" in RFC 1201 Section 2.1, see also page 4-10
+	 * in the 1983 edition of the "ARCNET Designer's Handbook" published
+	 * by Datapoint (document number 61610-01).
+	 */
 	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 0, 1, eaddr);
+		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 1, 1, eaddr);
+		return gen_cmp(cstate, OR_LINKHDR, 1, BPF_B, eaddr);
 
 	case Q_AND:
 		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
