@@ -1322,11 +1322,16 @@ if(NOT WIN32)
 endif()
 
 #
-# Find the size of time_t.
+# Find and print the size of time_t.
 #
 cmake_push_check_state()
 set(CMAKE_EXTRA_INCLUDE_FILES time.h)
 check_type_size("time_t" SIZEOF_TIME_T)
+if(SIZEOF_TIME_T EQUAL 4)
+  message(STATUS "32-bit time_t")
+elseif(SIZEOF_TIME_T EQUAL 8)
+  message(STATUS "64-bit time_t")
+endif()
 cmake_pop_check_state()
 
 if(INET6)
