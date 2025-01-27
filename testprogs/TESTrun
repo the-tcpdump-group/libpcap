@@ -3765,95 +3765,87 @@ my %accept_blocks = (
 		expr => 'decnet host 50.764',
 		opt => <<~'EOF',
 			(000) ldh      [12]
-			(001) jeq      #0x6003          jt 2	jf 43
+			(001) jeq      #0x6003          jt 2	jf 39
 			(002) ldb      [16]
 			(003) and      #0x7
 			(004) jeq      #0x2             jt 5	jf 7
 			(005) ldh      [19]
-			(006) jeq      #0xfcca          jt 42	jf 7
+			(006) jeq      #0xfcca          jt 38	jf 7
 			(007) ldh      [16]
 			(008) and      #0xff07
 			(009) jeq      #0x8102          jt 10	jf 12
 			(010) ldh      [20]
-			(011) jeq      #0xfcca          jt 42	jf 12
+			(011) jeq      #0xfcca          jt 38	jf 12
 			(012) ldb      [16]
 			(013) and      #0x7
 			(014) jeq      #0x6             jt 15	jf 17
 			(015) ldh      [31]
-			(016) jeq      #0xfcca          jt 42	jf 17
+			(016) jeq      #0xfcca          jt 38	jf 17
 			(017) ldh      [16]
 			(018) and      #0xff07
 			(019) jeq      #0x8106          jt 20	jf 22
 			(020) ldh      [32]
-			(021) jeq      #0xfcca          jt 42	jf 22
-			(022) ldb      [16]
-			(023) and      #0x7
-			(024) jeq      #0x2             jt 25	jf 27
-			(025) ldh      [17]
-			(026) jeq      #0xfcca          jt 42	jf 27
-			(027) ldh      [16]
-			(028) and      #0xff07
-			(029) jeq      #0x8102          jt 30	jf 32
-			(030) ldh      [18]
-			(031) jeq      #0xfcca          jt 42	jf 32
-			(032) ldb      [16]
-			(033) and      #0x7
-			(034) jeq      #0x6             jt 35	jf 37
-			(035) ldh      [23]
-			(036) jeq      #0xfcca          jt 42	jf 37
-			(037) ldh      [16]
-			(038) and      #0xff07
-			(039) jeq      #0x8106          jt 40	jf 43
-			(040) ldh      [24]
-			(041) jeq      #0xfcca          jt 42	jf 43
-			(042) ret      #262144
-			(043) ret      #0
+			(021) jeq      #0xfcca          jt 38	jf 22
+			(022) ld       [16]
+			(023) and      #0x7ffff00
+			(024) jeq      #0x2fcca00       jt 38	jf 25
+			(025) ld       [16]
+			(026) and      #0xff07ffff
+			(027) jeq      #0x8102fcca      jt 38	jf 28
+			(028) ldb      [16]
+			(029) and      #0x7
+			(030) jeq      #0x6             jt 31	jf 33
+			(031) ldh      [23]
+			(032) jeq      #0xfcca          jt 38	jf 33
+			(033) ldh      [16]
+			(034) and      #0xff07
+			(035) jeq      #0x8106          jt 36	jf 39
+			(036) ldh      [24]
+			(037) jeq      #0xfcca          jt 38	jf 39
+			(038) ret      #262144
+			(039) ret      #0
 			EOF
 		unopt => <<~'EOF',
 			(000) ldh      [12]
-			(001) jeq      #0x6003          jt 2	jf 43
+			(001) jeq      #0x6003          jt 2	jf 39
 			(002) ldb      [16]
 			(003) and      #0x7
 			(004) jeq      #0x2             jt 5	jf 7
 			(005) ldh      [19]
-			(006) jeq      #0xfcca          jt 42	jf 7
+			(006) jeq      #0xfcca          jt 38	jf 7
 			(007) ldh      [16]
 			(008) and      #0xff07
 			(009) jeq      #0x8102          jt 10	jf 12
 			(010) ldh      [20]
-			(011) jeq      #0xfcca          jt 42	jf 12
+			(011) jeq      #0xfcca          jt 38	jf 12
 			(012) ldb      [16]
 			(013) and      #0x7
 			(014) jeq      #0x6             jt 15	jf 17
 			(015) ldh      [31]
-			(016) jeq      #0xfcca          jt 42	jf 17
+			(016) jeq      #0xfcca          jt 38	jf 17
 			(017) ldh      [16]
 			(018) and      #0xff07
 			(019) jeq      #0x8106          jt 20	jf 22
 			(020) ldh      [32]
-			(021) jeq      #0xfcca          jt 42	jf 22
-			(022) ldb      [16]
-			(023) and      #0x7
-			(024) jeq      #0x2             jt 25	jf 27
-			(025) ldh      [17]
-			(026) jeq      #0xfcca          jt 42	jf 27
-			(027) ldh      [16]
-			(028) and      #0xff07
-			(029) jeq      #0x8102          jt 30	jf 32
-			(030) ldh      [18]
-			(031) jeq      #0xfcca          jt 42	jf 32
-			(032) ldb      [16]
-			(033) and      #0x7
-			(034) jeq      #0x6             jt 35	jf 37
-			(035) ldh      [23]
-			(036) jeq      #0xfcca          jt 42	jf 37
-			(037) ldh      [16]
-			(038) and      #0xff07
-			(039) jeq      #0x8106          jt 40	jf 43
-			(040) ldh      [24]
-			(041) jeq      #0xfcca          jt 42	jf 43
-			(042) ret      #262144
-			(043) ret      #0
+			(021) jeq      #0xfcca          jt 38	jf 22
+			(022) ld       [16]
+			(023) and      #0x7ffff00
+			(024) jeq      #0x2fcca00       jt 38	jf 25
+			(025) ld       [16]
+			(026) and      #0xff07ffff
+			(027) jeq      #0x8102fcca      jt 38	jf 28
+			(028) ldb      [16]
+			(029) and      #0x7
+			(030) jeq      #0x6             jt 31	jf 33
+			(031) ldh      [23]
+			(032) jeq      #0xfcca          jt 38	jf 33
+			(033) ldh      [16]
+			(034) and      #0xff07
+			(035) jeq      #0x8106          jt 36	jf 39
+			(036) ldh      [24]
+			(037) jeq      #0xfcca          jt 38	jf 39
+			(038) ret      #262144
+			(039) ret      #0
 			EOF
 	}, # decnet_host
 	decnet_src_host => {
@@ -3893,29 +3885,25 @@ my %accept_blocks = (
 		aliases => ['decnet dst 50.764'],
 		unopt => <<~'EOF',
 			(000) ldh      [12]
-			(001) jeq      #0x6003          jt 2	jf 23
-			(002) ldb      [16]
-			(003) and      #0x7
-			(004) jeq      #0x2             jt 5	jf 7
-			(005) ldh      [17]
-			(006) jeq      #0xfcca          jt 22	jf 7
-			(007) ldh      [16]
-			(008) and      #0xff07
-			(009) jeq      #0x8102          jt 10	jf 12
-			(010) ldh      [18]
-			(011) jeq      #0xfcca          jt 22	jf 12
-			(012) ldb      [16]
-			(013) and      #0x7
-			(014) jeq      #0x6             jt 15	jf 17
-			(015) ldh      [23]
-			(016) jeq      #0xfcca          jt 22	jf 17
-			(017) ldh      [16]
-			(018) and      #0xff07
-			(019) jeq      #0x8106          jt 20	jf 23
-			(020) ldh      [24]
-			(021) jeq      #0xfcca          jt 22	jf 23
-			(022) ret      #262144
-			(023) ret      #0
+			(001) jeq      #0x6003          jt 2	jf 19
+			(002) ld       [16]
+			(003) and      #0x7ffff00
+			(004) jeq      #0x2fcca00       jt 18	jf 5
+			(005) ld       [16]
+			(006) and      #0xff07ffff
+			(007) jeq      #0x8102fcca      jt 18	jf 8
+			(008) ldb      [16]
+			(009) and      #0x7
+			(010) jeq      #0x6             jt 11	jf 13
+			(011) ldh      [23]
+			(012) jeq      #0xfcca          jt 18	jf 13
+			(013) ldh      [16]
+			(014) and      #0xff07
+			(015) jeq      #0x8106          jt 16	jf 19
+			(016) ldh      [24]
+			(017) jeq      #0xfcca          jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
 			EOF
 	}, # decnet_dst_host
 

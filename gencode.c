@@ -5066,9 +5066,14 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	 * the header.  "Short header" means bits 0-2 of the bitmap encode the
 	 * integer value 2 (SFDP), and "long header" means value 6 (LFDP).
 	 *
+	 * To test PLENGTH and FLAGS, use multiple-byte constants with the
+	 * values and the masks, this maps to the required single bytes of
+	 * the message correctly on both big-endian and little-endian hosts.
 	 * For the DECnet address use SWAPSHORT(), which always swaps bytes,
-	 * because the wire encoding is little-endian and this function always
-	 * receives a big-endian address value.
+	 * because the wire encoding is little-endian and BPF multiple-byte
+	 * loads are big-endian.  When the destination address is near enough
+	 * to PLENGTH and FLAGS, generate one 32-bit comparison instead of two
+	 * smaller ones.
 	 */
 	/* Check for pad = 1, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
@@ -5082,16 +5087,28 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
-	b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
-	    SWAPSHORT(addr));
-	gen_and(tmp, b2);
+	if (dir == Q_DST) {
+		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
+		    0x81020000U | SWAPSHORT(addr),
+		    0xFF07FFFFU);
+	} else {
+		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
+		b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
+		    SWAPSHORT(addr));
+		gen_and(tmp, b2);
+	}
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
-	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
-	    SWAPSHORT(addr));
-	gen_and(tmp, b2);
+	if (dir == Q_DST) {
+		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
+		    0x02000000U | SWAPSHORT(addr) << 8,
+		    0x07FFFF00U);
+	} else {
+		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
+		b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
+		    SWAPSHORT(addr));
+		gen_and(tmp, b2);
+	}
 	gen_or(b2, b1);
 
 	return b1;
