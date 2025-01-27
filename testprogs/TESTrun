@@ -3809,6 +3809,54 @@ my %accept_blocks = (
 			(042) ret      #262144
 			(043) ret      #0
 			EOF
+		unopt => <<~'EOF',
+			(000) ldh      [12]
+			(001) jeq      #0x6003          jt 2	jf 22
+			(002) ldb      [16]
+			(003) and      #0x7
+			(004) jeq      #0x2             jt 5	jf 7
+			(005) ldh      [19]
+			(006) jeq      #0xfcca          jt 44	jf 7
+			(007) ldh      [16]
+			(008) and      #0xff07
+			(009) jeq      #0x8102          jt 10	jf 12
+			(010) ldh      [20]
+			(011) jeq      #0xfcca          jt 44	jf 12
+			(012) ldb      [16]
+			(013) and      #0x7
+			(014) jeq      #0x6             jt 15	jf 17
+			(015) ldh      [31]
+			(016) jeq      #0xfcca          jt 44	jf 17
+			(017) ldh      [16]
+			(018) and      #0xff07
+			(019) jeq      #0x8106          jt 20	jf 22
+			(020) ldh      [32]
+			(021) jeq      #0xfcca          jt 44	jf 22
+			(022) ldh      [12]
+			(023) jeq      #0x6003          jt 24	jf 45
+			(024) ldb      [16]
+			(025) and      #0x7
+			(026) jeq      #0x2             jt 27	jf 29
+			(027) ldh      [17]
+			(028) jeq      #0xfcca          jt 44	jf 29
+			(029) ldh      [16]
+			(030) and      #0xff07
+			(031) jeq      #0x8102          jt 32	jf 34
+			(032) ldh      [18]
+			(033) jeq      #0xfcca          jt 44	jf 34
+			(034) ldb      [16]
+			(035) and      #0x7
+			(036) jeq      #0x6             jt 37	jf 39
+			(037) ldh      [23]
+			(038) jeq      #0xfcca          jt 44	jf 39
+			(039) ldh      [16]
+			(040) and      #0xff07
+			(041) jeq      #0x8106          jt 42	jf 45
+			(042) ldh      [24]
+			(043) jeq      #0xfcca          jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			EOF
 	}, # decnet_host
 	decnet_src_host => {
 		DLT => 'EN10MB',
