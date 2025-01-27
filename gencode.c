@@ -5070,7 +5070,6 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	 * because the wire encoding is little-endian and this function always
 	 * receives a big-endian address value.
 	 */
-	b0 = gen_linktype(cstate, ETHERTYPE_DN);
 	/* Check for pad = 1, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
 	b1 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_lh,
@@ -5095,8 +5094,6 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
-	/* Combine with test for cstate->linktype */
-	gen_and(b0, b1);
 	return b1;
 }
 
@@ -5197,7 +5194,10 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		bpf_error(cstate, "AppleTalk host filtering not implemented");
 
 	case Q_DECNET:
-		return gen_dnhostop(cstate, addr, dir);
+		b0 = gen_linktype(cstate, ETHERTYPE_DN);
+		b1 = gen_dnhostop(cstate, addr, dir);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_LAT:
 		bpf_error(cstate, "LAT host filtering not implemented");
