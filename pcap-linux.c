@@ -5482,10 +5482,14 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 		}
 	}
 
+	/*
+	 * Not an error. We don't know how to decode all DSA tag formats,
+	 * but we shouldn't give up on the packet.
+	 */
 	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		      "unsupported DSA tag: %s", buf);
+		 "unsupported DSA tag: %s", buf);
 
-	return PCAP_ERROR;
+	return 0;
 }
 
 /*
