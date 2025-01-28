@@ -653,9 +653,9 @@ my %accept_blocks = (
 			'dpc (0x31d6 or 0x31d6)',
 		],
 		opt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jeq      #0xd6310000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jeq      #0xd631          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -664,9 +664,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc > 0x1273',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jgt      #0x73120000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jgt      #0x7312          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -675,9 +675,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc >= 0x1273',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jge      #0x73120000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jge      #0x7312          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -686,9 +686,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc <= 0x1273',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jgt      #0x73120000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jgt      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -697,9 +697,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc < 0x1273',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jge      #0x73120000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jge      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -708,9 +708,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc != 0x1273',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jeq      #0x73120000      jt 3	jf 4
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jeq      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -719,15 +719,15 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'dpc (0x1274 or 0x1275 or 0x1276)',
 		unopt => <<~'EOF',
-			(000) ld       [4]
-			(001) and      #0xff3f0000
-			(002) jeq      #0x74120000      jt 9	jf 3
-			(003) ld       [4]
-			(004) and      #0xff3f0000
-			(005) jeq      #0x75120000      jt 9	jf 6
-			(006) ld       [4]
-			(007) and      #0xff3f0000
-			(008) jeq      #0x76120000      jt 9	jf 10
+			(000) ldh      [4]
+			(001) and      #0xff3f
+			(002) jeq      #0x7412          jt 9	jf 3
+			(003) ldh      [4]
+			(004) and      #0xff3f
+			(005) jeq      #0x7512          jt 9	jf 6
+			(006) ldh      [4]
+			(007) and      #0xff3f
+			(008) jeq      #0x7612          jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
 			EOF
@@ -1033,9 +1033,9 @@ my %accept_blocks = (
 			'hdpc (0x0ab5 or 0x0ab5)',
 		],
 		opt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jeq      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jeq      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -1044,9 +1044,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc > 0x0ab5',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jgt      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jgt      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -1055,9 +1055,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc >= 0x0ab5',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jge      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jge      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
 			EOF
@@ -1066,9 +1066,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc <= 0x0ab5',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jgt      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jgt      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -1077,9 +1077,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc < 0x0ab5',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jge      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jge      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -1088,9 +1088,9 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc != 0x0ab5',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jeq      #0xb50a0000      jt 3	jf 4
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jeq      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
 			EOF
@@ -1099,15 +1099,15 @@ my %accept_blocks = (
 		DLT => 'MTP2',
 		expr => 'hdpc (0x0ab6 or 0x0ab7 or 0x0ab8)',
 		unopt => <<~'EOF',
-			(000) ld       [7]
-			(001) and      #0xff3f0000
-			(002) jeq      #0xb60a0000      jt 9	jf 3
-			(003) ld       [7]
-			(004) and      #0xff3f0000
-			(005) jeq      #0xb70a0000      jt 9	jf 6
-			(006) ld       [7]
-			(007) and      #0xff3f0000
-			(008) jeq      #0xb80a0000      jt 9	jf 10
+			(000) ldh      [7]
+			(001) and      #0xff3f
+			(002) jeq      #0xb60a          jt 9	jf 3
+			(003) ldh      [7]
+			(004) and      #0xff3f
+			(005) jeq      #0xb70a          jt 9	jf 6
+			(006) ldh      [7]
+			(007) and      #0xff3f
+			(008) jeq      #0xb80a          jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
 			EOF

@@ -10451,12 +10451,19 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	return b0;
 }
 
+/*
+ * These maximum valid values are all-ones, so they double as the bitmasks
+ * before any bitwise shifting.
+ */
+#define MTP2_SIO_MAXVAL UINT8_MAX
+#define MTP3_PC_MAXVAL 0x3fffU
+#define MTP3_SLS_MAXVAL 0xfU
+
 static struct block *
 gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
     bpf_u_int32 jvalue, int jtype, int reverse)
 {
 	struct block *b0;
-	bpf_u_int32 val1 , val2 , val3;
 	u_int newoff_sio;
 	u_int newoff_opc;
 	u_int newoff_dpc;
@@ -10468,6 +10475,13 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	newoff_sls = cstate->off_sls;
 	switch (mtp3field) {
 
+	/*
+	 * See UTU-T Rec. Q.703, Section 2.2, Figure 3/Q.703.
+	 *
+	 * SIO is the simplest field: the size is one byte and the offset is a
+	 * multiple of bytes, so the only detail to get right is the value of
+	 * the [right-to-left] field offset.
+	 */
 	case MH_SIO:
 		newoff_sio += 3; /* offset for MTP2_HSL */
 		/* FALLTHROUGH */
@@ -10475,14 +10489,43 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_SIO:
 		if (cstate->off_sio == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sio' supported only on SS7");
-		/* sio coded on 1 byte so max value 255 */
-		if(jvalue > 255)
-			bpf_error(cstate, "sio value %u too big; max value = 255",
-			    jvalue);
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, 0xffffffffU,
+		if(jvalue > MTP2_SIO_MAXVAL)
+			bpf_error(cstate, "sio value %u too big; max value = %u",
+			    jvalue, MTP2_SIO_MAXVAL);
+		// Here the bitmask means "do not apply a bitmask".
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
 		    jtype, reverse, jvalue);
 		break;
 
+	/*
+	 * See UTU-T Rec. Q.704, Section 2.2, Figure 3/Q.704.
+	 *
+	 * SLS, OPC and DPC are more complicated: none of these is sized in a
+	 * multiple of 8 bits, MTP3 encoding is little-endian and MTP packet
+	 * diagrams are meant to be read right-to-left.  This means in the
+	 * diagrams within individual fields and concatenations thereof
+	 * bitwise shifts and masks can be noted in the common left-to-right
+	 * manner until each final value is ready to be byte-swapped and
+	 * handed to gen_ncmp().  See also gen_dnhostop(), which solves a
+	 * similar problem in a similar way.
+	 *
+	 * Offsets of fields within the packet header always have the
+	 * right-to-left meaning.  Note that in DLT_MTP2 and possibly other
+	 * DLTs the offset does not include the F (Flag) field at the
+	 * beginning of each message.
+	 *
+	 * For example, if the 8-bit SIO field has a 3 byte [RTL] offset, the
+	 * 32-bit standard routing header has a 4 byte [RTL] offset and could
+	 * be tested entirely using a single BPF_W comparison.  In this case
+	 * the 14-bit DPC field [LTR] bitmask would be 0x3FFF, the 14-bit OPC
+	 * field [LTR] bitmask would be (0x3FFF << 14) and the 4-bit SLS field
+	 * [LTR] bitmask would be (0xF << 28), all of which conveniently
+	 * correlates with the [RTL] packet diagram until the byte-swapping is
+	 * done before use.
+	 *
+	 * The code below uses this approach for OPC, which spans 3 bytes.
+	 * DPC and SLS use shorter loads, SLS also uses a different offset.
+	 */
 	case MH_OPC:
 		newoff_opc += 3;
 
@@ -10490,21 +10533,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_OPC:
 		if (cstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
-		/* opc coded on 14 bits so max value 16383 */
-		if (jvalue > 16383)
-			bpf_error(cstate, "opc value %u too big; max value = 16383",
-			    jvalue);
-		/* the following instructions are made to convert jvalue
-		 * to the form used to write opc in an ss7 message*/
-		val1 = jvalue & 0x00003c00;
-		val1 = val1 >>10;
-		val2 = jvalue & 0x000003fc;
-		val2 = val2 <<6;
-		val3 = jvalue & 0x00000003;
-		val3 = val3 <<22;
-		jvalue = val1 + val2 + val3;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W, 0x00c0ff0fU,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_PC_MAXVAL)
+			bpf_error(cstate, "opc value %u too big; max value = %u",
+			    jvalue, MTP3_PC_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
+		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
+		    SWAPLONG(jvalue << 14));
 		break;
 
 	case MH_DPC:
@@ -10514,19 +10548,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_DPC:
 		if (cstate->off_dpc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'dpc' supported only on SS7");
-		/* dpc coded on 14 bits so max value 16383 */
-		if (jvalue > 16383)
-			bpf_error(cstate, "dpc value %u too big; max value = 16383",
-			    jvalue);
-		/* the following instructions are made to convert jvalue
-		 * to the forme used to write dpc in an ss7 message*/
-		val1 = jvalue & 0x000000ff;
-		val1 = val1 << 24;
-		val2 = jvalue & 0x00003f00;
-		val2 = val2 << 8;
-		jvalue = val1 + val2;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_W, 0xff3f0000U,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_PC_MAXVAL)
+			bpf_error(cstate, "dpc value %u too big; max value = %u",
+			    jvalue, MTP3_PC_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
+		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
+		    SWAPSHORT(jvalue));
 		break;
 
 	case MH_SLS:
@@ -10536,15 +10563,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_SLS:
 		if (cstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
-		/* sls coded on 4 bits so max value 15 */
-		if (jvalue > 15)
-			 bpf_error(cstate, "sls value %u too big; max value = 15",
-			     jvalue);
-		/* the following instruction is made to convert jvalue
-		 * to the forme used to write sls in an ss7 message*/
-		jvalue = jvalue << 4;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B, 0xf0U,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_SLS_MAXVAL)
+			 bpf_error(cstate, "sls value %u too big; max value = %u",
+			     jvalue, MTP3_SLS_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
+		    MTP3_SLS_MAXVAL << 4, jtype, reverse,
+		    jvalue << 4);
 		break;
 
 	default:
