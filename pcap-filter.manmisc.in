@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "13 January 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "28 January 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1365,15 +1365,21 @@ and
 .B hsls
 keywords became available in libpcap 1.5.3.
 .PP
+The modulo
+.RB ( % )
+and bitwise XOR
+.RB ( ^ )
+binary operators became available in libpcap 1.6.2.
+.PP
+The
+.B geneve
+keyword became available in libpcap 1.8.0.
+.PP
 The ICMPv6 type code names, as well as the
 .B tcp-ece
 and
 .B tcp-cwr
 TCP flag names became available in libpcap 1.9.0.
-.PP
-The
-.B geneve
-keyword became available in libpcap 1.8.0.
 .PP
 The
 .B ifindex
