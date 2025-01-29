@@ -5834,6 +5834,10 @@ my %reject_tests = (
 # On all platforms where timeout(1) is available it exits with status 124
 # if the command timed out.
 use constant TIMED_OUT => 124;
+# In this libpcap version filtertest exits with EX_DATAERR if the user input
+# is invalid and with other status codes for other (memory/file/etc) error
+# conditions.
+use constant EX_DATAERR => 65;
 
 my $tmpdir = File::Temp->newdir ('libpcap_TESTrun_XXXXXXXX', TMPDIR => 1); # Unlinks automatically.
 my $filename_expected = 'expected.txt';
@@ -5926,10 +5930,8 @@ sub print_result {
 	printf "    %-40s: %s\n", @_;
 }
 
-# In this libpcap version a working filtertest, if invoked without arguments,
-# prints to stderr and exits with status 1.
-my $r = system ("$filtertest >/dev/null 2>&1") >> 8;
-if ($r != 1) {
+# In this libpcap version "filtertest -h" prints to stdout and exits normally.
+if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
 	# Make it easier to see what the problem is.
 	system $filtertest;
 	print STDERR "ERROR: $filtertest is not usable\n";
@@ -5981,7 +5983,7 @@ sub run_accept_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1"
 	);
-	$r = system (join ' ', @args) >> 8;
+	my $r = system (join ' ', @args) >> 8;
 
 	return {
 		char => CHAR_TIMED_OUT,
@@ -6022,7 +6024,7 @@ sub run_reject_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
-	$r = system (join ' ', @args) >> 8;
+	my $r = system (join ' ', @args) >> 8;
 
 	return {
 		char => CHAR_FAILED,
@@ -6043,7 +6045,7 @@ sub run_reject_test {
 			reason => "filtertest status $r",
 			details => file_get_contents mytmpfile $filename_stdout
 		}
-	} if $r != 1;
+	} if $r != EX_DATAERR;
 
 	return {
 		char => CHAR_FAILED,
