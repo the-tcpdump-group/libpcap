@@ -226,13 +226,13 @@ main(int argc, char **argv)
 	int gflag = 0;
 #endif
 	char *infile = NULL;
+	char *insavefile = NULL;
 	int Oflag = 1;
 #ifdef LINUX_BPF_EXT
 	int lflag = 0;
 #endif
 	int snaplen = MAXIMUM_SNAPLEN;
 	char *p;
-	int dlt;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 	char *cmdbuf;
 	pcap_t *pd;
@@ -250,7 +250,7 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "hdF:gm:Os:l")) != -1) {
+	while ((op = getopt(argc, argv, "hdF:gm:Os:lr:")) != -1) {
 		switch (op) {
 
 		case 'h':
@@ -271,6 +271,10 @@ main(int argc, char **argv)
 
 		case 'F':
 			infile = optarg;
+			break;
+
+		case 'r':
+			insavefile = optarg;
 			break;
 
 		case 'O':
@@ -329,38 +333,54 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (optind >= argc) {
-		usage(stderr);
-		/* NOTREACHED */
-	}
+	if (insavefile) {
+		if (dflag > 1)
+			warn("-d is a no-op with -r");
+#ifdef BDEBUG
+		if (gflag)
+			warn("-g is a no-op with -r");
+#endif
+#ifdef LINUX_BPF_EXT
+		if (lflag)
+			warn("-l is a no-op with -r");
+#endif
 
-	dlt = pcap_datalink_name_to_val(argv[optind]);
-	if (dlt < 0) {
-		dlt = (int)strtol(argv[optind], &p, 10);
-		if (p == argv[optind] || *p != '\0')
-			error(EX_DATAERR, "invalid data link type %s", argv[optind]);
+		char errbuf[PCAP_ERRBUF_SIZE];
+		if (NULL == (pd = pcap_open_offline(insavefile, errbuf)))
+			error(EX_NOINPUT, "Failed opening: %s", errbuf);
+	} else {
+		// Must have at least one command-line argument for the DLT.
+		if (optind >= argc) {
+			usage(stderr);
+			/* NOTREACHED */
+		}
+		int dlt = pcap_datalink_name_to_val(argv[optind]);
+		if (dlt < 0) {
+			dlt = (int)strtol(argv[optind], &p, 10);
+			if (p == argv[optind] || *p != '\0')
+				error(EX_DATAERR, "invalid data link type %s", argv[optind]);
+		}
+		optind++;
+
+		pd = pcap_open_dead(dlt, snaplen);
+		if (pd == NULL)
+			error(EX_SOFTWARE, "Can't open fake pcap_t");
+#ifdef LINUX_BPF_EXT
+		if (lflag) {
+			pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+			pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+		}
+#endif
+#ifdef BDEBUG
+		pcap_set_optimizer_debug(dflag);
+		pcap_set_print_dot_graph(gflag);
+#endif
 	}
 
 	if (infile)
 		cmdbuf = read_infile(infile);
 	else
-		cmdbuf = copy_argv(&argv[optind+1]);
-
-#ifdef BDEBUG
-	pcap_set_optimizer_debug(dflag);
-	pcap_set_print_dot_graph(gflag);
-#endif
-
-	pd = pcap_open_dead(dlt, snaplen);
-	if (pd == NULL)
-		error(EX_SOFTWARE, "Can't open fake pcap_t");
-
-#ifdef LINUX_BPF_EXT
-	if (lflag) {
-		pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
-		pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
-	}
-#endif
+		cmdbuf = copy_argv(&argv[optind]);
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error(EX_DATAERR, "%s", pcap_geterr(pd));
@@ -368,8 +388,8 @@ main(int argc, char **argv)
 	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
 		warn("Filter doesn't pass validation");
 
+	if (! insavefile) {
 #ifdef BDEBUG
-	if (cmdbuf != NULL) {
 		// replace line feed with space
 		for (cp = cmdbuf; *cp != '\0'; ++cp) {
 			if (*cp == '\r' || *cp == '\n') {
@@ -378,11 +398,21 @@ main(int argc, char **argv)
 		}
 		// only show machine code if BDEBUG defined, since dflag > 3
 		printf("machine codes for filter: %s\n", cmdbuf);
-	} else
-		printf("machine codes for empty filter:\n");
 #endif
-
-	bpf_dump(&fcode, dflag);
+		bpf_dump(&fcode, dflag);
+	} else {
+		struct pcap_pkthdr *h;
+		const u_char *d;
+		int ret;
+		while (PCAP_ERROR_BREAK != (ret = pcap_next_ex(pd, &h, &d))) {
+			if (ret == PCAP_ERROR)
+				error(EX_IOERR, "pcap_next_ex() failed: %s", pcap_geterr(pd));
+			if (ret == 1)
+				printf("%d\n", pcap_offline_filter(&fcode, h, d));
+			else
+				error(EX_IOERR, "pcap_next_ex() failed: %d", ret);
+		}
+	}
 	free(cmdbuf);
 	pcap_freecode (&fcode);
 	pcap_close(pd);
@@ -409,6 +439,10 @@ usage(FILE *f)
 	    "] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expr ]\n",
 	    program_name);
 	(void)fprintf(f, "       (print the filter program bytecode)\n");
+	(void)fprintf(f,
+	    "  or:  %s [-O] [ -F file ] [ -m netmask] -r file [ expression ]\n",
+	    program_name);
+	(void)fprintf(f, "       (print the filter program result for each packet)\n");
 	(void)fprintf(f, "  or:  %s -h\n", program_name);
 	(void)fprintf(f, "       (print the detailed help screen)\n");
 	if (f == stdout) {
@@ -428,6 +462,7 @@ usage(FILE *f)
 		(void)fprintf(f, "  -O              do not optimize the filter program\n");
 		(void)fprintf(f, "  -F <file>       read the filter expression from the specified file\n");
 		(void)fprintf(f, "  -s <snaplen>    set the snapshot length\n");
+		(void)fprintf(f, "  -r <file>       read the packets from this savefile\n");
 		(void)fprintf(f, "\nIf no filter expression is specified, it defaults to an empty string, which\n");
 		(void)fprintf(f, "accepts all packets.  If the -F option is in use, it replaces any filter\n");
 		(void)fprintf(f, "expression specified as a command-line argument.\n");

@@ -56,6 +56,8 @@ BEGIN {
 	require $FindBin::RealBin . '/TEST' . ($Config{useithreads} ? 'mt' : 'st') . '.pm';
 }
 
+use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
+
 # When using threads, STDOUT becomes line-buffered on TTYs, which is not good
 # for interactive progress monitoring.
 STDOUT->autoflush (1) if $Config{useithreads} && -t STDOUT;
@@ -5557,6 +5559,235 @@ my %accept_blocks = (
 	}, # dst_portrange_degenerate
 );
 
+# In apply_blocks the top-level keys are test block names.  Each test block
+# always generates two tests: optimized and unoptimized.  (Small tests often
+# produce short bytecode that is already optimal, in which case testing the
+# "optimized" version again is a duplicate work.  However, it is not clear yet
+# what would be the right way to avoid the duplicate work without creating
+# gaps in the test coverage.)  The top-level values are in turn hashes, where
+# the keys have the following meaning:
+#
+# * savefile (mandatory, string): the file in tests/filter/ to use with
+#   "filtertest -r", this should not have too many packets
+# * expr (mandatory, string): the filter expression
+# * results (mandatory, array): the list of program filter results to expect
+my %apply_blocks = (
+	pppoed_nullary_on_ctp => {
+		savefile => 'loopback.pcap',
+		expr => 'pppoed',
+		results => [0, 0, 0, 0, 0, 0],
+	},
+	pppoed_nullary_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'pppoed',
+		results => [1508],
+	},
+	pppoed_nullary_on_pppoes => {
+		savefile => 'pppoes.pcap',
+		expr => 'pppoed',
+		results => [0, 0],
+	},
+	pppoes_nullary_on_ctp => {
+		savefile => 'loopback.pcap',
+		expr => 'pppoes',
+		results => [0, 0, 0, 0, 0, 0],
+	},
+	pppoes_nullary_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'pppoes',
+		results => [0],
+	},
+	pppoes_nullary_on_pppoes => {
+		savefile => 'pppoes.pcap',
+		expr => 'pppoes',
+		results => [2000, 2000],
+	},
+	pppoes_unary_on_ctp => {
+		savefile => 'loopback.pcap',
+		expr => 'pppoes 0x3b',
+		results => [0, 0, 0, 0, 0, 0],
+	},
+	pppoes_unary_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'pppoes 0x3b',
+		results => [0],
+	},
+	pppoes_unary_on_pppoes => {
+		savefile => 'pppoes.pcap',
+		expr => 'pppoes 0x3b',
+		results => [0, 2000],
+	},
+	decnet_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet',
+		results => [0],
+	},
+	decnet_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet',
+		# This tests EtherType, so every packet matches.
+		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	decnet_src_1_1_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet src 1.1',
+		results => [0],
+	},
+	decnet_dst_1_1_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet dst 1.1',
+		results => [0],
+	},
+
+	# This tests a DECnet address, which in the current implementation works
+	# for data packets only.  The first packet is an Ethernet Endnode Hello
+	# message, so it does not match even though the packet is from node 1.1.
+	decnet_src_1_1_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet src 1.1',
+		results => [0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	decnet_dst_1_1_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet dst 1.1',
+		results => [0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	decnet_src_not_1_1_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet src not 1.1',
+		results => [65535, 0, 0, 0, 0, 0, 0, 0],
+	},
+	decnet_dst_not_1_1_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet dst not 1.1',
+		results => [65535, 0, 0, 0, 0, 0, 0, 0],
+	},
+
+	# The first result is correct from a formal point of view, but the actual
+	# reason is the same as above.
+	decnet_src_63_1023_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet src 63.1023',
+		results => [0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	decnet_dst_63_1023_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet dst 63.1023',
+		results => [0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	decnet_src_not_63_1023_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet src not 63.1023',
+		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	decnet_dst_not_63_1023_on_decnet => {
+		savefile => 'decnet.pcap',
+		expr => 'decnet dst not 63.1023',
+		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+
+	# The meaning of this expression is NOT the intuitive "any DECnet packets
+	# that do not have the source address set to 1.1", but this is not
+	# specific to DECnet.  Let's test it anyway.
+	decnet_src_not_1_1_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet src not 1.1',
+		results => [1508],
+	},
+	decnet_dst_not_1_1_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet dst not 1.1',
+		results => [1508],
+	},
+	decnet_src_not_63_1023_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet src not 63.1023',
+		results => [1508],
+	},
+	decnet_dst_not_63_1023_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet dst not 63.1023',
+		results => [1508],
+	},
+
+	decnet_src_63_1023_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet src 63.1023',
+		results => [0],
+	},
+	decnet_dst_63_1023_on_pppoed => {
+		savefile => 'pppoe.pcap',
+		expr => 'decnet src 63.1023',
+		results => [0],
+	},
+
+	dpc_eq_1 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc == 1',
+		results => [0, 279, 0, 279, 279, 0, 279, 0, 279, 0],
+	},
+	dpc_lt_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc < 2',
+		results => [0, 279, 0, 279, 279, 0, 279, 0, 279, 0],
+	},
+	dpc_eq_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc == 2',
+		results => [279, 0, 279, 0, 0, 279, 0, 279, 0, 279],
+	},
+	dpc_gt_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc > 2',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	dpc_le_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc <= 2',
+		results => [279, 279, 279, 279, 279, 279, 279, 279, 279, 279],
+	},
+	dpc_ne_0 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'dpc != 0',
+		results => [279, 279, 279, 279, 279, 279, 279, 279, 279, 279],
+	},
+	opc_eq_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'opc == 2',
+		results => [0, 279, 0, 279, 279, 0, 279, 0, 279, 0],
+	},
+	opc_ge_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'opc >= 2',
+		results => [0, 279, 0, 279, 279, 0, 279, 0, 279, 0],
+	},
+	opc_gt_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'opc > 2',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	opc_le_2 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'opc <= 2',
+		results => [279, 279, 279, 279, 279, 279, 279, 279, 279, 279],
+	},
+	opc_ne_0 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'opc != 0',
+		results => [279, 279, 279, 279, 279, 279, 279, 279, 279, 279],
+	},
+	sls_eq_9 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'sls == 9',
+		results => [279, 279, 279, 279, 279, 279, 279, 279, 279, 279],
+	},
+	sls_ne_9 => {
+		savefile => 'isup_load_generator.pcap',
+		expr => 'sls != 9',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+);
+
 # * DLT, expr and skip: same as in accept_blocks above
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
@@ -5948,6 +6179,11 @@ sub accept_alias_label {
 	return "${label} (alias ${index})";
 }
 
+sub apply_test_label {
+	my ($name, $type) = @_;
+	return "apply_${name}_${type}";
+}
+
 sub reject_test_label {
 	my $name = shift;
 	return "reject_${name}";
@@ -5961,30 +6197,8 @@ use constant {
 	CHAR_TIMED_OUT => 'T',
 };
 
-sub run_accept_test {
-	my %test = @_;
-	# BSD timeout(1) does not implement --verbose.
-	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-	push @args, $filtertest;
-	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
-	push @args, '-O' unless $test{optimize};
-	push @args, '-l' if $test{linuxext};
-	# Write the filter expression to a file because the version of
-	# system() that takes a list does not support redirecting stdout,
-	# and the version of system() that takes a string does not escape
-	# special characters in the filter expression, which becomes
-	# invalid shell syntax.
-	file_put_contents mytmpfile ($filename_filter), $test{expr};
-	file_put_contents mytmpfile ($filename_expected), $test{expected};
-	push @args, (
-		'-F',
-		mytmpfile ($filename_filter),
-		$test{DLT},
-		'>' . mytmpfile ($filename_stdout),
-		"2>&1"
-	);
-	my $r = system (join ' ', @args) >> 8;
-
+sub validate_stdout_test {
+	my $r = system (join ' ', @_) >> 8;
 	return {
 		char => CHAR_TIMED_OUT,
 		failure => {reason => 'filtertest timeout'}
@@ -6010,6 +6224,49 @@ sub run_accept_test {
 		mytmpfile ($filename_diags);
 
 	return {char => CHAR_PASSED};
+}
+
+sub run_accept_test {
+	my %test = @_;
+	# BSD timeout(1) does not implement --verbose.
+	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
+	push @args, $filtertest;
+	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
+	push @args, '-O' unless $test{optimize};
+	push @args, '-l' if $test{linuxext};
+	# Write the filter expression to a file because the version of
+	# system() that takes a list does not support redirecting stdout,
+	# and the version of system() that takes a string does not escape
+	# special characters in the filter expression, which becomes
+	# invalid shell syntax.
+	file_put_contents mytmpfile ($filename_filter), $test{expr};
+	file_put_contents mytmpfile ($filename_expected), $test{expected};
+	push @args, (
+		'-F',
+		mytmpfile ($filename_filter),
+		$test{DLT},
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1"
+	);
+	return validate_stdout_test @args;
+}
+
+sub run_apply_test {
+	my %test = @_;
+	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
+	push @args, $filtertest;
+	push @args, '-O' unless $test{optimize};
+	file_put_contents mytmpfile ($filename_filter), $test{expr};
+	file_put_contents mytmpfile ($filename_expected), $test{expected};
+	push @args, (
+		'-F',
+		mytmpfile ($filename_filter),
+		'-r',
+		SAVEFILE_DIR . $test{savefile},
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1"
+	);
+	return validate_stdout_test @args;
 }
 
 sub run_reject_test {
@@ -6129,6 +6386,25 @@ foreach my $testname (sort keys %accept_blocks) {
 				}
 			}
 		}
+	}
+}
+foreach my $blockname (sort keys %apply_blocks) {
+	my $block = $apply_blocks{$blockname};
+	foreach ('savefile', 'expr', 'results') {
+		next if defined $block->{$_};
+		die "Internal error: apply test block '$blockname' does not define key '$_'";
+	}
+	foreach my $optunopt ('unopt', 'opt') {
+		my $lines = '';
+		$lines .= $block->{results}[$_] . "\n" for (0 .. $block->{results}->$#*);
+		push @ready_to_run, {
+			label => apply_test_label ($blockname, $optunopt),
+			func => \&run_apply_test,
+			optimize => int ($optunopt eq 'opt'),
+			expr => $block->{expr},
+			expected => $lines,
+			savefile => $block->{savefile},
+		};
 	}
 }
 foreach my $testname (sort keys %reject_tests) {
