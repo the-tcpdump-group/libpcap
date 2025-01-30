@@ -713,7 +713,7 @@ my %accept_blocks = (
 			(004) ret      #262144
 			EOF
 	}, # mtp3_dpc_ne
-	mtp2_dpc_nary => {
+	mtp3_dpc_nary => {
 		DLT => 'MTP2',
 		expr => 'dpc (0x1274 or 0x1275 or 0x1276)',
 		unopt => <<~'EOF',
@@ -729,7 +729,7 @@ my %accept_blocks = (
 			(009) ret      #262144
 			(010) ret      #0
 			EOF
-	}, # mtp2_dpc_nary
+	}, # mtp3_dpc_nary
 	mtp3_opc => {
 		DLT => 'MTP2',
 		expr => 'opc 0x3b35',
@@ -1009,7 +1009,7 @@ my %accept_blocks = (
 			(003) ret      #262144
 			EOF
 	}, # mtp2_hsio_ne
-	mtp3_hsio_nary => {
+	mtp2_hsio_nary => {
 		DLT => 'MTP2',
 		expr => 'hsio (0x42 or 0x43 or 0x44)',
 		opt => <<~'EOF',
@@ -1020,7 +1020,7 @@ my %accept_blocks = (
 			(004) ret      #262144
 			(005) ret      #0
 			EOF
-	}, # mtp3_hsio_nary
+	}, # mtp2_hsio_nary
 	mtp3_hdpc => {
 		DLT => 'MTP2',
 		expr => 'hdpc 0x0ab5',
@@ -5582,17 +5582,17 @@ my %reject_tests = (
 		expr => 'sio 256',
 		errstr => 'too big',
 	},
-	mtp2_dpc => {
+	mtp3_dpc => {
 		DLT => 'MTP2',
 		expr => 'dpc 16384',
 		errstr => 'too big',
 	},
-	mtp2_opc => {
+	mtp3_opc => {
 		DLT => 'MTP2',
 		expr => 'opc 16384',
 		errstr => 'too big',
 	},
-	mtp2_sls => {
+	mtp3_sls => {
 		DLT => 'MTP2',
 		expr => 'sls 16',
 		errstr => 'too big',
@@ -5602,17 +5602,17 @@ my %reject_tests = (
 		expr => 'hsio 256',
 		errstr => 'too big',
 	},
-	mtp2_hdpc => {
+	mtp3_hdpc => {
 		DLT => 'MTP2',
 		expr => 'hdpc 16384',
 		errstr => 'too big',
 	},
-	mtp2_hopc => {
+	mtp3_hopc => {
 		DLT => 'MTP2',
 		expr => 'hopc 16384',
 		errstr => 'too big',
 	},
-	mtp2_hsls => {
+	mtp3_hsls => {
 		DLT => 'MTP2',
 		expr => 'hsls 16',
 		errstr => 'too big',
@@ -5936,19 +5936,19 @@ if ($r != 1) {
 	exit 2;
 }
 
-sub valid_test_label {
+sub accept_test_label {
 	my ($name, $type) = @_;
-	return "valid_${name}_${type}";
+	return "accept_${name}_${type}";
 }
 
-sub valid_alias_label {
+sub accept_alias_label {
 	my ($label, $index) = @_;
 	return "${label} (alias ${index})";
 }
 
-sub invalid_test_label {
+sub reject_test_label {
 	my $name = shift;
-	return "invalid_${name}";
+	return "reject_${name}";
 }
 
 # The characters are inspired by PHPUnit format, but are not exactly the same.
@@ -6087,7 +6087,7 @@ foreach my $testname (sort keys %accept_blocks) {
 	}
 	foreach my $optunopt ('unopt', 'opt') {
 		defined $test->{$optunopt} || next;
-		my $label = valid_test_label $testname, $optunopt;
+		my $label = accept_test_label $testname, $optunopt;
 		defined $only_one && $only_one ne $label && next;
 
 		if (defined $test->{skip} && $test->{skip} ne '') {
@@ -6099,7 +6099,7 @@ foreach my $testname (sort keys %accept_blocks) {
 			if (defined $test->{aliases}) {
 				foreach my $i (0 .. $test->{aliases}->$#*) {
 					push @ready_to_run, {
-						label => valid_alias_label ($label, $i),
+						label => accept_alias_label ($label, $i),
 						func => \&run_skip_test,
 						skip => $test->{skip},
 					};
@@ -6119,7 +6119,7 @@ foreach my $testname (sort keys %accept_blocks) {
 			if (defined $test->{aliases}) {
 				foreach my $i (0 .. $test->{aliases}->$#*) {
 					my $alias = {
-						label => valid_alias_label ($label, $i),
+						label => accept_alias_label ($label, $i),
 						expr => $test->{aliases}[$i],
 					};
 					$alias->{$_} = $main->{$_} foreach ('DLT', 'func', 'optimize', 'expected', 'snaplen', 'linuxext');
@@ -6136,7 +6136,7 @@ foreach my $testname (sort keys %reject_tests) {
 			die "Internal error: reject test '$testname' does not define key '$_'";
 		}
 	}
-	my $label = invalid_test_label $testname;
+	my $label = reject_test_label $testname;
 	defined $only_one && $only_one ne $label && next;
 
 	if (defined $test->{skip} && $test->{skip} ne '') {
