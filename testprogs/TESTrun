@@ -6508,7 +6508,7 @@ sub validate_stdout_test {
 	return {char => CHAR_PASSED};
 }
 
-sub run_accept_test {
+sub common_filtertest_args {
 	my %test = @_;
 	# BSD timeout(1) does not implement --verbose.
 	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
@@ -6516,6 +6516,12 @@ sub run_accept_test {
 	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
 	push @args, '-O' unless $test{optimize};
 	push @args, '-l' if $test{linuxext};
+	return @args;
+}
+
+sub run_accept_test {
+	my %test = @_;
+	my @args = common_filtertest_args %test;
 	# Write the filter expression to a file because the version of
 	# system() that takes a list does not support redirecting stdout,
 	# and the version of system() that takes a string does not escape
@@ -6535,9 +6541,7 @@ sub run_accept_test {
 
 sub run_apply_test {
 	my %test = @_;
-	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-	push @args, $filtertest;
-	push @args, '-O' unless $test{optimize};
+	my @args = common_filtertest_args %test;
 	file_put_contents mytmpfile ($filename_filter), $test{expr};
 	file_put_contents mytmpfile ($filename_expected), $test{expected};
 	push @args, (
@@ -6553,8 +6557,7 @@ sub run_apply_test {
 
 sub run_reject_test {
 	my %test = @_;
-	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-	push @args, $filtertest;
+	my @args = common_filtertest_args %test;
 	file_put_contents mytmpfile ($filename_filter), $test{expr};
 	push @args, (
 		'-F',
