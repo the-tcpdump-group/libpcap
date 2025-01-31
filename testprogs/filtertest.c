@@ -294,7 +294,8 @@ main(int argc, char **argv)
 				    pcap_strerror(errno));
 
 			case 1:
-				netmask = addr;
+				// inet_pton(): network byte order, pcap_compile(): host byte order.
+				netmask = ntohl(addr);
 				break;
 			}
 			break;

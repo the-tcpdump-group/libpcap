@@ -93,6 +93,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix autotools and CMake issues with snprintf test and sanitizers.
         Fixes issue #1396.
       filtertest: Add "-l" flag to use Linux BPF extensions.
+      filtertest: Use ntohl() on the netmask to fix the -m option.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
