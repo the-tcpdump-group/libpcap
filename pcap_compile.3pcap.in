@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_COMPILE 3PCAP "24 January 2025"
+.TH PCAP_COMPILE 3PCAP "31 January 2025"
 .SH NAME
 pcap_compile \- compile a filter expression
 .SH SYNOPSIS
@@ -46,7 +46,8 @@ struct and is filled in by
 .I optimize
 controls whether optimization on the resulting code is performed.
 .I netmask
-specifies the IPv4 netmask of the network on which packets are being
+specifies the IPv4 netmask (in host byte order) of the network on which
+packets are being
 captured; it is used only when checking for IPv4 broadcast addresses in
 the filter program.  If the netmask of the network on which packets are
 being captured isn't known to the program, or if packets are being

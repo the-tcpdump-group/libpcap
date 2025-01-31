@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOKUPNET 3PCAP "13 March 2024"
+.TH PCAP_LOOKUPNET 3PCAP "31 January 2025"
 .SH NAME
 pcap_lookupnet \- find the IPv4 network number and netmask for a device
 .SH SYNOPSIS
@@ -47,7 +47,7 @@ and
 .I maskp
 are
 .B bpf_u_int32
-pointers.
+pointers, on success both values will be set in network byte order.
 .I errbuf
 is a buffer large enough to hold at least
 .B PCAP_ERRBUF_SIZE
