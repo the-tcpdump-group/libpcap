@@ -116,6 +116,7 @@ sub is_not_linux {
 #   causes the test to skip using the string as the reason
 # * linuxext (optional, int): if defined and is equal to 1, use Linux BPF
 #   extensions.
+# * netmask (optional, string, dotted-quad): the netmask for pcap_compile()
 #
 # At least one of "opt" and "unopt" must be defined in each accept test block.
 
@@ -4093,6 +4094,37 @@ my %accept_blocks = (
 			(004) ret      #0
 			EOF
 	}, # ip_multicast
+	ip_broadcast_30 => {
+		DLT => 'IPV4',
+		netmask => '255.255.255.252',
+		expr => 'ip broadcast',
+		unopt => <<~'EOF',
+			(000) ld       #0x0
+			(001) jeq      #0x0             jt 2	jf 9
+			(002) ld       [16]
+			(003) and      #0x3
+			(004) jeq      #0x0             jt 8	jf 5
+			(005) ld       [16]
+			(006) and      #0x3
+			(007) jeq      #0x3             jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			EOF
+	}, # ip_broadcast_30
+	ip_broadcast_24 => {
+		DLT => 'IPV4',
+		netmask => '255.255.255.0',
+		expr => 'ip broadcast',
+		opt => <<~'EOF',
+			(000) ld       #0x0
+			(001) ld       [16]
+			(002) jset     #0xff            jt 3	jf 6
+			(003) and      #0xff
+			(004) jeq      #0xff            jt 6	jf 5
+			(005) ret      #0
+			(006) ret      #262144
+			EOF
+	}, # ip_broadcast_24
 
 	ip_proto => {
 		DLT => 'EN10MB',
@@ -5799,9 +5831,9 @@ my %accept_blocks = (
 # gaps in the test coverage.)  The top-level values are in turn hashes, where
 # the keys have the following meaning:
 #
+# * expr and netmask: same as in accept_blocks above
 # * savefile (mandatory, string): the file in tests/filter/ to use with
 #   "filtertest -r", this should not have too many packets
-# * expr (mandatory, string): the filter expression
 # * results (mandatory, array): the list of program filter results to expect
 my %apply_blocks = (
 	pppoed_nullary_on_ctp => {
@@ -6038,9 +6070,15 @@ my %apply_blocks = (
 		expr => 'link host not $c0',
 		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 65535],
 	},
+	ip_broadcast => {
+		savefile => 'dhcp-rfc3004.pcap',
+		netmask => '255.255.255.0',
+		expr => 'ip broadcast',
+		results => [262144, 0, 262144, 0],
+	},
 );
 
-# * DLT, expr and skip: same as in accept_blocks above
+# * DLT, expr, netmask and skip: same as in accept_blocks above
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
 #   is what the test expects, rather than some unrelated cause).
@@ -6342,6 +6380,17 @@ my %reject_tests = (
 		expr => 'link host 120',
 		errstr => 'illegal link layer address',
 	},
+	ip_broadcast_implicit => {
+		DLT => 'EN10MB',
+		expr => 'ip broadcast',
+		errstr => "netmask not known, so 'ip broadcast' not supported",
+	},
+	ip_broadcast_explicit => {
+		DLT => 'EN10MB',
+		netmask => '255.255.255.255',
+		expr => 'ip broadcast',
+		errstr => "netmask not known, so 'ip broadcast' not supported",
+	},
 );
 
 # On all platforms where timeout(1) is available it exits with status 124
@@ -6514,6 +6563,7 @@ sub common_filtertest_args {
 	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
 	push @args, $filtertest;
 	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
+	push @args, ('-m', $test{netmask}) if defined $test{netmask};
 	push @args, '-O' unless $test{optimize};
 	push @args, '-l' if $test{linuxext};
 	return @args;
@@ -6654,6 +6704,7 @@ foreach my $testname (sort keys %accept_blocks) {
 				label => $label,
 				func => \&run_accept_test,
 				snaplen => defined $test->{snaplen} ? $test->{snaplen} : undef,
+				netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 				optimize => int ($optunopt eq 'opt'),
 				linuxext => defined $test->{linuxext} && $test->{linuxext} == 1,
 				expected => $test->{$optunopt},
@@ -6685,6 +6736,7 @@ foreach my $blockname (sort keys %apply_blocks) {
 		push @ready_to_run, {
 			label => apply_test_label ($blockname, $optunopt),
 			func => \&run_apply_test,
+			netmask => defined $block->{netmask} ? $block->{netmask} : undef,
 			optimize => int ($optunopt eq 'opt'),
 			expr => $block->{expr},
 			expected => $lines,
@@ -6713,6 +6765,7 @@ foreach my $testname (sort keys %reject_tests) {
 			label => $label,
 			func => \&run_reject_test,
 			DLT => $test->{DLT},
+			netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 			expr => $test->{expr},
 			expected => $test->{errstr},
 		};
