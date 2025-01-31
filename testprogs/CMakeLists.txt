@@ -51,5 +51,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
    CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR
    CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  add_subdirectory(fuzz)
+  if(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/.git)
+     add_subdirectory(fuzz)
+  endif(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/.git)
 endif()
