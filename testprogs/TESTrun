@@ -47,10 +47,10 @@
 use sigtrap qw(die normal-signals);
 use strict;
 use warnings FATAL => qw(uninitialized);
-use File::Temp;
+use File::Temp qw(tempdir);
 
 BEGIN {
-	require 5.26.1; # Ubuntu 18.04
+	require 5.8.4; # Solaris 10
 	use Config;
 	use FindBin;
 	if (defined $ENV{TESTRUN_PERL}) {
@@ -131,9 +131,9 @@ my %accept_blocks = (
 	empty => {
 		DLT => 'EN10MB',
 		expr => '',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ret      #262144
-			EOF
+			',
 	},
 
 	greater => {
@@ -142,12 +142,12 @@ my %accept_blocks = (
 		expr => 'greater 100',
 		aliases => ['len >= 100', 'length >= 100'],
 		# Only the optimized bytecode is equivalent!
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #pktlen
 			(001) jge      #0x64            jt 2	jf 3
 			(002) ret      #200
 			(003) ret      #0
-			EOF
+			',
 	}, # greater
 	less => {
 		DLT => 'RAW',
@@ -155,12 +155,12 @@ my %accept_blocks = (
 		expr => 'less 200',
 		aliases => ['len <= 200', 'length <= 200'],
 		# Only the optimized bytecode is equivalent!
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #pktlen
 			(001) jgt      #0xc8            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #200
-			EOF
+			',
 	}, # less
 
 	link_index_byte => {
@@ -180,12 +180,12 @@ my %accept_blocks = (
 			'tr[5:1] == 0x12',
 			'wlan[5:1] == 0x12',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [5]
 			(001) jeq      #0x12            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # link_index_byte
 	link_index_halfword => {
 		DLT => 'EN10MB',
@@ -198,12 +198,12 @@ my %accept_blocks = (
 			'tr[7:2] == 0x1234',
 			'wlan[7:2] == 0x1234',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [7]
 			(001) jeq      #0x1234          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # link_index_halfword
 	link_index_word => {
 		DLT => 'EN10MB',
@@ -216,12 +216,12 @@ my %accept_blocks = (
 			'tr[10:4] == 0x12345678',
 			'wlan[10:4] == 0x12345678',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [10]
 			(001) jeq      #0x12345678      jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # link_index_word
 
 	icmp_index_icmptype => {
@@ -231,7 +231,7 @@ my %accept_blocks = (
 		# protocol supports index operation.
 		expr => 'icmp[icmptype] != 0xff',
 		aliases => ['icmp[0] != 0xff'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 10
 			(002) ldb      [23]
@@ -243,7 +243,7 @@ my %accept_blocks = (
 			(008) jeq      #0xff            jt 10	jf 9
 			(009) ret      #16000
 			(010) ret      #0
-			EOF
+			',
 	}, # icmp_index_icmptype
 	icmp_index_icmpcode => {
 		DLT => 'EN10MB',
@@ -251,7 +251,7 @@ my %accept_blocks = (
 		# Same as for icmp[icmptype] above.
 		expr => 'icmp[icmpcode] != 0xff',
 		aliases => ['icmp[1] != 0xff'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 10
 			(002) ldb      [23]
@@ -263,7 +263,7 @@ my %accept_blocks = (
 			(008) jeq      #0xff            jt 10	jf 9
 			(009) ret      #16000
 			(010) ret      #0
-			EOF
+			',
 	}, # icmp_index_icmpcode
 	icmp6_index_icmp6type => {
 		DLT => 'IPV6',
@@ -271,7 +271,7 @@ my %accept_blocks = (
 		# Same as for icmp[icmptype] above.
 		expr => 'icmp6[icmp6type] != 0xff',
 		aliases => ['icmp6[0] != 0xff'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #0x0
 			(001) ldb      [6]
 			(002) jeq      #0x3a            jt 3	jf 6
@@ -279,7 +279,7 @@ my %accept_blocks = (
 			(004) jeq      #0xff            jt 6	jf 5
 			(005) ret      #10000
 			(006) ret      #0
-			EOF
+			',
 	}, # icmp6_index_icmp6type
 	icmp6_index_icmp6code => {
 		DLT => 'IPV6',
@@ -287,7 +287,7 @@ my %accept_blocks = (
 		# Same as for icmp[icmptype] above.
 		expr => 'icmp6[icmp6code] != 0xff',
 		aliases => ['icmp6[1] != 0xff'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #0x0
 			(001) ldb      [6]
 			(002) jeq      #0x3a            jt 3	jf 6
@@ -295,14 +295,14 @@ my %accept_blocks = (
 			(004) jeq      #0xff            jt 6	jf 5
 			(005) ret      #10000
 			(006) ret      #0
-			EOF
+			',
 	}, # icmp6_index_icmp6code
 	udp_index_halfword => {
 		DLT => 'RAW',
 		snaplen => 65535,
 		# The implementation is IPv4-only.
 		expr => 'udp[8:2] == 0xabcd',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 11
@@ -315,7 +315,7 @@ my %accept_blocks = (
 			(009) jeq      #0xabcd          jt 10	jf 11
 			(010) ret      #65535
 			(011) ret      #0
-			EOF
+			',
 	}, # udp_index_halfword
 	tcp_index_byte => {
 		DLT => 'RAW',
@@ -324,7 +324,7 @@ my %accept_blocks = (
 		# The implementation is IPv4-only.
 		expr => 'tcp[tcpflags] == 0xFF',
 		aliases => ['tcp[13] == 0xFF'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 11
@@ -337,221 +337,221 @@ my %accept_blocks = (
 			(009) jeq      #0xff            jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
-			EOF
+			',
 	}, # tcp_index_byte
 	linux_sll_inbound => {
 		DLT => 'LINUX_SLL',
 		snaplen => 65535,
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [0]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #65535
-			EOF
+			',
 	}, # linux_sll_inbound
 	linux_sll_outbound => {
 		DLT => 'LINUX_SLL',
 		snaplen => 65535,
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [0]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #65535
 			(003) ret      #0
-			EOF
+			',
 	}, # linux_sll_outbound
 	linux_sll2_inbound => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #65535
-			EOF
+			',
 	}, # linux_sll2_inbound
 	linux_sll2_outbound => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #65535
 			(003) ret      #0
-			EOF
+			',
 	}, # linux_sll2_outbound
 	linux_sll2_ifindex => {
 		DLT => 'LINUX_SLL2',
 		snaplen => 65535,
 		expr => 'ifindex 7',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) jeq      #0x7             jt 2	jf 3
 			(002) ret      #65535
 			(003) ret      #0
-			EOF
+			',
 	}, # linux_sll2_ifindex
 	slip_inbound => {
 		DLT => 'SLIP',
 		snaplen => 100,
 		expr => 'inbound',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jeq      #0x0             jt 2	jf 3
 			(002) ret      #100
 			(003) ret      #0
-			EOF
+			',
 	}, # slip_inbound
 	slip_outbound => {
 		DLT => 'SLIP',
 		snaplen => 100,
 		expr => 'outbound',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jeq      #0x0             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #100
-			EOF
+			',
 	}, # slip_outbound
 	ipnet_inbound => {
 		DLT => 'IPNET',
 		snaplen => 1000,
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jeq      #0x2             jt 2	jf 3
 			(002) ret      #1000
 			(003) ret      #0
-			EOF
+			',
 	}, # ipnet_inbound
 	ipnet_outbound => {
 		DLT => 'IPNET',
 		snaplen => 1000,
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jeq      #0x1             jt 2	jf 3
 			(002) ret      #1000
 			(003) ret      #0
-			EOF
+			',
 	}, # ipnet_outbound
 	pflog_inbound => {
 		DLT => 'PFLOG',
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [60]
 			(001) jeq      #0x1             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # pflog_inbound
 	pflog_outbound => {
 		DLT => 'PFLOG',
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [60]
 			(001) jeq      #0x2             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # pflog_outbound
 	ppp_pppd_inbound => {
 		DLT => 'PPP_PPPD',
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [0]
 			(001) jeq      #0x0             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ppp_pppd_inbound
 	ppp_pppd_oubound => {
 		DLT => 'PPP_PPPD',
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [0]
 			(001) jeq      #0x1             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ppp_pppd_oubound
 	juniper_mfr_inbound => {
 		DLT => 'JUNIPER_MFR',
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) and      #0x1
 			(002) jeq      #0x1             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # juniper_mfr_inbound
 	juniper_mfr_outbound => {
 		DLT => 'JUNIPER_MFR',
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) and      #0x1
 			(002) jeq      #0x0             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # juniper_mfr_outbound
 	inbound_linuxext => {
 		skip => is_not_linux(),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'inbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [type]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # inbound_linuxext
 	outbound_linuxext => {
 		skip => is_not_linux(),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'outbound',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [type]
 			(001) jeq      #0x4             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # outbound_linuxext
 	ifindex_linuxext => {
 		skip => is_not_linux(),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		expr => 'ifindex 10',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [ifidx]
 			(001) jeq      #0xa             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ifindex_linuxext
 
 	mtp2_fisu => {
 		DLT => 'MTP2',
 		expr => 'fisu',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [2]
 			(001) jset     #0x3f            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_fisu
 	mtp2_lssu => {
 		DLT => 'MTP2',
 		expr => 'lssu',
 		aliases => ['lsu'], # Not documented (and probably should not be).
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [2]
 			(001) and      #0x3f
 			(002) jgt      #0x0             jt 3	jf 7
@@ -560,18 +560,18 @@ my %accept_blocks = (
 			(005) jgt      #0x2             jt 7	jf 6
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # mtp2_lssu
 	mtp2_msu => {
 		DLT => 'MTP2',
 		expr => 'msu',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [2]
 			(001) and      #0x3f
 			(002) jgt      #0x2             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp2_msu
 	mtp2_sio => {
 		DLT => 'MTP2',
@@ -582,74 +582,74 @@ my %accept_blocks = (
 			'sio (0xd2)',
 			'sio (0xd2 or 0xd2)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [3]
 			(001) jeq      #0xd2            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_sio
 	mtp2_sio_gt => {
 		DLT => 'MTP2',
 		expr => 'sio > 0xa1',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) jgt      #0xa1            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_sio_gt
 	mtp2_sio_ge => {
 		DLT => 'MTP2',
 		expr => 'sio >= 0xa2',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) jge      #0xa2            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_sio_ge
 	mtp2_sio_le => {
 		DLT => 'MTP2',
 		expr => 'sio <= 0xa3',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) jgt      #0xa3            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_sio_le
 	mtp2_sio_lt => {
 		DLT => 'MTP2',
 		expr => 'sio < 0xa4',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) jge      #0xa4            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_sio_lt
 	mtp2_sio_ne => {
 		DLT => 'MTP2',
 		expr => 'sio != 0xa5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [3]
 			(001) jeq      #0xa5            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_sio_ne
 	mtp2_sio_nary => {
 		DLT => 'MTP2',
 		expr => 'sio (73 or 74 or 75)',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [3]
 			(001) jeq      #0x49            jt 4	jf 2
 			(002) jeq      #0x4a            jt 4	jf 3
 			(003) jeq      #0x4b            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # mtp2_sio_nary
 	mtp3_dpc => {
 		DLT => 'MTP2',
@@ -660,73 +660,73 @@ my %accept_blocks = (
 			'dpc (0x31d6)',
 			'dpc (0x31d6 or 0x31d6)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jeq      #0xd631          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_dpc
 	mtp3_dpc_gt => {
 		DLT => 'MTP2',
 		expr => 'dpc > 0x1273',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jgt      #0x7312          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_dpc_gt
 	mtp3_dpc_ge => {
 		DLT => 'MTP2',
 		expr => 'dpc >= 0x1273',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jge      #0x7312          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_dpc_ge
 	mtp3_dpc_le => {
 		DLT => 'MTP2',
 		expr => 'dpc <= 0x1273',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jgt      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_dpc_le
 	mtp3_dpc_lt => {
 		DLT => 'MTP2',
 		expr => 'dpc < 0x1273',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jge      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_dpc_lt
 	mtp3_dpc_ne => {
 		DLT => 'MTP2',
 		expr => 'dpc != 0x1273',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jeq      #0x7312          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_dpc_ne
 	mtp3_dpc_nary => {
 		DLT => 'MTP2',
 		expr => 'dpc (0x1274 or 0x1275 or 0x1276)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jeq      #0x7412          jt 9	jf 3
@@ -738,7 +738,7 @@ my %accept_blocks = (
 			(008) jeq      #0x7612          jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp3_dpc_nary
 	mtp3_opc => {
 		DLT => 'MTP2',
@@ -749,73 +749,73 @@ my %accept_blocks = (
 			'opc (0x3b35)',
 			'opc (0x3b35 or 0x3b35)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x40cd0e        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_opc
 	mtp3_opc_gt => {
 		DLT => 'MTP2',
 		expr => 'opc > 0x607',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jgt      #0xc08101        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_opc_gt
 	mtp3_opc_ge => {
 		DLT => 'MTP2',
 		expr => 'opc >= 0x607',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jge      #0xc08101        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_opc_ge
 	mtp3_opc_le => {
 		DLT => 'MTP2',
 		expr => 'opc <= 0x607',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jgt      #0xc08101        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_opc_le
 	mtp3_opc_lt => {
 		DLT => 'MTP2',
 		expr => 'opc < 0x607',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jge      #0xc08101        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_opc_lt
 	mtp3_opc_ne => {
 		DLT => 'MTP2',
 		expr => 'opc != 0x607',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0xc08101        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_opc_ne
 	mtp2_opc_nary => {
 		DLT => 'MTP2',
 		expr => 'opc (0x608 or 0x609 or 0x60a)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x8201          jt 9	jf 3
@@ -827,7 +827,7 @@ my %accept_blocks = (
 			(008) jeq      #0x808201        jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp2_opc_nary
 	mtp3_sls => {
 		DLT => 'MTP2',
@@ -838,73 +838,73 @@ my %accept_blocks = (
 			'sls (3)',
 			'sls (3 or 3)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jeq      #0x30            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_sls
 	mtp3_sls_gt => {
 		DLT => 'MTP2',
 		expr => 'sls > 1',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jgt      #0x10            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_sls_gt
 	mtp3_sls_ge => {
 		DLT => 'MTP2',
 		expr => 'sls >= 2',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jge      #0x20            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_sls_ge
 	mtp3_sls_le => {
 		DLT => 'MTP2',
 		expr => 'sls <= 4',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jgt      #0x40            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_sls_le
 	mtp3_sls_lt => {
 		DLT => 'MTP2',
 		expr => 'sls < 5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jge      #0x50            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_sls_lt
 	mtp3_sls_ne => {
 		DLT => 'MTP2',
 		expr => 'sls != 8',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jeq      #0x80            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_sls_ne
 	mtp3_sls_nary => {
 		DLT => 'MTP2',
 		expr => 'sls (3 or 4 or 5)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jeq      #0x30            jt 9	jf 3
@@ -916,22 +916,22 @@ my %accept_blocks = (
 			(008) jeq      #0x50            jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp3_sls_nary
 	mtp2_hfisu => {
 		DLT => 'MTP2',
 		expr => 'hfisu',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [4]
 			(001) jset     #0xff80          jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_hfisu
 	mtp2_hlssu => {
 		DLT => 'MTP2',
 		expr => 'hlssu',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [4]
 			(001) and      #0xff80
 			(002) jgt      #0x0             jt 3	jf 7
@@ -940,18 +940,18 @@ my %accept_blocks = (
 			(005) jgt      #0x100           jt 7	jf 6
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # mtp2_hlssu
 	mtp2_hmsu => {
 		DLT => 'MTP2',
 		expr => 'hmsu',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [4]
 			(001) and      #0xff80
 			(002) jgt      #0x100           jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp2_hmsu
 	mtp2_hsio => {
 		DLT => 'MTP2',
@@ -962,74 +962,74 @@ my %accept_blocks = (
 			'hsio (0x41)',
 			'hsio (0x41 or 0x41)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [6]
 			(001) jeq      #0x41            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_hsio
 	mtp2_hsio_gt => {
 		DLT => 'MTP2',
 		expr => 'hsio > 0x41',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [6]
 			(001) jgt      #0x41            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_hsio_gt
 	mtp2_hsio_ge => {
 		DLT => 'MTP2',
 		expr => 'hsio >= 0x41',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [6]
 			(001) jge      #0x41            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mtp2_hsio_ge
 	mtp2_hsio_le => {
 		DLT => 'MTP2',
 		expr => 'hsio <= 0x41',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [6]
 			(001) jgt      #0x41            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_hsio_le
 	mtp2_hsio_lt => {
 		DLT => 'MTP2',
 		expr => 'hsio < 0x41',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [6]
 			(001) jge      #0x41            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_hsio_lt
 	mtp2_hsio_ne => {
 		DLT => 'MTP2',
 		expr => 'hsio != 0x41',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [6]
 			(001) jeq      #0x41            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # mtp2_hsio_ne
 	mtp2_hsio_nary => {
 		DLT => 'MTP2',
 		expr => 'hsio (0x42 or 0x43 or 0x44)',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [6]
 			(001) jeq      #0x42            jt 4	jf 2
 			(002) jeq      #0x43            jt 4	jf 3
 			(003) jeq      #0x44            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # mtp2_hsio_nary
 	mtp3_hdpc => {
 		DLT => 'MTP2',
@@ -1040,73 +1040,73 @@ my %accept_blocks = (
 			'hdpc (0x0ab5)',
 			'hdpc (0x0ab5 or 0x0ab5)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jeq      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hdpc
 	mtp3_hdpc_gt => {
 		DLT => 'MTP2',
 		expr => 'hdpc > 0x0ab5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jgt      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hdpc_gt
 	mtp3_hdpc_ge => {
 		DLT => 'MTP2',
 		expr => 'hdpc >= 0x0ab5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jge      #0xb50a          jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hdpc_ge
 	mtp3_hdpc_le => {
 		DLT => 'MTP2',
 		expr => 'hdpc <= 0x0ab5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jgt      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hdpc_le
 	mtp3_hdpc_lt => {
 		DLT => 'MTP2',
 		expr => 'hdpc < 0x0ab5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jge      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hdpc_lt
 	mtp3_hdpc_ne => {
 		DLT => 'MTP2',
 		expr => 'hdpc != 0x0ab5',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jeq      #0xb50a          jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hdpc_ne
 	mtp3_hdpc_nary => {
 		DLT => 'MTP2',
 		expr => 'hdpc (0x0ab6 or 0x0ab7 or 0x0ab8)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jeq      #0xb60a          jt 9	jf 3
@@ -1118,7 +1118,7 @@ my %accept_blocks = (
 			(008) jeq      #0xb80a          jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp3_hdpc_nary
 	mtp3_hopc => {
 		DLT => 'MTP2',
@@ -1129,73 +1129,73 @@ my %accept_blocks = (
 			'hopc (0x3aba)',
 			'hopc (0x3aba or 0x3aba)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x80ae0e        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hopc
 	mtp3_hopc_gt => {
 		DLT => 'MTP2',
 		expr => 'hopc > 0x3aba',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jgt      #0x80ae0e        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hopc_gt
 	mtp3_hopc_ge => {
 		DLT => 'MTP2',
 		expr => 'hopc >= 0x3aba',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jge      #0x80ae0e        jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hopc_ge
 	mtp3_hopc_le => {
 		DLT => 'MTP2',
 		expr => 'hopc <= 0x3aba',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jgt      #0x80ae0e        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hopc_le
 	mtp3_hopc_lt => {
 		DLT => 'MTP2',
 		expr => 'hopc < 0x3aba',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jge      #0x80ae0e        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hopc_lt
 	mtp3_hopc_ne => {
 		DLT => 'MTP2',
 		expr => 'hopc != 0x3aba',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x80ae0e        jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hopc_ne
 	mtp3_hopc_nary => {
 		DLT => 'MTP2',
 		expr => 'hopc (9000 or 10000 or 9001)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0xca08          jt 9	jf 3
@@ -1207,7 +1207,7 @@ my %accept_blocks = (
 			(008) jeq      #0x40ca08        jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp3_hopc_nary
 	mtp3_hsls => {
 		DLT => 'MTP2',
@@ -1218,73 +1218,73 @@ my %accept_blocks = (
 			'hsls (5)',
 			'hsls (5 or 5)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jeq      #0x50            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hsls
 	mtp3_hsls_gt => {
 		DLT => 'MTP2',
 		expr => 'hsls > 6',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jgt      #0x60            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hsls_gt
 	mtp3_hsls_ge => {
 		DLT => 'MTP2',
 		expr => 'hsls >= 7',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jge      #0x70            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # mtp3_hsls_ge
 	mtp3_hsls_le => {
 		DLT => 'MTP2',
 		expr => 'hsls <= 8',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jgt      #0x80            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hsls_le
 	mtp3_hsls_lt => {
 		DLT => 'MTP2',
 		expr => 'hsls < 9',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jge      #0x90            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hsls_lt
 	mtp3_hsls_ne => {
 		DLT => 'MTP2',
 		expr => 'hsls != 10',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jeq      #0xa0            jt 3	jf 4
 			(003) ret      #0
 			(004) ret      #262144
-			EOF
+			',
 	}, # mtp3_hsls_ne
 	mtp3_hsls_nary => {
 		DLT => 'MTP2',
 		expr => 'hsls (13 or 12 or 11)',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jeq      #0xd0            jt 9	jf 3
@@ -1296,7 +1296,7 @@ my %accept_blocks = (
 			(008) jeq      #0xb0            jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # mtp3_hsls_nary
 
 	atm_vpi => {
@@ -1308,76 +1308,76 @@ my %accept_blocks = (
 			'vpi (10)',
 			'vpi (10 or 10)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0xa             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vpi
 	atm_vpi_gt => {
 		DLT => 'SUNATM',
 		expr => 'vpi > 100',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jgt      #0x64            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vpi_gt
 	atm_vpi_ge => {
 		DLT => 'SUNATM',
 		expr => 'vpi >= 101',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jge      #0x65            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vpi_ge
 	atm_vpi_le => {
 		DLT => 'SUNATM',
 		expr => 'vpi <= 102',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jgt      #0x66            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vpi_le
 	atm_vpi_lt => {
 		DLT => 'SUNATM',
 		expr => 'vpi < 103',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jge      #0x67            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vpi_lt
 	atm_vpi_ne => {
 		DLT => 'SUNATM',
 		expr => 'vpi != 104',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0x68            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vpi_ne
 	atm_vpi_nary => {
 		DLT => 'SUNATM',
 		expr => 'vpi (105 or 0x7a or 0311)',
 		# The bytecode preserves the order of values, hence no aliases for the
 		# permutations.
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x69            jt 4	jf 2
 			(002) jeq      #0x7a            jt 4	jf 3
 			(003) jeq      #0xc9            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_vpi_nary
 	atm_vci => {
 		DLT => 'SUNATM',
@@ -1388,115 +1388,115 @@ my %accept_blocks = (
 			'vci (20)',
 			'vci (20 or 20)',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [2]
 			(001) jeq      #0x14            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vci
 	atm_vci_gt => {
 		DLT => 'SUNATM',
 		expr => 'vci > 20001',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jgt      #0x4e21          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vci_gt
 	atm_vci_ge => {
 		DLT => 'SUNATM',
 		expr => 'vci >= 20002',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jge      #0x4e22          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # atm_vci_ge
 	atm_vci_le => {
 		DLT => 'SUNATM',
 		expr => 'vci <= 20003',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jgt      #0x4e23          jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vci_le
 	atm_vci_lt => {
 		DLT => 'SUNATM',
 		expr => 'vci < 20004',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jge      #0x4e24          jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vci_lt
 	atm_vci_ne => {
 		DLT => 'SUNATM',
 		expr => 'vci != 20005',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [2]
 			(001) jeq      #0x4e25          jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # atm_vci_ne
 	atm_vci_nary => {
 		DLT => 'SUNATM',
 		expr => 'vci (10 or 0xdb or 0700)',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [2]
 			(001) jeq      #0xa             jt 4	jf 2
 			(002) jeq      #0xdb            jt 4	jf 3
 			(003) jeq      #0x1c0           jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_vci_nary
 	atm_lane => {
 		DLT => 'SUNATM',
 		expr => 'lane',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf
 			(002) jeq      #0x1             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # atm_lane
 	atm_oamf4sc => {
 		DLT => 'SUNATM',
 		expr => 'oamf4sc',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x3             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_oamf4sc
 	atm_oamf4ec => {
 		DLT => 'SUNATM',
 		expr => 'oamf4ec',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x4             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_oamf4ec
 	atm_oamf4 => {
 		DLT => 'SUNATM',
 		expr => 'oamf4',
 		aliases => ['oam'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 6
 			(002) ldh      [2]
@@ -1504,60 +1504,60 @@ my %accept_blocks = (
 			(004) jeq      #0x4             jt 5	jf 6
 			(005) ret      #262144
 			(006) ret      #0
-			EOF
+			',
 	}, # atm_oamf4
 	atm_metac => {
 		DLT => 'SUNATM',
 		expr => 'metac',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x1             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_metac
 	atm_bcc => {
 		DLT => 'SUNATM',
 		expr => 'bcc',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x2             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_bcc
 	atm_sc => {
 		DLT => 'SUNATM',
 		expr => 'sc',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x5             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_sc
 	atm_ilmic => {
 		DLT => 'SUNATM',
 		expr => 'ilmic',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0x10            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # atm_ilmic
 	atm_connectmsg => {
 		DLT => 'SUNATM',
 		expr => 'connectmsg',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 12
 			(002) ldh      [2]
@@ -1571,12 +1571,12 @@ my %accept_blocks = (
 			(010) jeq      #0x2             jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
-			EOF
+			',
 	}, # atm_connectmsg
 	atm_metaconnect => {
 		DLT => 'SUNATM',
 		expr => 'metaconnect',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 11
 			(002) ldh      [2]
@@ -1589,7 +1589,7 @@ my %accept_blocks = (
 			(009) jeq      #0x2             jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
-			EOF
+			',
 	}, # atm_metaconnect
 
 	# Do not permutate all possible aliases for "link", just the ones that
@@ -1603,12 +1603,12 @@ my %accept_blocks = (
 			'link multicast',
 			'link dst $00',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # arcnet_broadcast_multicast
 	arcnet_host => {
 		DLT => 'ARCNET',
@@ -1620,36 +1620,36 @@ my %accept_blocks = (
 			'link src or dst host $e',
 			'link src or dst $e',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [0]
 			(001) jeq      #0xe             jt 4	jf 2
 			(002) ldb      [1]
 			(003) jeq      #0xe             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # arcnet_host
 	arcnet_src_host => {
 		DLT => 'ARCNET',
 		expr => 'link src host $8c',
 		aliases => ['link src $8c'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [0]
 			(001) jeq      #0x8c            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # arcnet_src_host
 	arcnet_dst_host => {
 		DLT => 'ARCNET',
 		expr => 'link dst host $a4',
 		aliases => ['link dst $a4'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0xa4            jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # arcnet_dst_host
 	fddi_broadcast => {
 		DLT => 'FDDI',
@@ -1658,14 +1658,14 @@ my %accept_blocks = (
 			'fddi broadcast',
 			'link broadcast',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [3]
 			(001) jeq      #0xffffffff      jt 2	jf 5
 			(002) ldh      [1]
 			(003) jeq      #0xffff          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # fddi_broadcast
 	fddi_multicast => {
 		DLT => 'FDDI',
@@ -1674,12 +1674,12 @@ my %accept_blocks = (
 			'fddi multicast',
 			'link multicast',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [1]
 			(001) jset     #0x1             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # fddi_multicast
 	ieee802_broadcast => {
 		DLT => 'IEEE802',
@@ -1688,14 +1688,14 @@ my %accept_blocks = (
 			'tr broadcast',
 			'link broadcast',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) jeq      #0xffffffff      jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0xffff          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ieee802_broadcast
 	ieee802_multicast => {
 		DLT => 'IEEE802',
@@ -1704,12 +1704,12 @@ my %accept_blocks = (
 			'tr multicast',
 			'link multicast',
 		],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldb      [2]
 			(001) jset     #0x1             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ieee802_multicast
 	ieee802_11_broadcast => {
 		DLT => 'IEEE802_11',
@@ -1719,7 +1719,7 @@ my %accept_blocks = (
 			'ether broadcast',
 			'link broadcast',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x4             jt 14	jf 2
 			(002) jset     #0x8             jt 3	jf 9
@@ -1735,7 +1735,7 @@ my %accept_blocks = (
 			(012) jeq      #0xffff          jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # ieee802_11_broadcast
 	ieee802_11_multicast => {
 		DLT => 'IEEE802_11',
@@ -1745,7 +1745,7 @@ my %accept_blocks = (
 			'ether multicast',
 			'link multicast',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x4             jt 10	jf 2
 			(002) jset     #0x8             jt 3	jf 7
@@ -1757,31 +1757,31 @@ my %accept_blocks = (
 			(008) jset     #0x1             jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # ieee802_11_multicast
 	ip_over_fc_broadcast => {
 		DLT => 'IP_OVER_FC',
 		expr => 'broadcast',
 		aliases => ['link broadcast'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       [4]
 			(001) jeq      #0xffffffff      jt 2	jf 5
 			(002) ldh      [2]
 			(003) jeq      #0xffff          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ip_over_fc_broadcast
 	ip_over_fc_multicast => {
 		DLT => 'IP_OVER_FC',
 		expr => 'multicast',
 		aliases => ['link multicast'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [2]
 			(001) jset     #0x1             jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ip_over_fc_multicast
 
 
@@ -1793,14 +1793,14 @@ my %accept_blocks = (
 			'ether broadcast',
 			'link broadcast',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [2]
 			(001) jeq      #0xffffffff      jt 2	jf 5
 			(002) ldh      [0]
 			(003) jeq      #0xffff          jt 4	jf 5
 			(004) ret      #16000
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_broadcast
 	ether_multicast => {
 		DLT => 'EN10MB',
@@ -1810,12 +1810,12 @@ my %accept_blocks = (
 			'ether multicast',
 			'link multicast',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x1             jt 2	jf 3
 			(002) ret      #16000
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_multicast
 	ether_host => {
 		DLT => 'EN10MB',
@@ -1824,7 +1824,7 @@ my %accept_blocks = (
 			'ether src or dst host ab.CD.ef.0.0.1',
 			'ether src or dst Ab.cD.ef.00.0.01',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [8]
 			(001) jeq      #0xef000001      jt 2	jf 4
 			(002) ldh      [6]
@@ -1835,40 +1835,40 @@ my %accept_blocks = (
 			(007) jeq      #0xabcd          jt 8	jf 9
 			(008) ret      #262144
 			(009) ret      #0
-			EOF
+			',
 	}, # ether_host
 	ether_src_host => {
 		DLT => 'EN10MB',
 		expr => 'ether src host ab-cd-ef-00-00-02',
 		aliases => ['ether src ab.cd.ef.00.00.02'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [8]
 			(001) jeq      #0xef000002      jt 2	jf 5
 			(002) ldh      [6]
 			(003) jeq      #0xabcd          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_src_host
 	ether_dst_host => {
 		DLT => 'EN10MB',
 		expr => 'ether dst host abcd.ef00.0003',
 		aliases => ['ether dst abcdef000003'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [2]
 			(001) jeq      #0xef000003      jt 2	jf 5
 			(002) ldh      [0]
 			(003) jeq      #0xabcd          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_dst_host
 
 	ether_proto_aarp => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \aarp',
 		aliases => ['aarp'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x80f3          jt 7	jf 2
 			(002) jgt      #0x5dc           jt 8	jf 3
@@ -1878,24 +1878,24 @@ my %accept_blocks = (
 			(006) jeq      #0xaaaa0300      jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # ether_proto_aarp
 	ether_proto_arp => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \arp',
 		aliases => ['arp'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x806           jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_arp
 	ether_proto_atalk => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \atalk',
 		aliases => ['atalk'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x809b          jt 7	jf 2
 			(002) jgt      #0x5dc           jt 8	jf 3
@@ -1905,56 +1905,56 @@ my %accept_blocks = (
 			(006) jeq      #0xaaaa0308      jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # ether_proto_atalk
 	ether_proto_decnet => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \decnet',
 		aliases => ['decnet'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6003          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_decnet
 	ether_proto_ip => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \ip',
 		aliases => ['ip'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_ip
 	ether_proto_ip6 => {
 		DLT => 'EN10MB',
 		skip => ipv6_disabled(),
 		expr => 'ether proto \ip6',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_ip6
 	ip6 => {
 		DLT => 'EN10MB',
 		expr => 'ip6',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ip6
 	ether_proto_ipx => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \ipx',
 		aliases => ['ipx'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8137          jt 11	jf 2
 			(002) jgt      #0x5dc           jt 12	jf 3
@@ -1968,130 +1968,130 @@ my %accept_blocks = (
 			(010) jeq      #0xffff          jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
-			EOF
+			',
 	}, # ether_proto_ipx
 	ether_proto_iso => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \iso',
 		aliases => ['iso'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 5	jf 2
 			(002) ldh      [14]
 			(003) jeq      #0xfefe          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_proto_iso
 	ether_proto_lat => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \lat',
 		aliases => ['lat'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6004          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_lat
 	ether_proto_loopback => {
 		DLT => 'EN10MB',
 		# No backslash escaping and no alias (the identifier is not a keyword).
 		expr => 'ether proto loopback',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x9000          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_loopback
 	ether_proto_mopdl => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \mopdl',
 		aliases => ['mopdl'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6001          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_mopdl
 	ether_proto_moprc => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \moprc',
 		aliases => ['moprc'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6002          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_
 	ether_proto_netbeui => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \netbeui',
 		aliases => ['netbeui'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 5	jf 2
 			(002) ldh      [14]
 			(003) jeq      #0xf0f0          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_proto_netbeui
 	ether_proto_rarp => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \rarp',
 		aliases => ['rarp'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8035          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_rarp
 	ether_proto_sca => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \sca',
 		aliases => ['sca'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6007          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # ether_proto_sca
 	ether_proto_stp => {
 		DLT => 'EN10MB',
 		expr => 'ether proto \stp',
 		aliases => ['stp'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 5	jf 2
 			(002) ldb      [14]
 			(003) jeq      #0x42            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ether_proto_stp
 
 	vlan_eth_nullary => {
 		DLT => 'EN10MB',
 		expr => 'vlan',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8100          jt 4	jf 2
 			(002) jeq      #0x88a8          jt 4	jf 3
 			(003) jeq      #0x9100          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # vlan_eth_nullary
 	vlan_eth_unary => {
 		DLT => 'EN10MB',
 		expr => 'vlan 4095',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8100          jt 4	jf 2
 			(002) jeq      #0x88a8          jt 4	jf 3
@@ -2101,12 +2101,12 @@ my %accept_blocks = (
 			(006) jeq      #0xfff           jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # vlan_eth_unary
 	vlan_and_vlan_eth => {
 		DLT => 'EN10MB',
 		expr => 'vlan and vlan',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8100          jt 4	jf 2
 			(002) jeq      #0x88a8          jt 4	jf 3
@@ -2117,24 +2117,24 @@ my %accept_blocks = (
 			(007) jeq      #0x9100          jt 8	jf 9
 			(008) ret      #262144
 			(009) ret      #0
-			EOF
+			',
 	}, # vlan_and_vlan_eth
 	vlan_netanalyzer_nullary => {
 		DLT => 'NETANALYZER',
 		expr => 'vlan',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [16]
 			(001) jeq      #0x8100          jt 4	jf 2
 			(002) jeq      #0x88a8          jt 4	jf 3
 			(003) jeq      #0x9100          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # vlan_netanalyzer_nullary
 	vlan_netanalyzer_unary => {
 		DLT => 'NETANALYZER',
 		expr => 'vlan 10',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [16]
 			(001) jeq      #0x8100          jt 4	jf 2
 			(002) jeq      #0x88a8          jt 4	jf 3
@@ -2144,14 +2144,14 @@ my %accept_blocks = (
 			(006) jeq      #0xa             jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # vlan_netanalyzer_unary
 	vlan_eth_linuxext_nullary => {
 		skip => is_not_linux(),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [vlanp]
 			(001) jeq      #0x1             jt 6	jf 2
 			(002) ldh      [12]
@@ -2160,14 +2160,14 @@ my %accept_blocks = (
 			(005) jeq      #0x9100          jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # vlan_eth_linuxext_nullary
 	vlan_eth_linuxext_unary => {
 		skip => is_not_linux(),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan 10',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [vlanp]
 			(001) jeq      #0x1             jt 6	jf 2
 			(002) ldh      [12]
@@ -2183,14 +2183,14 @@ my %accept_blocks = (
 			(012) jeq      #0xa             jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # vlan_eth_linuxext_unary
 	vlan_and_vlan_eth_linuxext => {
 		skip => is_not_linux(),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan and vlan',
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #0x0
 			(001) st       M[1]
 			(002) ldb      [vlanp]
@@ -2208,23 +2208,23 @@ my %accept_blocks = (
 			(014) jeq      #0x9100          jt 15	jf 16
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # vlan_and_vlan_eth_linuxext
 
 	mpls_eth_nullary => {
 		DLT => 'EN10MB',
 		expr => 'mpls',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8847          jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
-			EOF
+			',
 	}, # mpls_eth_nullary
 	mpls_eth_unary => {
 		DLT => 'EN10MB',
 		expr => 'mpls 100',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8847          jt 2	jf 6
 			(002) ld       [14]
@@ -2232,24 +2232,24 @@ my %accept_blocks = (
 			(004) jeq      #0x64000         jt 5	jf 6
 			(005) ret      #262144
 			(006) ret      #0
-			EOF
+			',
 	}, # mpls_eth_unary
 	mpls_and_mpls_eth => {
 		DLT => 'EN10MB',
 		expr => 'mpls and mpls',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8847          jt 2	jf 5
 			(002) ldb      [16]
 			(003) jset     #0x1             jt 5	jf 4
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # mpls_and_mpls_eth
 	mpls_ppp_unary => {
 		DLT => 'PPP',
 		expr => 'mpls 100',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [2]
 			(001) jeq      #0x281           jt 2	jf 6
 			(002) ld       [4]
@@ -2257,7 +2257,7 @@ my %accept_blocks = (
 			(004) jeq      #0x64000         jt 5	jf 6
 			(005) ret      #262144
 			(006) ret      #0
-			EOF
+			',
 	}, # mpls_ppp_unary
 
 	wlan_host => {
@@ -2267,7 +2267,7 @@ my %accept_blocks = (
 			'wlan src or dst host 12:34:56:78:9a:bc',
 			'wlan src or dst 12:34:56:78:9a:bc',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x4             jt 33	jf 2
 			(002) jset     #0x8             jt 3	jf 24
@@ -2302,13 +2302,13 @@ my %accept_blocks = (
 			(031) jeq      #0x1234          jt 32	jf 33
 			(032) ret      #262144
 			(033) ret      #0
-			EOF
+			',
 	}, # wlan_host
 	wlan_src_host => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan src host 12:34:56:78:9a:bc',
 		aliases => ['wlan src 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x4             jt 19	jf 2
 			(002) jset     #0x8             jt 3	jf 14
@@ -2329,13 +2329,13 @@ my %accept_blocks = (
 			(017) jeq      #0x1234          jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # wlan_src_host
 	wlan_dst_host => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan dst host 12:34:56:78:9a:bc',
 		aliases => ['wlan dst 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x4             jt 14	jf 2
 			(002) jset     #0x8             jt 3	jf 9
@@ -2351,12 +2351,12 @@ my %accept_blocks = (
 			(012) jeq      #0x1234          jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # wlan_dst_host
 	wlan_ra => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan ra 12:34:56:78:9a:bc',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x8             jt 2	jf 7
 			(002) ld       [6]
@@ -2365,12 +2365,12 @@ my %accept_blocks = (
 			(005) jeq      #0x1234          jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # wlan_ra
 	wlan_ta => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan ta 12:34:56:78:9a:bc',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0x8             jt 2	jf 15
 			(002) and      #0xc
@@ -2387,26 +2387,26 @@ my %accept_blocks = (
 			(013) jeq      #0x1234          jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # wlan_ta
 	wlan_addr1 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan addr1 12:34:56:78:9a:bc',
 		aliases => ['wlan address1 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       [6]
 			(001) jeq      #0x56789abc      jt 2	jf 5
 			(002) ldh      [4]
 			(003) jeq      #0x1234          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # wlan_addr1
 	wlan_addr2 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan addr2 12:34:56:78:9a:bc',
 		aliases => ['wlan address2 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xc
 			(002) jeq      #0x4             jt 3	jf 9
@@ -2422,13 +2422,13 @@ my %accept_blocks = (
 			(012) jeq      #0x1234          jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # wlan_addr2
 	wlan_addr3 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan addr3 12:34:56:78:9a:bc',
 		aliases => ['wlan address3 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xc
 			(002) jeq      #0x4             jt 8	jf 3
@@ -2438,13 +2438,13 @@ my %accept_blocks = (
 			(006) jeq      #0x1234          jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # wlan_addr3
 	wlan_addr4 => {
 		DLT => 'IEEE802_11',
 		expr => 'wlan addr4 12:34:56:78:9a:bc',
 		aliases => ['wlan address4 12:34:56:78:9a:bc'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) and      #0x3
 			(002) jeq      #0x3             jt 3	jf 8
@@ -2454,7 +2454,7 @@ my %accept_blocks = (
 			(006) jeq      #0x1234          jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # wlan_addr4
 	wlan_type_mgt => {
 		DLT => 'IEEE802_11',
@@ -2466,12 +2466,12 @@ my %accept_blocks = (
 			'wlan type management',
 			'type management',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0xc             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # type_mgt
 	wlan_subtype_assoc_req => {
 		DLT => 'IEEE802_11',
@@ -2499,12 +2499,12 @@ my %accept_blocks = (
 			'wlan type management subtype assocreq',
 			'type management subtype assocreq',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) jset     #0xfc            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # wlan_type_mgt_subtype_assoc_req
 	wlan_subtype_assoc_resp => {
 		DLT => 'IEEE802_11',
@@ -2532,13 +2532,13 @@ my %accept_blocks = (
 			'wlan type management subtype assocresp',
 			'type management subtype assocresp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x10            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_assoc_resp
 	wlan_subtype_reassoc_req => {
 		DLT => 'IEEE802_11',
@@ -2566,13 +2566,13 @@ my %accept_blocks = (
 			'wlan type management subtype reassocreq',
 			'type management subtype reassocreq',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x20            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_reassoc_req
 	wlan_subtype_reassoc_resp => {
 		DLT => 'IEEE802_11',
@@ -2600,13 +2600,13 @@ my %accept_blocks = (
 			'wlan type management subtype reassocresp',
 			'type management subtype reassocresp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x30            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_mgt_subtype_reassoc_resp
 	wlan_subtype_probe_req => {
 		DLT => 'IEEE802_11',
@@ -2634,13 +2634,13 @@ my %accept_blocks = (
 			'wlan type management subtype probereq',
 			'type management subtype probereq',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x40            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_probe_req
 	wlan_subtype_probe_resp => {
 		DLT => 'IEEE802_11',
@@ -2668,13 +2668,13 @@ my %accept_blocks = (
 			'wlan type management subtype proberesp',
 			'type management subtype proberesp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x50            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_probe_resp
 	wlan_subtype_beacon => {
 		DLT => 'IEEE802_11',
@@ -2694,13 +2694,13 @@ my %accept_blocks = (
 			'wlan type management subtype 0x80',
 			'type management subtype 0x80',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x80            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_beacon
 	wlan_subtype_atim => {
 		DLT => 'IEEE802_11',
@@ -2720,13 +2720,13 @@ my %accept_blocks = (
 			'wlan type management subtype 0x90',
 			'type management subtype 0x90',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x90            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_atim
 	wlan_subtype_disassoc => {
 		DLT => 'IEEE802_11',
@@ -2754,13 +2754,13 @@ my %accept_blocks = (
 			'wlan type management subtype disassociation',
 			'type management subtype disassociation',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xa0            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_disassoc
 	wlan_subtype_auth => {
 		DLT => 'IEEE802_11',
@@ -2788,13 +2788,13 @@ my %accept_blocks = (
 			'wlan type management subtype authentication',
 			'type management subtype authentication',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xb0            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_auth
 	wlan_subtype_deauth => {
 		DLT => 'IEEE802_11',
@@ -2822,13 +2822,13 @@ my %accept_blocks = (
 			'wlan type management subtype deauthentication',
 			'type management subtype deauthentication',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xc0            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_deauth
 	wlan_type_ctl => {
 		DLT => 'IEEE802_11',
@@ -2840,13 +2840,13 @@ my %accept_blocks = (
 			'wlan type control',
 			'type control',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xc
 			(002) jeq      #0x4             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # type_ctl
 	wlan_subtype_bar => {
 		DLT => 'IEEE802_11',
@@ -2866,13 +2866,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0x80',
 			'type control subtype 0x80',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x84            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_bar
 	wlan_subtype_ba => {
 		DLT => 'IEEE802_11',
@@ -2892,13 +2892,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0x90',
 			'type control subtype 0x90',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x94            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_ba
 	wlan_subtype_ps_poll => {
 		DLT => 'IEEE802_11',
@@ -2918,13 +2918,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xa0',
 			'type control subtype 0xa0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xa4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_ps_poll
 	wlan_subtype_rts => {
 		DLT => 'IEEE802_11',
@@ -2944,13 +2944,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xb0',
 			'type control subtype 0xb0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xb4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_rts
 	wlan_subtype_cts => {
 		DLT => 'IEEE802_11',
@@ -2970,13 +2970,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xc0',
 			'type control subtype 0xc0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xc4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cts
 	wlan_subtype_ack => {
 		DLT => 'IEEE802_11',
@@ -2996,13 +2996,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xd0',
 			'type control subtype 0xd0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xd4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_ack
 	wlan_subtype_cf_end => {
 		DLT => 'IEEE802_11',
@@ -3022,13 +3022,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xe0',
 			'type control subtype 0xe0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xe4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cf_end
 	wlan_subtype_cf_end_ack => {
 		DLT => 'IEEE802_11',
@@ -3048,13 +3048,13 @@ my %accept_blocks = (
 			'wlan type control subtype 0xf0',
 			'type control subtype 0xf0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xf4            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cf_end_ack
 	wlan_type_data => {
 		DLT => 'IEEE802_11',
@@ -3064,13 +3064,13 @@ my %accept_blocks = (
 			'wlan type 8',
 			'type 8',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xc
 			(002) jeq      #0x8             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_type_data
 	wlan_subtype_data => {
 		DLT => 'IEEE802_11',
@@ -3086,13 +3086,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x00',
 			'type 8 subtype 0x00',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x8             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_data
 	wlan_subtype_data_cf_ack => {
 		DLT => 'IEEE802_11',
@@ -3108,13 +3108,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x10',
 			'type 8 subtype 0x10',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x18            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_data_cf_ack
 	wlan_subtype_data_cf_poll => {
 		DLT => 'IEEE802_11',
@@ -3130,13 +3130,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x20',
 			'type 8 subtype 0x20',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x28            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_data_cf_poll
 	wlan_subtype_data_cf_ack_poll => {
 		DLT => 'IEEE802_11',
@@ -3152,13 +3152,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x30',
 			'type 8 subtype 0x30',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x38            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_data_cf_ack_poll
 	wlan_subtype_null => {
 		DLT => 'IEEE802_11',
@@ -3174,13 +3174,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x40',
 			'type 8 subtype 0x40',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x48            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_null
 	wlan_subtype_cf_ack => {
 		DLT => 'IEEE802_11',
@@ -3196,13 +3196,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x50',
 			'type 8 subtype 0x50',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x58            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cf_ack
 	wlan_subtype_cf_poll => {
 		DLT => 'IEEE802_11',
@@ -3218,13 +3218,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x60',
 			'type 8 subtype 0x60',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x68            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cf_poll
 	wlan_subtype_cf_ack_poll => {
 		DLT => 'IEEE802_11',
@@ -3240,13 +3240,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x70',
 			'type 8 subtype 0x70',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x78            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_cf_ack_poll
 	wlan_subtype_qos_data => {
 		DLT => 'IEEE802_11',
@@ -3262,13 +3262,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x80',
 			'type 8 subtype 0x80',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x88            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_data
 	wlan_subtype_qos_data_cf_ack => {
 		DLT => 'IEEE802_11',
@@ -3284,13 +3284,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0x90',
 			'type 8 subtype 0x90',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0x98            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_data_cf_ack
 	wlan_subtype_qos_data_cf_poll => {
 		DLT => 'IEEE802_11',
@@ -3306,13 +3306,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0xa0',
 			'type 8 subtype 0xa0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xa8            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_data_cf_poll
 	wlan_subtype_qos_data_cf_ack_poll => {
 		DLT => 'IEEE802_11',
@@ -3328,13 +3328,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0xb0',
 			'type 8 subtype 0xb0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xb8            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_data_cf_ack_poll
 	wlan_subtype_qos => {
 		DLT => 'IEEE802_11',
@@ -3350,13 +3350,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0xc0',
 			'type 8 subtype 0xc0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xc8            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos
 	wlan_subtype_qos_cf_poll => {
 		DLT => 'IEEE802_11',
@@ -3372,13 +3372,13 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0xe0',
 			'type 8 subtype 0xe0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xe8            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_cf_poll
 	wlan_subtype_qos_cf_ack_poll => {
 		DLT => 'IEEE802_11',
@@ -3394,26 +3394,26 @@ my %accept_blocks = (
 			'wlan type 8 subtype 0xf0',
 			'type 8 subtype 0xf0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xfc
 			(002) jeq      #0xf8            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_subtype_qos_cf_ack_poll
 	wlan_type_reserved => {
 		DLT => 'IEEE802_11',
 		# Reserved frame type, no name.
 		expr => 'wlan type 12',
 		aliases => ['type 12'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xc
 			(002) jeq      #0xc             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_type_reserved
 	wlan_dir_nods => {
 		DLT => 'IEEE802_11',
@@ -3427,12 +3427,12 @@ my %accept_blocks = (
 			'direction nods',
 			'direction 0',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) jset     #0x3             jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #262144
-			EOF
+			',
 	}, # wlan_dir_nods
 	wlan_dir_tods => {
 		DLT => 'IEEE802_11',
@@ -3446,13 +3446,13 @@ my %accept_blocks = (
 			'direction tods',
 			'direction 1',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) and      #0x3
 			(002) jeq      #0x1             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_dir_tods
 	wlan_dir_fromds => {
 		DLT => 'IEEE802_11',
@@ -3466,13 +3466,13 @@ my %accept_blocks = (
 			'direction fromds',
 			'direction 2',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) and      #0x3
 			(002) jeq      #0x2             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_dir_fromds
 	wlan_dir_dstods => {
 		DLT => 'IEEE802_11',
@@ -3486,69 +3486,69 @@ my %accept_blocks = (
 			'direction dstods',
 			'direction 3',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [1]
 			(001) and      #0x3
 			(002) jeq      #0x3             jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			EOF
+			',
 	}, # wlan_dir_dstods
 
 	pppoed => {
 		snaplen => 200,
 		DLT => 'EN10MB',
 		expr => 'pppoed',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8863          jt 2	jf 3
 			(002) ret      #200
 			(003) ret      #0
-			EOF
+			',
 	}, # pppoed
 	pppoes_nullary => {
 		snaplen => 200,
 		DLT => 'EN10MB',
 		expr => 'pppoes',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8864          jt 2	jf 3
 			(002) ret      #200
 			(003) ret      #0
-			EOF
+			',
 	}, # pppoes_nullary
 	pppoes_unary => {
 		snaplen => 200,
 		DLT => 'EN10MB',
 		expr => 'pppoes 1234',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8864          jt 2	jf 5
 			(002) ldh      [16]
 			(003) jeq      #0x4d2           jt 4	jf 5
 			(004) ret      #200
 			(005) ret      #0
-			EOF
+			',
 	}, # pppoes_unary
 
 	llc => {
 		snaplen => 200,
 		DLT => 'EN10MB',
 		expr => 'llc',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 4	jf 2
 			(002) ldh      [14]
 			(003) jeq      #0xffff          jt 4	jf 5
 			(004) ret      #0
 			(005) ret      #200
-			EOF
+			',
 	}, # llc_nullary
 	llc_i => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc i',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 6	jf 2
 			(002) ldh      [14]
@@ -3557,13 +3557,13 @@ my %accept_blocks = (
 			(005) jset     #0x1             jt 6	jf 7
 			(006) ret      #0
 			(007) ret      #100
-			EOF
+			',
 	}, # llc_i
 	llc_s => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc s',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3573,13 +3573,13 @@ my %accept_blocks = (
 			(006) jeq      #0x1             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_s
 	llc_u => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc u',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3589,13 +3589,13 @@ my %accept_blocks = (
 			(006) jeq      #0x3             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_u
 	llc_rr => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc rr',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3605,13 +3605,13 @@ my %accept_blocks = (
 			(006) jeq      #0x1             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_rr
 	llc_rnr => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc rnr',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3621,13 +3621,13 @@ my %accept_blocks = (
 			(006) jeq      #0x5             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_rnr
 	llc_rej => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc rej',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3637,13 +3637,13 @@ my %accept_blocks = (
 			(006) jeq      #0x9             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_rej
 	llc_ui => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc ui',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3653,13 +3653,13 @@ my %accept_blocks = (
 			(006) jeq      #0x3             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_ui
 	llc_ua => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc ua',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3669,13 +3669,13 @@ my %accept_blocks = (
 			(006) jeq      #0x63            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_ua
 	llc_disc => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc disc',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3685,13 +3685,13 @@ my %accept_blocks = (
 			(006) jeq      #0x43            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_disc
 	llc_dm => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc dm',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3701,13 +3701,13 @@ my %accept_blocks = (
 			(006) jeq      #0xf             jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_dm
 	llc_sabme => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc sabme',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3717,13 +3717,13 @@ my %accept_blocks = (
 			(006) jeq      #0x6f            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_sabme
 	llc_test => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc test',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3733,13 +3733,13 @@ my %accept_blocks = (
 			(006) jeq      #0xe3            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_test
 	llc_xid => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc xid',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3749,13 +3749,13 @@ my %accept_blocks = (
 			(006) jeq      #0xaf            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_xid
 	llc_frmr => {
 		snaplen => 100,
 		DLT => 'EN10MB',
 		expr => 'llc frmr',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 8	jf 2
 			(002) ldh      [14]
@@ -3765,13 +3765,13 @@ my %accept_blocks = (
 			(006) jeq      #0x87            jt 7	jf 8
 			(007) ret      #100
 			(008) ret      #0
-			EOF
+			',
 	}, # llc_frmr
 
 	decnet_host => {
 		DLT => 'EN10MB',
 		expr => 'decnet host 50.764',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6003          jt 2	jf 39
 			(002) ldb      [16]
@@ -3812,8 +3812,8 @@ my %accept_blocks = (
 			(037) jeq      #0xfcca          jt 38	jf 39
 			(038) ret      #262144
 			(039) ret      #0
-			EOF
-		unopt => <<~'EOF',
+			',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6003          jt 2	jf 39
 			(002) ldb      [16]
@@ -3854,13 +3854,13 @@ my %accept_blocks = (
 			(037) jeq      #0xfcca          jt 38	jf 39
 			(038) ret      #262144
 			(039) ret      #0
-			EOF
+			',
 	}, # decnet_host
 	decnet_src_host => {
 		DLT => 'EN10MB',
 		expr => 'decnet src host 50.764',
 		aliases => ['decnet src 50.764'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6003          jt 2	jf 23
 			(002) ldb      [16]
@@ -3885,13 +3885,13 @@ my %accept_blocks = (
 			(021) jeq      #0xfcca          jt 22	jf 23
 			(022) ret      #262144
 			(023) ret      #0
-			EOF
+			',
 	}, # decnet_src_host
 	decnet_dst_host => {
 		DLT => 'EN10MB',
 		expr => 'decnet dst host 50.764',
 		aliases => ['decnet dst 50.764'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x6003          jt 2	jf 19
 			(002) ld       [16]
@@ -3912,14 +3912,14 @@ my %accept_blocks = (
 			(017) jeq      #0xfcca          jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # decnet_dst_host
 
 	iso_proto_clnp => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \clnp',
 		aliases => ['clnp'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
 			(002) ldh      [14]
@@ -3928,13 +3928,13 @@ my %accept_blocks = (
 			(005) jeq      #0x81            jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # iso_proto_clnp
 	iso_proto_esis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \esis',
 		aliases => ['esis', 'es-is'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
 			(002) ldh      [14]
@@ -3943,13 +3943,13 @@ my %accept_blocks = (
 			(005) jeq      #0x82            jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # iso_proto_esis
 	iso_proto_isis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \isis',
 		aliases => ['isis', 'is-is'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
 			(002) ldh      [14]
@@ -3958,12 +3958,12 @@ my %accept_blocks = (
 			(005) jeq      #0x83            jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # iso_proto_isis
 	isis_l1 => {
 		DLT => 'EN10MB',
 		expr => 'l1',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 13	jf 2
 			(002) ldh      [14]
@@ -3978,12 +3978,12 @@ my %accept_blocks = (
 			(011) jeq      #0x11            jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
-			EOF
+			',
 	}, # isis_l1
 	isis_l2 => {
 		DLT => 'EN10MB',
 		expr => 'l2',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 13	jf 2
 			(002) ldh      [14]
@@ -3998,12 +3998,12 @@ my %accept_blocks = (
 			(011) jeq      #0x11            jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
-			EOF
+			',
 	}, # isis_l2
 	isis_iih => {
 		DLT => 'EN10MB',
 		expr => 'iih',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 11	jf 2
 			(002) ldh      [14]
@@ -4016,12 +4016,12 @@ my %accept_blocks = (
 			(009) jeq      #0x10            jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
-			EOF
+			',
 	}, # isis_iih
 	isis_lsp => {
 		DLT => 'EN10MB',
 		expr => 'lsp',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
 			(002) ldh      [14]
@@ -4033,12 +4033,12 @@ my %accept_blocks = (
 			(008) jeq      #0x14            jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # isis_lsp
 	isis_snp => {
 		DLT => 'EN10MB',
 		expr => 'snp',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 12	jf 2
 			(002) ldh      [14]
@@ -4052,12 +4052,12 @@ my %accept_blocks = (
 			(010) jeq      #0x19            jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
-			EOF
+			',
 	}, # isis_snp
 	isis_csnp => {
 		DLT => 'EN10MB',
 		expr => 'csnp',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
 			(002) ldh      [14]
@@ -4069,12 +4069,12 @@ my %accept_blocks = (
 			(008) jeq      #0x19            jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # isis_csnp
 	isis_psnp => {
 		DLT => 'EN10MB',
 		expr => 'psnp',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
 			(002) ldh      [14]
@@ -4086,26 +4086,26 @@ my %accept_blocks = (
 			(008) jeq      #0x1b            jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # isis_psnp
 
 	ip_multicast => {
 		snaplen => 1000,
 		DLT => 'IPV4',
 		expr => 'ip multicast',
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #0x0
 			(001) ldb      [16]
 			(002) jge      #0xe0            jt 3	jf 4
 			(003) ret      #1000
 			(004) ret      #0
-			EOF
+			',
 	}, # ip_multicast
 	ip_broadcast_30 => {
 		DLT => 'IPV4',
 		netmask => '255.255.255.252',
 		expr => 'ip broadcast',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       #0x0
 			(001) jeq      #0x0             jt 2	jf 9
 			(002) ld       [16]
@@ -4116,13 +4116,13 @@ my %accept_blocks = (
 			(007) jeq      #0x3             jt 8	jf 9
 			(008) ret      #262144
 			(009) ret      #0
-			EOF
+			',
 	}, # ip_broadcast_30
 	ip_broadcast_24 => {
 		DLT => 'IPV4',
 		netmask => '255.255.255.0',
 		expr => 'ip broadcast',
-		opt => <<~'EOF',
+		opt => '
 			(000) ld       #0x0
 			(001) ld       [16]
 			(002) jset     #0xff            jt 3	jf 6
@@ -4130,7 +4130,7 @@ my %accept_blocks = (
 			(004) jeq      #0xff            jt 6	jf 5
 			(005) ret      #0
 			(006) ret      #262144
-			EOF
+			',
 	}, # ip_broadcast_24
 
 	ip_proto => {
@@ -4140,20 +4140,20 @@ my %accept_blocks = (
 		# to resolve on all supported OSes.
 		expr => 'ip proto \tcp',
 		aliases => ['ip proto 6'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 5
 			(002) ldb      [23]
 			(003) jeq      #0x6             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ip6_proto
 	ip6_proto => {
 		DLT => 'EN10MB',
 		expr => 'ip6 proto \tcp', # Same as above.
 		aliases => ['ip6 proto 6'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -4163,13 +4163,13 @@ my %accept_blocks = (
 			(006) jeq      #0x6             jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # ip6_proto
 	proto => {
 		DLT => 'EN10MB',
 		expr => 'proto \tcp', # Same as above.
 		aliases => ['proto 6'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 4
 			(002) ldb      [23]
@@ -4182,7 +4182,7 @@ my %accept_blocks = (
 			(009) jeq      #0x6             jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
-			EOF
+			',
 	}, # proto
 	ip_host => {
 		# For this and some other single-stack qualifiers below use DLT_RAW to
@@ -4194,7 +4194,7 @@ my %accept_blocks = (
 			'host 192.168.170.211',
 			'src or dst host 192.168.170.211',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 8
@@ -4204,7 +4204,7 @@ my %accept_blocks = (
 			(006) jeq      #0xc0a8aad3      jt 7	jf 8
 			(007) ret      #2000
 			(008) ret      #0
-			EOF
+			',
 	}, # host
 	ip_src_host => {
 		DLT => 'RAW',
@@ -4215,7 +4215,7 @@ my %accept_blocks = (
 			'src host 10.0.0.2',
 			'src 10.0.0.2',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 6
@@ -4223,7 +4223,7 @@ my %accept_blocks = (
 			(004) jeq      #0xa000002       jt 5	jf 6
 			(005) ret      #2000
 			(006) ret      #0
-			EOF
+			',
 	}, # ip_src_host
 	ip_dst_host => {
 		DLT => 'RAW',
@@ -4234,7 +4234,7 @@ my %accept_blocks = (
 			'dst host 172.17.89.30',
 			'dst 172.17.89.30',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 6
@@ -4242,7 +4242,7 @@ my %accept_blocks = (
 			(004) jeq      #0xac11591e      jt 5	jf 6
 			(005) ret      #2000
 			(006) ret      #0
-			EOF
+			',
 	}, # ip_dst_host
 	ip_net => {
 		DLT => 'RAW',
@@ -4253,7 +4253,7 @@ my %accept_blocks = (
 			'src or dst net 192.168.0.0/16',
 		],
 		# Only the optimized bytecode is equivalent!
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 10
@@ -4265,7 +4265,7 @@ my %accept_blocks = (
 			(008) jeq      #0xc0a80000      jt 9	jf 10
 			(009) ret      #2000
 			(010) ret      #0
-			EOF
+			',
 	}, # ip_net
 	ip_src_net => {
 		DLT => 'RAW',
@@ -4273,7 +4273,7 @@ my %accept_blocks = (
 		expr => 'ip src net 10.0.1.0/24',
 		aliases => ['src net 10.0.1.0/24'],
 		# Only the optimized bytecode is equivalent!
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 7
@@ -4282,7 +4282,7 @@ my %accept_blocks = (
 			(005) jeq      #0xa000100       jt 6	jf 7
 			(006) ret      #2000
 			(007) ret      #0
-			EOF
+			',
 	}, # ip_src_net
 	ip_dst_net => {
 		DLT => 'RAW',
@@ -4290,7 +4290,7 @@ my %accept_blocks = (
 		expr => 'ip dst net 10.0.2.0/24',
 		aliases => ['dst net 10.0.2.0/24'],
 		# Only the optimized bytecode is equivalent!
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 7
@@ -4299,47 +4299,47 @@ my %accept_blocks = (
 			(005) jeq      #0xa000200       jt 6	jf 7
 			(006) ret      #2000
 			(007) ret      #0
-			EOF
+			',
 	}, # ip_dst_net
 
 	carp => {
 		DLT => 'EN10MB',
 		expr => 'carp',
 		aliases => ['vrrp', 'ip proto 112'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 5
 			(002) ldb      [23]
 			(003) jeq      #0x70            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # carp
 	icmp => {
 		DLT => 'EN10MB',
 		expr => 'icmp',
 		aliases => ['ip proto 1'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 5
 			(002) ldb      [23]
 			(003) jeq      #0x1             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # icmp
 	igmp => {
 		DLT => 'EN10MB',
 		expr => 'igmp',
 		aliases => ['ip proto 2'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 5
 			(002) ldb      [23]
 			(003) jeq      #0x2             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # igmp
 	igrp => {
 		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
@@ -4349,20 +4349,20 @@ my %accept_blocks = (
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 5
 			(002) ldb      [23]
 			(003) jeq      #0x9             jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # igrp
 	icmp6 => {
 		DLT => 'EN10MB',
 		expr => 'icmp6',
 		aliases => ['ip6 proto 58'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -4372,13 +4372,13 @@ my %accept_blocks = (
 			(006) jeq      #0x3a            jt 7	jf 8
 			(007) ret      #262144
 			(008) ret      #0
-			EOF
+			',
 	}, # icmp6
 	ah => {
 		DLT => 'RAW',
 		expr => 'ah',
 		aliases => ['proto 51'], # not "proto \ah"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4394,13 +4394,13 @@ my %accept_blocks = (
 			(012) jeq      #0x33            jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # ah
 	esp => {
 		DLT => 'RAW',
 		expr => 'esp',
 		aliases => ['proto 50'], # not "proto \esp"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4416,13 +4416,13 @@ my %accept_blocks = (
 			(012) jeq      #0x32            jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # esp
 	pim => {
 		DLT => 'RAW',
 		expr => 'pim',
 		aliases => ['proto 103'], # not "proto \pim"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4438,13 +4438,13 @@ my %accept_blocks = (
 			(012) jeq      #0x67            jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # pim
 	sctp => {
 		DLT => 'RAW',
 		expr => 'sctp',
 		aliases => ['proto 132'], # not "proto \sctp"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4460,13 +4460,13 @@ my %accept_blocks = (
 			(012) jeq      #0x84            jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # sctp
 	tcp => {
 		DLT => 'RAW',
 		expr => 'tcp',
 		aliases => ['proto 6'], # not "proto \tcp"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4482,13 +4482,13 @@ my %accept_blocks = (
 			(012) jeq      #0x6             jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # tcp
 	udp => {
 		DLT => 'RAW',
 		expr => 'udp',
 		aliases => ['proto 17'], # not "proto \udp"
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 5
@@ -4504,7 +4504,7 @@ my %accept_blocks = (
 			(012) jeq      #0x11            jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
-			EOF
+			',
 	}, # udp
 
 	ip6_host => {
@@ -4518,7 +4518,7 @@ my %accept_blocks = (
 			'src or dst host ::1',
 			'src or dst ::1',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 20
@@ -4540,7 +4540,7 @@ my %accept_blocks = (
 			(018) jeq      #0x1             jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
-			EOF
+			',
 	}, # ip6_host
 	ip6_src_host => {
 		skip => ipv6_disabled(),
@@ -4551,7 +4551,7 @@ my %accept_blocks = (
 			'src host fe80::1122:33ff:fe44:5566',
 			'src fe80::1122:33ff:fe44:5566',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
@@ -4565,7 +4565,7 @@ my %accept_blocks = (
 			(010) jeq      #0xfe445566      jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
-			EOF
+			',
 	}, # ip6_src_host
 	ip6_dst_host => {
 		skip => ipv6_disabled(),
@@ -4576,7 +4576,7 @@ my %accept_blocks = (
 			'dst host fe80::7788:99ff:feaa:bbcc',
 			'dst fe80::7788:99ff:feaa:bbcc',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
@@ -4590,7 +4590,7 @@ my %accept_blocks = (
 			(010) jeq      #0xfeaabbcc      jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
-			EOF
+			',
 	}, # ip6_dst_host
 	ip6_net => {
 		skip => ipv6_disabled(),
@@ -4601,7 +4601,7 @@ my %accept_blocks = (
 			'src or dst net fe80::/10',
 			'ip6 src or dst net fe80::/10',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 10
@@ -4613,14 +4613,14 @@ my %accept_blocks = (
 			(008) jeq      #0xfe800000      jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
-			EOF
+			',
 	}, # ip6_net
 	ip6_src_net => {
 		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		expr => 'ip6 src net 2000::/3',
 		aliases => ['src net 2000::/3'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 7
@@ -4629,14 +4629,14 @@ my %accept_blocks = (
 			(005) jeq      #0x20000000      jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # ip6_src_net
 	ip6_dst_net => {
 		skip => ipv6_disabled(),
 		DLT => 'RAW',
 		expr => 'ip6 dst net ff00::/8',
 		aliases => ['dst net ff00::/8'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 7
@@ -4645,24 +4645,24 @@ my %accept_blocks = (
 			(005) jeq      #0xff000000      jt 6	jf 7
 			(006) ret      #262144
 			(007) ret      #0
-			EOF
+			',
 	}, # ip6_net
 	ip6_multicast => {
 		DLT => 'IPV6',
 		expr => 'ip6 multicast',
-		unopt => <<~'EOF',
+		unopt => '
 			(000) ld       #0x0
 			(001) jeq      #0x0             jt 2	jf 5
 			(002) ldb      [24]
 			(003) jeq      #0xff            jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
-			EOF
+			',
 	}, # ip6_multicast
 
 	icmp_types => {
 		DLT => 'EN10MB',
-		expr => <<~'EOF',
+		expr => '
 			0 == icmp-echoreply &&
 			3 == icmp-unreach &&
 			4 == icmp-sourcequench &&
@@ -4678,14 +4678,14 @@ my %accept_blocks = (
 			16 == icmp-ireqreply &&
 			17 == icmp-maskreq &&
 			18 == icmp-maskreply
-			EOF
-		opt => <<~'EOF',
+			',
+		opt => '
 			(000) ret      #262144
-			EOF
+			',
 	}, # icmp_types
 	icmp6_types => {
 		DLT => 'IPV6',
-		expr => <<~'EOF',
+		expr => '
 			1 == icmp6-destinationunreach &&
 			2 == icmp6-packettoobig &&
 			3 == icmp6-timeexceeded &&
@@ -4715,15 +4715,15 @@ my %accept_blocks = (
 			151 == icmp6-multicastrouteradvert &&
 			152 == icmp6-multicastroutersolicit &&
 			153 == icmp6-multicastrouterterm
-			EOF
-		opt => <<~'EOF',
+			',
+		opt => '
 			(000) ret      #262144
-			EOF
+			',
 	}, # icmp6_types
 
 	tcp_flags => {
 		DLT => 'EN10MB',
-		expr => <<~'EOF',
+		expr => '
 			0x01 == tcp-fin &&
 			0x02 == tcp-syn &&
 			0x04 == tcp-rst &&
@@ -4732,24 +4732,24 @@ my %accept_blocks = (
 			0x20 == tcp-urg &&
 			0x40 == tcp-ece &&
 			0x80 == tcp-cwr
-			EOF
-		opt => <<~'EOF',
+			',
+		opt => '
 			(000) ret      #262144
-			EOF
+			',
 	}, # tcp_flags
 
 	named_offsets => {
 		DLT => 'EN10MB',
-		expr => <<~'EOF',
+		expr => '
 			icmptype == 0 &&
 			icmpcode == 1 &&
 			icmp6type == 0 &&
 			icmp6code == 1 &&
 			tcpflags == 13
-			EOF
-		opt => <<~'EOF',
+			',
+		opt => '
 			(000) ret      #262144
-			EOF
+			',
 	}, # offsets
 
 	# In the tests below "smtp" depends on getaddrinfo().
@@ -4761,7 +4761,7 @@ my %accept_blocks = (
 			'tcp src or dst port 25',
 			'tcp src or dst port smtp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -4782,13 +4782,13 @@ my %accept_blocks = (
 			(017) jeq      #0x19            jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # tcp_port
 	tcp_src_port => {
 		DLT=> 'EN10MB',
 		expr => 'tcp src port 25',
 		aliases => ['tcp src port smtp'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -4805,13 +4805,13 @@ my %accept_blocks = (
 			(013) jeq      #0x19            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # tcp_src_port
 	tcp_dst_port => {
 		DLT=> 'EN10MB',
 		expr => 'tcp dst port 25',
 		aliases => ['tcp dst port smtp'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -4828,7 +4828,7 @@ my %accept_blocks = (
 			(013) jeq      #0x19            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # tcp_dst_port
 	tcp_portrange => {
 		DLT=> 'EN10MB',
@@ -4850,7 +4850,7 @@ my %accept_blocks = (
 			'tcp src or dst portrange 53-smtp',
 			'tcp src or dst portrange domain-smtp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -4874,7 +4874,7 @@ my %accept_blocks = (
 			(020) jgt      #0x35            jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # tcp_portrange
 	tcp_src_portrange => {
 		DLT=> 'EN10MB',
@@ -4888,7 +4888,7 @@ my %accept_blocks = (
 			'tcp src portrange 53-smtp',
 			'tcp src portrange domain-smtp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -4906,7 +4906,7 @@ my %accept_blocks = (
 			(014) jgt      #0x35            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # tcp_src_portrange
 	tcp_dst_portrange => {
 		DLT=> 'EN10MB',
@@ -4920,7 +4920,7 @@ my %accept_blocks = (
 			'tcp dst portrange 53-smtp',
 			'tcp dst portrange domain-smtp',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -4938,7 +4938,7 @@ my %accept_blocks = (
 			(014) jgt      #0x35            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # tcp_dst_portrange
 	tcp_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -4955,7 +4955,7 @@ my %accept_blocks = (
 			'tcp src or dst portrange smtp-smtp',
 			'tcp src or dst portrange 25',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -4979,7 +4979,7 @@ my %accept_blocks = (
 			(020) jgt      #0x19            jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # tcp_portrange_degenerate
 	tcp_src_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -4990,7 +4990,7 @@ my %accept_blocks = (
 			'tcp src portrange smtp-smtp',
 			'tcp src portrange 25',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5008,7 +5008,7 @@ my %accept_blocks = (
 			(014) jgt      #0x19            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # tcp_src_portrange_degenerate
 	tcp_dst_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -5019,7 +5019,7 @@ my %accept_blocks = (
 			'tcp dst portrange smtp-smtp',
 			'tcp dst portrange 25',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5037,7 +5037,7 @@ my %accept_blocks = (
 			(014) jgt      #0x19            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # tcp_dst_portrange_degenerate
 	# In the tests below "domain" depends on getaddrinfo().
 	udp_port => {
@@ -5048,7 +5048,7 @@ my %accept_blocks = (
 			'udp src or dst port 53',
 			'udp src or dst port domain',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5069,13 +5069,13 @@ my %accept_blocks = (
 			(017) jeq      #0x35            jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # udp_port
 	udp_src_port => {
 		DLT=> 'EN10MB',
 		expr => 'udp src port 53',
 		aliases => ['udp src port domain'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5092,13 +5092,13 @@ my %accept_blocks = (
 			(013) jeq      #0x35            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # udp_src_port
 	udp_dst_port => {
 		DLT=> 'EN10MB',
 		expr => 'udp dst port 53',
 		aliases => ['udp dst port domain'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5115,7 +5115,7 @@ my %accept_blocks = (
 			(013) jeq      #0x35            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # udp_dst_port
 	udp_portrange => {
 		DLT=> 'EN10MB',
@@ -5137,7 +5137,7 @@ my %accept_blocks = (
 			'udp src or dst portrange 68-bootps',
 			'udp src or dst portrange bootpc-bootps',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -5161,7 +5161,7 @@ my %accept_blocks = (
 			(020) jgt      #0x44            jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # udp_portrange
 	udp_src_portrange => {
 		DLT=> 'EN10MB',
@@ -5175,7 +5175,7 @@ my %accept_blocks = (
 			'udp src portrange 68-bootps',
 			'udp src portrange bootpc-bootps',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5193,7 +5193,7 @@ my %accept_blocks = (
 			(014) jgt      #0x44            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # udp_src_portrange
 	udp_dst_portrange => {
 		DLT=> 'EN10MB',
@@ -5207,7 +5207,7 @@ my %accept_blocks = (
 			'udp dst portrange 68-bootps',
 			'udp dst portrange bootpc-bootps',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5225,7 +5225,7 @@ my %accept_blocks = (
 			(014) jgt      #0x44            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # udp_dst_portrange
 	udp_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -5242,7 +5242,7 @@ my %accept_blocks = (
 			'udp src or dst portrange domain-domain',
 			'udp src or dst portrange 53',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -5266,7 +5266,7 @@ my %accept_blocks = (
 			(020) jgt      #0x35            jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # udp_portrange_degenerate
 	udp_src_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -5277,7 +5277,7 @@ my %accept_blocks = (
 			'udp src portrange domain-domain',
 			'udp src portrange 53',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5295,7 +5295,7 @@ my %accept_blocks = (
 			(014) jgt      #0x35            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # udp_src_portrange_degenerate
 	udp_dst_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -5306,7 +5306,7 @@ my %accept_blocks = (
 			'udp dst portrange domain-domain',
 			'udp dst portrange 53',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5324,7 +5324,7 @@ my %accept_blocks = (
 			(014) jgt      #0x35            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # udp_dst_portrange_degenerate
 	# SCTP tests below do not use service names because the translation is
 	# currently broken and may not have a suitable /etc/services contents
@@ -5333,7 +5333,7 @@ my %accept_blocks = (
 		DLT=> 'EN10MB',
 		expr => 'sctp port 5672',
 		aliases => ['sctp src or dst port 5672'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5354,12 +5354,12 @@ my %accept_blocks = (
 			(017) jeq      #0x1628          jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # sctp_port
 	sctp_src_port => {
 		DLT=> 'EN10MB',
 		expr => 'sctp src port 5672',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5376,12 +5376,12 @@ my %accept_blocks = (
 			(013) jeq      #0x1628          jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # sctp_src_port
 	sctp_dst_port => {
 		DLT=> 'EN10MB',
 		expr => 'sctp dst port 5672',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5398,7 +5398,7 @@ my %accept_blocks = (
 			(013) jeq      #0x1628          jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
-			EOF
+			',
 	}, # sctp_dst_port
 	sctp_portrange => {
 		DLT=> 'EN10MB',
@@ -5408,7 +5408,7 @@ my %accept_blocks = (
 			'sctp src or dst portrange 1-1023',
 			'sctp src or dst portrange 1023-1',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -5432,13 +5432,13 @@ my %accept_blocks = (
 			(020) jgt      #0x3ff           jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # sctp_portrange
 	sctp_src_portrange => {
 		DLT=> 'EN10MB',
 		expr => 'sctp src portrange 1-1023',
 		aliases => ['sctp src portrange 1023-1'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5456,13 +5456,13 @@ my %accept_blocks = (
 			(014) jgt      #0x3ff           jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # sctp_src_portrange
 	sctp_dst_portrange => {
 		DLT=> 'EN10MB',
 		expr => 'sctp dst portrange 1-1023',
 		aliases => ['sctp dst portrange 1023-1'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5480,7 +5480,7 @@ my %accept_blocks = (
 			(014) jgt      #0x3ff           jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # sctp_dst_portrange
 	sctp_portrange_degenerate => {
 		DLT=> 'EN10MB',
@@ -5490,7 +5490,7 @@ my %accept_blocks = (
 			'sctp src or dst portrange 5672-5672',
 			'sctp src or dst portrange 5672',
 		],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 9
 			(002) ldb      [20]
@@ -5514,13 +5514,13 @@ my %accept_blocks = (
 			(020) jgt      #0x1628          jt 22	jf 21
 			(021) ret      #262144
 			(022) ret      #0
-			EOF
+			',
 	}, # sctp_portrange_degenerate
 	sctp_src_portrange_degenerate => {
 		DLT=> 'EN10MB',
 		expr => 'sctp src portrange 5672-5672',
 		aliases => ['sctp src portrange 5672'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5538,13 +5538,13 @@ my %accept_blocks = (
 			(014) jgt      #0x1628          jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # sctp_src_portrange_degenerate
 	sctp_dst_portrange_degenerate => {
 		DLT=> 'EN10MB',
 		expr => 'sctp dst portrange 5672-5672',
 		aliases => ['sctp dst portrange 5672'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
 			(002) ldb      [20]
@@ -5562,14 +5562,14 @@ my %accept_blocks = (
 			(014) jgt      #0x1628          jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
-			EOF
+			',
 	}, # sctp_dst_portrange_degenerate
 	port => {
 		DLT=> 'EN10MB',
 		expr => 'port 7',
 		# Do not try a service name due to SCTP.
 		alias => ['src or dst port 7'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 10
 			(002) ldb      [20]
@@ -5594,12 +5594,12 @@ my %accept_blocks = (
 			(021) jeq      #0x7             jt 22	jf 23
 			(022) ret      #262144
 			(023) ret      #0
-			EOF
+			',
 	}, # port
 	src_port => {
 		DLT=> 'EN10MB',
 		expr => 'src port 7',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5620,12 +5620,12 @@ my %accept_blocks = (
 			(017) jeq      #0x7             jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # src_port
 	dst_port => {
 		DLT=> 'EN10MB',
 		expr => 'dst port 7',
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5646,13 +5646,13 @@ my %accept_blocks = (
 			(017) jeq      #0x7             jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
-			EOF
+			',
 	}, # dst_port
 	portrange => {
 		DLT=> 'EN10MB',
 		expr => 'portrange 1-1023',
 		aliases => ['portrange 1023-1'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 11
 			(002) ldb      [20]
@@ -5680,13 +5680,13 @@ my %accept_blocks = (
 			(024) jgt      #0x3ff           jt 26	jf 25
 			(025) ret      #262144
 			(026) ret      #0
-			EOF
+			',
 	}, # portrange
 	src_portrange => {
 		DLT=> 'EN10MB',
 		expr => 'src portrange 1-1023',
 		aliases => ['src portrange 1023-1'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5708,13 +5708,13 @@ my %accept_blocks = (
 			(018) jgt      #0x3ff           jt 20	jf 19
 			(019) ret      #262144
 			(020) ret      #0
-			EOF
+			',
 	}, # src_portrange
 	dst_portrange => {
 		DLT=> 'EN10MB',
 		expr => 'dst portrange 1-1023',
 		aliases => ['dst portrange 1023-1'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5736,13 +5736,13 @@ my %accept_blocks = (
 			(018) jgt      #0x3ff           jt 20	jf 19
 			(019) ret      #262144
 			(020) ret      #0
-			EOF
+			',
 	}, # dst_portrange
 	portrange_degenerate => {
 		DLT=> 'EN10MB',
 		expr => 'portrange 1812-1812',
 		aliases => ['portrange 1812'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 11
 			(002) ldb      [20]
@@ -5770,13 +5770,13 @@ my %accept_blocks = (
 			(024) jgt      #0x714           jt 26	jf 25
 			(025) ret      #262144
 			(026) ret      #0
-			EOF
+			',
 	}, # portrange_degenerate
 	src_portrange_degenerate => {
 		DLT=> 'EN10MB',
 		expr => 'src portrange 1812-1812',
 		aliases => ['src portrange 1812'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5798,13 +5798,13 @@ my %accept_blocks = (
 			(018) jgt      #0x714           jt 20	jf 19
 			(019) ret      #262144
 			(020) ret      #0
-			EOF
+			',
 	}, # src_portrange_degenerate
 	dst_portrange_degenerate => {
 		DLT=> 'EN10MB',
 		expr => 'dst portrange 1812-1812',
 		aliases => ['dst portrange 1812'],
-		opt => <<~'EOF',
+		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
@@ -5826,7 +5826,7 @@ my %accept_blocks = (
 			(018) jgt      #0x714           jt 20	jf 19
 			(019) ret      #262144
 			(020) ret      #0
-			EOF
+			',
 	}, # dst_portrange_degenerate
 );
 
@@ -6408,7 +6408,12 @@ use constant TIMED_OUT => 124;
 # conditions.
 use constant EX_DATAERR => 65;
 
-my $tmpdir = File::Temp->newdir ('libpcap_TESTrun_XXXXXXXX', TMPDIR => 1); # Unlinks automatically.
+# No File::Temp->newdir() in Perl 5.8.4.
+my $tmpdir = tempdir (
+	'libpcap_TESTrun_XXXXXXXX',
+	TMPDIR => 1,
+	CLEANUP => 1
+);
 my $filename_expected = 'expected.txt';
 my $filename_stdout = 'stdout.txt';
 my $filename_filter = 'filter.txt';
@@ -6565,31 +6570,31 @@ sub validate_stdout_test {
 }
 
 sub common_filtertest_args {
-	my %test = @_;
+	my $test = shift;
 	# BSD timeout(1) does not implement --verbose.
 	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
 	push @args, $filtertest;
-	push @args, ('-s', $test{snaplen}) if defined $test{snaplen};
-	push @args, ('-m', $test{netmask}) if defined $test{netmask};
-	push @args, '-O' unless $test{optimize};
-	push @args, '-l' if $test{linuxext};
+	push @args, ('-s', $test->{snaplen}) if defined $test->{snaplen};
+	push @args, ('-m', $test->{netmask}) if defined $test->{netmask};
+	push @args, '-O' unless $test->{optimize};
+	push @args, '-l' if $test->{linuxext};
 	return @args;
 }
 
 sub run_accept_test {
-	my %test = @_;
-	my @args = common_filtertest_args %test;
+	my $test = shift;
+	my @args = common_filtertest_args $test;
 	# Write the filter expression to a file because the version of
 	# system() that takes a list does not support redirecting stdout,
 	# and the version of system() that takes a string does not escape
 	# special characters in the filter expression, which becomes
 	# invalid shell syntax.
-	file_put_contents mytmpfile ($filename_filter), $test{expr};
-	file_put_contents mytmpfile ($filename_expected), $test{expected};
+	file_put_contents mytmpfile ($filename_filter), $test->{expr};
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
-		$test{DLT},
+		$test->{DLT},
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1"
 	);
@@ -6597,15 +6602,15 @@ sub run_accept_test {
 }
 
 sub run_apply_test {
-	my %test = @_;
-	my @args = common_filtertest_args %test;
-	file_put_contents mytmpfile ($filename_filter), $test{expr};
-	file_put_contents mytmpfile ($filename_expected), $test{expected};
+	my $test = shift;
+	my @args = common_filtertest_args $test;
+	file_put_contents mytmpfile ($filename_filter), $test->{expr};
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
 		'-r',
-		SAVEFILE_DIR . $test{savefile},
+		SAVEFILE_DIR . $test->{savefile},
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1"
 	);
@@ -6613,13 +6618,13 @@ sub run_apply_test {
 }
 
 sub run_reject_test {
-	my %test = @_;
-	my @args = common_filtertest_args %test;
-	file_put_contents mytmpfile ($filename_filter), $test{expr};
+	my $test = shift;
+	my @args = common_filtertest_args $test;
+	file_put_contents mytmpfile ($filename_filter), $test->{expr};
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
-		$test{DLT},
+		$test->{DLT},
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
@@ -6652,16 +6657,16 @@ sub run_reject_test {
 			reason => 'error string mismatch',
 			details => file_get_contents mytmpfile $filename_stdout
 		}
-	}	if ! string_in_file ($test{expected}, mytmpfile $filename_stdout);
+	}	if ! string_in_file ($test->{expected}, mytmpfile $filename_stdout);
 
 	return {char => CHAR_PASSED};
 }
 
 sub run_skip_test {
-	my %test = @_;
+	my $test = shift;
 	return {
 		char => CHAR_SKIPPED,
-		skip => $test{skip},
+		skip => $test->{skip},
 	};
 }
 
@@ -6698,15 +6703,21 @@ foreach my $testname (sort keys %accept_blocks) {
 				skip => $test->{skip},
 			};
 			if (defined $test->{aliases}) {
-				foreach my $i (0 .. $test->{aliases}->$#*) {
+				my $i = 0;
+				foreach (@{$test->{aliases}}) {
 					push @ready_to_run, {
-						label => accept_alias_label ($label, $i),
+						label => accept_alias_label ($label, $i++),
 						func => \&run_skip_test,
 						skip => $test->{skip},
 					};
 				}
 			}
 		} else {
+			# Dedent and trim to restore the format of bpf_dump().
+			my $multiline = '';
+			foreach (split /^/, $test->{$optunopt}) {
+				$multiline .= "$1\n" if /^[\t]*(\(.+)$/o;
+			}
 			my $main = {
 				label => $label,
 				func => \&run_accept_test,
@@ -6714,15 +6725,16 @@ foreach my $testname (sort keys %accept_blocks) {
 				netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 				optimize => int ($optunopt eq 'opt'),
 				linuxext => defined $test->{linuxext} && $test->{linuxext} == 1,
-				expected => $test->{$optunopt},
+				expected => $multiline,
 			};
 			$main->{$_} = $test->{$_} foreach ('DLT', 'expr');
 			push @ready_to_run, $main;
 			if (defined $test->{aliases}) {
-				foreach my $i (0 .. $test->{aliases}->$#*) {
+				my $i = 0;
+				foreach (@{$test->{aliases}}) {
 					my $alias = {
-						label => accept_alias_label ($label, $i),
-						expr => $test->{aliases}[$i],
+						label => accept_alias_label ($label, $i++),
+						expr => $_,
 					};
 					$alias->{$_} = $main->{$_} foreach ('DLT', 'func', 'optimize', 'expected', 'snaplen', 'linuxext');
 					push @ready_to_run, $alias;
@@ -6740,15 +6752,15 @@ foreach my $blockname (sort keys %apply_blocks) {
 	foreach my $optunopt ('unopt', 'opt') {
 		my $label = apply_test_label ($blockname, $optunopt);
 		defined $only_one && $only_one ne $label && next;
-		my $lines = '';
-		$lines .= $block->{results}[$_] . "\n" for (0 .. $block->{results}->$#*);
+		# Convert the array to filtertest output format.
+		my $multiline = join ("\n", @{$block->{results}}) . "\n";
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_apply_test,
 			netmask => defined $block->{netmask} ? $block->{netmask} : undef,
 			optimize => int ($optunopt eq 'opt'),
 			expr => $block->{expr},
-			expected => $lines,
+			expected => $multiline,
 			savefile => $block->{savefile},
 		};
 	}
@@ -6858,15 +6870,19 @@ if (%failed) {
 	}
 	print "\n";
 }
+
+# scalar (%hash) returns incorrect value on Perl 5.8.4.
+my $skippedcount = scalar keys %skipped;
+my $failedcount = scalar keys %failed;
 print "------------------------------------------------\n";
-printf "%4u tests skipped\n", scalar %skipped;
-printf "%4u tests failed\n", scalar %failed;
+printf "%4u tests skipped\n", $skippedcount;
+printf "%4u tests failed\n", $failedcount;
 printf "%4u tests passed\n", $passedcount;
 
-if (scalar %skipped + scalar %failed + $passedcount != $results_to_print) {
+if ($skippedcount + $failedcount + $passedcount != $results_to_print) {
 	printf STDERR "Internal error: statistics bug (%u + %u + %u != %u)\n",
-		scalar %skipped,
-		scalar %failed,
+		$skippedcount,
+		$failedcount,
 		$passedcount,
 		$results_to_print;
 	$exit_status = 2;

@@ -1,3 +1,4 @@
+require 5.10.1; # Debian 6
 use strict;
 use warnings FATAL => qw(uninitialized);
 use threads;
@@ -27,13 +28,15 @@ sub tester_thread_func {
 	my $jobid = shift;
 	$tmpid = sprintf 'job%03u', $jobid;
 	for (my $i = $jobid; $i < scalar @tests; $i += $njobs) {
-		my $result = $tests[$i]{func} ($tests[$i]->%*);
-		$result->{label} = $tests[$i]{label};
+		my $test = $tests[$i];
+		my $result = $test->{func} ($test);
+		$result->{label} = $test->{label};
 		$result_queues[$jobid]->enqueue ($result);
 	}
 	# Instead of detaching let the receiver join, this works around File::Temp
 	# not cleaning up.
-	$result_queues[$jobid]->end;
+	# No Thread::Queue->end() in Perl 5.10.1, so use an undef to mark the end.
+	$result_queues[$jobid]->enqueue (undef);
 }
 
 sub start_tests {
@@ -48,16 +51,21 @@ sub start_tests {
 # Here ordering of the results is the same as ordering of the tests because
 # this function starts at job 0 and continues round-robin, which reverses the
 # interleaving done in the thread function above; also because every attempt
-# to dequeue blocks until it returns exactly one result or reaches the end of
-# queue.
+# to dequeue blocks until it returns exactly one result.
 sub get_next_result {
 	for (0 .. $njobs - 1) {
-		my $result = $result_queues[$next_to_dequeue]->dequeue;
+		my $jobid = $next_to_dequeue;
 		$next_to_dequeue = ($next_to_dequeue + 1) % $njobs;
+		# Skip queues that have already ended.
+		next unless defined $result_queues[$jobid];
+		my $result = $result_queues[$jobid]->dequeue;
+		# A test result?
 		return $result if defined $result;
+		# No, an end-of-queue marker.
+		$result_queues[$jobid] = undef;
+		$tester_threads[$jobid]->join;
 	}
-	# All queues have ended.
-	$_->join foreach @tester_threads;
+	# No results after one complete round, therefore done.
 	return undef;
 }
 
