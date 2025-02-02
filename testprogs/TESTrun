@@ -53,6 +53,13 @@ BEGIN {
 	require 5.26.1; # Ubuntu 18.04
 	use Config;
 	use FindBin;
+	if (defined $ENV{TESTRUN_PERL}) {
+		my $newperl = $ENV{TESTRUN_PERL};
+		delete $ENV{TESTRUN_PERL};
+		print "INFO: Re-launching using TESTRUN_PERL='$newperl'.\n";
+		exec ($newperl, $FindBin::RealBin . '/' . $FindBin::RealScript, @ARGV);
+		die 'ERROR: Failed to re-launch.';
+	}
 	require $FindBin::RealBin . '/TEST' . ($Config{useithreads} ? 'mt' : 'st') . '.pm';
 }
 
