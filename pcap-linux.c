@@ -93,6 +93,7 @@
 #include <linux/ethtool.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
+#include <linux/netlink.h>
 
 #include <linux/if_arp.h>
 #ifndef ARPHRD_IEEE802154
