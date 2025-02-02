@@ -6731,10 +6731,12 @@ foreach my $blockname (sort keys %apply_blocks) {
 		die "Internal error: apply test block '$blockname' does not define key '$_'";
 	}
 	foreach my $optunopt ('unopt', 'opt') {
+		my $label = apply_test_label ($blockname, $optunopt);
+		defined $only_one && $only_one ne $label && next;
 		my $lines = '';
 		$lines .= $block->{results}[$_] . "\n" for (0 .. $block->{results}->$#*);
 		push @ready_to_run, {
-			label => apply_test_label ($blockname, $optunopt),
+			label => $label,
 			func => \&run_apply_test,
 			netmask => defined $block->{netmask} ? $block->{netmask} : undef,
 			optimize => int ($optunopt eq 'opt'),
