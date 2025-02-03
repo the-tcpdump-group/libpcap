@@ -71,8 +71,7 @@ PCAP_API void pcap_set_print_dot_graph(int);
 #endif
 
 #ifdef __linux__
-#include <linux/filter.h>
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#include <linux/filter.h> // SKF_AD_VLAN_TAG_PRESENT
 /*
  * pcap-int.h is a private header and should not be included by programs that
  * use libpcap.  This test program uses a special hack because it is the
@@ -80,8 +79,6 @@ PCAP_API void pcap_set_print_dot_graph(int);
  * elevated privileges.  Do not do this in normal code.
  */
 #include <pcap-int.h>
-#define LINUX_BPF_EXT
-#endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 #endif // __linux__
 
 static char *program_name;
@@ -228,7 +225,7 @@ main(int argc, char **argv)
 	char *infile = NULL;
 	char *insavefile = NULL;
 	int Oflag = 1;
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 	int lflag = 0;
 #endif
 	int snaplen = MAXIMUM_SNAPLEN;
@@ -320,7 +317,7 @@ main(int argc, char **argv)
 		}
 
 		case 'l':
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 			// Enable Linux BPF extensions.
 			lflag = 1;
 			break;
@@ -341,7 +338,7 @@ main(int argc, char **argv)
 		if (gflag)
 			warn("-g is a no-op with -r");
 #endif
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 		if (lflag)
 			warn("-l is a no-op with -r");
 #endif
@@ -366,12 +363,21 @@ main(int argc, char **argv)
 		pd = pcap_open_dead(dlt, snaplen);
 		if (pd == NULL)
 			error(EX_SOFTWARE, "Can't open fake pcap_t");
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 		if (lflag) {
+#ifdef SKF_AD_VLAN_TAG_PRESENT
+			/*
+			 * Generally speaking, the fact the header defines the
+			 * symbol does not necessarily mean the running kernel
+			 * supports what is known as [vlanp] and everything
+			 * before it, but in this use case the filter program
+			 * is not meant for the kernel.
+			 */
 			pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+#endif // SKF_AD_VLAN_TAG_PRESENT
 			pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
 		}
-#endif
+#endif // __linux__
 #ifdef BDEBUG
 		pcap_set_optimizer_debug(dflag);
 		pcap_set_print_dot_graph(gflag);
@@ -434,7 +440,7 @@ usage(FILE *f)
 	    "g"
 #endif
 	    "O"
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 	    "l"
 #endif
 	    "] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expr ]\n",
@@ -450,7 +456,7 @@ usage(FILE *f)
 		(void)fprintf(f, "\nOptions specific to %s:\n", program_name);
 		(void)fprintf(f, "  <dlt>           a valid DLT name, e.g. 'EN10MB'\n");
 		(void)fprintf(f, "  <expr>          a valid filter expression, e.g. 'tcp port 80'\n");
-#ifdef LINUX_BPF_EXT
+#ifdef __linux__
 		(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
 #endif
 #ifdef BDEBUG

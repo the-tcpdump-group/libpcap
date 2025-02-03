@@ -2424,10 +2424,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 	int			val;
 	int			err = 0;
 	struct packet_mreq	mr;
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
-	int			bpf_extensions;
-	socklen_t		len = sizeof(bpf_extensions);
-#endif
 
 	/*
 	 * Open a socket with protocol family packet. If cooked is true,
@@ -2763,31 +2759,39 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	handle->fd = sock_fd;
 
-#ifdef SO_BPF_EXTENSIONS
+	/*
+	 * Any supported Linux version implements at least four auxiliary
+	 * data items (SKF_AD_PROTOCOL, SKF_AD_PKTTYPE, SKF_AD_IFINDEX and
+	 * SKF_AD_NLATTR).  Set a flag so the code generator can use these
+	 * items if necessary.
+	 */
+	handle->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+
 	/*
 	 * Can we generate special code for VLAN checks?
 	 * (XXX - what if we need the special code but it's not supported
 	 * by the OS?  Is that possible?)
+	 *
+	 * This depends on both a runtime condition (the running Linux kernel
+	 * must support at least SKF_AD_VLAN_TAG_PRESENT in the auxiliary data
+	 * and must support SO_BPF_EXTENSIONS in order to tell the userland
+	 * process what it supports) and a compile-time condition (the OS
+	 * headers must define both constants in order to compile libpcap code
+	 * that asks the kernel about the support).
 	 */
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	int bpf_extensions;
+	socklen_t len = sizeof(bpf_extensions);
 	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
 	    &bpf_extensions, &len) == 0) {
-		/*
-		 * This is a live capture with some BPF extensions support,
-		 * so indicate that at least the auxiliary data items from
-		 * Linux 2.6.27 are available (this concerns SKF_AD_PKTTYPE
-		 * and SKF_AD_IFINDEX in the first place).
-		 */
-		handle->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
-#ifdef SKF_AD_VLAN_TAG_PRESENT
 		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
 			/*
 			 * Yes, we can.  Request that we do so.
 			 */
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
-#endif // SKF_AD_VLAN_TAG_PRESENT
 	}
-#endif // SO_BPF_EXTENSIONS
+#endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 
 	return status;
 }
