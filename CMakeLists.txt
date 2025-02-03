@@ -2139,6 +2139,11 @@ else(WIN32)
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
+
+        # This check is for TESTrun purposes, not for the C code.
+        # This and the #cmakedefine01 in cmakeconfig.h.in reproduce exactly the
+        # behaviour of "AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], ...".
+        check_symbol_exists(SKF_AD_VLAN_TAG_PRESENT linux/filter.h HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.

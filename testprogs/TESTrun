@@ -102,6 +102,18 @@ sub is_not_linux {
 	return $^O eq 'linux' ? '' : 'not running on Linux';
 }
 
+sub have_decl {
+	my ($name, $value) = @_;
+	$name = 'HAVE_DECL_' . $name;
+	# "Unlike the other ‘AC_CHECK_*S’ macros, when a symbol is not declared,
+	# HAVE_DECL_symbol is defined to ‘0’ instead of leaving HAVE_DECL_symbol
+	# undeclared." -- GNU Autoconf manual.
+	#
+	# (This requires the CMake leg to do the same for the same symbol.)
+	die "no $name in $config_h" unless defined $config{$name};
+	return int ($config{$name}) == $value ? "$name=$value" : '';
+}
+
 # In accept_blocks the top-level keys are test block names.  Each test block
 # defines one or more tests.  When possible, a test block name should be easy
 # to relate with the main filter expression, for example, ip_multicast for
@@ -2147,7 +2159,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_netanalyzer_unary
 	vlan_eth_linuxext_nullary => {
-		skip => is_not_linux(),
+		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan',
@@ -2163,7 +2175,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_eth_linuxext_nullary
 	vlan_eth_linuxext_unary => {
-		skip => is_not_linux(),
+		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan 10',
@@ -2186,7 +2198,7 @@ my %accept_blocks = (
 			',
 	}, # vlan_eth_linuxext_unary
 	vlan_and_vlan_eth_linuxext => {
-		skip => is_not_linux(),
+		skip => (is_not_linux() or have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0)),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		expr => 'vlan and vlan',

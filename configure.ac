@@ -1107,6 +1107,9 @@ linux)
 		#include <sys/types.h>
 		#include <linux/if_packet.h>
 	    ])
+
+	# This check is for TESTrun purposes, not for the C code.
+	AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], [], [], [[#include <linux/filter.h>]])
 	;;
 
 bpf)
