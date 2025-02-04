@@ -3563,11 +3563,9 @@ pcap_get_ring_frame_status(pcap_t *handle, u_int offset)
 	switch (handlep->tp_version) {
 	case TPACKET_V2:
 		return __atomic_load_n(&h.h2->tp_status, __ATOMIC_ACQUIRE);
-		break;
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
 		return __atomic_load_n(&h.h3->hdr.bh1.block_status, __ATOMIC_ACQUIRE);
-		break;
 #endif
 	}
 	/* This should not happen. */
