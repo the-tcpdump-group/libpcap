@@ -2233,7 +2233,7 @@ linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	;;
 
 solaris*)
-	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
+	AC_DEFINE(HAVE_SOLARIS,1,[On Solaris])
 
 	DYEXT="so"
 
