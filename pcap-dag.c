@@ -18,6 +18,11 @@
 
 #include "pcap-int.h"
 
+#if __BYTE_ORDER == __BIG_ENDIAN
+// Will need SWAPLL().
+#include "pcap-util.h"
+#endif
+
 #include "dagapi.h"
 #include "dagpci.h"
 #include "dag_config_api.h"

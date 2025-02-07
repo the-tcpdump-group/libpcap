@@ -40,6 +40,7 @@ The Regents of the University of California.  All rights reserved.\n";
   #include "unix.h"
 #else
   #include <unistd.h>
+  #include <sysexits.h>
 #endif
 #include <fcntl.h>
 #include <errno.h>
@@ -69,11 +70,22 @@ PCAP_API void pcap_set_optimizer_debug(int);
 PCAP_API void pcap_set_print_dot_graph(int);
 #endif
 
+#ifdef __linux__
+#include <linux/filter.h> // SKF_AD_VLAN_TAG_PRESENT
+/*
+ * pcap-int.h is a private header and should not be included by programs that
+ * use libpcap.  This test program uses a special hack because it is the
+ * simplest way to test internal code paths that otherwise would require
+ * elevated privileges.  Do not do this in normal code.
+ */
+#include <pcap-int.h>
+#endif // __linux__
+
 static char *program_name;
 
 /* Forwards */
-static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
+static void PCAP_NORETURN usage(FILE *);
+static void PCAP_NORETURN error(const int, const char *, ...) PCAP_PRINTFLIKE(2, 3);
 static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 
 /*
@@ -95,10 +107,10 @@ read_infile(char *fname)
 
 	fd = open(fname, O_RDONLY|O_BINARY);
 	if (fd < 0)
-		error("can't open %s: %s", fname, pcap_strerror(errno));
+		error(EX_NOINPUT, "can't open %s: %s", fname, pcap_strerror(errno));
 
 	if (fstat(fd, &buf) < 0)
-		error("can't stat %s: %s", fname, pcap_strerror(errno));
+		error(EX_NOINPUT, "can't stat %s: %s", fname, pcap_strerror(errno));
 
 	/*
 	 * _read(), on Windows, has an unsigned int byte count and an
@@ -108,17 +120,17 @@ read_infile(char *fname)
 	 * the end of the string.)
 	 */
 	if (buf.st_size > INT_MAX - 1)
-		error("%s is larger than %d bytes; that's too large", fname,
+		error(EX_DATAERR, "%s is larger than %d bytes; that's too large", fname,
 		    INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
 	if (cp == NULL)
-		error("malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
+		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
 	cc = (int)read(fd, cp, (u_int)buf.st_size);
 	if (cc < 0)
-		error("read %s: %s", fname, pcap_strerror(errno));
+		error(EX_IOERR, "read %s: %s", fname, pcap_strerror(errno));
 	if (cc != buf.st_size)
-		error("short read %s (%d != %d)", fname, cc, (int)buf.st_size);
+		error(EX_IOERR, "short read %s (%d != %d)", fname, cc, (int)buf.st_size);
 
 	close(fd);
 	/* replace "# comment" with spaces */
@@ -133,7 +145,7 @@ read_infile(char *fname)
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -146,7 +158,7 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
 
@@ -187,7 +199,7 @@ copy_argv(register char **argv)
 
 	buf = (char *)malloc(len);
 	if (buf == NULL)
-		error("copy_argv: malloc");
+		error(EX_OSERR, "%s: malloc", __func__);
 
 	p = argv;
 	dst = buf;
@@ -206,15 +218,18 @@ main(int argc, char **argv)
 {
 	char *cp;
 	int op;
-	int dflag;
+	int dflag = 1;
 #ifdef BDEBUG
-	int gflag;
+	int gflag = 0;
 #endif
-	char *infile;
-	int Oflag;
-	int snaplen;
+	char *infile = NULL;
+	char *insavefile = NULL;
+	int Oflag = 1;
+#ifdef __linux__
+	int lflag = 0;
+#endif
+	int snaplen = MAXIMUM_SNAPLEN;
 	char *p;
-	int dlt;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 	char *cmdbuf;
 	pcap_t *pd;
@@ -226,23 +241,18 @@ main(int argc, char **argv)
 		return 1;
 #endif /* _WIN32 */
 
-	dflag = 1;
-#ifdef BDEBUG
-	gflag = 0;
-#endif
-
-	infile = NULL;
-	Oflag = 1;
-	snaplen = MAXIMUM_SNAPLEN;
-
 	if ((cp = strrchr(argv[0], '/')) != NULL)
 		program_name = cp + 1;
 	else
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "dF:gm:Os:")) != -1) {
+	while ((op = getopt(argc, argv, "hdF:gm:Os:lr:")) != -1) {
 		switch (op) {
+
+		case 'h':
+			usage(stdout);
+			/* NOTREACHED */
 
 		case 'd':
 			++dflag;
@@ -253,11 +263,15 @@ main(int argc, char **argv)
 			++gflag;
 			break;
 #else
-			error("libpcap and filtertest not built with optimizer debugging enabled");
+			error(EX_USAGE, "libpcap and filtertest not built with optimizer debugging enabled");
 #endif
 
 		case 'F':
 			infile = optarg;
+			break;
+
+		case 'r':
+			insavefile = optarg;
 			break;
 
 		case 'O':
@@ -270,14 +284,15 @@ main(int argc, char **argv)
 			switch (inet_pton(AF_INET, optarg, &addr)) {
 
 			case 0:
-				error("invalid netmask %s", optarg);
+				error(EX_DATAERR, "invalid netmask %s", optarg);
 
 			case -1:
-				error("invalid netmask %s: %s", optarg,
+				error(EX_DATAERR, "invalid netmask %s: %s", optarg,
 				    pcap_strerror(errno));
 
 			case 1:
-				netmask = addr;
+				// inet_pton(): network byte order, pcap_compile(): host byte order.
+				netmask = ntohl(addr);
 				break;
 			}
 			break;
@@ -291,7 +306,7 @@ main(int argc, char **argv)
 			if (optarg == end || *end != '\0'
 			    || long_snaplen < 0
 			    || long_snaplen > MAXIMUM_SNAPLEN)
-				error("invalid snaplen %s", optarg);
+				error(EX_DATAERR, "invalid snaplen %s", optarg);
 			else {
 				if (snaplen == 0)
 					snaplen = MAXIMUM_SNAPLEN;
@@ -301,46 +316,87 @@ main(int argc, char **argv)
 			break;
 		}
 
+		case 'l':
+#ifdef __linux__
+			// Enable Linux BPF extensions.
+			lflag = 1;
+			break;
+#else
+			error(EX_USAGE, "libpcap and filtertest built without Linux BPF extensions");
+#endif
+
 		default:
-			usage();
+			usage(stderr);
 			/* NOTREACHED */
 		}
 	}
 
-	if (optind >= argc) {
-		usage();
-		/* NOTREACHED */
-	}
+	if (insavefile) {
+		if (dflag > 1)
+			warn("-d is a no-op with -r");
+#ifdef BDEBUG
+		if (gflag)
+			warn("-g is a no-op with -r");
+#endif
+#ifdef __linux__
+		if (lflag)
+			warn("-l is a no-op with -r");
+#endif
 
-	dlt = pcap_datalink_name_to_val(argv[optind]);
-	if (dlt < 0) {
-		dlt = (int)strtol(argv[optind], &p, 10);
-		if (p == argv[optind] || *p != '\0')
-			error("invalid data link type %s", argv[optind]);
+		char errbuf[PCAP_ERRBUF_SIZE];
+		if (NULL == (pd = pcap_open_offline(insavefile, errbuf)))
+			error(EX_NOINPUT, "Failed opening: %s", errbuf);
+	} else {
+		// Must have at least one command-line argument for the DLT.
+		if (optind >= argc) {
+			usage(stderr);
+			/* NOTREACHED */
+		}
+		int dlt = pcap_datalink_name_to_val(argv[optind]);
+		if (dlt < 0) {
+			dlt = (int)strtol(argv[optind], &p, 10);
+			if (p == argv[optind] || *p != '\0')
+				error(EX_DATAERR, "invalid data link type %s", argv[optind]);
+		}
+		optind++;
+
+		pd = pcap_open_dead(dlt, snaplen);
+		if (pd == NULL)
+			error(EX_SOFTWARE, "Can't open fake pcap_t");
+#ifdef __linux__
+		if (lflag) {
+#ifdef SKF_AD_VLAN_TAG_PRESENT
+			/*
+			 * Generally speaking, the fact the header defines the
+			 * symbol does not necessarily mean the running kernel
+			 * supports what is known as [vlanp] and everything
+			 * before it, but in this use case the filter program
+			 * is not meant for the kernel.
+			 */
+			pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+#endif // SKF_AD_VLAN_TAG_PRESENT
+			pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+		}
+#endif // __linux__
+#ifdef BDEBUG
+		pcap_set_optimizer_debug(dflag);
+		pcap_set_print_dot_graph(gflag);
+#endif
 	}
 
 	if (infile)
 		cmdbuf = read_infile(infile);
 	else
-		cmdbuf = copy_argv(&argv[optind+1]);
-
-#ifdef BDEBUG
-	pcap_set_optimizer_debug(dflag);
-	pcap_set_print_dot_graph(gflag);
-#endif
-
-	pd = pcap_open_dead(dlt, snaplen);
-	if (pd == NULL)
-		error("Can't open fake pcap_t");
+		cmdbuf = copy_argv(&argv[optind]);
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
-		error("%s", pcap_geterr(pd));
+		error(EX_DATAERR, "%s", pcap_geterr(pd));
 
 	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
 		warn("Filter doesn't pass validation");
 
+	if (! insavefile) {
 #ifdef BDEBUG
-	if (cmdbuf != NULL) {
 		// replace line feed with space
 		for (cp = cmdbuf; *cp != '\0'; ++cp) {
 			if (*cp == '\r' || *cp == '\n') {
@@ -349,31 +405,74 @@ main(int argc, char **argv)
 		}
 		// only show machine code if BDEBUG defined, since dflag > 3
 		printf("machine codes for filter: %s\n", cmdbuf);
-	} else
-		printf("machine codes for empty filter:\n");
 #endif
-
-	bpf_dump(&fcode, dflag);
+		bpf_dump(&fcode, dflag);
+	} else {
+		struct pcap_pkthdr *h;
+		const u_char *d;
+		int ret;
+		while (PCAP_ERROR_BREAK != (ret = pcap_next_ex(pd, &h, &d))) {
+			if (ret == PCAP_ERROR)
+				error(EX_IOERR, "pcap_next_ex() failed: %s", pcap_geterr(pd));
+			if (ret == 1)
+				printf("%d\n", pcap_offline_filter(&fcode, h, d));
+			else
+				error(EX_IOERR, "pcap_next_ex() failed: %d", ret);
+		}
+	}
 	free(cmdbuf);
 	pcap_freecode (&fcode);
 	pcap_close(pd);
 #ifdef _WIN32
 	WSACleanup();
 #endif
-	exit(0);
+	exit(EX_OK);
 }
 
 static void
-usage(void)
+usage(FILE *f)
 {
-	(void)fprintf(stderr, "%s, with %s\n", program_name,
+	(void)fprintf(f, "%s, with %s\n", program_name,
 	    pcap_lib_version());
-	(void)fprintf(stderr,
+	(void)fprintf(f,
+	    "Usage: %s [-d"
 #ifdef BDEBUG
-	    "Usage: %s [-dgO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
-#else
-	    "Usage: %s [-dO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
+	    "g"
 #endif
+	    "O"
+#ifdef __linux__
+	    "l"
+#endif
+	    "] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expr ]\n",
 	    program_name);
-	exit(1);
+	(void)fprintf(f, "       (print the filter program bytecode)\n");
+	(void)fprintf(f,
+	    "  or:  %s [-O] [ -F file ] [ -m netmask] -r file [ expression ]\n",
+	    program_name);
+	(void)fprintf(f, "       (print the filter program result for each packet)\n");
+	(void)fprintf(f, "  or:  %s -h\n", program_name);
+	(void)fprintf(f, "       (print the detailed help screen)\n");
+	if (f == stdout) {
+		(void)fprintf(f, "\nOptions specific to %s:\n", program_name);
+		(void)fprintf(f, "  <dlt>           a valid DLT name, e.g. 'EN10MB'\n");
+		(void)fprintf(f, "  <expr>          a valid filter expression, e.g. 'tcp port 80'\n");
+#ifdef __linux__
+		(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
+#endif
+#ifdef BDEBUG
+		(void)fprintf(f, "  -g              print Graphviz dot graphs for the optimizer steps\n");
+#endif
+		(void)fprintf(f, "  -m <netmask>    use this netmask for pcap_compile(), e.g. 255.255.255.0\n");
+		(void)fprintf(f, "\n");
+		(void)fprintf(f, "Options common with tcpdump:\n");
+		(void)fprintf(f, "  -d              change output format (accumulates, one -d is implicit)\n");
+		(void)fprintf(f, "  -O              do not optimize the filter program\n");
+		(void)fprintf(f, "  -F <file>       read the filter expression from the specified file\n");
+		(void)fprintf(f, "  -s <snaplen>    set the snapshot length\n");
+		(void)fprintf(f, "  -r <file>       read the packets from this savefile\n");
+		(void)fprintf(f, "\nIf no filter expression is specified, it defaults to an empty string, which\n");
+		(void)fprintf(f, "accepts all packets.  If the -F option is in use, it replaces any filter\n");
+		(void)fprintf(f, "expression specified as a command-line argument.\n");
+	}
+	exit(f == stdout ? EX_OK : EX_USAGE);
 }

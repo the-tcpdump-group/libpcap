@@ -164,6 +164,7 @@ You can get around this by installing GCC.
 	fmtutils.h	    - error message formatting prototypes
 	ftmacros.h	    - feature test macros
 	testprogs/TESTrun   - a script for "make check"
+	testprogs/TESTlib.pm - TESTrun helper file
 	testprogs/TESTmt.pm - TESTrun helper file
 	testprogs/TESTst.pm - TESTrun helper file
 	testprogs/filtertest.c      - test program for BPF compiler

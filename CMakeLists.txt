@@ -1322,11 +1322,16 @@ if(NOT WIN32)
 endif()
 
 #
-# Find the size of time_t.
+# Find and print the size of time_t.
 #
 cmake_push_check_state()
 set(CMAKE_EXTRA_INCLUDE_FILES time.h)
 check_type_size("time_t" SIZEOF_TIME_T)
+if(SIZEOF_TIME_T EQUAL 4)
+  message(STATUS "32-bit time_t")
+elseif(SIZEOF_TIME_T EQUAL 8)
+  message(STATUS "64-bit time_t")
+endif()
 cmake_pop_check_state()
 
 if(INET6)
@@ -2134,6 +2139,11 @@ else(WIN32)
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
+
+        # This check is for TESTrun purposes, not for the C code.
+        # This and the #cmakedefine01 in cmakeconfig.h.in reproduce exactly the
+        # behaviour of "AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], ...".
+        check_symbol_exists(SKF_AD_VLAN_TAG_PRESENT linux/filter.h HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.

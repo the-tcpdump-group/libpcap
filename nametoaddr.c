@@ -601,8 +601,8 @@ pcap_nametollc(const char *s)
 }
 
 /* Hex digit to 8-bit unsigned integer. */
-static inline u_char
-xdtoi(u_char c)
+u_char
+pcapint_xdtoi(const u_char c)
 {
 	if (c >= '0' && c <= '9')
 		return (u_char)(c - '0');
@@ -613,7 +613,7 @@ xdtoi(u_char c)
 }
 
 int
-__pcap_atoin(const char *s, bpf_u_int32 *addr)
+pcapint_atoin(const char *s, bpf_u_int32 *addr)
 {
 	u_int n;
 	int len;
@@ -649,7 +649,7 @@ __pcap_atoin(const char *s, bpf_u_int32 *addr)
  * normal addressing purposes, but either can appear on the wire.
  */
 int
-__pcap_atodn(const char *s, bpf_u_int32 *addr)
+pcapint_atodn(const char *s, bpf_u_int32 *addr)
 {
 #define AREASHIFT 10
 #define AREAMASK 0176000
@@ -729,6 +729,64 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 }
 
 /*
+ * libpcap ARCnet address format is "^\$[0-9a-fA-F]{1,2}$" in regexp syntax.
+ * Iff the given string is a well-formed ARCnet address, parse the string,
+ * store the 8-bit unsigned value into the provided integer and return 1.
+ * Otherwise return 0.
+ *
+ *  --> START -- $ --> DOLLAR -- [0-9a-fA-F] --> HEX1 -- \0 -->-+
+ *        |              |                        |             |
+ *       [.]            [.]                  [0-9a-fA-F]        |
+ *        |              |                        |             |
+ *        v              v                        v             v
+ *    (invalid) <--------+-<---------------[.]-- HEX2 -- \0 -->-+--> (valid)
+ */
+int
+pcapint_atoan(const char *s, uint8_t *addr)
+{
+	enum {
+		START,
+		DOLLAR,
+		HEX1,
+		HEX2,
+	} fsm_state = START;
+	uint8_t tmp = 0;
+
+	while (*s) {
+		switch (fsm_state) {
+		case START:
+			if (*s != '$')
+				goto invalid;
+			fsm_state = DOLLAR;
+			break;
+		case DOLLAR:
+			if (! PCAP_ISXDIGIT(*s))
+				goto invalid;
+			tmp = pcapint_xdtoi(*s);
+			fsm_state = HEX1;
+			break;
+		case HEX1:
+			if (! PCAP_ISXDIGIT(*s))
+				goto invalid;
+			tmp <<= 4;
+			tmp |= pcapint_xdtoi(*s);
+			fsm_state = HEX2;
+			break;
+		case HEX2:
+			goto invalid;
+		} // switch
+		s++;
+	} // while
+	if (fsm_state == HEX1 || fsm_state == HEX2) {
+		*addr = tmp;
+		return 1;
+	}
+
+invalid:
+	return 0;
+}
+
+/*
  * Convert 's', which can have the one of the forms:
  *
  *	"xx:xx:xx:xx:xx:xx"
@@ -753,10 +811,10 @@ pcap_ether_aton(const char *s)
 	while (*s) {
 		if (*s == ':' || *s == '.' || *s == '-')
 			s += 1;
-		d = xdtoi(*s++);
+		d = pcapint_xdtoi(*s++);
 		if (PCAP_ISXDIGIT(*s)) {
 			d <<= 4;
-			d |= xdtoi(*s++);
+			d |= pcapint_xdtoi(*s++);
 		}
 		*ep++ = d;
 	}

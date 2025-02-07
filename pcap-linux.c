@@ -93,6 +93,7 @@
 #include <linux/ethtool.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
+#include <linux/netlink.h>
 
 #include <linux/if_arp.h>
 #ifndef ARPHRD_IEEE802154
@@ -2423,10 +2424,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 	int			val;
 	int			err = 0;
 	struct packet_mreq	mr;
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
-	int			bpf_extensions;
-	socklen_t		len = sizeof(bpf_extensions);
-#endif
 
 	/*
 	 * Open a socket with protocol family packet. If cooked is true,
@@ -2762,12 +2759,29 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	handle->fd = sock_fd;
 
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	/*
+	 * Any supported Linux version implements at least four auxiliary
+	 * data items (SKF_AD_PROTOCOL, SKF_AD_PKTTYPE, SKF_AD_IFINDEX and
+	 * SKF_AD_NLATTR).  Set a flag so the code generator can use these
+	 * items if necessary.
+	 */
+	handle->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+
 	/*
 	 * Can we generate special code for VLAN checks?
 	 * (XXX - what if we need the special code but it's not supported
 	 * by the OS?  Is that possible?)
+	 *
+	 * This depends on both a runtime condition (the running Linux kernel
+	 * must support at least SKF_AD_VLAN_TAG_PRESENT in the auxiliary data
+	 * and must support SO_BPF_EXTENSIONS in order to tell the userland
+	 * process what it supports) and a compile-time condition (the OS
+	 * headers must define both constants in order to compile libpcap code
+	 * that asks the kernel about the support).
 	 */
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	int bpf_extensions;
+	socklen_t len = sizeof(bpf_extensions);
 	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
 	    &bpf_extensions, &len) == 0) {
 		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
@@ -2777,7 +2791,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
 	}
-#endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
+#endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 
 	return status;
 }
@@ -3549,11 +3563,9 @@ pcap_get_ring_frame_status(pcap_t *handle, u_int offset)
 	switch (handlep->tp_version) {
 	case TPACKET_V2:
 		return __atomic_load_n(&h.h2->tp_status, __ATOMIC_ACQUIRE);
-		break;
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
 		return __atomic_load_n(&h.h3->hdr.bh1.block_status, __ATOMIC_ACQUIRE);
-		break;
 #endif
 	}
 	/* This should not happen. */

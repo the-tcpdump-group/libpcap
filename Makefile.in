@@ -351,6 +351,7 @@ EXTRA_DIST = \
 	testprogs/CMakeLists.txt \
 	testprogs/Makefile.in \
 	testprogs/TESTrun \
+	testprogs/TESTlib.pm \
 	testprogs/TESTmt.pm \
 	testprogs/TESTst.pm \
 	testprogs/activatetest.c \
@@ -359,14 +360,6 @@ EXTRA_DIST = \
 	testprogs/filtertest.c \
 	testprogs/findalldevstest.c \
 	testprogs/findalldevstest-perf.c \
-	testprogs/fuzz/CMakeLists.txt \
-	testprogs/fuzz/fuzz_both.c \
-	testprogs/fuzz/fuzz_both.options \
-	testprogs/fuzz/fuzz_filter.c \
-	testprogs/fuzz/fuzz_filter.options \
-	testprogs/fuzz/fuzz_pcap.c \
-	testprogs/fuzz/fuzz_pcap.options \
-	testprogs/fuzz/onefile.c \
 	testprogs/nonblocktest.c \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \

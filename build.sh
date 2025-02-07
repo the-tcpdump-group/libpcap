@@ -34,6 +34,15 @@ tcc-*/*)
     # thread-local storage.
     LIBPCAP_TAINTED=yes
     ;;
+clang-3.4/Linux-*)
+    # pcap-netfilter-linux.c:427:10: error: will never be executed
+    #   [-Werror,-Wunreachable-code]
+    # pcap.c:3812:4: error: will never be executed
+    #   [-Werror,-Wunreachable-code]
+    # scanner.l:662:3: warning: will never be executed [-Wunreachable-code]
+    # gencode.c:7061:3: warning: will never be executed [-Wunreachable-code]
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac

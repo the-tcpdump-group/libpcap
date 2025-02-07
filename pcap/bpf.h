@@ -150,7 +150,7 @@ struct bpf_program {
 #define		BPF_MEM		0x60
 #define		BPF_LEN		0x80
 #define		BPF_MSH		0xa0
-/*				0xc0	reserved; used by BSD/OS */
+/*				0xc0	reserved; used by BSD/OS; also by OpenBSD for BPF_RND */
 /*				0xe0	reserved; used by BSD/OS */
 
 /* alu/jmp fields */
@@ -263,6 +263,7 @@ struct bpf_insn {
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
 PCAP_AVAILABLE_0_4
+PCAP_DEPRECATED("use pcap_offline_filter()")
 PCAP_API u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 
 PCAP_AVAILABLE_0_6
