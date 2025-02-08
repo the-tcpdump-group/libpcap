@@ -7393,6 +7393,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		b = gen_gateway(cstate, eaddr, res, proto, dir);
 		cstate->ai = NULL;
 		freeaddrinfo(res);
+		free(eaddr);
 		if (b == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
 		return b;
