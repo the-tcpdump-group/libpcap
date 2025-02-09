@@ -126,6 +126,7 @@ HDR = $(PUBHDR) \
 	ftmacros.h \
 	gencode.h \
 	ieee80211.h \
+	ipproto.h \
 	llc.h \
 	nametoaddr.h \
 	optimize.h \

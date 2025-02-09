@@ -258,6 +258,7 @@ udp		return UDP;
 icmp		return ICMP;
 igmp		return IGMP;
 igrp		return IGRP;
+eigrp		return EIGRP;
 pim		return PIM;
 vrrp		return VRRP;
 carp		return CARP;

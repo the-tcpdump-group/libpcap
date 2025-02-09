@@ -134,6 +134,8 @@
 
 #define Q_CARP		39
 
+#define Q_EIGRP		40
+
 /* Directional qualifiers. */
 
 #define Q_SRC		1

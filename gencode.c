@@ -21,12 +21,6 @@
 
 #include <config.h>
 
-#ifdef _WIN32
-  #include <ws2tcpip.h>
-#else
-  #include <netinet/in.h>
-#endif /* _WIN32 */
-
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
@@ -41,6 +35,7 @@
 
 #include "ethertype.h"
 #include "llc.h"
+#include "ipproto.h"
 #include "gencode.h"
 #include "ieee80211.h"
 #include "pflog.h"
@@ -5207,6 +5202,9 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	case Q_IGRP:
 		bpf_error(cstate, "'igrp' modifier applied to %s", typestr);
 
+	case Q_EIGRP:
+		bpf_error(cstate, "'eigrp' modifier applied to %s", typestr);
+
 	case Q_ATALK:
 		bpf_error(cstate, "AppleTalk host filtering not implemented");
 
@@ -5349,6 +5347,9 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 
 	case Q_IGRP:
 		bpf_error(cstate, "'igrp' modifier applied to ip6 %s", typestr);
+
+	case Q_EIGRP:
+		bpf_error(cstate, "'eigrp' modifier applied to ip6 %s", typestr);
 
 	case Q_ATALK:
 		bpf_error(cstate, "AppleTalk modifier applied to ip6 %s", typestr);
@@ -5574,40 +5575,38 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP, Q_DEFAULT);
 		break;
 
-#ifndef	IPPROTO_IGMP
-#define	IPPROTO_IGMP	2
-#endif
-
 	case Q_IGMP:
 		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP, Q_DEFAULT);
 		break;
 
-#ifndef	IPPROTO_IGRP
-#define	IPPROTO_IGRP	9
-#endif
 	case Q_IGRP:
-		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP, Q_DEFAULT);
+		/*
+		 * XXX - the current IANA protocol number assignments
+		 * page lists 9 as "any private interior gateway
+		 * (used by Cisco for their IGRP)" and 88 as
+		 * "EIGRP" from Cisco.
+		 *
+		 * Recent FreeBSD, DragonFly BSD, and macOS <netinet/in.h>
+		 * headers define IPPROTO_PIGP ("private interior gateway
+		 * protocol") as 9 and IPPROTO_IGRP as 88.  We define
+		 * IPPROTO_PIGP as 9 and IPPROTO_EIGRP as 88; those
+		 * names better match what the current protocol number
+		 * assignments say.
+		 */
+		b1 = gen_proto(cstate, IPPROTO_PIGP, Q_IP, Q_DEFAULT);
 		break;
 
-#ifndef IPPROTO_PIM
-#define IPPROTO_PIM	103
-#endif
+	case Q_EIGRP:
+		b1 = gen_proto(cstate, IPPROTO_EIGRP, Q_IP, Q_DEFAULT);
+		break;
 
 	case Q_PIM:
 		b1 = gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT, Q_DEFAULT);
 		break;
 
-#ifndef IPPROTO_VRRP
-#define IPPROTO_VRRP	112
-#endif
-
 	case Q_VRRP:
 		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP, Q_DEFAULT);
 		break;
-
-#ifndef IPPROTO_CARP
-#define IPPROTO_CARP	112
-#endif
 
 	case Q_CARP:
 		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP, Q_DEFAULT);
@@ -5660,23 +5659,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		b1 = gen_linktype(cstate, ETHERTYPE_IPV6);
 		break;
 
-#ifndef IPPROTO_ICMPV6
-#define IPPROTO_ICMPV6	58
-#endif
 	case Q_ICMPV6:
 		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6, Q_DEFAULT);
 		break;
 
-#ifndef IPPROTO_AH
-#define IPPROTO_AH	51
-#endif
 	case Q_AH:
 		b1 = gen_proto(cstate, IPPROTO_AH, Q_DEFAULT, Q_DEFAULT);
 		break;
 
-#ifndef IPPROTO_ESP
-#define IPPROTO_ESP	50
-#endif
 	case Q_ESP:
 		b1 = gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT, Q_DEFAULT);
 		break;
@@ -6677,6 +6667,10 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 
 	case Q_IGRP:
 		bpf_error(cstate, "'igrp proto' is bogus");
+		/*NOTREACHED*/
+
+	case Q_EIGRP:
+		bpf_error(cstate, "'eigrp proto' is bogus");
 		/*NOTREACHED*/
 
 	case Q_ATALK:
@@ -7940,6 +7934,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	case Q_ICMP:
 	case Q_IGMP:
 	case Q_IGRP:
+	case Q_EIGRP:
 	case Q_PIM:
 	case Q_VRRP:
 	case Q_CARP:
