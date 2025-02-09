@@ -85,6 +85,8 @@ BEGIN {
 }
 
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
+# See RFC 6761 Section 6.4.
+my $nonexistent = 'host.invalid';
 
 my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 # Enable all shared skip functions to be able to declare the tests below.
@@ -6386,6 +6388,69 @@ my %reject_tests = (
 		netmask => '255.255.255.255',
 		expr => 'ip broadcast',
 		errstr => "netmask not known, so 'ip broadcast' not supported",
+	},
+	# In the tests below the hostname normally should not matter because the
+	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
+	# use a hostname that does not exist on the Internet, just in case.
+	link_host_en10mb => {
+		DLT => 'EN10MB',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_netanalyzer => {
+		DLT => 'NETANALYZER',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_netanalyzer_transparent => {
+		DLT => 'NETANALYZER_TRANSPARENT',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_fddi => {
+		DLT => 'FDDI',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown FDDI host '${nonexistent}'",
+	},
+	link_host_ieee802 => {
+		DLT => 'IEEE802',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown token ring host '${nonexistent}'",
+	},
+	link_host_802_11 => {
+		DLT => 'IEEE802_11',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_802_11_radio => {
+		DLT => 'IEEE802_11_RADIO_AVS',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_802_11_radio_avs => {
+		DLT => 'IEEE802_11_RADIO_AVS',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_prism_header => {
+		DLT => 'PRISM_HEADER',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_ip_over_fc => {
+		DLT => 'IP_OVER_FC',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown Fibre Channel host '${nonexistent}'",
+	},
+	link_host_other => {
+		DLT => 'ARCNET',
+		expr => "link host ${nonexistent}",
+		errstr => 'supports link-level host name',
+	},
+	decnet_host => {
+		DLT => 'EN10MB',
+		expr => "decnet host ${nonexistent}",
+		errstr => "invalid DECnet address '${nonexistent}'",
 	},
 );
 
