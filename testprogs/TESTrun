@@ -4330,10 +4330,11 @@ my %accept_blocks = (
 			',
 	}, # igmp
 	igrp => {
-		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
-		# from all other supported OSes.  Skip the test until it is
-		# clear how to resolve this discrepancy.
-		skip => (skip_os ('freebsd') or skip_os ('darwin')),
+		# "igrp" uses IPPROTO_IGRP, which FreeBSD and its derivatives define, but
+		# other supported OSes don't (thus libpcap uses its own value, which is
+		# different from FreeBSD).  Skip the test until it is clear how to resolve
+		# this discrepancy.
+		skip => (skip_os ('freebsd') or skip_os ('darwin') or skip_os ('dragonfly')),
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
