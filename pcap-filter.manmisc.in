@@ -881,7 +881,14 @@ Abbreviations for:
 \fBiso proto \\\fIprotocol\fR
 .fi
 .in -.5i
-where \fIprotocol\fR is one of the above protocols.
+where \fIprotocol\fR is one of the above protocols.  Also in this context
+.B \%es-is
+is an alias for
+.B esis
+and
+.B \%is-is
+is an alias for
+.BR isis .
 .IP "\fBl1\fR, \fBl2\fR, \fBiih\fR, \fBlsp\fR, \fBsnp\fR, \fBcsnp\fR, \fBpsnp\fR"
 Abbreviations for IS-IS PDU types.
 .IP "\fIatmfield relop val\fR"
