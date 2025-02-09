@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "29 January 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "9 February 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -347,9 +347,14 @@ Abbreviation for:
 Abbreviation for:
 .in +.5i
 .nf
-\fBip proto\fR 9
+\fBip proto \fIigrpval\fR
 .fi
 .in -.5i
+where
+.I igrpval
+is 88 on DragonFly BSD, FreeBSD and macOS, and 9 on all other OSes.  This
+abbreviation should not be used in portable applications and may be removed
+in future.
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 (See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
