@@ -3906,7 +3906,7 @@ my %accept_blocks = (
 	iso_proto_clnp => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \clnp',
-		aliases => ['clnp'],
+		aliases => ['clnp', 'iso proto 0x81'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -3921,7 +3921,7 @@ my %accept_blocks = (
 	iso_proto_esis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \esis',
-		aliases => ['esis', 'es-is'],
+		aliases => ['esis', 'es-is', 'iso proto 0x82'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -3936,7 +3936,7 @@ my %accept_blocks = (
 	iso_proto_isis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \isis',
-		aliases => ['isis', 'is-is'],
+		aliases => ['isis', 'is-is', 'iso proto 0x83'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
