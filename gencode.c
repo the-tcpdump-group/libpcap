@@ -34,6 +34,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "pcap-int.h"
 
@@ -56,10 +57,6 @@
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
-#endif
-
-#ifndef offsetof
-#define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
 
 #ifdef _WIN32
