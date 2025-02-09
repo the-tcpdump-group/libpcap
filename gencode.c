@@ -1702,7 +1702,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		/* frames captured on a Juniper PPPoE service PIC
 		 * contain raw ethernet frames */
 	case DLT_JUNIPER_PPPOE:
-        case DLT_JUNIPER_ETHER:
+	case DLT_JUNIPER_ETHER:
 		cstate->off_linkpl.constant_part = 14;
 		cstate->off_linktype.constant_part = 16;
 		cstate->off_nl = 18;		/* Ethernet II */
@@ -1949,8 +1949,8 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	switch (offrel) {
 
 	case OR_PACKET:
-                s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-                s->s.k = offset;
+		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
+		s->s.k = offset;
 		break;
 
 	case OR_LINKHDR:
@@ -3708,27 +3708,27 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_MFR:
 		bpf_error(cstate, "Multi-link Frame Relay link-layer type filtering not implemented");
 
-        case DLT_JUNIPER_MFR:
-        case DLT_JUNIPER_MLFR:
-        case DLT_JUNIPER_MLPPP:
+	case DLT_JUNIPER_MFR:
+	case DLT_JUNIPER_MLFR:
+	case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_PPPOE_ATM:
-        case DLT_JUNIPER_GGSN:
-        case DLT_JUNIPER_ES:
-        case DLT_JUNIPER_MONITOR:
-        case DLT_JUNIPER_SERVICES:
-        case DLT_JUNIPER_ETHER:
-        case DLT_JUNIPER_PPP:
-        case DLT_JUNIPER_FRELAY:
-        case DLT_JUNIPER_CHDLC:
-        case DLT_JUNIPER_VP:
-        case DLT_JUNIPER_ST:
-        case DLT_JUNIPER_ISM:
-        case DLT_JUNIPER_VS:
-        case DLT_JUNIPER_SRX_E2E:
-        case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_GGSN:
+	case DLT_JUNIPER_ES:
+	case DLT_JUNIPER_MONITOR:
+	case DLT_JUNIPER_SERVICES:
+	case DLT_JUNIPER_ETHER:
+	case DLT_JUNIPER_PPP:
+	case DLT_JUNIPER_FRELAY:
+	case DLT_JUNIPER_CHDLC:
+	case DLT_JUNIPER_VP:
+	case DLT_JUNIPER_ST:
+	case DLT_JUNIPER_ISM:
+	case DLT_JUNIPER_VS:
+	case DLT_JUNIPER_SRX_E2E:
+	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
 
 		/* just lets verify the magic number for now -
@@ -5121,29 +5121,29 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	struct block *b0, *b1;
 
-        switch (ll_proto) {
+	switch (ll_proto) {
 
-        case ETHERTYPE_IP:
-                /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-                /* match the IPv4 version number */
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
-                gen_and(b0, b1);
-                return b1;
+	case ETHERTYPE_IP:
+		/* match the bottom-of-stack bit */
+		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		/* match the IPv4 version number */
+		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
+		gen_and(b0, b1);
+		return b1;
 
-        case ETHERTYPE_IPV6:
-                /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-                /* match the IPv4 version number */
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
-                gen_and(b0, b1);
-                return b1;
+	case ETHERTYPE_IPV6:
+		/* match the bottom-of-stack bit */
+		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		/* match the IPv4 version number */
+		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
+		gen_and(b0, b1);
+		return b1;
 
-        default:
-               /* FIXME add other L3 proto IDs */
-               bpf_error(cstate, "unsupported protocol over mpls");
-               /*NOTREACHED*/
-        }
+ default:
+	 /* FIXME add other L3 proto IDs */
+	 bpf_error(cstate, "unsupported protocol over mpls");
+	 /*NOTREACHED*/
+ }
 }
 
 static struct block *
@@ -9311,17 +9311,17 @@ static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
     int has_vlan_tag)
 {
-        struct block *b0, *b_tpid, *b_vid = NULL;
-        struct slist *s;
+	struct block *b0, *b_tpid, *b_vid = NULL;
+	struct slist *s;
 
-        /* generate new filter code based on extracting packet
-         * metadata */
-        s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
-        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+	/* generate new filter code based on extracting packet
+	 * metadata */
+	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+	s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
 
-        b0 = new_block(cstate, JMP(BPF_JEQ));
-        b0->stmts = s;
-        b0->s.k = 1;
+	b0 = new_block(cstate, JMP(BPF_JEQ));
+	b0->stmts = s;
+	b0->s.k = 1;
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
@@ -9347,7 +9347,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 		b0 = b_vid;
 	}
 
-        return b0;
+	return b0;
 }
 #endif
 
