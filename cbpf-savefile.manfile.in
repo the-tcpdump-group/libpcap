@@ -11,9 +11,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "17 July 2022"
+.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "9 February 2025"
 .SH NAME
-cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 6)
+cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 7)
 .SH DESCRIPTION
 This man page discusses a file format for cBPF, which is the "classic" (and
 for a long time the only) Berkeley Packet Filter.  It does
@@ -90,16 +90,17 @@ part of the header up to and including MinorVer identical.
 .nf
  b15 b14 b13 b12 b11 b10 b09 b08 b07 b06 b05 b04 b03 b02 b01 b00
 +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-|                       reserved                |CPX|COP|XOR|MOD|
+|                       reserved            |RND|CPX|COP|XOR|MOD|
 +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 .fi
 
-MOD, XOR, COP and CPX: if set to 1, in this BPF dialect
+MOD, XOR, COP, CPX and RND: if set to 1, in this BPF dialect
 .BR BPF_MOD ,
 .BR BPF_XOR ,
-.B BPF_COP
-and
+.BR BPF_COP ,
 .B BPF_COPX
+and
+.B BPF_RND
 respectively are valid instructions.  For the current list of OSes that
 support
 .B BPF_MOD
@@ -115,6 +116,8 @@ binary operators in
 and
 .B BPF_COPX
 are implemented in NetBSD kernel.
+.B BPF_RND
+is implemented in OpenBSD kernel.
 .LP
 Note that the fact an instruction is valid in a BPF dialect does not always
 mean the compiled bytecode in the savefile contains the instruction.  In other
