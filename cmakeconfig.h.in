@@ -114,7 +114,7 @@
 /* Define to 1 if the system has the type `socklen_t'. */
 #cmakedefine HAVE_SOCKLEN_T 1
 
-/* On solaris */
+/* On Solaris */
 #cmakedefine HAVE_SOLARIS 1
 
 /* target host supports Solaris "any" device */

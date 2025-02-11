@@ -23,6 +23,8 @@
 
 #include <config.h>
 
+#include <stddef.h>
+
 #include <pcap-types.h>
 
 #include "pcap/can_socketcan.h"

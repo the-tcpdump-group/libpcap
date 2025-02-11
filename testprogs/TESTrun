@@ -85,6 +85,8 @@ BEGIN {
 }
 
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
+# See RFC 6761 Section 6.4.
+my $nonexistent = 'host.invalid';
 
 my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 # Enable all shared skip functions to be able to declare the tests below.
@@ -3906,7 +3908,7 @@ my %accept_blocks = (
 	iso_proto_clnp => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \clnp',
-		aliases => ['clnp'],
+		aliases => ['clnp', 'iso proto 0x81'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -3921,7 +3923,7 @@ my %accept_blocks = (
 	iso_proto_esis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \esis',
-		aliases => ['esis', 'es-is'],
+		aliases => ['esis', 'es-is', 'iso proto 0x82'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -3936,7 +3938,7 @@ my %accept_blocks = (
 	iso_proto_isis => {
 		DLT => 'EN10MB',
 		expr => 'iso proto \isis',
-		aliases => ['isis', 'is-is'],
+		aliases => ['isis', 'is-is', 'iso proto 0x83'],
 		unopt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 7	jf 2
@@ -4330,10 +4332,11 @@ my %accept_blocks = (
 			',
 	}, # igmp
 	igrp => {
-		# "igrp" uses IPPROTO_IGRP, which FreeBSD defines differently
-		# from all other supported OSes.  Skip the test until it is
-		# clear how to resolve this discrepancy.
-		skip => (skip_os ('freebsd') or skip_os ('darwin')),
+		# "igrp" uses IPPROTO_IGRP, which FreeBSD and its derivatives define, but
+		# other supported OSes don't (thus libpcap uses its own value, which is
+		# different from FreeBSD).  Skip the test until it is clear how to resolve
+		# this discrepancy.
+		skip => (skip_os ('freebsd') or skip_os ('darwin') or skip_os ('dragonfly')),
 		DLT => 'EN10MB',
 		expr => 'igrp',
 		aliases => ['ip proto 9'],
@@ -6385,6 +6388,69 @@ my %reject_tests = (
 		netmask => '255.255.255.255',
 		expr => 'ip broadcast',
 		errstr => "netmask not known, so 'ip broadcast' not supported",
+	},
+	# In the tests below the hostname normally should not matter because the
+	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
+	# use a hostname that does not exist on the Internet, just in case.
+	link_host_en10mb => {
+		DLT => 'EN10MB',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_netanalyzer => {
+		DLT => 'NETANALYZER',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_netanalyzer_transparent => {
+		DLT => 'NETANALYZER_TRANSPARENT',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown ether host '${nonexistent}'",
+	},
+	link_host_fddi => {
+		DLT => 'FDDI',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown FDDI host '${nonexistent}'",
+	},
+	link_host_ieee802 => {
+		DLT => 'IEEE802',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown token ring host '${nonexistent}'",
+	},
+	link_host_802_11 => {
+		DLT => 'IEEE802_11',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_802_11_radio => {
+		DLT => 'IEEE802_11_RADIO_AVS',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_802_11_radio_avs => {
+		DLT => 'IEEE802_11_RADIO_AVS',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_prism_header => {
+		DLT => 'PRISM_HEADER',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown 802.11 host '${nonexistent}'",
+	},
+	link_host_ip_over_fc => {
+		DLT => 'IP_OVER_FC',
+		expr => "link host ${nonexistent}",
+		errstr => "unknown Fibre Channel host '${nonexistent}'",
+	},
+	link_host_other => {
+		DLT => 'ARCNET',
+		expr => "link host ${nonexistent}",
+		errstr => 'supports link-level host name',
+	},
+	decnet_host => {
+		DLT => 'EN10MB',
+		expr => "decnet host ${nonexistent}",
+		errstr => "invalid DECnet address '${nonexistent}'",
 	},
 );
 
