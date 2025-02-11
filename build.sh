@@ -43,6 +43,48 @@ clang-3.4/Linux-*)
     # gencode.c:7061:3: warning: will never be executed [-Wunreachable-code]
     LIBPCAP_TAINTED=yes
     ;;
+suncc-5.15/SunOS-5.10)
+    # (Sun C 5.15 on Solaris 11.4 does not generate any of these warnings.)
+    # "./gencode.c", line 599: warning: function "bpf_error" marked as not
+    #   returning, might return
+    # "optimize.c", line 2409: warning: function "opt_error" marked as not
+    #   returning, might return
+    # "optimize.c", line 2915: warning: function "conv_error" marked as not
+    #   returning, might return
+    # "./can_set_rfmon_test.c", line 95: warning: function "error" marked as
+    #   not returning, might return
+    # "./capturetest.c", line 314: warning: function "usage" marked as not
+    #   returning, might return
+    # "./capturetest.c", line 333: warning: function "error" marked as not
+    #   returning, might return
+    # "./filtertest.c", line 163: warning: function "error" marked as not
+    #   returning, might return
+    # "./filtertest.c", line 478: warning: function "usage" marked as not
+    #   returning, might return
+    # "./opentest.c", line 222: warning: function "usage" marked as not
+    #   returning, might return
+    # "./opentest.c", line 241: warning: function "error" marked as not
+    #   returning, might return
+    # "./nonblocktest.c", line 69: warning: function "error" marked as not
+    #   returning, might return
+    # "./nonblocktest.c", line 94: warning: function "usage" marked as not
+    #   returning, might return
+    # "./reactivatetest.c", line 89: warning: function "error" marked as not
+    #   returning, might return
+    # "./selpolltest.c", line 375: warning: function "usage" marked as not
+    #   returning, might return
+    # "./selpolltest.c", line 394: warning: function "error" marked as not
+    #   returning, might return
+    # "./threadsignaltest.c", line 339: warning: function "usage" marked as
+    #   not returning, might return
+    # "./threadsignaltest.c", line 358: warning: function "error" marked as
+    #   not returning, might return
+    # "./writecaptest.c", line 490: warning: function "usage" marked as not
+    #   returning, might return
+    # "./writecaptest.c", line 509: warning: function "error" marked as not
+    #   returning, might return
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac
