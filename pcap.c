@@ -46,7 +46,14 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#ifdef HAVE_SYS_SOCKIO_H
+
+/*
+ * On most supported platforms <sys/ioctl.h> also defines the SIOCGIF* macros.
+ * However, on Haiku, illumos and Solaris the macros need <sys/sockio.h>,
+ * which does not exist in AIX 7, HP-UX 11, GNU/Hurd and Linux (both GNU and
+ * musl libc).
+ */
+#if defined(HAVE_SOLARIS) || defined(__HAIKU__)
 #include <sys/sockio.h>
 #endif
 

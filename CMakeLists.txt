@@ -690,7 +690,6 @@ if(NOT HAVE_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)
 if(NOT WIN32)
     check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
-    check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)

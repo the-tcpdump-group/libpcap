@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #define NETMAP_WITH_LIBS
 #include <net/netmap_user.h>

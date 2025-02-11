@@ -138,7 +138,7 @@ dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
 dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
 dnl (this might have already happened).
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
+AC_CHECK_HEADERS([sys/ioccom.h])
 
 #
 # Check whether the platform for which we're compiling requires extra
