@@ -43,11 +43,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#else
-#include <sys/time.h>	/* older UN*Xes */
-#endif
 #include <poll.h>
 
 #include "pcap/funcattrs.h"
