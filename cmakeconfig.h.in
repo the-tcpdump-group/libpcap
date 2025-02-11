@@ -81,9 +81,6 @@
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
 
-/* Define to 1 if you have the <netpacket/packet.h> header file. */
-#cmakedefine HAVE_NETPACKET_PACKET_H 1
-
 /* Define to 1 if you have the <net/bpf.h> header file. */
 #cmakedefine HAVE_NET_BPF_H 1
 

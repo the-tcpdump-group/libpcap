@@ -693,7 +693,6 @@ if(NOT WIN32)
     check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 
-    check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 endif(NOT WIN32)
 

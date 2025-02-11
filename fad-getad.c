@@ -58,16 +58,9 @@
  * we end up including both the OS's <net/bpf.h> and our <pcap/bpf.h>,
  * and their definitions of some data structures collide.
  */
-#if defined(__linux__) && defined(AF_PACKET)
-# ifdef HAVE_NETPACKET_PACKET_H
-/* Linux distributions with newer glibc */
-#  include <netpacket/packet.h>
-# else /* HAVE_NETPACKET_PACKET_H */
-/* Linux distributions with older glibc */
-#  include <linux/types.h>
-#  include <linux/if_packet.h>
-# endif /* HAVE_NETPACKET_PACKET_H */
-#endif /* defined(__linux__) && defined(AF_PACKET) */
+#ifdef __linux__
+#include <netpacket/packet.h>
+#endif
 
 /*
  * This is fun.
@@ -122,7 +115,7 @@ get_sa_len(struct sockaddr *addr)
 		return (sizeof (struct sockaddr_in6));
 #endif
 
-#if defined(__linux__) && defined(AF_PACKET)
+#if defined(__linux__)
 	case AF_PACKET:
 		return (sizeof (struct sockaddr_ll));
 #endif

@@ -27,10 +27,10 @@
   // Solaris 11 defines both AF_PACKET and AF_LINK, but uses neither.
   // GNU/Hurd defines neither AF_PACKET nor AF_LINK.
   #include <net/if.h>
-  #ifdef AF_PACKET
+  #ifdef __linux__
     #include <netpacket/packet.h> // struct sockaddr_ll
     #include <net/if_arp.h> // ARPHRD_ETHER
-  #endif // AF_PACKET
+  #endif // __linux__
   #ifdef AF_LINK
     #include <net/if_dl.h> // struct sockaddr_dl and LLADDR()
     #include <net/if_types.h> // IFT_ETHER
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
   exit(exit_status);
 }
 
-#if ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+#if ! defined(_WIN32) && (defined(__linux__) || defined(AF_LINK))
 static char *
 ether_ntop(const u_char addr[], char *buffer, size_t size, u_char mask)
 {
@@ -210,7 +210,7 @@ ether_ntop(const u_char addr[], char *buffer, size_t size, u_char mask)
              addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
   return buffer;
 }
-#endif // ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+#endif // ! defined(_WIN32) && (defined(__linux__) || defined(AF_LINK))
 
 static int ifprint(pcap_if_t *d)
 {
@@ -283,9 +283,9 @@ static int ifprint(pcap_if_t *d)
       fprintf(stderr, "\tWarning: a->addr is NULL, skipping this address.\n");
       status = 0;
     } else {
-#if ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+#if ! defined(_WIN32) && (defined(__linux__) || defined(AF_LINK))
       char ether_buf[] = "00:00:00:00:00:00";
-#endif // ! defined(_WIN32) && (defined(AF_PACKET) || defined(AF_LINK))
+#endif // ! defined(_WIN32) && (defined(__linux__) || defined(AF_LINK))
       switch(a->addr->sa_family) {
       case AF_INET:
         printf("\tAddress Family: AF_INET (%d)\n", a->addr->sa_family);
@@ -312,7 +312,7 @@ static int ifprint(pcap_if_t *d)
         break;
 
 #if ! defined(_WIN32)
-#ifdef AF_PACKET
+#ifdef __linux__
       case AF_PACKET:
         printf("\tAddress Family: AF_PACKET (%d)\n", a->addr->sa_family);
         struct sockaddr_ll *sll = (struct sockaddr_ll *)a->addr;
@@ -325,7 +325,7 @@ static int ifprint(pcap_if_t *d)
                  ether_ntop((const u_char *)sll->sll_addr,
                             ether_buf, sizeof(ether_buf), ! unmask));
       break;
-#endif // AF_PACKET
+#endif // __linux__
 
 #ifdef AF_LINK
       case AF_LINK:
