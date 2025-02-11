@@ -689,7 +689,6 @@ if(NOT HAVE_UNISTD_H)
     add_definitions(-DYY_NO_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)
 if(NOT WIN32)
-    check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
@@ -1928,10 +1927,31 @@ else()
     #
     if(PCAP_TYPE STREQUAL "")
         #
-        # Check for a bunch of headers for various packet capture mechanisms.
+        # No.  Try auto-detecting the obvious types first.
+        #
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(PCAP_TYPE linux)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+            set(PCAP_TYPE haiku)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "GNU")
+            set(PCAP_TYPE hurd)
+        endif()
+    endif()
+
+    if(PCAP_TYPE STREQUAL "")
+        #
+        # It is not one of the above obvious types, let's see if it is BPF.
+        # Check this before DLPI to pick BPF on Solaris 11 and later.
         #
         check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
         if(HAVE_NET_BPF_H)
+            #
+            # HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+            # supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+            # (this might have already happened).
+            #
+            check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
+
             #
             # Does it define BIOCSETIF?
             # I.e., is it a header for an LBL/BSD-style capture
@@ -1970,38 +1990,23 @@ else()
                 check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
-        check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
-        check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
-        check_include_file(config/HaikuConfig.h HAVE_CONFIG_HAIKUCONFIG_H)
-        check_include_file(hurd.h HAVE_HURD_H)
 
         if(BPF_H_DEFINES_BIOCSETIF)
-            #
-            # BPF.
-            # Check this before DLPI, so that we pick BPF on
-            # Solaris 11 and later.
-            #
             set(PCAP_TYPE bpf)
-        elseif(HAVE_LINUX_SOCKET_H)
-            #
-            # No prizes for guessing this one.
-            #
-            set(PCAP_TYPE linux)
-        elseif(HAVE_SYS_DLPI_H)
+        endif()
+    endif()
+
+    if(PCAP_TYPE STREQUAL "")
+        #
+        # It is not BPF either, let's see if it is DLPI on pre-Solaris 11
+        # SunOS 5, HP-UX, possibly others.  Otherwise fail properly.
+        #
+        check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
+        if(HAVE_SYS_DLPI_H)
             #
             # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
             #
             set(PCAP_TYPE dlpi)
-        elseif(HAVE_CONFIG_HAIKUCONFIG_H)
-            #
-            # Haiku.
-            #
-            set(PCAP_TYPE haiku)
-        elseif(HAVE_HURD_H)
-            #
-            # Hurd.
-            #
-            set(PCAP_TYPE hurd)
         else()
             #
             # We don't have any capture type we know about.

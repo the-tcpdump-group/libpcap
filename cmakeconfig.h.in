@@ -18,9 +18,6 @@
 /* Define to 1 if you have the `asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
-/* Define to 1 if you have the <config/HaikuConfig.h> header file. */
-#cmakedefine HAVE_CONFIG_HAIKUCONFIG_H 1
-
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
@@ -54,9 +51,6 @@
 /* on HP-UX 10.20 or later */
 #cmakedefine HAVE_HPUX10_20_OR_LATER 1
 
-/* Define to 1 if you have the <hurd.h> header file. */
-#cmakedefine HAVE_HURD_H 1
-
 /* if libdlpi exists */
 #cmakedefine HAVE_LIBDLPI 1
 
@@ -74,9 +68,6 @@
 
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #cmakedefine HAVE_LINUX_NET_TSTAMP_H 1
-
-/* Define to 1 if you have the <linux/socket.h> header file. */
-#cmakedefine HAVE_LINUX_SOCKET_H 1
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1

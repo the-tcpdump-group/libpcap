@@ -133,13 +133,6 @@ AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_PCAP_C___ATOMICS
 
-dnl
-dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
-dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
-dnl (this might have already happened).
-dnl
-AC_CHECK_HEADERS([sys/ioccom.h])
-
 #
 # Check whether the platform for which we're compiling requires extra
 # defines and libraries.  If so, add them to CFLAGS and LIBS, as we want
@@ -720,11 +713,35 @@ if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
 else
 	#
-	# Check for a bunch of headers for various packet
-	# capture mechanisms.
+	# Try auto-detecting the obvious types first.
+	#
+	case "$host_os" in
+	linux*)
+		V_PCAP=linux
+		;;
+	haiku)
+		V_PCAP=haiku
+		;;
+	gnu*)
+		V_PCAP=hurd
+		;;
+	esac
+fi
+
+if test -z "$V_PCAP"; then
+	#
+	# It is not one of the above obvious types, let's see if it is BPF.
+	# Check this before DLPI to pick BPF on Solaris 11 and later.
 	#
 	AC_CHECK_HEADERS(net/bpf.h)
 	if test "$ac_cv_header_net_bpf_h" = yes; then
+		#
+		# HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+		# supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+		# (this might have already happened).
+		#
+		AC_CHECK_HEADERS([sys/ioccom.h])
+
 		#
 		# Does it define BIOCSETIF?
 		# I.e., is it a header for an LBL/BSD-style capture
@@ -776,37 +793,20 @@ else
 			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
-	AC_CHECK_HEADERS(linux/socket.h sys/dlpi.h)
-	AC_CHECK_HEADERS(config/HaikuConfig.h)
-	AC_CHECK_HEADERS(hurd.h)
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
-		#
-		# BPF.
-		# Check this before DLPI, so that we pick BPF on
-		# Solaris 11 and later.
-		#
 		V_PCAP=bpf
-	elif test "$ac_cv_header_linux_socket_h" = yes; then
-		#
-		# No prizes for guessing this one.
-		#
-		V_PCAP=linux
-	elif test "$ac_cv_header_sys_dlpi_h" = yes; then
-		#
-		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
-		#
+	fi
+fi
+
+if test -z "$V_PCAP"; then
+	#
+	# It is not BPF either, let's see if it is DLPI on pre-Solaris 11
+	# SunOS 5, HP-UX, possibly others.  Otherwise fail properly.
+	#
+	AC_CHECK_HEADERS([sys/dlpi.h])
+	if test "$ac_cv_header_sys_dlpi_h" = yes; then
 		V_PCAP=dlpi
-	elif test "$ac_cv_header_config_HaikuConfig_h" = yes; then
-		#
-		# Haiku.
-		#
-		V_PCAP=haiku
-	elif test "$ac_cv_header_hurd_h" = yes; then
-		#
-		# Hurd.
-		#
-		V_PCAP=hurd
 	else
 		#
 		# We don't have any capture type we know about.
