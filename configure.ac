@@ -715,13 +715,6 @@ if test "$enable_protochain" = "disabled"; then
 fi
 AC_MSG_RESULT(${enable_protochain})
 
-#
-# valgrindtest directly uses the native capture mechanism, but
-# only tests with BPF and PF_PACKET sockets; only enable it if
-# we have BPF or PF_PACKET sockets.
-#
-VALGRINDTEST_SRC=
-
 AC_ARG_WITH(pcap,
 AS_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
@@ -795,24 +788,11 @@ else
 		# Solaris 11 and later.
 		#
 		V_PCAP=bpf
-
-		#
-		# We have BPF, so build valgrindtest with "make test"
-		# on macOS and FreeBSD (add your OS once there's a
-		# valgrind for it).
-		#
-		case "$host_os" in
-
-		freebsd*|darwin*|linux*)
-			VALGRINDTEST_SRC=valgrindtest.c
-			;;
-		esac
 	elif test "$ac_cv_header_linux_socket_h" = yes; then
 		#
 		# No prizes for guessing this one.
 		#
 		V_PCAP=linux
-		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_sys_dlpi_h" = yes; then
 		#
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
@@ -846,6 +826,20 @@ else
 fi
 AC_MSG_CHECKING(packet capture type)
 AC_MSG_RESULT($V_PCAP)
+
+#
+# valgrindtest directly uses the native capture mechanism, but
+# only tests with BPF and PF_PACKET sockets; enable it for OSes
+# that have both the type of sockets and a working Valgrind.
+#
+case "$host_os" in
+freebsd*|darwin*|linux*)
+	VALGRINDTEST_SRC=valgrindtest.c
+	;;
+*)
+	VALGRINDTEST_SRC=
+	;;
+esac
 AC_SUBST(VALGRINDTEST_SRC)
 
 #
