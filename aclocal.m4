@@ -775,11 +775,6 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    LIBS="-lxnet $LIBS"
 	], , -lsocket -lnsl)
     ])
-
-    #
-    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
-    #
-    AC_SEARCH_LIBS(putmsg, str)
 ])
 
 m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])

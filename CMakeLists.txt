@@ -1003,19 +1003,26 @@ else(WIN32)
         endif(LIBXNET_HAS_RECVMSG)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
 
-    #
-    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
-    #
-    check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
-    if(NOT STDLIBS_HAVE_PUTMSG)
-        check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
-        if(LIBSTR_HAS_PUTMSG)
-            set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
-            set(LIBS "-lstr ${LIBS}")
-            set(LIBS_STATIC "-lstr ${LIBS_STATIC}")
-            set(LIBS_PRIVATE "-lstr ${LIBS_PRIVATE}")
-        endif(LIBSTR_HAS_PUTMSG)
-    endif(NOT STDLIBS_HAVE_PUTMSG)
+    if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
+        #
+        # Same as the respective AC_CHECK_MEMBERS() in Autoconf.
+        #
+        check_struct_has_member("struct dl_hp_ppa_info_t" dl_module_id_1 "sys/types.h;sys/dlpi.h;sys/dlpi_ext.h" HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1)
+
+        #
+        # Same as the respective AC_SEARCH_LIBS() in Autoconf.
+        #
+        check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
+        if(NOT STDLIBS_HAVE_PUTMSG)
+            check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
+            if(LIBSTR_HAS_PUTMSG)
+                set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
+                set(LIBS "-lstr ${LIBS}")
+                set(LIBS_STATIC "-lstr ${LIBS_STATIC}")
+                set(LIBS_PRIVATE "-lstr ${LIBS_PRIVATE}")
+            endif(LIBSTR_HAS_PUTMSG)
+        endif(NOT STDLIBS_HAVE_PUTMSG)
+    endif()
 
     #
     # Haiku has getpass() in libbsd.

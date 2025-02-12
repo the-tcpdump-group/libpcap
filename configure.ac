@@ -151,6 +151,33 @@ haiku*)
 	#
 	LIBS="-lbsd $LIBS"
 	;;
+hpux*)
+	#
+	# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+	# dl_module_id_1 member.
+	# (This is the case on HP-UX B.11.31.)
+	#
+	# NOTE: any failure means we conclude that it doesn't have that member,
+	# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
+	# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
+	# it doesn't have that member (which is OK, as either we won't be
+	# using code that would use that member, or we wouldn't compile in
+	# any case).
+	#
+	AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
+	    [
+		#include <sys/types.h>
+		#include <sys/dlpi.h>
+		#include <sys/dlpi_ext.h>
+	    ])
+
+	#
+	# On HP-UX DLPI needs putmsg(), which previously was in libstr, but in
+	# HP-UX B.11.31 this is no longer the case.
+	# AC_SEARCH_LIBS() accounts for that.
+	#
+	AC_SEARCH_LIBS([putmsg], [str])
+	;;
 esac
 
 AC_CHECK_FUNC(strerror_r,
@@ -2317,24 +2344,6 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],,,
     [
 	#include <sys/types.h>
 	#include <sys/socket.h>
-    ])
-
-#
-# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
-# dl_module_id_1 member.
-#
-# NOTE: any failure means we conclude that it doesn't have that member,
-# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
-# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
-# it doesn't have that member (which is OK, as either we won't be
-# using code that would use that member, or we wouldn't compile in
-# any case).
-#
-AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
-    [
-	#include <sys/types.h>
-	#include <sys/dlpi.h>
-	#include <sys/dlpi_ext.h>
     ])
 
 #
