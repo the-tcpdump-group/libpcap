@@ -195,11 +195,6 @@ main(void)
     ])
 
 #
-# Thanks, IBM, for not providing vsyslog() in AIX!
-#
-AC_CHECK_FUNCS(vsyslog)
-
-#
 # Require a proof of suitable snprintf(3), same as in tcpdump.
 #
 AC_MSG_CHECKING([whether snprintf is suitable])
@@ -1631,6 +1626,11 @@ yes)	AC_MSG_RESULT(yes)
 	# OK, we have crypt().  Do we have getspnam()?
 	#
 	AC_CHECK_FUNCS(getspnam)
+
+	#
+	# Thanks, IBM, for not providing vsyslog() in AIX!
+	#
+	AC_CHECK_FUNCS(vsyslog)
 
 	#
 	# Check for various members of struct msghdr.

@@ -862,9 +862,6 @@ check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(asprintf HAVE_ASPRINTF)
 check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
-if(NOT WIN32)
-    check_function_exists(vsyslog HAVE_VSYSLOG)
-endif()
 
 #
 # Look for various networking-related libraries that we may need.
