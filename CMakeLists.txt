@@ -517,8 +517,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(DISABLE_LINUX_USBMON "Disable Linux usbmon USB sniffing support" OFF)
 endif()
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
-option(DISABLE_NETMAP "Disable netmap support" OFF)
-option(DISABLE_DPDK "Disable DPDK support" OFF)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+   CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+   WIN32)
+    option(DISABLE_NETMAP "Disable netmap support" OFF)
+else()
+    set(DISABLE_NETMAP ON)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+   CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    option(DISABLE_DPDK "Disable DPDK support" OFF)
+else()
+    set(DISABLE_DPDK ON)
+endif()
 
 #
 # We don't support D-Bus sniffing on macOS; see
@@ -530,12 +543,22 @@ if(APPLE)
 else(APPLE)
     option(DISABLE_DBUS "Disable D-Bus sniffing support" OFF)
 endif(APPLE)
-option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
-option(DISABLE_DAG "Disable Endace DAG card support" OFF)
-option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
-option(DISABLE_SNF "Disable Myricom SNF support" OFF)
+    option(DISABLE_DAG "Disable Endace DAG card support" OFF)
+    option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
+
+    option(DISABLE_SNF "Disable Myricom SNF support" OFF)
+else()
+    set(DISABLE_RDMA ON)
+
+    set(DISABLE_DAG ON)
+    set(ENABLE_DAG_TX OFF)
+
+    set(DISABLE_SNF ON)
+endif()
 
 #
 # Debugging options.

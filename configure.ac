@@ -1345,6 +1345,19 @@ AS_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not
 	dag_lib_dir=$withval
 ],[])
 
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$want_dag" in
+	ifpresent)
+		# Replace one default value with another silently and move on.
+		want_dag=no
+		;;
+	yes)
+		# Fail hard: this is a user request and it cannot be done.
+		AC_MSG_ERROR([cannot enable DAG support (not Linux)])
+		;;
+	esac
+fi
+
 if test "$want_dag" != no; then
 
 	# If necessary, set default paths for DAG API headers and libraries.
@@ -1496,6 +1509,18 @@ AS_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if no
 	want_snf=yes
 	snf_lib_dir=$withval
 ],[])
+
+# Same as for DAG above.
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$want_snf" in
+	ifpresent)
+		want_snf=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable SNF support (not Linux)])
+		;;
+	esac
+fi
 
 if test "$want_snf" != no; then
 	# If necessary, set default paths for Sniffer headers and libraries.
@@ -2411,6 +2436,16 @@ AC_ARG_ENABLE([netmap],
     [],
     [enable_netmap=yes])
 
+# In this block "yes" means the same as "ifpresent" in the DAG block above.
+# Windows is CMake-only.
+case "$host_os" in
+linux*|freebsd*)
+	;;
+*)
+	enable_netmap=no
+	;;
+esac
+
 if test "x$enable_netmap" != "xno" ; then
 	#
 	# Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
@@ -2470,6 +2505,22 @@ AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 		want_dpdk=ifpresent
 	fi
 ])
+
+# Same as for DAG above.
+case "$host_os" in
+linux*|freebsd*)
+	;;
+*)
+	case "$want_dpdk" in
+	ifpresent)
+		want_dpdk=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable DPDK support (neither Linux nor FreeBSD)])
+		;;
+	esac
+	;;
+esac
 
 if test "$want_dpdk" != no; then
 	#
@@ -2816,6 +2867,18 @@ if test "$xxx_only" = yes; then
 	# User requested something-else-only pcap, so they don't
 	# want RDMA support.
 	enable_rdma=no
+fi
+
+# Same as for DAG above.
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$enable_rdma" in
+	ifavailable)
+		enable_rdma=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable RDMA support (not Linux)])
+		;;
+	esac
 fi
 
 if test "x$enable_rdma" != "xno"; then
