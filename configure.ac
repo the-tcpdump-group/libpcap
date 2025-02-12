@@ -145,10 +145,11 @@ haiku*)
 	# use them.
 	#
 	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+
 	#
-	# Haiku has getpass in libbsd.
+	# Haiku has getpass() in libbsd.
 	#
-	AC_CHECK_LIB(bsd, getpass)
+	LIBS="-lbsd $LIBS"
 	;;
 esac
 
