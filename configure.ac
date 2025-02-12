@@ -844,7 +844,11 @@ PKG_PROG_PKG_CONFIG
 #
 # Do we have the brew command from Homebrew?
 #
-AC_PATH_PROG([BREW], [brew])
+case "$host_os" in
+darwin*|linux*)
+	AC_PATH_PROG([BREW], [brew])
+	;;
+esac
 
 #
 # Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
