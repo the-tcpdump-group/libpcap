@@ -2188,27 +2188,29 @@ else(WIN32)
         endif()
         cmake_pop_check_state()
 
-        #
-        # Check whether there's a inet/ipnet.h header and,
-        # if so, whether it defines IPNET_ANY_LINK - if so,
-        # we assume we have the "any" device (that's a
-        # Solaris header, and later versions of Solaris
-        # have an "any" device).
-        #
-        # Attempting to include it at compile time could
-        # be a pain, as it's a kernel header.
-        #
-        message(STATUS "Checking whether the Solaris \"any\" device is supported")
-        if(EXISTS /usr/include/inet/ipnet.h)
-            file(STRINGS /usr/include/inet/ipnet.h IPNET_ANY_LINK_LINES REGEX IPNET_ANY_LINK)
-            if(NOT IPNET_ANY_LINK_LINES STREQUAL "")
-                set(HAVE_SOLARIS_ANY_DEVICE TRUE)
+        if(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+            #
+            # Check whether there's a inet/ipnet.h header and,
+            # if so, whether it defines IPNET_ANY_LINK - if so,
+            # we assume we have the "any" device (that's a
+            # Solaris header, and later versions of Solaris
+            # have an "any" device).
+            #
+            # Attempting to include it at compile time could
+            # be a pain, as it's a kernel header.
+            #
+            message(STATUS "Checking whether the Solaris \"any\" device is supported")
+            if(EXISTS /usr/include/inet/ipnet.h)
+                file(STRINGS /usr/include/inet/ipnet.h IPNET_ANY_LINK_LINES REGEX IPNET_ANY_LINK)
+                if(NOT IPNET_ANY_LINK_LINES STREQUAL "")
+                    set(HAVE_SOLARIS_ANY_DEVICE TRUE)
+                endif()
             endif()
-        endif()
-        if(HAVE_SOLARIS_ANY_DEVICE)
-            message(STATUS "Checking whether the Solaris \"any\" device is supported - supported")
-        else()
-            message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
+            if(HAVE_SOLARIS_ANY_DEVICE)
+                message(STATUS "Checking whether the Solaris \"any\" device is supported - supported")
+            else()
+                message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
+            endif()
         endif()
     elseif(PCAP_TYPE STREQUAL "haiku")
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
