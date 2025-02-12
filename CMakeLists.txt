@@ -2049,7 +2049,7 @@ pcap and pcapng files, run cmake with -DPCAP_TYPE=null.")
 endif(WIN32)
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig)
 
 #
 # Do capture-mechanism-dependent tests.
@@ -2476,12 +2476,18 @@ if(NOT DISABLE_DPDK)
             set(CMAKE_EXTRA_INCLUDE_FILES rte_ether.h)
             check_type_size("struct rte_ether_addr" STRUCT_RTE_ETHER_ADDR)
             cmake_pop_check_state()
+
+            #
+            # Same as in Autoconf.
+            #
+            message(STATUS "building with DPDK")
+        else()
+            #
+            # Same as in Autoconf.
+            #
+            message(STATUS "building without DPDK (present, but cannot be used)")
         endif()
-    else()
-      message(WARNING,
-"We couldn't find DPDK with pkg-config.  If you want DPDK support,
-make sure that pkg-config is installed, that DPDK 18.02.2 or later is
-installed, and that DPDK provides a .pc file.")
+    # Else: Finddpdk.cmake has already printed the diagnostics.
     endif()
 endif()
 

@@ -2620,13 +2620,19 @@ if test "$want_dpdk" != no; then
 		if test $V_PCAP != dpdk ; then
 			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
 		fi
+
+		#
+		# The last line of the output is:
+		# "checking for struct rte_ether_addr... yes"
+		# Make it clear what it means for the final result.
+		#
+		AC_MSG_NOTICE([building with DPDK])
 	else
 		#
 		# We didn't find a usable DPDK.
 		# If we required it (with --with-dpdk or --with-pcap=dpdk),
 		# fail with an appropriate message telling the user what
-		# the problem was, otherwise note the problem with a
-		# warning.
+		# the problem was.
 		#
 		if test "$found_dpdk" != yes; then
 			#
@@ -2659,13 +2665,13 @@ DPDK provides .pc file.])
 
 			#
 			# User didn't indicate whether they wanted DPDK
-			# or not; just warn why we didn't find it.
+			# or not; the last line of the output is one of:
+			# "checking for libdpdk with pkg-config... pkg-config not found"
+			# "checking for libdpdk with pkg-config... not found"
+			# This conveys the point and is the right amount of
+			# output when auto-detecting an optional module, so do
+			# not print anything else.
 			#
-			AC_MSG_WARN(
-[We couldn't find DPDK with pkg-config.  If
-you want DPDK support, make sure that pkg-config is installed,
-that DPDK 18.02.2 or later is installed, and that DPDK provides a
-.pc file.])
 		elif test "$ac_cv_func_rte_eth_dev_count_avail" != yes; then
 			#
 			# Found with pkg-config, but we couldn't compile
@@ -2698,11 +2704,11 @@ or later is DPDK is installed.])
 
 			#
 			# User didn't indicate whether they wanted DPDK
-			# or not; just warn why we didn't find it.
+			# or not; the last line of the output is:
+			# "checking for rte_eth_dev_count_avail... no"
+			# Make it clear what it means for the final result.
 			#
-			AC_MSG_WARN(
-[DPDK was found, but we can't compile libpcap with it.
-Make sure that DPDK 18.02.2 or later is installed.])
+			AC_MSG_NOTICE([building without DPDK (present, but cannot be used)])
 		fi
 	fi
 fi
