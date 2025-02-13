@@ -4174,6 +4174,152 @@ my %accept_blocks = (
 			(011) ret      #0
 			',
 	}, # proto
+	ip_protochain => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'ip protochain \udp',
+		aliases => ['ip protochain 17'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 24
+			(003) ldb      [9]
+			(004) ldxb     4*([0]&0xf)
+			(005) jeq      #0x11            jt 21	jf 6
+			(006) jeq      #0x3b            jt 21	jf 7
+			(007) add      #0
+			(008) jeq      #0x33            jt 9	jf 21
+			(009) txa
+			(010) ldb      [x + 0]
+			(011) st       M[0]
+			(012) txa
+			(013) add      #1
+			(014) tax
+			(015) ldb      [x + 0]
+			(016) add      #2
+			(017) mul      #4
+			(018) tax
+			(019) ld       M[0]
+			(020) ja       5
+			(021) add      #0
+			(022) jeq      #0x11            jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # ip_protochain
+	ip6_protochain => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'ip6 protochain \udp',
+		aliases => ['ip6 protochain 17'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 36
+			(003) ldb      [6]
+			(004) ldx      #0x28
+			(005) jeq      #0x11            jt 33	jf 6
+			(006) jeq      #0x3b            jt 33	jf 7
+			(007) jeq      #0x0             jt 11	jf 8
+			(008) jeq      #0x3c            jt 11	jf 9
+			(009) jeq      #0x2b            jt 11	jf 10
+			(010) jeq      #0x2c            jt 11	jf 20
+			(011) ldb      [x + 0]
+			(012) st       M[0]
+			(013) ldb      [x + 1]
+			(014) add      #1
+			(015) mul      #8
+			(016) add      x
+			(017) tax
+			(018) ld       M[0]
+			(019) ja       5
+			(020) jeq      #0x33            jt 21	jf 33
+			(021) txa
+			(022) ldb      [x + 0]
+			(023) st       M[0]
+			(024) txa
+			(025) add      #1
+			(026) tax
+			(027) ldb      [x + 0]
+			(028) add      #2
+			(029) mul      #4
+			(030) tax
+			(031) ld       M[0]
+			(032) ja       5
+			(033) add      #0
+			(034) jeq      #0x11            jt 35	jf 36
+			(035) ret      #262144
+			(036) ret      #0
+			',
+	}, # ip6_protochain
+	protochain => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'protochain \udp',
+		aliases => ['protochain 17'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 23
+			(003) ldb      [9]
+			(004) ldxb     4*([0]&0xf)
+			(005) jeq      #0x11            jt 21	jf 6
+			(006) jeq      #0x3b            jt 21	jf 7
+			(007) add      #0
+			(008) jeq      #0x33            jt 9	jf 21
+			(009) txa
+			(010) ldb      [x + 0]
+			(011) st       M[1]
+			(012) txa
+			(013) add      #1
+			(014) tax
+			(015) ldb      [x + 0]
+			(016) add      #2
+			(017) mul      #4
+			(018) tax
+			(019) ld       M[1]
+			(020) ja       5
+			(021) add      #0
+			(022) jeq      #0x11            jt 58	jf 23
+			(023) ldb      [0]
+			(024) and      #0xf0
+			(025) jeq      #0x60            jt 26	jf 59
+			(026) ldb      [6]
+			(027) ldx      #0x28
+			(028) jeq      #0x11            jt 56	jf 29
+			(029) jeq      #0x3b            jt 56	jf 30
+			(030) jeq      #0x0             jt 34	jf 31
+			(031) jeq      #0x3c            jt 34	jf 32
+			(032) jeq      #0x2b            jt 34	jf 33
+			(033) jeq      #0x2c            jt 34	jf 43
+			(034) ldb      [x + 0]
+			(035) st       M[1]
+			(036) ldb      [x + 1]
+			(037) add      #1
+			(038) mul      #8
+			(039) add      x
+			(040) tax
+			(041) ld       M[1]
+			(042) ja       28
+			(043) jeq      #0x33            jt 44	jf 56
+			(044) txa
+			(045) ldb      [x + 0]
+			(046) st       M[1]
+			(047) txa
+			(048) add      #1
+			(049) tax
+			(050) ldb      [x + 0]
+			(051) add      #2
+			(052) mul      #4
+			(053) tax
+			(054) ld       M[1]
+			(055) ja       28
+			(056) add      #0
+			(057) jeq      #0x11            jt 58	jf 59
+			(058) ret      #262144
+			(059) ret      #0
+			',
+	}, # protochain
 	ip_host => {
 		# For this and some other single-stack qualifiers below use DLT_RAW to
 		# verify that the bytecode does not try to match the other protocol too.
@@ -4181,7 +4327,10 @@ my %accept_blocks = (
 		snaplen => 2000,
 		expr => 'ip host 192.168.170.211',
 		aliases => [
+			'ip src or dst 192.168.170.211',
+			'ip src or dst host 192.168.170.211',
 			'host 192.168.170.211',
+			'src or dst 192.168.170.211',
 			'src or dst host 192.168.170.211',
 		],
 		opt => '
@@ -4331,11 +4480,11 @@ my %accept_blocks = (
 			(005) ret      #0
 			',
 	}, # igmp
-	igrp => {
-		# "igrp" uses IPPROTO_IGRP, which FreeBSD and its derivatives define, but
-		# other supported OSes don't (thus libpcap uses its own value, which is
-		# different from FreeBSD).  Skip the test until it is clear how to resolve
-		# this discrepancy.
+	# "igrp" uses IPPROTO_IGRP, which FreeBSD and its derivatives define, but
+	# other supported OSes don't (thus libpcap uses its own value, which is
+	# different from FreeBSD).  Test each case separately.
+	# this discrepancy.
+	igrp_9 => {
 		skip => (skip_os ('freebsd') or skip_os ('darwin') or skip_os ('dragonfly')),
 		DLT => 'EN10MB',
 		expr => 'igrp',
@@ -4348,7 +4497,23 @@ my %accept_blocks = (
 			(004) ret      #262144
 			(005) ret      #0
 			',
-	}, # igrp
+	}, # igrp_9
+	igrp_88 => {
+		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		DLT => 'EN10MB',
+		expr => 'igrp',
+		aliases => [
+			'ip proto 88',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [23]
+			(003) jeq      #0x58            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # igrp_88
 	icmp6 => {
 		DLT => 'EN10MB',
 		expr => 'icmp6',
@@ -6388,6 +6553,11 @@ my %reject_tests = (
 		netmask => '255.255.255.255',
 		expr => 'ip broadcast',
 		errstr => "netmask not known, so 'ip broadcast' not supported",
+	},
+	arp_protochain => {
+		DLT => 'EN10MB',
+		expr => 'arp protochain 17',
+		errstr => 'bad protocol applied for \'protochain\'',
 	},
 	# In the tests below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
