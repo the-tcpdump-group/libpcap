@@ -101,6 +101,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add kernel filtering, fix userland filtering.
     OpenBSD:
       Use getprotobyname_r() correctly on OpenBSD.
+    Linux:
+      Do not use ether_hostton() from musl libc.
     DAG:
       Always set PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE.
       In dag_findalldevs() handle known errors better.

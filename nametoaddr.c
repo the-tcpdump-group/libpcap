@@ -35,6 +35,17 @@
 
   #include <netinet/in.h>
 
+  #if defined(__linux__) && defined(HAVE_ETHER_HOSTTON)
+    #include <features.h>
+    #if ! defined(__GLIBC__) && ! defined(__UCLIBC__)
+      /*
+       * In musl libc (which does not identify itself) ether_hostton() is
+       * present and does not work.
+       */
+      #undef HAVE_ETHER_HOSTTON
+    #endif
+  #endif // defined(__linux__) && defined(HAVE_ETHER_HOSTTON)
+
   #ifdef HAVE_ETHER_HOSTTON
     #if defined(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON)
       /*
