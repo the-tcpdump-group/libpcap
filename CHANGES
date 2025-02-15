@@ -139,6 +139,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
       Expand the table of DSA tag types to include all current types.
+      Fix an error message when deleting a monN interface.
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
