@@ -45,6 +45,9 @@
 /* Define to 1 if you have the `getspnam' function. */
 #cmakedefine HAVE_GETSPNAM 1
 
+/* Define to 1 if using GNU libc. */
+#cmakedefine HAVE_GLIBC 1
+
 /* Define to 1 if you have a GNU-style `strerror_r' function. */
 #cmakedefine HAVE_GNU_STRERROR_R 1
 
@@ -166,6 +169,9 @@
 
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #cmakedefine HAVE_SYS_IOCCOM_H 1
+
+/* Define to 1 if using uclibc(-ng). */
+#cmakedefine HAVE_UCLIBC 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1

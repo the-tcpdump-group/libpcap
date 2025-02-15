@@ -638,6 +638,46 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	fi
 fi
 
+if expr "$host_os" : linux >/dev/null; then
+	#
+	# On Linux there is a couple more factors to consider together with
+	# HAVE_ETHER_HOSTTON.  C code can test for __GLIBC__ and __UCLIBC__
+	# trivially, make it nearly as trivial for TESTrun.
+	#
+	AC_MSG_CHECKING([if features.h defines __GLIBC__])
+	AC_COMPILE_IFELSE(
+		[
+			AC_LANG_PROGRAM(
+				[[#include <features.h>]],
+				[[int i = __GLIBC__;]]
+			)
+		],
+		[
+			AC_DEFINE([HAVE_GLIBC], [1], [Define to 1 if using GNU libc.])
+			AC_MSG_RESULT([yes])
+		],
+		[
+			AC_MSG_RESULT([no])
+			AC_MSG_CHECKING([if features.h defines __UCLIBC__])
+			AC_COMPILE_IFELSE(
+				[
+					AC_LANG_PROGRAM(
+						[[#include <features.h>]],
+						[[int i = __UCLIBC__;]]
+					)
+				],
+				[
+					AC_DEFINE([HAVE_UCLIBC], [1], [Define to 1 if using uclibc(-ng).])
+					AC_MSG_RESULT([yes])
+				],
+				[
+					AC_MSG_RESULT([no])
+				]
+			)
+		]
+	)
+fi
+
 #
 # For various things that might use pthreads.
 #

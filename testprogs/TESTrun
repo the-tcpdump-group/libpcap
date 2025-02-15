@@ -92,6 +92,112 @@ my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 # Enable all shared skip functions to be able to declare the tests below.
 read_config_h ($config_h);
 
+# Skip unless the file exists and is readable and contains every given line
+# (less any duplicates) at least once in any order.
+sub skip_unless_file_contains_lines {
+	my $filename = shift;
+	my %notfound = map {$_ => 1} @_;
+	my $skip = "needs $filename";
+
+	open FH, '<', $filename or return $skip;
+	while (<FH>) {
+		chomp;
+		next unless exists $notfound{$_};
+		delete $notfound{$_};
+		last unless scalar keys %notfound;
+	}
+	close FH or die "failed closing '$filename'";
+	return scalar (keys %notfound) ? $skip : '';
+}
+
+# Skip if running on Linux with musl libc.
+sub skip_musl_libc {
+	return skip_os ('linux') &&
+		skip_config_undef ('HAVE_GLIBC') &&
+		skip_config_undef ('HAVE_UCLIBC') &&
+		'musl libc';
+}
+
+# libpcap.test is a domain subject to RFC 6761 Section 6.2.
+#
+# Each of the seven hostnames under host123.libpcap.test has 1..3 addresses
+# (at most one of {Ethernet, IPv4, IPv6} each, at least one in total):
+# * eth-ipv4-ipv6.host123.libpcap.test
+# * eth-ipv4-noipv6.host123.libpcap.test
+# * eth-noipv4-ipv6.host123.libpcap.test
+# * eth-noipv4-noipv6.host123.libpcap.test
+# * noeth-ipv4-ipv6.host123.libpcap.test
+# * noeth-ipv4-noipv6.host123.libpcap.test
+# * noeth-noipv4-ipv6.host123.libpcap.test
+#
+# To add tests that require hostnames with a different arrangement of
+# addresses, consider adding similar mnemonic domains.
+
+# Skip if /etc/ethers (or the equivalent) has not been configured for tests.
+#
+# Do not use getent(1): it works, but experiences some portability issues and
+# does not always test the same code paths as what libpcap uses.
+my $cached_skip_no_ethers;
+sub skip_no_ethers {
+	$cached_skip_no_ethers = skip_unless_file_contains_lines (
+		$^O eq 'haiku' ? '/boot/system/settings/network/ethers' :
+		'/etc/ethers',
+		(
+			# The MAC address is in the locally-administered DECnet OUI space.
+			'aa:00:04:00:14:0e eth-noipv4-noipv6.host123.libpcap.test',
+			'aa:00:04:00:14:0e eth-noipv4-ipv6.host123.libpcap.test',
+			'aa:00:04:00:14:0e eth-ipv4-noipv6.host123.libpcap.test',
+			'aa:00:04:00:14:0e eth-ipv4-ipv6.host123.libpcap.test',
+		)
+	) unless defined $cached_skip_no_ethers;
+	return $cached_skip_no_ethers;
+}
+
+# Same as the above, plus require the platform to treat hostnames in
+# ethers(5) correctly (case-insensitive).
+sub skip_no_ethers_casecmp {
+	return skip_no_ethers ||
+		# pcap_ether_hostton() uses strcmp().
+		skip_musl_libc ||
+		skip_os ('haiku') ||
+		# ether_hostton() uses strcmp().
+		skip_os ('freebsd') ||
+		skip_os ('netbsd') ||
+		skip_os ('openbsd');
+}
+
+# Skip if /etc/hosts (or the equivalent) has not been configured for tests.
+#
+# Do not use getent(1): it experiences too many portability issues (especially
+# with dual-stack hostnames) to be practicable.
+my $cached_skip_no_hosts;
+sub skip_no_hosts {
+	$cached_skip_no_hosts = skip_unless_file_contains_lines (
+		$^O eq 'haiku' ? '/boot/system/settings/network/hosts' :
+		$^O eq 'solaris' ? '/etc/inet/hosts' :
+		'/etc/hosts',
+		(
+			'10.20.30.40 noeth-ipv4-noipv6.host123.libpcap.test',
+			'10.20.30.40 noeth-ipv4-ipv6.host123.libpcap.test',
+			'10.20.30.40 eth-ipv4-noipv6.host123.libpcap.test',
+			'10.20.30.40 eth-ipv4-ipv6.host123.libpcap.test',
+			'fe80::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test',
+			'fe80::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test',
+			'fe80::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test',
+			'fe80::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test',
+		)
+	) unless defined $cached_skip_no_hosts;
+	return $cached_skip_no_hosts;
+}
+
+# Same as the above, plus require the platform to treat hostnames in
+# hosts(5) correctly (case-insensitive).
+sub skip_no_hosts_casecmp {
+	return skip_no_hosts ||
+		# getaddrinfo() uses strcmp() on /etc/hosts.
+		skip_musl_libc();
+}
+
 # In accept_blocks the top-level keys are test block names.  Each test block
 # defines one or more tests.  When possible, a test block name should be easy
 # to relate with the main filter expression, for example, ip_multicast for
@@ -1807,7 +1913,7 @@ my %accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ether_multicast
-	ether_host => {
+	ether_host_addr => {
 		DLT => 'EN10MB',
 		expr => 'ether host ab:cd:ef:0:0:1',
 		aliases => [
@@ -1826,8 +1932,50 @@ my %accept_blocks = (
 			(008) ret      #262144
 			(009) ret      #0
 			',
-	}, # ether_host
-	ether_src_host => {
+	}, # ether_host_addr
+	ether_host_name => {
+		skip => skip_no_ethers(),
+		DLT => 'EN10MB',
+		expr => 'ether host eth-noipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ether src or dst eth-noipv4-noipv6.host123.libpcap.test',
+			'ether src or dst host eth-noipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 9
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # ether_host_name
+	ether_host_NAME => {
+		skip => skip_no_ethers_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'ether host ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ether src or dst ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'ether src or dst host ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 9
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # ether_host_NAME
+	ether_src_host_addr => {
 		DLT => 'EN10MB',
 		expr => 'ether src host ab-cd-ef-00-00-02',
 		aliases => ['ether src ab.cd.ef.00.00.02'],
@@ -1839,8 +1987,40 @@ my %accept_blocks = (
 			(004) ret      #262144
 			(005) ret      #0
 			',
-	}, # ether_src_host
-	ether_dst_host => {
+	}, # ether_src_host_addr
+	ether_src_host_name => {
+		skip => skip_no_ethers(),
+		DLT => 'EN10MB',
+		expr => 'ether src host eth-noipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ether src eth-noipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 5
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ether_src_host_name
+	ether_src_host_NAME => {
+		skip => skip_no_ethers_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'ether src host ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ether src ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 5
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ether_src_host_NAME
+	ether_dst_host_addr => {
 		DLT => 'EN10MB',
 		expr => 'ether dst host abcd.ef00.0003',
 		aliases => ['ether dst abcdef000003'],
@@ -1852,7 +2032,39 @@ my %accept_blocks = (
 			(004) ret      #262144
 			(005) ret      #0
 			',
-	}, # ether_dst_host
+	}, # ether_dst_host_addr
+	ether_dst_host_name => {
+		skip => skip_no_ethers(),
+		DLT => 'EN10MB',
+		expr => 'ether dst host eth-noipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ether dst eth-noipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ld       [2]
+			(001) jeq      #0x400140e       jt 2	jf 5
+			(002) ldh      [0]
+			(003) jeq      #0xaa00          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ether_dst_host_name
+	ether_dst_host_NAME => {
+		skip => skip_no_ethers_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'ether dst host ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ether dst ETH-NOIPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ld       [2]
+			(001) jeq      #0x400140e       jt 2	jf 5
+			(002) ldh      [0]
+			(003) jeq      #0xaa00          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ether_dst_host_NAME
 
 	ether_proto_aarp => {
 		DLT => 'EN10MB',
@@ -4320,7 +4532,7 @@ my %accept_blocks = (
 			(059) ret      #0
 			',
 	}, # protochain
-	ip_host => {
+	ip_host_addr => {
 		# For this and some other single-stack qualifiers below use DLT_RAW to
 		# verify that the bytecode does not try to match the other protocol too.
 		DLT => 'RAW',
@@ -4344,8 +4556,68 @@ my %accept_blocks = (
 			(007) ret      #2000
 			(008) ret      #0
 			',
-	}, # host
-	ip_src_host => {
+	}, # ip_host_addr
+	# The DLT supports both IPv4 and IPv6, the expressions use:
+	# * IPv4-only syntax and an IPv4-only hostname
+	# * IPv4-only syntax and an IPv4+IPv6 hostname
+	# * IPv4+IPv6 syntax and an IPv4-only hostname
+	# In each case the filter program should be the same and IPv4-only.  Other
+	# similar tests use a similar approach.
+	ip_host_name => {
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip host noeth-ipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ip host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip src or dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'ip src or dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			'ip src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'host noeth-ipv4-noipv6.host123.libpcap.test',
+			'src or dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 7	jf 5
+			(005) ld       [16]
+			(006) jeq      #0xa141e28       jt 7	jf 8
+			(007) ret      #2000
+			(008) ret      #0
+			',
+	}, # ip_host_name
+	ip_host_NAME => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip src or dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'ip src or dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'ip src or dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'src or dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 7	jf 5
+			(005) ld       [16]
+			(006) jeq      #0xa141e28       jt 7	jf 8
+			(007) ret      #2000
+			(008) ret      #0
+			',
+	}, # ip_host_NAME
+	ip_src_host_addr => {
 		DLT => 'RAW',
 		snaplen => 2000,
 		expr => 'ip src host 10.0.0.2',
@@ -4363,8 +4635,52 @@ my %accept_blocks = (
 			(005) ret      #2000
 			(006) ret      #0
 			',
-	}, # ip_src_host
-	ip_dst_host => {
+	}, # ip_src_host_addr
+	ip_src_host_name => {
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip src host noeth-ipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ip src host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip src noeth-ipv4-noipv6.host123.libpcap.test',
+			'ip src noeth-ipv4-ipv6.host123.libpcap.test',
+			'src host noeth-ipv4-noipv6.host123.libpcap.test',
+			'src noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 5	jf 6
+			(005) ret      #2000
+			(006) ret      #0
+			',
+	}, # ip_src_host_name
+	ip_src_host_NAME => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip src host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip src host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'ip src NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'src host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 5	jf 6
+			(005) ret      #2000
+			(006) ret      #0
+			',
+	}, # ip_src_host_NAME
+	ip_dst_host_addr => {
 		DLT => 'RAW',
 		snaplen => 2000,
 		expr => 'ip dst host 172.17.89.30',
@@ -4382,7 +4698,51 @@ my %accept_blocks = (
 			(005) ret      #2000
 			(006) ret      #0
 			',
-	}, # ip_dst_host
+	}, # ip_dst_host_addr
+	ip_dst_host_name => {
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		aliases => [
+			'ip dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'ip dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [16]
+			(004) jeq      #0xa141e28       jt 5	jf 6
+			(005) ret      #2000
+			(006) ret      #0
+			',
+	}, # ip_dst_host_name
+	ip_dst_host_NAME => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		snaplen => 2000,
+		expr => 'ip dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'ip dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [16]
+			(004) jeq      #0xa141e28       jt 5	jf 6
+			(005) ret      #2000
+			(006) ret      #0
+			',
+	}, # ip_dst_host_NAME
 	ip_net => {
 		DLT => 'RAW',
 		snaplen => 2000,
@@ -4440,7 +4800,1733 @@ my %accept_blocks = (
 			(007) ret      #0
 			',
 	}, # ip_dst_net
-
+	# TODO: Verify identity with DLT_NETANALYZER and
+	# DLT_NETANALYZER_TRANSPARENT in all DLT_EN10MB gateway tests.
+	gateway_name_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		# In the current implementation of this keyword the presence of an IPv6
+		# address in the Internet address space should make no difference in
+		# the resulting filter program.
+		aliases => ['gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [28]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [38]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_name_en10mb
+	gateway_NAME_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [28]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [38]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_NAME_en10mb
+	ip_gateway_name_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['ip gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_name_en10mb
+	ip_gateway_NAME_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'ip gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['ip gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_NAME_en10mb
+	arp_gateway_name_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['arp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_name_en10mb
+	arp_gateway_NAME_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'arp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['arp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_NAME_en10mb
+	rarp_gateway_name_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['rarp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_name_en10mb
+	rarp_gateway_NAME_en10mb => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		expr => 'rarp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['rarp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_NAME_en10mb
+	gateway_name_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [19]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [33]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [37]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [35]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [45]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_name_fddi
+	gateway_NAME_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'FDDI',
+		expr => 'gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [19]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [33]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [37]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [35]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [45]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_NAME_fddi
+	ip_gateway_name_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['ip gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [33]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [37]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_name_fddi
+	ip_gateway_NAME_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'FDDI',
+		expr => 'ip gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['ip gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [33]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [37]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_NAME_fddi
+	arp_gateway_name_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['arp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [35]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [45]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_name_fddi
+	arp_gateway_NAME_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'FDDI',
+		expr => 'arp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['arp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [35]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [45]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_NAME_fddi
+	rarp_gateway_name_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['rarp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [35]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [45]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_name_fddi
+	rarp_gateway_NAME_fddi => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'FDDI',
+		expr => 'rarp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['rarp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [9]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [7]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [3]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [1]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [19]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [35]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [45]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_NAME_fddi
+	gateway_name_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [20]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [34]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [36]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [46]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_name_ieee802
+	gateway_NAME_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802',
+		expr => 'gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [20]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [34]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [36]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [46]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_NAME_ieee802
+	ip_gateway_name_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802',
+		expr => 'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['ip gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [34]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_name_ieee802
+	ip_gateway_NAME_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802',
+		expr => 'ip gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['ip gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [34]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_NAME_ieee802
+	arp_gateway_name_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802',
+		expr => 'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['arp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [46]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_name_ieee802
+	arp_gateway_NAME_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802',
+		expr => 'arp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['arp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [46]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_NAME_ieee802
+	rarp_gateway_name_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802',
+		expr => 'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['rarp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [46]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_name_ieee802
+	rarp_gateway_NAME_ieee802 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802',
+		expr => 'rarp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['rarp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [10]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [8]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [20]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [46]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_NAME_ieee802
+	# TODO: Verify identity with DLT_PRISM_HEADER, DLT_IEEE802_11_RADIO_AVS,
+	# DLT_IEEE802_11_RADIO and DLT_PPI in all DLT_IEEE802_11 gateway tests.
+	gateway_name_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802_11',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 124	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 124
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 124
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 124
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 124
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x800           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 20]
+			(072) jeq      #0xa141e28       jt 124	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x800           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 24]
+			(082) jeq      #0xa141e28       jt 124	jf 83
+			(083) ldb      [0]
+			(084) jset     #0x4             jt 93	jf 85
+			(085) ldb      [0]
+			(086) jset     #0x8             jt 87	jf 93
+			(087) ldx      M[0]
+			(088) ldh      [x + 6]
+			(089) jeq      #0x806           jt 90	jf 93
+			(090) ldx      M[0]
+			(091) ld       [x + 22]
+			(092) jeq      #0xa141e28       jt 124	jf 93
+			(093) ldb      [0]
+			(094) jset     #0x4             jt 103	jf 95
+			(095) ldb      [0]
+			(096) jset     #0x8             jt 97	jf 103
+			(097) ldx      M[0]
+			(098) ldh      [x + 6]
+			(099) jeq      #0x806           jt 100	jf 103
+			(100) ldx      M[0]
+			(101) ld       [x + 32]
+			(102) jeq      #0xa141e28       jt 124	jf 103
+			(103) ldb      [0]
+			(104) jset     #0x4             jt 113	jf 105
+			(105) ldb      [0]
+			(106) jset     #0x8             jt 107	jf 113
+			(107) ldx      M[0]
+			(108) ldh      [x + 6]
+			(109) jeq      #0x8035          jt 110	jf 113
+			(110) ldx      M[0]
+			(111) ld       [x + 22]
+			(112) jeq      #0xa141e28       jt 124	jf 113
+			(113) ldb      [0]
+			(114) jset     #0x4             jt 123	jf 115
+			(115) ldb      [0]
+			(116) jset     #0x8             jt 117	jf 123
+			(117) ldx      M[0]
+			(118) ldh      [x + 6]
+			(119) jeq      #0x8035          jt 120	jf 123
+			(120) ldx      M[0]
+			(121) ld       [x + 32]
+			(122) jeq      #0xa141e28       jt 124	jf 123
+			(123) ret      #262144
+			(124) ret      #0
+			',
+	}, # gateway_name_ieee802_11
+	gateway_NAME_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802_11',
+		expr => 'gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 124	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 124
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 124
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 124
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 124
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x800           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 20]
+			(072) jeq      #0xa141e28       jt 124	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x800           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 24]
+			(082) jeq      #0xa141e28       jt 124	jf 83
+			(083) ldb      [0]
+			(084) jset     #0x4             jt 93	jf 85
+			(085) ldb      [0]
+			(086) jset     #0x8             jt 87	jf 93
+			(087) ldx      M[0]
+			(088) ldh      [x + 6]
+			(089) jeq      #0x806           jt 90	jf 93
+			(090) ldx      M[0]
+			(091) ld       [x + 22]
+			(092) jeq      #0xa141e28       jt 124	jf 93
+			(093) ldb      [0]
+			(094) jset     #0x4             jt 103	jf 95
+			(095) ldb      [0]
+			(096) jset     #0x8             jt 97	jf 103
+			(097) ldx      M[0]
+			(098) ldh      [x + 6]
+			(099) jeq      #0x806           jt 100	jf 103
+			(100) ldx      M[0]
+			(101) ld       [x + 32]
+			(102) jeq      #0xa141e28       jt 124	jf 103
+			(103) ldb      [0]
+			(104) jset     #0x4             jt 113	jf 105
+			(105) ldb      [0]
+			(106) jset     #0x8             jt 107	jf 113
+			(107) ldx      M[0]
+			(108) ldh      [x + 6]
+			(109) jeq      #0x8035          jt 110	jf 113
+			(110) ldx      M[0]
+			(111) ld       [x + 22]
+			(112) jeq      #0xa141e28       jt 124	jf 113
+			(113) ldb      [0]
+			(114) jset     #0x4             jt 123	jf 115
+			(115) ldb      [0]
+			(116) jset     #0x8             jt 117	jf 123
+			(117) ldx      M[0]
+			(118) ldh      [x + 6]
+			(119) jeq      #0x8035          jt 120	jf 123
+			(120) ldx      M[0]
+			(121) ld       [x + 32]
+			(122) jeq      #0xa141e28       jt 124	jf 123
+			(123) ret      #262144
+			(124) ret      #0
+			',
+	}, # gateway_NAME_ieee802_11
+	ip_gateway_name_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802_11',
+		expr => 'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['ip gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x800           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 20]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x800           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 24]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # ip_gateway_name_ieee802_11
+	ip_gateway_NAME_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802_11',
+		expr => 'ip gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['ip gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x800           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 20]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x800           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 24]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # ip_gateway_NAME_ieee802_11
+	arp_gateway_name_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802_11',
+		expr => 'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['arp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x806           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 22]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x806           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 32]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # arp_gateway_name_ieee802_11
+	arp_gateway_NAME_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802_11',
+		expr => 'arp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['arp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x806           jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 22]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x806           jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 32]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # arp_gateway_NAME_ieee802_11
+	rarp_gateway_name_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IEEE802_11',
+		expr => 'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['rarp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x8035          jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 22]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x8035          jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 32]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # rarp_gateway_name_ieee802_11
+	rarp_gateway_NAME_ieee802_11 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IEEE802_11',
+		expr => 'rarp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['rarp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 41	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 19	jf 15
+			(015) ld       [12]
+			(016) jeq      #0x400140e       jt 17	jf 19
+			(017) ldh      [10]
+			(018) jeq      #0xaa00          jt 63	jf 19
+			(019) ldb      [0]
+			(020) jset     #0x8             jt 21	jf 41
+			(021) ldb      [1]
+			(022) jset     #0x2             jt 27	jf 23
+			(023) ld       [12]
+			(024) jeq      #0x400140e       jt 25	jf 27
+			(025) ldh      [10]
+			(026) jeq      #0xaa00          jt 63	jf 27
+			(027) ldb      [1]
+			(028) jset     #0x2             jt 29	jf 41
+			(029) ldb      [1]
+			(030) jset     #0x1             jt 35	jf 31
+			(031) ld       [18]
+			(032) jeq      #0x400140e       jt 33	jf 35
+			(033) ldh      [16]
+			(034) jeq      #0xaa00          jt 63	jf 35
+			(035) ldb      [1]
+			(036) jset     #0x1             jt 37	jf 41
+			(037) ld       [26]
+			(038) jeq      #0x400140e       jt 39	jf 41
+			(039) ldh      [24]
+			(040) jeq      #0xaa00          jt 63	jf 41
+			(041) ldb      [0]
+			(042) jset     #0x4             jt 84	jf 43
+			(043) ldb      [0]
+			(044) jset     #0x8             jt 49	jf 45
+			(045) ld       [6]
+			(046) jeq      #0x400140e       jt 47	jf 49
+			(047) ldh      [4]
+			(048) jeq      #0xaa00          jt 63	jf 49
+			(049) ldb      [0]
+			(050) jset     #0x8             jt 51	jf 84
+			(051) ldb      [1]
+			(052) jset     #0x1             jt 57	jf 53
+			(053) ld       [6]
+			(054) jeq      #0x400140e       jt 55	jf 57
+			(055) ldh      [4]
+			(056) jeq      #0xaa00          jt 63	jf 57
+			(057) ldb      [1]
+			(058) jset     #0x1             jt 59	jf 84
+			(059) ld       [18]
+			(060) jeq      #0x400140e       jt 61	jf 84
+			(061) ldh      [16]
+			(062) jeq      #0xaa00          jt 63	jf 84
+			(063) ldb      [0]
+			(064) jset     #0x4             jt 73	jf 65
+			(065) ldb      [0]
+			(066) jset     #0x8             jt 67	jf 73
+			(067) ldx      M[0]
+			(068) ldh      [x + 6]
+			(069) jeq      #0x8035          jt 70	jf 73
+			(070) ldx      M[0]
+			(071) ld       [x + 22]
+			(072) jeq      #0xa141e28       jt 84	jf 73
+			(073) ldb      [0]
+			(074) jset     #0x4             jt 83	jf 75
+			(075) ldb      [0]
+			(076) jset     #0x8             jt 77	jf 83
+			(077) ldx      M[0]
+			(078) ldh      [x + 6]
+			(079) jeq      #0x8035          jt 80	jf 83
+			(080) ldx      M[0]
+			(081) ld       [x + 32]
+			(082) jeq      #0xa141e28       jt 84	jf 83
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # rarp_gateway_NAME_ieee802_11
+	gateway_name_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IP_OVER_FC',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [22]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [40]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [48]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_name_ip_over_fc
+	gateway_NAME_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IP_OVER_FC',
+		expr => 'gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [22]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [40]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [48]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # gateway_NAME_ip_over_fc
+	ip_gateway_name_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IP_OVER_FC',
+		expr => 'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['ip gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [40]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_name_ip_over_fc
+	ip_gateway_NAME_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IP_OVER_FC',
+		expr => 'ip gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['ip gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [36]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [40]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_NAME_ip_over_fc
+	arp_gateway_name_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IP_OVER_FC',
+		expr => 'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['arp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [48]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_name_ip_over_fc
+	arp_gateway_NAME_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IP_OVER_FC',
+		expr => 'arp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['arp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [48]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_NAME_ip_over_fc
+	rarp_gateway_name_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'IP_OVER_FC',
+		expr => 'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+		aliases => ['rarp gateway eth-ipv4-ipv6.host123.libpcap.test'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [48]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_name_ip_over_fc
+	rarp_gateway_NAME_ip_over_fc => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers_casecmp() ||
+			skip_no_hosts_casecmp(),
+		DLT => 'IP_OVER_FC',
+		expr => 'rarp gateway ETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		aliases => ['rarp gateway ETH-IPV4-IPV6.HOST123.LIBPCAP.TEST'],
+		opt => '
+			(000) ld       [12]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [10]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [4]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [2]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [22]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [48]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_NAME_ip_over_fc
 	carp => {
 		DLT => 'EN10MB',
 		expr => 'carp',
@@ -4663,7 +6749,7 @@ my %accept_blocks = (
 			',
 	}, # udp
 
-	ip6_host => {
+	ip6_host_addr => {
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host ::1',
@@ -4697,8 +6783,84 @@ my %accept_blocks = (
 			(019) ret      #262144
 			(020) ret      #0
 			',
-	}, # ip6_host
-	ip6_src_host => {
+	}, # ip6_host_addr
+	ip6_host_name => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		DLT => 'RAW',
+		expr => 'ip6 host noeth-noipv4-ipv6.host123.libpcap.test',
+		aliases => [
+			'ip6 host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip6 src or dst noeth-noipv4-ipv6.host123.libpcap.test',
+			'ip6 src or dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip6 src or dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'ip6 src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src or dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src or dst noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 20
+			(003) ld       [8]
+			(004) jeq      #0xfe800000      jt 5	jf 11
+			(005) ld       [12]
+			(006) jeq      #0x0             jt 7	jf 11
+			(007) ld       [16]
+			(008) jeq      #0x10203040      jt 9	jf 11
+			(009) ld       [20]
+			(010) jeq      #0x50607080      jt 19	jf 11
+			(011) ld       [24]
+			(012) jeq      #0xfe800000      jt 13	jf 20
+			(013) ld       [28]
+			(014) jeq      #0x0             jt 15	jf 20
+			(015) ld       [32]
+			(016) jeq      #0x10203040      jt 17	jf 20
+			(017) ld       [36]
+			(018) jeq      #0x50607080      jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # ip6_host_name
+	ip6_host_NAME => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		expr => 'ip6 host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip6 host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src or dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src or dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src or dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src or dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'src or dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'src or dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 20
+			(003) ld       [8]
+			(004) jeq      #0xfe800000      jt 5	jf 11
+			(005) ld       [12]
+			(006) jeq      #0x0             jt 7	jf 11
+			(007) ld       [16]
+			(008) jeq      #0x10203040      jt 9	jf 11
+			(009) ld       [20]
+			(010) jeq      #0x50607080      jt 19	jf 11
+			(011) ld       [24]
+			(012) jeq      #0xfe800000      jt 13	jf 20
+			(013) ld       [28]
+			(014) jeq      #0x0             jt 15	jf 20
+			(015) ld       [32]
+			(016) jeq      #0x10203040      jt 17	jf 20
+			(017) ld       [36]
+			(018) jeq      #0x50607080      jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # ip6_host_NAME
+	ip6_src_host_addr => {
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 src host fe80::1122:33ff:fe44:5566',
@@ -4722,8 +6884,62 @@ my %accept_blocks = (
 			(011) ret      #262144
 			(012) ret      #0
 			',
-	}, # ip6_src_host
-	ip6_dst_host => {
+	}, # ip6_src_host_addr
+	ip6_src_host_name => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		DLT => 'RAW',
+		expr => 'ip6 src host noeth-noipv4-ipv6.host123.libpcap.test',
+		aliases => [
+			'ip6 src host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip6 src noeth-noipv4-ipv6.host123.libpcap.test',
+			'ip6 src noeth-ipv4-ipv6.host123.libpcap.test',
+			'src host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 12
+			(003) ld       [8]
+			(004) jeq      #0xfe800000      jt 5	jf 12
+			(005) ld       [12]
+			(006) jeq      #0x0             jt 7	jf 12
+			(007) ld       [16]
+			(008) jeq      #0x10203040      jt 9	jf 12
+			(009) ld       [20]
+			(010) jeq      #0x50607080      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # ip6_src_host_name
+	ip6_src_host_NAME => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		expr => 'ip6 src host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip6 src host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 src NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'src host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'src NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 12
+			(003) ld       [8]
+			(004) jeq      #0xfe800000      jt 5	jf 12
+			(005) ld       [12]
+			(006) jeq      #0x0             jt 7	jf 12
+			(007) ld       [16]
+			(008) jeq      #0x10203040      jt 9	jf 12
+			(009) ld       [20]
+			(010) jeq      #0x50607080      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # ip6_src_host_NAME
+	ip6_dst_host_addr => {
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 dst host fe80::7788:99ff:feaa:bbcc',
@@ -4747,7 +6963,61 @@ my %accept_blocks = (
 			(011) ret      #262144
 			(012) ret      #0
 			',
-	}, # ip6_dst_host
+	}, # ip6_dst_host_addr
+	ip6_dst_host_name => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		DLT => 'RAW',
+		expr => 'ip6 dst host noeth-noipv4-ipv6.host123.libpcap.test',
+		aliases => [
+			'ip6 dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'ip6 dst noeth-noipv4-ipv6.host123.libpcap.test',
+			'ip6 dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 12
+			(003) ld       [24]
+			(004) jeq      #0xfe800000      jt 5	jf 12
+			(005) ld       [28]
+			(006) jeq      #0x0             jt 7	jf 12
+			(007) ld       [32]
+			(008) jeq      #0x10203040      jt 9	jf 12
+			(009) ld       [36]
+			(010) jeq      #0x50607080      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # ip6_dst_host_name
+	ip6_dst_host_NAME => {
+		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		DLT => 'RAW',
+		expr => 'ip6 dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		aliases => [
+			'ip6 dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'ip6 dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+			'dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 12
+			(003) ld       [24]
+			(004) jeq      #0xfe800000      jt 5	jf 12
+			(005) ld       [28]
+			(006) jeq      #0x0             jt 7	jf 12
+			(007) ld       [32]
+			(008) jeq      #0x10203040      jt 9	jf 12
+			(009) ld       [36]
+			(010) jeq      #0x50607080      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # ip6_dst_host_NAME
 	ip6_net => {
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
@@ -6621,6 +8891,78 @@ my %reject_tests = (
 		DLT => 'EN10MB',
 		expr => "decnet host ${nonexistent}",
 		errstr => "invalid DECnet address '${nonexistent}'",
+	},
+	gateway_noipv4_noipv6 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
+		errstr => 'unknown host', # no IPv4 address in /etc/hosts
+	},
+	gateway_noipv4_ipv6 => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
+		errstr => 'unknown host', # no IPv4 address in /etc/hosts
+	},
+	gateway_noeth => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
+		errstr => 'unknown ether host', # not in /etc/ethers
+	},
+	src_gateway => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'src gateway eth-ipv4-noipv6.host123.libpcap.test',
+		errstr => 'syntax error',
+	},
+	dst_gateway => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
+		errstr => 'syntax error',
+	},
+	gateway_sunatm => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'SUNATM',
+		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
+		errstr => '\'gateway\' supported only on',
+	},
+	gateway_raw => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'RAW',
+		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
+		errstr => '\'gateway\' supported only on',
+	},
+	# If "gateway" begins to support IPv6 in future, the reject tests below will
+	# fail and will need to be replaced with accept tests.
+	gateway_INET6 => {
+		skip => skip_config_undef ('INET6'),
+		DLT => 'EN10MB',
+		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
+		errstr => 'not supported in this configuration',
+	},
+	ip6_gateway => {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'EN10MB',
+		expr => "ip6 gateway eth-ipv4-ipv6.host123.libpcap.test",
+		errstr => 'illegal modifier of \'gateway\'',
 	},
 );
 

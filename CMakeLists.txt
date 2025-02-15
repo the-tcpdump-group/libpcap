@@ -1316,6 +1316,16 @@ endif()
 cmake_pop_check_state()
 
 #
+# Same as in Autoconf.
+#
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    check_symbol_exists(__GLIBC__ features.h HAVE_GLIBC)
+    if(NOT HAVE_GLIBC)
+        check_symbol_exists(__UCLIBC__ features.h HAVE_UCLIBC)
+    endif()
+endif()
+
+#
 # Large file support on UN*X, a/k/a LFS.
 #
 if(NOT WIN32)
