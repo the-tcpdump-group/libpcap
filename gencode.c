@@ -5480,17 +5480,16 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 		case DLT_PPI:
 			b0 = gen_wlanhostop(cstate, eaddr, Q_OR);
 			break;
+		case DLT_IP_OVER_FC:
+			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
+			break;
 		case DLT_SUNATM:
 			/*
 			 * This is LLC-multiplexed traffic; if it were
 			 * LANE, cstate->linktype would have been set to
 			 * DLT_EN10MB.
 			 */
-			bpf_error(cstate,
-			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-		case DLT_IP_OVER_FC:
-			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
-			break;
+			 /* FALLTHROUGH */
 		default:
 			bpf_error(cstate,
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
