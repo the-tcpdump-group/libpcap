@@ -249,7 +249,9 @@ sub test_and_report {
 	print "\n";
 	if (%skipped) {
 		print "Skipped tests:\n";
-		print_result $_, $skipped{$_} foreach (sort keys %skipped);
+		foreach (sort keys %skipped) {
+			print_result $_, $skipped{$_} if $skipped{$_} ne '';
+		}
 		print "\n";
 	}
 	if (%failed) {

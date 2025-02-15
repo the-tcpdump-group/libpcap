@@ -6818,24 +6818,30 @@ foreach my $testname (sort keys %accept_blocks) {
 	if (! defined $test->{unopt} && ! defined $test->{opt}) {
 		die "Internal error: accept test block '$testname' defines neither 'unopt' nor 'opt'";
 	}
+	# Make the number of skip requests equal to the number of tests, but
+	# provide the reason for the first skip request only.  This avoid wasting
+	# the vertical scroll space when skipping test blocks with many aliases.
+	my $skip_reason = (defined $test->{skip} && $test->{skip} ne '') ?
+		$test->{skip} : undef;
 	foreach my $optunopt ('unopt', 'opt') {
 		defined $test->{$optunopt} || next;
 		my $label = accept_test_label $testname, $optunopt;
 		defined $only_one && $only_one ne $label && next;
 
-		if (defined $test->{skip} && $test->{skip} ne '') {
+		if (defined $skip_reason) {
 			push @ready_to_run, {
 				label => $label,
 				func => \&run_skip_test,
-				skip => $test->{skip},
+				skip => $skip_reason,
 			};
+			$skip_reason = '';
 			if (defined $test->{aliases}) {
 				my $i = 0;
 				foreach (@{$test->{aliases}}) {
 					push @ready_to_run, {
 						label => accept_alias_label ($label, $i++),
 						func => \&run_skip_test,
-						skip => $test->{skip},
+						skip => $skip_reason,
 					};
 				}
 			}
