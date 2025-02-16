@@ -68,42 +68,42 @@ sub read_config_h {
 	%config = {};
 	my $re_define_uint = qr/^#define ([0-9_A-Z]+) ([0-9]+)$/;
 	my $re_define_str = qr/^#define ([0-9_A-Z]+) "(.+)"$/;
-	open (my $fh, '<', $config_h) || die "failed opening '$config_h'";
-	while (<$fh>) {
+	open FH, '<', $config_h or die "failed opening '$config_h'";
+	while (<FH>) {
 		$config{$1} = $2 if /$re_define_uint/o || /$re_define_str/o;
 	}
-	close ($fh) || die "failed closing '$config_h'";
+	close FH or die "failed closing '$config_h'";
 }
 
 # This is a simpler version of the PHP function.
 sub file_put_contents {
 	my ($filename, $contents) = @_;
-	open (my $fh, '>', $filename) || die "failed opening '$filename'";
-	print $fh $contents;
-	close ($fh) || die "failed closing '$filename'";
+	open FH, '>', $filename or die "failed opening '$filename'";
+	print FH $contents;
+	close FH or die "failed closing '$filename'";
 }
 
 # Idem.
 sub file_get_contents {
 	my $filename = shift;
-	open (my $fh, '<', $filename) || die "failed opening '$filename'";
+	open FH, '<', $filename or die "failed opening '$filename'";
 	my $ret = '';
-	$ret .= $_ while (<$fh>);
-	close ($fh) || die "failed closing '$filename'";
+	$ret .= $_ while (<FH>);
+	close FH or die "failed closing '$filename'";
 	return $ret;
 }
 
 sub string_in_file {
 	my ($string, $filename) = @_;
 	my $ret = 0;
-	open (my $fh, '<', $filename) || die "failed opening '$filename'";
-	while (<$fh>) {
+	open FH, '<', $filename or die "failed opening '$filename'";
+	while (<FH>) {
 		if (-1 != index $_, $string) {
 			$ret = 1;
 			last;
 		}
 	}
-	close ($fh) || die "failed closing '$filename'";
+	close FH or die "failed closing '$filename'";
 	return $ret;
 }
 
@@ -202,7 +202,7 @@ sub print_result_char {
 	if ($results_dangling) {
 		return if $results_printed < $results_to_print;
 		# Complete the dangling line to keep the progress column aligned.
-		print ' ' for (1 .. $max_results_per_line - $results_dangling);
+		print ' ' x ($max_results_per_line - $results_dangling);
 	}
 	printf " %*u / %*u (%3u%%)\n",
 		$max_result_digits,
