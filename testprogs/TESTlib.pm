@@ -66,8 +66,8 @@ sub get_diff_flags {
 sub read_config_h {
 	my $config_h = shift;
 	%config = {};
-	my $re_define_uint = qr/^#define ([0-9_A-Z]+) ([0-9]+)$/;
-	my $re_define_str = qr/^#define ([0-9_A-Z]+) "(.+)"$/;
+	my $re_define_uint = qr/^#define[[:blank:]]+([0-9_A-Z]+)[[:blank:]]+([0-9]+)$/;
+	my $re_define_str = qr/^#define[[:blank:]]+([0-9_A-Z]+)[[:blank:]]+"(.+)"$/;
 	open FH, '<', $config_h or die "failed opening '$config_h'";
 	while (<FH>) {
 		$config{$1} = $2 if /$re_define_uint/o || /$re_define_str/o;
