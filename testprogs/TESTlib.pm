@@ -232,6 +232,9 @@ sub test_and_report {
 	my %failed;
 	my $passedcount = 0;
 
+	printf "INFO: %s = skipped, %s = passed, %s = failed, %s = timed out\n",
+		CHAR_SKIPPED, CHAR_PASSED, CHAR_FAILED, CHAR_TIMED_OUT;
+
 	# Ordering of the results is the same as ordering of the tests.  Print the
 	# results map immediately and buffer any skipped/failed test details for the
 	# post-map diagnostics.

@@ -26,27 +26,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Usage:
-# <this file>               run all tests
-# <this file> <test label>  run only the test with the label (if any)
-#
-# Set FILTERTEST_TIMEOUT to 0 to disable the timeout completely or to any other
-# value to override the default timeout.  The timeout applies to every test.
-# If TIMEOUT_BIN is not set, the timeout applies iff the default "timeout"
-# binary works.  If it is set (on macOS there is no default "timeout" and the
-# binary from GNU coreutils package may be available as "gtimeout" only), the
-# custom binary must work.
-#
-# FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
-# if the current working directory is not the directory where the build output
-# files go to.  Otherwise by default this script finds the files for both
-# Autoconf and CMake, both in-tree and out-of-tree builds.
-#
-# TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
-
 use sigtrap qw(die normal-signals);
 use strict;
 use warnings FATAL => qw(uninitialized);
+use Getopt::Long;
 require $FindBin::RealBin . '/TESTlib.pm';
 # TESTlib.pm
 use subs qw(
@@ -85,8 +68,78 @@ BEGIN {
 }
 
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
+my $filename_expected = 'expected.txt';
+my $filename_stdout = 'stdout.txt';
+my $filename_filter = 'filter.txt';
+my $filename_diags = 'diags.txt';
+
 # See RFC 6761 Section 6.4.
 my $nonexistent = 'host.invalid';
+
+use constant {
+	EX_OK => 0,
+	# On all platforms where timeout(1) is available it exits with status 124
+	# if the command timed out.
+	TIMED_OUT => 124,
+	EX_USAGE => 64,
+	# In this libpcap version filtertest exits with EX_DATAERR if the user input
+	# is invalid and with other status codes for other (memory/file/etc) error
+	# conditions.
+	EX_DATAERR => 65,
+};
+
+# Set these later only if running any tests.
+my $diff_flags;
+my $timeout_bin;
+my $test_timeout;
+my $filtertest;
+
+sub usage_text {
+	my $detailed = shift;
+	my $myname = $FindBin::Script;
+
+	my $ret = "Usage: ${myname}
+       (run all tests)
+  or:  ${myname} --list
+       (print all test labels)
+  or:  ${myname} --one <test_label>
+       (run one test only)
+  or:  ${myname} --help
+       (print the detailed help screen)
+";
+	return $ret unless $detailed;
+	$ret .="
+Set FILTERTEST_TIMEOUT to 0 to disable the timeout completely or to any other
+value to override the default timeout.  The timeout applies to every test.
+If TIMEOUT_BIN is not set, the timeout applies iff the default \"timeout\"
+binary works.  If it is set (on macOS there is no default \"timeout\" and the
+binary from GNU coreutils package may be available as \"gtimeout\" only), the
+custom binary must work.
+
+FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
+if the current working directory is not the directory where the build output
+files go to.  Otherwise by default this script finds the files for both
+Autoconf and CMake, both in-tree and out-of-tree builds.
+
+TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
+
+TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
+
+TESTRUN_PERL allows to specify the Perl interpreter binary.
+";
+	return $ret;
+}
+
+my $only_one = undef;
+my $only_list = 0;
+if (! GetOptions (
+	'one=s' => \$only_one,
+	'list' => \$only_list,
+	'help' => sub {print STDOUT usage_text 1; exit EX_OK;},
+)) {
+	print STDERR usage_text 0;
+	exit EX_USAGE;
+};
 
 my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 # Enable all shared skip functions to be able to declare the tests below.
@@ -9209,58 +9262,6 @@ my %reject_tests = (
 	},
 );
 
-# On all platforms where timeout(1) is available it exits with status 124
-# if the command timed out.
-use constant TIMED_OUT => 124;
-# In this libpcap version filtertest exits with EX_DATAERR if the user input
-# is invalid and with other status codes for other (memory/file/etc) error
-# conditions.
-use constant EX_DATAERR => 65;
-
-my $filename_expected = 'expected.txt';
-my $filename_stdout = 'stdout.txt';
-my $filename_filter = 'filter.txt';
-my $filename_diags = 'diags.txt';
-
-my $diff_flags = get_diff_flags;
-
-# Every test in this file uses an expression that under normal conditions takes
-# well under one second to process, so if a filtertest invocation is taking
-# longer, it is likely a regression.  Or an invocation via Valgrind, which
-# demands a sensible host-specific override of the timeout value.
-my $test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
-	$ENV{FILTERTEST_TIMEOUT} : 1;
-
-my $timeout_bin = undef;
-if ($test_timeout eq '0') {
-	print "INFO: Not using a test timeout (FILTERTEST_TIMEOUT=0).\n";
-} elsif (defined $ENV{TIMEOUT_BIN}) {
-	$timeout_bin = $ENV{TIMEOUT_BIN};
-	if (system ($timeout_bin, '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
-		print STDERR "ERROR: TIMEOUT_BIN='$timeout_bin' is not usable.\n";
-		exit 1;
-	}
-	print "INFO: Using a test timeout of $test_timeout (TIMEOUT_BIN='$timeout_bin').\n";
-} elsif (system ('timeout', '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
-	print "WARNING: Not using a test timeout (the default 'timeout' is not usable).\n";
-} else {
-	$timeout_bin = 'timeout';
-	printf "INFO: Using a test timeout of %s.\n", $test_timeout;
-}
-
-my $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
-	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? 'run/filtertest' :
-	'testprogs/filtertest';
-my $only_one = @ARGV == 1 ? $ARGV[0] : undef;
-
-# In this libpcap version "filtertest -h" prints to stdout and exits normally.
-if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
-	# Make it easier to see what the problem is.
-	system $filtertest;
-	print STDERR "ERROR: $filtertest is not usable\n";
-	exit 2;
-}
-
 sub accept_test_label {
 	return join '_', ('accept', @_);
 }
@@ -9492,8 +9493,50 @@ foreach my $testname (sort keys %reject_tests) {
 }
 
 if (! scalar @ready_to_run) {
-	die "ERROR: Unknown test case '${only_one}'" if defined $only_one;
+	die "ERROR: Unknown test label '${only_one}'" if defined $only_one;
 	die 'Internal error: no tests defined to run!'
 }
+if ($only_list) {
+	print $_->{label} . "\n" foreach @ready_to_run;
+	exit EX_OK;
+}
+
+$diff_flags = get_diff_flags;
+
+$filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
+	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? 'run/filtertest' :
+	'testprogs/filtertest';
+
+# In this libpcap version "filtertest -h" prints to stdout and exits normally.
+if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
+	# Make it easier to see what the problem is.
+	system $filtertest;
+	print STDERR "ERROR: $filtertest is not usable\n";
+	exit 2;
+}
+
+# Every test in this file uses an expression that under normal conditions takes
+# well under one second to process, so if a filtertest invocation is taking
+# longer, it is likely a regression.  Or an invocation via Valgrind, which
+# demands a sensible host-specific override of the timeout value.
+$test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
+	$ENV{FILTERTEST_TIMEOUT} : 1;
+
+if ($test_timeout eq '0') {
+	print "INFO: Not using a test timeout (FILTERTEST_TIMEOUT=0).\n";
+} elsif (defined $ENV{TIMEOUT_BIN}) {
+	$timeout_bin = $ENV{TIMEOUT_BIN};
+	if (system ($timeout_bin, '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
+		print STDERR "ERROR: TIMEOUT_BIN='$timeout_bin' is not usable.\n";
+		exit 1;
+	}
+	print "INFO: Using a test timeout of $test_timeout (TIMEOUT_BIN='$timeout_bin').\n";
+} elsif (system ('timeout', '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
+	print "WARNING: Not using a test timeout (the default 'timeout' is not usable).\n";
+} else {
+	$timeout_bin = 'timeout';
+	printf "INFO: Using a test timeout of %s.\n", $test_timeout;
+}
+
 init_tmpdir 'libpcap_TESTrun';
 exit test_and_report @ready_to_run;
