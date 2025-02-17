@@ -3646,12 +3646,24 @@ add_custom_target(uninstall
 # rule run testprogs/TESTrun with it, because just trying to run the TESTrun
 # script as a command won't work on Windows.
 #
-find_program(PERL perl)
+# However, if the PERL environment variable is set, use its value instead of
+# trying to find the interpreter, this implements the same behaviour as in the
+# Makefile.
+#
+if(NOT "$ENV{PERL}" STREQUAL "")
+    set(PERL $ENV{PERL})
+    message(STATUS "Using PERL='${PERL}'")
+else()
+    find_program(PERL perl)
+    if(PERL)
+        message(STATUS "Found perl at ${PERL}")
+    else()
+        message(STATUS "Didn't find perl")
+    endif()
+endif()
+
 if(PERL)
-    message(STATUS "Found perl at ${PERL}")
     add_custom_target(check
         COMMAND ${PERL} ${CMAKE_SOURCE_DIR}/testprogs/TESTrun
         DEPENDS testprogs)
-else()
-    message(STATUS "Didn't find perl")
 endif()

@@ -57,13 +57,6 @@ BEGIN {
 	require 5.8.4; # Solaris 10
 	use Config;
 	use FindBin;
-	if (defined $ENV{TESTRUN_PERL}) {
-		my $newperl = $ENV{TESTRUN_PERL};
-		delete $ENV{TESTRUN_PERL};
-		print "INFO: Re-launching using TESTRUN_PERL='$newperl'.\n";
-		exec ($newperl, $FindBin::RealBin . '/' . $FindBin::RealScript, @ARGV);
-		die 'ERROR: Failed to re-launch.';
-	}
 	require $FindBin::RealBin . '/TEST' . ($Config{useithreads} ? 'mt' : 'st') . '.pm';
 }
 
@@ -124,8 +117,6 @@ Autoconf and CMake, both in-tree and out-of-tree builds.
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
 TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
-
-TESTRUN_PERL allows to specify the Perl interpreter binary.
 ";
 	return $ret;
 }
