@@ -145,6 +145,14 @@ my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 # Enable all shared skip functions to be able to declare the tests below.
 read_config_h ($config_h);
 
+# All accept tests require that BDEBUG is not set.
+{
+	my $bdebug = skip_config_def1 'BDEBUG';
+	if ($bdebug) {
+		die 'ERROR: This script is not compatible with optimizer debugging.';
+	}
+}
+
 # Skip unless the file exists and is readable and contains every given line
 # (less any duplicates) at least once in any order.
 sub skip_unless_file_contains_lines {
