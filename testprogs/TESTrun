@@ -180,23 +180,42 @@ sub skip_musl_libc {
 # To add tests that require hostnames with a different arrangement of
 # addresses, consider adding similar mnemonic domains.
 
+# The MAC address is in the locally-administered DECnet OUI space.
+# These 4 lines can be copied into ethers(5) directly:
+my @ethers_lines = split /\n/, <<EOF;
+aa:00:04:00:14:0e eth-noipv4-noipv6.host123.libpcap.test
+aa:00:04:00:14:0e eth-noipv4-ipv6.host123.libpcap.test
+aa:00:04:00:14:0e eth-ipv4-noipv6.host123.libpcap.test
+aa:00:04:00:14:0e eth-ipv4-ipv6.host123.libpcap.test
+EOF
+
+# These 8 lines can be copied into hosts(5) directly:
+my @hosts_lines = split /\n/, <<EOF;
+10.20.30.40 noeth-ipv4-noipv6.host123.libpcap.test
+10.20.30.40 noeth-ipv4-ipv6.host123.libpcap.test
+10.20.30.40 eth-ipv4-noipv6.host123.libpcap.test
+10.20.30.40 eth-ipv4-ipv6.host123.libpcap.test
+fe80::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test
+fe80::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test
+fe80::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test
+fe80::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test
+EOF
+
 # Skip if /etc/ethers (or the equivalent) has not been configured for tests.
 #
 # Do not use getent(1): it works, but experiences some portability issues and
 # does not always test the same code paths as what libpcap uses.
 my $cached_skip_no_ethers;
 sub skip_no_ethers {
-	$cached_skip_no_ethers = skip_unless_file_contains_lines (
-		$^O eq 'haiku' ? '/boot/system/settings/network/ethers' :
-		'/etc/ethers',
-		(
-			# The MAC address is in the locally-administered DECnet OUI space.
-			'aa:00:04:00:14:0e eth-noipv4-noipv6.host123.libpcap.test',
-			'aa:00:04:00:14:0e eth-noipv4-ipv6.host123.libpcap.test',
-			'aa:00:04:00:14:0e eth-ipv4-noipv6.host123.libpcap.test',
-			'aa:00:04:00:14:0e eth-ipv4-ipv6.host123.libpcap.test',
-		)
-	) unless defined $cached_skip_no_ethers;
+	$cached_skip_no_ethers =
+		# pcap_ether_hostton() currently cannot guess a suitable
+		# location for the libpcap-only ethers(5).
+		skip_os ('MSWin32') ||
+		skip_unless_file_contains_lines (
+			$^O eq 'haiku' ? '/boot/system/settings/network/ethers' :
+			'/etc/ethers',
+			@ethers_lines
+		) unless defined $cached_skip_no_ethers;
 	return $cached_skip_no_ethers;
 }
 
@@ -223,16 +242,7 @@ sub skip_no_hosts {
 		$^O eq 'haiku' ? '/boot/system/settings/network/hosts' :
 		$^O eq 'solaris' ? '/etc/inet/hosts' :
 		'/etc/hosts',
-		(
-			'10.20.30.40 noeth-ipv4-noipv6.host123.libpcap.test',
-			'10.20.30.40 noeth-ipv4-ipv6.host123.libpcap.test',
-			'10.20.30.40 eth-ipv4-noipv6.host123.libpcap.test',
-			'10.20.30.40 eth-ipv4-ipv6.host123.libpcap.test',
-			'fe80::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test',
-			'fe80::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test',
-			'fe80::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test',
-			'fe80::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test',
-		)
+		@hosts_lines
 	) unless defined $cached_skip_no_hosts;
 	return $cached_skip_no_hosts;
 }
