@@ -9115,9 +9115,16 @@ my %reject_tests = (
 		errstr => "netmask not known, so 'ip broadcast' not supported",
 	},
 	arp_protochain => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'EN10MB',
 		expr => 'arp protochain 17',
 		errstr => 'bad protocol applied for \'protochain\'',
+	},
+	protochain_disabled => {
+		skip => skip_config_undef ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => 'protochain 17',
+		errstr => 'protochain not supported',
 	},
 	# In the tests below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
