@@ -9512,8 +9512,8 @@ if ($only_list) {
 $diff_flags = get_diff_flags;
 
 $filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
-	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? 'run/filtertest' :
-	'testprogs/filtertest';
+	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? './run/filtertest' :
+	'./testprogs/filtertest';
 
 # In this libpcap version "filtertest -h" prints to stdout and exits normally.
 if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
