@@ -98,6 +98,8 @@ sub usage_text {
        (print all test labels)
   or:  ${myname} --one <test_label> [--passed]
        (run one test only)
+  or:  ${myname} --config
+       (print the parsed contents of config.h)
   or:  ${myname} --help
        (print the detailed help screen)
 
@@ -125,6 +127,7 @@ TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
 	return $ret;
 }
 
+my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 my $only_one = undef;
 my $only_list = 0;
 my $print_passed = 0;
@@ -132,14 +135,19 @@ if (! GetOptions (
 	'one=s' => \$only_one,
 	'list' => \$only_list,
 	'passed' => \$print_passed,
+	'config' => sub {
+		my %config = read_config_h $config_h;
+		printf "%-50s %s\n", $_, $config{$_} foreach sort keys %config;
+		exit EX_OK;
+	},
 	'help' => sub {print STDOUT usage_text 1; exit EX_OK;},
 )) {
 	print STDERR usage_text 0;
 	exit EX_USAGE;
 };
 
-my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
-# Enable all shared skip functions to be able to declare the tests below.
+# Initialize now so that the skip functions in TESTlib.pm (and therefore the
+# test declarations below) work as intended.
 read_config_h ($config_h);
 
 # All accept tests require that BDEBUG is not set.

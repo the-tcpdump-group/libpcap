@@ -66,14 +66,17 @@ sub get_diff_flags {
 # Parse config.h into a hash for later use.
 sub read_config_h {
 	my $config_h = shift;
-	%config = {};
-	my $re_define_uint = qr/^[[:blank:]]*#define[[:blank:]]+([0-9_A-Z]+)[[:blank:]]+([0-9]+)$/;
-	my $re_define_str = qr/^[[:blank:]]*#define[[:blank:]]+([0-9_A-Z]+)[[:blank:]]+"(.+)"$/;
+	%config = ();
 	open FH, '<', $config_h or die "failed opening '$config_h'";
 	while (<FH>) {
-		$config{$1} = $2 if /$re_define_uint/o || /$re_define_str/o;
+		$config{$1} = $2 if /^
+			[[:blank:]]*\#define
+			[[:blank:]]+([0-9_A-Z]+)
+			[[:blank:]]+([0-9]+|".*")
+			[\r\n]*$/xo;
 	}
 	close FH or die "failed closing '$config_h'";
+	return %config;
 }
 
 # This is a simpler version of the PHP function.
