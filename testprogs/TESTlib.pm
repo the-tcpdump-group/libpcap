@@ -3,6 +3,7 @@ use strict;
 use warnings FATAL => qw(uninitialized);
 use Config;
 use File::Temp qw(tempdir);
+use List::Util qw(min max sum);
 
 # TESTrun helper functions (common to all projects).
 
@@ -149,7 +150,10 @@ sub result_skipped {
 }
 
 sub result_passed {
-	return {char => CHAR_PASSED};
+	return {
+		char => CHAR_PASSED,
+		T => shift
+	};
 }
 
 sub result_failed {
@@ -231,6 +235,7 @@ sub test_and_report {
 	# * details (optional, [multi-line] string)
 	my %failed;
 	my $passedcount = 0;
+	my %passed; # May stay empty even if $passedcount > 0.
 
 	printf "INFO: %s = skipped, %s = passed, %s = failed, %s = timed out\n",
 		CHAR_SKIPPED, CHAR_PASSED, CHAR_FAILED, CHAR_TIMED_OUT;
@@ -246,10 +251,16 @@ sub test_and_report {
 			$failed{$result->{label}} = $result->{failure};
 		} else {
 			$passedcount++;
+			$passed{$result->{label}} = $result->{T} if defined $result->{T};
 		}
 	}
 
 	print "\n";
+	if (%passed) {
+		print "Passed tests:\n";
+		print_result $_, sprintf ('T=%.06fs', $passed{$_}) foreach (sort keys %passed);
+		print "\n";
+	}
 	if (%skipped) {
 		print "Skipped tests:\n";
 		foreach (sort keys %skipped) {
@@ -273,7 +284,21 @@ sub test_and_report {
 	print "------------------------------------------------\n";
 	printf "%4u tests skipped\n", $skippedcount;
 	printf "%4u tests failed\n", $failedcount;
-	printf "%4u tests passed\n", $passedcount;
+	if (! scalar keys %passed) {
+		# There isn't any test duration statistics.
+		printf "%4u tests passed\n", $passedcount;
+	} elsif ($passedcount != scalar keys %passed) {
+		die sprintf ("Internal error: statistics bug (%u != %u)",
+			$passedcount,
+			scalar (keys %passed)
+		);
+	} else {
+		printf "%4u tests passed: T min/avg/max = %.06f/%.06f/%.06fs\n",
+			scalar (keys %passed),
+			min (values %passed),
+			sum (values %passed) / scalar (keys %passed),
+			max (values %passed);
+	}
 
 	if ($skippedcount + $failedcount + $passedcount != $results_to_print) {
 		printf STDERR "Internal error: statistics bug (%u + %u + %u != %u)\n",

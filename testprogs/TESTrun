@@ -30,6 +30,7 @@ use sigtrap qw(die normal-signals);
 use strict;
 use warnings FATAL => qw(uninitialized);
 use Getopt::Long;
+use Time::HiRes;
 require $FindBin::RealBin . '/TESTlib.pm';
 # TESTlib.pm
 use subs qw(
@@ -91,14 +92,17 @@ sub usage_text {
 	my $detailed = shift;
 	my $myname = $FindBin::Script;
 
-	my $ret = "Usage: ${myname}
+	my $ret = "Usage: ${myname} [--passed]
        (run all tests)
   or:  ${myname} --list
        (print all test labels)
-  or:  ${myname} --one <test_label>
+  or:  ${myname} --one <test_label> [--passed]
        (run one test only)
   or:  ${myname} --help
        (print the detailed help screen)
+
+Options:
+  --passed        print the passed tests as well (with timings)
 ";
 	return $ret unless $detailed;
 	$ret .="
@@ -123,9 +127,11 @@ TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
 
 my $only_one = undef;
 my $only_list = 0;
+my $print_passed = 0;
 if (! GetOptions (
 	'one=s' => \$only_one,
 	'list' => \$only_list,
+	'passed' => \$print_passed,
 	'help' => sub {print STDOUT usage_text 1; exit EX_OK;},
 )) {
 	print STDERR usage_text 0;
@@ -9285,8 +9291,23 @@ sub reject_test_label {
 	return join '_', ('reject', @_);
 }
 
+sub time_test_command {
+	my $cmdline = join ' ', @_;
+	my $r;
+	my $T;
+	if (! $print_passed) {
+		$r = system $cmdline;
+	} else {
+		my $t0 = Time::HiRes::time;
+		$r = system $cmdline;
+		$T = Time::HiRes::time - $t0;
+	}
+	return ($r >>= 8, $T);
+}
+
 sub validate_stdout_test {
-	my $r = system (join ' ', @_) >> 8;
+	my ($r, $T) = time_test_command @_;
+
 	return result_timed_out 'filtertest timeout' if $r == TIMED_OUT;
 
 	return result_failed (
@@ -9302,7 +9323,7 @@ sub validate_stdout_test {
 		mytmpfile ($filename_stdout),
 		mytmpfile ($filename_diags);
 
-	return result_passed;
+	return result_passed $T;
 }
 
 sub common_filtertest_args {
@@ -9364,7 +9385,7 @@ sub run_reject_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
-	my $r = system (join ' ', @args) >> 8;
+	my ($r, $T) = time_test_command @args;
 
 	return result_failed (
 		'no filtertest error',
@@ -9383,7 +9404,7 @@ sub run_reject_test {
 		file_get_contents mytmpfile $filename_stdout
 	) if ! string_in_file ($test->{expected}, mytmpfile $filename_stdout);
 
-	return result_passed;
+	return result_passed $T;
 }
 
 # Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
