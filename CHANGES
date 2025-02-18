@@ -94,6 +94,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         Fixes issue #1396.
       filtertest: Add "-l" flag to use Linux BPF extensions.
       filtertest: Use ntohl() on the netmask to fix the -m option.
+      filtertest: Add support for stdin as "-" to the -F option.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

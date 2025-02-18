@@ -57,6 +57,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 #define MAXIMUM_SNAPLEN		262144
+#define MAX_STDIN		(64 * 1024)
 
 #ifdef BDEBUG
 /*
@@ -98,10 +99,21 @@ static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 #define O_BINARY	0
 #endif
 
+// Replace "# comment" with spaces.
+static void
+blank_comments(char *cp, const size_t size)
+{
+	for (size_t i = 0; i < size; i++) {
+		if (cp[i] == '#')
+			while (i < size && cp[i] != '\n')
+				cp[i++] = ' ';
+	}
+}
+
 static char *
 read_infile(char *fname)
 {
-	register int i, fd, cc;
+	int fd, cc;
 	register char *cp;
 	struct stat buf;
 
@@ -133,14 +145,31 @@ read_infile(char *fname)
 		error(EX_IOERR, "short read %s (%d != %d)", fname, cc, (int)buf.st_size);
 
 	close(fd);
-	/* replace "# comment" with spaces */
-	for (i = 0; i < cc; i++) {
-		if (cp[i] == '#')
-			while (i < cc && cp[i] != '\n')
-				cp[i++] = ' ';
-	}
+	blank_comments(cp, (size_t)cc);
 	cp[cc] = '\0';
 	return (cp);
+}
+
+// Copy stdin into a size-limited buffer.
+static char *
+read_stdin(void)
+{
+	char *buf = calloc(1, MAX_STDIN + 1);
+	if (buf == NULL)
+		error(EX_OSERR, "%s: calloc", __func__);
+	size_t readsize = fread(buf, 1, MAX_STDIN, stdin);
+	if (! feof(stdin)) {
+		free(buf);
+		error(EX_DATAERR, "received more than %u bytes on stdin", MAX_STDIN);
+	}
+	if (ferror(stdin)) {
+		free(buf);
+		error(EX_IOERR, "failed reading from stdin after %zd bytes", readsize);
+	}
+	fclose(stdin);
+	// No error, all data is within the buffer and NUL-terminated.
+	blank_comments(buf, readsize);
+	return buf;
 }
 
 /* VARARGS */
@@ -385,7 +414,7 @@ main(int argc, char **argv)
 	}
 
 	if (infile)
-		cmdbuf = read_infile(infile);
+		cmdbuf = strcmp(infile, "-") ? read_infile(infile) : read_stdin();
 	else
 		cmdbuf = copy_argv(&argv[optind]);
 
@@ -468,6 +497,7 @@ usage(FILE *f)
 		(void)fprintf(f, "  -d              change output format (accumulates, one -d is implicit)\n");
 		(void)fprintf(f, "  -O              do not optimize the filter program\n");
 		(void)fprintf(f, "  -F <file>       read the filter expression from the specified file\n");
+		(void)fprintf(f, "                  (\"-\" means stdin and allows at most %u characters)\n", MAX_STDIN);
 		(void)fprintf(f, "  -s <snaplen>    set the snapshot length\n");
 		(void)fprintf(f, "  -r <file>       read the packets from this savefile\n");
 		(void)fprintf(f, "\nIf no filter expression is specified, it defaults to an empty string, which\n");
