@@ -155,7 +155,10 @@ die 'ERROR: This script is not compatible with optimizer debugging.' if skip_con
 sub skip_unless_file_contains_lines {
 	my $filename = shift;
 	my %notfound = map {$_ => 1} @_;
-	my $skip = "needs $filename";
+	# In Perl 5.8.4 "s///" does not have the "r" option.
+	my $basename = $filename;
+	$basename =~ s|^.*[/\\]||o;
+	my $skip = "configure the $basename file";
 
 	open FH, '<', $filename or return $skip;
 	while (<FH>) {
@@ -200,16 +203,17 @@ aa:00:04:00:14:0e eth-ipv4-noipv6.host123.libpcap.test
 aa:00:04:00:14:0e eth-ipv4-ipv6.host123.libpcap.test
 EOF
 
+# The IPv6 address is subject to RFC4193.
 # These 8 lines can be copied into hosts(5) directly:
 my @hosts_lines = split /\n/, <<EOF;
 10.20.30.40 noeth-ipv4-noipv6.host123.libpcap.test
 10.20.30.40 noeth-ipv4-ipv6.host123.libpcap.test
 10.20.30.40 eth-ipv4-noipv6.host123.libpcap.test
 10.20.30.40 eth-ipv4-ipv6.host123.libpcap.test
-fe80::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test
-fe80::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test
-fe80::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test
-fe80::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test
+fd00:a1b2:c3d4::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test
+fd00:a1b2:c3d4::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test
+fd00:a1b2:c3d4::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test
+fd00:a1b2:c3d4::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test
 EOF
 
 # Skip if /etc/ethers (or the equivalent) has not been configured for tests.
@@ -249,9 +253,11 @@ sub skip_no_ethers_casecmp {
 # with dual-stack hostnames) to be practicable.
 my $cached_skip_no_hosts;
 sub skip_no_hosts {
+	return '%SYSTEMROOT% not set' if $^O eq 'MSWin32' && ! defined $ENV{SYSTEMROOT};
 	$cached_skip_no_hosts = skip_unless_file_contains_lines (
 		$^O eq 'haiku' ? '/boot/system/settings/network/hosts' :
 		$^O eq 'solaris' ? '/etc/inet/hosts' :
+		$^O eq 'MSWin32' ? "${ENV{SYSTEMROOT}}\\system32\\drivers\\etc\\hosts" :
 		'/etc/hosts',
 		@hosts_lines
 	) unless defined $cached_skip_no_hosts;
@@ -7078,17 +7084,17 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 20
 			(003) ld       [8]
-			(004) jeq      #0xfe800000      jt 5	jf 11
+			(004) jeq      #0xfd00a1b2      jt 5	jf 11
 			(005) ld       [12]
-			(006) jeq      #0x0             jt 7	jf 11
+			(006) jeq      #0xc3d40000      jt 7	jf 11
 			(007) ld       [16]
 			(008) jeq      #0x10203040      jt 9	jf 11
 			(009) ld       [20]
 			(010) jeq      #0x50607080      jt 19	jf 11
 			(011) ld       [24]
-			(012) jeq      #0xfe800000      jt 13	jf 20
+			(012) jeq      #0xfd00a1b2      jt 13	jf 20
 			(013) ld       [28]
-			(014) jeq      #0x0             jt 15	jf 20
+			(014) jeq      #0xc3d40000      jt 15	jf 20
 			(015) ld       [32]
 			(016) jeq      #0x10203040      jt 17	jf 20
 			(017) ld       [36]
@@ -7116,17 +7122,17 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 20
 			(003) ld       [8]
-			(004) jeq      #0xfe800000      jt 5	jf 11
+			(004) jeq      #0xfd00a1b2      jt 5	jf 11
 			(005) ld       [12]
-			(006) jeq      #0x0             jt 7	jf 11
+			(006) jeq      #0xc3d40000      jt 7	jf 11
 			(007) ld       [16]
 			(008) jeq      #0x10203040      jt 9	jf 11
 			(009) ld       [20]
 			(010) jeq      #0x50607080      jt 19	jf 11
 			(011) ld       [24]
-			(012) jeq      #0xfe800000      jt 13	jf 20
+			(012) jeq      #0xfd00a1b2      jt 13	jf 20
 			(013) ld       [28]
-			(014) jeq      #0x0             jt 15	jf 20
+			(014) jeq      #0xc3d40000      jt 15	jf 20
 			(015) ld       [32]
 			(016) jeq      #0x10203040      jt 17	jf 20
 			(017) ld       [36]
@@ -7176,9 +7182,9 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
 			(003) ld       [8]
-			(004) jeq      #0xfe800000      jt 5	jf 12
+			(004) jeq      #0xfd00a1b2      jt 5	jf 12
 			(005) ld       [12]
-			(006) jeq      #0x0             jt 7	jf 12
+			(006) jeq      #0xc3d40000      jt 7	jf 12
 			(007) ld       [16]
 			(008) jeq      #0x10203040      jt 9	jf 12
 			(009) ld       [20]
@@ -7203,9 +7209,9 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
 			(003) ld       [8]
-			(004) jeq      #0xfe800000      jt 5	jf 12
+			(004) jeq      #0xfd00a1b2      jt 5	jf 12
 			(005) ld       [12]
-			(006) jeq      #0x0             jt 7	jf 12
+			(006) jeq      #0xc3d40000      jt 7	jf 12
 			(007) ld       [16]
 			(008) jeq      #0x10203040      jt 9	jf 12
 			(009) ld       [20]
@@ -7255,9 +7261,9 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
 			(003) ld       [24]
-			(004) jeq      #0xfe800000      jt 5	jf 12
+			(004) jeq      #0xfd00a1b2      jt 5	jf 12
 			(005) ld       [28]
-			(006) jeq      #0x0             jt 7	jf 12
+			(006) jeq      #0xc3d40000      jt 7	jf 12
 			(007) ld       [32]
 			(008) jeq      #0x10203040      jt 9	jf 12
 			(009) ld       [36]
@@ -7282,9 +7288,9 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
 			(003) ld       [24]
-			(004) jeq      #0xfe800000      jt 5	jf 12
+			(004) jeq      #0xfd00a1b2      jt 5	jf 12
 			(005) ld       [28]
-			(006) jeq      #0x0             jt 7	jf 12
+			(006) jeq      #0xc3d40000      jt 7	jf 12
 			(007) ld       [32]
 			(008) jeq      #0x10203040      jt 9	jf 12
 			(009) ld       [36]
