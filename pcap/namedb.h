@@ -99,6 +99,11 @@ PCAP_API int	pcap_nametoeproto(const char *);
 PCAP_AVAILABLE_0_9
 PCAP_API int	pcap_nametollc(const char *);
 
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_nametobatadvtype_v14(const char *);
+
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_nametobatadvtype_v15(const char *);
 /*
  * If a protocol is unknown, PROTO_UNDEF is returned.
  * Also, pcap_nametoport() returns the protocol along with the port number.

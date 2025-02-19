@@ -46,6 +46,8 @@
 #include "ieee80211.h"
 #include "pflog.h"
 #include "ppp.h"
+#include "batadv_packet.h"
+#include "batadv_legacy_packet.h"
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "diag-control.h"
@@ -10122,6 +10124,330 @@ gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	cstate->is_encap = 1;
 
 	return b1;
+}
+
+static struct block *
+gen_batadv_check_version(compiler_state_t *cstate, struct block *b0, bpf_u_int32 version)
+{
+	struct block *b1;
+
+	if (version > UINT8_MAX)
+		bpf_error(cstate,
+			  "batman-adv compatibility version number %u unsupported",
+			  version);
+
+	b1 = gen_cmp(cstate, OR_LINKPL, 1, BPF_B, version);
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+static struct block *
+gen_batadv_check_type(compiler_state_t *cstate, struct block *b0,
+		      bpf_u_int32 version, bpf_u_int32 type)
+{
+	struct block *b1;
+
+	switch (version) {
+	case 14:
+	case 15:
+		if (type > UINT8_MAX)
+			bpf_error(cstate,
+				  "batman-adv packet type %u unsupported for compatibility version %u",
+				  type, version);
+
+		b1 = gen_cmp(cstate, OR_LINKPL, 0, BPF_B, type);
+		gen_and(b0, b1);
+		b0 = b1;
+
+		break;
+	default:
+		bpf_error(cstate,
+			  "batman-adv compatibility version number %u unsupported",
+			  version);
+	}
+
+	return b0;
+}
+
+
+static void gen_batadv_push_offset(compiler_state_t *cstate, u_int offset)
+{
+	PUSH_LINKHDR(cstate, DLT_EN10MB, cstate->off_linkpl.is_variable,
+		     cstate->off_linkpl.constant_part + cstate->off_nl + offset,
+		     cstate->off_linkpl.reg);
+
+	cstate->off_linktype.constant_part += cstate->off_linkhdr.constant_part;
+	cstate->off_linkpl.constant_part += cstate->off_linkhdr.constant_part;
+
+	cstate->off_nl = 0;
+	cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+}
+
+static void
+gen_batadv_offsets_v14(compiler_state_t *cstate, bpf_u_int32 type)
+{
+	size_t offset;
+
+	switch (type) {
+	case BATADV_LEGACY_UNICAST:		/* 0x03 */
+		offset = sizeof(struct batadv_legacy_unicast_packet);
+		break;
+	case BATADV_LEGACY_BCAST:		/* 0x04 */
+		offset = sizeof(struct batadv_legacy_bcast_packet);
+		break;
+	case BATADV_LEGACY_UNICAST_FRAG:	/* 0x06 */
+		offset = sizeof(struct batadv_legacy_unicast_frag_packet);
+		break;
+	case BATADV_LEGACY_UNICAST_4ADDR:	/* 0x09 */
+		offset = sizeof(struct batadv_legacy_unicast_4addr_packet);
+		break;
+	case BATADV_LEGACY_CODED:		/* 0x0a */
+		offset = sizeof(struct batadv_legacy_coded_packet);
+		break;
+	default:
+		offset = 0;
+	}
+
+	if (offset)
+		gen_batadv_push_offset(cstate, (u_int)offset);
+}
+
+static void
+gen_prepare_var_offset(compiler_state_t *cstate, bpf_abs_offset *off, struct slist *s)
+{
+	struct slist *s2;
+
+	if (!off->is_variable)
+		off->is_variable = 1;
+	if (off->reg == -1) {
+		off->reg = alloc_reg(cstate);
+
+		s2 = new_stmt(cstate, BPF_ALU|BPF_AND);
+		s2->s.k = 0;
+		s2 = new_stmt(cstate, BPF_ST);
+		s2->s.k = off->reg;
+		sappend(s, s2);
+	}
+}
+
+/**
+ * gen_batadv_loadx_tvlv_len_offset() - load offset to tvlv_len into X
+ * @cstate: our compiler state
+ * @bat_offset: our offset to the start of the batman-adv packet header
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ * @s: instructions list to append to
+ *
+ * Will load: X = bat_offset + field_offset. So that [X] in the packet will
+ * point to the most-significant byte of the tvlv_len in a batman-adv packet.
+ */
+static void
+gen_batadv_loadx_tvlv_len_offset(compiler_state_t *cstate,
+				 bpf_abs_offset *bat_offset,
+				 bpf_u_int32 field_offset, struct slist *s)
+{
+	struct slist *s2;
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2->s.k = bat_offset->reg;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
+	s2->s.k = bat_offset->constant_part + field_offset;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s2->s.k = 0;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_loadx_tvlv_len() - load tvlv_len value into X
+ * @cstate: our compiler state
+ * @bat_offset: our offset to the start of the batman-adv packet header
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ * @s: instructions list to append to
+ *
+ * Loads the value of the 2 byte tvlv_len field in a given batman-adv packet
+ * header into the X register.
+ */
+static void
+gen_batadv_loadx_tvlv_len(compiler_state_t *cstate, bpf_abs_offset *bat_offset,
+			  bpf_u_int32 field_offset, struct slist *s)
+{
+	struct slist *s2;
+
+	/* load offset to tvlv_len field into X register */
+	gen_batadv_loadx_tvlv_len_offset(cstate, bat_offset, field_offset, s);
+
+	/* clear A register */
+	s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	/* load most significant byte of tvlv_len */
+	s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	/* multiply by 2^8 for real value of MSB, make room for LSB */
+	s2 = new_stmt(cstate, BPF_ALU|BPF_LSH|BPF_K);
+	s2->s.k = 8;
+	sappend(s, s2);
+
+	/* load least significant byte of tvlv_len */
+	s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
+	s2->s.k = 1;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s2->s.k = 0;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_offset_addx() - add X register to a variable offset
+ * @cstate: our compiler state
+ * @off: the (variable) offset to add to
+ * @s: instructions list to append to
+ *
+ * Adds the value from the X register to the given variable offset.
+ */
+static void
+gen_batadv_offset_addx(compiler_state_t *cstate, bpf_abs_offset *off,
+		       struct slist *s)
+{
+	struct slist *s2;
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
+	s2->s.k = 0;
+	sappend(s, s2);
+
+	s2 = new_stmt(cstate, BPF_ST);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+}
+
+/**
+ * gen_batadv_offsets_add_tvlv_len() - add tvlv_len to payload offsets
+ * @cstate: our compiler state
+ * @b0: instructions block to add to
+ * @field_offset: offset of tvlv_len field within the batman-adv packet header
+ *
+ * Adds the tvlv_len value from/in a batman-adv packet header to the offsets
+ * of cstate->off_linkpl and cstate->off_linktype.
+ *
+ * Return: The updated instructions block.
+ */
+static struct block *
+gen_batadv_offsets_add_tvlv_len(compiler_state_t *cstate, struct block *b0,
+				bpf_u_int32 field_offset)
+{
+	struct slist s;
+
+	s.next = NULL;
+
+	/* turn constant-only offsets into variable offsets as we need to add
+	 * variable offset values (tvlv_len) to them later */
+	gen_prepare_var_offset(cstate, &cstate->off_linkpl, &s);
+	gen_prepare_var_offset(cstate, &cstate->off_linktype, &s);
+
+	/* load tvlv_len into X register */
+	gen_batadv_loadx_tvlv_len(cstate, &cstate->off_linkpl, field_offset, &s);
+
+	gen_batadv_offset_addx(cstate, &cstate->off_linkpl, &s);
+	gen_batadv_offset_addx(cstate, &cstate->off_linktype, &s);
+
+	sappend(s.next, b0->head->stmts);
+	b0->head->stmts = s.next;
+
+	return b0;
+}
+
+static struct block *
+gen_batadv_offsets_v15(compiler_state_t *cstate, struct block *b0, bpf_u_int32 type)
+{
+	size_t offset;
+	bpf_u_int32 field_offset;
+
+	switch (type) {
+	case BATADV_BCAST:		/* 0x01 */
+		offset = sizeof(struct batadv_bcast_packet);
+		break;
+	case BATADV_CODED:		/* 0x02 */
+		offset = sizeof(struct batadv_coded_packet);
+		break;
+	case BATADV_MCAST:		/* 0x05 */
+		offset = sizeof(struct batadv_mcast_packet);
+		field_offset = (bpf_u_int32)offsetof(struct batadv_mcast_packet,
+						     tvlv_len);
+
+		b0 = gen_batadv_offsets_add_tvlv_len(cstate, b0, field_offset);
+		break;
+	case BATADV_UNICAST:		/* 0x40 */
+		offset = sizeof(struct batadv_unicast_packet);
+		break;
+	case BATADV_UNICAST_FRAG:	/* 0x41 */
+		offset = sizeof(struct batadv_frag_packet);
+		break;
+	case BATADV_UNICAST_4ADDR:	/* 0x42 */
+		offset = sizeof(struct batadv_unicast_4addr_packet);
+		break;
+	default:
+		offset = 0;
+	}
+
+	if (offset)
+		gen_batadv_push_offset(cstate, (u_int)offset);
+
+	return b0;
+}
+
+static struct block *
+gen_batadv_offsets(compiler_state_t *cstate, struct block *b0, bpf_u_int32 version, bpf_u_int32 type)
+{
+	switch (version) {
+	case 14:
+		gen_batadv_offsets_v14(cstate, type);
+		break;
+	case 15:
+		b0 = gen_batadv_offsets_v15(cstate, b0, type);
+		break;
+	default:
+		break;
+	}
+
+	return b0;
+}
+
+struct block *
+gen_batadv(compiler_state_t *cstate, bpf_u_int32 version, int has_version,
+	   bpf_u_int32 type, int has_type)
+{
+	struct block *b0;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	b0 = gen_linktype(cstate, ETHERTYPE_BATMAN);
+
+	if (has_version)
+		b0 = gen_batadv_check_version(cstate, b0, version);
+
+	if (has_type) {
+		b0 = gen_batadv_check_type(cstate, b0, version, type);
+		b0 = gen_batadv_offsets(cstate, b0, version, type);
+	}
+
+	return b0;
 }
 
 /* Check that the encapsulated frame has a link layer header
