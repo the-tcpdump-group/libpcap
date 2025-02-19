@@ -22,6 +22,21 @@ use constant {
 	CHAR_TIMED_OUT => 'T',
 };
 
+my %osnames = (
+	aix => 'AIX',
+	darwin => 'macOS',
+	dragonfly => 'DragonFly BSD',
+	freebsd => 'FreeBSD',
+	gnu => 'Hurd',
+	haiku => 'Haiku',
+	hpux => 'HP-UX',
+	linux => 'Linux',
+	MSWin32 => 'Windows',
+	netbsd => 'NetBSD',
+	openbsd => 'OpenBSD',
+	solaris => 'illumos/Solaris',
+);
+
 my $results_to_print;
 my $results_printed;
 my $max_result_digits;
@@ -113,12 +128,14 @@ sub string_in_file {
 
 sub skip_os {
 	my $name = shift;
-	return $^O eq $name ? "is $name" : '';
+	my $bettername = $osnames{$name} || $name;
+	return $^O eq $name ? "is $bettername" : '';
 }
 
 sub skip_os_not {
 	my $name = shift;
-	return $^O ne $name ? "is not $name" : '';
+	my $bettername = $osnames{$name} || $name;
+	return $^O ne $name ? "is not $bettername" : '';
 }
 
 sub skip_config_def1 {
