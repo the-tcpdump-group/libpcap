@@ -9437,6 +9437,11 @@ foreach my $testname (sort keys %accept_blocks) {
 	}
 	if (! scalar @{$test->{aliases}}) {
 		die "Internal error: accept test block '$testname' defines zero aliases";
+	} else {
+		my %unique = map {$_ => 1} @{$test->{aliases}};
+		if (scalar (keys %unique) != scalar @{$test->{aliases}}) {
+			die "Internal error: accept test block '$testname' defines duplicate aliases";
+		}
 	}
 	if (! defined $test->{unopt} && ! defined $test->{opt}) {
 		die "Internal error: accept test block '$testname' defines neither 'unopt' nor 'opt'";
