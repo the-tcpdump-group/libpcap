@@ -4718,6 +4718,36 @@ my %accept_blocks = (
 			'host 192.168.170.211',
 			'src or dst 192.168.170.211',
 			'src or dst host 192.168.170.211',
+			'ip host 0xc0a8aad3',
+			'ip src or dst 0xc0a8aad3',
+			'ip src or dst host 0xc0a8aad3',
+			'host 0xc0a8aad3',
+			'src or dst 0xc0a8aad3',
+			'src or dst host 0xc0a8aad3',
+			'ip host 3232279251',
+			'ip src or dst 3232279251',
+			'ip src or dst host 3232279251',
+			'host 3232279251',
+			'src or dst 3232279251',
+			'src or dst host 3232279251',
+			# No aliases for 030052125323, which matches a MAC address.
+			# "net" without an explicit netmask defaults to /32.
+			'ip net 192.168.170.211/32',
+			'ip src or dst net 192.168.170.211/ 32',
+			'net 192.168.170.211 /32',
+			'src or dst net 192.168.170.211 / 32',
+			'ip net 192.168.170.211',
+			'ip src or dst net 192.168.170.211',
+			'net 192.168.170.211',
+			'src or dst net 192.168.170.211',
+			'ip net 0xc0a8aad3',
+			'ip src or dst net 0xc0a8aad3',
+			'net 0xc0a8aad3',
+			'src or dst net 0xc0a8aad3',
+			'ip net 3232279251',
+			'ip src or dst net 3232279251',
+			'net 3232279251',
+			'src or dst net 3232279251',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -4799,6 +4829,35 @@ my %accept_blocks = (
 			'ip src 10.0.0.2',
 			'src host 10.0.0.2',
 			'src 10.0.0.2',
+			'ip src host 0x0a000002',
+			'ip src 0x0A000002',
+			'src host 0X0a000002',
+			'src 0X0A000002',
+			'ip src host 0xa000002',
+			'ip src 0xA000002',
+			'src host 0Xa000002',
+			'src 0XA000002',
+			'ip src host 167772162',
+			'ip src 167772162',
+			'src host 167772162',
+			'src 167772162',
+			'ip src host 01200000002',
+			'ip src 01200000002',
+			'src host 01200000002',
+			'src 01200000002',
+			# "net" /32
+			'ip src net 10.0.0.2/  32',
+			'src net 10.0.0.2  /32',
+			'ip src net 10.0.0.2',
+			'src net 10.0.0.2',
+			'ip src net 0x0a000002',
+			'src net 0X0a000002',
+			'ip src net 0xa000002',
+			'src net 0Xa000002',
+			'ip src net 167772162',
+			'src net 167772162',
+			'ip src net 01200000002',
+			'src net 01200000002',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -4862,6 +4921,24 @@ my %accept_blocks = (
 			'ip dst 172.17.89.30',
 			'dst host 172.17.89.30',
 			'dst 172.17.89.30',
+			'ip dst host 0xac11591e',
+			'ip dst 0xAC11591E',
+			'dst host 0Xac11591e',
+			'dst 0XAC11591E',
+			'ip dst host 2886818078',
+			'ip dst 2886818078',
+			'dst host 2886818078',
+			'dst 2886818078',
+			# No aliases for 025404254436, which matches a MAC address.
+			# "net" /32
+			'ip dst net 172.17.89.30 /  32',
+			'dst net 172.17.89.30  / 32',
+			'ip dst net 172.17.89.30',
+			'dst net 172.17.89.30',
+			'ip dst net 0xac11591e',
+			'dst net 0Xac11591e',
+			'ip dst net 2886818078',
+			'dst net 2886818078',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -4922,8 +4999,33 @@ my %accept_blocks = (
 		snaplen => 2000,
 		aliases => [
 			'ip net 192.168.0.0/16',
+			'ip src or dst net 192.168.0.0/16',
 			'net 192.168.0.0/16',
 			'src or dst net 192.168.0.0/16',
+			'ip net 192.168/16',
+			'ip src or dst net 192.168/16',
+			'net 192.168/16',
+			'src or dst net 192.168/16',
+			'ip net 192.168.0.0 mask 255.255.0.0',
+			'ip src or dst net 192.168.0.0 mask 255.255.0.0',
+			'net 192.168.0.0 mask 255.255.0.0',
+			'src or dst net 192.168.0.0 mask 255.255.0.0',
+			'ip net 192.168.0.0 mask 255.255',
+			'ip src or dst net 192.168.0.0 mask 255.255',
+			'net 192.168.0.0 mask 255.255',
+			'src or dst net 192.168.0.0 mask 255.255',
+			'ip net 192.168 mask 255.255.0.0',
+			'ip src or dst net 192.168 mask 255.255.0.0',
+			'net 192.168 mask 255.255.0.0',
+			'src or dst net 192.168 mask 255.255.0.0',
+			'ip net 192.168 mask 255.255',
+			'ip src or dst net 192.168 mask 255.255',
+			'net 192.168 mask 255.255',
+			'src or dst net 192.168 mask 255.255',
+			'ip net 192.168',
+			'ip src or dst net 192.168',
+			'net 192.168',
+			'src or dst net 192.168',
 		],
 		# Only the optimized bytecode is equivalent!
 		opt => '
@@ -4946,6 +5048,18 @@ my %accept_blocks = (
 		aliases => [
 			'ip src net 10.0.1.0/24',
 			'src net 10.0.1.0/24',
+			'ip src net 10.0.1/24',
+			'src net 10.0.1/24',
+			'ip src net 10.0.1.0 mask 255.255.255.0',
+			'src net 10.0.1.0 mask 255.255.255.0',
+			'ip src net 10.0.1.0 mask 255.255.255',
+			'src net 10.0.1.0 mask 255.255.255',
+			'ip src net 10.0.1 mask 255.255.255.0',
+			'src net 10.0.1 mask 255.255.255.0',
+			'ip src net 10.0.1 mask 255.255.255',
+			'src net 10.0.1 mask 255.255.255',
+			'ip src net 10.0.1',
+			'src net 10.0.1',
 		],
 		# Only the optimized bytecode is equivalent!
 		opt => '
@@ -4963,8 +5077,14 @@ my %accept_blocks = (
 		DLT => 'RAW',
 		snaplen => 2000,
 		aliases => [
-			'ip dst net 10.0.2.0/24',
-			'dst net 10.0.2.0/24',
+			'ip dst net 10.0.0.0/8',
+			'dst net 10.0.0.0/8',
+			'ip dst net 10.0.0.0 mask 255.0.0.0',
+			'dst net 10.0.0.0 mask 255.0.0.0',
+			# "net 10/<any masklength>", "net 10 mask <any mask>" and
+			# "net <any net> mask 255" are invalid syntax.
+			'ip dst net 10',
+			'dst net 10',
 		],
 		# Only the optimized bytecode is equivalent!
 		opt => '
@@ -4972,8 +5092,8 @@ my %accept_blocks = (
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 7
 			(003) ld       [16]
-			(004) and      #0xffffff00
-			(005) jeq      #0xa000200       jt 6	jf 7
+			(004) and      #0xff000000
+			(005) jeq      #0xa000000       jt 6	jf 7
 			(006) ret      #2000
 			(007) ret      #0
 			',
@@ -8985,6 +9105,36 @@ my %reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
 		errstr => 'not supported',
+	},
+	ip_net_bits1 => {
+		DLT => 'RAW',
+		expr => 'net 192.168/8',
+		errstr => 'non-network bits set in',
+	},
+	ip_net_bits2 => {
+		DLT => 'RAW',
+		expr => 'net 192.168 mask 255.0.0.0',
+		errstr => 'non-network bits set in',
+	},
+	ip_net_nonhid1 => {
+		DLT => 'RAW',
+		expr => 'net 10 mask 255.0.0.0',
+		errstr => 'syntax error',
+	},
+	ip_net_nonhid2 => {
+		DLT => 'RAW',
+		expr => 'net 10/8',
+		errstr => 'syntax error',
+	},
+	ip_net_mask_nonhid => {
+		DLT => 'RAW',
+		expr => 'net 10.0.0.0 mask 255',
+		errstr => 'syntax error',
+	},
+	ip_net_nonhid_mask_nonhid => {
+		DLT => 'RAW',
+		expr => 'net 10 mask 255',
+		errstr => 'syntax error',
 	},
 	ip6_net_prefix => {
 		skip => skip_config_undef ('INET6'),
