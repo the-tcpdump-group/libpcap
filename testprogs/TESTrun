@@ -216,6 +216,21 @@ fd00:a1b2:c3d4::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test
 fd00:a1b2:c3d4::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test
 EOF
 
+# Dotted-quad is the only portable syntax common to all implementations of
+# getnetbyname().
+# These 3 lines can be copied into networks(5) directly (except on OpenBSD):
+my @networks_lines = split /\n/, <<EOF;
+net-10-0-0-0.libpcap.test 10.0.0.0
+net-10-20-0-0.libpcap.test 10.20.0.0
+net-10-20-30-0.libpcap.test 10.20.30.0
+EOF
+# These 3 lines can be copied into hosts(5) directly (on OpenBSD only):
+my @networks_lines_swapped = split /\n/, <<EOF;
+10.0.0.0 net-10-0-0-0.libpcap.test
+10.20.0.0 net-10-20-0-0.libpcap.test
+10.20.30.0 net-10-20-30-0.libpcap.test
+EOF
+
 # Skip if /etc/ethers (or the equivalent) has not been configured for tests.
 #
 # Do not use getent(1): it works, but experiences some portability issues and
@@ -270,6 +285,29 @@ sub skip_no_hosts_casecmp {
 	return skip_no_hosts ||
 		# getaddrinfo() uses strcmp() on /etc/hosts.
 		skip_musl_libc();
+}
+
+# Skip if /etc/networks (or the equivalent) has not been configured for tests.
+my $cached_skip_no_networks;
+sub skip_no_networks {
+	$cached_skip_no_networks =
+		# Does not implement getnetbyname().
+		skip_os ('msys') ||
+		# getnetbyname() is a no-op.
+		skip_musl_libc() ||
+		skip_unless_file_contains_lines (
+			$^O eq 'solaris' ? '/etc/inet/networks' :
+			$^O eq 'haiku' ? '/etc/networks' : # May change, see haiku bug report 19432.
+			$^O eq 'openbsd' ? '/etc/hosts' : # (sic)
+			'/etc/networks',
+			$^O eq 'openbsd' ? @networks_lines_swapped : @networks_lines
+		) unless defined $cached_skip_no_networks;
+	return $cached_skip_no_networks;
+}
+
+sub skip_no_networks_casecmp {
+	return skip_no_networks ||
+		skip_os ('solaris');
 }
 
 # In accept_blocks the top-level keys are test block names.  Each test block
@@ -4994,7 +5032,7 @@ my %accept_blocks = (
 			(006) ret      #0
 			',
 	}, # ip_dst_host_NAME
-	ip_net => {
+	ip_net_addr => {
 		DLT => 'RAW',
 		snaplen => 2000,
 		aliases => [
@@ -5041,8 +5079,46 @@ my %accept_blocks = (
 			(009) ret      #2000
 			(010) ret      #0
 			',
-	}, # ip_net
-	ip_src_net => {
+	}, # ip_net_addr
+	ip_net_name => {
+		skip => skip_no_networks(),
+		DLT => 'RAW',
+		aliases => [
+			'ip net net-10-0-0-0.libpcap.test',
+			'ip src or dst net net-10-0-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa000000       jt 7	jf 5
+			(005) ld       [16]
+			(006) jeq      #0xa000000       jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # ip_net_name
+	ip_net_NAME => {
+		skip => skip_no_networks_casecmp(),
+		DLT => 'RAW',
+		aliases => [
+			'ip net NET-10-0-0-0.LIBPCAP.TEST',
+			'ip src or dst net NET-10-0-0-0.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa000000       jt 7	jf 5
+			(005) ld       [16]
+			(006) jeq      #0xa000000       jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # ip_net_NAME
+	ip_src_net_addr => {
 		DLT => 'RAW',
 		snaplen => 2000,
 		aliases => [
@@ -5072,8 +5148,42 @@ my %accept_blocks = (
 			(006) ret      #2000
 			(007) ret      #0
 			',
-	}, # ip_src_net
-	ip_dst_net => {
+	}, # ip_src_net_addr
+	ip_src_net_name => {
+		skip => skip_no_networks(),
+		DLT => 'RAW',
+		aliases => [
+			'ip src net net-10-20-0-0.libpcap.test',
+			'src net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [12]
+			(004) jeq      #0xa140000       jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # ip_src_net_name
+	ip_src_net_NAME => {
+		skip => skip_no_networks_casecmp(),
+		DLT => 'RAW',
+		aliases => [
+			'ip src net NET-10-20-0-0.LIBPCAP.TEST',
+			'src net NET-10-20-0-0.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [12]
+			(004) jeq      #0xa140000       jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # ip_src_net_NAME
+	ip_dst_net_addr => {
 		DLT => 'RAW',
 		snaplen => 2000,
 		aliases => [
@@ -5097,7 +5207,41 @@ my %accept_blocks = (
 			(006) ret      #2000
 			(007) ret      #0
 			',
-	}, # ip_dst_net
+	}, # ip_dst_net_addr
+	ip_dst_net_name => {
+		skip => skip_no_networks(),
+		DLT => 'RAW',
+		aliases => [
+			'ip dst net net-10-20-30-0.libpcap.test',
+			'dst net net-10-20-30-0.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [16]
+			(004) jeq      #0xa141e00       jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # ip_dst_net_name
+	ip_dst_net_NAME => {
+		skip => skip_no_networks_casecmp(),
+		DLT => 'RAW',
+		aliases => [
+			'ip dst net NET-10-20-30-0.LIBPCAP.TEST',
+			'dst net NET-10-20-30-0.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       [16]
+			(004) jeq      #0xa141e00       jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # ip_dst_net_NAME
 	# TODO: Verify identity with DLT_NETANALYZER and
 	# DLT_NETANALYZER_TRANSPARENT in all DLT_EN10MB gateway tests.
 	gateway_name_en10mb => {
@@ -9135,6 +9279,41 @@ my %reject_tests = (
 		DLT => 'RAW',
 		expr => 'net 10 mask 255',
 		errstr => 'syntax error',
+	},
+	ip_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "ip net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	ip_src_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "ip src net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	ip_dst_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "ip dst net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	net_unknown => {
+		DLT => 'EN10MB',
+		expr => "net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	src_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "src net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	dst_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "dst net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
+	},
+	src_or_dst_net_unknown => {
+		DLT => 'EN10MB',
+		expr => "src or dst net ${nonexistent}",
+		errstr => "unknown network '${nonexistent}'",
 	},
 	ip6_net_prefix => {
 		skip => skip_config_undef ('INET6'),
