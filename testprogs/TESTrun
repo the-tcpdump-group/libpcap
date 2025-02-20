@@ -9482,6 +9482,36 @@ my %reject_tests = (
 		expr => 'protochain 17',
 		errstr => 'protochain not supported',
 	},
+	protochain_invalid => {
+		DLT => 'RAW',
+		expr => 'protochain nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
+	ip_protochain_invalid => {
+		DLT => 'RAW',
+		expr => 'ip protochain nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
+	ip6_protochain_invalid => {
+		DLT => 'RAW',
+		expr => 'ip6 protochain nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
+	proto_invalid => {
+		DLT => 'RAW',
+		expr => 'proto nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
+	ip_proto_invalid => {
+		DLT => 'RAW',
+		expr => 'ip proto nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
+	ip6_proto_invalid => {
+		DLT => 'RAW',
+		expr => 'ip6 proto nosuchprotocol',
+		errstr => 'unknown ip proto',
+	},
 	# In the tests below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
 	# use a hostname that does not exist on the Internet, just in case.
