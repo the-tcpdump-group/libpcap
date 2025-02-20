@@ -104,6 +104,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Use getprotobyname_r() correctly on OpenBSD.
     Linux:
       Do not use ether_hostton() from musl libc.
+      Fix propagation of getprotobyname_r() errors.
     Haiku:
       Look for ethers(5) in /boot/system/settings/network/.
     DAG:
