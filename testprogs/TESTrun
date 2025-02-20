@@ -162,7 +162,7 @@ sub skip_unless_file_contains_lines {
 
 	open FH, '<', $filename or return $skip;
 	while (<FH>) {
-		chomp;
+		s/[\r\n]*$//o; # chomp() removes LF, but not CR, even on Windows.
 		next unless exists $notfound{$_};
 		delete $notfound{$_};
 		last unless scalar keys %notfound;
@@ -225,7 +225,7 @@ sub skip_no_ethers {
 	$cached_skip_no_ethers =
 		# pcap_ether_hostton() currently cannot guess a suitable
 		# location for the libpcap-only ethers(5).
-		skip_os ('MSWin32') ||
+		skip_os ('msys') ||
 		skip_unless_file_contains_lines (
 			$^O eq 'haiku' ? '/boot/system/settings/network/ethers' :
 			'/etc/ethers',
@@ -253,11 +253,11 @@ sub skip_no_ethers_casecmp {
 # with dual-stack hostnames) to be practicable.
 my $cached_skip_no_hosts;
 sub skip_no_hosts {
-	return '%SYSTEMROOT% not set' if $^O eq 'MSWin32' && ! defined $ENV{SYSTEMROOT};
+	return '%SYSTEMROOT% not set' if $^O eq 'msys' && ! defined $ENV{SYSTEMROOT};
 	$cached_skip_no_hosts = skip_unless_file_contains_lines (
 		$^O eq 'haiku' ? '/boot/system/settings/network/hosts' :
 		$^O eq 'solaris' ? '/etc/inet/hosts' :
-		$^O eq 'MSWin32' ? "${ENV{SYSTEMROOT}}\\system32\\drivers\\etc\\hosts" :
+		$^O eq 'msys' ? "${ENV{SYSTEMROOT}}\\system32\\drivers\\etc\\hosts" :
 		'/etc/hosts',
 		@hosts_lines
 	) unless defined $cached_skip_no_hosts;
