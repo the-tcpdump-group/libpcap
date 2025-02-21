@@ -4534,6 +4534,22 @@ my %accept_blocks = (
 			(006) ret      #262144
 			',
 	}, # ip_broadcast_24
+	ip_broadcast_0 => {
+		# tcpdump does this by default (matches 0.0.0.0 and 255.255.255.255).
+		DLT => 'RAW',
+		netmask => '0.0.0.0',
+		aliases => ['ip broadcast'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 7
+			(003) ld       [16]
+			(004) jeq      #0x0             jt 6	jf 5
+			(005) jeq      #0xffffffff      jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # ip_broadcast_0
 
 	ip_proto => {
 		DLT => 'EN10MB',
