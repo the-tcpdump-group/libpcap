@@ -1,32 +1,30 @@
+require 5.8.4; # Solaris 10
 use strict;
 use warnings FATAL => qw(uninitialized);
+# TESTlib.pm
+use subs qw(get_njobs);
 
 # TESTrun helper functions (single-threaded implementation).
 
 my @tests;
-my $done;
 
 sub my_tmp_id {
 	return 'main';
 }
 
-sub set_njobs {
-	print "INFO: This Perl does not support threads.\n";
-	my $njobs = shift;
-	die "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
-}
-
 sub start_tests {
+	print "INFO: This Perl does not support threads.\n";
+	my $njobs = get_njobs;
+	die "ERROR: Impossible to run $njobs tester threads!" if $njobs > 1;
 	@tests = @_;
-	$done = 0;
 }
 
 # Here ordering of the results is obviously the same as ordering of the tests.
 sub get_next_result {
-	return undef if $done == scalar @tests;
-	my $result = $tests[$done]{func} ($tests[$done]->%*);
-	$result->{label} = $tests[$done]{label};
-	$done++;
+	my $test = shift @tests;
+	return undef unless defined $test;
+	my $result = $test->{func} ($test);
+	$result->{label} = $test->{label};
 	return $result;
 }
 

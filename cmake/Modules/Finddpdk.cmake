@@ -32,6 +32,17 @@
 # to PKG_CONFIG_PATH, so we look for the .pc file there,
 # first.
 #
+
+#
+# If pkg-config is not available; the last line of the output is:
+# "-- Could NOT find dpdk (missing: dpdk_INCLUDE_DIRS dpdk_LIBRARIES)"
+# More than 20 lines before that there is the root cause:
+# "-- Could NOT find PkgConfig (missing: PKG_CONFIG_EXECUTABLE)"
+# Print a message to make the cause and the effect easier to relate,
+# whether the attempt fails or not.
+#
+message(STATUS "Using pkg-config to find DPDK: ${PKG_CONFIG_FOUND}")
+
 if(PKG_CONFIG_FOUND)
   set(save_PKG_CONFIG_PATH $ENV{PKG_CONFIG_PATH})
   if(dpdk_ROOT)

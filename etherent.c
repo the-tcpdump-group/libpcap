@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "pcap-int.h"
+#include "nametoaddr.h"
 
 #include <pcap/namedb.h>
 
@@ -39,18 +40,6 @@
 
 static inline int skip_space(FILE *);
 static inline int skip_line(FILE *);
-
-/* Hex digit to integer. */
-static inline u_char
-xdtoi(u_char c)
-{
-	if (c >= '0' && c <= '9')
-		return (u_char)(c - '0');
-	else if (c >= 'a' && c <= 'f')
-		return (u_char)(c - 'a' + 10);
-	else
-		return (u_char)(c - 'A' + 10);
-}
 
 /*
  * Skip linear white space (space and tab) and any CRs before LF.
@@ -109,13 +98,13 @@ pcap_next_etherent(FILE *fp)
 
 		/* must be the start of an address */
 		for (i = 0; i < 6; i += 1) {
-			d = xdtoi((u_char)c);
+			d = pcapint_xdtoi((u_char)c);
 			c = getc(fp);
 			if (c == EOF)
 				return (NULL);
 			if (PCAP_ISXDIGIT(c)) {
 				d <<= 4;
-				d |= xdtoi((u_char)c);
+				d |= pcapint_xdtoi((u_char)c);
 				c = getc(fp);
 				if (c == EOF)
 					return (NULL);

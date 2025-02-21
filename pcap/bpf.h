@@ -150,7 +150,7 @@ struct bpf_program {
 #define		BPF_MEM		0x60
 #define		BPF_LEN		0x80
 #define		BPF_MSH		0xa0
-/*				0xc0	reserved; used by BSD/OS */
+/*				0xc0	reserved; used by BSD/OS; also by OpenBSD for BPF_RND */
 /*				0xe0	reserved; used by BSD/OS */
 
 /* alu/jmp fields */

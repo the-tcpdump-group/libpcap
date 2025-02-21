@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_OFFLINE_FILTER 3PCAP "7 April 2014"
+.TH PCAP_OFFLINE_FILTER 3PCAP "24 January 2025"
 .SH NAME
 pcap_offline_filter \- check whether a filter matches a packet
 .SH SYNOPSIS
@@ -45,6 +45,12 @@ points to the
 structure for the packet, and
 .I pkt
 points to the data in the packet.
+.PP
+The filter program must have been compiled for a link-layer header type
+that matches the packet data; also on Linux the filter must not use
+BPF extensions, see
+.BR \%pcap_compile ()
+for more information.
 .SH RETURN VALUE
 .BR pcap_offline_filter ()
 returns the return value of the filter program.  This will be zero if

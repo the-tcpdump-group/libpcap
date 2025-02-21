@@ -12,6 +12,8 @@ if(UNIX)
       message(WARNING "crypt() not found. Won't be able to build rpcapd.")
     endif(HAVE_CRYPT_IN_LIBCRYPT)
   endif(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
+
+  check_function_exists(vsyslog HAVE_VSYSLOG)
 endif(UNIX)
 
 #

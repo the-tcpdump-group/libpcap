@@ -24,6 +24,7 @@
 #ifndef pcap_util_h
 #define pcap_util_h
 
+#include <pcap/pcap-inttypes.h>
 /*
  * We use the "receiver-makes-right" approach to byte order;
  * because time is at a premium when we are writing the file.
@@ -41,6 +42,14 @@
  * ntoh[ls] aren't sufficient because we might need to swap on a big-endian
  * machine (if the file was written in little-end order).
  */
+#define SWAPLL(y)  ((((uint64_t)(y) & 0xff00000000000000ULL) >> 56) | \
+                      (((uint64_t)(y) & 0x00ff000000000000ULL) >> 40) | \
+                      (((uint64_t)(y) & 0x0000ff0000000000ULL) >> 24) | \
+                      (((uint64_t)(y) & 0x000000ff00000000ULL) >> 8)  | \
+                      (((uint64_t)(y) & 0x00000000ff000000ULL) << 8)  | \
+                      (((uint64_t)(y) & 0x0000000000ff0000ULL) << 24) | \
+                      (((uint64_t)(y) & 0x000000000000ff00ULL) << 40) | \
+                      (((uint64_t)(y) & 0x00000000000000ffULL) << 56))
 #define	SWAPLONG(y) \
     (((((u_int)(y))&0xff)<<24) | \
      ((((u_int)(y))&0xff00)<<8) | \

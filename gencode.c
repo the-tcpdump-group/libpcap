@@ -34,6 +34,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "pcap-int.h"
 
@@ -56,10 +57,6 @@
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
-#endif
-
-#ifndef offsetof
-#define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
 
 #ifdef _WIN32
@@ -667,7 +664,7 @@ static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, bpf_u_int32, u_int, u_int);
 #endif
-static struct block *gen_ahostop(compiler_state_t *, const u_char *, int);
+static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_ehostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_fhostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_thostop(compiler_state_t *, const u_char *, int);
@@ -1709,7 +1706,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		/* frames captured on a Juniper PPPoE service PIC
 		 * contain raw ethernet frames */
 	case DLT_JUNIPER_PPPOE:
-        case DLT_JUNIPER_ETHER:
+	case DLT_JUNIPER_ETHER:
 		cstate->off_linkpl.constant_part = 14;
 		cstate->off_linktype.constant_part = 16;
 		cstate->off_nl = 18;		/* Ethernet II */
@@ -1956,8 +1953,8 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	switch (offrel) {
 
 	case OR_PACKET:
-                s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-                s->s.k = offset;
+		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
+		s->s.k = offset;
 		break;
 
 	case OR_LINKHDR:
@@ -3715,27 +3712,27 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_MFR:
 		bpf_error(cstate, "Multi-link Frame Relay link-layer type filtering not implemented");
 
-        case DLT_JUNIPER_MFR:
-        case DLT_JUNIPER_MLFR:
-        case DLT_JUNIPER_MLPPP:
+	case DLT_JUNIPER_MFR:
+	case DLT_JUNIPER_MLFR:
+	case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_PPPOE_ATM:
-        case DLT_JUNIPER_GGSN:
-        case DLT_JUNIPER_ES:
-        case DLT_JUNIPER_MONITOR:
-        case DLT_JUNIPER_SERVICES:
-        case DLT_JUNIPER_ETHER:
-        case DLT_JUNIPER_PPP:
-        case DLT_JUNIPER_FRELAY:
-        case DLT_JUNIPER_CHDLC:
-        case DLT_JUNIPER_VP:
-        case DLT_JUNIPER_ST:
-        case DLT_JUNIPER_ISM:
-        case DLT_JUNIPER_VS:
-        case DLT_JUNIPER_SRX_E2E:
-        case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_GGSN:
+	case DLT_JUNIPER_ES:
+	case DLT_JUNIPER_MONITOR:
+	case DLT_JUNIPER_SERVICES:
+	case DLT_JUNIPER_ETHER:
+	case DLT_JUNIPER_PPP:
+	case DLT_JUNIPER_FRELAY:
+	case DLT_JUNIPER_CHDLC:
+	case DLT_JUNIPER_VP:
+	case DLT_JUNIPER_ST:
+	case DLT_JUNIPER_ISM:
+	case DLT_JUNIPER_VS:
+	case DLT_JUNIPER_SRX_E2E:
+	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
 
 		/* just lets verify the magic number for now -
@@ -5070,11 +5067,15 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	 * the header.  "Short header" means bits 0-2 of the bitmap encode the
 	 * integer value 2 (SFDP), and "long header" means value 6 (LFDP).
 	 *
+	 * To test PLENGTH and FLAGS, use multiple-byte constants with the
+	 * values and the masks, this maps to the required single bytes of
+	 * the message correctly on both big-endian and little-endian hosts.
 	 * For the DECnet address use SWAPSHORT(), which always swaps bytes,
-	 * because the wire encoding is little-endian and this function always
-	 * receives a big-endian address value.
+	 * because the wire encoding is little-endian and BPF multiple-byte
+	 * loads are big-endian.  When the destination address is near enough
+	 * to PLENGTH and FLAGS, generate one 32-bit comparison instead of two
+	 * smaller ones.
 	 */
-	b0 = gen_linktype(cstate, ETHERTYPE_DN);
 	/* Check for pad = 1, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
 	b1 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_lh,
@@ -5087,20 +5088,30 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
-	b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
-	    SWAPSHORT(addr));
-	gen_and(tmp, b2);
+	if (dir == Q_DST) {
+		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
+		    0x81020000U | SWAPSHORT(addr),
+		    0xFF07FFFFU);
+	} else {
+		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
+		b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
+		    SWAPSHORT(addr));
+		gen_and(tmp, b2);
+	}
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
-	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
-	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
-	    SWAPSHORT(addr));
-	gen_and(tmp, b2);
+	if (dir == Q_DST) {
+		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
+		    0x02000000U | SWAPSHORT(addr) << 8,
+		    0x07FFFF00U);
+	} else {
+		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
+		b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
+		    SWAPSHORT(addr));
+		gen_and(tmp, b2);
+	}
 	gen_or(b2, b1);
 
-	/* Combine with test for cstate->linktype */
-	gen_and(b0, b1);
 	return b1;
 }
 
@@ -5114,29 +5125,29 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	struct block *b0, *b1;
 
-        switch (ll_proto) {
+	switch (ll_proto) {
 
-        case ETHERTYPE_IP:
-                /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-                /* match the IPv4 version number */
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
-                gen_and(b0, b1);
-                return b1;
+	case ETHERTYPE_IP:
+		/* match the bottom-of-stack bit */
+		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		/* match the IPv4 version number */
+		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
+		gen_and(b0, b1);
+		return b1;
 
-        case ETHERTYPE_IPV6:
-                /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-                /* match the IPv4 version number */
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
-                gen_and(b0, b1);
-                return b1;
+	case ETHERTYPE_IPV6:
+		/* match the bottom-of-stack bit */
+		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		/* match the IPv4 version number */
+		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
+		gen_and(b0, b1);
+		return b1;
 
-        default:
-               /* FIXME add other L3 proto IDs */
-               bpf_error(cstate, "unsupported protocol over mpls");
-               /*NOTREACHED*/
-        }
+ default:
+	 /* FIXME add other L3 proto IDs */
+	 bpf_error(cstate, "unsupported protocol over mpls");
+	 /*NOTREACHED*/
+ }
 }
 
 static struct block *
@@ -5201,7 +5212,10 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		bpf_error(cstate, "AppleTalk host filtering not implemented");
 
 	case Q_DECNET:
-		return gen_dnhostop(cstate, addr, dir);
+		b0 = gen_linktype(cstate, ETHERTYPE_DN);
+		b1 = gen_dnhostop(cstate, addr, dir);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_LAT:
 		bpf_error(cstate, "LAT host filtering not implemented");
@@ -5470,17 +5484,16 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 		case DLT_PPI:
 			b0 = gen_wlanhostop(cstate, eaddr, Q_OR);
 			break;
+		case DLT_IP_OVER_FC:
+			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
+			break;
 		case DLT_SUNATM:
 			/*
 			 * This is LLC-multiplexed traffic; if it were
 			 * LANE, cstate->linktype would have been set to
 			 * DLT_EN10MB.
 			 */
-			bpf_error(cstate,
-			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-		case DLT_IP_OVER_FC:
-			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
-			break;
+			 /* FALLTHROUGH */
 		default:
 			bpf_error(cstate,
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
@@ -7380,6 +7393,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		b = gen_gateway(cstate, eaddr, res, proto, dir);
 		cstate->ai = NULL;
 		freeaddrinfo(res);
+		free(eaddr);
 		if (b == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
 		return b;
@@ -7426,14 +7440,14 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	nlen = __pcap_atoin(s1, &n);
+	nlen = pcapint_atoin(s1, &n);
 	if (nlen < 0)
 		bpf_error(cstate, "invalid IPv4 address '%s'", s1);
 	/* Promote short ipaddr */
 	n <<= 32 - nlen;
 
 	if (s2 != NULL) {
-		mlen = __pcap_atoin(s2, &m);
+		mlen = pcapint_atoin(s2, &m);
 		if (mlen < 0)
 			bpf_error(cstate, "invalid IPv4 address '%s'", s2);
 		/* Promote short ipaddr */
@@ -7501,7 +7515,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
 		 * for a valid DECnet address.
 		 */
-		vlen = __pcap_atodn(s, &v);
+		vlen = pcapint_atodn(s, &v);
 		if (vlen == 0)
 			bpf_error(cstate, "invalid DECnet address '%s'", s);
 	} else {
@@ -7510,7 +7524,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 * {N}.{N}.{N}.{N}, all of which potentially stand for a valid
 		 * IPv4 address.
 		 */
-		vlen = __pcap_atoin(s, &v);
+		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
 			bpf_error(cstate, "invalid IPv4 address '%s'", s);
 	}
@@ -8394,8 +8408,6 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	return b;
 }
 
-static const u_char abroadcast[] = { 0x0 };
-
 struct block *
 gen_broadcast(compiler_state_t *cstate, int proto)
 {
@@ -8417,7 +8429,8 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		switch (cstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
-			return gen_ahostop(cstate, abroadcast, Q_DST);
+			// ARCnet broadcast is [8-bit] destination address 0.
+			return gen_ahostop(cstate, 0, Q_DST);
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -8502,8 +8515,8 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		switch (cstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
-			/* all ARCnet multicasts use the same address */
-			return gen_ahostop(cstate, abroadcast, Q_DST);
+			// ARCnet multicast is the same as broadcast.
+			return gen_ahostop(cstate, 0, Q_DST);
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -8666,6 +8679,25 @@ gen_multicast(compiler_state_t *cstate, int proto)
 	/*NOTREACHED*/
 }
 
+#ifdef __linux__
+/*
+ * This is Linux; we require PF_PACKET support.  If this is a *live* capture,
+ * we can look at special meta-data in the filter expression; otherwise we
+ * can't because it is either a savefile (rfile != NULL) or a pcap_t created
+ * using pcap_open_dead() (rfile == NULL).  Thus check for a flag that
+ * pcap_activate() conditionally sets.
+ */
+static void
+require_basic_bpf_extensions(compiler_state_t *cstate, const char *keyword)
+{
+	if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_BASIC_HANDLING)
+		return;
+	bpf_error(cstate, "%s not supported on %s (not a live capture)",
+	    keyword,
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+}
+#endif // __linux__
+
 struct block *
 gen_ifindex(compiler_state_t *cstate, int ifindex)
 {
@@ -8688,18 +8720,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		break;
 	default:
 #if defined(__linux__)
-		/*
-		 * This is Linux; we require PF_PACKET support.
-		 * If this is a *live* capture, we can look at
-		 * special meta-data in the filter expression;
-		 * if it's a savefile, we can't.
-		 */
-		if (cstate->bpf_pcap->rfile != NULL) {
-			/* We have a FILE *, so this is a savefile */
-			bpf_error(cstate, "ifindex not supported on %s when reading savefiles",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-			/*NOTREACHED*/
-		}
+		require_basic_bpf_extensions(cstate, "ifindex");
 		/* match ifindex */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
@@ -8820,18 +8841,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 		 * in pcapng files.
 		 */
 #if defined(__linux__)
-		/*
-		 * This is Linux; we require PF_PACKET support.
-		 * If this is a *live* capture, we can look at
-		 * special meta-data in the filter expression;
-		 * if it's a savefile, we can't.
-		 */
-		if (cstate->bpf_pcap->rfile != NULL) {
-			/* We have a FILE *, so this is a savefile */
-			bpf_error(cstate, "inbound/outbound not supported on %s when reading savefiles",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-			/*NOTREACHED*/
-		}
+		require_basic_bpf_extensions(cstate, outbound ? "outbound" : "inbound");
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
 		             PACKET_OUTGOING);
@@ -9060,11 +9070,10 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 	return (b0);
 }
 
+// Process an ARCnet host address string.
 struct block *
 gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 {
-	struct block *b;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -9078,13 +9087,16 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 	case DLT_ARCNET_LINUX:
 		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
 		    q.proto == Q_LINK) {
-			cstate->e = pcap_ether_aton(s);
-			if (cstate->e == NULL)
-				bpf_error(cstate, "malloc");
-			b = gen_ahostop(cstate, cstate->e, (int)q.dir);
-			free(cstate->e);
-			cstate->e = NULL;
-			return (b);
+			uint8_t addr;
+			/*
+			 * The lexer currently defines the address format in a
+			 * way that makes this error condition never true.
+			 * Let's check it anyway in case this part of the lexer
+			 * changes in future.
+			 */
+			if (! pcapint_atoan(s, &addr))
+			    bpf_error(cstate, "invalid ARCnet address '%s'", s);
+			return gen_ahostop(cstate, addr, (int)q.dir);
 		} else
 			bpf_error(cstate, "ARCnet address used in non-arc expression");
 		/*NOTREACHED*/
@@ -9095,18 +9107,25 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 	}
 }
 
+// Compare an ARCnet host address with the given value.
 static struct block *
-gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
+gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
 {
 	register struct block *b0, *b1;
 
 	switch (dir) {
-	/* src comes first, different from Ethernet */
+	/*
+	 * ARCnet is different from Ethernet: the source address comes before
+	 * the destination address, each is one byte long.  This holds for all
+	 * three "buffer formats" in RFC 1201 Section 2.1, see also page 4-10
+	 * in the 1983 edition of the "ARCNET Designer's Handbook" published
+	 * by Datapoint (document number 61610-01).
+	 */
 	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 0, 1, eaddr);
+		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 1, 1, eaddr);
+		return gen_cmp(cstate, OR_LINKHDR, 1, BPF_B, eaddr);
 
 	case Q_AND:
 		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
@@ -9295,17 +9314,17 @@ static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
     int has_vlan_tag)
 {
-        struct block *b0, *b_tpid, *b_vid = NULL;
-        struct slist *s;
+	struct block *b0, *b_tpid, *b_vid = NULL;
+	struct slist *s;
 
-        /* generate new filter code based on extracting packet
-         * metadata */
-        s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
-        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+	/* generate new filter code based on extracting packet
+	 * metadata */
+	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+	s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
 
-        b0 = new_block(cstate, JMP(BPF_JEQ));
-        b0->stmts = s;
-        b0->s.k = 1;
+	b0 = new_block(cstate, JMP(BPF_JEQ));
+	b0->stmts = s;
+	b0->s.k = 1;
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
@@ -9331,7 +9350,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 		b0 = b_vid;
 	}
 
-        return b0;
+	return b0;
 }
 #endif
 
@@ -9557,6 +9576,19 @@ gen_pppoed(compiler_state_t *cstate)
 	return gen_linktype(cstate, ETHERTYPE_PPPOED);
 }
 
+/*
+ * RFC 2516 Section 4:
+ *
+ * The Ethernet payload for PPPoE is as follows:
+ *
+ *                      1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |  VER  | TYPE  |      CODE     |          SESSION_ID           |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |            LENGTH             |           payload             ~
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
 struct block *
 gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 {
@@ -9576,11 +9608,11 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (has_sess_num) {
-		if (sess_num > 0x0000ffff) {
+		if (sess_num > UINT16_MAX) {
 			bpf_error(cstate, "PPPoE session number %u greater than maximum %u",
-			    sess_num, 0x0000ffff);
+			    sess_num, UINT16_MAX);
 		}
-		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, sess_num, 0x0000ffff);
+		b1 = gen_cmp(cstate, OR_LINKPL, 2, BPF_H, sess_num);
 		gen_and(b0, b1);
 		b0 = b1;
 	}
@@ -10420,12 +10452,19 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	return b0;
 }
 
+/*
+ * These maximum valid values are all-ones, so they double as the bitmasks
+ * before any bitwise shifting.
+ */
+#define MTP2_SIO_MAXVAL UINT8_MAX
+#define MTP3_PC_MAXVAL 0x3fffU
+#define MTP3_SLS_MAXVAL 0xfU
+
 static struct block *
 gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
     bpf_u_int32 jvalue, int jtype, int reverse)
 {
 	struct block *b0;
-	bpf_u_int32 val1 , val2 , val3;
 	u_int newoff_sio;
 	u_int newoff_opc;
 	u_int newoff_dpc;
@@ -10437,6 +10476,13 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	newoff_sls = cstate->off_sls;
 	switch (mtp3field) {
 
+	/*
+	 * See UTU-T Rec. Q.703, Section 2.2, Figure 3/Q.703.
+	 *
+	 * SIO is the simplest field: the size is one byte and the offset is a
+	 * multiple of bytes, so the only detail to get right is the value of
+	 * the [right-to-left] field offset.
+	 */
 	case MH_SIO:
 		newoff_sio += 3; /* offset for MTP2_HSL */
 		/* FALLTHROUGH */
@@ -10444,14 +10490,43 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_SIO:
 		if (cstate->off_sio == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sio' supported only on SS7");
-		/* sio coded on 1 byte so max value 255 */
-		if(jvalue > 255)
-			bpf_error(cstate, "sio value %u too big; max value = 255",
-			    jvalue);
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, 0xffffffffU,
+		if(jvalue > MTP2_SIO_MAXVAL)
+			bpf_error(cstate, "sio value %u too big; max value = %u",
+			    jvalue, MTP2_SIO_MAXVAL);
+		// Here the bitmask means "do not apply a bitmask".
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
 		    jtype, reverse, jvalue);
 		break;
 
+	/*
+	 * See UTU-T Rec. Q.704, Section 2.2, Figure 3/Q.704.
+	 *
+	 * SLS, OPC and DPC are more complicated: none of these is sized in a
+	 * multiple of 8 bits, MTP3 encoding is little-endian and MTP packet
+	 * diagrams are meant to be read right-to-left.  This means in the
+	 * diagrams within individual fields and concatenations thereof
+	 * bitwise shifts and masks can be noted in the common left-to-right
+	 * manner until each final value is ready to be byte-swapped and
+	 * handed to gen_ncmp().  See also gen_dnhostop(), which solves a
+	 * similar problem in a similar way.
+	 *
+	 * Offsets of fields within the packet header always have the
+	 * right-to-left meaning.  Note that in DLT_MTP2 and possibly other
+	 * DLTs the offset does not include the F (Flag) field at the
+	 * beginning of each message.
+	 *
+	 * For example, if the 8-bit SIO field has a 3 byte [RTL] offset, the
+	 * 32-bit standard routing header has a 4 byte [RTL] offset and could
+	 * be tested entirely using a single BPF_W comparison.  In this case
+	 * the 14-bit DPC field [LTR] bitmask would be 0x3FFF, the 14-bit OPC
+	 * field [LTR] bitmask would be (0x3FFF << 14) and the 4-bit SLS field
+	 * [LTR] bitmask would be (0xF << 28), all of which conveniently
+	 * correlates with the [RTL] packet diagram until the byte-swapping is
+	 * done before use.
+	 *
+	 * The code below uses this approach for OPC, which spans 3 bytes.
+	 * DPC and SLS use shorter loads, SLS also uses a different offset.
+	 */
 	case MH_OPC:
 		newoff_opc += 3;
 
@@ -10459,21 +10534,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_OPC:
 		if (cstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
-		/* opc coded on 14 bits so max value 16383 */
-		if (jvalue > 16383)
-			bpf_error(cstate, "opc value %u too big; max value = 16383",
-			    jvalue);
-		/* the following instructions are made to convert jvalue
-		 * to the form used to write opc in an ss7 message*/
-		val1 = jvalue & 0x00003c00;
-		val1 = val1 >>10;
-		val2 = jvalue & 0x000003fc;
-		val2 = val2 <<6;
-		val3 = jvalue & 0x00000003;
-		val3 = val3 <<22;
-		jvalue = val1 + val2 + val3;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W, 0x00c0ff0fU,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_PC_MAXVAL)
+			bpf_error(cstate, "opc value %u too big; max value = %u",
+			    jvalue, MTP3_PC_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
+		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
+		    SWAPLONG(jvalue << 14));
 		break;
 
 	case MH_DPC:
@@ -10483,19 +10549,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_DPC:
 		if (cstate->off_dpc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'dpc' supported only on SS7");
-		/* dpc coded on 14 bits so max value 16383 */
-		if (jvalue > 16383)
-			bpf_error(cstate, "dpc value %u too big; max value = 16383",
-			    jvalue);
-		/* the following instructions are made to convert jvalue
-		 * to the forme used to write dpc in an ss7 message*/
-		val1 = jvalue & 0x000000ff;
-		val1 = val1 << 24;
-		val2 = jvalue & 0x00003f00;
-		val2 = val2 << 8;
-		jvalue = val1 + val2;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_W, 0xff3f0000U,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_PC_MAXVAL)
+			bpf_error(cstate, "dpc value %u too big; max value = %u",
+			    jvalue, MTP3_PC_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
+		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
+		    SWAPSHORT(jvalue));
 		break;
 
 	case MH_SLS:
@@ -10505,15 +10564,12 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_SLS:
 		if (cstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
-		/* sls coded on 4 bits so max value 15 */
-		if (jvalue > 15)
-			 bpf_error(cstate, "sls value %u too big; max value = 15",
-			     jvalue);
-		/* the following instruction is made to convert jvalue
-		 * to the forme used to write sls in an ss7 message*/
-		jvalue = jvalue << 4;
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B, 0xf0U,
-		    jtype, reverse, jvalue);
+		if (jvalue > MTP3_SLS_MAXVAL)
+			 bpf_error(cstate, "sls value %u too big; max value = %u",
+			     jvalue, MTP3_SLS_MAXVAL);
+		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
+		    MTP3_SLS_MAXVAL << 4, jtype, reverse,
+		    jvalue << 4);
 		break;
 
 	default:

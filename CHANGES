@@ -48,6 +48,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "[wlan] dir" integer value to be within range.
       Fix the != comparison for ATM and MTP field values.
       Deprecate bpf_filter().
+      Require a live capture for all Linux BPF extensions.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
@@ -63,6 +64,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add a README.snf.md file.
       pcap-filter(7): Clarify Ethernet, IPv4 and IPv6.
       pcap_lib_version(3PCAP): Add details and examples.
+      Discuss Linux BPF extensions in the man pages.
+      Note endianness in pcap_compile(3PCAP) and pcap_lookupnet(3PCAP).
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
@@ -89,6 +92,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CI: Implement "make check".
       Fix autotools and CMake issues with snprintf test and sanitizers.
         Fixes issue #1396.
+      filtertest: Add "-l" flag to use Linux BPF extensions.
+      filtertest: Use ntohl() on the netmask to fix the -m option.
+      filtertest: Add support for stdin as "-" to the -F option.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
@@ -96,6 +102,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Add kernel filtering, fix userland filtering.
     OpenBSD:
       Use getprotobyname_r() correctly on OpenBSD.
+    Linux:
+      Do not use ether_hostton() from musl libc.
+      Fix propagation of getprotobyname_r() errors.
+    Haiku:
+      Look for ethers(5) in /boot/system/settings/network/.
     DAG:
       Always set PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE.
       In dag_findalldevs() handle known errors better.
@@ -125,6 +136,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
       gencode: Fix an undefined behavior in gen_mcode().
+      gencode: Add a missing free() in gen_scode().
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
@@ -132,6 +144,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
+      Expand the table of DSA tag types to include all current types.
+      Fix an error message when deleting a monN interface.
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
@@ -156,6 +170,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Build on Windows with a newer version of OpenSSL.
       CMake: generalize handling of non-x86 Windows architectures.
       CI: use the -A flag for all Visual Studio generators.
+      Remove the fuzzing props from the release tarball.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release

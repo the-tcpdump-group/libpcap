@@ -57,7 +57,11 @@ struct pcap_etherent {
 	char name[122];
 };
 #ifndef PCAP_ETHERS_FILE
-#define PCAP_ETHERS_FILE "/etc/ethers"
+  #ifdef __HAIKU__
+    #define PCAP_ETHERS_FILE "/boot/system/settings/network/ethers"
+  #else
+    #define PCAP_ETHERS_FILE "/etc/ethers"
+  #endif
 #endif
 
 PCAP_AVAILABLE_0_4

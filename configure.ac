@@ -133,14 +133,6 @@ AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_PCAP_C___ATOMICS
 
-dnl
-dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
-dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
-dnl (this might have already happened).
-dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
-AC_CHECK_HEADERS(netpacket/packet.h)
-
 #
 # Check whether the platform for which we're compiling requires extra
 # defines and libraries.  If so, add them to CFLAGS and LIBS, as we want
@@ -153,10 +145,38 @@ haiku*)
 	# use them.
 	#
 	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+
 	#
-	# Haiku has getpass in libbsd.
+	# Haiku has getpass() in libbsd.
 	#
-	AC_CHECK_LIB(bsd, getpass)
+	LIBS="-lbsd $LIBS"
+	;;
+hpux*)
+	#
+	# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+	# dl_module_id_1 member.
+	# (This is the case on HP-UX B.11.31.)
+	#
+	# NOTE: any failure means we conclude that it doesn't have that member,
+	# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
+	# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
+	# it doesn't have that member (which is OK, as either we won't be
+	# using code that would use that member, or we wouldn't compile in
+	# any case).
+	#
+	AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
+	    [
+		#include <sys/types.h>
+		#include <sys/dlpi.h>
+		#include <sys/dlpi_ext.h>
+	    ])
+
+	#
+	# On HP-UX DLPI needs putmsg(), which previously was in libstr, but in
+	# HP-UX B.11.31 this is no longer the case.
+	# AC_SEARCH_LIBS() accounts for that.
+	#
+	AC_SEARCH_LIBS([putmsg], [str])
 	;;
 esac
 
@@ -201,11 +221,6 @@ main(void)
 	#
 	AC_CHECK_FUNCS(_wcserror_s)
     ])
-
-#
-# Thanks, IBM, for not providing vsyslog() in AIX!
-#
-AC_CHECK_FUNCS(vsyslog)
 
 #
 # Require a proof of suitable snprintf(3), same as in tcpdump.
@@ -623,6 +638,46 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	fi
 fi
 
+if expr "$host_os" : linux >/dev/null; then
+	#
+	# On Linux there is a couple more factors to consider together with
+	# HAVE_ETHER_HOSTTON.  C code can test for __GLIBC__ and __UCLIBC__
+	# trivially, make it nearly as trivial for TESTrun.
+	#
+	AC_MSG_CHECKING([if features.h defines __GLIBC__])
+	AC_COMPILE_IFELSE(
+		[
+			AC_LANG_PROGRAM(
+				[[#include <features.h>]],
+				[[int i = __GLIBC__;]]
+			)
+		],
+		[
+			AC_DEFINE([HAVE_GLIBC], [1], [Define to 1 if using GNU libc.])
+			AC_MSG_RESULT([yes])
+		],
+		[
+			AC_MSG_RESULT([no])
+			AC_MSG_CHECKING([if features.h defines __UCLIBC__])
+			AC_COMPILE_IFELSE(
+				[
+					AC_LANG_PROGRAM(
+						[[#include <features.h>]],
+						[[int i = __UCLIBC__;]]
+					)
+				],
+				[
+					AC_DEFINE([HAVE_UCLIBC], [1], [Define to 1 if using uclibc(-ng).])
+					AC_MSG_RESULT([yes])
+				],
+				[
+					AC_MSG_RESULT([no])
+				]
+			)
+		]
+	)
+fi
+
 #
 # For various things that might use pthreads.
 #
@@ -715,24 +770,41 @@ if test "$enable_protochain" = "disabled"; then
 fi
 AC_MSG_RESULT(${enable_protochain})
 
-#
-# valgrindtest directly uses the native capture mechanism, but
-# only tests with BPF and PF_PACKET sockets; only enable it if
-# we have BPF or PF_PACKET sockets.
-#
-VALGRINDTEST_SRC=
-
 AC_ARG_WITH(pcap,
 AS_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
 else
 	#
-	# Check for a bunch of headers for various packet
-	# capture mechanisms.
+	# Try auto-detecting the obvious types first.
+	#
+	case "$host_os" in
+	linux*)
+		V_PCAP=linux
+		;;
+	haiku)
+		V_PCAP=haiku
+		;;
+	gnu*)
+		V_PCAP=hurd
+		;;
+	esac
+fi
+
+if test -z "$V_PCAP"; then
+	#
+	# It is not one of the above obvious types, let's see if it is BPF.
+	# Check this before DLPI to pick BPF on Solaris 11 and later.
 	#
 	AC_CHECK_HEADERS(net/bpf.h)
 	if test "$ac_cv_header_net_bpf_h" = yes; then
+		#
+		# HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+		# supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+		# (this might have already happened).
+		#
+		AC_CHECK_HEADERS([sys/ioccom.h])
+
 		#
 		# Does it define BIOCSETIF?
 		# I.e., is it a header for an LBL/BSD-style capture
@@ -784,50 +856,20 @@ else
 			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
-	AC_CHECK_HEADERS(linux/socket.h sys/dlpi.h)
-	AC_CHECK_HEADERS(config/HaikuConfig.h)
-	AC_CHECK_HEADERS(hurd.h)
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
-		#
-		# BPF.
-		# Check this before DLPI, so that we pick BPF on
-		# Solaris 11 and later.
-		#
 		V_PCAP=bpf
+	fi
+fi
 
-		#
-		# We have BPF, so build valgrindtest with "make test"
-		# on macOS and FreeBSD (add your OS once there's a
-		# valgrind for it).
-		#
-		case "$host_os" in
-
-		freebsd*|darwin*|linux*)
-			VALGRINDTEST_SRC=valgrindtest.c
-			;;
-		esac
-	elif test "$ac_cv_header_linux_socket_h" = yes; then
-		#
-		# No prizes for guessing this one.
-		#
-		V_PCAP=linux
-		VALGRINDTEST_SRC=valgrindtest.c
-	elif test "$ac_cv_header_sys_dlpi_h" = yes; then
-		#
-		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
-		#
+if test -z "$V_PCAP"; then
+	#
+	# It is not BPF either, let's see if it is DLPI on pre-Solaris 11
+	# SunOS 5, HP-UX, possibly others.  Otherwise fail properly.
+	#
+	AC_CHECK_HEADERS([sys/dlpi.h])
+	if test "$ac_cv_header_sys_dlpi_h" = yes; then
 		V_PCAP=dlpi
-	elif test "$ac_cv_header_config_HaikuConfig_h" = yes; then
-		#
-		# Haiku.
-		#
-		V_PCAP=haiku
-	elif test "$ac_cv_header_hurd_h" = yes; then
-		#
-		# Hurd.
-		#
-		V_PCAP=hurd
 	else
 		#
 		# We don't have any capture type we know about.
@@ -846,6 +888,20 @@ else
 fi
 AC_MSG_CHECKING(packet capture type)
 AC_MSG_RESULT($V_PCAP)
+
+#
+# valgrindtest directly uses the native capture mechanism, but
+# only tests with BPF and PF_PACKET sockets; enable it for OSes
+# that have both the type of sockets and a working Valgrind.
+#
+case "$host_os" in
+freebsd*|darwin*|linux*)
+	VALGRINDTEST_SRC=valgrindtest.c
+	;;
+*)
+	VALGRINDTEST_SRC=
+	;;
+esac
 AC_SUBST(VALGRINDTEST_SRC)
 
 #
@@ -856,7 +912,11 @@ PKG_PROG_PKG_CONFIG
 #
 # Do we have the brew command from Homebrew?
 #
-AC_PATH_PROG([BREW], [brew])
+case "$host_os" in
+darwin*|linux*)
+	AC_PATH_PROG([BREW], [brew])
+	;;
+esac
 
 #
 # Solaris pkg-config is annoying.  For at least one package (D-Bus, I'm
@@ -1107,6 +1167,9 @@ linux)
 		#include <sys/types.h>
 		#include <linux/if_packet.h>
 	    ])
+
+	# This check is for TESTrun purposes, not for the C code.
+	AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], [], [], [[#include <linux/filter.h>]])
 	;;
 
 bpf)
@@ -1133,23 +1196,25 @@ bpf)
 		#include <net/bpf.h>
 	    ])
 
-	#
-	# Check whether there's a net/ipnet.h header and,
-	# if so, whether it defines IPNET_ANY_LINK - if so,
-	# we assume we have the "any" device (that's a
-	# Solaris header, and later versions of Solaris
-	# have an "any" device).
-	#
-	# Attempting to include it at compile time could
-	# be a pain, as it's a kernel header.
-	#
-	AC_MSG_CHECKING(whether the Solaris "any" device is supported)
-	if test -e /usr/include/inet/ipnet.h &&
-	    grep -q IPNET_ANY_LINK /usr/include/inet/ipnet.h; then
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SOLARIS_ANY_DEVICE, 1, [target host supports Solaris "any" device])
-	else
-		AC_MSG_RESULT(no)
+	if expr "$host_os" : solaris >/dev/null; then
+		#
+		# Check whether there's a net/ipnet.h header and,
+		# if so, whether it defines IPNET_ANY_LINK - if so,
+		# we assume we have the "any" device (that's a
+		# Solaris header, and later versions of Solaris
+		# have an "any" device).
+		#
+		# Attempting to include it at compile time could
+		# be a pain, as it's a kernel header.
+		#
+		AC_MSG_CHECKING(whether the Solaris "any" device is supported)
+		if test -e /usr/include/inet/ipnet.h &&
+		    grep -q IPNET_ANY_LINK /usr/include/inet/ipnet.h; then
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_SOLARIS_ANY_DEVICE, 1, [target host supports Solaris "any" device])
+		else
+			AC_MSG_RESULT(no)
+		fi
 	fi
 	;;
 
@@ -1349,6 +1414,19 @@ AS_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not
 	dag_lib_dir=$withval
 ],[])
 
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$want_dag" in
+	ifpresent)
+		# Replace one default value with another silently and move on.
+		want_dag=no
+		;;
+	yes)
+		# Fail hard: this is a user request and it cannot be done.
+		AC_MSG_ERROR([cannot enable DAG support (not Linux)])
+		;;
+	esac
+fi
+
 if test "$want_dag" != no; then
 
 	# If necessary, set default paths for DAG API headers and libraries.
@@ -1501,6 +1579,18 @@ AS_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if no
 	snf_lib_dir=$withval
 ],[])
 
+# Same as for DAG above.
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$want_snf" in
+	ifpresent)
+		want_snf=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable SNF support (not Linux)])
+		;;
+	esac
+fi
+
 if test "$want_snf" != no; then
 	# If necessary, set default paths for Sniffer headers and libraries.
 	if test -z "$snf_root"; then
@@ -1610,6 +1700,11 @@ yes)	AC_MSG_RESULT(yes)
 	# OK, we have crypt().  Do we have getspnam()?
 	#
 	AC_CHECK_FUNCS(getspnam)
+
+	#
+	# Thanks, IBM, for not providing vsyslog() in AIX!
+	#
+	AC_CHECK_FUNCS(vsyslog)
 
 	#
 	# Check for various members of struct msghdr.
@@ -2230,7 +2325,7 @@ linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	;;
 
 solaris*)
-	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
+	AC_DEFINE(HAVE_SOLARIS,1,[On Solaris])
 
 	DYEXT="so"
 
@@ -2289,24 +2384,6 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],,,
     [
 	#include <sys/types.h>
 	#include <sys/socket.h>
-    ])
-
-#
-# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
-# dl_module_id_1 member.
-#
-# NOTE: any failure means we conclude that it doesn't have that member,
-# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
-# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
-# it doesn't have that member (which is OK, as either we won't be
-# using code that would use that member, or we wouldn't compile in
-# any case).
-#
-AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
-    [
-	#include <sys/types.h>
-	#include <sys/dlpi.h>
-	#include <sys/dlpi_ext.h>
     ])
 
 #
@@ -2415,6 +2492,16 @@ AC_ARG_ENABLE([netmap],
     [],
     [enable_netmap=yes])
 
+# In this block "yes" means the same as "ifpresent" in the DAG block above.
+# Windows is CMake-only.
+case "$host_os" in
+linux*|freebsd*)
+	;;
+*)
+	enable_netmap=no
+	;;
+esac
+
 if test "x$enable_netmap" != "xno" ; then
 	#
 	# Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
@@ -2474,6 +2561,22 @@ AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 		want_dpdk=ifpresent
 	fi
 ])
+
+# Same as for DAG above.
+case "$host_os" in
+linux*|freebsd*)
+	;;
+*)
+	case "$want_dpdk" in
+	ifpresent)
+		want_dpdk=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable DPDK support (neither Linux nor FreeBSD)])
+		;;
+	esac
+	;;
+esac
 
 if test "$want_dpdk" != no; then
 	#
@@ -2557,13 +2660,19 @@ if test "$want_dpdk" != no; then
 		if test $V_PCAP != dpdk ; then
 			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
 		fi
+
+		#
+		# The last line of the output is:
+		# "checking for struct rte_ether_addr... yes"
+		# Make it clear what it means for the final result.
+		#
+		AC_MSG_NOTICE([building with DPDK])
 	else
 		#
 		# We didn't find a usable DPDK.
 		# If we required it (with --with-dpdk or --with-pcap=dpdk),
 		# fail with an appropriate message telling the user what
-		# the problem was, otherwise note the problem with a
-		# warning.
+		# the problem was.
 		#
 		if test "$found_dpdk" != yes; then
 			#
@@ -2596,13 +2705,13 @@ DPDK provides .pc file.])
 
 			#
 			# User didn't indicate whether they wanted DPDK
-			# or not; just warn why we didn't find it.
+			# or not; the last line of the output is one of:
+			# "checking for libdpdk with pkg-config... pkg-config not found"
+			# "checking for libdpdk with pkg-config... not found"
+			# This conveys the point and is the right amount of
+			# output when auto-detecting an optional module, so do
+			# not print anything else.
 			#
-			AC_MSG_WARN(
-[We couldn't find DPDK with pkg-config.  If
-you want DPDK support, make sure that pkg-config is installed,
-that DPDK 18.02.2 or later is installed, and that DPDK provides a
-.pc file.])
 		elif test "$ac_cv_func_rte_eth_dev_count_avail" != yes; then
 			#
 			# Found with pkg-config, but we couldn't compile
@@ -2635,11 +2744,11 @@ or later is DPDK is installed.])
 
 			#
 			# User didn't indicate whether they wanted DPDK
-			# or not; just warn why we didn't find it.
+			# or not; the last line of the output is:
+			# "checking for rte_eth_dev_count_avail... no"
+			# Make it clear what it means for the final result.
 			#
-			AC_MSG_WARN(
-[DPDK was found, but we can't compile libpcap with it.
-Make sure that DPDK 18.02.2 or later is installed.])
+			AC_MSG_NOTICE([building without DPDK (present, but cannot be used)])
 		fi
 	fi
 fi
@@ -2820,6 +2929,18 @@ if test "$xxx_only" = yes; then
 	# User requested something-else-only pcap, so they don't
 	# want RDMA support.
 	enable_rdma=no
+fi
+
+# Same as for DAG above.
+if ! expr "$host_os" : linux >/dev/null; then
+	case "$enable_rdma" in
+	ifavailable)
+		enable_rdma=no
+		;;
+	yes)
+		AC_MSG_ERROR([cannot enable RDMA support (not Linux)])
+		;;
+	esac
 fi
 
 if test "x$enable_rdma" != "xno"; then

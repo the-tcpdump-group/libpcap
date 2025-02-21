@@ -93,6 +93,7 @@
 #include <linux/ethtool.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
+#include <linux/netlink.h>
 
 #include <linux/if_arp.h>
 #ifndef ARPHRD_IEEE802154
@@ -1387,19 +1388,17 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 			return 0;
 
 		/*
-		 * If this is an outgoing CAN or CAN FD frame, and
-		 * the user doesn't only want outgoing packets,
-		 * reject it; CAN devices and drivers, and the CAN
-		 * stack, always arrange to loop back transmitted
-		 * packets, so they also appear as incoming packets.
-		 * We don't want duplicate packets, and we can't
-		 * easily distinguish packets looped back by the CAN
-		 * layer than those received by the CAN layer, so we
-		 * eliminate this packet instead.
+		 * If this is an outgoing CAN frame, and the user doesn't
+		 * want only outgoing packets, reject it; CAN devices
+		 * and drivers, and the CAN stack, always arrange to
+		 * loop back transmitted packets, so they also appear
+		 * as incoming packets.  We don't want duplicate packets,
+		 * and we can't easily distinguish packets looped back
+		 * by the CAN layer than those received by the CAN layer,
+		 * so we eliminate this packet instead.
 		 *
-		 * We check whether this is a CAN or CAN FD frame
-		 * by checking whether the device's hardware type
-		 * is ARPHRD_CAN.
+		 * We check whether this is a CAN frame by checking whether
+		 * the device's hardware type is ARPHRD_CAN.
 		 */
 		if (sll->sll_hatype == ARPHRD_CAN &&
 		     handle->direction != PCAP_D_OUT)
@@ -2423,10 +2422,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 	int			val;
 	int			err = 0;
 	struct packet_mreq	mr;
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
-	int			bpf_extensions;
-	socklen_t		len = sizeof(bpf_extensions);
-#endif
 
 	/*
 	 * Open a socket with protocol family packet. If cooked is true,
@@ -2762,12 +2757,29 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	handle->fd = sock_fd;
 
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	/*
+	 * Any supported Linux version implements at least four auxiliary
+	 * data items (SKF_AD_PROTOCOL, SKF_AD_PKTTYPE, SKF_AD_IFINDEX and
+	 * SKF_AD_NLATTR).  Set a flag so the code generator can use these
+	 * items if necessary.
+	 */
+	handle->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
+
 	/*
 	 * Can we generate special code for VLAN checks?
 	 * (XXX - what if we need the special code but it's not supported
 	 * by the OS?  Is that possible?)
+	 *
+	 * This depends on both a runtime condition (the running Linux kernel
+	 * must support at least SKF_AD_VLAN_TAG_PRESENT in the auxiliary data
+	 * and must support SO_BPF_EXTENSIONS in order to tell the userland
+	 * process what it supports) and a compile-time condition (the OS
+	 * headers must define both constants in order to compile libpcap code
+	 * that asks the kernel about the support).
 	 */
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	int bpf_extensions;
+	socklen_t len = sizeof(bpf_extensions);
 	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
 	    &bpf_extensions, &len) == 0) {
 		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
@@ -2777,7 +2789,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
 	}
-#endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
+#endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 
 	return status;
 }
@@ -3549,11 +3561,9 @@ pcap_get_ring_frame_status(pcap_t *handle, u_int offset)
 	switch (handlep->tp_version) {
 	case TPACKET_V2:
 		return __atomic_load_n(&h.h2->tp_status, __ATOMIC_ACQUIRE);
-		break;
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
 		return __atomic_load_n(&h.h3->hdr.bh1.block_status, __ATOMIC_ACQUIRE);
-		break;
 #endif
 	}
 	/* This should not happen. */
@@ -5394,23 +5404,299 @@ iface_get_offload(pcap_t *handle _U_)
 }
 #endif /* SIOCETHTOOL */
 
+/*
+ * As per
+ *
+ *    https://www.kernel.org/doc/html/latest/networking/dsa/dsa.html#switch-tagging-protocols
+ *
+ * Type 1 means that the tag is prepended to the Ethernet packet.
+ * LINKTYPE_ETHERNET/DLT_EN10MB doesn't work, as it would try to
+ * dissect the tag data as the Ethernet header.  These should get
+ * their own LINKTYPE_DLT_ values.
+ *
+ * Type 2 means that the tag is inserted into the Ethernet header
+ * after the source address and before the type/length field.
+ *
+ * Type 3 means that tag is a packet trailer.  LINKTYPE_ETHERNET/DLT_EN10MB
+ * works,  unless the next-layer protocol has no length field of its own,
+ * so that the tag might be treated as part of the payload. These should
+ * get their own LINKTYPE_/DLT_ values.
+ *
+ * If you get an "unsupported DSA tag" error, please add the tag to here,
+ * complete with a full comment indicating whether it's type 1, 2, or 3,
+ * and, for type 2, indicating whether it has an Ethertype and, if so
+ * what that type is, and whether it's registered with the IEEE or is
+ * self-assigned. Also, point to *something* that indicates the format
+ * of the tag.
+ */
 static struct dsa_proto {
 	const char *name;
 	bpf_u_int32 linktype;
 } dsa_protos[] = {
+	/*
+	 * Type 1. See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ar9331.c
+	 */
+	{ "ar9331", DLT_EN10MB },
+
+	/*
+	 * Type 2, without an Ethertype at the beginning,
+	 * assigned a LINKTYPE_/DLT_ value.
+	 */
+	{ "brcm", DLT_DSA_TAG_BRCM },
+
+	/*
+	 * Type 2, with Ethertype 0x8874, assigned to Broadcom.
+	 *
+	 * This doies not require a LINKTYPE_/DLT_ value, it
+	 * just requires that Ethertype 0x8874 be dissected
+	 * properly.
+	 */
+	{ "brcm-legacy", DLT_EN10MB },
+
+	/*
+	 * Type 1.
+	 */
+	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
+
+	/*
+	 * Type 2, without an Etherype at he beginning,
+	 * assigned a LINKTYPE_/DLT_ value.
+	 */
+	{ "dsa", DLT_DSA_TAG_DSA },
+
+	/*
+	 * Type 2, with an Ethertype field, but without
+	 * an assigned Ethertype value that can be relied
+	 * on; assigned a LINKTYPE_/DLT_ value.
+	 */
+	{ "edsa", DLT_DSA_TAG_EDSA },
+
+	/*
+	 * Type 1, with different transmit and receive headers,
+	 * so can't really be handled well with the current
+	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
+	 * to get the direction?
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_gswip.c
+	 */
+	{ "gswip", DLT_EN10MB },
+
+	/*
+	 * Type 3. See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_hellcreek.c
+	 */
+	{ "hellcreek", DLT_EN10MB },
+
+	/*
+	 * Type 3, with different transmit and receive headers,
+	 * so can't really be handled well with the current
+	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
+	 * to get the direction?
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L102
+	 */
+	{ "ksz8795", DLT_EN10MB },
+
+	/*
+	 * Type 3, with different transmit and receive headers,
+	 * so can't really be handled well with the current
+	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
+	 * to get the direction?
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L160
+	 */
+	{ "ksz9477", DLT_EN10MB },
+
+	/*
+	 * Type 3, with different transmit and receive headers,
+	 * so can't really be handled well with the current
+	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
+	 * to get the direction?
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L341
+	 */
+	{ "ksz9893", DLT_EN10MB },
+
+	/*
+	 * Type 3, with different transmit and receive headers,
+	 * so can't really be handled well with the current
+	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
+	 * to get the direction?
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L386
+	 */
+	{ "lan937x", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * as per
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_lan9303.c#L24
+	 *
+	 * so giving its own LINKTYPE_/DLT_ value would allow a
+	 * dissector to do so.
+	 */
+	{ "lan9303", DLT_EN10MB },
+
+	/*
+	 * Type 2, without an Etherype at he beginning,
+	 * should be assigned a LINKTYPE_/DLT_ value.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_mtk.c#L15
+	 */
+	{ "mtk", DLT_EN10MB },
+
 	/*
 	 * None is special and indicates that the interface does not have
 	 * any tagging protocol configured, and is therefore a standard
 	 * Ethernet interface.
 	 */
 	{ "none", DLT_EN10MB },
-	{ "brcm", DLT_DSA_TAG_BRCM },
-	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
-	{ "dsa", DLT_DSA_TAG_DSA },
-	{ "edsa", DLT_DSA_TAG_EDSA },
+
+	/*
+	 * Type 1.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ocelot.c
+	 */
+	{ "ocelot", DLT_EN10MB },
+
+	/*
+	 * Type 1.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ocelot.c
+	 */
+	{ "seville", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * as per
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
+	 *
+	 * so giving its own LINKTYPE_/DLT_ value would allow a
+	 * dissector to do so.
+	 */
+	{ "ocelot-8021q", DLT_EN10MB },
+
+	/*
+	 * Type 2, without an Etherype at he beginning,
+	 * should be assigned a LINKTYPE_/DLT_ value.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_qca.c
+	 */
+	{ "qca", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8899, assigned to Realtek;
+	 * they use it for several on-the-Ethernet protocols
+	 * as well, but there are fields that allow the two
+	 * tag formats, and all the protocols in question,
+	 * to be distinguiished from one another.
+	 *
+	 * This doies not require a LINKTYPE_/DLT_ value, it
+	 * just requires that Ethertype 0x8899 be dissected
+	 * properly.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_rtl4_a.c
+	 *
+	 *    http://realtek.info/pdf/rtl8306sd%28m%29_datasheet_1.1.pdf
+	 *
+	 * and various pages in tcpdump's print-realtek.c and Wireshark's
+	 * epan/dissectors/packet-realtek.c for the other protocols.
+	 */
 	{ "rtl4a", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8899, assigned to Realtek;
+	 * see above.
+	 */
 	{ "rtl8_4", DLT_EN10MB },
+
+	/*
+	 * Type 3, with the same tag format as rtl8_4.
+	 */
 	{ "rtl8_4t", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0xe001; that's probably
+	 * self-assigned, so this really should ahve its
+	 * own LINKTYPE_/DLT_ value.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_rzn1_a5psw.c
+	 */
+	{ "a5psw", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8100 or the self-assigned
+	 * 0xdadb, so this really should ahve its own
+	 * LINKTYPE_/DLT_ value; that would also allow the
+	 * VID of the tag to be dissected as per
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
+	 */
+	{ "sja1105", DLT_EN10MB },
+
+	/*
+	 * Type "none of the above", with both a header and trailer,
+	 * with different transmit and receive tags.  Has
+	 * Ethertype 0xdadc, which is probably self-assigned.
+	 * This should really have its own LINKTYPE_/DLT_ value.
+	 */
+	{ "sja1110", DLT_EN10MB },
+
+	/*
+	 * Type 3, as the name suggests.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_trailer.c
+	 */
+	{ "trailer", DLT_EN10MB },
+
+	/*
+	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * as per
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
+	 *
+	 * so giving its own LINKTYPE_/DLT_ value would allow a
+	 * dissector to do so.
+	 */
+	{ "vsc73xx-8021q", DLT_EN10MB },
+
+	/*
+	 * Type 3.
+	 *
+	 * See
+	 *
+	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_xrs700x.c
+	 */
+	{ "xrs700x", DLT_EN10MB },
 };
 
 static int

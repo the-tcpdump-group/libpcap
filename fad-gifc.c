@@ -37,9 +37,6 @@
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>
-#endif
 
 #include <net/if.h>
 #include <netinet/in.h>

@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "13 January 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "9 February 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -347,9 +347,14 @@ Abbreviation for:
 Abbreviation for:
 .in +.5i
 .nf
-\fBip proto\fR 9
+\fBip proto \fIigrpval\fR
 .fi
 .in -.5i
+where
+.I igrpval
+is 88 on DragonFly BSD, FreeBSD and macOS, and 9 on all other OSes.  This
+abbreviation should not be used in portable applications and may be removed
+in future.
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
 (See `\fBip proto\fP' above for the meaning of \fIprotocol\fR.)
@@ -876,7 +881,14 @@ Abbreviations for:
 \fBiso proto \\\fIprotocol\fR
 .fi
 .in -.5i
-where \fIprotocol\fR is one of the above protocols.
+where \fIprotocol\fR is one of the above protocols.  Also in this context
+.B \%es-is
+is an alias for
+.B esis
+and
+.B \%is-is
+is an alias for
+.BR isis .
 .IP "\fBl1\fR, \fBl2\fR, \fBiih\fR, \fBlsp\fR, \fBsnp\fR, \fBcsnp\fR, \fBpsnp\fR"
 Abbreviations for IS-IS PDU types.
 .IP "\fIatmfield relop val\fR"
@@ -1032,6 +1044,38 @@ and
 respectively, but only if the MTP2 link uses the extended sequence numbers
 encoding specified for high speed signalling links (HSL) in ITU-T
 Recommendation Q.703 Annex A.
+.IP "\fBlink src \fIarcnetaddr\fR"
+True, only for
+.B \%DLT_ARCNET
+or
+.BR \%DLT_ARCNET_LINUX ,
+if the ARCnet source address is
+.IR \%arcnetaddr ,
+which in this expression is a string of the form
+.B $xx
+or
+.BR $x ,
+where "x" is a hexadecimal digit (for example,
+.BR $2b ).
+Note that this address syntax clashes with the parameter expansion syntax
+in POSIX-compatible shells and elsewhere, so depending on the use case the
+filter string may require the use of single quotes or a backslash.
+.IP "\fBlink dst \fIarcnetaddr\fR"
+Same as the above, but for the destination ARCnet address; also in ARCnet
+context
+.B \%broadcast
+and
+.B \%multicast
+are equivalent to
+.BR "\%link dst $0" .
+.IP "\fBlink host \fIarcnetaddr\fR"
+Abbreviation for:
+.in +.5i
+.nf
+\fBlink src \fIarcnetaddr \fBor link dst \fIarcnetaddr\fR
+.fi
+.in -.5i
+in the expressions above.
 .IP  "\fIexpr1 relop expr2\fR"
 True if the relation holds.  \fIRelop\fR is one of
 .RB { > ,
@@ -1365,15 +1409,21 @@ and
 .B hsls
 keywords became available in libpcap 1.5.3.
 .PP
+The modulo
+.RB ( % )
+and bitwise XOR
+.RB ( ^ )
+binary operators became available in libpcap 1.6.2.
+.PP
+The
+.B geneve
+keyword became available in libpcap 1.8.0.
+.PP
 The ICMPv6 type code names, as well as the
 .B tcp-ece
 and
 .B tcp-cwr
 TCP flag names became available in libpcap 1.9.0.
-.PP
-The
-.B geneve
-keyword became available in libpcap 1.8.0.
 .PP
 The
 .B ifindex

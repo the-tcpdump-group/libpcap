@@ -517,8 +517,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(DISABLE_LINUX_USBMON "Disable Linux usbmon USB sniffing support" OFF)
 endif()
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
-option(DISABLE_NETMAP "Disable netmap support" OFF)
-option(DISABLE_DPDK "Disable DPDK support" OFF)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+   CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+   WIN32)
+    option(DISABLE_NETMAP "Disable netmap support" OFF)
+else()
+    set(DISABLE_NETMAP ON)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+   CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    option(DISABLE_DPDK "Disable DPDK support" OFF)
+else()
+    set(DISABLE_DPDK ON)
+endif()
 
 #
 # We don't support D-Bus sniffing on macOS; see
@@ -530,12 +543,22 @@ if(APPLE)
 else(APPLE)
     option(DISABLE_DBUS "Disable D-Bus sniffing support" OFF)
 endif(APPLE)
-option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
-option(DISABLE_DAG "Disable Endace DAG card support" OFF)
-option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
-option(DISABLE_SNF "Disable Myricom SNF support" OFF)
+    option(DISABLE_DAG "Disable Endace DAG card support" OFF)
+    option(ENABLE_DAG_TX "Enable Endace DAG transmit support" OFF)
+
+    option(DISABLE_SNF "Disable Myricom SNF support" OFF)
+else()
+    set(DISABLE_RDMA ON)
+
+    set(DISABLE_DAG ON)
+    set(ENABLE_DAG_TX OFF)
+
+    set(DISABLE_SNF ON)
+endif()
 
 #
 # Debugging options.
@@ -692,11 +715,6 @@ if(NOT HAVE_UNISTD_H)
     add_definitions(-DYY_NO_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)
 if(NOT WIN32)
-    check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
-    check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
-    check_include_file(sys/select.h HAVE_SYS_SELECT_H)
-
-    check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 endif(NOT WIN32)
 
@@ -847,9 +865,6 @@ check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(asprintf HAVE_ASPRINTF)
 check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
-if(NOT WIN32)
-    check_function_exists(vsyslog HAVE_VSYSLOG)
-endif()
 
 #
 # Look for various networking-related libraries that we may need.
@@ -991,28 +1006,33 @@ else(WIN32)
         endif(LIBXNET_HAS_RECVMSG)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
 
-    #
-    # DLPI needs putmsg under HP-UX, so test for -lstr while we're at it.
-    #
-    check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
-    if(NOT STDLIBS_HAVE_PUTMSG)
-        check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
-        if(LIBSTR_HAS_PUTMSG)
-            set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
-            set(LIBS "-lstr ${LIBS}")
-            set(LIBS_STATIC "-lstr ${LIBS_STATIC}")
-            set(LIBS_PRIVATE "-lstr ${LIBS_PRIVATE}")
-        endif(LIBSTR_HAS_PUTMSG)
-    endif(NOT STDLIBS_HAVE_PUTMSG)
+    if(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
+        #
+        # Same as the respective AC_CHECK_MEMBERS() in Autoconf.
+        #
+        check_struct_has_member("struct dl_hp_ppa_info_t" dl_module_id_1 "sys/types.h;sys/dlpi.h;sys/dlpi_ext.h" HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1)
 
-    # Haiku has getpass in libbsd
-    check_function_exists(getpass STDLIBS_HAVE_GETPASS)
-    if(NOT STDLIBS_HAVE_GETPASS)
-        check_library_exists(bsd getpass "" LIBBSD_HAS_GETPASS)
-        if(LIBBSD_HAS_GETPASS)
-            set(PCAP_LINK_LIBRARIES bsd ${PCAP_LINK_LIBRARIES})
-        endif(LIBBSD_HAS_GETPASS)
-    endif(NOT STDLIBS_HAVE_GETPASS)
+        #
+        # Same as the respective AC_SEARCH_LIBS() in Autoconf.
+        #
+        check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
+        if(NOT STDLIBS_HAVE_PUTMSG)
+            check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
+            if(LIBSTR_HAS_PUTMSG)
+                set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
+                set(LIBS "-lstr ${LIBS}")
+                set(LIBS_STATIC "-lstr ${LIBS_STATIC}")
+                set(LIBS_PRIVATE "-lstr ${LIBS_PRIVATE}")
+            endif(LIBSTR_HAS_PUTMSG)
+        endif(NOT STDLIBS_HAVE_PUTMSG)
+    endif()
+
+    #
+    # Haiku has getpass() in libbsd.
+    #
+    if(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+        set(PCAP_LINK_LIBRARIES bsd ${PCAP_LINK_LIBRARIES})
+    endif()
 endif(WIN32)
 
 #
@@ -1299,6 +1319,16 @@ endif()
 cmake_pop_check_state()
 
 #
+# Same as in Autoconf.
+#
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    check_symbol_exists(__GLIBC__ features.h HAVE_GLIBC)
+    if(NOT HAVE_GLIBC)
+        check_symbol_exists(__UCLIBC__ features.h HAVE_UCLIBC)
+    endif()
+endif()
+
+#
 # Large file support on UN*X, a/k/a LFS.
 #
 if(NOT WIN32)
@@ -1325,11 +1355,16 @@ if(NOT WIN32)
 endif()
 
 #
-# Find the size of time_t.
+# Find and print the size of time_t.
 #
 cmake_push_check_state()
 set(CMAKE_EXTRA_INCLUDE_FILES time.h)
 check_type_size("time_t" SIZEOF_TIME_T)
+if(SIZEOF_TIME_T EQUAL 4)
+  message(STATUS "32-bit time_t")
+elseif(SIZEOF_TIME_T EQUAL 8)
+  message(STATUS "64-bit time_t")
+endif()
 cmake_pop_check_state()
 
 if(INET6)
@@ -1928,10 +1963,31 @@ else()
     #
     if(PCAP_TYPE STREQUAL "")
         #
-        # Check for a bunch of headers for various packet capture mechanisms.
+        # No.  Try auto-detecting the obvious types first.
+        #
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(PCAP_TYPE linux)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+            set(PCAP_TYPE haiku)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "GNU")
+            set(PCAP_TYPE hurd)
+        endif()
+    endif()
+
+    if(PCAP_TYPE STREQUAL "")
+        #
+        # It is not one of the above obvious types, let's see if it is BPF.
+        # Check this before DLPI to pick BPF on Solaris 11 and later.
         #
         check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
         if(HAVE_NET_BPF_H)
+            #
+            # HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+            # supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+            # (this might have already happened).
+            #
+            check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
+
             #
             # Does it define BIOCSETIF?
             # I.e., is it a header for an LBL/BSD-style capture
@@ -1970,38 +2026,23 @@ else()
                 check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
-        check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
-        check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
-        check_include_file(config/HaikuConfig.h HAVE_CONFIG_HAIKUCONFIG_H)
-        check_include_file(hurd.h HAVE_HURD_H)
 
         if(BPF_H_DEFINES_BIOCSETIF)
-            #
-            # BPF.
-            # Check this before DLPI, so that we pick BPF on
-            # Solaris 11 and later.
-            #
             set(PCAP_TYPE bpf)
-        elseif(HAVE_LINUX_SOCKET_H)
-            #
-            # No prizes for guessing this one.
-            #
-            set(PCAP_TYPE linux)
-        elseif(HAVE_SYS_DLPI_H)
+        endif()
+    endif()
+
+    if(PCAP_TYPE STREQUAL "")
+        #
+        # It is not BPF either, let's see if it is DLPI on pre-Solaris 11
+        # SunOS 5, HP-UX, possibly others.  Otherwise fail properly.
+        #
+        check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
+        if(HAVE_SYS_DLPI_H)
             #
             # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
             #
             set(PCAP_TYPE dlpi)
-        elseif(HAVE_CONFIG_HAIKUCONFIG_H)
-            #
-            # Haiku.
-            #
-            set(PCAP_TYPE haiku)
-        elseif(HAVE_HURD_H)
-            #
-            # Hurd.
-            #
-            set(PCAP_TYPE hurd)
         else()
             #
             # We don't have any capture type we know about.
@@ -2021,7 +2062,7 @@ pcap and pcapng files, run cmake with -DPCAP_TYPE=null.")
 endif(WIN32)
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig)
 
 #
 # Do capture-mechanism-dependent tests.
@@ -2137,6 +2178,11 @@ else(WIN32)
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
+
+        # This check is for TESTrun purposes, not for the C code.
+        # This and the #cmakedefine01 in cmakeconfig.h.in reproduce exactly the
+        # behaviour of "AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], ...".
+        check_symbol_exists(SKF_AD_VLAN_TAG_PRESENT linux/filter.h HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.
@@ -2160,27 +2206,29 @@ else(WIN32)
         endif()
         cmake_pop_check_state()
 
-        #
-        # Check whether there's a inet/ipnet.h header and,
-        # if so, whether it defines IPNET_ANY_LINK - if so,
-        # we assume we have the "any" device (that's a
-        # Solaris header, and later versions of Solaris
-        # have an "any" device).
-        #
-        # Attempting to include it at compile time could
-        # be a pain, as it's a kernel header.
-        #
-        message(STATUS "Checking whether the Solaris \"any\" device is supported")
-        if(EXISTS /usr/include/inet/ipnet.h)
-            file(STRINGS /usr/include/inet/ipnet.h IPNET_ANY_LINK_LINES REGEX IPNET_ANY_LINK)
-            if(NOT IPNET_ANY_LINK_LINES STREQUAL "")
-                set(HAVE_SOLARIS_ANY_DEVICE TRUE)
+        if(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+            #
+            # Check whether there's a inet/ipnet.h header and,
+            # if so, whether it defines IPNET_ANY_LINK - if so,
+            # we assume we have the "any" device (that's a
+            # Solaris header, and later versions of Solaris
+            # have an "any" device).
+            #
+            # Attempting to include it at compile time could
+            # be a pain, as it's a kernel header.
+            #
+            message(STATUS "Checking whether the Solaris \"any\" device is supported")
+            if(EXISTS /usr/include/inet/ipnet.h)
+                file(STRINGS /usr/include/inet/ipnet.h IPNET_ANY_LINK_LINES REGEX IPNET_ANY_LINK)
+                if(NOT IPNET_ANY_LINK_LINES STREQUAL "")
+                    set(HAVE_SOLARIS_ANY_DEVICE TRUE)
+                endif()
             endif()
-        endif()
-        if(HAVE_SOLARIS_ANY_DEVICE)
-            message(STATUS "Checking whether the Solaris \"any\" device is supported - supported")
-        else()
-            message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
+            if(HAVE_SOLARIS_ANY_DEVICE)
+                message(STATUS "Checking whether the Solaris \"any\" device is supported - supported")
+            else()
+                message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
+            endif()
         endif()
     elseif(PCAP_TYPE STREQUAL "haiku")
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
@@ -2441,12 +2489,18 @@ if(NOT DISABLE_DPDK)
             set(CMAKE_EXTRA_INCLUDE_FILES rte_ether.h)
             check_type_size("struct rte_ether_addr" STRUCT_RTE_ETHER_ADDR)
             cmake_pop_check_state()
+
+            #
+            # Same as in Autoconf.
+            #
+            message(STATUS "building with DPDK")
+        else()
+            #
+            # Same as in Autoconf.
+            #
+            message(STATUS "building without DPDK (present, but cannot be used)")
         endif()
-    else()
-      message(WARNING,
-"We couldn't find DPDK with pkg-config.  If you want DPDK support,
-make sure that pkg-config is installed, that DPDK 18.02.2 or later is
-installed, and that DPDK provides a .pc file.")
+    # Else: Finddpdk.cmake has already printed the diagnostics.
     endif()
 endif()
 
@@ -3595,12 +3649,24 @@ add_custom_target(uninstall
 # rule run testprogs/TESTrun with it, because just trying to run the TESTrun
 # script as a command won't work on Windows.
 #
-find_program(PERL perl)
+# However, if the PERL environment variable is set, use its value instead of
+# trying to find the interpreter, this implements the same behaviour as in the
+# Makefile.
+#
+if(NOT "$ENV{PERL}" STREQUAL "")
+    set(PERL $ENV{PERL})
+    message(STATUS "Using PERL='${PERL}'")
+else()
+    find_program(PERL perl)
+    if(PERL)
+        message(STATUS "Found perl at ${PERL}")
+    else()
+        message(STATUS "Didn't find perl")
+    endif()
+endif()
+
 if(PERL)
-    message(STATUS "Found perl at ${PERL}")
     add_custom_target(check
         COMMAND ${PERL} ${CMAKE_SOURCE_DIR}/testprogs/TESTrun
         DEPENDS testprogs)
-else()
-    message(STATUS "Didn't find perl")
 endif()
