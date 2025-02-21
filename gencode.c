@@ -8467,8 +8467,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 		hostmask = ~cstate->netmask;
 		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, 0, hostmask);
-		b2 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W,
-			      ~0 & hostmask, hostmask);
+		b2 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, hostmask, hostmask);
 		gen_or(b1, b2);
 		gen_and(b0, b2);
 		return b2;
