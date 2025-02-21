@@ -15,8 +15,8 @@ install:
   - win_bison --version
   - appveyor DownloadFile https://github.com/the-tcpdump-group/tcpdump-htdocs/raw/master/depends/WpdPack_4_1_2.zip
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
-  - appveyor DownloadFile https://npcap.com/dist/npcap-sdk-1.13.zip
-  - 7z x .\npcap-sdk-1.13.zip -oc:\projects\libpcap\Win32\npcap-sdk
+  - appveyor DownloadFile https://npcap.com/dist/npcap-sdk-1.15.zip
+  - 7z x .\npcap-sdk-1.15.zip -oc:\projects\libpcap\Win32\npcap-sdk
 
 environment:
   #
