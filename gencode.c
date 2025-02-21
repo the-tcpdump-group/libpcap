@@ -9114,7 +9114,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	unsigned cnt;
 
 	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
-	s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
 	/* true -> next instructions, false -> beginning of b_vid */
 	sjeq = new_stmt(cstate, JMP(BPF_JEQ));
@@ -9123,7 +9123,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	sappend(s, sjeq);
 
 	s2 = new_stmt(cstate, BPF_LD|BPF_H|BPF_ABS);
-	s2->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
+	s2->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG);
 	sappend(s, s2);
 	sjeq->s.jt = s2;
 
@@ -9161,7 +9161,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
         /* generate new filter code based on extracting packet
          * metadata */
         s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
-        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+        s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
         b0 = new_block(cstate, JMP(BPF_JEQ));
         b0->stmts = s;
