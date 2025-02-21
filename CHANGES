@@ -152,6 +152,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Solaris:
       Fix not to ignore logical interfaces in fad-gifc.c and
         fad-glifc.c.
+    Windows:
+      Fix filtering for VLAN-tagged frames.
     D-Bus:
       Fix message leak.
     Capture file writing:
