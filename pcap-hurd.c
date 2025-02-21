@@ -170,7 +170,7 @@ retry:
 		ETH_HLEN);
 
 	/*
-	 * It seems, kernel device filters treat the K in BPF_MOD as a Boolean:
+	 * It seems, kernel device filters treat the K in BPF_RET as a Boolean:
 	 * so long as it is positive, the Mach message will contain the entire
 	 * packet and wirelen will be set accordingly.  Thus the caplen value
 	 * for the callback needs to be calculated for every packet no matter
