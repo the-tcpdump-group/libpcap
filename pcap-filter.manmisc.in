@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "9 February 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "22 February 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -415,16 +415,39 @@ True if the packet is an Ethernet broadcast packet.
 The \fBether\fP
 keyword is optional.
 .IP "\fBip broadcast\fR"
-True if the packet is an IPv4 broadcast packet.
-It checks for both the all-zeroes and all-ones broadcast conventions,
-and looks up the subnet mask on the interface on which the capture is
-being done.
+True if the packet is an IPv4 packet with the host part of the destination
+address being either all-ones or all-zeroes.  This primitive requires to
+specify the netmask, which cannot be done in the filter expression; the only
+way to specify a netmask is via the
+.B \%netmask
+argument of the
+.BR \%pcap_compile ()
+function.  If a netmask has not been specified, an attempt to compile a
+filter expression with this primitive will return an error.
 .IP
-If the subnet mask of the interface on which the capture is being done
-is not available, either because the interface on which capture is being
-done has no netmask or because the capture is being done on the Linux
-"any" interface, which can capture on more than one interface, this
-check will not work correctly.
+Note that this primitive ignores the network part of the destination address,
+thus it can match more packets than expected, especially if the interface has
+multiple IPv4 addresses with different netmasks.  For example, if the
+interface has addresses 10.1.2.100/29 and 192.168.202.200/24 configured and
+the
+.B \%netmask
+argument corresponds to the first address, its value will be
+.BR \%0xFFFFFFF8
+and the host mask value will be
+.BR \%0x00000007 .
+This will match the expected two addresses in the first prefix (10.1.2.96 and
+10.1.2.103), as well as 64 addresses in the second prefix (192.168.202.0,
+192.168.202.7, 192.168.202.8, 192.168.202.15, 192.168.202.16 and so on), as
+well as any other IPv4 address with the lowest 3 bits being all-ones or
+all-zeroes (for example: 10.73.74.151, 192.168.50.63, 172.19.0.128) -- in
+other words, 25% of the complete IPv4 address space.  This is why in use
+cases that require more precision it would be better to match the required
+address(es) explicitly, for example:
+.in +.5i
+.nf
+\fBip dst host 10.1.2.96 or 10.1.2.103\fR
+.fi
+.in -.5i
 .IP "\fBether multicast\fR"
 True if the packet is an Ethernet multicast packet.
 The \fBether\fP
