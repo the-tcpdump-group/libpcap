@@ -2449,6 +2449,913 @@ my %accept_blocks = (
 			',
 	}, # ether_proto_stp
 
+	# ARP and RARP tests are interleaved for ease of cross-reference
+	# because ARP filter programs and RARP filter programs differ in the
+	# link-layer protocol code point only (0x8035 instead of 0x0806 for
+	# most DLTs, 0xD6 instead of {0xD5, 0xF1} for ARCnet).
+	arp_host_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'arp host 1.2.3.4',
+			'arp src or dst 1.2.3.4',
+			'arp src or dst host 1.2.3.4',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_en10mb
+	rarp_host_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp host 1.2.3.4',
+			'rarp src or dst 1.2.3.4',
+			'rarp src or dst host 1.2.3.4',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_en10mb
+	arp_host_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp host noeth-ipv4-noipv6.host123.libpcap.test',
+			'arp src or dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'arp src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0xa141e28       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_name_en10mb
+	rarp_host_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp host noeth-ipv4-noipv6.host123.libpcap.test',
+			'rarp src or dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'rarp src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0xa141e28       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_name_en10mb
+	arp_host_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'arp src or dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'arp src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0xa141e28       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_NAME_en10mb
+	rarp_host_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'rarp src or dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'rarp src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 6	jf 4
+			(004) ld       [38]
+			(005) jeq      #0xa141e28       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_NAME_en10mb
+	arp_src_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'arp src 1.2.3.4',
+			'arp src host 1.2.3.4',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0x1020304       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # arp_src_addr_en10mb
+	rarp_src_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp src 1.2.3.4',
+			'rarp src host 1.2.3.4',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0x1020304       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # rarp_src_addr_en10mb
+	arp_src_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp src noeth-ipv4-noipv6.host123.libpcap.test',
+			'arp src host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # arp_src_name_en10mb
+	rarp_src_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp src noeth-ipv4-noipv6.host123.libpcap.test',
+			'rarp src host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # rarp_src_name_en10mb
+	arp_src_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'arp src host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # arp_src_NAME_en10mb
+	rarp_src_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'rarp src host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [28]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # rarp_src_NAME_en10mb
+	arp_dst_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'arp dst 1.2.3.4',
+			'arp dst host 1.2.3.4',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+		',
+	}, # arp_dst_addr_en10mb
+	rarp_dst_addr_en10mb => {
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp dst 1.2.3.4',
+			'rarp dst host 1.2.3.4',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+		',
+	}, # rarp_dst_addr_en10mb
+	arp_dst_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'arp dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # arp_dst_name_en10mb
+	rarp_dst_name_en10mb => {
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'rarp dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # rarp_dst_name_en10mb
+	arp_dst_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'arp dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # arp_dst_NAME_en10mb
+	rarp_dst_NAME_en10mb => {
+		skip => skip_no_hosts_casecmp(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+			'rarp dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ld       [38]
+			(003) jeq      #0xa141e28       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # rarp_dst_NAME_en10mb
+	# Exercise other DLTs briefly only to touch some of the various code paths
+	# in gen_linktype() with different L2 headers and offsets for the SPA
+	# and TPA fields.
+	arp_host_addr_c_hdlc => {
+		DLT => 'C_HDLC',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [18]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [28]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_c_hdlc
+	rarp_host_addr_c_hdlc => {
+		DLT => 'C_HDLC',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [18]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [28]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_c_hdlc
+	arp_host_addr_ieee802_11 => {
+		DLT => 'IEEE802_11',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 21	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 15	jf 21
+			(015) ldx      M[0]
+			(016) ldh      [x + 6]
+			(017) jeq      #0x806           jt 18	jf 21
+			(018) ldx      M[0]
+			(019) ld       [x + 22]
+			(020) jeq      #0x1020304       jt 31	jf 21
+			(021) ldb      [0]
+			(022) jset     #0x4             jt 32	jf 23
+			(023) ldb      [0]
+			(024) jset     #0x8             jt 25	jf 32
+			(025) ldx      M[0]
+			(026) ldh      [x + 6]
+			(027) jeq      #0x806           jt 28	jf 32
+			(028) ldx      M[0]
+			(029) ld       [x + 32]
+			(030) jeq      #0x1020304       jt 31	jf 32
+			(031) ret      #262144
+			(032) ret      #0
+			',
+	}, # arp_host_addr_ieee802_11
+	rarp_host_addr_ieee802_11 => {
+		DLT => 'IEEE802_11',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) jset     #0x4             jt 21	jf 13
+			(013) ldb      [0]
+			(014) jset     #0x8             jt 15	jf 21
+			(015) ldx      M[0]
+			(016) ldh      [x + 6]
+			(017) jeq      #0x8035          jt 18	jf 21
+			(018) ldx      M[0]
+			(019) ld       [x + 22]
+			(020) jeq      #0x1020304       jt 31	jf 21
+			(021) ldb      [0]
+			(022) jset     #0x4             jt 32	jf 23
+			(023) ldb      [0]
+			(024) jset     #0x8             jt 25	jf 32
+			(025) ldx      M[0]
+			(026) ldh      [x + 6]
+			(027) jeq      #0x8035          jt 28	jf 32
+			(028) ldx      M[0]
+			(029) ld       [x + 32]
+			(030) jeq      #0x1020304       jt 31	jf 32
+			(031) ret      #262144
+			(032) ret      #0
+			',
+	}, # rarp_host_addr_ieee802_11
+	arp_host_addr_fddi => {
+		DLT => 'FDDI',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [35]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [45]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_fddi
+	rarp_host_addr_fddi => {
+		DLT => 'FDDI',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [35]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [45]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_fddi
+	arp_host_addr_ieee802 => {
+		DLT => 'IEEE802',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [20]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [36]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [46]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_ieee802
+	rarp_host_addr_ieee802 => {
+		DLT => 'IEEE802',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [20]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [36]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [46]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_ieee802
+	arp_host_addr_ip_over_fc => {
+		DLT => 'IP_OVER_FC',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [48]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_ip_over_fc
+	rarp_host_addr_ip_over_fc => {
+		DLT => 'IP_OVER_FC',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [48]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_ip_over_fc
+	arp_host_addr_sunatm => {
+		DLT => 'SUNATM',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x2             jt 3	jf 10
+			(003) ldh      [10]
+			(004) jeq      #0x806           jt 5	jf 10
+			(005) ld       [26]
+			(006) jeq      #0x1020304       jt 9	jf 7
+			(007) ld       [36]
+			(008) jeq      #0x1020304       jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # arp_host_addr_sunatm
+	rarp_host_addr_sunatm => {
+		DLT => 'SUNATM',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x2             jt 3	jf 10
+			(003) ldh      [10]
+			(004) jeq      #0x8035          jt 5	jf 10
+			(005) ld       [26]
+			(006) jeq      #0x1020304       jt 9	jf 7
+			(007) ld       [36]
+			(008) jeq      #0x1020304       jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # rarp_host_addr_sunatm
+	arp_host_addr_linux_sll => {
+		DLT => 'LINUX_SLL',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [30]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [40]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_linux_sll
+	rarp_host_addr_linux_sll => {
+		DLT => 'LINUX_SLL',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [30]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [40]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_linux_sll
+	arp_host_addr_raw => {
+		DLT => 'RAW',
+		aliases => ['arp host 1.2.3.4'],
+		# This boils down to "ret #0", which the optimizer expectedly rejects.
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 4
+			(002) ld       [14]
+			(003) jeq      #0x1020304       jt 8	jf 4
+			(004) ld       #0x1
+			(005) jeq      #0x0             jt 6	jf 9
+			(006) ld       [24]
+			(007) jeq      #0x1020304       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # arp_host_addr_raw
+	rarp_host_addr_raw => {
+		DLT => 'RAW',
+		aliases => ['rarp host 1.2.3.4'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 4
+			(002) ld       [14]
+			(003) jeq      #0x1020304       jt 8	jf 4
+			(004) ld       #0x1
+			(005) jeq      #0x0             jt 6	jf 9
+			(006) ld       [24]
+			(007) jeq      #0x1020304       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # rarp_host_addr_raw
+	arp_host_addr_ppp => {
+		DLT => 'PPP',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [18]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [28]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_ppp
+	rarp_host_addr_ppp => {
+		DLT => 'PPP',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [18]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [28]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_ppp
+	arp_host_addr_ppp_bsdos => {
+		DLT => 'PPP_BSDOS',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [5]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [48]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_ppp_bsdos
+	rarp_host_addr_ppp_bsdos => {
+		DLT => 'PPP_BSDOS',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [5]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [38]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [48]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_ppp_bsdos
+	arp_host_addr_arcnet => {
+		DLT => 'ARCNET',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd5            jt 3	jf 2
+			(002) jeq      #0xf1            jt 3	jf 11
+			(003) ld       [20]
+			(004) jeq      #0x1020304       jt 10	jf 5
+			(005) ldb      [2]
+			(006) jeq      #0xd5            jt 8	jf 7
+			(007) jeq      #0xf1            jt 8	jf 11
+			(008) ld       [30]
+			(009) jeq      #0x1020304       jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # arp_host_addr_arcnet
+	rarp_host_addr_arcnet => {
+		DLT => 'ARCNET',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd6            jt 2	jf 7
+			(002) ld       [20]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [30]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_arcnet
+	# At the time of this writing the DLTs below stand for the default case
+	# in gen_linktype().
+	arp_host_addr_linux_sll2 => {
+		DLT => 'LINUX_SLL2',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [34]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [44]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_linux_sll2
+	rarp_host_addr_linux_sll2 => {
+		DLT => 'LINUX_SLL2',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [34]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [44]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_linux_sll2
+	arp_host_addr_symfw => {
+		DLT => 'SYMANTEC_FIREWALL',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [6]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [58]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [68]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_symfw
+	rarp_host_addr_symfw => {
+		DLT => 'SYMANTEC_FIREWALL',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [6]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [58]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [68]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_symfw
+	arp_host_addr_ipoieee1394 => {
+		DLT => 'APPLE_IP_OVER_IEEE1394',
+		aliases => ['arp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [32]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [42]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_host_addr_ipoieee1394
+	rarp_host_addr_ipoieee1394 => {
+		DLT => 'APPLE_IP_OVER_IEEE1394',
+		aliases => ['rarp host 1.2.3.4'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [32]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [42]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_host_addr_ipoieee1394
+
+	arp_net_addr => {
+		DLT => 'EN10MB',
+		snaplen => 2000,
+		aliases => [
+			'arp net 192.168.0.0/16',
+			'arp src or dst net 192.168.0.0/16',
+			'arp net 192.168/16',
+			'arp src or dst net 192.168/16',
+			'arp net 192.168.0.0 mask 255.255.0.0',
+			'arp src or dst net 192.168.0.0 mask 255.255.0.0',
+			'arp net 192.168.0.0 mask 255.255',
+			'arp src or dst net 192.168.0.0 mask 255.255',
+			'arp net 192.168 mask 255.255.0.0',
+			'arp src or dst net 192.168 mask 255.255.0.0',
+			'arp net 192.168 mask 255.255',
+			'arp src or dst net 192.168 mask 255.255',
+			'arp net 192.168',
+			'arp src or dst net 192.168',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 9
+			(002) ld       [28]
+			(003) and      #0xffff0000
+			(004) jeq      #0xc0a80000      jt 8	jf 5
+			(005) ld       [38]
+			(006) and      #0xffff0000
+			(007) jeq      #0xc0a80000      jt 8	jf 9
+			(008) ret      #2000
+			(009) ret      #0
+			',
+	}, # arp_net_addr
+	rarp_net_addr => {
+		DLT => 'LINUX_SLL2',
+		snaplen => 2000,
+		aliases => [
+			'rarp net 192.168.0.0/16',
+			'rarp src or dst net 192.168.0.0/16',
+			'rarp net 192.168/16',
+			'rarp src or dst net 192.168/16',
+			'rarp net 192.168.0.0 mask 255.255.0.0',
+			'rarp src or dst net 192.168.0.0 mask 255.255.0.0',
+			'rarp net 192.168.0.0 mask 255.255',
+			'rarp src or dst net 192.168.0.0 mask 255.255',
+			'rarp net 192.168 mask 255.255.0.0',
+			'rarp src or dst net 192.168 mask 255.255.0.0',
+			'rarp net 192.168 mask 255.255',
+			'rarp src or dst net 192.168 mask 255.255',
+			'rarp net 192.168',
+			'rarp src or dst net 192.168',
+		],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x8035          jt 2	jf 9
+			(002) ld       [34]
+			(003) and      #0xffff0000
+			(004) jeq      #0xc0a80000      jt 8	jf 5
+			(005) ld       [44]
+			(006) and      #0xffff0000
+			(007) jeq      #0xc0a80000      jt 8	jf 9
+			(008) ret      #2000
+			(009) ret      #0
+			',
+	}, # rarp_net_addr
+	arp_net_name => {
+		skip => skip_no_networks(),
+		DLT => 'LINUX_SLL',
+		aliases => [
+			'arp net net-10-0-0-0.libpcap.test',
+			'arp src or dst net net-10-0-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x806           jt 2	jf 7
+			(002) ld       [30]
+			(003) jeq      #0xa000000       jt 6	jf 4
+			(004) ld       [40]
+			(005) jeq      #0xa000000       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # arp_net_name
+	rarp_net_name => {
+		skip => skip_no_networks(),
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'rarp net net-10-0-0-0.libpcap.test',
+			'rarp src or dst net net-10-0-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x8035          jt 2	jf 7
+			(002) ld       [38]
+			(003) jeq      #0xa000000       jt 6	jf 4
+			(004) ld       [48]
+			(005) jeq      #0xa000000       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_net_name
+	arp_net_NAME => {
+		skip => skip_no_networks(),
+		DLT => 'SUNATM',
+		aliases => [
+			'arp net NET-10-0-0-0.LIBPCAP.TEST',
+			'arp src or dst net NET-10-0-0-0.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x2             jt 3	jf 10
+			(003) ldh      [10]
+			(004) jeq      #0x806           jt 5	jf 10
+			(005) ld       [26]
+			(006) jeq      #0xa000000       jt 9	jf 7
+			(007) ld       [36]
+			(008) jeq      #0xa000000       jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # arp_net_NAME
+	rarp_net_NAME => {
+		skip => skip_no_networks(),
+		DLT => 'ARCNET',
+		aliases => [
+			'rarp net NET-10-0-0-0.LIBPCAP.TEST',
+			'rarp src or dst net NET-10-0-0-0.LIBPCAP.TEST',
+		],
+		opt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd6            jt 2	jf 7
+			(002) ld       [20]
+			(003) jeq      #0xa000000       jt 6	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa000000       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # rarp_net_NAME
+
 	vlan_eth_nullary => {
 		DLT => 'EN10MB',
 		aliases => ['vlan'],
@@ -9106,6 +10013,131 @@ my %apply_blocks = (
 		expr => 'ip broadcast',
 		results => [262144, 0, 262144, 0],
 	},
+	arp => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp',
+		results => [1536, 1536, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	arp_host => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp host 192.1.2.254',
+		results => [1536, 1536, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	arp_src_1 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp src 192.1.2.254',
+		results => [1536, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	arp_src_2 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp src 192.1.2.23',
+		results => [0, 1536, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	arp_dst_1 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp dst 192.1.2.254',
+		results => [0, 1536, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	arp_dst_2 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'arp dst 192.1.2.23',
+		results => [1536, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	rarp => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp',
+		results => [65535, 65535],
+	},
+	rarp_host_1 => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp host 0.0.0.0',
+		results => [65535, 0],
+	},
+	rarp_host_2 => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp host 10.1.1.100',
+		results => [0, 65535],
+	},
+	rarp_host_3 => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp host 10.1.1.10',
+		results => [0, 65535],
+	},
+	rarp_src => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp src 10.1.1.10',
+		results => [0, 65535],
+	},
+	rarp_dst => {
+		savefile => 'rarp_req_reply.pcapng',
+		expr => 'rarp dst 10.1.1.100',
+		results => [0, 65535],
+	},
+	ip_1 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'ip',
+		results => [0, 0, 1536, 1536, 1536, 1536, 1536, 1536, 1536, 1536],
+	},
+	ip_2 => {
+		savefile => 'vrrp.pcap',
+		expr => 'ip',
+		results => [0, 0, 65535, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 0, 0, 65535, 65535]
+	},
+	ip_host => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'ip host 192.1.2.23',
+		results => [0, 0, 1536, 1536, 1536, 1536, 1536, 1536, 1536, 1536],
+	},
+	ip_src_1 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'ip src 192.1.2.254',
+		results => [0, 0, 1536, 0, 1536, 0, 1536, 0, 1536, 0],
+	},
+	ip_src_2 => {
+		savefile => 'dhcp-rfc3004.pcap',
+		expr => 'ip src 0.0.0.0',
+		results => [262144, 0, 262144, 0],
+	},
+	ip_dst_1 => {
+		savefile => 'isakmp4500.pcap',
+		expr => 'ip dst 192.1.2.254',
+		results => [0, 0, 0, 1536, 0, 1536, 0, 1536, 0, 1536],
+	},
+	ip_dst_2 => {
+		savefile => 'dhcp-rfc3004.pcap',
+		expr => 'ip dst 192.168.1.4',
+		results => [0, 262144, 0, 262144],
+	},
+	ip6 => {
+		skip => skip_config_undef ('INET6'),
+		savefile => 'vrrp.pcap',
+		expr => 'ip6',
+		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 65535, 65535, 0, 0],
+	},
+	ip6_src_1 => {
+		skip => skip_config_undef ('INET6'),
+		savefile => 'vrrp.pcap',
+		expr => 'ip6 src fe80::d6ca:6dff:fe66:cf60',
+		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 0, 0, 0, 0],
+	},
+	ip6_src_2 => {
+		skip => skip_config_undef ('INET6'),
+		savefile => 'pim-packet-assortment.pcap',
+		expr => 'ip6 src 10::1',
+		results => [0, 0, 0, 0, 0, 0, 0, 65535, 65535, 65535],
+	},
+	ip6_dst_1 => {
+		skip => skip_config_undef ('INET6'),
+		savefile => 'vrrp.pcap',
+		expr => 'ip6 dst ff02::12',
+		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 65535, 65535, 0, 0],
+	},
+	ip6_dst_2 => {
+		skip => skip_config_undef ('INET6'),
+		savefile => 'pim-packet-assortment.pcap',
+		expr => 'ip6 dst 10::1',
+		results => [0, 0, 0, 0, 0, 0, 65535, 0, 0, 0],
+	},
 );
 
 # * DLT, expr, netmask and skip: same as in accept_blocks above
@@ -9491,6 +10523,37 @@ my %reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'arp protochain 17',
 		errstr => 'bad protocol applied for \'protochain\'',
+	},
+	arp_proto => {
+		DLT => 'EN10MB',
+		expr => 'arp proto 17',
+		errstr => 'arp does not encapsulate another protocol',
+	},
+	arp_host_ipv4_ipv6 => {
+		skip => skip_config_undef ('INET6') ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'arp host eth-ipv4-ipv6.host123.libpcap.test',
+		errstr => '\'arp\' modifier applied to ip6 host',
+	},
+	rarp_host_ipv4_ipv6 => {
+		skip => skip_config_undef ('INET6') ||
+			skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'rarp host eth-ipv4-ipv6.host123.libpcap.test',
+		errstr => '\'rarp\' modifier applied to ip6 host',
+	},
+	arp_host_noipv4_noipv6 => {
+		skip => skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'arp host eth-noipv4-noipv6.host123.libpcap.test',
+		errstr => 'unknown host',
+	},
+	rarp_host_noipv4_noipv6 => {
+		skip => skip_no_hosts(),
+		DLT => 'FDDI',
+		expr => 'rarp host eth-noipv4-noipv6.host123.libpcap.test',
+		errstr => 'unknown host',
 	},
 	protochain_disabled => {
 		skip => skip_config_undef ('NO_PROTOCHAIN'),
