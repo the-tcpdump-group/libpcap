@@ -1430,7 +1430,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 
 	case DLT_PPP_ETHER:
 		/*
-		 * This does no include the Ethernet header, and
+		 * This does not include the Ethernet header, and
 		 * only covers session state.
 		 */
 		cstate->off_linktype.constant_part = 6;
