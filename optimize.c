@@ -2165,7 +2165,7 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 
 #ifdef BDEBUG
 	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
-		printf("opt_loop(root, %d) begin\n", do_stmts);
+		printf("%s(root, %d) begin\n", __func__, do_stmts);
 		opt_dump(opt_state, ic);
 	}
 #endif
@@ -2188,7 +2188,7 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 		opt_blks(opt_state, ic, do_stmts);
 #ifdef BDEBUG
 		if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
-			printf("opt_loop(root, %d) bottom, done=%d\n", do_stmts, opt_state->done);
+			printf("%s(root, %d) bottom, done=%d\n", __func__, do_stmts, opt_state->done);
 			opt_dump(opt_state, ic);
 		}
 #endif
@@ -3075,6 +3075,6 @@ opt_dump(opt_state_t *opt_state, struct icode *ic)
 	else
 		status = plain_dump(ic, errbuf);
 	if (status == -1)
-		opt_error(opt_state, "opt_dump: icode_to_fcode failed: %s", errbuf);
+		opt_error(opt_state, "%s: icode_to_fcode failed: %s", __func__, errbuf);
 }
 #endif
