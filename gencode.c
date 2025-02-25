@@ -659,10 +659,10 @@ static struct block *gen_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_snap(compiler_state_t *, bpf_u_int32, bpf_u_int32);
 static struct block *gen_llc_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
-    int, bpf_u_int32, u_int, u_int);
+    int, u_int, u_int);
 #ifdef INET6
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
-    struct in6_addr *, int, bpf_u_int32, u_int, u_int);
+    struct in6_addr *, int, u_int, u_int);
 #endif
 static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_ehostop(compiler_state_t *, const u_char *, int);
@@ -4174,7 +4174,7 @@ gen_llc_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 static struct block *
 gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
-    int dir, bpf_u_int32 ll_proto, u_int src_off, u_int dst_off)
+    int dir, u_int src_off, u_int dst_off)
 {
 	struct block *b0, *b1;
 	u_int offset;
@@ -4190,15 +4190,15 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		break;
 
 	case Q_AND:
-		b0 = gen_hostop(cstate, addr, mask, Q_SRC, ll_proto, src_off, dst_off);
-		b1 = gen_hostop(cstate, addr, mask, Q_DST, ll_proto, src_off, dst_off);
+		b0 = gen_hostop(cstate, addr, mask, Q_SRC, src_off, dst_off);
+		b1 = gen_hostop(cstate, addr, mask, Q_DST, src_off, dst_off);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		b0 = gen_hostop(cstate, addr, mask, Q_SRC, ll_proto, src_off, dst_off);
-		b1 = gen_hostop(cstate, addr, mask, Q_DST, ll_proto, src_off, dst_off);
+		b0 = gen_hostop(cstate, addr, mask, Q_SRC, src_off, dst_off);
+		b1 = gen_hostop(cstate, addr, mask, Q_DST, src_off, dst_off);
 		gen_or(b0, b1);
 		return b1;
 
@@ -4230,17 +4230,13 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		abort();
 		/*NOTREACHED*/
 	}
-	b0 = gen_linktype(cstate, ll_proto);
-	b1 = gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
-	gen_and(b0, b1);
-	return b1;
+	return gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
 }
 
 #ifdef INET6
 static struct block *
 gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
-    struct in6_addr *mask, int dir, bpf_u_int32 ll_proto, u_int src_off,
-    u_int dst_off)
+    struct in6_addr *mask, int dir, u_int src_off, u_int dst_off)
 {
 	struct block *b0, *b1;
 	u_int offset;
@@ -4266,15 +4262,15 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		break;
 
 	case Q_AND:
-		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, ll_proto, src_off, dst_off);
-		b1 = gen_hostop6(cstate, addr, mask, Q_DST, ll_proto, src_off, dst_off);
+		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, src_off, dst_off);
+		b1 = gen_hostop6(cstate, addr, mask, Q_DST, src_off, dst_off);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, ll_proto, src_off, dst_off);
-		b1 = gen_hostop6(cstate, addr, mask, Q_DST, ll_proto, src_off, dst_off);
+		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, src_off, dst_off);
+		b1 = gen_hostop6(cstate, addr, mask, Q_DST, src_off, dst_off);
 		gen_or(b0, b1);
 		return b1;
 
@@ -4315,8 +4311,6 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
 	gen_and(b0, b1);
 	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
-	gen_and(b0, b1);
-	b0 = gen_linktype(cstate, ll_proto);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -5182,13 +5176,22 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		bpf_error(cstate, "link-layer modifier applied to %s", typestr);
 
 	case Q_IP:
-		return gen_hostop(cstate, addr, mask, dir, ETHERTYPE_IP, 12, 16);
+		b0 = gen_linktype(cstate, ETHERTYPE_IP);
+		b1 = gen_hostop(cstate, addr, mask, dir, 12, 16);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_RARP:
-		return gen_hostop(cstate, addr, mask, dir, ETHERTYPE_REVARP, 14, 24);
+		b0 = gen_linktype(cstate, ETHERTYPE_REVARP);
+		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_ARP:
-		return gen_hostop(cstate, addr, mask, dir, ETHERTYPE_ARP, 14, 24);
+		b0 = gen_linktype(cstate, ETHERTYPE_ARP);
+		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_SCTP:
 		bpf_error(cstate, "'sctp' modifier applied to %s", typestr);
@@ -5309,6 +5312,7 @@ static struct block *
 gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int proto, int dir, int type)
 {
+	struct block *b0, *b1;
 	const char *typestr;
 
 	if (type == Q_NET)
@@ -5319,7 +5323,11 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	switch (proto) {
 
 	case Q_DEFAULT:
-		return gen_host6(cstate, addr, mask, Q_IPV6, dir, type);
+	case Q_IPV6:
+		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
+		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_LINK:
 		bpf_error(cstate, "link-layer modifier applied to ip6 %s", typestr);
@@ -5368,9 +5376,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 
 	case Q_MOPDL:
 		bpf_error(cstate, "'mopdl' modifier applied to ip6 %s", typestr);
-
-	case Q_IPV6:
-		return gen_hostop6(cstate, addr, mask, dir, ETHERTYPE_IPV6, 8, 24);
 
 	case Q_ICMPV6:
 		bpf_error(cstate, "'icmp6' modifier applied to ip6 %s", typestr);
