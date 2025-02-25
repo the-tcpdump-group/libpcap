@@ -9872,11 +9872,24 @@ foreach my $blockname (sort keys %apply_blocks) {
 		next if defined $block->{$_};
 		die "Internal error: apply test block '$blockname' does not define key '$_'";
 	}
+	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
+		$block->{skip} : undef;
+	# Convert the array to filtertest output format.
+	my $multiline = join ("\n", @{$block->{results}}) . "\n";
 	foreach my $optunopt ('unopt', 'opt') {
 		my $label = apply_test_label ($blockname, $optunopt);
 		next if defined $only_one && $only_one ne $label;
-		# Convert the array to filtertest output format.
-		my $multiline = join ("\n", @{$block->{results}}) . "\n";
+
+		if (defined $skip_reason) {
+			push @ready_to_run, {
+				label => $label,
+				func => \&run_skip_test,
+				skip => $skip_reason,
+			};
+			$skip_reason = '';
+			next;
+		}
+
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_apply_test,
