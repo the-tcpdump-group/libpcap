@@ -2699,9 +2699,12 @@ AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 		want_dpdk=no
 	else
 		#
-		# Use DPDK API if present, otherwise don't
+		# User didn't explicitly request DPDK; don't give it
+		# to them without their consent, as the code is
+		# immensely hard to keep compiling for every random
+		# API change the DPDK folks make.
 		#
-		want_dpdk=ifpresent
+		want_dpdk=no
 	fi
 ])
 

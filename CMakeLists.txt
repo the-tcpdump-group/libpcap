@@ -513,7 +513,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 option(DISABLE_NETMAP "Disable netmap support" OFF)
-option(DISABLE_DPDK "Disable DPDK support" OFF)
+
+#
+# Require that DPDK support be explicitly enabled, as the code is
+# immensely hard to keep compiling for every random API change
+# the DPDK folks make.
+#
+set(DISABLE_DPDK ON)
 
 #
 # We don't support D-Bus sniffing on macOS; see
