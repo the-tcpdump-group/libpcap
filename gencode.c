@@ -8763,9 +8763,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 	 */
 	switch (cstate->linktype) {
 	case DLT_SLIP:
-		b0 = gen_relation_internal(cstate, BPF_JEQ,
-			  gen_load_internal(cstate, Q_LINK, gen_loadi_internal(cstate, 0), 1),
-			  gen_loadi_internal(cstate, 0),
+		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B,
 			  outbound ? SLIPDIR_OUT : SLIPDIR_IN);
 		break;
 

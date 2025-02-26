@@ -621,7 +621,7 @@ my %accept_blocks = (
 		DLT => 'SLIP',
 		snaplen => 100,
 		aliases => ['inbound'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) jeq      #0x0             jt 2	jf 3
 			(002) ret      #100
@@ -632,11 +632,11 @@ my %accept_blocks = (
 		DLT => 'SLIP',
 		snaplen => 100,
 		aliases => ['outbound'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
-			(001) jeq      #0x0             jt 2	jf 3
-			(002) ret      #0
-			(003) ret      #100
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #100
+			(003) ret      #0
 			',
 	}, # slip_outbound
 	ipnet_inbound => {
@@ -10045,7 +10045,7 @@ my %apply_blocks = (
 	slip_outbound_on_invalid => {
 		savefile => 'slip-bad-direction.pcap',
 		expr => 'outbound',
-		results => [262144],
+		results => [0],
 	},
 	slip_inbound_on_rx => {
 		savefile => 'slip-compressed_sl_print-oobr.pcap',
