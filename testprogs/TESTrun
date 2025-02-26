@@ -10037,6 +10037,36 @@ my %apply_blocks = (
 		expr => 'ip6 dst 10::1',
 		results => [0, 0, 0, 0, 0, 0, 65535, 0, 0, 0],
 	},
+	slip_inbound_on_invalid => {
+		savefile => 'slip-bad-direction.pcap',
+		expr => 'inbound',
+		results => [0],
+	},
+	slip_outbound_on_invalid => {
+		savefile => 'slip-bad-direction.pcap',
+		expr => 'outbound',
+		results => [262144],
+	},
+	slip_inbound_on_rx => {
+		savefile => 'slip-compressed_sl_print-oobr.pcap',
+		expr => 'inbound',
+		results => [46],
+	},
+	slip_outbound_on_rx => {
+		savefile => 'slip-compressed_sl_print-oobr.pcap',
+		expr => 'outbound',
+		results => [0],
+	},
+	slip_inbound_on_tx => {
+		savefile => 'slip-sliplink_print-oobr.pcap',
+		expr => 'inbound',
+		results => [0],
+	},
+	slip_outbound_on_tx => {
+		savefile => 'slip-sliplink_print-oobr.pcap',
+		expr => 'outbound',
+		results => [46],
+	},
 );
 
 # * DLT, expr, netmask and skip: same as in accept_blocks above
