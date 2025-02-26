@@ -378,6 +378,8 @@ struct block *gen_pf_action(compiler_state_t *, int);
 struct block *gen_p80211_type(compiler_state_t *, bpf_u_int32, bpf_u_int32);
 struct block *gen_p80211_fcdir(compiler_state_t *, bpf_u_int32);
 
+struct block *gen_offset_adjustment(compiler_state_t*, int);
+
 /*
  * Representation of a program as a tree of blocks, plus current mark.
  * A block is marked if only if its mark equals the current mark.

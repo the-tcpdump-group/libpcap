@@ -10712,3 +10712,11 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	}
 	return b1;
 }
+
+struct block *gen_offset_adjustment(compiler_state_t *cstate, int n) {
+    struct block *b = new_block(cstate, BPF_JMP|BPF_JA);
+    b->s.k = 0;  // Jump by 0 bytes, effectively a no-op
+    cstate->off_linkpl.constant_part += n;
+    cstate->off_linktype.constant_part += n;
+    return b;
+}

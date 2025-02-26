@@ -401,12 +401,14 @@ DIAG_OFF_BISON_BYACC
 %token	RADIO
 %token	FISU LSSU MSU HFISU HLSSU HMSU
 %token	SIO OPC DPC SLS HSIO HOPC HDPC HSLS
+%token  OFFSET OFFSET_PLUS OFFSET_MINUS
 %token	LEX_ERROR
 
 %type	<s> ID EID AID
 %type	<s> HID HID6
 %type	<h> NUM
 %type	<i> action reason type subtype type_subtype dir
+%type   <h> OFFSET_PLUS OFFSET_MINUS
 
 %left OR AND
 %nonassoc  '!'
@@ -689,6 +691,8 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| GENEVE		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, 0, 0))); }
 	| VXLAN pnum		{ CHECK_PTR_VAL(($$ = gen_vxlan(cstate, $2, 1))); }
 	| VXLAN			{ CHECK_PTR_VAL(($$ = gen_vxlan(cstate, 0, 0))); }
+	| OFFSET OFFSET_PLUS    { CHECK_PTR_VAL(($$ = gen_offset_adjustment(cstate, $2))); }
+    	| OFFSET OFFSET_MINUS   { CHECK_PTR_VAL(($$ = gen_offset_adjustment(cstate, -$2))); }
 	| pfvar			{ $$ = $1; }
 	| pqual p80211		{ $$ = $2; }
 	| pllc			{ $$ = $1; }
@@ -942,4 +946,5 @@ mtp3fieldvalue: NUM {
 mtp3listvalue: mtp3fieldvalue
 	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
 	;
+
 %%
