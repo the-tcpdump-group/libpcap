@@ -9222,6 +9222,13 @@ gen_vlan_no_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 	return b0;
 }
 
+/* Npcap defines these constants in a way that is compatible with Linux, as
+ * long as no assumptions are made about the value or ordering. */
+#if defined(NPCAP_AD_OFF) && !defined(SKF_AD_OFF)
+#define SKF_AD_OFF              NPCAP_AD_OFF
+#define SKF_AD_VLAN_TAG         NPCAP_AD_VLAN_TAG
+#define SKF_AD_VLAN_TAG_PRESENT NPCAP_AD_VLAN_TAG_PRESENT
+#endif
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
 /* add v to variable part of off */
 static void
@@ -9418,7 +9425,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		 *
 		 * This requires special treatment.
 		 */
-#if defined(SKF_AD_VLAN_TAG_PRESENT)
+#if defined(SKF_AD_VLAN_TAG_PRESENT) || defined(NPCAP_AD_VLAN_TAG_PRESENT)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
 		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&

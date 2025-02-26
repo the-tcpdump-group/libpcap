@@ -48,11 +48,18 @@
 #include "os-proto.h"
 #endif
 
-#ifdef SKF_AD_OFF
+#if defined(SKF_AD_OFF) || defined(NPCAP_AD_OFF)
 /*
- * Symbolic names for offsets that refer to the special Linux BPF locations.
+ * Symbolic names for special offsets that refer to platform-specific BPF extensions.
  */
-static const char *offsets[SKF_AD_MAX] = {
+#ifdef (NPCAP_AD_MAX)
+#define BPFEXT_AD_OFF NPCAP_AD_OFF
+#define BPFEXT_AD_MAX NPCAP_AD_MAX
+#else
+#define BPFEXT_AD_OFF SKF_AD_OFF
+#define BPFEXT_AD_MAX SKF_AD_MAX
+#endif
+static const char *offsets[BPFEXT_AD_MAX] = {
 #ifdef SKF_AD_PROTOCOL
 	[SKF_AD_PROTOCOL] = "proto",
 #endif
@@ -86,10 +93,14 @@ static const char *offsets[SKF_AD_MAX] = {
 #ifdef SKF_AD_ALU_XOR_X
 	[SKF_AD_ALU_XOR_X] = "xor_x",
 #endif
-#ifdef SKF_AD_VLAN_TAG
+#ifdef NPCAP_AD_VLAN_TAG
+	[NPCAP_AD_VLAN_TAG] = "vlan_tci",
+#elif defined(SKF_AD_VLAN_TAG)
 	[SKF_AD_VLAN_TAG] = "vlan_tci",
 #endif
-#ifdef SKF_AD_VLAN_TAG_PRESENT
+#ifdef NPCAP_AD_VLAN_TAG_PRESENT
+	[NPCAP_AD_VLAN_TAG_PRESENT] = "vlanp",
+#elif defined(SKF_AD_VLAN_TAG_PRESENT)
 	[SKF_AD_VLAN_TAG_PRESENT] = "vlanp",
 #endif
 #ifdef SKF_AD_PAY_OFFSET
@@ -107,16 +118,16 @@ static const char *offsets[SKF_AD_MAX] = {
 static void
 bpf_print_abs_load_operand(char *buf, size_t bufsize, const struct bpf_insn *p)
 {
-#ifdef SKF_AD_OFF
+#ifdef BPFEXT_AD_OFF
 	const char *sym;
 
 	/*
 	 * It's an absolute load.
 	 * Is the offset a special Linux offset that we know about?
 	 */
-	if (p->k >= (bpf_u_int32)SKF_AD_OFF &&
-	    p->k < (bpf_u_int32)(SKF_AD_OFF + SKF_AD_MAX) &&
-	    (sym = offsets[p->k - (bpf_u_int32)SKF_AD_OFF]) != NULL) {
+	if (p->k >= (bpf_u_int32)BPFEXT_AD_OFF &&
+	    p->k < (bpf_u_int32)(BPFEXT_AD_OFF + BPFEXT_AD_MAX) &&
+	    (sym = offsets[p->k - (bpf_u_int32)BPFEXT_AD_OFF]) != NULL) {
 		/*
 		 * Yes.  Print the offset symbolically.
 		 */
