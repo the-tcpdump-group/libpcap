@@ -63,7 +63,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Cross-reference some man pages better.
       Actualize README.dag and make it Markdown.
       Add a README.snf.md file.
-      pcap-filter(7): Clarify Ethernet, IPv4 and IPv6.
+      pcap-filter(7): Make a number of assorted improvements.
       pcap_lib_version(3PCAP): Add details and examples.
       Discuss Linux BPF extensions in the man pages.
       Note endianness in pcap_compile(3PCAP) and pcap_lookupnet(3PCAP).

@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "22 February 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "27 February 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -39,7 +39,8 @@ The \fIfilter expression\fP consists of one or more
 .IR primitives .
 Primitives usually consist of an
 .I id
-(name or number) preceded by one or more qualifiers.
+(a name, a number or something slightly more complex, such as a CIDR prefix)
+preceded by one or more qualifiers.
 There are three
 different kinds of qualifier:
 .IP \fItype\fP
@@ -48,10 +49,12 @@ qualifiers say what kind of thing the id name or number refers to.
 Possible types are
 .BR host ,
 .BR net ,
+.BR proto ,
 .B port
 and
 .BR portrange .
-E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008'.
+E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008',
+`\fBproto \fP 17'.
 If there is no type
 qualifier,
 .B host
@@ -87,10 +90,14 @@ qualifiers are only valid for IEEE 802.11 Wireless LAN link layers.
 .IP \fIproto\fP
 .I proto
 qualifiers restrict the match to a particular protocol.
+(This should not be confused with the
+.B proto
+type qualifier above.)
 Possible
 protocols are:
 .BR ether ,
 .BR fddi ,
+.BR link ,
 .BR tr ,
 .BR wlan ,
 .BR ip ,
@@ -98,19 +105,43 @@ protocols are:
 .BR arp ,
 .BR rarp ,
 .BR decnet ,
+.BR iso ,
 .BR sctp ,
 .B tcp
 and
 .BR udp .
 E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
+`\fBip proto\fP ospf', `\fBether proto\fP 0x88CC',
 `\fBudp portrange\fP 7000-7009', `\fBwlan addr2\fP 0:2:3:4:5:6'.
 If there is no
 .I proto
 qualifier, all protocols consistent with the type are assumed.
 E.g., `\fBsrc\fP foo' means `\fB(ip6 or ip or arp or rarp) src\fP foo',
-`\fBnet\fP bar' means `\fB(ip or arp or rarp) net\fP bar' and
+`\fBproto\fP tcp' means `\fB(ip6 or ip) proto\fP tcp'
+`\fBnet\fP bar' means `\fB(ip6 or ip or arp or rarp) net\fP bar' and
 `\fBport\fP 53' means `\fB(tcp or udp or sctp) port\fP 53'
 (note that these examples use invalid syntax to illustrate the principle).
+.LP
+In primitives that follow this pattern each qualifier kind may be present at
+most once, and if more than one kind is present, any
+.I proto
+qualifier must be the first qualifier and any
+.I type
+qualifier must be the last qualifier, for example, `\fBtcp dst port\fP 80'.
+Also not all combinations of these qualifier kinds are valid syntax.  Some
+make no sense in network protocols space, for example:
+.B "ether port"
+(Ethernet header has no ports),
+.B "tcp net"
+(TCP header does not have layer 3 fields),
+.B "dst proto"
+(in a protocol header the same protocol applies to both the source and the
+destination), and so on.  Some other combinations are not valid syntax because
+they are not implemented, even though hypothetically could make sense, for
+example:
+.BR "iso net" ,
+.B "aarp host"
+and so on.
 .LP
 [\fBfddi\fP is actually an alias for \fBether\fP; the parser treats them
 identically as meaning ``the data link level used on the specified
@@ -120,20 +151,30 @@ types, so you can filter on these FDDI fields just as with the
 analogous Ethernet fields.
 FDDI headers also contain other fields,
 but you cannot name them explicitly in a filter expression.
+Similarly, \fBtr\fP and \fBwlan\fP are aliases for \fBether\fP; the
+statements about FDDI headers also apply to Token Ring and 802.11 wireless
+LAN headers.]
 .LP
-Similarly, \fBtr\fP and \fBwlan\fP are aliases for \fBether\fP; the previous
-paragraph's statements about FDDI headers also apply to Token Ring
-and 802.11 wireless LAN headers.  For 802.11 headers, the destination
-address is the DA field and the source address is the SA field; the
-BSSID, RA, and TA fields aren't tested.]
+For IEEE 802.11 headers, the destination address is the DA field and the
+source address is the SA field.  For both ARP and RARP headers, the
+destination address is the TPA (Target Protocol Address) field and the
+source address is the SPA (Sender Protocol Address) field.
 .LP
 In addition to the above, there are some special `primitive' keywords
-that don't follow the pattern:
+that don't follow the pattern, for example:
 .BR gateway ,
 .BR broadcast ,
+.BR multicast ,
+.BR inbound ,
+.BR outbound ,
+.BR ifindex ,
+.BR llc ,
+.BR vlan ,
+.BR mpls ,
+.BR wlan ,
 .BR less ,
-.B greater
-and arithmetic expressions.
+.BR greater ,
+the index operation and arithmetic expressions.
 All of these are described below.
 .LP
 More complex filter expressions are built up by using the words
@@ -150,87 +191,215 @@ E.g.,
 `\fBtcp dst port\fP ftp \fBor tcp dst port\fP ftp-data \fBor tcp dst port\fP domain'.
 .LP
 Allowable primitives are:
-.IP "\fBdst host \fIhostnameaddr\fR"
-True if the IPv4/v6 destination field of the packet is \fIhostnameaddr\fP,
-which may be either an address or a name.
-.IP "\fBsrc host \fIhostnameaddr\fR"
-True if the IPv4/v6 source field of the packet is \fIhostnameaddr\fP.
-.IP "\fBhost \fIhostnameaddr\fP"
-True if either the IPv4/v6 source or destination of the packet is \fIhostnameaddr\fP.
+.IP "\fBhost \fIhostnameaddr\fR"
+True if the source or the destination ARP/IPv4/IPv6/RARP address of the packet is
+.IR hostnameaddr .
+May be qualified with a specific protocol
+.RB ( arp ,
+.BR ip ,
+.BR ip6 ,
+.BR rarp )
+and/or a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in the latter case the
+.B host
+keyword is optional.  For example,
+.in +.5i
+.nf
+\fBip src \fIhostnameaddr\fR
+.fi
+.in -.5i
+is equivalent to
+.in +.5i
+.nf
+\fBether proto \\\fRip \fBand src host \fIhostnameaddr\fR
+.fi
+.in -.5i
 .IP
-Any of the above host expressions can be prepended with the keywords,
-\fBip\fP, \fBarp\fP, \fBrarp\fP, or \fBip6\fP as in:
-.in +.5i
-.nf
-\fBip host \fIhostnameaddr\fR
-.fi
-.in -.5i
-which is equivalent to:
-.in +.5i
-.nf
-\fBether proto \\\fRip \fBand host \fIhostnameaddr\fR
-.fi
-.in -.5i
-If \fIhostnameaddr\fR is a name with multiple IPv4/v6 addresses, each address will
-be checked for a match.
-.IP "\fBether dst \fIethernameaddr\fP"
-True if the Ethernet destination address is \fIethernameaddr\fP.
+.I hostnameaddr
+may be either an address or a name.  If it is a name with multiple IPv4/IPv6 addresses,
+each address will be checked for a match.
+.IP "\fBether host \fIethernameaddr\fP"
+True if the source or the destination Ethernet/802.11/IPFC/FDDI/Token Ring
+address of the packet is
+.IR ethernameaddr .
+May be qualified with a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in which case the
+.B host
+keyword is optional.
+.IP
 \fIethernameaddr\fP
 may be either a name from /etc/ethers or a numerical MAC address of the
 form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
 "xxxx.xxxx.xxxx" or "xxxxxxxxxxxx",
 where each "x" is a hex digit (0-9, a-f, or A-F).
-.IP "\fBether src \fIethernameaddr\fP"
-True if the Ethernet source address is \fIethernameaddr\fP.
-.IP "\fBether host \fIethernameaddr\fP"
-True if either the Ethernet source or destination address is \fIethernameaddr\fP.
 .IP "\fBgateway\fP \fIhost\fP"
 True if the packet used \fIhost\fP as a gateway.
-I.e., the Ethernet
-source or destination address was \fIhost\fP but neither the IP source
-nor the IP destination was \fIhost\fP.
+I.e., the source or the destination Ethernet address was
+.I host
+but neither the source nor the destination ARP/IPv4/RARP address was
+.IR host .
+In this implementation this primitive is not available in IPv6-enabled
+configuration.  May be qualified with a specific protocol
+.RB ( arp ,
+.BR ip ,
+.BR rarp ).
+For example,
+.in +.5i
+.nf
+\fBip gateway \fIhost\fR
+.fi
+.in -.5i
+is equivalent to
+.in +.5i
+.nf
+\fBether host \fIethernameaddr \fBand not ip host \fIhostnameaddr\fR
+.fi
+.in -.5i
+which can be used with either names or numbers for
+.I hostnameaddr
+and
+.IR ethernameaddr .
+.IP
 \fIHost\fP must be a name and
 must be found both by the machine's host-name-to-IP-address resolution
 mechanisms (host name file, DNS, NIS, etc.) and by the machine's
 host-name-to-Ethernet-address resolution mechanism (/etc/ethers, etc.).
-(An equivalent expression is
-.in +.5i
-.nf
-\fBether host \fIethernameaddr \fBand not host \fIhostnameaddr\fR
-.fi
-.in -.5i
-which can be used with either names or numbers for \fIhostnameaddr / ethernameaddr\fP.)
-This syntax does not work in IPv6-enabled configuration at this moment.
-.IP "\fBdst net \fInetnameaddr\fR"
-True if the IPv4/v6 destination address of the packet has a network
-number of \fInetnameaddr\fP.
-\fINet\fP may be either a name from the networks database
+.IP "\fBnet \fInetnameaddr\fR"
+True if the source or the destination ARP/IPv4/IPv6/RARP address of the packet
+belongs to the specified network.  May be qualified with a specific protocol
+.RB ( arp ,
+.BR ip ,
+.BR ip6 ,
+.BR rarp )
+and/or a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in the latter case the
+.B net
+keyword is optional.
+.I netnameaddr
+may be either a name from the networks database
 (/etc/networks, etc.) or a network number.
+.IP
 An IPv4 network number can be written as a dotted quad (e.g., 192.168.1.0),
 dotted triple (e.g., 192.168.1), dotted pair (e.g, 172.16), or single
-number (e.g., 10); the netmask is 255.255.255.255 for a dotted quad
-(which means that it's really a host match), 255.255.255.0 for a dotted
-triple, 255.255.0.0 for a dotted pair, or 255.0.0.0 for a single number.
+number (e.g., 10); the netmask is 255.255.255.255 (/32) for a dotted quad
+(which means that it's really a host match), 255.255.255.0 (/24) for a dotted
+triple, 255.255.0.0 (/16) for a dotted pair, or 255.0.0.0 (/8) for a single number.
 An IPv6 network number must be written out fully; the netmask is
-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff, so IPv6 "network" matches are really always
-host matches, and a network match requires a netmask length.
-.IP "\fBsrc net \fInetnameaddr\fR"
-True if the IPv4/v6 source address of the packet has a network
-number of \fInetnameaddr\fP.
-.IP "\fBnet \fInetnameaddr\fR"
-True if either the IPv4/v6 source or destination address of the packet has a network
-number of \fInetnameaddr\fP.
+ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff (/128), so in this primitive IPv6
+"network" matches are really always host matches.  For an actual IPv6 network
+match see the `\fBnet \fInetaddr\fR/\fIlen\fR' primitive below.
 .IP "\fBnet \fInetaddr\fR \fBmask \fInetmask\fR"
-True if the IPv4 address matches \fInetaddr\fR with the specific \fInetmask\fR.
-May be qualified with \fBsrc\fR or \fBdst\fR.
-Note that this syntax is not valid for IPv6 \fInetaddr\fR.
+True if the source or the destination ARP/IPv4/RARP address of the packet
+belongs to \fInetaddr\fR with the specified \fInetmask\fR.  May be qualified
+with a specific protocol
+.RB ( arp ,
+.BR ip ,
+.BR rarp )
+and/or a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in the latter case the
+.B net
+keyword remains mandatory.  In this implementation this primitive does not
+support IPv6 networks.
+.IP
+Both
+.I netaddr
+and
+.I netmask
+use the IPv4 network number notation described above, except the "single
+number" form is not valid in this primitive.  For example,
+.in +.5i
+.nf
+\fBnet \fP192.168 \fBmask \fP255.255\fR
+.fi
+.in -.5i
+is equivalent to
+.in +.5i
+.nf
+\fBnet \fP192.168.0.0 \fBmask \fP255.255.0.0\fR
+.fi
+.in -.5i
+.IP
+The
+.I netmask
+can represent any 32-bit value, which is why the
+`\fBnet \fI\%netaddr\fR/\fIlen\fR' primitive below is usually a better fit for
+use cases that require the value to be strictly one of the 33 CIDR masks (from
+/0 to /32).
 .IP "\fBnet \fInetaddr\fR/\fIlen\fR"
-True if the IPv4/v6 address matches \fInetaddr\fR with a netmask \fIlen\fR
-bits wide.
-May be qualified with \fBsrc\fR or \fBdst\fR.
-.IP "\fBdst port \fIportnamenum\fR"
-True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
-destination port value of \fIportnamenum\fP.
+True if the source or the destination ARP/IPv4/IPv6/RARP address of the packet
+belongs to
+.I netaddr
+where the bit-length of the network mask equals
+.I len
+(in other words, the address belongs to the specified CIDR prefix).  May be
+qualified with a specific protocol
+.RB ( arp ,
+.BR ip ,
+.BR ip6 ,
+.BR rarp )
+and/or a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in the latter case the
+.B net
+keyword is optional.
+.IP
+For IPv4,
+.I len
+is an integer between 0 and 32 (both inclusive) and
+.I netaddr
+is the same as the above.  For IPv6,
+.I len
+is an integer between 0 and 128 (both inclusive) and
+.I netaddr
+is an IPv6 address.  For the latter zero compression notation
+.RB ( :: )
+is valid, but IPv4-mapped notation
+.RB ( x:x:x:x:x:x:d.d.d.d )
+is not.  For both IPv4 and IPv6 the maximum value of
+.I len
+is equivalent to a host match and the 0 value (which implies an all-zeroes
+value of
+.IR netaddr )
+matches any address.  In the latter case this primitive reduces to matching
+the specified (or implied) protocols only.
+.IP "\fBport \fIportnamenum\fR"
+True if the source or the destination TCP/UDP/SCTP port of an IPv4/IPv6 packet
+is
+.IR portnamenum .
+For IPv4 this also implies that the packet is the first fragment or is not
+fragmented.  May be qualified with a specific layer 4 protocol
+.RB ( tcp ,
+.BR udp ,
+.BR sctp )
+or a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in the latter case the
+.B port
+keyword remains mandatory.  Cannot be qualified with a specific layer 3
+protocol (IPv4/IPv6) in the same primitive, but can be trivially combined with
+other primitives to achieve the required effect, for example:
+.in +.5i
+.nf
+\fBip and tcp dst port \fP80\fR
+.fi
+.in -.5i
+.IP
 The \fIportnamenum\fP can be a number or a name used in /etc/services (see
 .BR services (5)).
 If a name is used, both the port
@@ -239,35 +408,21 @@ If a number or ambiguous name is used,
 only the port number is checked (e.g., `\fBdst port\fR 513' will print both
 tcp/login traffic and udp/who traffic, and `\fBport\fR domain' will print
 both tcp/domain and udp/domain traffic).
-.IP "\fBsrc port \fIportnamenum\fR"
-True if the packet has a source port value of \fIportnamenum\fP.
-.IP "\fBport \fIportnamenum\fR"
-True if either the source or destination port of the packet is \fIportnamenum\fP.
-.IP "\fBdst portrange \fIportnamenum1-portnamenum2\fR"
-True if the packet is IPv4/v6 TCP, UDP or SCTP and has a
-destination port value between \fIportnamenum1\fP and \fIportnamenum2\fP (both inclusive).
+.IP "\fBportrange \fIportnamenum1-portnamenum2\fR"
+This is a more generic form of the above: true if the port number in the
+packet is between
 .I portnamenum1
 and
 .I portnamenum2
-are interpreted in the same fashion as the
-.I portnamenum
-parameter for
-.BR port .
-.IP "\fBsrc portrange \fIportnamenum1-portnamenum2\fR"
-True if the packet has a source port value between \fIportnamenum1\fP and
-\fIportnamenum2\fP (both inclusive).
-.IP "\fBportrange \fIportnamenum1-portnamenum2\fR"
-True if either the source or destination port of the packet is between
-\fIportnamenum1\fP and \fIportnamenum2\fP (both inclusive).
-.IP
-Any of the above port or port range expressions can be prepended with
-the keywords, \fBtcp\fP, \fBudp\fP or \fBsctp\fP, as in:
-.in +.5i
-.nf
-\fBtcp src port \fIportnamenum\fR
-.fi
-.in -.5i
-which matches only TCP packets whose source port is \fIportnamenum\fP.
+(both inclusive), everything else holds the same meaning.
+In this predicate
+.I portnamenum1
+and
+.I portnamenum2
+can be specified in either order.  If the two values are equal, this primitive
+has the same effect as the
+.B port
+primitive above.
 .IP "\fBless \fIlength\fR"
 True if the packet has a length less than or equal to \fIlength\fP.
 This is equivalent to:
@@ -411,8 +566,11 @@ True if the packet is an IPv4 or IPv6 packet of protocol type
 \fIprotocol\fP.)  Note that this primitive chases the protocol
 header chain.
 .IP "\fBether broadcast\fR"
-True if the packet is an Ethernet broadcast packet.
-The \fBether\fP
+True if the destination Ethernet/802.11/IPFC/ARCnet/FDDI/Token Ring address of
+the packet is the broadcast address (e.g.
+.B FF:FF:FF:FF:FF:FF
+for Ethernet).  The
+.B ether
 keyword is optional.
 .IP "\fBip broadcast\fR"
 True if the packet is an IPv4 packet with the host part of the destination
@@ -449,10 +607,12 @@ address(es) explicitly, for example:
 .fi
 .in -.5i
 .IP "\fBether multicast\fR"
-True if the packet is an Ethernet multicast packet.
-The \fBether\fP
+True if the destination Ethernet/802.11/IPFC/ARCnet/FDDI/Token Ring address of
+the packet is a multicast address (e.g.
+.B "\%ether[0] & 1 != 0"
+for Ethernet).  The
+.B ether
 keyword is optional.
-This is shorthand for `\fBether[\fP0\fB] & \fP1\fB != \fP0'.
 .IP "\fBip multicast\fR"
 True if the packet is an IPv4 multicast packet.
 .IP "\fBip6 multicast\fR"
@@ -539,20 +699,28 @@ is DNA Dump/Load (MOP),
 is DNA Remote Console (MOP) and
 .B sca
 is System Communication Architecture (SCA).
-.IP "\fBdecnet src \fIdecnetaddr\fR"
-True if the DECnet source address is
-.IR decnetaddr ,
-which is an address of the form
-.B AREANUMBER.NODENUMBER
-(for example, "10.123"), where the area number can be between 0 and 63
-and the node number can be between 0 and 1023 and both numbers always use
-decimal base.
-.IP "\fBdecnet dst \fIdecnetaddr\fR"
-True if the DECnet destination address is
-.IR decnetaddr .
 .IP "\fBdecnet host \fIdecnetaddr\fR"
-True if either the DECnet source or destination address is
+True if the source or the destination DECnet address of the packet is
 .IR decnetaddr .
+May be qualified with a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in which case the
+.B host
+keyword is optional.
+.IP
+.I decnetaddr
+is an address of the form
+.BR AREANUMBER.NODENUMBER ,
+where the area number can be between 0 and 63 (both inclusive) and the node
+number can be between 0 and 1023 (both inclusive) and both numbers always use
+decimal base.  For example:
+.in +.5i
+.nf
+\fBdecnet src \fP10.123\fR
+.fi
+.in -.5i
 .IP \fBllc\fP
 True if the packet has an 802.2 LLC header.  This includes:
 .IP
@@ -1067,38 +1235,43 @@ and
 respectively, but only if the MTP2 link uses the extended sequence numbers
 encoding specified for high speed signalling links (HSL) in ITU-T
 Recommendation Q.703 Annex A.
-.IP "\fBlink src \fIarcnetaddr\fR"
+.IP "\fBlink host \fIarcnetaddr\fR"
 True, only for
 .B \%DLT_ARCNET
 or
 .BR \%DLT_ARCNET_LINUX ,
-if the ARCnet source address is
-.IR \%arcnetaddr ,
-which in this expression is a string of the form
+if the source or the destination ARCnet address of the packet is
+.IR \%arcnetaddr .
+May be qualified with a different direction
+.RB ( src ,
+.BR dst ,
+.BR "src and dst" ),
+in which case the
+.B host
+keyword is optional.
+.IP
+.I \%arcnetaddr
+is a string of the form
 .B $xx
 or
 .BR $x ,
-where "x" is a hexadecimal digit (for example,
-.BR $2b ).
-Note that this address syntax clashes with the parameter expansion syntax
-in POSIX-compatible shells and elsewhere, so depending on the use case the
-filter string may require the use of single quotes or a backslash.
-.IP "\fBlink dst \fIarcnetaddr\fR"
-Same as the above, but for the destination ARCnet address; also in ARCnet
-context
+where "x" is a hexadecimal digit.  For example:
+.in +.5i
+.nf
+\fBlink host \fP$2b\fR
+.fi
+.in -.5i
+.IP
+Also in ARCnet context
 .B \%broadcast
 and
 .B \%multicast
 are equivalent to
 .BR "\%link dst $0" .
-.IP "\fBlink host \fIarcnetaddr\fR"
-Abbreviation for:
-.in +.5i
-.nf
-\fBlink src \fIarcnetaddr \fBor link dst \fIarcnetaddr\fR
-.fi
-.in -.5i
-in the expressions above.
+.IP
+Note that this address syntax clashes with the parameter expansion syntax
+in POSIX-compatible shells and elsewhere, so depending on the use case the
+filter string may require the use of single quotes or a backslash.
 .IP  "\fIexpr1 relop expr2\fR"
 True if the relation holds.  \fIRelop\fR is one of
 .RB { > ,
@@ -1480,3 +1653,7 @@ is supplied for this behavior.  For example, to match IPv6 fragments:
 Arithmetic expression against transport layer headers, like \fBtcp[0]\fP,
 does not work against IPv6 packets.
 It only looks at IPv4 packets.
+.LP
+For ARP and RARP the current implementation assumes IPv4 over Ethernet and may
+incorrectly match packets that have a different combination of protocol and
+hardware.
