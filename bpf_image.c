@@ -52,7 +52,7 @@
 /*
  * Symbolic names for special offsets that refer to platform-specific BPF extensions.
  */
-#ifdef (NPCAP_AD_MAX)
+#ifdef NPCAP_AD_MAX
 #define BPFEXT_AD_OFF NPCAP_AD_OFF
 #define BPFEXT_AD_MAX NPCAP_AD_MAX
 #else
