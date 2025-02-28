@@ -82,7 +82,8 @@ enum {
  *
  * Thanks to Ani Sinha <ani@arista.com> for providing initial implementation
  */
-#if defined(SKF_AD_VLAN_TAG_PRESENT)
+/* Npcap does not provide auxiliary data */
+#if defined(SKF_AD_VLAN_TAG_PRESENT) && !defined(NPCAP_AD_VLAN_TAG_PRESENT)
 u_int
 pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct pcap_bpf_aux_data *aux_data)
@@ -142,7 +143,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 DIAG_OFF_DEFAULT_ONLY_SWITCH
 			switch (pc->k) {
 
-#if defined(SKF_AD_VLAN_TAG_PRESENT)
+#if defined(SKF_AD_VLAN_TAG_PRESENT) && !defined(NPCAP_AD_VLAN_TAG_PRESENT)
 			case SKF_AD_OFF + SKF_AD_VLAN_TAG:
 				if (!aux_data)
 					return 0;
