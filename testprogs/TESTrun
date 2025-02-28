@@ -10491,16 +10491,19 @@ my %reject_tests = (
 		errstr => 'protochain not supported',
 	},
 	protochain_invalid => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'protochain nosuchprotocol',
 		errstr => 'unknown ip proto',
 	},
 	ip_protochain_invalid => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'ip protochain nosuchprotocol',
 		errstr => 'unknown ip proto',
 	},
 	ip6_protochain_invalid => {
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'ip6 protochain nosuchprotocol',
 		errstr => 'unknown ip proto',
