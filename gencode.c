@@ -10713,10 +10713,51 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	return b1;
 }
 
-struct block *gen_offset_adjustment(compiler_state_t *cstate, int n) {
-    struct block *b = new_block(cstate, BPF_JMP|BPF_JA);
-    b->s.k = 0;  // Jump by 0 bytes, effectively a no-op
-    cstate->off_linkpl.constant_part += n;
-    cstate->off_linktype.constant_part += n;
-    return b;
+struct block*
+gen_offset(compiler_state_t *cstate, struct arth *a_arg)
+{
+	struct arth *a = a_arg;
+	struct block *b;
+	struct slist *s, *s1;
+	bpf_abs_offset *offsets[2];
+	int i;
+	offsets[0] = &(cstate->off_linkpl);
+	offsets[1] = &(cstate->off_linktype)};
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	s = NULL;
+	b = gen_true(cstate);
+	for (i = 0; i < 2; ++i) {
+		bpf_abs_offset *off = offsets[i];
+		// Make sure the offset being adjusted is variable
+		if (!off->is_variable)
+			off->is_variable = 1;
+		if (off->reg == -1)
+			off->reg = alloc_reg(cstate);
+
+		// Put the current offset into the accumulator
+		s = new_stmt(cstate, BPF_LD|BPF_MEM);
+		s->s.k = off->reg;
+
+		// Put the computed offset into the extra register
+		s1 = xfer_to_x(cstate, a);
+		sappend(s, s1);
+
+		// Add to the accumulator from the computed offset in the extra register
+		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
+		sappend(s, s1);
+
+		s1 = new_stmt(cstate, BPF_ST);
+		s1->s.k = off->reg;
+		sappend(s, s1);
+	}
+	sappend(a->s, s);
+	b->stmts = a->s;
+	return b;
 }
