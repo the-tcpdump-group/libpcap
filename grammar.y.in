@@ -389,7 +389,7 @@ DIAG_OFF_BISON_BYACC
 %token	LSH RSH
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
-%token	VLAN MPLS
+%token	VLAN MPLS VNTAG
 %token	PPPOED PPPOES GENEVE VXLAN
 %token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP
 %token  STP
@@ -682,6 +682,8 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| VLAN			{ CHECK_PTR_VAL(($$ = gen_vlan(cstate, 0, 0))); }
 	| MPLS pnum		{ CHECK_PTR_VAL(($$ = gen_mpls(cstate, $2, 1))); }
 	| MPLS			{ CHECK_PTR_VAL(($$ = gen_mpls(cstate, 0, 0))); }
+	| VNTAG VLAN pnum	{ CHECK_PTR_VAL(($$ = gen_vntag(cstate, $3, 1))); }
+	| VNTAG			{ CHECK_PTR_VAL(($$ = gen_vntag(cstate, 0, 0))); }
 	| PPPOED		{ CHECK_PTR_VAL(($$ = gen_pppoed(cstate))); }
 	| PPPOES pnum		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, $2, 1))); }
 	| PPPOES		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, 0, 0))); }

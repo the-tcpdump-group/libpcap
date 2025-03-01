@@ -10715,3 +10715,60 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	}
 	return b1;
 }
+
+/*
+ * support IEEE 802.1Q VLAN trunk over ethernet
+ */
+struct block *
+gen_vntag(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	/*
+	 * Check for a VNTag packet, and then change the offsets to point
+	 * to the type and data fields within the VLAN after the VNTag packet.
+	 * VNTag always requires VLAN afterwards, and that likely won't be
+	 * offloaded so handle it just like inline VLAN. Apply the same rules
+	 * and restrictions as VLAN, too.
+	 */
+	if (cstate->label_stack_depth > 0)
+		bpf_error(cstate, "no VNTag match after MPLS");
+
+	/* Assume any of the EtherTypes that can have VLAN can also have
+ 	 * VNTag as well. With VNTag not being accepted as 802.1Qbh but
+ 	 * being replaced in the standads by 802.1Qbr there's not much to go on
+ 	 * other than a few vendor proprietary implementations. So, assume that
+ 	 * because VNTag is tied to VLAN and they're the same in this regard.
+ 	 */
+	switch (cstate->linktype) {
+	case DLT_EN10MB:
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+		/* Make sure we have a VNTag frame, then jump over it. */
+		b0 = gen_linktype(cstate, ETHERTYPE_VNTAG);
+		cstate->off_linkpl.constant_part += 6;
+		cstate->off_linktype.constant_part += 6;
+		/* There should always be VLAN after VNTag. */
+		b1 = gen_vlan_no_bpf_extensions(cstate, vlan_num, has_vlan_tag);
+		gen_and(b0, b1);
+		break;
+	default:
+		bpf_error(cstate, "no VNTag support for %s",
+		      pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		/*NOTREACHED*/
+	}
+
+	cstate->vlan_stack_depth++;
+	return (b1);
+}

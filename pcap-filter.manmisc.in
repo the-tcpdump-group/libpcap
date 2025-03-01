@@ -1012,6 +1012,36 @@ filters packets with an outer label of 100000 and an inner label of
 .in -.5i
 filters packets to or from 192.9.200.1 with an inner label of 1024 and
 any outer label.
+.IP "\fBvntag \fI[vlan vlan_id]\fR"
+True if the packet is a VNTag packet EtherType 0x8926 followed by an
+IEEE 802.1Q VLAN packet. As with VLAN, this moves the link layer offsets forward
+past the VNTag and following VLAN headers.
+If the optional \fIvlan vlan_id\fR is specified, this term only matches if the
+packet has the specified \fIvlan_id\fR following the VNTag header. Without the
+\fIvlan_id\fR specified, there is an implicit check for any VLAN after VNTag.
+Note that the \fBvntag\fR keyword changes the decoding offsets for the remainder
+of the expression on the assumption that the packet is a VNTag + VLAN packet.
+Each use of that keyword increments the filter offsets by 10 (6 VNTag + 4 VLAN).
+.IP
+For example:
+.in +.5i
+.nf
+\fBvntag\fR and \fBip src host\fR 192.0.2.0
+.fi
+.in -.5i
+filters on VNTag followed by any VLAN followed by an IPv4 packet from 192.0.2.0
+.in +.5i
+.nf
+\fBvntag vlan\fR 100
+.fi
+.in -.5i
+filters on VNTag followed by VLAN 100
+.in +.5i
+.nf
+\fBvntag && vlan \fR300 \fB&& ip\fR
+.fi
+.in -.5i
+filters IPv4 protocol encapsulated in VLAN 300 encapsulated within any VLAN within VNTag.
 .IP \fBpppoed\fP
 True if the packet is a PPP-over-Ethernet Discovery packet (Ethernet
 type 0x8863).
