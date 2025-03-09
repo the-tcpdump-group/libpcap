@@ -2134,8 +2134,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * DSAP, as we do for other types <= ETHERMTU
 		 * (i.e., other SAP values)?
 		 */
-		b0 = gen_cmp_gt(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
-		gen_not(b0);
+		b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 		b1 = gen_cmp(cstate, OR_LLC, 0, BPF_H, (ll_proto << 8) | ll_proto);
 		gen_and(b0, b1);
 		return b1;
@@ -2188,8 +2187,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * Now we generate code to check for 802.3
 		 * frames in general.
 		 */
-		b0 = gen_cmp_gt(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
-		gen_not(b0);
+		b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 
 		/*
 		 * Now add the check for 802.3 frames before the
@@ -2217,11 +2215,10 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 		/*
 		 * Check for 802.2 encapsulation (EtherTalk phase 2?);
-		 * we check for an Ethernet type field less than
+		 * we check for an Ethernet type field less or equal than
 		 * 1500, which means it's an 802.3 length field.
 		 */
-		b0 = gen_cmp_gt(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
-		gen_not(b0);
+		b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 
 		/*
 		 * 802.2-encapsulated ETHERTYPE_ATALK packets are
@@ -2260,8 +2257,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 * a length field, <= ETHERMTU) and
 			 * then check the DSAP.
 			 */
-			b0 = gen_cmp_gt(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
-			gen_not(b0);
+			b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 			b1 = gen_cmp(cstate, OR_LINKTYPE, 2, BPF_B, ll_proto);
 			gen_and(b0, b1);
 			return b1;
@@ -3877,11 +3873,10 @@ gen_llc_internal(compiler_state_t *cstate)
 
 	case DLT_EN10MB:
 		/*
-		 * We check for an Ethernet type field less than
+		 * We check for an Ethernet type field less or equal than
 		 * 1500, which means it's an 802.3 length field.
 		 */
-		b0 = gen_cmp_gt(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
-		gen_not(b0);
+		b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 
 		/*
 		 * Now check for the purported DSAP and SSAP not being
