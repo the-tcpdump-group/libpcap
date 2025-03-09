@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "27 February 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "9 March 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -174,7 +174,7 @@ that don't follow the pattern, for example:
 .BR wlan ,
 .BR less ,
 .BR greater ,
-the index operation and arithmetic expressions.
+packet data accessors and arithmetic expressions.
 All of these are described below.
 .LP
 More complex filter expressions are built up by using the words
@@ -189,8 +189,7 @@ To save typing, identical qualifier lists can be omitted.
 E.g.,
 `\fBtcp dst port\fP ftp \fBor\fP ftp-data \fBor\fP domain' is exactly the same as
 `\fBtcp dst port\fP ftp \fBor tcp dst port\fP ftp-data \fBor tcp dst port\fP domain'.
-.LP
-Allowable primitives are:
+.SH PRIMITIVES
 .IP "\fBhost \fIhostnameaddr\fR"
 True if the source or the destination ARP/IPv4/IPv6/RARP address of the packet is
 .IR hostnameaddr .
@@ -283,7 +282,7 @@ and/or a different direction
 .BR "src and dst" ),
 in the latter case the
 .B net
-keyword is optional.
+keyword remains mandatory.
 .I netnameaddr
 may be either a name from the networks database
 (/etc/networks, etc.) or a network number.
@@ -1196,16 +1195,14 @@ means the same as
 .I val
 is an integer.
 .B sio
-stands for the Service Information Octet (SIO) field of the MTP2 MSU header;
-note that this keyword does not test whether the packet is an MSU packet.
+stands for the Service Information Octet (SIO) field of the MTP2 MSU header.
 .BR dpc ,
 .B opc
 and
 .B sls
 stand for the Destination Point Code (DPC), Originating Point Code (OPC) and
 Signalling Link Selection (SLS) fields respectively of the MTP3 standard
-routing label; note that these keywords do not test whether the packet is an
-MTP3 packet.
+routing label.
 .IP "\fImtpfield\fP \fIval\fR"
 Abbreviation for
 .in +.5i
@@ -1272,8 +1269,17 @@ are equivalent to
 Note that this address syntax clashes with the parameter expansion syntax
 in POSIX-compatible shells and elsewhere, so depending on the use case the
 filter string may require the use of single quotes or a backslash.
-.IP  "\fIexpr1 relop expr2\fR"
-True if the relation holds.  \fIRelop\fR is one of
+.SH ARITHMETIC EXPRESSIONS
+Arithmetic expressions are the operands of a relational operator in a
+relation of the following form:
+.in +.5i
+.nf
+\fIexpr1 relop expr2\fR
+.fi
+.in -.5i
+This evaluates to true if and only if the relation holds.
+.I relop
+(the relational operator) is one of
 .RB { > ,
 .BR < ,
 .BR >= ,
@@ -1286,7 +1292,8 @@ True if the relation holds.  \fIRelop\fR is one of
 means the same as
 .BR == ).
 Each of \fIexpr1\fR and \fIexpr2\fR is an arithmetic expression composed of
-integer constants (expressed in standard C syntax), the normal binary operators
+integer constants (expressed in standard C syntax), the common arithmetic and
+bitwise binary operations
 .RB { + ,
 .BR - ,
 .BR * ,
@@ -1297,10 +1304,11 @@ integer constants (expressed in standard C syntax), the normal binary operators
 .BR ^ ,
 .BR << ,
 .BR >> },
-a length operator, and special packet data
-accessors.  Note that all comparisons are unsigned, so that, for example,
-0x80000000 and 0xffffffff are > 0.
-.IP
+a length operator, and packet data accessors.  All arithmetic expressions
+regardless of the complexity and composition resolve to an integer value.
+Note that all comparisons are unsigned, so that, for example, both 0x80000000
+and 0xffffffff are > 0.
+.LP
 The
 .B %
 and
@@ -1312,11 +1320,11 @@ OpenBSD), if
 those operators are used, filtering will be done in user mode, which
 will increase the overhead of capturing packets and may cause more
 packets to be dropped.
-.IP
+.LP
 The length operator, indicated by the keyword \fBlen\fP, gives the
 length of the packet.
-.IP
-To access data inside the packet, use the following syntax:
+.SH PACKET DATA ACCESSORS
+To use the packet data in an arithmetic expression, use the following syntax:
 .in +.5i
 .nf
 \fIproto\fB [ \fIexpr\fB : \fIsize\fB ]\fR
@@ -1364,14 +1372,17 @@ indicates the protocol layer for the index operation.
 and
 .BR wlan
 all refer to the
-link layer. \fBradio\fR refers to the "radio header" added to some
+link layer, \fBradio\fR refers to the "radio header" added to some
 802.11 captures.)
 Note that \fBtcp\fR, \fBudp\fR and other upper-layer protocol types only
 apply to IPv4, not IPv6 (this will be fixed in the future).
 The byte offset, relative to the indicated protocol layer, is
-given by \fIexpr\fR.
+given by \fIexpr\fR, which can be an integer constant or any other valid
+arithmetic expression.
 \fISize\fR is optional and indicates the number of bytes in the
-field of interest; it can be either one, two, or four, and defaults to one.
+field of interest; it can be either one, two, or four, and defaults to one;
+also it must be one of these valid integer constants only and cannot be a
+more complex expression.
 
 For example, `\fBether[\fP0\fB] &\fP 1 \fB!=\fP 0' catches all multicast traffic.
 The expression `\fBip[\fP0\fB] &\fP 0xf \fB!=\fP 5'
@@ -1395,14 +1406,14 @@ index operations.
 For instance, \fBtcp[\fP0\fB]\fP always means the first
 byte of the TCP \fIheader\fP, and never means the first byte of an
 intervening fragment.
-.IP
+.SH NAMED VALUES
 Some offsets and field values may be expressed as names rather than
 as numeric values.
 The following protocol header field offsets are
 available: \fBicmptype\fP (ICMP type field), \fBicmp6type\fP (ICMPv6 type field),
 \fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMPv6 code field) and
 \fBtcpflags\fP (TCP flags field).
-.IP
+.LP
 The following ICMP type field values are available:
 .BR \%icmp-echoreply ,
 .BR \%icmp-unreach ,
@@ -1419,7 +1430,7 @@ The following ICMP type field values are available:
 .BR \%icmp-ireqreply ,
 .BR \%icmp-maskreq ,
 .BR \%icmp-maskreply .
-.IP
+.LP
 The following ICMPv6 type field values are available:
 .BR \%icmp6-destinationunreach ,
 .BR \%icmp6-packettoobig ,
@@ -1450,29 +1461,28 @@ The following ICMPv6 type field values are available:
 .BR \%icmp6-multicastrouteradvert ,
 .BR \%icmp6-multicastroutersolicit ,
 .BR \%icmp6-multicastrouterterm .
-.IP
+.LP
 The following TCP flags field values are available: \fBtcp-fin\fP,
 \fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
 \fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
 \fBtcp-cwr\fP.
+.SH COMPOUND EXPRESSIONS
+Primitives and relations may be combined using:
 .LP
-Primitives may be combined using:
-.IP
-A parenthesized group of primitives and operators.
-.IP
+Parentheses.
+.LP
 Negation (`\fB!\fP' or `\fBnot\fP').
-.IP
+.LP
 Concatenation (`\fB&&\fP' or `\fBand\fP').
-.IP
+.LP
 Alternation (`\fB||\fP' or `\fBor\fP').
 .LP
 Negation has the highest precedence.
 Alternation and concatenation have equal precedence and associate
 left to right.
 .LP
-If an identifier is given without a keyword, the most recent keyword
-is assumed.
-For example,
+For primitives, if an identifier is given without a keyword, the most recent
+keyword is assumed.  For example,
 .in +.5i
 .nf
 \fBnot host\fP vs \fBand\fR ace
@@ -1487,7 +1497,7 @@ is short for
 which should not be confused with
 .in +.5i
 .nf
-\fBnot (host \fPvs\fB or \fPace\fB)\fR
+\fBnot (host \fPvs\fB and host \fPace\fB)\fR
 .fi
 .in -.5i
 .SH EXAMPLES
@@ -1653,6 +1663,20 @@ is supplied for this behavior.  For example, to match IPv6 fragments:
 Arithmetic expression against transport layer headers, like \fBtcp[0]\fP,
 does not work against IPv6 packets.
 It only looks at IPv4 packets.
+.LP
+The
+.B sio
+and
+.B hsio
+keywords do not test whether the packet is an MSU packet.  The
+.BR dpc ,
+.BR opc ,
+.BR sls ,
+.BR hdpc ,
+.B hopc
+and
+.B hsls
+keywords do not test whether the packet is an MTP3 packet.
 .LP
 For ARP and RARP the current implementation assumes IPv4 over Ethernet and may
 incorrectly match packets that have a different combination of protocol and
