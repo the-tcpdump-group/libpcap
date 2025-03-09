@@ -487,7 +487,7 @@ pcap_nametoproto(const char *str)
 	 * We have Linux's reentrant getprotobyname_r().
 	 */
 	struct protoent result_buf;
-	char buf[1024];	/* arbitrary size */
+	char buf[1024];	// "...1024 bytes should be sufficient for most applications."
 	int err;
 
 	err = getprotobyname_r(str, &result_buf, buf, sizeof buf, &p);
@@ -517,7 +517,7 @@ pcap_nametoproto(const char *str)
 	 * We have Solaris's reentrant getprotobyname_r().
 	 */
 	struct protoent result_buf;
-	char buf[1024];	/* arbitrary size */
+	char buf[1024];	// "...must be at least 1024 bytes."
 
 	p = getprotobyname_r(str, &result_buf, buf, (int)sizeof buf);
   #elif defined(HAVE_AIX_GETPROTOBYNAME_R)
