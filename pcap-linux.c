@@ -4146,17 +4146,17 @@ static int pcap_handle_packet_mmap(
 
 			/*
 			 * Put multi-byte header fields in a byte-order
-			 *-independent format.
+			 * -independent format.
 			 */
 			if (canxl_hdr->flags & CANXL_XLF) {
 				/*
 				 * This is a CAN XL frame.
 				 *
 				 * DLT_CAN_SOCKETCAN is specified as having
-				 * the Priority ID/VCID field in big--
+				 * the Priority ID/VCID field in big-
 				 * endian byte order, and the payload length
 				 * and Acceptance Field in little-endian byte
-				 * order. but capturing on a CAN device
+				 * order, but capturing on a CAN device
 				 * provides them in host byte order.
 				 * Convert them to the appropriate byte
 				 * orders.
@@ -4171,7 +4171,7 @@ static int pcap_handle_packet_mmap(
 				 * headers, and treats that field as
 				 * being big-endian.
 				 *
-				 * The other fields are put in little-
+				 * The reason other fields are put in little-
 				 * endian byte order is that older
 				 * libpcap code, ignorant of CAN XL,
 				 * left those fields alone, and the
