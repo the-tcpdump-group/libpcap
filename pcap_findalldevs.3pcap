@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FINDALLDEVS 3PCAP "9 August 2024"
+.TH PCAP_FINDALLDEVS 3PCAP "11 March 2025"
 .SH NAME
 pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
 free that list
@@ -39,25 +39,46 @@ void pcap_freealldevs(pcap_if_t *alldevs);
 .fi
 .SH DESCRIPTION
 .BR pcap_findalldevs ()
-constructs a list of network devices that can be opened with
-.BR pcap_create (3PCAP)
+constructs a list of packet capture devices that potentially can be opened
+with
+.BR \%pcap_create (3PCAP)
 and
-.BR pcap_activate (3PCAP)
+.BR \%pcap_activate (3PCAP)
 or with
-.BR pcap_open_live (3PCAP).
-(Note that there may be network devices that cannot be opened by the
-process calling
-.BR pcap_findalldevs (),
-because, for example, that process does not have sufficient privileges
-to open them for capturing; if so, those devices will not appear on the
-list.)
+.BR \%pcap_open_live (3PCAP).
 .I alldevsp
 is a pointer to a
 .BR "pcap_if_t *" ;
 .I errbuf
 is a buffer large enough to hold at least
-.B PCAP_ERRBUF_SIZE
+.B \%PCAP_ERRBUF_SIZE
 chars.
+.PP
+The most common type of a capture device is a regular network interface, in
+which case the capture device name is the same as the OS network interface
+name, for example, "eth0".  All supported Linux systems, as well as recent
+versions of macOS and Solaris, implement a special "any" pseudo-interface,
+which captures packets from all regular network interfaces and does not
+support promiscuous mode.  If the "any" pseudo-interface is available, the
+list of capture devices includes it.  What is considered a regular network
+interface is an implementation detail of the OS (for example, on Linux this
+includes SocketCAN devices), so packets captured on the "any" pseudo-interface
+may represent more different network protocols than expected.  The list of
+capture devices, depending on how libpcap was compiled and how the host is
+configured, often also includes at least some of the following types:
+Bluetooth, DAG, D-Bus, Netlink, SNF and USB.
+.PP
+For most capture device types enumeration of devices does not require special
+privileges or a specific device state (i.e. being "up" or ready in any other
+sense).  However, capturing of packets on a device usually depends on some
+conditions, so
+.BR \%pcap_findalldevs ()
+may list devices that a subsequent call to
+.BR pcap_activate ()
+would reject -- then, for example, the error code
+.B \%PCAP_ERROR_PERM_DENIED
+would make the same sense as not being able to read from a particular file in
+a directory that allows to list the files.  This is the intended design.
 .PP
 If
 .BR pcap_findalldevs ()
@@ -80,6 +101,8 @@ for the last element of the list
 .TP
 .B name
 a pointer to a string giving a name for the device to pass to
+.BR pcap_create ()
+or
 .BR pcap_open_live ()
 .TP
 .B description

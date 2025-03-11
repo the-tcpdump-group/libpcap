@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_CREATE 3PCAP "6 September 2024"
+.TH PCAP_CREATE 3PCAP "11 March 2025"
 .SH NAME
 pcap_create \- create a live capture handle
 .SH SYNOPSIS
@@ -37,18 +37,14 @@ pcap_t *pcap_create(const char *source, char *errbuf);
 .fi
 .SH DESCRIPTION
 .BR pcap_create ()
-is used to create a packet capture handle to look
-at packets on the network.
+is used to create a packet capture handle to capture packets on a device
+(typically a network interface, see
+.BR \%pcap_findalldevs (3PCAP)
+for a more detailed explanation).
 .I source
-is a string that specifies the network device to open; on all supported Linux
-systems, as well as on recent versions of macOS and Solaris, a
-.I source
-argument of "any" or
+is a string that specifies the capture device to open, in this function
 .B NULL
-can be used to capture packets from all network interfaces.  The latter should
-not be confused with all available capture devices as seen by
-.BR pcap_findalldevs (3PCAP),
-which may also include D-Bus, USB etc.
+means the same as the string "any".
 .I errbuf
 is a buffer large enough to hold at least
 .B PCAP_ERRBUF_SIZE
