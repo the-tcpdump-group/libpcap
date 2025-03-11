@@ -10523,6 +10523,11 @@ my %reject_tests = (
 		expr => 'ip6 proto nosuchprotocol',
 		errstr => 'unknown ip proto',
 	},
+	proto_1_2_3_4 => {
+		DLT => 'RAW',
+		expr => 'proto 1.2.3.4',
+		errstr => '\'proto\' modifier applied to IP address',
+	},
 	# In the tests below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
 	# use a hostname that does not exist on the Internet, just in case.
@@ -10657,6 +10662,42 @@ my %reject_tests = (
 		DLT => 'EN10MB',
 		expr => "ip6 gateway eth-ipv4-ipv6.host123.libpcap.test",
 		errstr => 'illegal modifier of \'gateway\'',
+	},
+	gateway_1 => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway 1',
+		errstr => '\'gateway\' requires a name',
+	},
+	gateway_1_2 => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway 1.2',
+		errstr => '\'gateway\' requires a name',
+	},
+	gateway_1_2_3 => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway 1.2.3',
+		errstr => '\'gateway\' requires a name',
+	},
+	gateway_1_2_3_4 => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway 1.2.3.4',
+		errstr => '\'gateway\' requires a name',
+	},
+	gateway_mac48 => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway 11:22:33:44:55:66',
+		errstr => 'ethernet address used in non-ether expression',
+	},
+	gateway_arcnet => {
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => 'gateway $af',
+		errstr => 'aid supported only on ARCnet',
 	},
 );
 
