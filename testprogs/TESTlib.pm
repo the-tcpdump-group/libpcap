@@ -245,6 +245,15 @@ sub print_result {
 
 sub test_and_report {
 	my @tests = @_;
+
+	my %seen_labels;
+	foreach (@tests) {
+		my $label = $_->{label};
+		die "ERROR: Duplicate test label '$label'" if exists $seen_labels{$label};
+		$seen_labels{$label} = 1;
+	}
+	undef %seen_labels;
+
 	start_tests (@tests);
 	init_results_processing scalar @tests;
 	my $ret = 0;
