@@ -26,7 +26,7 @@ fi
 # is Y2038-safe.
 if [ "`uname -s`" = Linux ]; then
 	if [ "$maj" -gt 2 ] || { [ "$maj" -eq 2 ] && [ "$min" -ge 72 ]; }; then
-		GLIBC_VERSION=$(ldd --version|head -1|grep GLIBC|sed 's/.* //')
+		GLIBC_VERSION=`ldd --version|head -1|grep GLIBC|sed 's/.* //'`
 		maj_glibc=`echo "$GLIBC_VERSION" | cut -d. -f1`
 		min_glibc=`echo "$GLIBC_VERSION" | cut -d. -f2`
 		if [ "$maj_glibc" -gt 2 ] || { [ "$maj_glibc" -eq 2 ] && \
