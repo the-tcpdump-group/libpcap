@@ -10091,6 +10091,34 @@ my @accept_blocks = (
 			(020) ret      #0
 			',
 	}, # dst_portrange_degenerate
+	vntag_eth => {
+		DLT => 'EN10MB',
+		aliases => ['vntag'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8926          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # vntag_eth
+	vntag_eth_vlan_vntag_vlan => {
+		DLT => 'EN10MB',
+		aliases => ['vlan and vntag and vlan'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 11
+			(004) ldh      [16]
+			(005) jeq      #0x8926          jt 6	jf 11
+			(006) ldh      [22]
+			(007) jeq      #0x8100          jt 10	jf 8
+			(008) jeq      #0x88a8          jt 10	jf 9
+			(009) jeq      #0x9100          jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # vntag_eth
 );
 
 # In apply_blocks each test block always generates two tests: optimized and
@@ -10574,6 +10602,21 @@ my @apply_blocks = (
 		savefile => 'slip-sliplink_print-oobr.pcap',
 		expr => 'outbound',
 		results => [46],
+	},
+	vntag => {
+		savefile => 'vntag-novntag-mixed.pcap',
+		expr => 'vntag',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	vntag_vlan_ip => {
+		savefile => 'vntag-novntag-mixed.pcap',
+		expr => 'vntag and vlan 100 and ip',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	vntag_vlan_dest_ip => {
+		savefile => 'vntag-novntag-mixed.pcap',
+		expr => 'vntag and vlan 100 and ip dst 192.168.20.102',
+		results => [0, 262144, 0, 0, 262144, 262144, 0, 0, 262144, 262144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
 );
 
@@ -11318,6 +11361,11 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'gateway $af',
 		errstr => 'aid supported only on ARCnet',
+	},
+	vntag_not_supported => {
+		DLT => 'RAW',
+		expr => 'vntag',
+		errstr => 'no VNTag support',
 	},
 );
 
