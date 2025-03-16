@@ -5092,6 +5092,26 @@ my @accept_blocks = (
 			(013) ret      #0
 			',
 	}, # wlan_dir_fromds_PRISM_HEADER
+	{
+		name => 'wlan_dir_fromds_PPI',
+		DLT => 'PPI',
+		aliases => ['wlan dir fromds'],
+		opt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 12
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) tax
+			(008) ldb      [x + 1]
+			(009) and      #0x3
+			(010) jeq      #0x2             jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # wlan_dir_fromds_PPI
 
 	{
 		name => 'pppoed',
@@ -5501,6 +5521,7 @@ my @accept_blocks = (
 		DLT => 'PPI',
 		aliases => [
 			'llc',
+			'wlan type data',
 		],
 		opt => '
 			(000) ld       [4]
@@ -10860,6 +10881,18 @@ my @apply_blocks = (
 		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
 		expr => 'wlan dir fromds',
 		results => [0, 0, 0, 0, 0, 0, 0, 65536, 0, 65536, 0, 65536, 0, 65536, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_ack_PPI',
+		savefile => 'http_PPI.pcap',
+		expr => 'wlan subtype ack',
+		results => [0, 65535, 0, 65535, 0],
+	},
+	{
+		name => 'wlan_dir_nods_PPI',
+		savefile => 'http_PPI.pcap',
+		expr => 'wlan dir nods',
+		results => [0, 65535, 0, 65535, 0],
 	},
 );
 

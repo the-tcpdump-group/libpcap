@@ -9001,6 +9001,7 @@ gen_p80211_type(compiler_state_t *cstate, bpf_u_int32 type, bpf_u_int32 mask)
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
+	case DLT_PPI:
 		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, type, mask);
 		break;
 
@@ -9030,6 +9031,7 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
+	case DLT_PPI:
 		break;
 
 	default:
