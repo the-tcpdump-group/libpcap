@@ -710,7 +710,6 @@ static struct block *gen_mac_multicast(compiler_state_t *, int);
 static struct block *gen_len(compiler_state_t *, int, int);
 static struct block *gen_encap_ll_check(compiler_state_t *cstate);
 
-static struct block *gen_ppi_dlt_check(compiler_state_t *);
 static struct block *gen_atmfield_code_internal(compiler_state_t *, int,
     bpf_u_int32, int, int);
 static struct block *gen_atmtype_llc(compiler_state_t *);
@@ -1103,8 +1102,6 @@ merge(struct block *b0, struct block *b1)
 int
 finish_parse(compiler_state_t *cstate, struct block *p)
 {
-	struct block *ppi_dlt_check;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return -1
 	 * on an error.
@@ -1146,9 +1143,11 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	 * 802.11 code (*and* anything else for which PPI is used)
 	 * and choose between them early in the BPF program?
 	 */
-	ppi_dlt_check = gen_ppi_dlt_check(cstate);
-	if (ppi_dlt_check != NULL)
+	if (cstate->linktype == DLT_PPI) {
+		struct block *ppi_dlt_check = gen_cmp(cstate, OR_PACKET,
+			4, BPF_W, SWAPLONG(DLT_IEEE802_11));
 		gen_and(ppi_dlt_check, p);
+	}
 
 	backpatch(p, gen_retblk_internal(cstate, cstate->snaplen));
 	p->sense = !p->sense;
@@ -3165,32 +3164,6 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 		sappend(s, b->stmts);
 		b->stmts = s;
 	}
-}
-
-static struct block *
-gen_ppi_dlt_check(compiler_state_t *cstate)
-{
-	struct slist *s_load_dlt;
-	struct block *b;
-
-	if (cstate->linktype == DLT_PPI)
-	{
-		/* Create the statements that check for the DLT
-		 */
-		s_load_dlt = new_stmt(cstate, BPF_LD|BPF_W|BPF_ABS);
-		s_load_dlt->s.k = 4;
-
-		b = new_block(cstate, JMP(BPF_JEQ));
-
-		b->stmts = s_load_dlt;
-		b->s.k = SWAPLONG(DLT_IEEE802_11);
-	}
-	else
-	{
-		b = NULL;
-	}
-
-	return b;
 }
 
 /*
