@@ -2976,20 +2976,19 @@ my @accept_blocks = (
 			(009) add      #2
 			(010) st       M[0]
 			(011) ldb      [0]
-			(012) jset     #0x4             jt 25	jf 13
-			(013) ldb      [0]
-			(014) jset     #0x8             jt 15	jf 25
-			(015) ldx      M[0]
-			(016) ldh      [x + 6]
-			(017) jeq      #0x806           jt 18	jf 25
-			(018) ldx      M[0]
-			(019) ld       [x + 22]
-			(020) jeq      #0x1020304       jt 24	jf 21
-			(021) ldx      M[0]
-			(022) ld       [x + 32]
-			(023) jeq      #0x1020304       jt 24	jf 25
-			(024) ret      #262144
-			(025) ret      #0
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 24
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x806           jt 17	jf 24
+			(017) ldx      M[0]
+			(018) ld       [x + 22]
+			(019) jeq      #0x1020304       jt 23	jf 20
+			(020) ldx      M[0]
+			(021) ld       [x + 32]
+			(022) jeq      #0x1020304       jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
 			',
 	}, # arp_host_addr_ieee802_11
 	{
@@ -3009,20 +3008,19 @@ my @accept_blocks = (
 			(009) add      #2
 			(010) st       M[0]
 			(011) ldb      [0]
-			(012) jset     #0x4             jt 25	jf 13
-			(013) ldb      [0]
-			(014) jset     #0x8             jt 15	jf 25
-			(015) ldx      M[0]
-			(016) ldh      [x + 6]
-			(017) jeq      #0x8035          jt 18	jf 25
-			(018) ldx      M[0]
-			(019) ld       [x + 22]
-			(020) jeq      #0x1020304       jt 24	jf 21
-			(021) ldx      M[0]
-			(022) ld       [x + 32]
-			(023) jeq      #0x1020304       jt 24	jf 25
-			(024) ret      #262144
-			(025) ret      #0
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 24
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x8035          jt 17	jf 24
+			(017) ldx      M[0]
+			(018) ld       [x + 22]
+			(019) jeq      #0x1020304       jt 23	jf 20
+			(020) ldx      M[0]
+			(021) ld       [x + 32]
+			(022) jeq      #0x1020304       jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
 			',
 	}, # rarp_host_addr_ieee802_11
 	{
@@ -5426,14 +5424,14 @@ my @accept_blocks = (
 		DLT => 'IEEE802_11',
 		aliases => [
 			'llc',
+			'wlan type data',
 		],
 		unopt => '
 			(000) ldb      [0]
-			(001) jset     #0x4             jt 5	jf 2
-			(002) ldb      [0]
-			(003) jset     #0x8             jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) and      #0xc
+			(002) jeq      #0x8             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
 			',
 	}, # llc_IEEE802_11
 	{
@@ -5441,6 +5439,7 @@ my @accept_blocks = (
 		DLT => 'IEEE802_11_RADIO',
 		aliases => [
 			'llc',
+			'wlan type data',
 		],
 		opt => '
 			(000) ldb      [3]
@@ -5450,8 +5449,8 @@ my @accept_blocks = (
 			(004) or       x
 			(005) tax
 			(006) ldb      [x + 0]
-			(007) jset     #0x4             jt 10	jf 8
-			(008) jset     #0x8             jt 9	jf 10
+			(007) and      #0xc
+			(008) jeq      #0x8             jt 9	jf 10
 			(009) ret      #262144
 			(010) ret      #0
 			',
@@ -5461,13 +5460,14 @@ my @accept_blocks = (
 		DLT => 'IEEE802_11_RADIO_AVS',
 		aliases => [
 			'llc',
+			'wlan type data',
 		],
 		opt => '
 			(000) ld       [4]
 			(001) tax
 			(002) ldb      [x + 0]
-			(003) jset     #0x4             jt 6	jf 4
-			(004) jset     #0x8             jt 5	jf 6
+			(003) and      #0xc
+			(004) jeq      #0x8             jt 5	jf 6
 			(005) ret      #262144
 			(006) ret      #0
 			',
@@ -5477,8 +5477,9 @@ my @accept_blocks = (
 		DLT => 'PRISM_HEADER',
 		aliases => [
 			'llc',
+			'wlan type data',
 		],
-		opt => '
+		unopt => '
 			(000) ld       [0]
 			(001) and      #0xfffff000
 			(002) jeq      #0x80211000      jt 3	jf 5
@@ -5489,12 +5490,10 @@ my @accept_blocks = (
 			(007) tax
 			(008) ldx      M[0]
 			(009) ldb      [x + 0]
-			(010) jset     #0x4             jt 15	jf 11
-			(011) ldx      M[0]
-			(012) ldb      [x + 0]
-			(013) jset     #0x8             jt 14	jf 15
-			(014) ret      #262144
-			(015) ret      #0
+			(010) and      #0xc
+			(011) jeq      #0x8             jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # llc_PRISM_HEADER
 	{
@@ -5513,8 +5512,8 @@ my @accept_blocks = (
 			(006) or       x
 			(007) tax
 			(008) ldb      [x + 0]
-			(009) jset     #0x4             jt 12	jf 10
-			(010) jset     #0x8             jt 11	jf 12
+			(009) and      #0xc
+			(010) jeq      #0x8             jt 11	jf 12
 			(011) ret      #262144
 			(012) ret      #0
 			',
@@ -7460,7 +7459,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 103	jf 43
+			(042) jset     #0x4             jt 100	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7468,7 +7467,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 103
+			(050) jset     #0x8             jt 51	jf 100
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7476,52 +7475,49 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 103
+			(058) jset     #0x1             jt 59	jf 100
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 103
+			(060) jeq      #0x400140e       jt 61	jf 100
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 103
+			(062) jeq      #0xaa00          jt 63	jf 100
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x800           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 20]
-			(072) jeq      #0xa141e28       jt 103	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 24]
-			(075) jeq      #0xa141e28       jt 103	jf 76
-			(076) ldb      [0]
-			(077) jset     #0x4             jt 89	jf 78
-			(078) ldb      [0]
-			(079) jset     #0x8             jt 80	jf 89
-			(080) ldx      M[0]
-			(081) ldh      [x + 6]
-			(082) jeq      #0x806           jt 83	jf 89
-			(083) ldx      M[0]
-			(084) ld       [x + 22]
-			(085) jeq      #0xa141e28       jt 103	jf 86
-			(086) ldx      M[0]
-			(087) ld       [x + 32]
-			(088) jeq      #0xa141e28       jt 103	jf 89
-			(089) ldb      [0]
-			(090) jset     #0x4             jt 102	jf 91
-			(091) ldb      [0]
-			(092) jset     #0x8             jt 93	jf 102
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x800           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 20]
+			(071) jeq      #0xa141e28       jt 100	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 24]
+			(074) jeq      #0xa141e28       jt 100	jf 75
+			(075) ldb      [0]
+			(076) and      #0xc
+			(077) jeq      #0x8             jt 78	jf 87
+			(078) ldx      M[0]
+			(079) ldh      [x + 6]
+			(080) jeq      #0x806           jt 81	jf 87
+			(081) ldx      M[0]
+			(082) ld       [x + 22]
+			(083) jeq      #0xa141e28       jt 100	jf 84
+			(084) ldx      M[0]
+			(085) ld       [x + 32]
+			(086) jeq      #0xa141e28       jt 100	jf 87
+			(087) ldb      [0]
+			(088) and      #0xc
+			(089) jeq      #0x8             jt 90	jf 99
+			(090) ldx      M[0]
+			(091) ldh      [x + 6]
+			(092) jeq      #0x8035          jt 93	jf 99
 			(093) ldx      M[0]
-			(094) ldh      [x + 6]
-			(095) jeq      #0x8035          jt 96	jf 102
+			(094) ld       [x + 22]
+			(095) jeq      #0xa141e28       jt 100	jf 96
 			(096) ldx      M[0]
-			(097) ld       [x + 22]
-			(098) jeq      #0xa141e28       jt 103	jf 99
-			(099) ldx      M[0]
-			(100) ld       [x + 32]
-			(101) jeq      #0xa141e28       jt 103	jf 102
-			(102) ret      #262144
-			(103) ret      #0
+			(097) ld       [x + 32]
+			(098) jeq      #0xa141e28       jt 100	jf 99
+			(099) ret      #262144
+			(100) ret      #0
 			',
 	}, # gateway_name_ieee802_11
 	{
@@ -7577,7 +7573,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 103	jf 43
+			(042) jset     #0x4             jt 100	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7585,7 +7581,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 103
+			(050) jset     #0x8             jt 51	jf 100
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7593,52 +7589,49 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 103
+			(058) jset     #0x1             jt 59	jf 100
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 103
+			(060) jeq      #0x400140e       jt 61	jf 100
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 103
+			(062) jeq      #0xaa00          jt 63	jf 100
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x800           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 20]
-			(072) jeq      #0xa141e28       jt 103	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 24]
-			(075) jeq      #0xa141e28       jt 103	jf 76
-			(076) ldb      [0]
-			(077) jset     #0x4             jt 89	jf 78
-			(078) ldb      [0]
-			(079) jset     #0x8             jt 80	jf 89
-			(080) ldx      M[0]
-			(081) ldh      [x + 6]
-			(082) jeq      #0x806           jt 83	jf 89
-			(083) ldx      M[0]
-			(084) ld       [x + 22]
-			(085) jeq      #0xa141e28       jt 103	jf 86
-			(086) ldx      M[0]
-			(087) ld       [x + 32]
-			(088) jeq      #0xa141e28       jt 103	jf 89
-			(089) ldb      [0]
-			(090) jset     #0x4             jt 102	jf 91
-			(091) ldb      [0]
-			(092) jset     #0x8             jt 93	jf 102
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x800           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 20]
+			(071) jeq      #0xa141e28       jt 100	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 24]
+			(074) jeq      #0xa141e28       jt 100	jf 75
+			(075) ldb      [0]
+			(076) and      #0xc
+			(077) jeq      #0x8             jt 78	jf 87
+			(078) ldx      M[0]
+			(079) ldh      [x + 6]
+			(080) jeq      #0x806           jt 81	jf 87
+			(081) ldx      M[0]
+			(082) ld       [x + 22]
+			(083) jeq      #0xa141e28       jt 100	jf 84
+			(084) ldx      M[0]
+			(085) ld       [x + 32]
+			(086) jeq      #0xa141e28       jt 100	jf 87
+			(087) ldb      [0]
+			(088) and      #0xc
+			(089) jeq      #0x8             jt 90	jf 99
+			(090) ldx      M[0]
+			(091) ldh      [x + 6]
+			(092) jeq      #0x8035          jt 93	jf 99
 			(093) ldx      M[0]
-			(094) ldh      [x + 6]
-			(095) jeq      #0x8035          jt 96	jf 102
+			(094) ld       [x + 22]
+			(095) jeq      #0xa141e28       jt 100	jf 96
 			(096) ldx      M[0]
-			(097) ld       [x + 22]
-			(098) jeq      #0xa141e28       jt 103	jf 99
-			(099) ldx      M[0]
-			(100) ld       [x + 32]
-			(101) jeq      #0xa141e28       jt 103	jf 102
-			(102) ret      #262144
-			(103) ret      #0
+			(097) ld       [x + 32]
+			(098) jeq      #0xa141e28       jt 100	jf 99
+			(099) ret      #262144
+			(100) ret      #0
 			',
 	}, # gateway_NAME_ieee802_11
 	{
@@ -7694,7 +7687,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7702,7 +7695,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7710,26 +7703,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x800           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 20]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 24]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x800           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 20]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 24]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # ip_gateway_name_ieee802_11
 	{
@@ -7785,7 +7777,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7793,7 +7785,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7801,26 +7793,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x800           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 20]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 24]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x800           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 20]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 24]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # ip_gateway_NAME_ieee802_11
 	{
@@ -7876,7 +7867,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7884,7 +7875,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7892,26 +7883,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x806           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 22]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 32]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x806           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 22]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 32]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # arp_gateway_name_ieee802_11
 	{
@@ -7967,7 +7957,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -7975,7 +7965,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -7983,26 +7973,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x806           jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 22]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 32]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x806           jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 22]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 32]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # arp_gateway_NAME_ieee802_11
 	{
@@ -8058,7 +8047,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -8066,7 +8055,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -8074,26 +8063,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x8035          jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 22]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 32]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x8035          jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 22]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 32]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # rarp_gateway_name_ieee802_11
 	{
@@ -8149,7 +8137,7 @@ my @accept_blocks = (
 			(039) ldh      [24]
 			(040) jeq      #0xaa00          jt 63	jf 41
 			(041) ldb      [0]
-			(042) jset     #0x4             jt 77	jf 43
+			(042) jset     #0x4             jt 76	jf 43
 			(043) ldb      [0]
 			(044) jset     #0x8             jt 49	jf 45
 			(045) ld       [6]
@@ -8157,7 +8145,7 @@ my @accept_blocks = (
 			(047) ldh      [4]
 			(048) jeq      #0xaa00          jt 63	jf 49
 			(049) ldb      [0]
-			(050) jset     #0x8             jt 51	jf 77
+			(050) jset     #0x8             jt 51	jf 76
 			(051) ldb      [1]
 			(052) jset     #0x1             jt 57	jf 53
 			(053) ld       [6]
@@ -8165,26 +8153,25 @@ my @accept_blocks = (
 			(055) ldh      [4]
 			(056) jeq      #0xaa00          jt 63	jf 57
 			(057) ldb      [1]
-			(058) jset     #0x1             jt 59	jf 77
+			(058) jset     #0x1             jt 59	jf 76
 			(059) ld       [18]
-			(060) jeq      #0x400140e       jt 61	jf 77
+			(060) jeq      #0x400140e       jt 61	jf 76
 			(061) ldh      [16]
-			(062) jeq      #0xaa00          jt 63	jf 77
+			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
-			(064) jset     #0x4             jt 76	jf 65
-			(065) ldb      [0]
-			(066) jset     #0x8             jt 67	jf 76
-			(067) ldx      M[0]
-			(068) ldh      [x + 6]
-			(069) jeq      #0x8035          jt 70	jf 76
-			(070) ldx      M[0]
-			(071) ld       [x + 22]
-			(072) jeq      #0xa141e28       jt 77	jf 73
-			(073) ldx      M[0]
-			(074) ld       [x + 32]
-			(075) jeq      #0xa141e28       jt 77	jf 76
-			(076) ret      #262144
-			(077) ret      #0
+			(064) and      #0xc
+			(065) jeq      #0x8             jt 66	jf 75
+			(066) ldx      M[0]
+			(067) ldh      [x + 6]
+			(068) jeq      #0x8035          jt 69	jf 75
+			(069) ldx      M[0]
+			(070) ld       [x + 22]
+			(071) jeq      #0xa141e28       jt 76	jf 72
+			(072) ldx      M[0]
+			(073) ld       [x + 32]
+			(074) jeq      #0xa141e28       jt 76	jf 75
+			(075) ret      #262144
+			(076) ret      #0
 			',
 	}, # rarp_gateway_NAME_ieee802_11
 	{

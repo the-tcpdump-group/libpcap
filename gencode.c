@@ -708,7 +708,6 @@ static struct slist *xfer_to_x(compiler_state_t *, struct arth *);
 static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
 static struct block *gen_len(compiler_state_t *, int, int);
-static struct block *gen_check_802_11_data_frame(compiler_state_t *);
 static struct block *gen_encap_ll_check(compiler_state_t *cstate);
 
 static struct block *gen_ppi_dlt_check(compiler_state_t *);
@@ -3387,7 +3386,9 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*
 		 * Check that we have a data frame.
 		 */
-		b0 = gen_check_802_11_data_frame(cstate);
+		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B,
+			IEEE80211_FC0_TYPE_DATA,
+			IEEE80211_FC0_TYPE_MASK);
 
 		/*
 		 * Now check for the specified link-layer type.
@@ -3925,8 +3926,9 @@ gen_llc_internal(compiler_state_t *cstate)
 		/*
 		 * Check that we have a data frame.
 		 */
-		b0 = gen_check_802_11_data_frame(cstate);
-		return b0;
+		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B,
+			IEEE80211_FC0_TYPE_DATA,
+			IEEE80211_FC0_TYPE_MASK);
 
 	default:
 		bpf_error(cstate, "'llc' not supported for %s",
@@ -6571,32 +6573,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	return b;
 }
 #endif /* !defined(NO_PROTOCHAIN) */
-
-static struct block *
-gen_check_802_11_data_frame(compiler_state_t *cstate)
-{
-	struct slist *s;
-	struct block *b0, *b1;
-
-	/*
-	 * A data frame has the 0x08 bit (b3) in the frame control field set
-	 * and the 0x04 bit (b2) clear.
-	 */
-	s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-	b0 = new_block(cstate, JMP(BPF_JSET));
-	b0->s.k = 0x08;
-	b0->stmts = s;
-
-	s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-	b1 = new_block(cstate, JMP(BPF_JSET));
-	b1->s.k = 0x04;
-	b1->stmts = s;
-	gen_not(b1);
-
-	gen_and(b1, b0);
-
-	return b0;
-}
 
 /*
  * Generate code that checks whether the packet is a packet for protocol
