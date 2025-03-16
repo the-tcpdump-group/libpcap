@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 : "${AUTORECONF:=autoreconf}"
+: "${BUILD_YEAR2038:=no}"
 
 AUTORECONFVERSION=`$AUTORECONF --version 2>&1 | grep "^autoreconf" | sed 's/.*) *//'`
 
@@ -26,7 +27,7 @@ echo "$AUTORECONF identification: $AUTORECONFVERSION"
 # On Linux, if Autoconf version >= 2.72 and GNU C Library version >= 2.34,
 # s/AC_SYS_LARGEFILE/AC_SYS_YEAR2038_RECOMMENDED/ to ensure time_t
 # is Y2038-safe.
-if [ "`uname -s`" = Linux ]; then
+if [ "$BUILD_YEAR2038" = yes ] && [ "`uname -s`" = Linux ]; then
 	if [ "$maj" -gt 2 ] || { [ "$maj" -eq 2 ] && [ "$min" -ge 72 ]; }; then
 		GLIBC_VERSION=`ldd --version|head -1|grep GLIBC|sed 's/.* //'`
 		maj_glibc=`echo "$GLIBC_VERSION" | cut -d. -f1`
