@@ -5037,6 +5037,63 @@ my @accept_blocks = (
 			(004) ret      #0
 			',
 	}, # wlan_dir_dstods
+	# For the other DLTs that "wlan dir" supports as well test only one
+	# alias and only one direction -- the only difference is the
+	# DLT-specific preamble, and the many equivalent ways to spell what
+	# follows have already been tested above.
+	{
+		name => 'wlan_dir_fromds_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['wlan dir fromds'],
+		opt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) tax
+			(006) ldb      [x + 1]
+			(007) and      #0x3
+			(008) jeq      #0x2             jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # wlan_dir_fromds_IEEE802_11_RADIO
+	{
+		name => 'wlan_dir_fromds_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['wlan dir fromds'],
+		opt => '
+			(000) ld       [4]
+			(001) tax
+			(002) ldb      [x + 1]
+			(003) and      #0x3
+			(004) jeq      #0x2             jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # wlan_dir_fromds_IEEE802_11_RADIO_AVS
+	{
+		name => 'wlan_dir_fromds_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['wlan dir fromds'],
+		unopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[0]
+			(007) tax
+			(008) ldx      M[0]
+			(009) ldb      [x + 1]
+			(010) and      #0x3
+			(011) jeq      #0x2             jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # wlan_dir_fromds_PRISM_HEADER
 
 	{
 		name => 'pppoed',
@@ -5078,7 +5135,7 @@ my @accept_blocks = (
 	}, # pppoes_unary
 
 	{
-		name => 'llc',
+		name => 'llc_nullary',
 		snaplen => 200,
 		DLT => 'EN10MB',
 		aliases => ['llc'],
@@ -5328,6 +5385,140 @@ my @accept_blocks = (
 			(008) ret      #0
 			',
 	}, # llc_frmr
+	{
+		name => 'llc_SUNATM',
+		DLT => 'SUNATM',
+		aliases => ['llc'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x2             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # llc_SUNATM
+	{
+		name => 'llc_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['llc'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # llc_IEEE802
+	{
+		name => 'llc_FDDI',
+		DLT => 'FDDI',
+		aliases => ['llc'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # llc_FDDI
+	{
+		name => 'llc_ATM_RFC1483',
+		DLT => 'ATM_RFC1483',
+		aliases => ['llc'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # llc_ATM_RFC1483
+	{
+		name => 'llc_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'llc',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) jset     #0x4             jt 5	jf 2
+			(002) ldb      [0]
+			(003) jset     #0x8             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # llc_IEEE802_11
+	{
+		name => 'llc_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => [
+			'llc',
+		],
+		opt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) tax
+			(006) ldb      [x + 0]
+			(007) jset     #0x4             jt 10	jf 8
+			(008) jset     #0x8             jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # llc_IEEE802_11_RADIO
+	{
+		name => 'llc_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => [
+			'llc',
+		],
+		opt => '
+			(000) ld       [4]
+			(001) tax
+			(002) ldb      [x + 0]
+			(003) jset     #0x4             jt 6	jf 4
+			(004) jset     #0x8             jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # llc_IEEE802_11_RADIO_AVS
+	{
+		name => 'llc_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => [
+			'llc',
+		],
+		opt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[0]
+			(007) tax
+			(008) ldx      M[0]
+			(009) ldb      [x + 0]
+			(010) jset     #0x4             jt 15	jf 11
+			(011) ldx      M[0]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # llc_PRISM_HEADER
+	{
+		name => 'llc_PPI',
+		DLT => 'PPI',
+		aliases => [
+			'llc',
+		],
+		opt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 12
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) tax
+			(008) ldb      [x + 0]
+			(009) jset     #0x4             jt 12	jf 10
+			(010) jset     #0x8             jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # llc_PPI
 
 	{
 		name => 'decnet_host',
@@ -10575,6 +10766,114 @@ my @apply_blocks = (
 		expr => 'outbound',
 		results => [46],
 	},
+	{
+		name => 'wlan_type_mgt',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan type mgt',
+		results => [65536, 65536, 65536, 65536, 65536, 65536, 65536, 0, 0, 0, 0, 0, 0, 0, 0, 65536],
+	},
+	{
+		name => 'wlan_subtype_beacon',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype beacon',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 2344, 2344],
+	},
+	{
+		name => 'wlan_subtype_probe_req',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype probe-req',
+		results => [2344, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_probe_resp',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype probe-resp',
+		results => [0, 2344, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_auth',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan subtype auth',
+		results => [0, 0, 0, 65536, 65536, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_deauth',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype deauth',
+		results => [0, 0, 0, 0, 0, 0, 2344, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_assoc_req',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan subtype assoc-req',
+		results => [0, 0, 0, 0, 0, 65536, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_assoc_resp',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan subtype assoc-resp',
+		results => [0, 0, 0, 0, 0, 0, 65536, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_disassoc',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan subtype disassoc',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65536],
+	},
+	{
+		name => 'wlan_type_ctl',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan type ctl',
+		results => [0, 0, 0, 2344, 0, 2344, 0, 2344, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_ack',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype ack',
+		results => [0, 0, 0, 2344, 0, 2344, 0, 2344, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_cts',
+		savefile => 'wpa-Induction.pcap',
+		expr => 'wlan subtype cts',
+		results => [0, 0, 0, 0, 65535, 0, 0, 65535, 0, 0],
+	},
+	{
+		name => 'wlan_type_data',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan type data',
+		results => [0, 0, 2344, 0, 2344, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_qos_data',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan subtype qos-data',
+		results => [0, 0, 0, 0, 0, 0, 0, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 0],
+	},
+	{
+		name => 'wlan_subtype_data',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype data',
+		results => [0, 0, 2344, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_subtype_null',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan subtype null',
+		results => [0, 0, 0, 0, 2344, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_dir_tods_IEEE802_11',
+		savefile => 'Network_Join_Nokia_Mobile.pcap',
+		expr => 'wlan dir tods',
+		results => [0, 0, 2344, 0, 2344, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'wlan_dir_fromds_IEEE802_11_RADIO',
+		savefile => 'wpa2linkuppassphraseiswireshark.pcap',
+		expr => 'wlan dir fromds',
+		results => [0, 0, 0, 0, 0, 0, 0, 65536, 0, 65536, 0, 65536, 0, 65536, 0, 0],
+	},
 );
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
@@ -10862,6 +11161,13 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
 		errstr => 'not supported',
+	},
+	{
+		name => 'ip6_net_bits',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'RAW',
+		expr => 'net fe80:1234:5678::/32',
+		errstr => 'non-network bits set in',
 	},
 	{
 		name => 'tcp_port',
@@ -11318,6 +11624,30 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'gateway $af',
 		errstr => 'aid supported only on ARCnet',
+	},
+	{
+		name => 'index_size_neg',
+		DLT => 'RAW',
+		expr => 'link[0:-1] != 0',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'index_size_0',
+		DLT => 'RAW',
+		expr => 'link[0:0] != 0',
+		errstr => 'data size must be 1, 2, or 4',
+	},
+	{
+		name => 'index_size_3',
+		DLT => 'RAW',
+		expr => 'link[0:3] != 0',
+		errstr => 'data size must be 1, 2, or 4',
+	},
+	{
+		name => 'index_size_5',
+		DLT => 'RAW',
+		expr => 'link[0:5] != 0',
+		errstr => 'data size must be 1, 2, or 4',
 	},
 );
 
