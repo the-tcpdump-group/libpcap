@@ -222,7 +222,7 @@
 #cmakedefine NO_PROTOCHAIN 1
 
 /* Define to the address where bug reports for this package should be sent. */
-#cmakedefine PACKAGE_BUGREPORT 1
+#cmakedefine PACKAGE_BUGREPORT "@PACKAGE_BUGREPORT@"
 
 /* Define to the DLL-preferred version string of this package. */
 #cmakedefine PACKAGE_VERSION_DLL @PACKAGE_VERSION_DLL@
@@ -234,10 +234,10 @@
 #cmakedefine PACKAGE_STRING "@PACKAGE_STRING@"
 
 /* Define to the one symbol short name of this package. */
-#cmakedefine PACKAGE_TARNAME 1
+#cmakedefine PACKAGE_TARNAME "@PACKAGE_TARNAME@"
 
 /* Define to the home page for this package. */
-#cmakedefine PACKAGE_URL 1
+#cmakedefine PACKAGE_URL "@PACKAGE_URL@"
 
 /* Define to the version of this package. */
 #cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"

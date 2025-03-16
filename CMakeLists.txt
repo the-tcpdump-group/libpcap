@@ -568,6 +568,7 @@ option(YYDEBUG "Build parser debugging code" OFF)
 
 ###################################################################
 #   Versioning
+# (and other variables to keep config.h consistent with Autoconf)
 ###################################################################
 
 # Get, parse, format and set pcap's version string from [pcap_root]/VERSION
@@ -594,8 +595,11 @@ if(WIN32)
     set(PACKAGE_VERSION_DLL ${PACKAGE_VERSION_PREDLL},0)
 endif(WIN32)
 
+set(PACKAGE_BUGREPORT "https://github.com/the-tcpdump-group/libpcap/issues")
 set(PACKAGE_NAME "${LIBRARY_NAME}")
 set(PACKAGE_STRING "${LIBRARY_NAME} ${PACKAGE_VERSION}")
+set(PACKAGE_TARNAME "lib${PACKAGE_NAME}")
+set(PACKAGE_URL "https://www.tcpdump.org/")
 
 ######################################
 # Project settings

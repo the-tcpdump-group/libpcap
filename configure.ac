@@ -16,7 +16,12 @@ dnl
 
 AC_PREREQ([2.69])
 
-AC_INIT([pcap],[m4_esyscmd_s(cat VERSION)],[https://github.com/the-tcpdump-group/libpcap/issues])
+AC_INIT(
+	[pcap],
+	[m4_esyscmd_s(cat VERSION)],
+	[https://github.com/the-tcpdump-group/libpcap/issues],
+	[libpcap],
+	[https://www.tcpdump.org/])
 AC_CONFIG_SRCDIR(pcap.c)
 AC_SUBST(PACKAGE_NAME)
 
