@@ -5642,7 +5642,7 @@ static struct dsa_proto {
 
 	/*
 	 * Type 2, with Ethertype 0xe001; that's probably
-	 * self-assigned, so this really should ahve its
+	 * self-assigned, so this really should have its
 	 * own LINKTYPE_/DLT_ value.
 	 *
 	 * See
@@ -5653,7 +5653,7 @@ static struct dsa_proto {
 
 	/*
 	 * Type 2, with Ethertype 0x8100 or the self-assigned
-	 * 0xdadb, so this really should ahve its own
+	 * 0xdadb, so this really should have its own
 	 * LINKTYPE_/DLT_ value; that would also allow the
 	 * VID of the tag to be dissected as per
 	 *
