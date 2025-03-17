@@ -2061,8 +2061,8 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 			if (ret == 1) {
 				/*
 				 * This is a DSA master/management network
-				 * device linktype is already set by
-				 * iface_dsa_get_proto_info() set an
+				 * device, linktype is already set by
+				 * iface_dsa_get_proto_info(), set an
 				 * appropriate offset here.
 				 */
 				handle->offset = 2;
@@ -5463,15 +5463,15 @@ static struct dsa_proto {
 	{ "ar9331", DLT_EN10MB },
 
 	/*
-	 * Type 2, without an Ethertype at the beginning,
+	 * Type 2, without an EtherType at the beginning,
 	 * assigned a LINKTYPE_/DLT_ value.
 	 */
 	{ "brcm", DLT_DSA_TAG_BRCM },
 
 	/*
-	 * Type 2, with Ethertype 0x8874, assigned to Broadcom.
+	 * Type 2, with EtherType 0x8874, assigned to Broadcom.
 	 *
-	 * This doies not require a LINKTYPE_/DLT_ value, it
+	 * This does not require a LINKTYPE_/DLT_ value, it
 	 * just requires that Ethertype 0x8874 be dissected
 	 * properly.
 	 */
@@ -5483,14 +5483,14 @@ static struct dsa_proto {
 	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
 
 	/*
-	 * Type 2, without an Etherype at he beginning,
+	 * Type 2, without an EtherType at the beginning,
 	 * assigned a LINKTYPE_/DLT_ value.
 	 */
 	{ "dsa", DLT_DSA_TAG_DSA },
 
 	/*
 	 * Type 2, with an Ethertype field, but without
-	 * an assigned Ethertype value that can be relied
+	 * an assigned EtherType value that can be relied
 	 * on; assigned a LINKTYPE_/DLT_ value.
 	 */
 	{ "edsa", DLT_DSA_TAG_EDSA },
@@ -5563,7 +5563,7 @@ static struct dsa_proto {
 	{ "lan937x", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_lan9303.c#L24
@@ -5574,7 +5574,7 @@ static struct dsa_proto {
 	{ "lan9303", DLT_EN10MB },
 
 	/*
-	 * Type 2, without an Etherype at he beginning,
+	 * Type 2, without an EtherType at the beginning,
 	 * should be assigned a LINKTYPE_/DLT_ value.
 	 *
 	 * See
@@ -5584,7 +5584,7 @@ static struct dsa_proto {
 	{ "mtk", DLT_EN10MB },
 
 	/*
-	 * None is special and indicates that the interface does not have
+	 * The string "none" indicates that the interface does not have
 	 * any tagging protocol configured, and is therefore a standard
 	 * Ethernet interface.
 	 */
@@ -5609,7 +5609,7 @@ static struct dsa_proto {
 	{ "seville", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
@@ -5620,7 +5620,7 @@ static struct dsa_proto {
 	{ "ocelot-8021q", DLT_EN10MB },
 
 	/*
-	 * Type 2, without an Etherype at he beginning,
+	 * Type 2, without an EtherType at the beginning,
 	 * should be assigned a LINKTYPE_/DLT_ value.
 	 *
 	 * See
@@ -5630,14 +5630,14 @@ static struct dsa_proto {
 	{ "qca", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8899, assigned to Realtek;
+	 * Type 2, with EtherType 0x8899, assigned to Realtek;
 	 * they use it for several on-the-Ethernet protocols
 	 * as well, but there are fields that allow the two
 	 * tag formats, and all the protocols in question,
 	 * to be distinguiished from one another.
 	 *
-	 * This doies not require a LINKTYPE_/DLT_ value, it
-	 * just requires that Ethertype 0x8899 be dissected
+	 * This does not require a LINKTYPE_/DLT_ value, it
+	 * just requires that EtherType 0x8899 be dissected
 	 * properly.
 	 *
 	 * See
@@ -5652,7 +5652,7 @@ static struct dsa_proto {
 	{ "rtl4a", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8899, assigned to Realtek;
+	 * Type 2, with EtherType 0x8899, assigned to Realtek;
 	 * see above.
 	 */
 	{ "rtl8_4", DLT_EN10MB },
@@ -5663,7 +5663,7 @@ static struct dsa_proto {
 	{ "rtl8_4t", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0xe001; that's probably
+	 * Type 2, with EtherType 0xe001; that's probably
 	 * self-assigned, so this really should have its
 	 * own LINKTYPE_/DLT_ value.
 	 *
@@ -5674,7 +5674,7 @@ static struct dsa_proto {
 	{ "a5psw", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8100 or the self-assigned
+	 * Type 2, with EtherType 0x8100 or the self-assigned
 	 * 0xdadb, so this really should have its own
 	 * LINKTYPE_/DLT_ value; that would also allow the
 	 * VID of the tag to be dissected as per
@@ -5686,7 +5686,7 @@ static struct dsa_proto {
 	/*
 	 * Type "none of the above", with both a header and trailer,
 	 * with different transmit and receive tags.  Has
-	 * Ethertype 0xdadc, which is probably self-assigned.
+	 * EtherType 0xdadc, which is probably self-assigned.
 	 * This should really have its own LINKTYPE_/DLT_ value.
 	 */
 	{ "sja1110", DLT_EN10MB },
@@ -5701,7 +5701,7 @@ static struct dsa_proto {
 	{ "trailer", DLT_EN10MB },
 
 	/*
-	 * Type 2, with Ethertype 0x8100; the VID can be interpreted
+	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
