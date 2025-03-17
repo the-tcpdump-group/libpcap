@@ -27,5 +27,13 @@ Please note that if you know exactly how to solve the problem and the solution
 would not be too intrusive, it would be best to contribute some development time
 and open a pull request instead.
 
+If the proposed changes concern the BPF compiler code, please try to make sure
+the code is sufficiently covered with filter tests beforehand and `make check`
+passes on all CI-supported platforms as a minimum (this is done automatically
+for a pull request).  Then with the changes applied the tests should prove that
+the resulting filter program has not changed where it is not expected to change,
+and has changed in the expected ways where it is supposed to change, also that
+the effect of the filter program has not (or has) changed as well.
+
 Still not sure how to do? Feel free to [subscribe](https://www.tcpdump.org/#mailing-lists)
 to the mailing list tcpdump-workers@lists.tcpdump.org and ask!
