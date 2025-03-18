@@ -10149,15 +10149,6 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
 
-	case A_CALLREFTYPE:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'callref' supported only on raw ATM");
-		if (cstate->off_proto == OFFSET_NOT_SET)
-			abort();
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B,
-		    0xffffffffU, jtype, reverse, jvalue);
-		break;
-
 	default:
 		abort();
 	}
@@ -10296,13 +10287,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 14;	/* Ethernet */
 		cstate->off_nl = 0;			/* Ethernet II */
 		cstate->off_nl_nosnap = 3;		/* 802.3+802.2 */
-		break;
-
-	case A_LLC:
-		/* Get all LLC-encapsulated packets */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'llc' supported only on raw ATM");
-		b1 = gen_atmtype_llc(cstate);
 		break;
 
 	default:

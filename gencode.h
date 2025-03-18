@@ -160,7 +160,6 @@
 #define A_OAM		28	/* OAM cells : F4 only */
 #define A_OAMF4		29	/* OAM F4 cells: Segment + End-to-end */
 #define A_LANE		30	/* LANE traffic */
-#define A_LLC		31	/* LLC-encapsulated traffic */
 
 /* Based on Q.2931 signalling protocol */
 #define A_SETUP		41	/* Setup message */
@@ -175,7 +174,6 @@
 #define A_VCI		52
 #define A_PROTOTYPE	53
 #define A_MSGTYPE	54
-#define A_CALLREFTYPE	55
 
 #define A_CONNECTMSG	70	/* returns Q.2931 signalling messages for
 				   establishing and destroying switched
