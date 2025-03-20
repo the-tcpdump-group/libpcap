@@ -43,6 +43,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: generalize handling of non-x86 Windows architectures.
       CI: use the -A flag for all Visual Studio generators.
       Remove the fuzzing props from the release tarball.
+      Autoconf: Use AC_SYS_YEAR2038_RECOMMENDED when possible if the
+        environment variable BUILD_YEAR2038 = yes (via autogen.sh)
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
