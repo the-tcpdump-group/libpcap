@@ -1059,6 +1059,23 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 
+// Validate a port/portrange proto qualifier and map to an IP protocol number.
+static int
+port_pq_to_ipproto(compiler_state_t *cstate, const int proto, const char *kw)
+{
+	switch (proto) {
+	case Q_UDP:
+		return IPPROTO_UDP;
+	case Q_TCP:
+		return IPPROTO_TCP;
+	case Q_SCTP:
+		return IPPROTO_SCTP;
+	case Q_DEFAULT:
+		return PROTO_UNDEF;
+	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), kw);
+}
+
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
@@ -7036,9 +7053,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		}
 
 	case Q_PORT:
-		if (proto != Q_DEFAULT &&
-		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
-			bpf_error(cstate, "illegal qualifier of 'port'");
+		(void)port_pq_to_ipproto(cstate, proto, "port"); // validate only
 		if (pcap_nametoport(name, &port, &real_proto) == 0)
 			bpf_error(cstate, "unknown port '%s'", name);
 		if (proto == Q_UDP) {
@@ -7079,9 +7094,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_PORTRANGE:
-		if (proto != Q_DEFAULT &&
-		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
-			bpf_error(cstate, "illegal qualifier of 'portrange'");
+		(void)port_pq_to_ipproto(cstate, proto, "portrange"); // validate only
 		stringtoportrange(cstate, name, &port1, &port2, &real_proto);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
@@ -7294,16 +7307,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		}
 
 	case Q_PORT:
-		if (proto == Q_UDP)
-			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
-			proto = IPPROTO_TCP;
-		else if (proto == Q_SCTP)
-			proto = IPPROTO_SCTP;
-		else if (proto == Q_DEFAULT)
-			proto = PROTO_UNDEF;
-		else
-			bpf_error(cstate, "illegal qualifier of 'port'");
+		proto = port_pq_to_ipproto(cstate, proto, "port");
 
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
@@ -7316,16 +7320,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	    }
 
 	case Q_PORTRANGE:
-		if (proto == Q_UDP)
-			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
-			proto = IPPROTO_TCP;
-		else if (proto == Q_SCTP)
-			proto = IPPROTO_SCTP;
-		else if (proto == Q_DEFAULT)
-			proto = PROTO_UNDEF;
-		else
-			bpf_error(cstate, "illegal qualifier of 'portrange'");
+		proto = port_pq_to_ipproto(cstate, proto, "portrange");
 
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
