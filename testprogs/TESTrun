@@ -10983,7 +10983,7 @@ my @reject_tests = (
 		name => 'wlan_on_eth',
 		DLT => 'EN10MB',
 		expr => 'type data',
-		errstr => '802.11 link-layer types supported only on 802.11',
+		errstr => '\'type/subtype\' not supported on Ethernet',
 	},
 	{
 		name => 'wlan_type',
@@ -11059,13 +11059,13 @@ my @reject_tests = (
 		name => 'broadcast_not_supported',
 		DLT => 'SLIP',
 		expr => 'broadcast',
-		errstr => 'not a broadcast link',
+		errstr => '\'broadcast\' not supported on SLIP',
 	},
 	{
 		name => 'multicast_not_supported',
 		DLT => 'SLIP',
 		expr => 'multicast',
-		errstr => 'link-layer multicast filters supported only on',
+		errstr => '\'multicast\' not supported on SLIP',
 	},
 # This test has been flaky because it depends on an external effect (DNS
 # lookup), which sometimes times out.  Let's disable it until there is a good
