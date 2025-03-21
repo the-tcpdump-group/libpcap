@@ -11357,13 +11357,13 @@ my @reject_tests = (
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'EN10MB',
 		expr => 'arp protochain 17',
-		errstr => 'bad protocol applied for \'protochain\'',
+		errstr => '\'arp\' is not a valid qualifier for \'protochain\'',
 	},
 	{
 		name => 'arp_proto',
 		DLT => 'EN10MB',
 		expr => 'arp proto 17',
-		errstr => 'arp does not encapsulate another protocol',
+		errstr => '\'arp\' is not a valid qualifier for \'proto\'',
 	},
 	{
 		name => 'arp_host_ipv4_ipv6',
@@ -11371,7 +11371,7 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'arp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => '\'arp\' modifier applied to ip6 host',
+		errstr => '\'arp\' is not a valid qualifier for \'ip6 host\'',
 	},
 	{
 		name => 'rarp_host_ipv4_ipv6',
@@ -11379,7 +11379,7 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'rarp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => '\'rarp\' modifier applied to ip6 host',
+		errstr => '\'rarp\' is not a valid qualifier for \'ip6 host\'',
 	},
 	{
 		name => 'arp_host_noipv4_noipv6',
@@ -11601,7 +11601,7 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => "ip6 gateway eth-ipv4-ipv6.host123.libpcap.test",
-		errstr => 'illegal modifier of \'gateway\'',
+		errstr => '\'ip6\' is not a valid qualifier for \'gateway\'',
 	},
 	{
 		name => 'gateway_1',
