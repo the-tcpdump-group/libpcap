@@ -864,6 +864,13 @@ fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
 	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 }
 
+static void
+assert_pflog(compiler_state_t *cstate, const char *kw)
+{
+	if (cstate->linktype != DLT_PFLOG)
+		bpf_error(cstate, "'%s' supported only on PFLOG linktype", kw);
+}
+
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
@@ -8782,10 +8789,8 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "ifname supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "ifname");
+
 	len = sizeof(((struct pfloghdr *)0)->ifname);
 	off = offsetof(struct pfloghdr, ifname);
 	if (strlen(ifname) >= len) {
@@ -8811,10 +8816,7 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "ruleset supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "ruleset");
 
 	if (strlen(ruleset) >= sizeof(((struct pfloghdr *)0)->ruleset)) {
 		bpf_error(cstate, "ruleset names can only be %ld characters",
@@ -8840,10 +8842,7 @@ gen_pf_rnr(compiler_state_t *cstate, int rnr)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "rnr supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "rnr");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, rulenr), BPF_W,
 		 (bpf_u_int32)rnr);
@@ -8863,10 +8862,7 @@ gen_pf_srnr(compiler_state_t *cstate, int srnr)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "srnr supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "srnr");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, subrulenr), BPF_W,
 	    (bpf_u_int32)srnr);
@@ -8886,10 +8882,7 @@ gen_pf_reason(compiler_state_t *cstate, int reason)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "reason supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "reason");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, reason), BPF_B,
 	    (bpf_u_int32)reason);
@@ -8909,10 +8902,7 @@ gen_pf_action(compiler_state_t *cstate, int action)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "action supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "action");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, action), BPF_B,
 	    (bpf_u_int32)action);
