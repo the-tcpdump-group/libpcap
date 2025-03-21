@@ -880,6 +880,54 @@ qual2kw(const char *kind, const unsigned id, const char *tokens[],
 	return ret;
 }
 
+// protocol qualifier keywords
+static const char *
+pqkw(const unsigned id)
+{
+	const char * tokens[] = {
+		[Q_LINK] = "link",
+		[Q_IP] = "ip",
+		[Q_ARP] = "arp",
+		[Q_RARP] = "rarp",
+		[Q_SCTP] = "sctp",
+		[Q_TCP] = "tcp",
+		[Q_UDP] = "udp",
+		[Q_ICMP] = "icmp",
+		[Q_IGMP] = "igmp",
+		[Q_IGRP] = "igrp",
+		[Q_ATALK] = "atalk",
+		[Q_DECNET] = "decnet",
+		[Q_LAT] = "lat",
+		[Q_SCA] = "sca",
+		[Q_MOPRC] = "moprc",
+		[Q_MOPDL] = "mopdl",
+		[Q_IPV6] = "ip6",
+		[Q_ICMPV6] = "icmp6",
+		[Q_AH] = "ah",
+		[Q_ESP] = "esp",
+		[Q_PIM] = "pim",
+		[Q_VRRP] = "vrrp",
+		[Q_AARP] = "aarp",
+		[Q_ISO] = "iso",
+		[Q_ESIS] = "esis",
+		[Q_ISIS] = "isis",
+		[Q_CLNP] = "clnp",
+		[Q_STP] = "stp",
+		[Q_IPX] = "ipx",
+		[Q_NETBEUI] = "netbeui",
+		[Q_ISIS_L1] = "l1",
+		[Q_ISIS_L2] = "l2",
+		[Q_ISIS_IIH] = "iih",
+		[Q_ISIS_SNP] = "snp",
+		[Q_ISIS_CSNP] = "csnp",
+		[Q_ISIS_PSNP] = "psnp",
+		[Q_ISIS_LSP] = "lsp",
+		[Q_RADIO] = "radio",
+		[Q_CARP] = "carp",
+	};
+	return qual2kw("proto", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
 // direction qualifier keywords
 static const char *
 dqkw(const unsigned id)
@@ -914,6 +962,7 @@ assert_pflog(compiler_state_t *cstate, const char *kw)
 }
 
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
+#define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
@@ -5032,12 +5081,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
     int proto, int dir, int type)
 {
 	struct block *b0, *b1;
-	const char *typestr;
-
-	if (type == Q_NET)
-		typestr = "net";
-	else
-		typestr = "host";
 
 	switch (proto) {
 
@@ -5056,7 +5099,7 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b0;
 
 	case Q_LINK:
-		bpf_error(cstate, "link-layer modifier applied to %s", typestr);
+		break; // invalid qualifier
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
@@ -5077,25 +5120,13 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b1;
 
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp' modifier applied to %s", typestr);
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to %s", typestr);
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp' modifier applied to %s", typestr);
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp' modifier applied to %s", typestr);
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp' modifier applied to %s", typestr);
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp' modifier applied to %s", typestr);
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk host filtering not implemented");
+		break; // invalid qualifier
 
 	case Q_DECNET:
 		b0 = gen_linktype(cstate, ETHERTYPE_DN);
@@ -5104,89 +5135,39 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b1;
 
 	case Q_LAT:
-		bpf_error(cstate, "LAT host filtering not implemented");
-
 	case Q_SCA:
-		bpf_error(cstate, "SCA host filtering not implemented");
-
 	case Q_MOPRC:
-		bpf_error(cstate, "MOPRC host filtering not implemented");
-
 	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL host filtering not implemented");
-
 	case Q_IPV6:
-		bpf_error(cstate, "'ip6' modifier applied to ip host");
-
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6' modifier applied to %s", typestr);
-
 	case Q_AH:
-		bpf_error(cstate, "'ah' modifier applied to %s", typestr);
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp' modifier applied to %s", typestr);
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to %s", typestr);
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to %s", typestr);
-
 	case Q_AARP:
-		bpf_error(cstate, "AARP host filtering not implemented");
-
 	case Q_ISO:
-		bpf_error(cstate, "ISO host filtering not implemented");
-
 	case Q_ESIS:
-		bpf_error(cstate, "'esis' modifier applied to %s", typestr);
-
 	case Q_ISIS:
-		bpf_error(cstate, "'isis' modifier applied to %s", typestr);
-
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp' modifier applied to %s", typestr);
-
 	case Q_STP:
-		bpf_error(cstate, "'stp' modifier applied to %s", typestr);
-
 	case Q_IPX:
-		bpf_error(cstate, "IPX host filtering not implemented");
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui' modifier applied to %s", typestr);
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1' modifier applied to %s", typestr);
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2' modifier applied to %s", typestr);
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih' modifier applied to %s", typestr);
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp' modifier applied to %s", typestr);
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp' modifier applied to %s", typestr);
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp' modifier applied to %s", typestr);
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp' modifier applied to %s", typestr);
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' modifier applied to %s", typestr);
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
+		break; // invalid qualifier
 
 	default:
 		abort();
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
+	    type == Q_NET ? "ip net" : "ip host");
 	/*NOTREACHED*/
 }
 
@@ -5196,12 +5177,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int proto, int dir, int type)
 {
 	struct block *b0, *b1;
-	const char *typestr;
-
-	if (type == Q_NET)
-		typestr = "net";
-	else
-		typestr = "host";
 
 	switch (proto) {
 
@@ -5213,122 +5188,50 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		return b1;
 
 	case Q_LINK:
-		bpf_error(cstate, "link-layer modifier applied to ip6 %s", typestr);
-
 	case Q_IP:
-		bpf_error(cstate, "'ip' modifier applied to ip6 %s", typestr);
-
 	case Q_RARP:
-		bpf_error(cstate, "'rarp' modifier applied to ip6 %s", typestr);
-
 	case Q_ARP:
-		bpf_error(cstate, "'arp' modifier applied to ip6 %s", typestr);
-
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp' modifier applied to ip6 %s", typestr);
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to ip6 %s", typestr);
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp' modifier applied to ip6 %s", typestr);
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp' modifier applied to ip6 %s", typestr);
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp' modifier applied to ip6 %s", typestr);
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp' modifier applied to ip6 %s", typestr);
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk modifier applied to ip6 %s", typestr);
-
 	case Q_DECNET:
-		bpf_error(cstate, "'decnet' modifier applied to ip6 %s", typestr);
-
 	case Q_LAT:
-		bpf_error(cstate, "'lat' modifier applied to ip6 %s", typestr);
-
 	case Q_SCA:
-		bpf_error(cstate, "'sca' modifier applied to ip6 %s", typestr);
-
 	case Q_MOPRC:
-		bpf_error(cstate, "'moprc' modifier applied to ip6 %s", typestr);
-
 	case Q_MOPDL:
-		bpf_error(cstate, "'mopdl' modifier applied to ip6 %s", typestr);
-
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6' modifier applied to ip6 %s", typestr);
-
 	case Q_AH:
-		bpf_error(cstate, "'ah' modifier applied to ip6 %s", typestr);
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp' modifier applied to ip6 %s", typestr);
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to ip6 %s", typestr);
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to ip6 %s", typestr);
-
 	case Q_AARP:
-		bpf_error(cstate, "'aarp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISO:
-		bpf_error(cstate, "'iso' modifier applied to ip6 %s", typestr);
-
 	case Q_ESIS:
-		bpf_error(cstate, "'esis' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS:
-		bpf_error(cstate, "'isis' modifier applied to ip6 %s", typestr);
-
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp' modifier applied to ip6 %s", typestr);
-
 	case Q_STP:
-		bpf_error(cstate, "'stp' modifier applied to ip6 %s", typestr);
-
 	case Q_IPX:
-		bpf_error(cstate, "'ipx' modifier applied to ip6 %s", typestr);
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp' modifier applied to ip6 %s", typestr);
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' modifier applied to ip6 %s", typestr);
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to ip6 %s", typestr);
+		break; // invalid qualifier
 
 	default:
 		abort();
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
+	    type == Q_NET ? "ip6 net" : "ip6 host");
 	/*NOTREACHED*/
 }
 #endif
@@ -5433,7 +5336,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 		gen_and(b0, b1);
 		return b1;
 	}
-	bpf_error(cstate, "illegal modifier of 'gateway'");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
 	/*NOTREACHED*/
 }
 #endif
@@ -5751,27 +5654,12 @@ gen_portop(compiler_state_t *cstate, u_int port, u_int proto, int dir)
 		break;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for ports");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for ports");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
 		/*NOTREACHED*/
 
 	default:
@@ -5958,27 +5846,12 @@ gen_portrangeop(compiler_state_t *cstate, u_int port1, u_int port2,
 		break;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for port ranges");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for port ranges");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
 		/*NOTREACHED*/
 
 	default:
@@ -6186,7 +6059,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_or(b0, b);
 		return b;
 	default:
-		bpf_error(cstate, "bad protocol applied for 'protochain'");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "protochain");
 		/*NOTREACHED*/
 	}
 
@@ -6512,60 +6385,20 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_ARP:
-		bpf_error(cstate, "arp does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_RARP:
-		bpf_error(cstate, "rarp does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk encapsulation is not specifiable");
-		/*NOTREACHED*/
-
 	case Q_DECNET:
-		bpf_error(cstate, "DECNET encapsulation is not specifiable");
-		/*NOTREACHED*/
-
 	case Q_LAT:
-		bpf_error(cstate, "LAT does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_SCA:
-		bpf_error(cstate, "SCA does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_MOPRC:
-		bpf_error(cstate, "MOPRC does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL does not encapsulate another protocol");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
@@ -6582,28 +6415,12 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_AH:
-		bpf_error(cstate, "'ah proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_AARP:
-		bpf_error(cstate, "'aarp proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_ISO:
 		switch (cstate->linktype) {
@@ -6650,8 +6467,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		}
 
 	case Q_ESIS:
-		bpf_error(cstate, "'esis proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_ISIS:
 		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
@@ -6664,61 +6480,25 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp proto' is not supported");
-		/*NOTREACHED*/
-
 	case Q_STP:
-		bpf_error(cstate, "'stp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IPX:
-		bpf_error(cstate, "'ipx proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	default:
 		abort();
 		/*NOTREACHED*/
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "proto");
 	/*NOTREACHED*/
 }
 
@@ -8335,7 +8115,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		gen_and(b0, b2);
 		return b2;
 	}
-	bpf_error(cstate, "only link-layer/IP broadcast filters supported");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "broadcast");
 	/*NOTREACHED*/
 }
 
@@ -8537,7 +8317,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		gen_and(b0, b1);
 		return b1;
 	}
-	bpf_error(cstate, "link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "multicast");
 	/*NOTREACHED*/
 }
 
