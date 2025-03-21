@@ -1047,6 +1047,15 @@ assert_ss7(compiler_state_t *cstate, const char *kw)
 	bpf_error(cstate, "'%s' supported only on SS7", kw);
 }
 
+static void
+assert_maxval(compiler_state_t *cstate, const char *name,
+    const bpf_u_int32 val, const bpf_u_int32 maxval)
+{
+	if (val > maxval)
+		bpf_error(cstate, "%s %u greater than maximum %u",
+		    name, val, maxval);
+}
+
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 
@@ -8881,10 +8890,7 @@ gen_vlan_tpid_test(compiler_state_t *cstate)
 static struct block *
 gen_vlan_vid_test(compiler_state_t *cstate, bpf_u_int32 vlan_num)
 {
-	if (vlan_num > 0x0fff) {
-		bpf_error(cstate, "VLAN tag %u greater than maximum %u",
-		    vlan_num, 0x0fff);
-	}
+	assert_maxval(cstate, "VLAN tag", vlan_num, 0x0fff);
 	return gen_mcmp(cstate, OR_LINKPL, 0, BPF_H, vlan_num, 0x0fff);
 }
 
@@ -9209,10 +9215,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 
 	/* If a specific MPLS label is requested, check it */
 	if (has_label_num) {
-		if (label_num > 0xFFFFF) {
-			bpf_error(cstate, "MPLS label %u greater than maximum %u",
-			    label_num, 0xFFFFF);
-		}
+		assert_maxval(cstate, "MPLS label", label_num, 0xFFFFF);
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, label_num,
 		    0xfffff000); /* only compare the first 20 bits */
@@ -9302,10 +9305,7 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (has_sess_num) {
-		if (sess_num > UINT16_MAX) {
-			bpf_error(cstate, "PPPoE session number %u greater than maximum %u",
-			    sess_num, UINT16_MAX);
-		}
+		assert_maxval(cstate, "PPPoE session number", sess_num, UINT16_MAX);
 		b1 = gen_cmp(cstate, OR_LINKPL, 2, BPF_H, sess_num);
 		gen_and(b0, b1);
 		b0 = b1;
@@ -9361,10 +9361,7 @@ gen_geneve_check(compiler_state_t *cstate,
 	b0 = b1;
 
 	if (has_vni) {
-		if (vni > 0xffffff) {
-			bpf_error(cstate, "Geneve VNI %u greater than maximum %u",
-			    vni, 0xffffff);
-		}
+		assert_maxval(cstate, "Geneve VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
 		gen_and(b0, b1);
@@ -9636,10 +9633,7 @@ gen_vxlan_check(compiler_state_t *cstate,
 	b0 = b1;
 
 	if (has_vni) {
-		if (vni > 0xffffff) {
-			bpf_error(cstate, "VXLAN VNI %u greater than maximum %u",
-			    vni, 0xffffff);
-		}
+		assert_maxval(cstate, "VXLAN VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
 		gen_and(b0, b1);
@@ -9870,15 +9864,13 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 	switch (atmfield) {
 
 	case A_VPI:
-		if (jvalue > UINT8_MAX)
-			bpf_error(cstate, "VPI value %u > %u", jvalue, UINT8_MAX);
+		assert_maxval(cstate, "VPI", jvalue, UINT8_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
 
 	case A_VCI:
-		if (jvalue > UINT16_MAX)
-			bpf_error(cstate, "VCI value %u > %u", jvalue, UINT16_MAX);
+		assert_maxval(cstate, "VCI", jvalue, UINT16_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
@@ -10133,9 +10125,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SIO:
-		if(jvalue > MTP2_SIO_MAXVAL)
-			bpf_error(cstate, "sio value %u too big; max value = %u",
-			    jvalue, MTP2_SIO_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP2_SIO_MAXVAL);
 		// Here the bitmask means "do not apply a bitmask".
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
 		    jtype, reverse, jvalue);
@@ -10175,9 +10165,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 
 		/* FALLTHROUGH */
 	case M_OPC:
-		if (jvalue > MTP3_PC_MAXVAL)
-			bpf_error(cstate, "opc value %u too big; max value = %u",
-			    jvalue, MTP3_PC_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
 		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
 		    SWAPLONG(jvalue << 14));
@@ -10188,9 +10176,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-		if (jvalue > MTP3_PC_MAXVAL)
-			bpf_error(cstate, "dpc value %u too big; max value = %u",
-			    jvalue, MTP3_PC_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
 		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
 		    SWAPSHORT(jvalue));
@@ -10201,9 +10187,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SLS:
-		if (jvalue > MTP3_SLS_MAXVAL)
-			 bpf_error(cstate, "sls value %u too big; max value = %u",
-			     jvalue, MTP3_SLS_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_SLS_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
 		    MTP3_SLS_MAXVAL << 4, jtype, reverse,
 		    jvalue << 4);
