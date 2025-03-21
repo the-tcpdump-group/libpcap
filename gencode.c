@@ -3314,7 +3314,6 @@ static struct block *
 gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	struct block *b0, *b1, *b2;
-	const char *description;
 
 	/* are we checking MPLS-encapsulated packets? */
 	if (cstate->label_stack_depth > 0)
@@ -3680,7 +3679,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*NOTREACHED*/
 
 	case DLT_MFR:
-		bpf_error(cstate, "Multi-link Frame Relay link-layer type filtering not implemented");
+		break; // not implemented
 
 	case DLT_JUNIPER_MFR:
 	case DLT_JUNIPER_MLFR:
@@ -3721,69 +3720,37 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		return gen_ipnet_linktype(cstate, ll_proto);
 
 	case DLT_LINUX_IRDA:
-		bpf_error(cstate, "IrDA link-layer type filtering not implemented");
-
 	case DLT_DOCSIS:
-		bpf_error(cstate, "DOCSIS link-layer type filtering not implemented");
-
 	case DLT_MTP2:
 	case DLT_MTP2_WITH_PHDR:
-		bpf_error(cstate, "MTP2 link-layer type filtering not implemented");
-
 	case DLT_ERF:
-		bpf_error(cstate, "ERF link-layer type filtering not implemented");
-
 	case DLT_PFSYNC:
-		bpf_error(cstate, "PFSYNC link-layer type filtering not implemented");
-
 	case DLT_LINUX_LAPD:
-		bpf_error(cstate, "LAPD link-layer type filtering not implemented");
-
 	case DLT_USB_FREEBSD:
 	case DLT_USB_LINUX:
 	case DLT_USB_LINUX_MMAPPED:
 	case DLT_USBPCAP:
-		bpf_error(cstate, "USB link-layer type filtering not implemented");
-
 	case DLT_BLUETOOTH_HCI_H4:
 	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-		bpf_error(cstate, "Bluetooth link-layer type filtering not implemented");
-
 	case DLT_CAN20B:
 	case DLT_CAN_SOCKETCAN:
-		bpf_error(cstate, "CAN link-layer type filtering not implemented");
-
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
 	case DLT_IEEE802_15_4_NOFCS:
 	case DLT_IEEE802_15_4_TAP:
-		bpf_error(cstate, "IEEE 802.15.4 link-layer type filtering not implemented");
-
 	case DLT_IEEE802_16_MAC_CPS_RADIO:
-		bpf_error(cstate, "IEEE 802.16 link-layer type filtering not implemented");
-
 	case DLT_SITA:
-		bpf_error(cstate, "SITA link-layer type filtering not implemented");
-
 	case DLT_RAIF1:
-		bpf_error(cstate, "RAIF1 link-layer type filtering not implemented");
-
 	case DLT_IPMB_KONTRON:
-		bpf_error(cstate, "IPMB link-layer type filtering not implemented");
-
 	case DLT_I2C_LINUX:
-		bpf_error(cstate, "I2C link-layer type filtering not implemented");
-
 	case DLT_AX25_KISS:
-		bpf_error(cstate, "AX.25 link-layer type filtering not implemented");
-
 	case DLT_NFLOG:
 		/* Using the fixed-size NFLOG header it is possible to tell only
 		 * the address family of the packet, other meaningful data is
 		 * either missing or behind TLVs.
 		 */
-		bpf_error(cstate, "NFLOG link-layer type filtering not implemented");
+		break; // not implemented
 
 	default:
 		/*
@@ -3800,16 +3767,10 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 */
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ll_proto);
 			/*NOTREACHED */
-		} else {
-			/*
-			 * No; report an error.
-			 */
-			description = pcap_datalink_val_to_description_or_dlt(cstate->linktype);
-			bpf_error(cstate, "%s link-layer type filtering not implemented",
-			    description);
-			/*NOTREACHED */
 		}
 	}
+	bpf_error(cstate, "link-layer type filtering not implemented for %s",
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 }
 
 /*
@@ -5529,7 +5490,7 @@ static struct block *
 gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 {
 	struct block *b0;
-	struct block *b1;
+	struct block *b1 = NULL;
 
 	switch (proto) {
 
@@ -5601,7 +5562,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_LINK:
-		bpf_error(cstate, "link layer applied in wrong context");
+		break; // invalid syntax
 
 	case Q_ATALK:
 		b1 = gen_linktype(cstate, ETHERTYPE_ATALK);
@@ -5745,12 +5706,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' is not a valid protocol type");
+		break; // invalid syntax
 
 	default:
 		abort();
 	}
-	return b1;
+	if (b1)
+		return b1;
+	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
 
 struct block *
@@ -7757,7 +7720,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	}
 	switch (proto) {
 	default:
-		bpf_error(cstate, "unsupported index operation");
+		bpf_error(cstate, "'%s' does not support the index operation", pqkw(proto));
 
 	case Q_RADIO:
 		/*
