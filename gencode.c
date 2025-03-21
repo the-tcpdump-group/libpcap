@@ -946,6 +946,36 @@ dqkw(const unsigned id)
 	return qual2kw("dir", id, map, sizeof(map) / sizeof(map[0]));
 }
 
+// ATM keywords
+static const char *
+atmkw(const unsigned id)
+{
+	const char * tokens[] = {
+		[A_METAC] = "metac",
+		[A_BCC] = "bcc",
+		[A_OAMF4SC] = "oamf4sc",
+		[A_OAMF4EC] = "oamf4ec",
+		[A_SC] = "sc",
+		[A_ILMIC] = "ilmic",
+		[A_OAM] = "oam",
+		[A_OAMF4] = "oamf4",
+		[A_LANE] = "lane",
+		// no keyword for A_SETUP
+		// no keyword for A_CALLPROCEED
+		// no keyword for A_CONNECT
+		// no keyword for A_CONNECTACK
+		// no keyword for A_RELEASE
+		// no keyword for A_RELEASE_DONE
+		[A_VPI] = "vpi",
+		[A_VCI] = "vci",
+		// no keyword for A_PROTOTYPE
+		// no keyword for A_MSGTYPE
+		[A_CONNECTMSG] = "connectmsg",
+		[A_METACONNECT] = "metaconnect",
+	};
+	return qual2kw("ATM keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
 static PCAP_NORETURN_DEF void
 fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
 {
@@ -958,6 +988,14 @@ assert_pflog(compiler_state_t *cstate, const char *kw)
 {
 	if (cstate->linktype != DLT_PFLOG)
 		bpf_error(cstate, "'%s' supported only on PFLOG linktype", kw);
+}
+
+static void
+assert_atm(compiler_state_t *cstate, const char *kw)
+{
+	// This is currently true iff cstate->linktype != DLT_SUNATM.
+	if (! cstate->is_atm)
+		bpf_error(cstate, "'%s' supported only on SUNATM", kw);
 }
 
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
@@ -9768,11 +9806,19 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 {
 	struct block *b0;
 
+	/*
+	 * This check is a no-op for A_MSGTYPE so long as the only incoming
+	 * code path is from gen_atmmulti_abbrev(), which makes the same
+	 * check first; also for A_PROTOTYPE so long as the only incoming code
+	 * paths are from gen_atmtype_abbrev(), which makes the same check
+	 * first, or from gen_llc_internal() or gen_linktype(), which restrict
+	 * it to DLT_SUNATM.
+	 */
+	assert_atm(cstate, atmkw(atmfield));
+
 	switch (atmfield) {
 
 	case A_VPI:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'vpi' supported only on raw ATM");
 		if (cstate->off_vpi == OFFSET_NOT_SET)
 			abort();
 		if (jvalue > UINT8_MAX)
@@ -9782,8 +9828,6 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 		break;
 
 	case A_VCI:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'vci' supported only on raw ATM");
 		if (cstate->off_vci == OFFSET_NOT_SET)
 			abort();
 		if (jvalue > UINT16_MAX)
@@ -9871,19 +9915,17 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_atm(cstate, atmkw(type));
+
 	switch (type) {
 
 	case A_METAC:
 		/* Get all packets in Meta signalling Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'metac' supported only on raw ATM");
 		b1 = gen_atmtype_metac(cstate);
 		break;
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'bcc' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 2, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -9891,8 +9933,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam4sc' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -9900,8 +9940,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam4ec' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -9909,15 +9947,11 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'sc' supported only on raw ATM");
 		b1 = gen_atmtype_sc(cstate);
 		break;
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'ilmic' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 16, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -9925,8 +9959,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_LANE:
 		/* Get all LANE packets */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'lane' supported only on raw ATM");
 		b1 = gen_atmfield_code_internal(cstate, A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
 
 		/*
@@ -10235,11 +10267,11 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_atm(cstate, atmkw(type));
+
 	switch (type) {
 
 	case A_OAM:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam' supported only on raw ATM");
 		/* OAM F4 type */
 		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
@@ -10249,8 +10281,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case A_OAMF4:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oamf4' supported only on raw ATM");
 		/* OAM F4 type */
 		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
@@ -10264,8 +10294,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 * Get Q.2931 signalling messages for switched
 		 * virtual connection
 		 */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'connectmsg' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
 		gen_or(b0, b1);
@@ -10282,8 +10310,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case A_METACONNECT:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'metaconnect' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
 		gen_or(b0, b1);
