@@ -11445,7 +11445,7 @@ my @reject_tests = (
 		name => 'proto_1_2_3_4',
 		DLT => 'RAW',
 		expr => 'proto 1.2.3.4',
-		errstr => '\'proto\' modifier applied to IP address',
+		errstr => '\'proto\' qualifier applied to IPv4 address',
 	},
 	# In the tests below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
