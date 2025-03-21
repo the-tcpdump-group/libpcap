@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "9 March 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "21 March 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -43,56 +43,12 @@ Primitives usually consist of an
 preceded by one or more qualifiers.
 There are three
 different kinds of qualifier:
-.IP \fItype\fP
-.I type
-qualifiers say what kind of thing the id name or number refers to.
-Possible types are
-.BR host ,
-.BR net ,
-.BR proto ,
-.B port
-and
-.BR portrange .
-E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008',
-`\fBproto \fP 17'.
-If there is no type
-qualifier,
-.B host
-is assumed.
-.IP \fIdir\fP
-.I dir
-qualifiers specify a particular transfer direction to and/or from
-.IR id .
-Possible directions are
-.BR src ,
-.BR dst ,
-.BR "src or dst" ,
-.BR "src and dst" ,
-.BR ra ,
-.BR ta ,
-.BR addr1 ,
-.BR addr2 ,
-.BR addr3 ,
-and
-.BR addr4 .
-E.g., `\fBsrc\fP foo', `\fBdst net\fP 128.3', `\fBsrc or dst port\fP ftp-data'.
-If
-there is no dir qualifier, `\fBsrc or dst\fP' is assumed.
-The
-.BR ra ,
-.BR ta ,
-.BR addr1 ,
-.BR addr2 ,
-.BR addr3 ,
-and
-.B addr4
-qualifiers are only valid for IEEE 802.11 Wireless LAN link layers.
 .IP \fIproto\fP
 .I proto
 qualifiers restrict the match to a particular protocol.
 (This should not be confused with the
 .B proto
-type qualifier above.)
+type qualifier below.)
 Possible
 protocols are:
 .BR ether ,
@@ -121,6 +77,50 @@ E.g., `\fBsrc\fP foo' means `\fB(ip6 or ip or arp or rarp) src\fP foo',
 `\fBnet\fP bar' means `\fB(ip6 or ip or arp or rarp) net\fP bar' and
 `\fBport\fP 53' means `\fB(tcp or udp or sctp) port\fP 53'
 (note that these examples use invalid syntax to illustrate the principle).
+.IP \fIdir\fP
+.I dir
+qualifiers specify a particular transfer direction to and/or from
+.IR id .
+Possible directions are
+.BR src ,
+.BR dst ,
+.BR "src or dst" ,
+.BR "src and dst" ,
+.BR ra ,
+.BR ta ,
+.BR addr1 ,
+.BR addr2 ,
+.BR addr3 ,
+and
+.BR addr4 .
+E.g., `\fBsrc\fP foo', `\fBdst net\fP 128.3', `\fBsrc or dst port\fP ftp-data'.
+If
+there is no dir qualifier, `\fBsrc or dst\fP' is assumed.
+The
+.BR ra ,
+.BR ta ,
+.BR addr1 ,
+.BR addr2 ,
+.BR addr3 ,
+and
+.B addr4
+qualifiers are only valid for IEEE 802.11 Wireless LAN link layers.
+.IP \fItype\fP
+.I type
+qualifiers say what kind of thing the id name or number refers to.
+Possible types are
+.BR host ,
+.BR net ,
+.BR proto ,
+.B port
+and
+.BR portrange .
+E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008',
+`\fBproto \fP 17'.
+If there is no type
+qualifier,
+.B host
+is assumed.
 .LP
 In primitives that follow this pattern each qualifier kind may be present at
 most once, and if more than one kind is present, any
@@ -161,7 +161,7 @@ destination address is the TPA (Target Protocol Address) field and the
 source address is the SPA (Sender Protocol Address) field.
 .LP
 In addition to the above, there are some special `primitive' keywords
-that don't follow the pattern, for example:
+that don't follow the pattern (for example:
 .BR gateway ,
 .BR broadcast ,
 .BR multicast ,
@@ -173,7 +173,7 @@ that don't follow the pattern, for example:
 .BR mpls ,
 .BR wlan ,
 .BR less ,
-.BR greater ,
+.BR greater ),
 packet data accessors and arithmetic expressions.
 All of these are described below.
 .LP
@@ -210,10 +210,10 @@ keyword is optional.  For example,
 \fBip src \fIhostnameaddr\fR
 .fi
 .in -.5i
-is equivalent to
+for Ethernet-like link-layer types is equivalent to
 .in +.5i
 .nf
-\fBether proto \\\fRip \fBand src host \fIhostnameaddr\fR
+\fBether proto \\\fRip \fBand ip src host \fIhostnameaddr\fR
 .fi
 .in -.5i
 .IP
@@ -221,7 +221,7 @@ is equivalent to
 may be either an address or a name.  If it is a name with multiple IPv4/IPv6 addresses,
 each address will be checked for a match.
 .IP "\fBether host \fIethernameaddr\fP"
-True if the source or the destination Ethernet/802.11/IPFC/FDDI/Token Ring
+True if the source or the destination Ethernet/802.11/IPFC/ATM LANE/FDDI/Token Ring
 address of the packet is
 .IR ethernameaddr .
 May be qualified with a different direction
@@ -565,7 +565,7 @@ True if the packet is an IPv4 or IPv6 packet of protocol type
 \fIprotocol\fP.)  Note that this primitive chases the protocol
 header chain.
 .IP "\fBether broadcast\fR"
-True if the destination Ethernet/802.11/IPFC/ARCnet/FDDI/Token Ring address of
+True if the destination Ethernet/802.11/IPFC/ARCnet/ATM LANE/FDDI/Token Ring address of
 the packet is the broadcast address (e.g.
 .B FF:FF:FF:FF:FF:FF
 for Ethernet).  The
@@ -606,7 +606,7 @@ address(es) explicitly, for example:
 .fi
 .in -.5i
 .IP "\fBether multicast\fR"
-True if the destination Ethernet/802.11/IPFC/ARCnet/FDDI/Token Ring address of
+True if the destination Ethernet/802.11/IPFC/ARCnet/ATM LANE/FDDI/Token Ring address of
 the packet is a multicast address (e.g.
 .B "\%ether[0] & 1 != 0"
 for Ethernet).  The
@@ -802,7 +802,7 @@ only to packets logged by OpenBSD's or FreeBSD's
 .IP "\fBon \fIinterface\fR"
 Synonymous with the
 .B ifname
-modifier.
+primitive.
 .IP "\fBrnr \fInum\fR"
 True if the packet was logged as matching the specified PF rule number
 (applies only to packets logged by OpenBSD's or FreeBSD's
@@ -810,7 +810,7 @@ True if the packet was logged as matching the specified PF rule number
 .IP "\fBrulenum \fInum\fR"
 Synonymous with the
 .B rnr
-modifier.
+primitive.
 .IP "\fBreason \fIcode\fR"
 True if the packet was logged with the specified PF reason code.  The known
 codes are:
@@ -831,7 +831,7 @@ or FreeBSD's
 .IP "\fBruleset \fIname\fR"
 Synonymous with the
 .B rset
-modifier.
+primitive.
 .IP "\fBsrnr \fInum\fR"
 True if the packet was logged as matching the specified PF rule number
 of an anchored ruleset (applies only to packets logged by OpenBSD's or
@@ -840,7 +840,7 @@ FreeBSD's
 .IP "\fBsubrulenum \fInum\fR"
 Synonymous with the
 .B srnr
-modifier.
+primitive.
 .IP "\fBaction \fIact\fR"
 True if PF took the specified action when the packet was logged.  Known actions
 are:
@@ -1133,6 +1133,13 @@ on the assumption that the packet is either a LANE emulated Ethernet
 packet or a LANE LE Control packet.  If \fBlane\fR isn't specified, the
 tests are done under the assumption that the packet is an
 LLC-encapsulated packet.
+.IP
+Also the first
+.B lane
+keyword enables primitives that do not apply to ATM in general, such as
+.B "link host"
+and
+.BR "link multicast" .
 .IP \fBoamf4sc\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 a segment OAM F4 flow cell (VPI=0 & VCI=3).
