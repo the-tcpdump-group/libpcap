@@ -10917,7 +10917,7 @@ my @reject_tests = (
 		name => 'mtp2_on_mtp3',
 		DLT => 'MTP3',
 		expr => 'fisu',
-		errstr => 'supported only on MTP2',
+		errstr => '\'fisu\' supported only on SS7',
 	},
 	{
 		name => 'mtp2_sio',
