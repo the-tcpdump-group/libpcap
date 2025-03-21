@@ -976,6 +976,29 @@ atmkw(const unsigned id)
 	return qual2kw("ATM keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
 
+// SS7 keywords
+static const char *
+ss7kw(const unsigned id)
+{
+	const char * tokens[] = {
+		[M_FISU] = "fisu",
+		[M_LSSU] = "lssu",
+		[M_MSU] = "msu",
+		[MH_FISU] = "hfisu",
+		[MH_LSSU] = "hlssu",
+		[MH_MSU] = "hmsu",
+		[M_SIO] = "sio",
+		[M_OPC] = "opc",
+		[M_DPC] = "dpc",
+		[M_SLS] = "sls",
+		[MH_SIO] = "hsio",
+		[MH_OPC] = "hopc",
+		[MH_DPC] = "hdpc",
+		[MH_SLS] = "hsls",
+	};
+	return qual2kw("MTP keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
 static PCAP_NORETURN_DEF void
 fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
 {
@@ -996,6 +1019,17 @@ assert_atm(compiler_state_t *cstate, const char *kw)
 	// This is currently true iff cstate->linktype != DLT_SUNATM.
 	if (! cstate->is_atm)
 		bpf_error(cstate, "'%s' supported only on SUNATM", kw);
+}
+
+static void
+assert_ss7(compiler_state_t *cstate, const char *kw)
+{
+	/*
+	 * This is currently true if cstate->linktype is not one of {DLT_MTP2,
+	 * DLT_ERF, DLT_MTP2_WITH_PHDR}.
+	 */
+	if (cstate->off_sio == OFFSET_NOT_SET)
+		bpf_error(cstate, "'%s' supported only on SS7", kw);
 }
 
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
@@ -10003,23 +10037,17 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_ss7(cstate, ss7kw(type));
+
 	switch (type) {
 
 	case M_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'fisu' supported only on MTP2");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JEQ, 0, 0U);
 		break;
 
 	case M_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'lssu' supported only on MTP2");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 1, 2U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
@@ -10028,29 +10056,17 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case M_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'msu' supported only on MTP2");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 0, 2U);
 		break;
 
 	case MH_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hfisu' supported only on MTP2_HSL");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JEQ, 0, 0U);
 		break;
 
 	case MH_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hlssu' supported only on MTP2_HSL");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 1, 0x0100U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
@@ -10059,10 +10075,6 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case MH_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hmsu' supported only on MTP2_HSL");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0x0100U);
 		break;
@@ -10095,6 +10107,9 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	newoff_opc = cstate->off_opc;
 	newoff_dpc = cstate->off_dpc;
 	newoff_sls = cstate->off_sls;
+
+	assert_ss7(cstate, ss7kw(mtp3field));
+
 	switch (mtp3field) {
 
 	/*
@@ -10109,8 +10124,6 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SIO:
-		if (cstate->off_sio == OFFSET_NOT_SET)
-			bpf_error(cstate, "'sio' supported only on SS7");
 		if(jvalue > MTP2_SIO_MAXVAL)
 			bpf_error(cstate, "sio value %u too big; max value = %u",
 			    jvalue, MTP2_SIO_MAXVAL);
@@ -10153,8 +10166,6 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 
 		/* FALLTHROUGH */
 	case M_OPC:
-		if (cstate->off_opc == OFFSET_NOT_SET)
-			bpf_error(cstate, "'opc' supported only on SS7");
 		if (jvalue > MTP3_PC_MAXVAL)
 			bpf_error(cstate, "opc value %u too big; max value = %u",
 			    jvalue, MTP3_PC_MAXVAL);
@@ -10168,8 +10179,6 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-		if (cstate->off_dpc == OFFSET_NOT_SET)
-			bpf_error(cstate, "'dpc' supported only on SS7");
 		if (jvalue > MTP3_PC_MAXVAL)
 			bpf_error(cstate, "dpc value %u too big; max value = %u",
 			    jvalue, MTP3_PC_MAXVAL);
@@ -10183,8 +10192,6 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SLS:
-		if (cstate->off_sls == OFFSET_NOT_SET)
-			bpf_error(cstate, "'sls' supported only on SS7");
 		if (jvalue > MTP3_SLS_MAXVAL)
 			 bpf_error(cstate, "sls value %u too big; max value = %u",
 			     jvalue, MTP3_SLS_MAXVAL);
