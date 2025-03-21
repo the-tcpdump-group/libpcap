@@ -680,7 +680,7 @@ static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
 #endif
 #ifndef INET6
 static struct block *gen_gateway(compiler_state_t *, const u_char *,
-    struct addrinfo *, int, int);
+    struct addrinfo *, int);
 #endif
 static struct block *gen_ipfrag(compiler_state_t *);
 static struct block *gen_portatom(compiler_state_t *, int, bpf_u_int32);
@@ -703,7 +703,7 @@ static int lookup_proto(compiler_state_t *, const char *, int);
 #if !defined(NO_PROTOCHAIN)
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
 #endif /* !defined(NO_PROTOCHAIN) */
-static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int, int);
+static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
 static struct slist *xfer_to_x(compiler_state_t *, struct arth *);
 static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
@@ -855,6 +855,210 @@ static inline PCAP_NORETURN_DEF void
 syntax(compiler_state_t *cstate)
 {
 	bpf_error(cstate, "syntax error in filter expression");
+}
+
+/*
+ * For the given integer return a string with the keyword (or the nominal
+ * keyword if there is more than one).  This is a simpler version of tok2str()
+ * in tcpdump because in this problem space a valid integer value is not
+ * greater than 71.
+ */
+static const char *
+qual2kw(const char *kind, const unsigned id, const char *tokens[],
+    const size_t size)
+{
+	static char buf[4][64] = {0};
+	static int idx = 0;
+
+	if (id < size && tokens[id])
+		return tokens[id];
+
+	char *ret = buf[idx];
+	idx = (idx + 1) % (sizeof(buf) / sizeof(buf[0]));
+	snprintf(ret, sizeof(buf[0]), "<invalid %s %u>", kind, id);
+	return ret;
+}
+
+// protocol qualifier keywords
+static const char *
+pqkw(const unsigned id)
+{
+	const char * tokens[] = {
+		[Q_LINK] = "link",
+		[Q_IP] = "ip",
+		[Q_ARP] = "arp",
+		[Q_RARP] = "rarp",
+		[Q_SCTP] = "sctp",
+		[Q_TCP] = "tcp",
+		[Q_UDP] = "udp",
+		[Q_ICMP] = "icmp",
+		[Q_IGMP] = "igmp",
+		[Q_IGRP] = "igrp",
+		[Q_ATALK] = "atalk",
+		[Q_DECNET] = "decnet",
+		[Q_LAT] = "lat",
+		[Q_SCA] = "sca",
+		[Q_MOPRC] = "moprc",
+		[Q_MOPDL] = "mopdl",
+		[Q_IPV6] = "ip6",
+		[Q_ICMPV6] = "icmp6",
+		[Q_AH] = "ah",
+		[Q_ESP] = "esp",
+		[Q_PIM] = "pim",
+		[Q_VRRP] = "vrrp",
+		[Q_AARP] = "aarp",
+		[Q_ISO] = "iso",
+		[Q_ESIS] = "esis",
+		[Q_ISIS] = "isis",
+		[Q_CLNP] = "clnp",
+		[Q_STP] = "stp",
+		[Q_IPX] = "ipx",
+		[Q_NETBEUI] = "netbeui",
+		[Q_ISIS_L1] = "l1",
+		[Q_ISIS_L2] = "l2",
+		[Q_ISIS_IIH] = "iih",
+		[Q_ISIS_SNP] = "snp",
+		[Q_ISIS_CSNP] = "csnp",
+		[Q_ISIS_PSNP] = "psnp",
+		[Q_ISIS_LSP] = "lsp",
+		[Q_RADIO] = "radio",
+		[Q_CARP] = "carp",
+	};
+	return qual2kw("proto", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
+// direction qualifier keywords
+static const char *
+dqkw(const unsigned id)
+{
+	const char * map[] = {
+		[Q_SRC] = "src",
+		[Q_DST] = "dst",
+		[Q_OR] = "src or dst",
+		[Q_AND] = "src and dst",
+		[Q_ADDR1] = "addr1",
+		[Q_ADDR2] = "addr2",
+		[Q_ADDR3] = "addr3",
+		[Q_ADDR4] = "addr4",
+		[Q_RA] = "ra",
+		[Q_TA] = "ta",
+	};
+	return qual2kw("dir", id, map, sizeof(map) / sizeof(map[0]));
+}
+
+// ATM keywords
+static const char *
+atmkw(const unsigned id)
+{
+	const char * tokens[] = {
+		[A_METAC] = "metac",
+		[A_BCC] = "bcc",
+		[A_OAMF4SC] = "oamf4sc",
+		[A_OAMF4EC] = "oamf4ec",
+		[A_SC] = "sc",
+		[A_ILMIC] = "ilmic",
+		[A_OAM] = "oam",
+		[A_OAMF4] = "oamf4",
+		[A_LANE] = "lane",
+		// no keyword for A_SETUP
+		// no keyword for A_CALLPROCEED
+		// no keyword for A_CONNECT
+		// no keyword for A_CONNECTACK
+		// no keyword for A_RELEASE
+		// no keyword for A_RELEASE_DONE
+		[A_VPI] = "vpi",
+		[A_VCI] = "vci",
+		// no keyword for A_PROTOTYPE
+		// no keyword for A_MSGTYPE
+		[A_CONNECTMSG] = "connectmsg",
+		[A_METACONNECT] = "metaconnect",
+	};
+	return qual2kw("ATM keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
+// SS7 keywords
+static const char *
+ss7kw(const unsigned id)
+{
+	const char * tokens[] = {
+		[M_FISU] = "fisu",
+		[M_LSSU] = "lssu",
+		[M_MSU] = "msu",
+		[MH_FISU] = "hfisu",
+		[MH_LSSU] = "hlssu",
+		[MH_MSU] = "hmsu",
+		[M_SIO] = "sio",
+		[M_OPC] = "opc",
+		[M_DPC] = "dpc",
+		[M_SLS] = "sls",
+		[MH_SIO] = "hsio",
+		[MH_OPC] = "hopc",
+		[MH_DPC] = "hdpc",
+		[MH_SLS] = "hsls",
+	};
+	return qual2kw("MTP keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
+static PCAP_NORETURN_DEF void
+fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
+{
+	bpf_error(cstate, "'%s' not supported on %s", keyword,
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+}
+
+static void
+assert_pflog(compiler_state_t *cstate, const char *kw)
+{
+	if (cstate->linktype != DLT_PFLOG)
+		bpf_error(cstate, "'%s' supported only on PFLOG linktype", kw);
+}
+
+static void
+assert_atm(compiler_state_t *cstate, const char *kw)
+{
+	// This is currently true iff cstate->linktype != DLT_SUNATM.
+	if (! cstate->is_atm)
+		bpf_error(cstate, "'%s' supported only on SUNATM", kw);
+}
+
+static void
+assert_ss7(compiler_state_t *cstate, const char *kw)
+{
+	/*
+	 * This is currently true if cstate->linktype is not one of {DLT_MTP2,
+	 * DLT_ERF, DLT_MTP2_WITH_PHDR}.
+	 */
+	if (cstate->off_sio == OFFSET_NOT_SET)
+		bpf_error(cstate, "'%s' supported only on SS7", kw);
+}
+
+static void
+assert_maxval(compiler_state_t *cstate, const char *name,
+    const bpf_u_int32 val, const bpf_u_int32 maxval)
+{
+	if (val > maxval)
+		bpf_error(cstate, "%s %u greater than maximum %u",
+		    name, val, maxval);
+}
+
+#define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
+#define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
+
+// Validate a port/portrange proto qualifier and map to an IP protocol number.
+static int
+port_pq_to_ipproto(compiler_state_t *cstate, const int proto, const char *kw)
+{
+	switch (proto) {
+	case Q_UDP:
+		return IPPROTO_UDP;
+	case Q_TCP:
+		return IPPROTO_TCP;
+	case Q_SCTP:
+		return IPPROTO_SCTP;
+	case Q_DEFAULT:
+		return PROTO_UNDEF;
+	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), kw);
 }
 
 int
@@ -3314,7 +3518,6 @@ static struct block *
 gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	struct block *b0, *b1, *b2;
-	const char *description;
 
 	/* are we checking MPLS-encapsulated packets? */
 	if (cstate->label_stack_depth > 0)
@@ -3680,7 +3883,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*NOTREACHED*/
 
 	case DLT_MFR:
-		bpf_error(cstate, "Multi-link Frame Relay link-layer type filtering not implemented");
+		break; // not implemented
 
 	case DLT_JUNIPER_MFR:
 	case DLT_JUNIPER_MLFR:
@@ -3721,69 +3924,37 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		return gen_ipnet_linktype(cstate, ll_proto);
 
 	case DLT_LINUX_IRDA:
-		bpf_error(cstate, "IrDA link-layer type filtering not implemented");
-
 	case DLT_DOCSIS:
-		bpf_error(cstate, "DOCSIS link-layer type filtering not implemented");
-
 	case DLT_MTP2:
 	case DLT_MTP2_WITH_PHDR:
-		bpf_error(cstate, "MTP2 link-layer type filtering not implemented");
-
 	case DLT_ERF:
-		bpf_error(cstate, "ERF link-layer type filtering not implemented");
-
 	case DLT_PFSYNC:
-		bpf_error(cstate, "PFSYNC link-layer type filtering not implemented");
-
 	case DLT_LINUX_LAPD:
-		bpf_error(cstate, "LAPD link-layer type filtering not implemented");
-
 	case DLT_USB_FREEBSD:
 	case DLT_USB_LINUX:
 	case DLT_USB_LINUX_MMAPPED:
 	case DLT_USBPCAP:
-		bpf_error(cstate, "USB link-layer type filtering not implemented");
-
 	case DLT_BLUETOOTH_HCI_H4:
 	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-		bpf_error(cstate, "Bluetooth link-layer type filtering not implemented");
-
 	case DLT_CAN20B:
 	case DLT_CAN_SOCKETCAN:
-		bpf_error(cstate, "CAN link-layer type filtering not implemented");
-
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
 	case DLT_IEEE802_15_4_NOFCS:
 	case DLT_IEEE802_15_4_TAP:
-		bpf_error(cstate, "IEEE 802.15.4 link-layer type filtering not implemented");
-
 	case DLT_IEEE802_16_MAC_CPS_RADIO:
-		bpf_error(cstate, "IEEE 802.16 link-layer type filtering not implemented");
-
 	case DLT_SITA:
-		bpf_error(cstate, "SITA link-layer type filtering not implemented");
-
 	case DLT_RAIF1:
-		bpf_error(cstate, "RAIF1 link-layer type filtering not implemented");
-
 	case DLT_IPMB_KONTRON:
-		bpf_error(cstate, "IPMB link-layer type filtering not implemented");
-
 	case DLT_I2C_LINUX:
-		bpf_error(cstate, "I2C link-layer type filtering not implemented");
-
 	case DLT_AX25_KISS:
-		bpf_error(cstate, "AX.25 link-layer type filtering not implemented");
-
 	case DLT_NFLOG:
 		/* Using the fixed-size NFLOG header it is possible to tell only
 		 * the address family of the packet, other meaningful data is
 		 * either missing or behind TLVs.
 		 */
-		bpf_error(cstate, "NFLOG link-layer type filtering not implemented");
+		break; // not implemented
 
 	default:
 		/*
@@ -3800,16 +3971,10 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 */
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ll_proto);
 			/*NOTREACHED */
-		} else {
-			/*
-			 * No; report an error.
-			 */
-			description = pcap_datalink_val_to_description_or_dlt(cstate->linktype);
-			bpf_error(cstate, "%s link-layer type filtering not implemented",
-			    description);
-			/*NOTREACHED */
 		}
 	}
+	bpf_error(cstate, "link-layer type filtering not implemented for %s",
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 }
 
 /*
@@ -3904,8 +4069,7 @@ gen_llc_internal(compiler_state_t *cstate)
 			IEEE80211_FC0_TYPE_MASK);
 
 	default:
-		bpf_error(cstate, "'llc' not supported for %s",
-			  pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "llc");
 		/*NOTREACHED*/
 	}
 }
@@ -4173,27 +4337,12 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 
 	default:
@@ -4245,27 +4394,12 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 
 	default:
@@ -4312,27 +4446,12 @@ gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11 with 802.11 headers");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11 with 802.11 headers");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11 with 802.11 headers");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11 with 802.11 headers");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is only supported on 802.11 with 802.11 headers");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is only supported on 802.11 with 802.11 headers");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	abort();
@@ -4368,27 +4487,12 @@ gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is only supported on 802.11");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	abort();
@@ -4424,27 +4528,12 @@ gen_thostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is only supported on 802.11");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	abort();
@@ -4905,27 +4994,12 @@ gen_ipfchostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is only supported on 802.11");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	abort();
@@ -4985,27 +5059,12 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 
 	default:
@@ -5119,12 +5178,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
     int proto, int dir, int type)
 {
 	struct block *b0, *b1;
-	const char *typestr;
-
-	if (type == Q_NET)
-		typestr = "net";
-	else
-		typestr = "host";
 
 	switch (proto) {
 
@@ -5143,7 +5196,7 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b0;
 
 	case Q_LINK:
-		bpf_error(cstate, "link-layer modifier applied to %s", typestr);
+		break; // invalid qualifier
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
@@ -5164,25 +5217,13 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b1;
 
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp' modifier applied to %s", typestr);
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to %s", typestr);
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp' modifier applied to %s", typestr);
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp' modifier applied to %s", typestr);
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp' modifier applied to %s", typestr);
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp' modifier applied to %s", typestr);
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk host filtering not implemented");
+		break; // invalid qualifier
 
 	case Q_DECNET:
 		b0 = gen_linktype(cstate, ETHERTYPE_DN);
@@ -5191,89 +5232,39 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b1;
 
 	case Q_LAT:
-		bpf_error(cstate, "LAT host filtering not implemented");
-
 	case Q_SCA:
-		bpf_error(cstate, "SCA host filtering not implemented");
-
 	case Q_MOPRC:
-		bpf_error(cstate, "MOPRC host filtering not implemented");
-
 	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL host filtering not implemented");
-
 	case Q_IPV6:
-		bpf_error(cstate, "'ip6' modifier applied to ip host");
-
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6' modifier applied to %s", typestr);
-
 	case Q_AH:
-		bpf_error(cstate, "'ah' modifier applied to %s", typestr);
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp' modifier applied to %s", typestr);
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to %s", typestr);
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to %s", typestr);
-
 	case Q_AARP:
-		bpf_error(cstate, "AARP host filtering not implemented");
-
 	case Q_ISO:
-		bpf_error(cstate, "ISO host filtering not implemented");
-
 	case Q_ESIS:
-		bpf_error(cstate, "'esis' modifier applied to %s", typestr);
-
 	case Q_ISIS:
-		bpf_error(cstate, "'isis' modifier applied to %s", typestr);
-
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp' modifier applied to %s", typestr);
-
 	case Q_STP:
-		bpf_error(cstate, "'stp' modifier applied to %s", typestr);
-
 	case Q_IPX:
-		bpf_error(cstate, "IPX host filtering not implemented");
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui' modifier applied to %s", typestr);
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1' modifier applied to %s", typestr);
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2' modifier applied to %s", typestr);
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih' modifier applied to %s", typestr);
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp' modifier applied to %s", typestr);
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp' modifier applied to %s", typestr);
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp' modifier applied to %s", typestr);
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp' modifier applied to %s", typestr);
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' modifier applied to %s", typestr);
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
+		break; // invalid qualifier
 
 	default:
 		abort();
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
+	    type == Q_NET ? "ip net" : "ip host");
 	/*NOTREACHED*/
 }
 
@@ -5283,12 +5274,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int proto, int dir, int type)
 {
 	struct block *b0, *b1;
-	const char *typestr;
-
-	if (type == Q_NET)
-		typestr = "net";
-	else
-		typestr = "host";
 
 	switch (proto) {
 
@@ -5300,137 +5285,66 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		return b1;
 
 	case Q_LINK:
-		bpf_error(cstate, "link-layer modifier applied to ip6 %s", typestr);
-
 	case Q_IP:
-		bpf_error(cstate, "'ip' modifier applied to ip6 %s", typestr);
-
 	case Q_RARP:
-		bpf_error(cstate, "'rarp' modifier applied to ip6 %s", typestr);
-
 	case Q_ARP:
-		bpf_error(cstate, "'arp' modifier applied to ip6 %s", typestr);
-
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp' modifier applied to ip6 %s", typestr);
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to ip6 %s", typestr);
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp' modifier applied to ip6 %s", typestr);
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp' modifier applied to ip6 %s", typestr);
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp' modifier applied to ip6 %s", typestr);
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp' modifier applied to ip6 %s", typestr);
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk modifier applied to ip6 %s", typestr);
-
 	case Q_DECNET:
-		bpf_error(cstate, "'decnet' modifier applied to ip6 %s", typestr);
-
 	case Q_LAT:
-		bpf_error(cstate, "'lat' modifier applied to ip6 %s", typestr);
-
 	case Q_SCA:
-		bpf_error(cstate, "'sca' modifier applied to ip6 %s", typestr);
-
 	case Q_MOPRC:
-		bpf_error(cstate, "'moprc' modifier applied to ip6 %s", typestr);
-
 	case Q_MOPDL:
-		bpf_error(cstate, "'mopdl' modifier applied to ip6 %s", typestr);
-
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6' modifier applied to ip6 %s", typestr);
-
 	case Q_AH:
-		bpf_error(cstate, "'ah' modifier applied to ip6 %s", typestr);
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp' modifier applied to ip6 %s", typestr);
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to ip6 %s", typestr);
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to ip6 %s", typestr);
-
 	case Q_AARP:
-		bpf_error(cstate, "'aarp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISO:
-		bpf_error(cstate, "'iso' modifier applied to ip6 %s", typestr);
-
 	case Q_ESIS:
-		bpf_error(cstate, "'esis' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS:
-		bpf_error(cstate, "'isis' modifier applied to ip6 %s", typestr);
-
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp' modifier applied to ip6 %s", typestr);
-
 	case Q_STP:
-		bpf_error(cstate, "'stp' modifier applied to ip6 %s", typestr);
-
 	case Q_IPX:
-		bpf_error(cstate, "'ipx' modifier applied to ip6 %s", typestr);
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp' modifier applied to ip6 %s", typestr);
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp' modifier applied to ip6 %s", typestr);
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' modifier applied to ip6 %s", typestr);
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to ip6 %s", typestr);
+		break; // invalid qualifier
 
 	default:
 		abort();
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
+	    type == Q_NET ? "ip6 net" : "ip6 host");
 	/*NOTREACHED*/
 }
 #endif
 
 #ifndef INET6
+/*
+ * This primitive is non-directional by design, so the grammar does not allow
+ * to qualify it with a direction.
+ */
 static struct block *
 gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
-    struct addrinfo *alist, int proto, int dir)
+    struct addrinfo *alist, int proto)
 {
 	struct block *b0, *b1, *tmp;
 	struct addrinfo *ai;
 	struct sockaddr_in *sin;
-
-	if (dir != 0)
-		bpf_error(cstate, "direction applied to 'gateway'");
 
 	switch (proto) {
 	case Q_DEFAULT:
@@ -5520,7 +5434,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 		gen_and(b0, b1);
 		return b1;
 	}
-	bpf_error(cstate, "illegal modifier of 'gateway'");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
 	/*NOTREACHED*/
 }
 #endif
@@ -5529,24 +5443,24 @@ static struct block *
 gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 {
 	struct block *b0;
-	struct block *b1;
+	struct block *b1 = NULL;
 
 	switch (proto) {
 
 	case Q_SCTP:
-		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT);
 		break;
 
 	case Q_TCP:
-		b1 = gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT);
 		break;
 
 	case Q_UDP:
-		b1 = gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT);
 		break;
 
 	case Q_ICMP:
-		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP);
 		break;
 
 #ifndef	IPPROTO_IGMP
@@ -5554,14 +5468,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_IGMP:
-		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP);
 		break;
 
 #ifndef	IPPROTO_IGRP
 #define	IPPROTO_IGRP	9
 #endif
 	case Q_IGRP:
-		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP);
 		break;
 
 #ifndef IPPROTO_PIM
@@ -5569,7 +5483,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_PIM:
-		b1 = gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
 		break;
 
 #ifndef IPPROTO_VRRP
@@ -5577,7 +5491,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_VRRP:
-		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP);
 		break;
 
 #ifndef IPPROTO_CARP
@@ -5585,7 +5499,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_CARP:
-		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP);
 		break;
 
 	case Q_IP:
@@ -5601,7 +5515,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_LINK:
-		bpf_error(cstate, "link layer applied in wrong context");
+		break; // invalid syntax
 
 	case Q_ATALK:
 		b1 = gen_linktype(cstate, ETHERTYPE_ATALK);
@@ -5639,21 +5553,21 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #define IPPROTO_ICMPV6	58
 #endif
 	case Q_ICMPV6:
-		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
 		break;
 
 #ifndef IPPROTO_AH
 #define IPPROTO_AH	51
 #endif
 	case Q_AH:
-		b1 = gen_proto(cstate, IPPROTO_AH, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
 		break;
 
 #ifndef IPPROTO_ESP
 #define IPPROTO_ESP	50
 #endif
 	case Q_ESP:
-		b1 = gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
 		break;
 
 	case Q_ISO:
@@ -5661,75 +5575,75 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_ESIS:
-		b1 = gen_proto(cstate, ISO9542_ESIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO9542_ESIS, Q_ISO);
 		break;
 
 	case Q_ISIS:
-		b1 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_LSP:
-		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_SNP:
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_CSNP:
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_PSNP:
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_CLNP:
-		b1 = gen_proto(cstate, ISO8473_CLNP, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO8473_CLNP, Q_ISO);
 		break;
 
 	case Q_STP:
@@ -5745,12 +5659,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' is not a valid protocol type");
+		break; // invalid syntax
 
 	default:
 		abort();
 	}
-	return b1;
+	if (b1)
+		return b1;
+	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
 
 struct block *
@@ -5836,27 +5752,12 @@ gen_portop(compiler_state_t *cstate, u_int port, u_int proto, int dir)
 		break;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for ports");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for ports");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for ports");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
 		/*NOTREACHED*/
 
 	default:
@@ -6043,27 +5944,12 @@ gen_portrangeop(compiler_state_t *cstate, u_int port1, u_int port2,
 		break;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for port ranges");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is not a valid qualifier for port ranges");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is not a valid qualifier for port ranges");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
 		/*NOTREACHED*/
 
 	default:
@@ -6248,6 +6134,10 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 }
 
 #if !defined(NO_PROTOCHAIN)
+/*
+ * This primitive is non-directional by design, so the grammar does not allow
+ * to qualify it with a direction.
+ */
 static struct block *
 gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
@@ -6271,7 +6161,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_or(b0, b);
 		return b;
 	default:
-		bpf_error(cstate, "bad protocol applied for 'protochain'");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "protochain");
 		/*NOTREACHED*/
 	}
 
@@ -6555,20 +6445,20 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
  *
  * If <proto> is Q_DEFAULT, i.e. just "proto" was specified, it checks
  * against Q_IP and Q_IPV6.
+ *
+ * This primitive is non-directional by design, so the grammar does not allow
+ * to qualify it with a direction.
  */
 static struct block *
-gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
+gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
 	struct block *b0, *b1;
 	struct block *b2;
 
-	if (dir != Q_DEFAULT)
-		bpf_error(cstate, "direction applied to 'proto'");
-
 	switch (proto) {
 	case Q_DEFAULT:
-		b0 = gen_proto(cstate, v, Q_IP, dir);
-		b1 = gen_proto(cstate, v, Q_IPV6, dir);
+		b0 = gen_proto(cstate, v, Q_IP);
+		b1 = gen_proto(cstate, v, Q_IPV6);
 		gen_or(b0, b1);
 		return b1;
 
@@ -6597,60 +6487,20 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_ARP:
-		bpf_error(cstate, "arp does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_RARP:
-		bpf_error(cstate, "rarp does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_TCP:
-		bpf_error(cstate, "'tcp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_UDP:
-		bpf_error(cstate, "'udp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk encapsulation is not specifiable");
-		/*NOTREACHED*/
-
 	case Q_DECNET:
-		bpf_error(cstate, "DECNET encapsulation is not specifiable");
-		/*NOTREACHED*/
-
 	case Q_LAT:
-		bpf_error(cstate, "LAT does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_SCA:
-		bpf_error(cstate, "SCA does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_MOPRC:
-		bpf_error(cstate, "MOPRC does not encapsulate another protocol");
-		/*NOTREACHED*/
-
 	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL does not encapsulate another protocol");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
@@ -6667,28 +6517,12 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_AH:
-		bpf_error(cstate, "'ah proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ESP:
-		bpf_error(cstate, "'esp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_PIM:
-		bpf_error(cstate, "'pim proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_VRRP:
-		bpf_error(cstate, "'vrrp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_AARP:
-		bpf_error(cstate, "'aarp proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_ISO:
 		switch (cstate->linktype) {
@@ -6735,11 +6569,10 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		}
 
 	case Q_ESIS:
-		bpf_error(cstate, "'esis proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	case Q_ISIS:
-		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 		/*
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
@@ -6749,61 +6582,25 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		return b1;
 
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp proto' is not supported");
-		/*NOTREACHED*/
-
 	case Q_STP:
-		bpf_error(cstate, "'stp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_IPX:
-		bpf_error(cstate, "'ipx proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_L1:
-		bpf_error(cstate, "'l1 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_L2:
-		bpf_error(cstate, "'l2 proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_IIH:
-		bpf_error(cstate, "'iih proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_SNP:
-		bpf_error(cstate, "'snp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_CSNP:
-		bpf_error(cstate, "'csnp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_PSNP:
-		bpf_error(cstate, "'psnp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_ISIS_LSP:
-		bpf_error(cstate, "'lsp proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_RADIO:
-		bpf_error(cstate, "'radio proto' is bogus");
-		/*NOTREACHED*/
-
 	case Q_CARP:
-		bpf_error(cstate, "'carp proto' is bogus");
-		/*NOTREACHED*/
+		break; // invalid qualifier
 
 	default:
 		abort();
 		/*NOTREACHED*/
 	}
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "proto");
 	/*NOTREACHED*/
 }
 
@@ -7246,9 +7043,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		}
 
 	case Q_PORT:
-		if (proto != Q_DEFAULT &&
-		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
-			bpf_error(cstate, "illegal qualifier of 'port'");
+		(void)port_pq_to_ipproto(cstate, proto, "port"); // validate only
 		if (pcap_nametoport(name, &port, &real_proto) == 0)
 			bpf_error(cstate, "unknown port '%s'", name);
 		if (proto == Q_UDP) {
@@ -7289,9 +7084,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_PORTRANGE:
-		if (proto != Q_DEFAULT &&
-		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
-			bpf_error(cstate, "illegal qualifier of 'portrange'");
+		(void)port_pq_to_ipproto(cstate, proto, "portrange"); // validate only
 		stringtoportrange(cstate, name, &port1, &port2, &real_proto);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
@@ -7339,7 +7132,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		cstate->ai = res;
 		if (res == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
-		b = gen_gateway(cstate, eaddr, res, proto, dir);
+		b = gen_gateway(cstate, eaddr, res, proto);
 		cstate->ai = NULL;
 		freeaddrinfo(res);
 		free(eaddr);
@@ -7353,7 +7146,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_PROTO:
 		real_proto = lookup_proto(cstate, name, proto);
 		if (real_proto >= 0)
-			return gen_proto(cstate, real_proto, proto, dir);
+			return gen_proto(cstate, real_proto, proto);
 		else
 			bpf_error(cstate, "unknown protocol: %s", name);
 
@@ -7504,16 +7297,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		}
 
 	case Q_PORT:
-		if (proto == Q_UDP)
-			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
-			proto = IPPROTO_TCP;
-		else if (proto == Q_SCTP)
-			proto = IPPROTO_SCTP;
-		else if (proto == Q_DEFAULT)
-			proto = PROTO_UNDEF;
-		else
-			bpf_error(cstate, "illegal qualifier of 'port'");
+		proto = port_pq_to_ipproto(cstate, proto, "port");
 
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
@@ -7526,16 +7310,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	    }
 
 	case Q_PORTRANGE:
-		if (proto == Q_UDP)
-			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
-			proto = IPPROTO_TCP;
-		else if (proto == Q_SCTP)
-			proto = IPPROTO_SCTP;
-		else if (proto == Q_DEFAULT)
-			proto = PROTO_UNDEF;
-		else
-			bpf_error(cstate, "illegal qualifier of 'portrange'");
+		proto = port_pq_to_ipproto(cstate, proto, "portrange");
 
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
@@ -7552,7 +7327,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	case Q_PROTO:
-		return gen_proto(cstate, v, proto, dir);
+		return gen_proto(cstate, v, proto);
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
@@ -7757,7 +7532,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	}
 	switch (proto) {
 	default:
-		bpf_error(cstate, "unsupported index operation");
+		bpf_error(cstate, "'%s' does not support the index operation", pqkw(proto));
 
 	case Q_RADIO:
 		/*
@@ -8400,9 +8175,8 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 			return gen_wlanhostop(cstate, ebroadcast, Q_DST);
 		case DLT_IP_OVER_FC:
 			return gen_ipfchostop(cstate, ebroadcast, Q_DST);
-		default:
-			bpf_error(cstate, "not a broadcast link");
 		}
+		fail_kw_on_dlt(cstate, "broadcast");
 		/*NOTREACHED*/
 
 	case Q_IP:
@@ -8421,7 +8195,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		gen_and(b0, b2);
 		return b2;
 	}
-	bpf_error(cstate, "only link-layer/IP broadcast filters supported");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "broadcast");
 	/*NOTREACHED*/
 }
 
@@ -8608,8 +8382,8 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		default:
 			break;
 		}
-		/* Link not known to support multicasts */
-		break;
+		fail_kw_on_dlt(cstate, "multicast");
+		/*NOTREACHED*/
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
@@ -8623,7 +8397,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		gen_and(b0, b1);
 		return b1;
 	}
-	bpf_error(cstate, "link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "multicast");
 	/*NOTREACHED*/
 }
 
@@ -8673,8 +8447,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
 #else /* defined(__linux__) */
-		bpf_error(cstate, "ifindex not supported on %s",
-		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "ifindex");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
@@ -8796,8 +8569,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 			gen_not(b0);
 		}
 #else /* defined(__linux__) */
-		bpf_error(cstate, "inbound/outbound not supported on %s",
-		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, outbound ? "outbound" : "inbound");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
@@ -8818,10 +8590,8 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "ifname supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "ifname");
+
 	len = sizeof(((struct pfloghdr *)0)->ifname);
 	off = offsetof(struct pfloghdr, ifname);
 	if (strlen(ifname) >= len) {
@@ -8847,10 +8617,7 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "ruleset supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "ruleset");
 
 	if (strlen(ruleset) >= sizeof(((struct pfloghdr *)0)->ruleset)) {
 		bpf_error(cstate, "ruleset names can only be %ld characters",
@@ -8876,10 +8643,7 @@ gen_pf_rnr(compiler_state_t *cstate, int rnr)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "rnr supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "rnr");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, rulenr), BPF_W,
 		 (bpf_u_int32)rnr);
@@ -8899,10 +8663,7 @@ gen_pf_srnr(compiler_state_t *cstate, int srnr)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "srnr supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "srnr");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, subrulenr), BPF_W,
 	    (bpf_u_int32)srnr);
@@ -8922,10 +8683,7 @@ gen_pf_reason(compiler_state_t *cstate, int reason)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "reason supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "reason");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, reason), BPF_B,
 	    (bpf_u_int32)reason);
@@ -8945,10 +8703,7 @@ gen_pf_action(compiler_state_t *cstate, int action)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (cstate->linktype != DLT_PFLOG) {
-		bpf_error(cstate, "action supported only on PF linktype");
-		/*NOTREACHED*/
-	}
+	assert_pflog(cstate, "action");
 
 	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, action), BPF_B,
 	    (bpf_u_int32)action);
@@ -8979,7 +8734,7 @@ gen_p80211_type(compiler_state_t *cstate, bpf_u_int32 type, bpf_u_int32 mask)
 		break;
 
 	default:
-		bpf_error(cstate, "802.11 link-layer types supported only on 802.11");
+		fail_kw_on_dlt(cstate, "type/subtype");
 		/*NOTREACHED*/
 	}
 
@@ -9008,7 +8763,7 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 		break;
 
 	default:
-		bpf_error(cstate, "frame direction supported only with 802.11 headers");
+		fail_kw_on_dlt(cstate, "dir");
 		/*NOTREACHED*/
 	}
 
@@ -9089,27 +8844,12 @@ gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_RA:
-		bpf_error(cstate, "'ra' is only supported on 802.11");
-		/*NOTREACHED*/
-
 	case Q_TA:
-		bpf_error(cstate, "'ta' is only supported on 802.11");
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	abort();
@@ -9135,10 +8875,7 @@ gen_vlan_tpid_test(compiler_state_t *cstate)
 static struct block *
 gen_vlan_vid_test(compiler_state_t *cstate, bpf_u_int32 vlan_num)
 {
-	if (vlan_num > 0x0fff) {
-		bpf_error(cstate, "VLAN tag %u greater than maximum %u",
-		    vlan_num, 0x0fff);
-	}
+	assert_maxval(cstate, "VLAN tag", vlan_num, 0x0fff);
 	return gen_mcmp(cstate, OR_LINKPL, 0, BPF_H, vlan_num, 0x0fff);
 }
 
@@ -9463,10 +9200,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 
 	/* If a specific MPLS label is requested, check it */
 	if (has_label_num) {
-		if (label_num > 0xFFFFF) {
-			bpf_error(cstate, "MPLS label %u greater than maximum %u",
-			    label_num, 0xFFFFF);
-		}
+		assert_maxval(cstate, "MPLS label", label_num, 0xFFFFF);
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, label_num,
 		    0xfffff000); /* only compare the first 20 bits */
@@ -9556,10 +9290,7 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (has_sess_num) {
-		if (sess_num > UINT16_MAX) {
-			bpf_error(cstate, "PPPoE session number %u greater than maximum %u",
-			    sess_num, UINT16_MAX);
-		}
+		assert_maxval(cstate, "PPPoE session number", sess_num, UINT16_MAX);
 		b1 = gen_cmp(cstate, OR_LINKPL, 2, BPF_H, sess_num);
 		gen_and(b0, b1);
 		b0 = b1;
@@ -9615,10 +9346,7 @@ gen_geneve_check(compiler_state_t *cstate,
 	b0 = b1;
 
 	if (has_vni) {
-		if (vni > 0xffffff) {
-			bpf_error(cstate, "Geneve VNI %u greater than maximum %u",
-			    vni, 0xffffff);
-		}
+		assert_maxval(cstate, "Geneve VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
 		gen_and(b0, b1);
@@ -9890,10 +9618,7 @@ gen_vxlan_check(compiler_state_t *cstate,
 	b0 = b1;
 
 	if (has_vni) {
-		if (vni > 0xffffff) {
-			bpf_error(cstate, "VXLAN VNI %u greater than maximum %u",
-			    vni, 0xffffff);
-		}
+		assert_maxval(cstate, "VXLAN VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
 		gen_and(b0, b1);
@@ -10111,26 +9836,30 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 {
 	struct block *b0;
 
+	/*
+	 * This check is a no-op for A_MSGTYPE so long as the only incoming
+	 * code path is from gen_atmmulti_abbrev(), which makes the same
+	 * check first; also for A_PROTOTYPE so long as the only incoming code
+	 * paths are from gen_atmtype_abbrev(), which makes the same check
+	 * first, or from gen_llc_internal() or gen_linktype(), which restrict
+	 * it to DLT_SUNATM.
+	 */
+	assert_atm(cstate, atmkw(atmfield));
+
 	switch (atmfield) {
 
 	case A_VPI:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'vpi' supported only on raw ATM");
 		if (cstate->off_vpi == OFFSET_NOT_SET)
 			abort();
-		if (jvalue > UINT8_MAX)
-			bpf_error(cstate, "VPI value %u > %u", jvalue, UINT8_MAX);
+		assert_maxval(cstate, "VPI", jvalue, UINT8_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
 
 	case A_VCI:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'vci' supported only on raw ATM");
 		if (cstate->off_vci == OFFSET_NOT_SET)
 			abort();
-		if (jvalue > UINT16_MAX)
-			bpf_error(cstate, "VCI value %u > %u", jvalue, UINT16_MAX);
+		assert_maxval(cstate, "VCI", jvalue, UINT16_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
@@ -10214,19 +9943,17 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_atm(cstate, atmkw(type));
+
 	switch (type) {
 
 	case A_METAC:
 		/* Get all packets in Meta signalling Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'metac' supported only on raw ATM");
 		b1 = gen_atmtype_metac(cstate);
 		break;
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'bcc' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 2, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -10234,8 +9961,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam4sc' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -10243,8 +9968,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam4ec' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -10252,15 +9975,11 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'sc' supported only on raw ATM");
 		b1 = gen_atmtype_sc(cstate);
 		break;
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'ilmic' supported only on raw ATM");
 		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 16, BPF_JEQ, 0);
 		gen_and(b0, b1);
@@ -10268,8 +9987,6 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_LANE:
 		/* Get all LANE packets */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'lane' supported only on raw ATM");
 		b1 = gen_atmfield_code_internal(cstate, A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
 
 		/*
@@ -10314,23 +10031,17 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_ss7(cstate, ss7kw(type));
+
 	switch (type) {
 
 	case M_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'fisu' supported only on MTP2");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JEQ, 0, 0U);
 		break;
 
 	case M_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'lssu' supported only on MTP2");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 1, 2U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
@@ -10339,29 +10050,17 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case M_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'msu' supported only on MTP2");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 0, 2U);
 		break;
 
 	case MH_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hfisu' supported only on MTP2_HSL");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JEQ, 0, 0U);
 		break;
 
 	case MH_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hlssu' supported only on MTP2_HSL");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 1, 0x0100U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
@@ -10370,10 +10069,6 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case MH_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
-			bpf_error(cstate, "'hmsu' supported only on MTP2_HSL");
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0x0100U);
 		break;
@@ -10406,6 +10101,9 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	newoff_opc = cstate->off_opc;
 	newoff_dpc = cstate->off_dpc;
 	newoff_sls = cstate->off_sls;
+
+	assert_ss7(cstate, ss7kw(mtp3field));
+
 	switch (mtp3field) {
 
 	/*
@@ -10420,11 +10118,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SIO:
-		if (cstate->off_sio == OFFSET_NOT_SET)
-			bpf_error(cstate, "'sio' supported only on SS7");
-		if(jvalue > MTP2_SIO_MAXVAL)
-			bpf_error(cstate, "sio value %u too big; max value = %u",
-			    jvalue, MTP2_SIO_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP2_SIO_MAXVAL);
 		// Here the bitmask means "do not apply a bitmask".
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
 		    jtype, reverse, jvalue);
@@ -10464,11 +10158,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 
 		/* FALLTHROUGH */
 	case M_OPC:
-		if (cstate->off_opc == OFFSET_NOT_SET)
-			bpf_error(cstate, "'opc' supported only on SS7");
-		if (jvalue > MTP3_PC_MAXVAL)
-			bpf_error(cstate, "opc value %u too big; max value = %u",
-			    jvalue, MTP3_PC_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
 		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
 		    SWAPLONG(jvalue << 14));
@@ -10479,11 +10169,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-		if (cstate->off_dpc == OFFSET_NOT_SET)
-			bpf_error(cstate, "'dpc' supported only on SS7");
-		if (jvalue > MTP3_PC_MAXVAL)
-			bpf_error(cstate, "dpc value %u too big; max value = %u",
-			    jvalue, MTP3_PC_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
 		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
 		    SWAPSHORT(jvalue));
@@ -10494,11 +10180,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 
 	case M_SLS:
-		if (cstate->off_sls == OFFSET_NOT_SET)
-			bpf_error(cstate, "'sls' supported only on SS7");
-		if (jvalue > MTP3_SLS_MAXVAL)
-			 bpf_error(cstate, "sls value %u too big; max value = %u",
-			     jvalue, MTP3_SLS_MAXVAL);
+		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_SLS_MAXVAL);
 		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
 		    MTP3_SLS_MAXVAL << 4, jtype, reverse,
 		    jvalue << 4);
@@ -10578,11 +10260,11 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_atm(cstate, atmkw(type));
+
 	switch (type) {
 
 	case A_OAM:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oam' supported only on raw ATM");
 		/* OAM F4 type */
 		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
@@ -10592,8 +10274,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case A_OAMF4:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'oamf4' supported only on raw ATM");
 		/* OAM F4 type */
 		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
 		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
@@ -10607,8 +10287,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 * Get Q.2931 signalling messages for switched
 		 * virtual connection
 		 */
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'connectmsg' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
 		gen_or(b0, b1);
@@ -10625,8 +10303,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case A_METACONNECT:
-		if (!cstate->is_atm)
-			bpf_error(cstate, "'metaconnect' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
 		gen_or(b0, b1);
