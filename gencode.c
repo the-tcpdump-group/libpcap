@@ -857,6 +857,13 @@ syntax(compiler_state_t *cstate)
 	bpf_error(cstate, "syntax error in filter expression");
 }
 
+static PCAP_NORETURN_DEF void
+fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
+{
+	bpf_error(cstate, "'%s' not supported on %s", keyword,
+	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+}
+
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
@@ -3865,8 +3872,7 @@ gen_llc_internal(compiler_state_t *cstate)
 			IEEE80211_FC0_TYPE_MASK);
 
 	default:
-		bpf_error(cstate, "'llc' not supported for %s",
-			  pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "llc");
 		/*NOTREACHED*/
 	}
 }
@@ -8363,9 +8369,8 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 			return gen_wlanhostop(cstate, ebroadcast, Q_DST);
 		case DLT_IP_OVER_FC:
 			return gen_ipfchostop(cstate, ebroadcast, Q_DST);
-		default:
-			bpf_error(cstate, "not a broadcast link");
 		}
+		fail_kw_on_dlt(cstate, "broadcast");
 		/*NOTREACHED*/
 
 	case Q_IP:
@@ -8571,8 +8576,8 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		default:
 			break;
 		}
-		/* Link not known to support multicasts */
-		break;
+		fail_kw_on_dlt(cstate, "multicast");
+		/*NOTREACHED*/
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
@@ -8636,8 +8641,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
 #else /* defined(__linux__) */
-		bpf_error(cstate, "ifindex not supported on %s",
-		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "ifindex");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
@@ -8759,8 +8763,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 			gen_not(b0);
 		}
 #else /* defined(__linux__) */
-		bpf_error(cstate, "inbound/outbound not supported on %s",
-		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, outbound ? "outbound" : "inbound");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
@@ -8942,7 +8945,7 @@ gen_p80211_type(compiler_state_t *cstate, bpf_u_int32 type, bpf_u_int32 mask)
 		break;
 
 	default:
-		bpf_error(cstate, "802.11 link-layer types supported only on 802.11");
+		fail_kw_on_dlt(cstate, "type/subtype");
 		/*NOTREACHED*/
 	}
 
@@ -8971,7 +8974,7 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 		break;
 
 	default:
-		bpf_error(cstate, "frame direction supported only with 802.11 headers");
+		fail_kw_on_dlt(cstate, "dir");
 		/*NOTREACHED*/
 	}
 
