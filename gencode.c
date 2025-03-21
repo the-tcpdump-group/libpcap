@@ -5442,7 +5442,7 @@ static struct block *
 gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 {
 	struct block *b0;
-	struct block *b1;
+	struct block *b1 = NULL;
 
 	switch (proto) {
 
@@ -5514,7 +5514,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_LINK:
-		bpf_error(cstate, "link layer applied in wrong context");
+		break; // invalid syntax
 
 	case Q_ATALK:
 		b1 = gen_linktype(cstate, ETHERTYPE_ATALK);
@@ -5658,12 +5658,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' is not a valid protocol type");
+		break; // invalid syntax
 
 	default:
 		abort();
 	}
-	return b1;
+	if (b1)
+		return b1;
+	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
 
 struct block *
@@ -7525,7 +7527,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	}
 	switch (proto) {
 	default:
-		bpf_error(cstate, "unsupported index operation");
+		bpf_error(cstate, "'%s' does not support the index operation", pqkw(proto));
 
 	case Q_RADIO:
 		/*
