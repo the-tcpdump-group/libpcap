@@ -305,9 +305,9 @@ struct arth *gen_loadlen(compiler_state_t *);
 struct arth *gen_neg(compiler_state_t *, struct arth *);
 struct arth *gen_arth(compiler_state_t *, int, struct arth *, struct arth *);
 
-void gen_and(struct block *, struct block *);
-void gen_or(struct block *, struct block *);
-void gen_not(struct block *);
+struct block *gen_and(struct block *, struct block *);
+struct block *gen_or(struct block *, struct block *);
+struct block *gen_not(struct block *);
 
 struct block *gen_scode(compiler_state_t *, const char *, struct qual);
 struct block *gen_ecode(compiler_state_t *, const char *, struct qual);
