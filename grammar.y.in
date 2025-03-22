@@ -466,6 +466,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 					bpf_set_error(cstate, "'protochain' qualifier applied to IPv4 address and prefix length");
 					YYABORT;
 				  }
+				  /* The default case in gen_mcode() catches Q_HOST and Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, NULL, $3, $$.q)));
 				}
 	| HID NETMASK HID	{
@@ -485,6 +486,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 					bpf_set_error(cstate, "'protochain' qualifier applied to IPv4 address and netmask");
 					YYABORT;
 				  }
+				  /* The default case in gen_mcode() catches Q_HOST and Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, $3, 0, $$.q)));
 				}
 	| HID			{
@@ -524,6 +526,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 					bpf_set_error(cstate, "'protochain' qualifier applied to IPv6 address and prefix length");
 					YYABORT;
 				  }
+				  /* The default case in gen_mcode6() catches Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, $3, $$.q)));
 #else
 				  bpf_set_error(cstate, "IPv6 addresses not supported "
@@ -549,6 +552,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 					bpf_set_error(cstate, "'protochain' qualifier applied to IPv6 address");
 					YYABORT;
 				  }
+				  /* The default case in gen_mcode6() catches Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 128, $$.q)));
 #else
 				  bpf_set_error(cstate, "IPv6 addresses not supported "

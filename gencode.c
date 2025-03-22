@@ -5211,6 +5211,7 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return b0;
 
 	case Q_LINK:
+		// "link net NETNAME" and variations thereof
 		break; // invalid qualifier
 
 	case Q_IP:
@@ -7224,6 +7225,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 		return gen_host(cstate, n, m, q.proto, q.dir, q.addr);
 
 	default:
+		// Q_HOST and Q_GATEWAY only (see the grammar)
 		bpf_error(cstate, "Mask syntax for networks only");
 		/*NOTREACHED*/
 	}
@@ -7289,6 +7291,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		if (proto == Q_DECNET)
 			return gen_host(cstate, v, 0, proto, dir, q.addr);
 		else if (proto == Q_LINK) {
+			// "link (host|net) IPV4ADDR" and variations thereof
 			bpf_error(cstate, "illegal link layer address");
 		} else {
 			mask = 0xffffffff;
@@ -7412,6 +7415,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		return b;
 
 	default:
+		// Q_GATEWAY only (see the grammar)
 		bpf_error(cstate, "invalid qualifier against IPv6 address");
 		/*NOTREACHED*/
 	}
@@ -10038,7 +10042,6 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	switch (type) {
 
 	case M_FISU:
-		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JEQ, 0, 0U);
 		break;
@@ -10057,7 +10060,6 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case MH_FISU:
-		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JEQ, 0, 0U);
 		break;
