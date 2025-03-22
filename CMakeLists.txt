@@ -526,12 +526,12 @@ else()
     set(DISABLE_NETMAP ON)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
-   CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    option(DISABLE_DPDK "Disable DPDK support" OFF)
-else()
-    set(DISABLE_DPDK ON)
-endif()
+#
+# Require that DPDK support be explicitly enabled, as the code is
+# immensely hard to keep compiling for every random API change
+# the DPDK folks make.
+#
+set(DISABLE_DPDK ON)
 
 #
 # We don't support D-Bus sniffing on macOS; see
