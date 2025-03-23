@@ -5756,7 +5756,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_l1',
 		DLT => 'EN10MB',
-		aliases => ['l1'],
+		aliases => [
+			'l1',
+			'isis proto 0x1a or 0x18 or 0x12 or 0x0f or 0x11',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 13	jf 2
@@ -5777,7 +5780,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_l2',
 		DLT => 'EN10MB',
-		aliases => ['l2'],
+		aliases => [
+			'l2',
+			'isis proto 0x1b or 0x19 or 0x14 or 0x10 or 0x11',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 13	jf 2
@@ -5798,7 +5804,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_iih',
 		DLT => 'EN10MB',
-		aliases => ['iih'],
+		aliases => [
+			'iih',
+			'isis proto 0x11 or 0x0f or 0x10',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 11	jf 2
@@ -5817,7 +5826,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_lsp',
 		DLT => 'EN10MB',
-		aliases => ['lsp'],
+		aliases => [
+			'lsp',
+			'isis proto 0x12 or 0x14',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
@@ -5835,7 +5847,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_snp',
 		DLT => 'EN10MB',
-		aliases => ['snp'],
+		aliases => [
+			'snp',
+			'isis proto 0x1b or 0x1a or 0x18 or 0x19',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 12	jf 2
@@ -5855,7 +5870,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_csnp',
 		DLT => 'EN10MB',
-		aliases => ['csnp'],
+		aliases => [
+			'csnp',
+			'isis proto 0x18 or 0x19',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
@@ -5873,7 +5891,10 @@ my @accept_blocks = (
 	{
 		name => 'isis_psnp',
 		DLT => 'EN10MB',
-		aliases => ['psnp'],
+		aliases => [
+			'psnp',
+			'isis proto 0x1a or 0x1b',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jgt      #0x5dc           jt 10	jf 2
@@ -8707,6 +8728,16 @@ my @accept_blocks = (
 			'host ::1',
 			'src or dst host ::1',
 			'src or dst ::1',
+			# This syntax is not documented and seems to be an unintended edge case
+			# in the invocation of gen_mcode6() from the grammar.  It may become
+			# invalid syntax later, in which case the aliases below will need to be
+			# converted to reject tests.
+			'ip6 host ::1/128',
+			'ip6 src or dst host ::1/128',
+			'ip6 src or dst ::1/128',
+			'host ::1/128',
+			'src or dst host ::1/128',
+			'src or dst ::1/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -8819,6 +8850,11 @@ my @accept_blocks = (
 			'ip6 src fe80::1122:33ff:fe44:5566',
 			'src host fe80::1122:33ff:fe44:5566',
 			'src fe80::1122:33ff:fe44:5566',
+			# same as above
+			'ip6 src host fe80::1122:33ff:fe44:5566/128',
+			'ip6 src fe80::1122:33ff:fe44:5566/128',
+			'src host fe80::1122:33ff:fe44:5566/128',
+			'src fe80::1122:33ff:fe44:5566/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -8901,6 +8937,11 @@ my @accept_blocks = (
 			'ip6 dst fe80::7788:99ff:feaa:bbcc',
 			'dst host fe80::7788:99ff:feaa:bbcc',
 			'dst fe80::7788:99ff:feaa:bbcc',
+			# same as above
+			'ip6 dst host fe80::7788:99ff:feaa:bbcc/128',
+			'ip6 dst fe80::7788:99ff:feaa:bbcc/128',
+			'dst host fe80::7788:99ff:feaa:bbcc/128',
+			'dst fe80::7788:99ff:feaa:bbcc/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11056,6 +11097,20 @@ my @reject_tests = (
 		errstr => 'syntax error',
 	},
 	{
+		name => 'ip6_host_ipv4addr',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'RAW',
+		expr => 'ip6 host 1.2.3.4',
+		errstr => '\'ip6\' is not a valid qualifier for \'ip host\'',
+	},
+	{
+		name => 'ip6_host_ipv4name',
+		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		DLT => 'RAW',
+		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
+		errstr => "unknown host \'noeth-ipv4-noipv6.host123.libpcap.test' for specified address family",
+	},
+	{
 		name => 'broadcast_not_supported',
 		DLT => 'SLIP',
 		expr => 'broadcast',
@@ -11669,7 +11724,272 @@ my @reject_tests = (
 		expr => 'link[0:5] != 0',
 		errstr => 'data size must be 1, 2, or 4',
 	},
+	{
+		name => 'bare_radio',
+		DLT => 'IEEE802_11_RADIO',
+		expr => 'radio',
+		errstr => '\'radio\' cannot be used as an abbreviation',
+	},
+	{
+		name => 'bare_link',
+		DLT => 'IEEE802_11_RADIO',
+		expr => 'link',
+		errstr => '\'link\' cannot be used as an abbreviation',
+	},
+	{
+		name => 'link_host_ipv4addr',
+		DLT => 'RAW',
+		expr => 'link host 1.2.3.4',
+		errstr => 'illegal link layer address',
+	},
+	{
+		name => 'link_net_ipv4addr',
+		DLT => 'RAW',
+		expr => 'link net 1.2.3.4',
+		errstr => 'illegal link layer address',
+	},
+	{
+		skip => skip_config_undef ('INET6'),
+		name => 'link_host_ipv6addr',
+		DLT => 'RAW',
+		expr => 'link host fe80::',
+		errstr => '\'link\' is not a valid qualifier for \'ip6 host\'',
+	},
+	{
+		skip => skip_config_undef ('INET6'),
+		name => 'link_net_ipv6addr',
+		DLT => 'RAW',
+		expr => 'link net fe80::',
+		errstr => '\'link\' is not a valid qualifier for \'ip6 net\'',
+	},
+	{
+		skip => skip_no_networks(),
+		name => 'link_net_ipv4name',
+		DLT => 'RAW',
+		expr => 'link net net-10-20-30-0.libpcap.test',
+		errstr => '\'link\' is not a valid qualifier for \'ip net\'',
+	},
 );
+
+push @reject_tests, {
+	name => "noindex_${_}",
+	DLT => 'EN10MB',
+	expr => "${_}[0] == 0",
+	errstr => "'${_}' does not support the index operation",
+} foreach (qw{
+	ah
+	esp
+	aarp
+	iso
+	esis
+	isis
+	clnp
+	stp
+	ipx
+	netbeui
+	l1
+	l2
+	iih
+	snp
+	csnp
+	psnp
+	lsp
+});
+
+# "link host IPV4ADDR" and "link net IPV4ADDR" use a different code path with
+# a different error message and are tested above.  "link net NAME" uses yet
+# another different code path with yet another different error message and is
+# tested above.  "(link|ip|rarp|arp|decnet|ip6) host" can be valid syntax or
+# not (depending on the primitive ID), which is tested above.
+foreach (qw(
+	sctp
+	tcp
+	udp
+	icmp
+	igmp
+	igrp
+	atalk
+	lat
+	sca
+	moprc
+	mopdl
+	icmp6
+	ah
+	esp
+	pim
+	vrrp
+	aarp
+	iso
+	esis
+	isis
+	clnp
+	stp
+	ipx
+	netbeui
+	l1
+	l2
+	iih
+	snp
+	csnp
+	psnp
+	lsp
+	radio
+	carp
+)) {
+	# HID -> gen_ncode() -> gen_host()
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_ipv4addr",
+		DLT => 'EN10MB',
+		expr => "${_} host 1.2.3.4",
+		errstr => "'${_}' is not a valid qualifier for 'ip host'",
+	};
+	# HID -> gen_ncode() -> gen_host()
+	push @reject_tests, {
+		name => "inv_qual_${_}_net_ipv4addr",
+		DLT => 'EN10MB',
+		expr => "${_} net 1.2.3.4",
+		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+	};
+	# HID6 -> gen_mcode6() -> gen_host6()
+	push @reject_tests, {
+		skip => skip_config_undef ('INET6'),
+		name => "inv_qual_${_}_host_ipv6addr",
+		DLT => 'EN10MB',
+		expr => "${_} host fe80::",
+		errstr => "'${_}' is not a valid qualifier for 'ip6 host'",
+	};
+	# HID6 -> gen_mcode6() -> gen_host6()
+	push @reject_tests, {
+		skip => skip_config_undef ('INET6'),
+		name => "inv_qual_${_}_net_ipv6addr",
+		DLT => 'EN10MB',
+		expr => "${_} net fe80::",
+		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
+	};
+
+	# HID NETMASK HID -> gen_mcode()
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_ipv4mask",
+		DLT => 'EN10MB',
+		expr => "${_} host 1.2.3.0 mask 255.255.255.0",
+		errstr => 'Mask syntax for networks only',
+	};
+	# HID NETMASK HID -> gen_mcode() -> gen_host()
+	push @reject_tests, {
+		name => "inv_qual_${_}_net_ipv4mask",
+		DLT => 'EN10MB',
+		expr => "${_} net 1.2.3.0 mask 255.255.255.0",
+		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+	};
+	# ("mask" is IPv4-only)
+
+	# HID '/' NUM -> gen_mcode()
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_ipv4cidr",
+		DLT => 'EN10MB',
+		expr => "${_} host 1.2.3.0/24",
+		errstr => 'Mask syntax for networks only',
+	};
+	# HID '/' NUM -> gen_mcode() -> gen_host()
+	push @reject_tests, {
+		name => "inv_qual_${_}_net_ipv4cidr",
+		DLT => 'EN10MB',
+		expr => "${_} net 1.2.3.0/24",
+		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+	};
+	# HID6 '/' NUM -> gen_mcode6()
+	push @reject_tests, {
+		skip => skip_config_undef ('INET6'),
+		name => "inv_qual_${_}_host_ipv6cidr",
+		DLT => 'EN10MB',
+		expr => "${_} host fe80::/16",
+		errstr => 'Mask syntax for networks only',
+	};
+	# HID6 '/' NUM -> gen_mcode6() -> gen_host6()
+	push @reject_tests, {
+		skip => skip_config_undef ('INET6'),
+		name => "inv_qual_${_}_net_ipv6cidr",
+		DLT => 'EN10MB',
+		expr => "${_} net fe80::/16",
+		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
+	};
+
+	# ID -> gen_scode() -> gen_host()
+	push @reject_tests, {
+		skip => skip_no_hosts(),
+		name => "inv_qual_${_}_host_ipv4name",
+		DLT => 'EN10MB',
+		expr => "${_} host noeth-ipv4-noipv6.host123.libpcap.test",
+		errstr => "'${_}' is not a valid qualifier for 'ip host'",
+	};
+	# ID -> gen_scode() -> gen_host()
+	push @reject_tests, {
+		skip => skip_no_networks(),
+		name => "inv_qual_${_}_net_ipv4name",
+		DLT => 'EN10MB',
+		expr => "${_} net net-10-20-30-0.libpcap.test",
+		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+	};
+	# ID -> gen_scode() -> gen_host6()
+	push @reject_tests, {
+		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		name => "inv_qual_${_}_host_ipv6name",
+		DLT => 'EN10MB',
+		expr => "${_} host noeth-noipv4-ipv6.host123.libpcap.test",
+		errstr => "'${_}' is not a valid qualifier for 'ip6 host'",
+	};
+	# (IPv6 networks cannot have names)
+}
+
+foreach (qw(
+	link
+	sctp
+	tcp
+	udp
+	icmp
+	igmp
+	igrp
+	atalk
+	decnet
+	lat
+	sca
+	moprc
+	mopdl
+	ip6
+	icmp6
+	ah
+	esp
+	pim
+	vrrp
+	aarp
+	iso
+	esis
+	isis
+	clnp
+	stp
+	ipx
+	netbeui
+	l1
+	l2
+	iih
+	snp
+	csnp
+	psnp
+	lsp
+	radio
+	carp
+)) {
+	# ID -> gen_scode() -> gen_host6()
+	push @reject_tests, {
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		name => "inv_qual_${_}_gateway_ipv4name",
+		DLT => 'EN10MB',
+		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
+		errstr => "'${_}' is not a valid qualifier for 'gateway'",
+	};
+}
 
 sub accept_test_label {
 	return join '_', ('accept', @_);
