@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "21 March 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "24 March 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -52,20 +52,23 @@ type qualifier below.)
 Possible
 protocols are:
 .BR ether ,
-.BR fddi ,
 .BR link ,
-.BR tr ,
 .BR wlan ,
 .BR ip ,
 .BR ip6 ,
 .BR arp ,
+.BR tcp ,
+.BR udp ,
+.BR sctp ,
+.BR iso ,
+.BR isis ,
 .BR rarp ,
 .BR decnet ,
-.BR iso ,
-.BR sctp ,
-.B tcp
+.BR fddi ,
+.BR tr ,
+.B ppp
 and
-.BR udp .
+.BR slip .
 E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
 `\fBip proto\fP ospf', `\fBether proto\fP 0x88CC',
 `\fBudp portrange\fP 7000-7009', `\fBwlan addr2\fP 0:2:3:4:5:6'.
@@ -111,10 +114,12 @@ qualifiers say what kind of thing the id name or number refers to.
 Possible types are
 .BR host ,
 .BR net ,
-.BR proto ,
-.B port
+.BR \%proto ,
+.BR port ,
+.BR \%portrange ,
+.B \%protochain
 and
-.BR portrange .
+.B \%gateway.
 E.g., `\fBhost\fP foo', `\fBnet\fP 128.3', `\fBport\fP 20', `\fBportrange\fP 6000-6008',
 `\fBproto \fP 17'.
 If there is no type
@@ -153,7 +158,12 @@ FDDI headers also contain other fields,
 but you cannot name them explicitly in a filter expression.
 Similarly, \fBtr\fP and \fBwlan\fP are aliases for \fBether\fP; the
 statements about FDDI headers also apply to Token Ring and 802.11 wireless
-LAN headers.]
+LAN headers.  The same stands for the
+.BR link ,
+.B ppp
+and
+.B slip
+keywords.]
 .LP
 For IEEE 802.11 headers, the destination address is the DA field and the
 source address is the SA field.  For both ARP and RARP headers, the
@@ -162,7 +172,6 @@ source address is the SPA (Sender Protocol Address) field.
 .LP
 In addition to the above, there are some special `primitive' keywords
 that don't follow the pattern (for example:
-.BR gateway ,
 .BR broadcast ,
 .BR multicast ,
 .BR inbound ,
@@ -171,10 +180,9 @@ that don't follow the pattern (for example:
 .BR llc ,
 .BR vlan ,
 .BR mpls ,
-.BR wlan ,
 .BR less ,
 .BR greater ),
-packet data accessors and arithmetic expressions.
+packet data accessors and relations of two arithmetic expressions.
 All of these are described below.
 .LP
 More complex filter expressions are built up by using the words
@@ -1079,6 +1087,10 @@ and
 .B \%is-is
 is an alias for
 .BR isis .
+.IP "\fBisis proto \fIprotocol\fR"
+True if the packet is an IS-IS packet of protocol type
+.IR protocol ,
+which can be a number only.
 .IP "\fBl1\fR, \fBl2\fR, \fBiih\fR, \fBlsp\fR, \fBsnp\fR, \fBcsnp\fR, \fBpsnp\fR"
 Abbreviations for IS-IS PDU types.
 .IP "\fIatmfield relop val\fR"
@@ -1507,6 +1519,81 @@ which should not be confused with
 \fBnot (host \fPvs\fB and host \fPace\fB)\fR
 .fi
 .in -.5i
+.SH PROTOCOL NAMES IN VARIOUS CONTEXTS
+The table below shows which protocol names can be used in which contexts of
+the currently implemented syntax.  The "name" column contains a protocol name,
+which often can be used as an ID in primitives that take a protocol name
+argument; in all cases except
+.BR \%loopback
+the protocol name is also a keyword.  If the keyword is an alias, the "see"
+column refers to the main keyword.  The "abbr" column tells whether the
+keyword can be used as an abbreviation (that is, if the keyword is the only
+contents of a primitive, it means a more complex expression).  The "PDA"
+column tells whether the keyword can be used in a packet data accessor.  The
+"pqual" column tells whether the keyword can be used as a case of the
+.I proto
+qualifier kind.  If the name can be used as an ID for the
+.B proto
+case of the
+.I type
+qualifier kind, the "tqual ID" column shows the valid context(s).
+
+.TS
+box;
+l	|l	|l	|l	|l	|l
+lB	|lB	|l	|l	|l	|lB.
+name	see	abbr	PDA	pqual	tqual ID
+_
+aarp		yes	no	no	link proto \\aarp
+ah		yes	no	no	[ip|ip6] proto \\ah
+arp		yes	yes	yes	link proto \\arp
+atalk		yes	yes	no	link proto \\atalk
+carp		yes	yes	no	ip proto \\carp
+clnp		yes	no	no	iso proto \\clnp
+csnp		yes	no	no
+decnet		yes	yes	yes	link proto \\decnet
+esis		yes	no	no	iso proto \\esis
+es-is	esis
+esp		yes	no	no	[ip|ip6] proto \\esp
+ether	link
+fddi	link
+icmp		yes	yes	no	ip proto \\icmp
+icmp6		yes	yes	no
+igmp		yes	yes	no	ip proto \\igmp
+igrp		yes	yes	no	ip proto \\igrp
+iih		yes	no	no
+ip		yes	yes	yes	link proto \\ip
+ip6		yes	yes	yes	link proto \\ip6
+ipx		yes	no	no	link proto \\ipx
+isis		yes	no	yes	iso proto \\isis
+is-is	isis
+iso		yes	no	yes	link proto \\iso
+l1		yes	no	no
+l2		yes	no	no
+lat		yes	yes	no	link proto \\lat
+link		no	yes	yes
+loopback					link proto loopback
+lsp		yes	no	no
+mopdl		yes	yes	no	link proto \\mopdl
+moprc		yes	yes	no	link proto \\moprc
+netbeui		yes	no	no	link proto \\netbeui
+pim		yes	yes	no	[ip|ip6] proto \\pim
+ppp	link
+psnp		yes	no	no
+radio		no	yes	no
+rarp		yes	yes	yes	link proto \\rarp
+sca		yes	yes	no	link proto \\sca
+sctp		yes	yes	yes	[ip|ip6] proto \\sctp
+slip	link
+snp		yes	no	no
+stp		yes	no	no	link proto \\stp
+tcp		yes	yes	yes	[ip|ip6] proto \\tcp
+tr	link
+udp		yes	yes	yes	[ip|ip6] proto \\udp
+vrrp		yes	yes	no	ip proto \\vrrp
+wlan	link
+.TE
+
 .SH EXAMPLES
 .LP
 To select all packets arriving at or departing from `sundown':
