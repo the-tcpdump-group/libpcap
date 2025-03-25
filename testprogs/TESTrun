@@ -6278,6 +6278,31 @@ my @accept_blocks = (
 			(007) ret      #0
 			',
 	}, # iso_proto_isis
+	# Test the DLT dimension of "iso proto" for one alias only.
+	{
+		name => 'iso_proto_clnp_FRELAY',
+		DLT => 'FRELAY',
+		aliases => ['iso proto \clnp'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x381           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # clnp_FRELAY
+	{
+		name => 'iso_proto_clnp_C_HDLC',
+		DLT => 'C_HDLC',
+		aliases => ['iso proto \clnp'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0xfefe          jt 2	jf 5
+			(002) ldb      [5]
+			(003) jeq      #0x81            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # clnp_C_HDLC
 	{
 		name => 'isis_l1',
 		DLT => 'EN10MB',
@@ -6369,6 +6394,22 @@ my @accept_blocks = (
 			(010) ret      #0
 			',
 	}, # isis_lsp
+	{
+		name => 'isis_lsp_C_HDLC',
+		DLT => 'C_HDLC',
+		aliases => ['lsp'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0xfefe          jt 2	jf 8
+			(002) ldb      [5]
+			(003) jeq      #0x83            jt 4	jf 8
+			(004) ldb      [8]
+			(005) jeq      #0x12            jt 7	jf 6
+			(006) jeq      #0x14            jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # isis_lsp_C_HDLC
 	{
 		name => 'isis_snp',
 		DLT => 'EN10MB',
@@ -11459,6 +11500,42 @@ my @apply_blocks = (
 		savefile => 'http_PPI.pcap',
 		expr => 'wlan dir nods',
 		results => [0, 65535, 0, 65535, 0],
+	},
+	{
+		name => 'iso_proto_isis_EN10MB',
+		savefile => 'ISIS_external_lsp.pcap',
+		expr => 'iso proto \isis',
+		results => [8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192],
+	},
+	{
+		name => 'iso_proto_esis_EN10MB',
+		savefile => 'ISIS_external_lsp.pcap',
+		expr => 'iso proto \esis',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'csnp_EN10MB',
+		savefile => 'ISIS_external_lsp.pcap',
+		expr => 'csnp',
+		results => [8192, 0, 0, 0, 0, 8192, 0, 0, 0, 0],
+	},
+	{
+		name => 'iso_proto_isis_C_HDLC',
+		savefile => 'ISIS_p2p_adjacency.pcap',
+		expr => 'iso proto \isis',
+		results => [8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192],
+	},
+	{
+		name => 'iso_proto_esis_C_HDLC',
+		savefile => 'ISIS_p2p_adjacency.pcap',
+		expr => 'iso proto \esis',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'csnp_C_HDLC',
+		savefile => 'ISIS_p2p_adjacency.pcap',
+		expr => 'csnp',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
 );
 
