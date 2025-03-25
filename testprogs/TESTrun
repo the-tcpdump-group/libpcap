@@ -791,6 +791,531 @@ my @accept_blocks = (
 	}, # ifindex_linuxext
 
 	{
+		name => 'pflog_ifname',
+		DLT => 'PFLOG',
+		aliases => [
+			'ifname testname1',
+			'on testname1',
+		],
+		unopt => '
+			(000) ld       [9]
+			(001) jeq      #0x616d6531      jt 2	jf 7
+			(002) ld       [5]
+			(003) jeq      #0x6573746e      jt 4	jf 7
+			(004) ldb      [4]
+			(005) jeq      #0x74            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # pflog_ifname
+	{
+		name => 'pflog_rnr',
+		DLT => 'PFLOG',
+		aliases => [
+			'rnr 0x456789',
+			'rulenum 0x456789',
+		],
+		unopt => '
+			(000) ld       [36]
+			(001) jeq      #0x456789        jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_rnr
+	{
+		name => 'pflog_reason_match',
+		DLT => 'PFLOG',
+		aliases => ['reason match'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_match
+	{
+		name => 'pflog_reason_bad_offset',
+		DLT => 'PFLOG',
+		aliases => ['reason bad-offset'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_bad_offset
+	{
+		name => 'pflog_reason_fragment',
+		DLT => 'PFLOG',
+		aliases => ['reason fragment'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_fragment
+	{
+		name => 'pflog_reason_short',
+		DLT => 'PFLOG',
+		aliases => ['reason short'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x3             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_short
+	{
+		name => 'pflog_reason_normalize',
+		DLT => 'PFLOG',
+		aliases => ['reason normalize'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_normalize
+	{
+		name => 'pflog_reason_memory',
+		DLT => 'PFLOG',
+		aliases => ['reason memory'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x5             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_memory
+	{
+		name => 'pflog_reason_bad_timestamp',
+		DLT => 'PFLOG',
+		aliases => ['reason bad-timestamp'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x6             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_bad_timestamp
+	{
+		name => 'pflog_reason_congestion',
+		DLT => 'PFLOG',
+		aliases => ['reason congestion'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x7             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_congestion
+	{
+		name => 'pflog_reason_ip_option',
+		DLT => 'PFLOG',
+		aliases => ['reason ip-option'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x8             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_ip_option
+	{
+		name => 'pflog_reason_proto_cksum',
+		DLT => 'PFLOG',
+		aliases => ['reason proto-cksum'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x9             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_proto_cksum
+	{
+		name => 'pflog_reason_state_mismatch',
+		DLT => 'PFLOG',
+		aliases => ['reason state-mismatch'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_state_mismatch
+	{
+		name => 'pflog_reason_state_insert',
+		DLT => 'PFLOG',
+		aliases => ['reason state-insert'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xb             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_state_insert
+	{
+		name => 'pflog_reason_state_limit',
+		DLT => 'PFLOG',
+		aliases => ['reason state-limit'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xc             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_state_limit
+	{
+		name => 'pflog_reason_src_limit',
+		DLT => 'PFLOG',
+		aliases => ['reason src-limit'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xd             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_src_limit
+	{
+		name => 'pflog_reason_synproxy',
+		DLT => 'PFLOG',
+		aliases => ['reason synproxy'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xe             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_synproxy
+	{
+		name => 'pflog_reason_map_failed',
+		skip => skip_os_not ('freebsd'),
+		DLT => 'PFLOG',
+		aliases => ['reason map-failed'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xf             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_map_failed
+	{
+		name => 'pflog_reason_state_locked',
+		skip => skip_os_not ('netbsd'),
+		DLT => 'PFLOG',
+		aliases => ['reason state-locked'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xf             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_state_locked
+	{
+		name => 'pflog_reason_translate',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['reason translate'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xf             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_translate
+	{
+		name => 'pflog_reason_no_route',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['reason no-route'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0x10            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_no_route
+	{
+		name => 'pflog_reason_dummynet',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['reason dummynet'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xf             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_reason_dummynet
+	{
+		name => 'pflog_rset',
+		DLT => 'PFLOG',
+		aliases => [
+			'rset testruleset2',
+			'ruleset testruleset2',
+		],
+		unopt => '
+			(000) ld       [28]
+			(001) jeq      #0x73657432      jt 2	jf 7
+			(002) ld       [24]
+			(003) jeq      #0x72756c65      jt 4	jf 7
+			(004) ld       [20]
+			(005) jeq      #0x74657374      jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # pflog_rset
+	{
+		name => 'pflog_srnr',
+		DLT => 'PFLOG',
+		aliases => [
+			'srnr 123',
+			'subrulenum 123',
+		],
+		unopt => '
+			(000) ld       [40]
+			(001) jeq      #0x7b            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_srnr
+	{
+		name => 'pflog_action_pass',
+		DLT => 'PFLOG',
+		aliases => [
+			'action pass',
+			'action accept',
+		],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_pass
+	{
+		name => 'pflog_action_block',
+		DLT => 'PFLOG',
+		aliases => [
+			'action block',
+			'action drop',
+		],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_block
+	{
+		name => 'pflog_action_scrub',
+		DLT => 'PFLOG',
+		aliases => ['action scrub'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_scrub
+	{
+		name => 'pflog_action_noscrub',
+		DLT => 'PFLOG',
+		aliases => ['action noscrub'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x3             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_noscrub
+	{
+		name => 'pflog_action_nat',
+		DLT => 'PFLOG',
+		aliases => ['action nat'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x4             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nat
+	{
+		name => 'pflog_action_nonat',
+		DLT => 'PFLOG',
+		aliases => ['action nonat'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x5             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nonat
+	{
+		name => 'pflog_action_binat',
+		DLT => 'PFLOG',
+		aliases => ['action binat'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x6             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_binat
+	{
+		name => 'pflog_action_nobinat',
+		DLT => 'PFLOG',
+		aliases => ['action nobinat'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x7             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nobinat
+	{
+		name => 'pflog_action_rdr',
+		DLT => 'PFLOG',
+		aliases => ['action rdr'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x8             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_rdr
+	{
+		name => 'pflog_action_nordr',
+		DLT => 'PFLOG',
+		aliases => ['action nordr'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0x9             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nordr
+	{
+		name => 'pflog_action_synproxy_drop',
+		DLT => 'PFLOG',
+		aliases => ['action synproxy-drop'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_synproxy_drop
+	{
+		name => 'pflog_action_defer',
+		skip => skip_os_not ('freebsd') && skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['action defer'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xb             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_defer
+	{
+		name => 'pflog_action_match',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['action match'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xc             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_match
+	{
+		name => 'pflog_action_divert',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['action divert'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_divert
+	{
+		name => 'pflog_action_rt',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['action rt'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xe             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_rt
+	{
+		name => 'pflog_action_afrt',
+		skip => skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['action afrt'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xf             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_afrt
+	{
+		name => 'pflog_action_dummynet',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['action dummynet'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xb             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_dummynet
+	{
+		name => 'pflog_action_nodummynet',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['action nodummynet'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xc             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nodummynet
+	{
+		name => 'pflog_action_nat64',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['action nat64'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nat64
+	{
+		name => 'pflog_action_nonat64',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['action nonat64'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xe             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # pflog_action_nonat64
+
+	{
 		name => 'mtp2_fisu',
 		DLT => 'MTP2',
 		aliases => ['fisu'],
@@ -11768,6 +12293,24 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'link net net-10-20-30-0.libpcap.test',
 		errstr => '\'link\' is not a valid qualifier for \'ip net\'',
+	},
+	{
+		name => 'reason_congestion',
+		DLT => 'RAW',
+		expr => 'reason congestion',
+		errstr => '\'reason\' supported only on PFLOG linktype',
+	},
+	{
+		name => 'reason_invalid_PFLOG',
+		DLT => 'PFLOG',
+		expr => 'reason invalid',
+		errstr => 'unknown PF reason "invalid"',
+	},
+	{
+		name => 'action_invalid_PFLOG',
+		DLT => 'PFLOG',
+		expr => 'action invalid',
+		errstr => 'unknown PF action "invalid"',
 	},
 );
 
