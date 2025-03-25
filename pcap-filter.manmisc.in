@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "24 March 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "25 March 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -804,66 +804,109 @@ used for the ``any'' device and for some other device types.
 True if the packet was logged via the specified interface (applies only to
 packets logged by the Linux "any" cooked v2 interface).
 .IP "\fBifname \fIinterface\fR"
-True if the packet was logged as coming from the specified interface (applies
-only to packets logged by OpenBSD's or FreeBSD's
-.BR pf (4)).
+True, for
+.BR DLT_PFLOG
+only, if the packet was logged as coming from the specified interface.
 .IP "\fBon \fIinterface\fR"
 Synonymous with the
 .B ifname
 primitive.
 .IP "\fBrnr \fInum\fR"
-True if the packet was logged as matching the specified PF rule number
-(applies only to packets logged by OpenBSD's or FreeBSD's
-.BR pf (4)).
+True, for
+.BR DLT_PFLOG
+only, if the packet was logged as matching the specified PF rule number.
 .IP "\fBrulenum \fInum\fR"
 Synonymous with the
 .B rnr
 primitive.
 .IP "\fBreason \fIcode\fR"
-True if the packet was logged with the specified PF reason code.  The known
+True, for
+.BR DLT_PFLOG
+only, if the packet was logged with the specified PF reason code.  Valid
 codes are:
 .BR \%match ,
 .BR \%bad-offset ,
 .BR \%fragment ,
 .BR \%short ,
 .BR \%normalize ,
-and
-.B memory
-(applies only to packets logged by OpenBSD's or FreeBSD's
-.BR pf (4)).
+.BR \%memory ,
+.BR \%bad-timestamp ,
+.BR \%congestion ,
+.BR \%ip-option ,
+.BR \%proto-cksum ,
+.BR \%state-mismatch ,
+.BR \%state-insert ,
+.BR \%state-limit ,
+.BR \%src-limit ,
+.BR \%synproxy ,
+.B \%map-failed
+(on FreeBSD only),
+.B \%state-locked
+(on NetBSD only),
+.B \%translate
+(on OpenBSD only),
+.B \%no-route
+(on OpenBSD only) and
+.B \%dummynet
+(on macOS only).
 .IP "\fBrset \fIname\fR"
-True if the packet was logged as matching the specified PF ruleset
-name of an anchored ruleset (applies only to packets logged by OpenBSD's
-or FreeBSD's
-.BR pf (4)).
+True, for
+.BR DLT_PFLOG
+only, if the packet was logged as matching the specified PF ruleset
+name of an anchored ruleset.
 .IP "\fBruleset \fIname\fR"
 Synonymous with the
 .B rset
 primitive.
 .IP "\fBsrnr \fInum\fR"
-True if the packet was logged as matching the specified PF rule number
-of an anchored ruleset (applies only to packets logged by OpenBSD's or
-FreeBSD's
-.BR pf (4)).
+True, for
+.BR DLT_PFLOG
+only, if the packet was logged as matching the specified PF rule number
+of an anchored ruleset.
 .IP "\fBsubrulenum \fInum\fR"
 Synonymous with the
 .B srnr
 primitive.
 .IP "\fBaction \fIact\fR"
-True if PF took the specified action when the packet was logged.  Known actions
-are:
+True, for
+.BR DLT_PFLOG
+only, if PF took the specified action when the packet was logged.  Valid
+actions are:
 .B pass
-and
+(or
+.BR \%accept ),
 .B block
+(or
+.BR drop )
 and, with later versions of
 .BR pf (4),
+.BR scrub ,
+.BR \%noscrub ,
 .BR nat ,
+.BR \%nonat ,
+.BR \%binat ,
+.BR \%nobinat ,
 .BR rdr ,
-.B binat
-and
-.B scrub
-(applies only to packets logged by OpenBSD's or FreeBSD's
-.BR pf (4)).
+.BR nordr ,
+.BR \%synproxy-drop ,
+.B \%defer
+(on FreeBSD and OpenBSD only),
+.B match
+(on OpenBSD only),
+.B \%divert
+(on OpenBSD only),
+.B rt
+(on OpenBSD only),
+.B afrt
+(on OpenBSD only),
+.B \%dummynet
+(on macOS only),
+.B \%nodummynet
+(on macOS only),
+.B nat64
+(on macOS only) and
+.B \%nonat64
+(on macOS only).
 .IP "\fBwlan ra \fIehost\fR"
 True if the IEEE 802.11 RA is
 .IR ehost .
