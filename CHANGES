@@ -53,6 +53,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Have "outbound" mean Tx only for DLT_SLIP.
       Filter Linux SocketCAN frames in userland if necessary.
       Enable "[wlan] dir/type/subtype" for DLT_PPI.
+      Require "(iso|isis) proto" values to be within valid ranges.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from

@@ -12312,6 +12312,18 @@ my @reject_tests = (
 		expr => 'action invalid',
 		errstr => 'unknown PF action "invalid"',
 	},
+	{
+		name => 'iso_proto_256',
+		DLT => 'EN10MB',
+		expr => 'iso proto 256',
+		errstr => 'ISO protocol 256 greater than maximum 255',
+	},
+	{
+		name => 'isis_proto_32',
+		DLT => 'EN10MB',
+		expr => 'isis proto 32',
+		errstr => 'IS-IS PDU type 32 greater than maximum 31',
+	},
 );
 
 push @reject_tests, {

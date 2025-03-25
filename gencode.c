@@ -254,6 +254,12 @@ struct addrinfo {
 #define ISIS_L2_CSNP         25
 #define ISIS_L1_PSNP         26
 #define ISIS_L2_PSNP         27
+/*
+ * The maximum possible value can also be used as a bit mask because the
+ * "PDU Type" field comprises the least significant 5 bits of a particular
+ * octet, see sections 9.5~9.13 of ISO/IEC 10589:2002(E).
+ */
+#define ISIS_PDU_TYPE_MAX 0x1FU
 
 #ifndef ISO8878A_CONS
 #define	ISO8878A_CONS		0x84
@@ -6541,6 +6547,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		break; // invalid qualifier
 
 	case Q_ISO:
+		assert_maxval(cstate, "ISO protocol", v, UINT8_MAX);
 		switch (cstate->linktype) {
 
 		case DLT_FRELAY:
@@ -6588,6 +6595,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		break; // invalid qualifier
 
 	case Q_ISIS:
+		assert_maxval(cstate, "IS-IS PDU type", v, ISIS_PDU_TYPE_MAX);
 		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 		/*
 		 * 4 is the offset of the PDU type relative to the IS-IS
