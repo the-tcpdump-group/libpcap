@@ -646,6 +646,7 @@ static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
 static struct block *gen_jmp(compiler_state_t *, int, bpf_u_int32,
     struct slist *);
 static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
+static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
 static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
@@ -1520,6 +1521,14 @@ static struct block *
 gen_set(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
 {
 	return gen_jmp(cstate, BPF_JSET, v, stmts);
+}
+
+static struct block *
+gen_unset(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
+{
+	struct block *b = gen_set(cstate, v, stmts);
+	gen_not(b);
+	return b;
 }
 
 /*
@@ -4156,10 +4165,8 @@ gen_llc_i(compiler_state_t *cstate)
 	 * be clear for I frames.
 	 */
 	s = gen_load_a(cstate, OR_LLC, 2, BPF_B);
-	b1 = new_block(cstate, JMP(BPF_JSET));
-	b1->s.k = 0x01;
-	b1->stmts = s;
-	gen_not(b1);
+	b1 = gen_unset(cstate, 0x01, s);
+
 	gen_and(b0, b1);
 	return b1;
 }
@@ -4647,10 +4654,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * "!(link[1] & 0x01)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b2 = new_block(cstate, JMP(BPF_JSET));
-		b2->s.k = 0x01;	/* To DS */
-		b2->stmts = s;
-		gen_not(b2);
+		b2 = gen_unset(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 		/*
 		 * If To DS is not set, the SA is at 16.
@@ -4677,10 +4681,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * Now check for data frames with From DS not set.
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b2 = new_block(cstate, JMP(BPF_JSET));
-		b2->s.k = 0x02;	/* From DS */
-		b2->stmts = s;
-		gen_not(b2);
+		b2 = gen_unset(cstate, IEEE80211_FC1_DIR_FROMDS, s);
 
 		/*
 		 * If From DS isn't set, the SA is at 10.
@@ -4713,10 +4714,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b2 = new_block(cstate, JMP(BPF_JSET));
-		b2->s.k = 0x08;
-		b2->stmts = s;
-		gen_not(b2);
+		b2 = gen_unset(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * For management frames, the SA is at 10.
@@ -4740,10 +4738,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x04;
-		b1->stmts = s;
-		gen_not(b1);
+		b1 = gen_unset(cstate, IEEE80211_FC0_TYPE_CTL, s);
 
 		/*
 		 * AND that with the checks for data and management
@@ -4788,10 +4783,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * "!(link[1] & 0x01)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b2 = new_block(cstate, JMP(BPF_JSET));
-		b2->s.k = 0x01;	/* To DS */
-		b2->stmts = s;
-		gen_not(b2);
+		b2 = gen_unset(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 		/*
 		 * If To DS is not set, the DA is at 4.
@@ -4823,10 +4815,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b2 = new_block(cstate, JMP(BPF_JSET));
-		b2->s.k = 0x08;
-		b2->stmts = s;
-		gen_not(b2);
+		b2 = gen_unset(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * For management frames, the DA is at 4.
@@ -4850,10 +4839,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x04;
-		b1->stmts = s;
-		gen_not(b1);
+		b1 = gen_unset(cstate, IEEE80211_FC0_TYPE_CTL, s);
 
 		/*
 		 * AND that with the checks for data and management
@@ -5712,16 +5698,10 @@ static struct block *
 gen_ipfrag(compiler_state_t *cstate)
 {
 	struct slist *s;
-	struct block *b;
 
 	/* not IPv4 frag other than the first frag */
 	s = gen_load_a(cstate, OR_LINKPL, 6, BPF_H);
-	b = new_block(cstate, JMP(BPF_JSET));
-	b->s.k = 0x1fff;
-	b->stmts = s;
-	gen_not(b);
-
-	return b;
+	return gen_unset(cstate, 0x1fff, s);
 }
 
 /*
@@ -8319,10 +8299,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * "!(link[1] & 0x01)".
 			 */
 			s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-			b2 = new_block(cstate, JMP(BPF_JSET));
-			b2->s.k = 0x01;	/* To DS */
-			b2->stmts = s;
-			gen_not(b2);
+			b2 = gen_unset(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 			/*
 			 * If To DS is not set, the DA is at 4.
@@ -8354,10 +8331,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * I.e, check "!(link[0] & 0x08)".
 			 */
 			s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-			b2 = new_block(cstate, JMP(BPF_JSET));
-			b2->s.k = 0x08;
-			b2->stmts = s;
-			gen_not(b2);
+			b2 = gen_unset(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 			/*
 			 * For management frames, the DA is at 4.
@@ -8381,10 +8355,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * I.e., check "!(link[0] & 0x04)".
 			 */
 			s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-			b1 = new_block(cstate, JMP(BPF_JSET));
-			b1->s.k = 0x04;
-			b1->stmts = s;
-			gen_not(b1);
+			b1 = gen_unset(cstate, IEEE80211_FC0_TYPE_CTL, s);
 
 			/*
 			 * AND that with the checks for data and management
