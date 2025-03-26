@@ -2671,6 +2671,22 @@ my @accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ip_over_fc_multicast
+	{
+		name => 'atm_multicast',
+		DLT => 'SUNATM',
+		aliases => ['lane and multicast'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x1             jt 3	jf 8
+			(003) ldh      [4]
+			(004) jeq      #0xff00          jt 8	jf 5
+			(005) ldb      [6]
+			(006) jset     #0x1             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # atm_multicast
 
 	{
 		name => 'ether_broadcast',
@@ -4260,6 +4276,408 @@ my @accept_blocks = (
 			(006) ret      #0
 			',
 	}, # mpls_ppp_unary
+
+	{
+		name => 'vxlan_nullary',
+		DLT => 'EN10MB',
+		aliases => ['vxlan'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 21
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 21	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 21
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 21
+			(011) txa
+			(012) jeq      x                jt 20	jf 21
+			(013) jeq      #0x86dd          jt 14	jf 21
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 21
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 21
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # vxlan_nullary
+	{
+		name => 'vxlan_unary',
+		DLT => 'EN10MB',
+		aliases => ['vxlan 12345'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 16
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 27
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 27	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 27
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 27
+			(011) ld       [x + 26]
+			(012) and      #0xffffff00
+			(013) jeq      #0x303900        jt 14	jf 27
+			(014) txa
+			(015) jeq      x                jt 26	jf 27
+			(016) jeq      #0x86dd          jt 17	jf 27
+			(017) ldb      [20]
+			(018) jeq      #0x11            jt 19	jf 27
+			(019) ldh      [56]
+			(020) jeq      #0x12b5          jt 21	jf 27
+			(021) ldb      [62]
+			(022) jeq      #0x8             jt 23	jf 27
+			(023) ld       [66]
+			(024) and      #0xffffff00
+			(025) jeq      #0x303900        jt 26	jf 27
+			(026) ret      #262144
+			(027) ret      #0
+			',
+	}, # vxlan_unary
+	{
+		name => 'vxlan_and_vxlan',
+		DLT => 'EN10MB',
+		aliases => ['vxlan and vxlan'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 75
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 75	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 75
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 75
+			(011) txa
+			(012) jeq      x                jt 23	jf 75
+			(013) jeq      #0x86dd          jt 14	jf 75
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 75
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 75
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 75
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) add      #2
+			(028) tax
+			(029) stx      M[2]
+			(030) ld       #0x0
+			(031) jeq      #0x0             jt 32	jf 32
+			(032) ldx      M[1]
+			(033) ldh      [x + 0]
+			(034) jeq      #0x800           jt 35	jf 62
+			(035) ldx      M[2]
+			(036) ldb      [x + 9]
+			(037) jeq      #0x11            jt 38	jf 75
+			(038) ldh      [x + 6]
+			(039) jset     #0x1fff          jt 75	jf 40
+			(040) ldb      [x + 0]
+			(041) and      #0xf
+			(042) lsh      #2
+			(043) add      x
+			(044) tax
+			(045) ldh      [x + 2]
+			(046) jeq      #0x12b5          jt 47	jf 75
+			(047) ldx      M[2]
+			(048) ldb      [x + 0]
+			(049) and      #0xf
+			(050) lsh      #2
+			(051) add      x
+			(052) tax
+			(053) ldb      [x + 8]
+			(054) jeq      #0x8             jt 55	jf 75
+			(055) ldx      M[2]
+			(056) ldb      [x + 0]
+			(057) and      #0xf
+			(058) lsh      #2
+			(059) add      x
+			(060) tax
+			(061) jeq      x                jt 74	jf 75
+			(062) jeq      #0x86dd          jt 63	jf 75
+			(063) ldx      M[2]
+			(064) ldb      [x + 6]
+			(065) jeq      #0x11            jt 66	jf 75
+			(066) ldh      [x + 42]
+			(067) jeq      #0x12b5          jt 68	jf 75
+			(068) ldb      [x + 48]
+			(069) jeq      #0x8             jt 70	jf 75
+			(070) ld       #0x28
+			(071) add      x
+			(072) tax
+			(073) jeq      x                jt 74	jf 75
+			(074) ret      #262144
+			(075) ret      #0
+			',
+	}, # vxlan_and_vxlan
+	{
+		name => 'geneve_nullary',
+		DLT => 'EN10MB',
+		aliases => ['geneve'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 16
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 16	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x17c1          jt 9	jf 16
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) and      #0xc0
+			(012) jeq      #0x0             jt 13	jf 16
+			(013) ldxb     4*([14]&0xf)
+			(014) txa
+			(015) jeq      x                jt 28	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x86dd          jt 18	jf 50
+			(018) ldb      [20]
+			(019) jeq      #0x11            jt 20	jf 50
+			(020) ldh      [56]
+			(021) jeq      #0x17c1          jt 22	jf 50
+			(022) ldb      [62]
+			(023) and      #0xc0
+			(024) jeq      #0x0             jt 25	jf 50
+			(025) ld       #0x28
+			(026) tax
+			(027) jeq      x                jt 28	jf 50
+			(028) add      #22
+			(029) tax
+			(030) add      #2
+			(031) st       M[0]
+			(032) ldb      [x + 0]
+			(033) and      #0x3f
+			(034) mul      #4
+			(035) add      #8
+			(036) add      x
+			(037) st       M[1]
+			(038) ldh      [x + 2]
+			(039) ldx      M[1]
+			(040) jeq      #0x6558          jt 41	jf 46
+			(041) txa
+			(042) add      #12
+			(043) st       M[0]
+			(044) add      #2
+			(045) tax
+			(046) stx      M[2]
+			(047) ld       #0x0
+			(048) jeq      #0x0             jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
+			',
+	}, # geneve_nullary
+	{
+		name => 'geneve_unary',
+		DLT => 'EN10MB',
+		aliases => ['geneve 12345'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 20
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x17c1          jt 9	jf 20
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) and      #0xc0
+			(012) jeq      #0x0             jt 13	jf 20
+			(013) ldxb     4*([14]&0xf)
+			(014) ld       [x + 26]
+			(015) and      #0xffffff00
+			(016) jeq      #0x303900        jt 17	jf 20
+			(017) ldxb     4*([14]&0xf)
+			(018) txa
+			(019) jeq      x                jt 35	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x86dd          jt 22	jf 57
+			(022) ldb      [20]
+			(023) jeq      #0x11            jt 24	jf 57
+			(024) ldh      [56]
+			(025) jeq      #0x17c1          jt 26	jf 57
+			(026) ldb      [62]
+			(027) and      #0xc0
+			(028) jeq      #0x0             jt 29	jf 57
+			(029) ld       [66]
+			(030) and      #0xffffff00
+			(031) jeq      #0x303900        jt 32	jf 57
+			(032) ld       #0x28
+			(033) tax
+			(034) jeq      x                jt 35	jf 57
+			(035) add      #22
+			(036) tax
+			(037) add      #2
+			(038) st       M[0]
+			(039) ldb      [x + 0]
+			(040) and      #0x3f
+			(041) mul      #4
+			(042) add      #8
+			(043) add      x
+			(044) st       M[1]
+			(045) ldh      [x + 2]
+			(046) ldx      M[1]
+			(047) jeq      #0x6558          jt 48	jf 53
+			(048) txa
+			(049) add      #12
+			(050) st       M[0]
+			(051) add      #2
+			(052) tax
+			(053) stx      M[2]
+			(054) ld       #0x0
+			(055) jeq      #0x0             jt 56	jf 57
+			(056) ret      #262144
+			(057) ret      #0
+			',
+	}, # geneve_unary
+	{
+		name => 'geneve_and_geneve',
+		DLT => 'EN10MB',
+		aliases => ['geneve and geneve'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 16
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 16
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 16	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x17c1          jt 9	jf 16
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) and      #0xc0
+			(012) jeq      #0x0             jt 13	jf 16
+			(013) ldxb     4*([14]&0xf)
+			(014) txa
+			(015) jeq      x                jt 28	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x86dd          jt 18	jf 123
+			(018) ldb      [20]
+			(019) jeq      #0x11            jt 20	jf 123
+			(020) ldh      [56]
+			(021) jeq      #0x17c1          jt 22	jf 123
+			(022) ldb      [62]
+			(023) and      #0xc0
+			(024) jeq      #0x0             jt 25	jf 123
+			(025) ld       #0x28
+			(026) tax
+			(027) jeq      x                jt 28	jf 123
+			(028) add      #22
+			(029) tax
+			(030) add      #2
+			(031) st       M[0]
+			(032) ldb      [x + 0]
+			(033) and      #0x3f
+			(034) mul      #4
+			(035) add      #8
+			(036) add      x
+			(037) st       M[1]
+			(038) ldh      [x + 2]
+			(039) ldx      M[1]
+			(040) jeq      #0x6558          jt 41	jf 46
+			(041) txa
+			(042) add      #12
+			(043) st       M[0]
+			(044) add      #2
+			(045) tax
+			(046) stx      M[2]
+			(047) ld       #0x0
+			(048) jeq      #0x0             jt 49	jf 123
+			(049) ldx      M[0]
+			(050) ldh      [x + 0]
+			(051) jeq      #0x800           jt 52	jf 83
+			(052) ldx      M[2]
+			(053) ldb      [x + 9]
+			(054) jeq      #0x11            jt 55	jf 83
+			(055) ldx      M[2]
+			(056) ldh      [x + 6]
+			(057) jset     #0x1fff          jt 83	jf 58
+			(058) ldx      M[2]
+			(059) ldb      [x + 0]
+			(060) and      #0xf
+			(061) lsh      #2
+			(062) add      x
+			(063) tax
+			(064) ldh      [x + 2]
+			(065) jeq      #0x17c1          jt 66	jf 83
+			(066) ldx      M[2]
+			(067) ldb      [x + 0]
+			(068) and      #0xf
+			(069) lsh      #2
+			(070) add      x
+			(071) tax
+			(072) ldb      [x + 8]
+			(073) and      #0xc0
+			(074) jeq      #0x0             jt 75	jf 83
+			(075) ldx      M[2]
+			(076) ldb      [x + 0]
+			(077) and      #0xf
+			(078) lsh      #2
+			(079) add      x
+			(080) tax
+			(081) txa
+			(082) jeq      x                jt 101	jf 83
+			(083) ldx      M[0]
+			(084) ldh      [x + 0]
+			(085) jeq      #0x86dd          jt 86	jf 123
+			(086) ldx      M[2]
+			(087) ldb      [x + 6]
+			(088) jeq      #0x11            jt 89	jf 123
+			(089) ldx      M[2]
+			(090) ldh      [x + 42]
+			(091) jeq      #0x17c1          jt 92	jf 123
+			(092) ldx      M[2]
+			(093) ldb      [x + 48]
+			(094) and      #0xc0
+			(095) jeq      #0x0             jt 96	jf 123
+			(096) ldx      M[2]
+			(097) ld       #0x28
+			(098) add      x
+			(099) tax
+			(100) jeq      x                jt 101	jf 123
+			(101) add      #8
+			(102) tax
+			(103) add      #2
+			(104) st       M[3]
+			(105) ldb      [x + 0]
+			(106) and      #0x3f
+			(107) mul      #4
+			(108) add      #8
+			(109) add      x
+			(110) st       M[4]
+			(111) ldh      [x + 2]
+			(112) ldx      M[4]
+			(113) jeq      #0x6558          jt 114	jf 119
+			(114) txa
+			(115) add      #12
+			(116) st       M[3]
+			(117) add      #2
+			(118) tax
+			(119) stx      M[5]
+			(120) ld       #0x0
+			(121) jeq      #0x0             jt 122	jf 123
+			(122) ret      #262144
+			(123) ret      #0
+			',
+	}, # geneve_and_geneve
 
 	{
 		name => 'wlan_host',
@@ -11323,6 +11741,42 @@ my @apply_blocks = (
 		expr => 'csnp',
 		results => [0, 0, 0, 0, 0, 8192, 8192, 8192, 8192, 0, 0, 0, 0, 0],
 	},
+	{
+		name => 'vxlan',
+		savefile => 'vxlan.pcap',
+		expr => 'vxlan',
+		results => [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
+	},
+	{
+		name => 'vxlan_100',
+		savefile => 'vxlan.pcap',
+		expr => 'vxlan 100',
+		results => [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
+	},
+	{
+		name => 'vxlan_101',
+		savefile => 'vxlan.pcap',
+		expr => 'vxlan 101',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'geneve',
+		savefile => 'geneve.pcap',
+		expr => 'geneve',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144],
+	},
+	{
+		name => 'geneve_10',
+		savefile => 'geneve.pcap',
+		expr => 'geneve 10',
+		results => [262144, 0, 0, 262144, 0, 262144, 0, 0, 262144, 0],
+	},
+	{
+		name => 'geneve_11',
+		savefile => 'geneve.pcap',
+		expr => 'geneve 11',
+		results => [0, 262144, 262144, 0, 262144, 0, 262144, 262144, 0, 262144],
+	},
 );
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
@@ -12252,6 +12706,30 @@ my @reject_tests = (
 		DLT => 'IPV4',
 		expr => 'byte 1 | 256',
 		errstr => 'byte argument 256 greater than maximum 255',
+	},
+	{
+		name => 'vxlan_invalid',
+		DLT => 'EN10MB',
+		expr => 'vxlan invalid',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'vxlan_123456789',
+		DLT => 'EN10MB',
+		expr => 'vxlan 123456789',
+		errstr => 'VXLAN VNI 123456789 greater than maximum 16777215',
+	},
+	{
+		name => 'geneve_invalid',
+		DLT => 'EN10MB',
+		expr => 'geneve invalid',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'geneve_123456789',
+		DLT => 'EN10MB',
+		expr => 'geneve 123456789',
+		errstr => 'Geneve VNI 123456789 greater than maximum 16777215',
 	},
 );
 
