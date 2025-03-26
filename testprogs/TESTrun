@@ -6312,19 +6312,28 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 13	jf 2
+			(001) jgt      #0x5dc           jt 22	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 13
+			(003) jeq      #0xfefe          jt 4	jf 22
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 13
+			(005) jeq      #0x83            jt 6	jf 22
 			(006) ldb      [21]
-			(007) jeq      #0x1a            jt 12	jf 8
-			(008) jeq      #0x18            jt 12	jf 9
-			(009) jeq      #0x12            jt 12	jf 10
-			(010) jeq      #0xf             jt 12	jf 11
-			(011) jeq      #0x11            jt 12	jf 13
-			(012) ret      #262144
-			(013) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x1a            jt 21	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x18            jt 21	jf 12
+			(012) ldb      [21]
+			(013) and      #0x1f
+			(014) jeq      #0x12            jt 21	jf 15
+			(015) ldb      [21]
+			(016) and      #0x1f
+			(017) jeq      #0xf             jt 21	jf 18
+			(018) ldb      [21]
+			(019) and      #0x1f
+			(020) jeq      #0x11            jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
 			',
 	}, # isis_l1
 	{
@@ -6336,19 +6345,28 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 13	jf 2
+			(001) jgt      #0x5dc           jt 22	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 13
+			(003) jeq      #0xfefe          jt 4	jf 22
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 13
+			(005) jeq      #0x83            jt 6	jf 22
 			(006) ldb      [21]
-			(007) jeq      #0x1b            jt 12	jf 8
-			(008) jeq      #0x19            jt 12	jf 9
-			(009) jeq      #0x14            jt 12	jf 10
-			(010) jeq      #0x10            jt 12	jf 11
-			(011) jeq      #0x11            jt 12	jf 13
-			(012) ret      #262144
-			(013) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x1b            jt 21	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x19            jt 21	jf 12
+			(012) ldb      [21]
+			(013) and      #0x1f
+			(014) jeq      #0x14            jt 21	jf 15
+			(015) ldb      [21]
+			(016) and      #0x1f
+			(017) jeq      #0x10            jt 21	jf 18
+			(018) ldb      [21]
+			(019) and      #0x1f
+			(020) jeq      #0x11            jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
 			',
 	}, # isis_l2
 	{
@@ -6360,17 +6378,22 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 11	jf 2
+			(001) jgt      #0x5dc           jt 16	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 11
+			(003) jeq      #0xfefe          jt 4	jf 16
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 11
+			(005) jeq      #0x83            jt 6	jf 16
 			(006) ldb      [21]
-			(007) jeq      #0x11            jt 10	jf 8
-			(008) jeq      #0xf             jt 10	jf 9
-			(009) jeq      #0x10            jt 10	jf 11
-			(010) ret      #262144
-			(011) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x11            jt 15	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0xf             jt 15	jf 12
+			(012) ldb      [21]
+			(013) and      #0x1f
+			(014) jeq      #0x10            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
 			',
 	}, # isis_iih
 	{
@@ -6382,16 +6405,19 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 10	jf 2
+			(001) jgt      #0x5dc           jt 13	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 10
+			(003) jeq      #0xfefe          jt 4	jf 13
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 10
+			(005) jeq      #0x83            jt 6	jf 13
 			(006) ldb      [21]
-			(007) jeq      #0x12            jt 9	jf 8
-			(008) jeq      #0x14            jt 9	jf 10
-			(009) ret      #262144
-			(010) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x12            jt 12	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x14            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # isis_lsp
 	{
@@ -6400,14 +6426,17 @@ my @accept_blocks = (
 		aliases => ['lsp'],
 		opt => '
 			(000) ldh      [2]
-			(001) jeq      #0xfefe          jt 2	jf 8
+			(001) jeq      #0xfefe          jt 2	jf 11
 			(002) ldb      [5]
-			(003) jeq      #0x83            jt 4	jf 8
+			(003) jeq      #0x83            jt 4	jf 11
 			(004) ldb      [9]
-			(005) jeq      #0x12            jt 7	jf 6
-			(006) jeq      #0x14            jt 7	jf 8
-			(007) ret      #262144
-			(008) ret      #0
+			(005) and      #0x1f
+			(006) jeq      #0x12            jt 10	jf 7
+			(007) ldb      [9]
+			(008) and      #0x1f
+			(009) jeq      #0x14            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # isis_lsp_C_HDLC
 	{
@@ -6419,18 +6448,25 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 12	jf 2
+			(001) jgt      #0x5dc           jt 19	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 12
+			(003) jeq      #0xfefe          jt 4	jf 19
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 12
+			(005) jeq      #0x83            jt 6	jf 19
 			(006) ldb      [21]
-			(007) jeq      #0x1b            jt 11	jf 8
-			(008) jeq      #0x1a            jt 11	jf 9
-			(009) jeq      #0x18            jt 11	jf 10
-			(010) jeq      #0x19            jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x1b            jt 18	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x1a            jt 18	jf 12
+			(012) ldb      [21]
+			(013) and      #0x1f
+			(014) jeq      #0x18            jt 18	jf 15
+			(015) ldb      [21]
+			(016) and      #0x1f
+			(017) jeq      #0x19            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
 			',
 	}, # isis_snp
 	{
@@ -6442,16 +6478,19 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 10	jf 2
+			(001) jgt      #0x5dc           jt 13	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 10
+			(003) jeq      #0xfefe          jt 4	jf 13
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 10
+			(005) jeq      #0x83            jt 6	jf 13
 			(006) ldb      [21]
-			(007) jeq      #0x18            jt 9	jf 8
-			(008) jeq      #0x19            jt 9	jf 10
-			(009) ret      #262144
-			(010) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x18            jt 12	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x19            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # isis_csnp
 	{
@@ -6463,16 +6502,19 @@ my @accept_blocks = (
 		],
 		opt => '
 			(000) ldh      [12]
-			(001) jgt      #0x5dc           jt 10	jf 2
+			(001) jgt      #0x5dc           jt 13	jf 2
 			(002) ldh      [14]
-			(003) jeq      #0xfefe          jt 4	jf 10
+			(003) jeq      #0xfefe          jt 4	jf 13
 			(004) ldb      [17]
-			(005) jeq      #0x83            jt 6	jf 10
+			(005) jeq      #0x83            jt 6	jf 13
 			(006) ldb      [21]
-			(007) jeq      #0x1a            jt 9	jf 8
-			(008) jeq      #0x1b            jt 9	jf 10
-			(009) ret      #262144
-			(010) ret      #0
+			(007) and      #0x1f
+			(008) jeq      #0x1a            jt 12	jf 9
+			(009) ldb      [21]
+			(010) and      #0x1f
+			(011) jeq      #0x1b            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # isis_psnp
 

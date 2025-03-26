@@ -6611,7 +6611,8 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		default:
 			pdu_type_offset = 4;
 		}
-		b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, pdu_type_offset, BPF_B, v);
+		b1 = gen_mcmp(cstate, OR_LINKPL_NOSNAP, pdu_type_offset, BPF_B,
+		    v, ISIS_PDU_TYPE_MAX);
 		gen_and(b0, b1);
 		return b1;
 
