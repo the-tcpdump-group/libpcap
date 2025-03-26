@@ -3146,7 +3146,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * 0x04 bit (b2) clear.
 	 */
 	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET));
-	sjset_data_frame_1->s.k = 0x08;
+	sjset_data_frame_1->s.k = IEEE80211_FC0_TYPE_DATA;
 	sappend(s, sjset_data_frame_1);
 
 	/*
@@ -3154,7 +3154,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * the rest of the program.
 	 */
 	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET));
-	sjset_data_frame_2->s.k = 0x04;
+	sjset_data_frame_2->s.k = IEEE80211_FC0_TYPE_CTL;
 	sappend(s, sjset_data_frame_2);
 	sjset_data_frame_1->s.jf = snext;
 
@@ -3165,7 +3165,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 */
 	sjset_data_frame_2->s.jt = snext;
 	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET));
-	sjset_qos->s.k = 0x80;	/* QoS bit */
+	sjset_qos->s.k = IEEE80211_FC0_SUBTYPE_QOS;
 	sappend(s, sjset_qos);
 
 	/*
