@@ -645,6 +645,7 @@ static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, const u_char *);
 static struct block *gen_jmp(compiler_state_t *, int, bpf_u_int32,
     struct slist *);
+static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
 static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
@@ -1513,6 +1514,12 @@ gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
 	b->s.k = v;
 	b->stmts = stmts;
 	return b;
+}
+
+static struct block *
+gen_set(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
+{
+	return gen_jmp(cstate, BPF_JSET, v, stmts);
 }
 
 /*
@@ -4627,9 +4634,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * First, check for To DS set, i.e. check "link[1] & 0x01".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x01;	/* To DS */
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 		/*
 		 * If To DS is set, the SA is at 24.
@@ -4665,9 +4670,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * the ORed-together checks.
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x02;	/* From DS */
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC1_DIR_FROMDS, s);
 		gen_and(b1, b0);
 
 		/*
@@ -4697,9 +4700,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "link[0] & 0x08".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x08;
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * AND that with the checks done for data frames.
@@ -4774,9 +4775,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * First, check for To DS set, i.e. "link[1] & 0x01".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x01;	/* To DS */
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 		/*
 		 * If To DS is set, the DA is at 16.
@@ -4811,9 +4810,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "link[0] & 0x08".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x08;
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * AND that with the checks done for data frames.
@@ -4935,9 +4932,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "(link[0] & 0x08)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x08;
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * Check addr1.
@@ -4974,9 +4969,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * I.e, check "(link[0] & 0x08)".
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-		b1 = new_block(cstate, JMP(BPF_JSET));
-		b1->s.k = 0x08;
-		b1->stmts = s;
+		b1 = gen_set(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 		/*
 		 * AND that with the check for frames other than
@@ -8237,15 +8230,11 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 static struct block *
 gen_mac_multicast(compiler_state_t *cstate, int offset)
 {
-	register struct block *b0;
 	register struct slist *s;
 
 	/* link[offset] & 1 != 0 */
 	s = gen_load_a(cstate, OR_LINKHDR, offset, BPF_B);
-	b0 = new_block(cstate, JMP(BPF_JSET));
-	b0->s.k = 1;
-	b0->stmts = s;
-	return b0;
+	return gen_set(cstate, 1, s);
 }
 
 struct block *
@@ -8317,9 +8306,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * First, check for To DS set, i.e. "link[1] & 0x01".
 			 */
 			s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
-			b1 = new_block(cstate, JMP(BPF_JSET));
-			b1->s.k = 0x01;	/* To DS */
-			b1->stmts = s;
+			b1 = gen_set(cstate, IEEE80211_FC1_DIR_TODS, s);
 
 			/*
 			 * If To DS is set, the DA is at 16.
@@ -8354,9 +8341,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * I.e, check "link[0] & 0x08".
 			 */
 			s = gen_load_a(cstate, OR_LINKHDR, 0, BPF_B);
-			b1 = new_block(cstate, JMP(BPF_JSET));
-			b1->s.k = 0x08;
-			b1->stmts = s;
+			b1 = gen_set(cstate, IEEE80211_FC0_TYPE_DATA, s);
 
 			/*
 			 * AND that with the checks done for data frames.
