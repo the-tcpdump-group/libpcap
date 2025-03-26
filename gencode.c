@@ -5913,19 +5913,8 @@ gen_portrangeatom(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
 {
 	struct block *b1, *b2;
 
-	if (v1 > v2) {
-		/*
-		 * Reverse the order of the ports, so v1 is the lower one.
-		 */
-		bpf_u_int32 vtemp;
-
-		vtemp = v1;
-		v1 = v2;
-		v2 = vtemp;
-	}
-
-	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV4, off, BPF_H, v1);
-	b2 = gen_cmp_le(cstate, OR_TRAN_IPV4, off, BPF_H, v2);
+	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV4, off, BPF_H, min(v1, v2));
+	b2 = gen_cmp_le(cstate, OR_TRAN_IPV4, off, BPF_H, max(v1, v2));
 
 	gen_and(b1, b2);
 
@@ -6021,19 +6010,8 @@ gen_portrangeatom6(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
 {
 	struct block *b1, *b2;
 
-	if (v1 > v2) {
-		/*
-		 * Reverse the order of the ports, so v1 is the lower one.
-		 */
-		bpf_u_int32 vtemp;
-
-		vtemp = v1;
-		v1 = v2;
-		v2 = vtemp;
-	}
-
-	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV6, off, BPF_H, v1);
-	b2 = gen_cmp_le(cstate, OR_TRAN_IPV6, off, BPF_H, v2);
+	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV6, off, BPF_H, min(v1, v2));
+	b2 = gen_cmp_le(cstate, OR_TRAN_IPV6, off, BPF_H, max(v1, v2));
 
 	gen_and(b1, b2);
 
