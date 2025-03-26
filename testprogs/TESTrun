@@ -6403,7 +6403,7 @@ my @accept_blocks = (
 			(001) jeq      #0xfefe          jt 2	jf 8
 			(002) ldb      [5]
 			(003) jeq      #0x83            jt 4	jf 8
-			(004) ldb      [8]
+			(004) ldb      [9]
 			(005) jeq      #0x12            jt 7	jf 6
 			(006) jeq      #0x14            jt 7	jf 8
 			(007) ret      #262144
@@ -11535,7 +11535,7 @@ my @apply_blocks = (
 		name => 'csnp_C_HDLC',
 		savefile => 'ISIS_p2p_adjacency.pcap',
 		expr => 'csnp',
-		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		results => [0, 0, 0, 0, 0, 8192, 8192, 8192, 8192, 0, 0, 0, 0, 0],
 	},
 );
 

@@ -6600,8 +6600,18 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		/*
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
+		 * Except when it is not, see above.
 		 */
-		b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 4, BPF_B, v);
+		unsigned pdu_type_offset;
+		switch (cstate->linktype) {
+		case DLT_C_HDLC:
+		case DLT_HDLC:
+			pdu_type_offset = 5;
+			break;
+		default:
+			pdu_type_offset = 4;
+		}
+		b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, pdu_type_offset, BPF_B, v);
 		gen_and(b0, b1);
 		return b1;
 
