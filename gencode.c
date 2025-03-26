@@ -643,6 +643,8 @@ static struct block *gen_mcmp_ne(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, bpf_u_int32);
 static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, const u_char *);
+static struct block *gen_jmp(compiler_state_t *, int, bpf_u_int32,
+    struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
 static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
@@ -1504,6 +1506,15 @@ gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	return b;
 }
 
+static struct block *
+gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
+{
+	struct block *b = new_block(cstate, JMP(jtype));
+	b->s.k = v;
+	b->stmts = stmts;
+	return b;
+}
+
 /*
  * AND the field of size "size" at offset "offset" relative to the header
  * specified by "offrel" with "mask", and compare it with the value "v"
@@ -1526,9 +1537,7 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		sappend(s, s2);
 	}
 
-	b = new_block(cstate, JMP(jtype));
-	b->stmts = s;
-	b->s.k = v;
+	b = gen_jmp(cstate, jtype, v, s);
 	if (reverse)
 		gen_not(b);
 	return b;
@@ -2321,15 +2330,11 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 static struct block *
 gen_uncond(compiler_state_t *cstate, int rsense)
 {
-	struct block *b;
 	struct slist *s;
 
 	s = new_stmt(cstate, BPF_LD|BPF_IMM);
 	s->s.k = !rsense;
-	b = new_block(cstate, JMP(BPF_JEQ));
-	b->stmts = s;
-
-	return b;
+	return gen_jmp(cstate, BPF_JEQ, 0, s);
 }
 
 static inline struct block *
@@ -6437,10 +6442,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/*
 	 * emit final check
+	 * Remember, s[0] is dummy.
 	 */
-	b = new_block(cstate, JMP(BPF_JEQ));
-	b->stmts = s[1];	/*remember, s[0] is dummy*/
-	b->s.k = v;
+	b = gen_jmp(cstate, BPF_JEQ, v, s[1]);
 
 	free_reg(cstate, reg2);
 
@@ -8062,14 +8066,9 @@ static struct block *
 gen_len(compiler_state_t *cstate, int jmp, int n)
 {
 	struct slist *s;
-	struct block *b;
 
 	s = new_stmt(cstate, BPF_LD|BPF_LEN);
-	b = new_block(cstate, JMP(jmp));
-	b->stmts = s;
-	b->s.k = n;
-
-	return b;
+	return gen_jmp(cstate, jmp, n, s);
 }
 
 struct block *
@@ -8158,8 +8157,7 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	// Load the required byte first.
 	struct slist *s0 = gen_load_a(cstate, OR_LINKHDR, idx, BPF_B);
 	sappend(s0, s);
-	b = new_block(cstate, JMP(BPF_JEQ));
-	b->stmts = s0;
+	b = gen_jmp(cstate, BPF_JEQ, 0, s0);
 	gen_not(b);
 
 	return b;
@@ -9040,9 +9038,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
-	b0 = new_block(cstate, JMP(BPF_JEQ));
-	b0->stmts = s;
-	b0->s.k = 1;
+	b0 = gen_jmp(cstate, BPF_JEQ, 1, s);
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
@@ -9411,9 +9407,7 @@ gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
-	b1->stmts = s;
-	b1->s.k = 0;
+	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
 
 	gen_and(b0, b1);
 
@@ -9450,9 +9444,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
-	b1->stmts = s;
-	b1->s.k = 0;
+	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
 
 	gen_and(b0, b1);
 
@@ -9683,9 +9675,7 @@ gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
-	b1->stmts = s;
-	b1->s.k = 0;
+	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
 
 	gen_and(b0, b1);
 
@@ -9722,9 +9712,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
-	b1->stmts = s;
-	b1->s.k = 0;
+	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
 
 	gen_and(b0, b1);
 
@@ -9855,9 +9843,7 @@ gen_encap_ll_check(compiler_state_t *cstate)
 	s1->s.k = cstate->off_linkpl.reg;
 	sappend(s, s1);
 
-	b0 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
-	b0->stmts = s;
-	b0->s.k = 0;
+	b0 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
 	gen_not(b0);
 
 	return b0;
