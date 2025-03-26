@@ -3002,8 +3002,6 @@ prepare_tpacket_socket(pcap_t *handle)
 	return -1;
 }
 
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
 /*
  * Attempt to set up memory-mapped access.
  *
@@ -3123,7 +3121,7 @@ create_ring(pcap_t *handle)
 			if (offload == -1)
 				return PCAP_ERROR;
 			if (offload)
-				max_frame_len = MAX(mtu, 65535);
+				max_frame_len = max(mtu, 65535);
 			else
 				max_frame_len = mtu;
 			max_frame_len += 18;

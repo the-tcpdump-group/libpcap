@@ -336,10 +336,6 @@ static void find_inedges(opt_state_t *, struct block *);
 static void opt_dump(opt_state_t *, struct icode *);
 #endif
 
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
 static void
 find_levels_r(opt_state_t *opt_state, struct icode *ic, struct block *b)
 {
@@ -354,7 +350,7 @@ find_levels_r(opt_state_t *opt_state, struct icode *ic, struct block *b)
 	if (JT(b)) {
 		find_levels_r(opt_state, ic, JT(b));
 		find_levels_r(opt_state, ic, JF(b));
-		level = MAX(JT(b)->level, JF(b)->level) + 1;
+		level = max(JT(b)->level, JF(b)->level) + 1;
 	} else
 		level = 0;
 	b->level = level;

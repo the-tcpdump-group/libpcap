@@ -375,6 +375,9 @@ struct oneshot_userdata {
 #ifndef min
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
+#ifndef max
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
 int	pcapint_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
