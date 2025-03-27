@@ -804,9 +804,9 @@ pcap_cleanup_npf(pcap_t *p)
 }
 
 static void
-pcap_breakloop_npf(pcap_t *p)
+pcap_breakloop_npf(pcap_t *p, int mode)
 {
-	pcapint_breakloop_common(p);
+	pcapint_breakloop_common(p, mode);
 	struct pcap_win *pw = p->priv;
 
 	/* XXX - what if this fails? */

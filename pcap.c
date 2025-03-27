@@ -2941,7 +2941,13 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 void
 pcap_breakloop(pcap_t *p)
 {
-	p->breakloop_op(p);
+	p->breakloop_op(p, PCAPINT_BREAK_IMMEDIATE);
+}
+
+void
+pcap_breakloop_flush(pcap_t *p)
+{
+	p->breakloop_op(p, PCAPINT_BREAK_FLUSH);
 }
 
 int
@@ -4074,9 +4080,9 @@ pcapint_remove_from_pcaps_to_close(pcap_t *p)
 }
 
 void
-pcapint_breakloop_common(pcap_t *p)
+pcapint_breakloop_common(pcap_t *p, int mode)
 {
-	p->break_loop = 1;
+	p->break_loop = mode;
 }
 
 
@@ -4293,7 +4299,7 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 }
 
 static void
-pcap_breakloop_dead(pcap_t *p _U_)
+pcap_breakloop_dead(pcap_t *p _U_, int mode)
 {
 	/*
 	 * A "dead" pcap_t is just a placeholder to use in order to

@@ -1106,9 +1106,9 @@ set_poll_timeout(struct pcap_linux *handlep)
 	}
 }
 
-static void pcap_breakloop_linux(pcap_t *handle)
+static void pcap_breakloop_linux(pcap_t *handle, int mode)
 {
-	pcapint_breakloop_common(handle);
+	pcapint_breakloop_common(handle,  mode);
 	struct pcap_linux *handlep = handle->priv;
 
 	uint64_t value = 1;
@@ -3677,7 +3677,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			 * the loop, do so.
 			 */
 			if (handle->break_loop)
-				return PCAP_ERROR_BREAK;
+				return 0;
 		} else if (ret > 0) {
 			/*
 			 * OK, some descriptor is ready.
@@ -3825,7 +3825,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 				 * to break out of the loop, do so.
 				 */
 				if (handle->break_loop)
-					return PCAP_ERROR_BREAK;
+					return 0;
 			}
 		}
 
@@ -4340,17 +4340,24 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 	int pkts = 0;
 	int ret;
 
+	/* Stop processing if we should break out immediately */
+	if (handle->break_loop == PCAPINT_BREAK_IMMEDIATE)
+		return PCAP_ERROR_BREAK;
+
 	/* wait for frames availability.*/
 	h.raw = RING_GET_CURRENT_FRAME(handle);
-	if (!packet_mmap_acquire(h.h2)) {
+	if (!handle->break_loop && !packet_mmap_acquire(h.h2)) {
 		/*
 		 * The current frame is owned by the kernel; wait for
 		 * a frame to be handed to us.
 		 */
 		ret = pcap_wait_for_frames_mmap(handle);
-		if (ret) {
+		if (ret)
 			return ret;
-		}
+
+		/* We may have received an immediate break while polling */
+		if (handle->break_loop == PCAPINT_BREAK_IMMEDIATE)
+			return PCAP_ERROR_BREAK;
 	}
 
 	/*
@@ -4418,10 +4425,15 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		if (++handle->offset >= handle->cc)
 			handle->offset = 0;
 
-		/* check for break loop condition*/
-		if (handle->break_loop)
-			return PCAP_ERROR_BREAK;
+		/* Abort processing if requested */
+		if (handle->break_loop == PCAPINT_BREAK_IMMEDIATE)
+			break;
 	}
+
+	/* All packets are drained, report loop break */
+	if (pkts == 0 && handle->break_loop)
+		return PCAP_ERROR_BREAK;
+
 	return pkts;
 }
 
@@ -4445,7 +4457,7 @@ again:
 			 * for a frame to be handed to us.
 			 */
 			ret = pcap_wait_for_frames_mmap(handle);
-			if (ret) {
+			if (ret && ret != PCAP_ERROR_BREAK) {
 				return ret;
 			}
 		}
