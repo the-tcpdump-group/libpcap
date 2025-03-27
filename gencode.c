@@ -8123,6 +8123,8 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	assert_maxval(cstate, "byte argument", val, UINT8_MAX);
+
 	switch (op) {
 	default:
 		abort();

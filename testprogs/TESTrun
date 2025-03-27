@@ -12223,6 +12223,36 @@ my @reject_tests = (
 		expr => 'byte 1 >> 2',
 		errstr => 'syntax error',
 	},
+	{
+		name => 'byte_eq_256',
+		DLT => 'IPV4',
+		expr => 'byte 1 = 256',
+		errstr => 'byte argument 256 greater than maximum 255',
+	},
+	{
+		name => 'byte_lt_256',
+		DLT => 'IPV4',
+		expr => 'byte 1 < 256',
+		errstr => 'byte argument 256 greater than maximum 255',
+	},
+	{
+		name => 'byte_gt_256',
+		DLT => 'IPV4',
+		expr => 'byte 1 > 256',
+		errstr => 'byte argument 256 greater than maximum 255',
+	},
+	{
+		name => 'byte_and_256',
+		DLT => 'IPV4',
+		expr => 'byte 1 & 256',
+		errstr => 'byte argument 256 greater than maximum 255',
+	},
+	{
+		name => 'byte_or_256',
+		DLT => 'IPV4',
+		expr => 'byte 1 | 256',
+		errstr => 'byte argument 256 greater than maximum 255',
+	},
 );
 
 push @reject_tests, {
