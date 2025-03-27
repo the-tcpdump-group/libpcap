@@ -8147,8 +8147,11 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 		break;
 	}
 	s->s.k = val;
+	// Load the required byte first.
+	struct slist *s0 = gen_load_a(cstate, OR_LINKHDR, idx, BPF_B);
+	sappend(s0, s);
 	b = new_block(cstate, JMP(BPF_JEQ));
-	b->stmts = s;
+	b->stmts = s0;
 	gen_not(b);
 
 	return b;

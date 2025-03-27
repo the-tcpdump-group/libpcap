@@ -10664,10 +10664,11 @@ my @accept_blocks = (
 		DLT => 'IPV4',
 		aliases => ['byte 8 | 5'],
 		unopt => '
-			(000) or       #0x5
-			(001) jeq      #0x0             jt 2	jf 3
-			(002) ret      #0
-			(003) ret      #262144
+			(000) ldb      [8]
+			(001) or       #0x5
+			(002) jeq      #0x0             jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
 			',
 	}, # byte_or
 	{
@@ -10675,10 +10676,11 @@ my @accept_blocks = (
 		DLT => 'IPV4',
 		aliases => ['byte 8 & 5'],
 		unopt => '
-			(000) and      #0x5
-			(001) jeq      #0x0             jt 2	jf 3
-			(002) ret      #0
-			(003) ret      #262144
+			(000) ldb      [8]
+			(001) and      #0x5
+			(002) jeq      #0x0             jt 3	jf 4
+			(003) ret      #0
+			(004) ret      #262144
 			',
 	}, # byte_and
 );
