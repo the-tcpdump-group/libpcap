@@ -5911,6 +5911,9 @@ static struct block *
 gen_portrangeatom(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
     bpf_u_int32 v2)
 {
+	if (v1 == v2)
+		return gen_portatom(cstate, off, v1);
+
 	struct block *b1, *b2;
 
 	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV4, off, BPF_H, min(v1, v2));
@@ -6008,6 +6011,9 @@ static struct block *
 gen_portrangeatom6(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
     bpf_u_int32 v2)
 {
+	if (v1 == v2)
+		return gen_portatom6(cstate, off, v1);
+
 	struct block *b1, *b2;
 
 	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV6, off, BPF_H, min(v1, v2));

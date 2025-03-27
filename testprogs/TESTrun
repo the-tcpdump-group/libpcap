@@ -9804,6 +9804,18 @@ my @accept_blocks = (
 			'tcp port smtp',
 			'tcp src or dst port 25',
 			'tcp src or dst port smtp',
+			# degenerate "portrange"
+			'tcp portrange 25-25',
+			'tcp portrange 25-smtp',
+			'tcp portrange smtp-25',
+			'tcp portrange smtp-smtp',
+			'tcp portrange 25',
+			# "25" is a valid port range, but "smtp" is not.
+			'tcp src or dst portrange 25-25',
+			'tcp src or dst portrange 25-smtp',
+			'tcp src or dst portrange smtp-25',
+			'tcp src or dst portrange smtp-smtp',
+			'tcp src or dst portrange 25',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -9834,6 +9846,12 @@ my @accept_blocks = (
 		aliases => [
 			'tcp src port 25',
 			'tcp src port smtp',
+			# degenerate "src portrange"
+			'tcp src portrange 25-25',
+			'tcp src portrange 25-smtp',
+			'tcp src portrange smtp-25',
+			'tcp src portrange smtp-smtp',
+			'tcp src portrange 25',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -9860,6 +9878,12 @@ my @accept_blocks = (
 		aliases => [
 			'tcp dst port 25',
 			'tcp dst port smtp',
+			# degenerate "dst portrange"
+			'tcp dst portrange 25-25',
+			'tcp dst portrange 25-smtp',
+			'tcp dst portrange smtp-25',
+			'tcp dst portrange smtp-smtp',
+			'tcp dst portrange 25',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -9993,108 +10017,6 @@ my @accept_blocks = (
 			(016) ret      #0
 			',
 	}, # tcp_dst_portrange
-	{
-		name => 'tcp_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'tcp portrange 25-25',
-			'tcp portrange 25-smtp',
-			'tcp portrange smtp-25',
-			'tcp portrange smtp-smtp',
-			'tcp portrange 25',
-			# "25" is a valid port range, but "smtp" is not.
-			'tcp src or dst portrange 25-25',
-			'tcp src or dst portrange 25-smtp',
-			'tcp src or dst portrange smtp-25',
-			'tcp src or dst portrange smtp-smtp',
-			'tcp src or dst portrange 25',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 9
-			(002) ldb      [20]
-			(003) jeq      #0x6             jt 4	jf 22
-			(004) ldh      [54]
-			(005) jge      #0x19            jt 6	jf 7
-			(006) jgt      #0x19            jt 7	jf 21
-			(007) ldh      [56]
-			(008) jge      #0x19            jt 20	jf 22
-			(009) jeq      #0x800           jt 10	jf 22
-			(010) ldb      [23]
-			(011) jeq      #0x6             jt 12	jf 22
-			(012) ldh      [20]
-			(013) jset     #0x1fff          jt 22	jf 14
-			(014) ldxb     4*([14]&0xf)
-			(015) ldh      [x + 14]
-			(016) jge      #0x19            jt 17	jf 18
-			(017) jgt      #0x19            jt 18	jf 21
-			(018) ldh      [x + 16]
-			(019) jge      #0x19            jt 20	jf 22
-			(020) jgt      #0x19            jt 22	jf 21
-			(021) ret      #262144
-			(022) ret      #0
-			',
-	}, # tcp_portrange_degenerate
-	{
-		name => 'tcp_src_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'tcp src portrange 25-25',
-			'tcp src portrange 25-smtp',
-			'tcp src portrange smtp-25',
-			'tcp src portrange smtp-smtp',
-			'tcp src portrange 25',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x6             jt 4	jf 16
-			(004) ldh      [54]
-			(005) jge      #0x19            jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x6             jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 14]
-			(013) jge      #0x19            jt 14	jf 16
-			(014) jgt      #0x19            jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # tcp_src_portrange_degenerate
-	{
-		name => 'tcp_dst_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'tcp dst portrange 25-25',
-			'tcp dst portrange 25-smtp',
-			'tcp dst portrange smtp-25',
-			'tcp dst portrange smtp-smtp',
-			'tcp dst portrange 25',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x6             jt 4	jf 16
-			(004) ldh      [56]
-			(005) jge      #0x19            jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x6             jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 16]
-			(013) jge      #0x19            jt 14	jf 16
-			(014) jgt      #0x19            jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # tcp_dst_portrange_degenerate
 	# In the tests below "domain" depends on getaddrinfo().
 	{
 		name => 'udp_port',
@@ -10104,6 +10026,18 @@ my @accept_blocks = (
 			'udp port domain',
 			'udp src or dst port 53',
 			'udp src or dst port domain',
+			# degenerate "portrange"
+			'udp portrange 53-53',
+			'udp portrange 53-domain',
+			'udp portrange domain-53',
+			'udp portrange domain-domain',
+			'udp portrange 53',
+			# "53" is a valid port range, but "domain" is not.
+			'udp src or dst portrange 53-53',
+			'udp src or dst portrange 53-domain',
+			'udp src or dst portrange domain-53',
+			'udp src or dst portrange domain-domain',
+			'udp src or dst portrange 53',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -10134,6 +10068,12 @@ my @accept_blocks = (
 		aliases => [
 			'udp src port 53',
 			'udp src port domain',
+			# degenerate "src portrange"
+			'udp src portrange 53-53',
+			'udp src portrange 53-domain',
+			'udp src portrange domain-53',
+			'udp src portrange domain-domain',
+			'udp src portrange 53',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -10160,6 +10100,12 @@ my @accept_blocks = (
 		aliases => [
 			'udp dst port 53',
 			'udp dst port domain',
+			# degenerate "dst portrange"
+			'udp dst portrange 53-53',
+			'udp dst portrange 53-domain',
+			'udp dst portrange domain-53',
+			'udp dst portrange domain-domain',
+			'udp dst portrange 53',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -10293,108 +10239,6 @@ my @accept_blocks = (
 			(016) ret      #0
 			',
 	}, # udp_dst_portrange
-	{
-		name => 'udp_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'udp portrange 53-53',
-			'udp portrange 53-domain',
-			'udp portrange domain-53',
-			'udp portrange domain-domain',
-			'udp portrange 53',
-			# "53" is a valid port range, but "domain" is not.
-			'udp src or dst portrange 53-53',
-			'udp src or dst portrange 53-domain',
-			'udp src or dst portrange domain-53',
-			'udp src or dst portrange domain-domain',
-			'udp src or dst portrange 53',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 9
-			(002) ldb      [20]
-			(003) jeq      #0x11            jt 4	jf 22
-			(004) ldh      [54]
-			(005) jge      #0x35            jt 6	jf 7
-			(006) jgt      #0x35            jt 7	jf 21
-			(007) ldh      [56]
-			(008) jge      #0x35            jt 20	jf 22
-			(009) jeq      #0x800           jt 10	jf 22
-			(010) ldb      [23]
-			(011) jeq      #0x11            jt 12	jf 22
-			(012) ldh      [20]
-			(013) jset     #0x1fff          jt 22	jf 14
-			(014) ldxb     4*([14]&0xf)
-			(015) ldh      [x + 14]
-			(016) jge      #0x35            jt 17	jf 18
-			(017) jgt      #0x35            jt 18	jf 21
-			(018) ldh      [x + 16]
-			(019) jge      #0x35            jt 20	jf 22
-			(020) jgt      #0x35            jt 22	jf 21
-			(021) ret      #262144
-			(022) ret      #0
-			',
-	}, # udp_portrange_degenerate
-	{
-		name => 'udp_src_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'udp src portrange 53-53',
-			'udp src portrange 53-domain',
-			'udp src portrange domain-53',
-			'udp src portrange domain-domain',
-			'udp src portrange 53',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x11            jt 4	jf 16
-			(004) ldh      [54]
-			(005) jge      #0x35            jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x11            jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 14]
-			(013) jge      #0x35            jt 14	jf 16
-			(014) jgt      #0x35            jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # udp_src_portrange_degenerate
-	{
-		name => 'udp_dst_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'udp dst portrange 53-53',
-			'udp dst portrange 53-domain',
-			'udp dst portrange domain-53',
-			'udp dst portrange domain-domain',
-			'udp dst portrange 53',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x11            jt 4	jf 16
-			(004) ldh      [56]
-			(005) jge      #0x35            jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x11            jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 16]
-			(013) jge      #0x35            jt 14	jf 16
-			(014) jgt      #0x35            jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # udp_dst_portrange_degenerate
 	# SCTP tests below do not use service names because the translation is
 	# currently broken and may not have a suitable /etc/services contents
 	# in all supported environments after the bug fix.
@@ -10404,6 +10248,11 @@ my @accept_blocks = (
 		aliases => [
 			'sctp port 5672',
 			'sctp src or dst port 5672',
+			# degenerate "portrange"
+			'sctp portrange 5672-5672',
+			'sctp portrange 5672',
+			'sctp src or dst portrange 5672-5672',
+			'sctp src or dst portrange 5672',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -10431,7 +10280,12 @@ my @accept_blocks = (
 	{
 		name => 'sctp_src_port',
 		DLT => 'EN10MB',
-		aliases => ['sctp src port 5672'],
+		aliases => [
+			'sctp src port 5672',
+			# degenerate "src portrange"
+			'sctp src portrange 5672-5672',
+			'sctp src portrange 5672',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
@@ -10454,7 +10308,12 @@ my @accept_blocks = (
 	{
 		name => 'sctp_dst_port',
 		DLT => 'EN10MB',
-		aliases => ['sctp dst port 5672'],
+		aliases => [
+			'sctp dst port 5672',
+			# degenerate "dst portrange"
+			'sctp dst portrange 5672-5672',
+			'sctp dst portrange 5672',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 6
@@ -10564,101 +10423,15 @@ my @accept_blocks = (
 			',
 	}, # sctp_dst_portrange
 	{
-		name => 'sctp_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'sctp portrange 5672-5672',
-			'sctp portrange 5672',
-			'sctp src or dst portrange 5672-5672',
-			'sctp src or dst portrange 5672',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 9
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 4	jf 22
-			(004) ldh      [54]
-			(005) jge      #0x1628          jt 6	jf 7
-			(006) jgt      #0x1628          jt 7	jf 21
-			(007) ldh      [56]
-			(008) jge      #0x1628          jt 20	jf 22
-			(009) jeq      #0x800           jt 10	jf 22
-			(010) ldb      [23]
-			(011) jeq      #0x84            jt 12	jf 22
-			(012) ldh      [20]
-			(013) jset     #0x1fff          jt 22	jf 14
-			(014) ldxb     4*([14]&0xf)
-			(015) ldh      [x + 14]
-			(016) jge      #0x1628          jt 17	jf 18
-			(017) jgt      #0x1628          jt 18	jf 21
-			(018) ldh      [x + 16]
-			(019) jge      #0x1628          jt 20	jf 22
-			(020) jgt      #0x1628          jt 22	jf 21
-			(021) ret      #262144
-			(022) ret      #0
-			',
-	}, # sctp_portrange_degenerate
-	{
-		name => 'sctp_src_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'sctp src portrange 5672-5672',
-			'sctp src portrange 5672',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 4	jf 16
-			(004) ldh      [54]
-			(005) jge      #0x1628          jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x84            jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 14]
-			(013) jge      #0x1628          jt 14	jf 16
-			(014) jgt      #0x1628          jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # sctp_src_portrange_degenerate
-	{
-		name => 'sctp_dst_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'sctp dst portrange 5672-5672',
-			'sctp dst portrange 5672',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 6
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 4	jf 16
-			(004) ldh      [56]
-			(005) jge      #0x1628          jt 14	jf 16
-			(006) jeq      #0x800           jt 7	jf 16
-			(007) ldb      [23]
-			(008) jeq      #0x84            jt 9	jf 16
-			(009) ldh      [20]
-			(010) jset     #0x1fff          jt 16	jf 11
-			(011) ldxb     4*([14]&0xf)
-			(012) ldh      [x + 16]
-			(013) jge      #0x1628          jt 14	jf 16
-			(014) jgt      #0x1628          jt 16	jf 15
-			(015) ret      #262144
-			(016) ret      #0
-			',
-	}, # sctp_dst_portrange_degenerate
-	{
 		name => 'port',
 		DLT => 'EN10MB',
 		aliases => [
 			'port 7',
 			'src or dst port 7',
 			# Do not try a service name due to SCTP.
+			# degenerate "portrange"
+			'portrange 7-7',
+			'portrange 7',
 		],
 		opt => '
 			(000) ldh      [12]
@@ -10690,7 +10463,12 @@ my @accept_blocks = (
 	{
 		name => 'src_port',
 		DLT => 'EN10MB',
-		aliases => ['src port 7'],
+		aliases => [
+			'src port 7',
+			# degenerate "src portrange"
+			'src portrange 7-7',
+			'src portrange 7',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
@@ -10717,7 +10495,12 @@ my @accept_blocks = (
 	{
 		name => 'dst_port',
 		DLT => 'EN10MB',
-		aliases => ['dst port 7'],
+		aliases => [
+			'dst port 7',
+			# degenerate "dst portrange"
+			'dst portrange 7-7',
+			'dst portrange 7',
+		],
 		opt => '
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
@@ -10840,105 +10623,6 @@ my @accept_blocks = (
 			(020) ret      #0
 			',
 	}, # dst_portrange
-	{
-		name => 'portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'portrange 1812-1812',
-			'portrange 1812',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 11
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 26
-			(006) ldh      [54]
-			(007) jge      #0x714           jt 8	jf 9
-			(008) jgt      #0x714           jt 9	jf 25
-			(009) ldh      [56]
-			(010) jge      #0x714           jt 24	jf 26
-			(011) jeq      #0x800           jt 12	jf 26
-			(012) ldb      [23]
-			(013) jeq      #0x84            jt 16	jf 14
-			(014) jeq      #0x6             jt 16	jf 15
-			(015) jeq      #0x11            jt 16	jf 26
-			(016) ldh      [20]
-			(017) jset     #0x1fff          jt 26	jf 18
-			(018) ldxb     4*([14]&0xf)
-			(019) ldh      [x + 14]
-			(020) jge      #0x714           jt 21	jf 22
-			(021) jgt      #0x714           jt 22	jf 25
-			(022) ldh      [x + 16]
-			(023) jge      #0x714           jt 24	jf 26
-			(024) jgt      #0x714           jt 26	jf 25
-			(025) ret      #262144
-			(026) ret      #0
-			',
-	}, # portrange_degenerate
-	{
-		name => 'src_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'src portrange 1812-1812',
-			'src portrange 1812',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 8
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 20
-			(006) ldh      [54]
-			(007) jge      #0x714           jt 18	jf 20
-			(008) jeq      #0x800           jt 9	jf 20
-			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 20
-			(013) ldh      [20]
-			(014) jset     #0x1fff          jt 20	jf 15
-			(015) ldxb     4*([14]&0xf)
-			(016) ldh      [x + 14]
-			(017) jge      #0x714           jt 18	jf 20
-			(018) jgt      #0x714           jt 20	jf 19
-			(019) ret      #262144
-			(020) ret      #0
-			',
-	}, # src_portrange_degenerate
-	{
-		name => 'dst_portrange_degenerate',
-		DLT => 'EN10MB',
-		aliases => [
-			'dst portrange 1812-1812',
-			'dst portrange 1812',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x86dd          jt 2	jf 8
-			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 20
-			(006) ldh      [56]
-			(007) jge      #0x714           jt 18	jf 20
-			(008) jeq      #0x800           jt 9	jf 20
-			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 20
-			(013) ldh      [20]
-			(014) jset     #0x1fff          jt 20	jf 15
-			(015) ldxb     4*([14]&0xf)
-			(016) ldh      [x + 16]
-			(017) jge      #0x714           jt 18	jf 20
-			(018) jgt      #0x714           jt 20	jf 19
-			(019) ret      #262144
-			(020) ret      #0
-			',
-	}, # dst_portrange_degenerate
 );
 
 # In apply_blocks each test block always generates two tests: optimized and
