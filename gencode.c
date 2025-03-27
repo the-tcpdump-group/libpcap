@@ -639,6 +639,8 @@ static struct block *gen_cmp_ne(compiler_state_t *, enum e_offrel, u_int,
     u_int size, bpf_u_int32);
 static struct block *gen_mcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, bpf_u_int32);
+static struct block *gen_mcmp_ne(compiler_state_t *, enum e_offrel, u_int,
+    u_int, bpf_u_int32, bpf_u_int32);
 static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, const u_char *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
@@ -1457,6 +1459,13 @@ gen_mcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 v, bpf_u_int32 mask)
 {
 	return gen_ncmp(cstate, offrel, offset, size, mask, BPF_JEQ, 0, v);
+}
+
+static struct block *
+gen_mcmp_ne(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
+    u_int size, bpf_u_int32 v, bpf_u_int32 mask)
+{
+	return gen_ncmp(cstate, offrel, offset, size, mask, BPF_JEQ, 1, v);
 }
 
 static struct block *
@@ -4874,15 +4883,12 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * Not present in CTS or ACK control frames.
 		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+		b0 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
 			IEEE80211_FC0_TYPE_MASK);
-		gen_not(b0);
-		b1 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+		b1 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b1);
-		b2 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+		b2 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b2);
 		gen_and(b1, b2);
 		gen_or(b0, b2);
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
@@ -4893,9 +4899,8 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * Not present in control frames.
 		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+		b0 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
 			IEEE80211_FC0_TYPE_MASK);
-		gen_not(b0);
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
 		gen_and(b0, b1);
 		return b1;
@@ -4949,15 +4954,12 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * Not present in CTS or ACK control frames.
 		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+		b0 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
 			IEEE80211_FC0_TYPE_MASK);
-		gen_not(b0);
-		b1 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+		b1 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b1);
-		b2 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+		b2 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b2);
 		gen_and(b1, b2);
 		gen_or(b0, b2);
 
