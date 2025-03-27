@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "25 March 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "27 March 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1331,6 +1331,36 @@ are equivalent to
 Note that this address syntax clashes with the parameter expansion syntax
 in POSIX-compatible shells and elsewhere, so depending on the use case the
 filter string may require the use of single quotes or a backslash.
+.IP "\fBbyte \fIidx op val\fR"
+True if the value of the link layer byte number
+.I idx
+satisfies a condition with regard to
+.IR val ,
+which can be a number only.  The condition is one of: "equals to" (if
+.I op
+is
+.BR = ),
+"less than" (if
+.I op
+is
+.BR < ),
+"greater than" (if
+.I op
+is
+.BR > ),
+"the result of bitwise AND is not zero" (if
+.I op
+is
+.BR & ),
+"the result of bitwise OR is not zero" (if
+.I op
+is
+.BR | ).
+.IP
+The arithmetic expressions and packet data accessors below implement all of
+these and many other things much better, so this primitive will be removed in
+a future release and should not be used in applications that require forward
+compatibility.
 .SH ARITHMETIC EXPRESSIONS
 Arithmetic expressions are the operands of a relational operator in a
 relation of the following form:
