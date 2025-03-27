@@ -670,10 +670,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 	do {
 		ret = ioctl(handle->fd, MON_IOCX_GET, &info);
 		if (handle->break_loop)
-		{
-			handle->break_loop = 0;
-			return -2;
-		}
+			return PCAP_ERROR_BREAK;
 	} while ((ret == -1) && (errno == EINTR));
 	if (ret < 0)
 	{
@@ -800,10 +797,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 		do {
 			ret = ioctl(handle->fd, MON_IOCX_MFETCH, &fetch);
 			if (handle->break_loop)
-			{
-				handle->break_loop = 0;
-				return -2;
-			}
+				return PCAP_ERROR_BREAK;
 		} while ((ret == -1) && (errno == EINTR));
 		if (ret < 0)
 		{

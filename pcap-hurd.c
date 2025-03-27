@@ -134,10 +134,8 @@ pcap_read_hurd(pcap_t *p, int cnt _U_, pcap_handler callback, u_char *user)
 	msg = (struct net_rcv_msg *)p->buffer;
 
 retry:
-	if (p->break_loop) {
-		p->break_loop = 0;
+	if (p->break_loop)
 		return PCAP_ERROR_BREAK;
-	}
 
 	kr = mach_msg(&msg->msg_hdr, MACH_RCV_MSG | MACH_RCV_INTERRUPT, 0,
 		      p->bufsize, ph->rcv_port, MACH_MSG_TIMEOUT_NONE,

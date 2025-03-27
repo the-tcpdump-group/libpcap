@@ -151,7 +151,6 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		if (p->break_loop) {
 			if (n == 0) {
-				p->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			} else {
 				return (n);

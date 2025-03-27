@@ -410,15 +410,8 @@ pcap_read_libdlpi(pcap_t *p, int count, pcap_handler callback, u_char *user)
 	}
 	do {
 		/* Has "pcap_breakloop()" been called? */
-		if (p->break_loop) {
-			/*
-			 * Yes - clear the flag that indicates that it has,
-			 * and return -2 to indicate that we were told to
-			 * break out of the loop.
-			 */
-			p->break_loop = 0;
-			return (-2);
-		}
+		if (p->break_loop)
+			return PCAP_ERROR_BREAK;
 
 		msglen = p->bufsize;
 		bufp = p->buffer + p->offset;

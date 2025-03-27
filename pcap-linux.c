@@ -3676,10 +3676,8 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			 * It's EINTR; if we were told to break out of
 			 * the loop, do so.
 			 */
-			if (handle->break_loop) {
-				handle->break_loop = 0;
+			if (handle->break_loop)
 				return PCAP_ERROR_BREAK;
-			}
 		} else if (ret > 0) {
 			/*
 			 * OK, some descriptor is ready.
@@ -3826,10 +3824,8 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 				 * pcap_breakloop() call; if we were told
 				 * to break out of the loop, do so.
 				 */
-				if (handle->break_loop) {
-					handle->break_loop = 0;
+				if (handle->break_loop)
 					return PCAP_ERROR_BREAK;
-				}
 			}
 		}
 
@@ -4423,10 +4419,8 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 			handle->offset = 0;
 
 		/* check for break loop condition*/
-		if (handle->break_loop) {
-			handle->break_loop = 0;
+		if (handle->break_loop)
 			return PCAP_ERROR_BREAK;
-		}
 	}
 	return pkts;
 }
@@ -4557,10 +4551,8 @@ again:
 		}
 
 		/* check for break loop condition*/
-		if (handle->break_loop) {
-			handle->break_loop = 0;
+		if (handle->break_loop)
 			return PCAP_ERROR_BREAK;
-		}
 	}
 	if (pkts == 0 && handlep->timeout == 0) {
 		/* Block until we see a packet. */

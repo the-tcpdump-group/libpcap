@@ -353,7 +353,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 
 	while( pkt_cnt < max_cnt){
 		if (p->break_loop){
-			p->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
 		// read once in non-blocking mode, or try many times waiting for timeout_ms.
@@ -365,9 +364,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			}else{
 				if (p->break_loop){
 					RTE_LOG(DEBUG, USER1, "dpdk: no packets available and break_loop is set in blocking mode.\n");
-					p->break_loop = 0;
 					return PCAP_ERROR_BREAK;
-
 				}
 				RTE_LOG(DEBUG, USER1, "dpdk: no packets available for timeout %d ms in blocking mode.\n", timeout_ms);
 			}

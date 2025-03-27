@@ -62,7 +62,6 @@ pcap_read_haiku(pcap_t* handle, int maxPackets _U_, pcap_handler callback,
 	ssize_t bytesReceived;
 	do {
 		if (handle->break_loop) {
-			handle->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
 		bytesReceived = recvfrom(handle->fd, buffer, handle->bufsize, MSG_TRUNC,
