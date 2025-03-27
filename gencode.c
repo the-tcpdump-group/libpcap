@@ -635,6 +635,8 @@ static struct block *gen_cmp_lt(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32);
 static struct block *gen_cmp_le(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32);
+static struct block *gen_cmp_ne(compiler_state_t *, enum e_offrel, u_int,
+    u_int size, bpf_u_int32);
 static struct block *gen_mcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, bpf_u_int32);
 static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
@@ -1441,6 +1443,13 @@ gen_cmp_le(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 v)
 {
 	return gen_ncmp(cstate, offrel, offset, size, 0xffffffff, BPF_JGT, 1, v);
+}
+
+static struct block *
+gen_cmp_ne(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
+    u_int size, bpf_u_int32 v)
+{
+	return gen_ncmp(cstate, offrel, offset, size, 0xffffffff, BPF_JEQ, 1, v);
 }
 
 static struct block *
@@ -3492,8 +3501,6 @@ ethertype_to_ppptype(bpf_u_int32 ll_proto)
 static struct block *
 gen_prevlinkhdr_check(compiler_state_t *cstate)
 {
-	struct block *b0;
-
 	if (cstate->is_encap)
 		return gen_encap_ll_check(cstate);
 
@@ -3507,9 +3514,7 @@ gen_prevlinkhdr_check(compiler_state_t *cstate)
 		 *
 		 * (We've already generated a test for LANE.)
 		 */
-		b0 = gen_cmp(cstate, OR_PREVLINKHDR, SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
-		gen_not(b0);
-		return b0;
+		return gen_cmp_ne(cstate, OR_PREVLINKHDR, SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
 
 	default:
 		/*
@@ -4042,8 +4047,7 @@ gen_llc_internal(compiler_state_t *cstate)
 		 * Now check for the purported DSAP and SSAP not being
 		 * 0xFF, to rule out NetWare-over-802.3.
 		 */
-		b1 = gen_cmp(cstate, OR_LLC, 0, BPF_H, 0xFFFF);
-		gen_not(b1);
+		b1 = gen_cmp_ne(cstate, OR_LLC, 0, BPF_H, 0xFFFF);
 		gen_and(b0, b1);
 		return b1;
 
