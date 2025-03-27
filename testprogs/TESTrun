@@ -10623,6 +10623,64 @@ my @accept_blocks = (
 			(020) ret      #0
 			',
 	}, # dst_portrange
+	{
+		name => 'byte_eq',
+		DLT => 'IPV4',
+		aliases => [
+			'byte 8 = 5',
+			'byte 8 == 5',
+		],
+		unopt => '
+			(000) ldb      [8]
+			(001) jeq      #0x5             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # byte_eq
+	{
+		name => 'byte_lt',
+		DLT => 'IPV4',
+		aliases => ['byte 8 < 5'],
+		unopt => '
+			(000) ldb      [8]
+			(001) jge      #0x5             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+	}, # byte_lt
+	{
+		name => 'byte_gt',
+		DLT => 'IPV4',
+		aliases => ['byte 8 > 5'],
+		unopt => '
+			(000) ldb      [8]
+			(001) jgt      #0x5             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # byte_gt
+	{
+		name => 'byte_or',
+		DLT => 'IPV4',
+		aliases => ['byte 8 | 5'],
+		unopt => '
+			(000) or       #0x5
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+	}, # byte_or
+	{
+		name => 'byte_and',
+		DLT => 'IPV4',
+		aliases => ['byte 8 & 5'],
+		unopt => '
+			(000) and      #0x5
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+	}, # byte_and
 );
 
 # In apply_blocks each test block always generates two tests: optimized and
@@ -12126,6 +12184,42 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'isis proto 32',
 		errstr => 'IS-IS PDU type 32 greater than maximum 31',
+	},
+	{
+		name => 'byte_ne',
+		DLT => 'IPV4',
+		expr => 'byte 1 != 2',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'byte_le',
+		DLT => 'IPV4',
+		expr => 'byte 1 <= 2',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'byte_ge',
+		DLT => 'IPV4',
+		expr => 'byte 1 >= 2',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'byte_xor',
+		DLT => 'IPV4',
+		expr => 'byte 1 ^ 2',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'byte_lsh',
+		DLT => 'IPV4',
+		expr => 'byte 1 << 2',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'byte_rsh',
+		DLT => 'IPV4',
+		expr => 'byte 1 >> 2',
+		errstr => 'syntax error',
 	},
 );
 
