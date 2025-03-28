@@ -1459,6 +1459,19 @@ static struct block *
 gen_mcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 v, bpf_u_int32 mask)
 {
+	/*
+	 * For any A: if mask == 0, it means A & mask == 0, so the result is
+	 * true iff v == 0.  In this case ideally the caller should have
+	 * skipped this invocation and have fewer statement blocks to juggle.
+	 * If the caller could have skipped, but has not, produce a block with
+	 * fewer statements.
+	 *
+	 * This could be done in gen_ncmp() in a more generic way, but this
+	 * function is the only code path that can have mask == 0.
+	 */
+	if (mask == 0)
+		return v ? gen_false(cstate) : gen_true(cstate);
+
 	return gen_ncmp(cstate, offrel, offset, size, mask, BPF_JEQ, 0, v);
 }
 

@@ -9191,12 +9191,11 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 7
-			(003) ld       [16]
-			(004) and      #0x0
-			(005) jeq      #0x0             jt 6	jf 7
-			(006) ret      #2000
-			(007) ret      #0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ld       #0x0
+			(004) jeq      #0x0             jt 5	jf 6
+			(005) ret      #2000
+			(006) ret      #0
 			',
 	}, # ip_dst_net_addr_0
 	{
@@ -11635,21 +11634,17 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 16
-			(003) ld       [24]
-			(004) and      #0x0
-			(005) jeq      #0x0             jt 6	jf 16
-			(006) ld       [28]
-			(007) and      #0x0
-			(008) jeq      #0x0             jt 9	jf 16
-			(009) ld       [32]
-			(010) and      #0x0
-			(011) jeq      #0x0             jt 12	jf 16
-			(012) ld       [36]
-			(013) and      #0x0
-			(014) jeq      #0x0             jt 15	jf 16
-			(015) ret      #262144
-			(016) ret      #0
+			(002) jeq      #0x60            jt 3	jf 12
+			(003) ld       #0x0
+			(004) jeq      #0x0             jt 5	jf 12
+			(005) ld       #0x0
+			(006) jeq      #0x0             jt 7	jf 12
+			(007) ld       #0x0
+			(008) jeq      #0x0             jt 9	jf 12
+			(009) ld       #0x0
+			(010) jeq      #0x0             jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
 			',
 	}, # ip6_dst_net_0
 	{
@@ -11670,21 +11665,18 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 16
+			(002) jeq      #0x60            jt 3	jf 13
 			(003) ld       [24]
 			(004) and      #0xff000000
-			(005) jeq      #0xff000000      jt 6	jf 16
-			(006) ld       [28]
-			(007) and      #0x0
-			(008) jeq      #0x0             jt 9	jf 16
-			(009) ld       [32]
-			(010) and      #0x0
-			(011) jeq      #0x0             jt 12	jf 16
-			(012) ld       [36]
-			(013) and      #0x0
-			(014) jeq      #0x0             jt 15	jf 16
-			(015) ret      #262144
-			(016) ret      #0
+			(005) jeq      #0xff000000      jt 6	jf 13
+			(006) ld       #0x0
+			(007) jeq      #0x0             jt 8	jf 13
+			(008) ld       #0x0
+			(009) jeq      #0x0             jt 10	jf 13
+			(010) ld       #0x0
+			(011) jeq      #0x0             jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # ip6_dst_net_8
 	{
@@ -11707,20 +11699,18 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 15
+			(002) jeq      #0x60            jt 3	jf 13
 			(003) ld       [24]
-			(004) jeq      #0xff112233      jt 5	jf 15
+			(004) jeq      #0xff112233      jt 5	jf 13
 			(005) ld       [28]
 			(006) and      #0xff000000
-			(007) jeq      #0x44000000      jt 8	jf 15
-			(008) ld       [32]
-			(009) and      #0x0
-			(010) jeq      #0x0             jt 11	jf 15
-			(011) ld       [36]
-			(012) and      #0x0
-			(013) jeq      #0x0             jt 14	jf 15
-			(014) ret      #262144
-			(015) ret      #0
+			(007) jeq      #0x44000000      jt 8	jf 13
+			(008) ld       #0x0
+			(009) jeq      #0x0             jt 10	jf 13
+			(010) ld       #0x0
+			(011) jeq      #0x0             jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # ip6_dst_net_40
 	{
@@ -11745,19 +11735,18 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 14
+			(002) jeq      #0x60            jt 3	jf 13
 			(003) ld       [24]
-			(004) jeq      #0xff112233      jt 5	jf 14
+			(004) jeq      #0xff112233      jt 5	jf 13
 			(005) ld       [28]
-			(006) jeq      #0x44556677      jt 7	jf 14
+			(006) jeq      #0x44556677      jt 7	jf 13
 			(007) ld       [32]
 			(008) and      #0xffff0000
-			(009) jeq      #0x88990000      jt 10	jf 14
-			(010) ld       [36]
-			(011) and      #0x0
-			(012) jeq      #0x0             jt 13	jf 14
-			(013) ret      #262144
-			(014) ret      #0
+			(009) jeq      #0x88990000      jt 10	jf 13
+			(010) ld       #0x0
+			(011) jeq      #0x0             jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # ip6_dst_net_80
 	{
