@@ -13093,7 +13093,7 @@ sub run_reject_test {
 # collect the results preserving the ordering.
 my @ready_to_run;
 foreach my $test (@accept_blocks) {
-	if (! defined $test->{name}) {
+	if (! defined $test->{name} || $test->{name} eq '') {
 		die "Internal error: accept test block <UNKNOWN> does not define key 'name'";
 	}
 	foreach ('DLT', 'aliases') {
@@ -13157,12 +13157,19 @@ foreach my $test (@accept_blocks) {
 	}
 }
 foreach my $block (@apply_blocks) {
-	if (! defined $block->{name}) {
+	if (! defined $block->{name} || $block->{name} eq '') {
 		die "Internal error: apply test block <UNKNOWN> does not define key 'name'";
 	}
 	foreach ('savefile', 'expr', 'results') {
 		next if defined $block->{$_};
 		die "Internal error: apply test block '$block->{name}' does not define key '$_'";
+	}
+	foreach ('savefile', 'expr') {
+		next if $block->{$_} ne '';
+		die "Internal error: key '$_' is an empty string in apply test block '$block->{name}'";
+	}
+	if (! scalar @{$block->{results}}) {
+		die "Internal error: apply test block '$block->{name}' defines zero results";
 	}
 	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
 		$block->{skip} : undef;
@@ -13194,11 +13201,11 @@ foreach my $block (@apply_blocks) {
 	}
 }
 foreach my $test (@reject_tests) {
-	if (! defined $test->{name}) {
+	if (! defined $test->{name} || $test->{name} eq '') {
 		die "Internal error: reject test <UNKNOWN> does not define key 'name'";
 	}
 	foreach ('DLT', 'expr', 'errstr') {
-		next if defined $test->{$_};
+		next if defined $test->{$_} && $test->{$_} ne '';
 		die "Internal error: reject test '$test->{name}' does not define key '$_'";
 	}
 	my $label = reject_test_label $test->{name};
