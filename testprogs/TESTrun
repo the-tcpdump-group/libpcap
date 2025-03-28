@@ -9181,21 +9181,12 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		snaplen => 2000,
 		aliases => ['ip dst net 0.0.0.0/0'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 4
 			(003) ret      #2000
 			(004) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 6
-			(003) ld       #0x0
-			(004) jeq      #0x0             jt 5	jf 6
-			(005) ret      #2000
-			(006) ret      #0
 			',
 	}, # ip_dst_net_addr_0
 	{

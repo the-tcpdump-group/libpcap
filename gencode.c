@@ -5136,18 +5136,33 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
+		/*
+		 * Belt and braces: if other code works correctly, any host
+		 * bits are clear and mask == 0 means addr == 0.  In this case
+		 * the call to gen_hostop() would produce an "always true"
+		 * instruction block and ANDing it with the link type check
+		 * would be a no-op.
+		 */
+		if (mask == 0 && addr == 0)
+			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 12, 16);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_RARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_REVARP);
+		// Same as for Q_IP above.
+		if (mask == 0 && addr == 0)
+			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_ARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_ARP);
+		// Same as for Q_IP above.
+		if (mask == 0 && addr == 0)
+			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		gen_and(b0, b1);
 		return b1;
