@@ -4472,14 +4472,19 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 	/* this order is important */
 	memcpy(a, addr, sizeof(a));
 	memcpy(m, mask, sizeof(m));
-	b1 = gen_mcmp(cstate, OR_LINKPL, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
-	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
-	gen_and(b0, b1);
-	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
-	gen_and(b0, b1);
-	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
-	gen_and(b0, b1);
-	return b1;
+	b1 = NULL;
+	for (int i = 3; i >= 0; i--) {
+		// Same as the Q_IP case in gen_host().
+		if (m[i] == 0 && a[i] == 0)
+			continue;
+		b0 = gen_mcmp(cstate, OR_LINKPL, offset + 4 * i, BPF_W,
+		    ntohl(a[i]), ntohl(m[i]));
+		if (b1)
+			gen_and(b0, b1);
+		else
+			b1 = b0;
+	}
+	return b1 ? b1 : gen_true(cstate);
 }
 #endif
 

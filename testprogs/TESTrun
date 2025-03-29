@@ -11625,17 +11625,11 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 12
+			(002) jeq      #0x60            jt 3	jf 6
 			(003) ld       #0x0
-			(004) jeq      #0x0             jt 5	jf 12
-			(005) ld       #0x0
-			(006) jeq      #0x0             jt 7	jf 12
-			(007) ld       #0x0
-			(008) jeq      #0x0             jt 9	jf 12
-			(009) ld       #0x0
-			(010) jeq      #0x0             jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(004) jeq      #0x0             jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
 			',
 	}, # ip6_dst_net_0
 	{
@@ -11643,7 +11637,7 @@ my @accept_blocks = (
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff00::/8'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 7
@@ -11653,29 +11647,13 @@ my @accept_blocks = (
 			(006) ret      #262144
 			(007) ret      #0
 			',
-		unopt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 13
-			(003) ld       [24]
-			(004) and      #0xff000000
-			(005) jeq      #0xff000000      jt 6	jf 13
-			(006) ld       #0x0
-			(007) jeq      #0x0             jt 8	jf 13
-			(008) ld       #0x0
-			(009) jeq      #0x0             jt 10	jf 13
-			(010) ld       #0x0
-			(011) jeq      #0x0             jt 12	jf 13
-			(012) ret      #262144
-			(013) ret      #0
-			',
 	}, # ip6_dst_net_8
 	{
 		name => 'ip6_dst_net_40',
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff11:2233:4400::/40'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 9
@@ -11687,29 +11665,13 @@ my @accept_blocks = (
 			(008) ret      #262144
 			(009) ret      #0
 			',
-		unopt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 13
-			(003) ld       [24]
-			(004) jeq      #0xff112233      jt 5	jf 13
-			(005) ld       [28]
-			(006) and      #0xff000000
-			(007) jeq      #0x44000000      jt 8	jf 13
-			(008) ld       #0x0
-			(009) jeq      #0x0             jt 10	jf 13
-			(010) ld       #0x0
-			(011) jeq      #0x0             jt 12	jf 13
-			(012) ret      #262144
-			(013) ret      #0
-			',
 	}, # ip6_dst_net_40
 	{
 		name => 'ip6_dst_net_80',
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff11:2233:4455:6677:8899::/80'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 11
@@ -11722,22 +11684,6 @@ my @accept_blocks = (
 			(009) jeq      #0x88990000      jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 13
-			(003) ld       [24]
-			(004) jeq      #0xff112233      jt 5	jf 13
-			(005) ld       [28]
-			(006) jeq      #0x44556677      jt 7	jf 13
-			(007) ld       [32]
-			(008) and      #0xffff0000
-			(009) jeq      #0x88990000      jt 10	jf 13
-			(010) ld       #0x0
-			(011) jeq      #0x0             jt 12	jf 13
-			(012) ret      #262144
-			(013) ret      #0
 			',
 	}, # ip6_dst_net_80
 	{
