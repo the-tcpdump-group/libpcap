@@ -256,6 +256,10 @@ sub skip_no_ethers_casecmp {
 		# pcap_ether_hostton() uses strcmp().
 		skip_musl_libc ||
 		skip_os ('haiku') ||
+		# On illumos and possibly Solaris 11.4 ether_hostton() initially
+		# fails to find any upper-case hostnames, then after a few minutes
+		# it finds some or all of them, or sometimes it does not.
+		skip_os ('solaris') ||
 		# ether_hostton() uses strcmp().
 		skip_os ('freebsd') ||
 		skip_os ('netbsd') ||
@@ -4041,7 +4045,7 @@ my @accept_blocks = (
 	}, # rarp_net_name
 	{
 		name => 'arp_net_NAME',
-		skip => skip_no_networks(),
+		skip => skip_no_networks_casecmp(),
 		DLT => 'SUNATM',
 		aliases => [
 			'arp net NET-10-0-0-0.LIBPCAP.TEST',
@@ -4063,7 +4067,7 @@ my @accept_blocks = (
 	}, # arp_net_NAME
 	{
 		name => 'rarp_net_NAME',
-		skip => skip_no_networks(),
+		skip => skip_no_networks_casecmp(),
 		DLT => 'ARCNET',
 		aliases => [
 			'rarp net NET-10-0-0-0.LIBPCAP.TEST',
