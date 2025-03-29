@@ -5236,6 +5236,12 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	case Q_DEFAULT:
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
+		// Same as the Q_IP case in gen_host().
+		if (
+			! memcmp(mask, &in6addr_any, sizeof(struct in6_addr)) &&
+			! memcmp(addr, &in6addr_any, sizeof(struct in6_addr))
+		)
+			return b0;
 		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
 		gen_and(b0, b1);
 		return b1;

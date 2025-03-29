@@ -11615,21 +11615,12 @@ my @accept_blocks = (
 		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ::/0'],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 4
 			(003) ret      #262144
 			(004) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x60            jt 3	jf 6
-			(003) ld       #0x0
-			(004) jeq      #0x0             jt 5	jf 6
-			(005) ret      #262144
-			(006) ret      #0
 			',
 	}, # ip6_dst_net_0
 	{
