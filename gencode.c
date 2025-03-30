@@ -3483,28 +3483,22 @@ ethertype_to_ppptype(bpf_u_int32 ll_proto)
 	switch (ll_proto) {
 
 	case ETHERTYPE_IP:
-		ll_proto = PPP_IP;
-		break;
+		return PPP_IP;
 
 	case ETHERTYPE_IPV6:
-		ll_proto = PPP_IPV6;
-		break;
+		return PPP_IPV6;
 
 	case ETHERTYPE_DN:
-		ll_proto = PPP_DECNET;
-		break;
+		return PPP_DECNET;
 
 	case ETHERTYPE_ATALK:
-		ll_proto = PPP_APPLE;
-		break;
+		return PPP_APPLE;
 
 	case ETHERTYPE_NS:
-		ll_proto = PPP_NS;
-		break;
+		return PPP_NS;
 
 	case LLCSAP_ISONS:
-		ll_proto = PPP_OSI;
-		break;
+		return PPP_OSI;
 
 	case LLCSAP_8021D:
 		/*
@@ -3512,12 +3506,10 @@ ethertype_to_ppptype(bpf_u_int32 ll_proto)
 		 * over PPP are Spanning Tree Protocol
 		 * Bridging PDUs.
 		 */
-		ll_proto = PPP_BRPDU;
-		break;
+		return PPP_BRPDU;
 
 	case LLCSAP_IPX:
-		ll_proto = PPP_IPX;
-		break;
+		return PPP_IPX;
 	}
 	return (ll_proto);
 }
@@ -4085,8 +4077,7 @@ gen_llc_internal(compiler_state_t *cstate)
 		/*
 		 * We check for LLC traffic.
 		 */
-		b0 = gen_atmtype_llc(cstate);
-		return b0;
+		return gen_atmtype_llc(cstate);
 
 	case DLT_IEEE802:	/* Token Ring */
 		/*
@@ -5455,144 +5446,118 @@ static struct block *
 gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 {
 	struct block *b0;
-	struct block *b1 = NULL;
+	struct block *b1;
 
 	switch (proto) {
 
 	case Q_SCTP:
-		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT);
 
 	case Q_TCP:
-		b1 = gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT);
 
 	case Q_UDP:
-		b1 = gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT);
 
 	case Q_ICMP:
-		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP);
-		break;
+		return gen_proto(cstate, IPPROTO_ICMP, Q_IP);
 
 #ifndef	IPPROTO_IGMP
 #define	IPPROTO_IGMP	2
 #endif
 
 	case Q_IGMP:
-		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP);
-		break;
+		return gen_proto(cstate, IPPROTO_IGMP, Q_IP);
 
 #ifndef	IPPROTO_IGRP
 #define	IPPROTO_IGRP	9
 #endif
 	case Q_IGRP:
-		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP);
-		break;
+		return gen_proto(cstate, IPPROTO_IGRP, Q_IP);
 
 #ifndef IPPROTO_PIM
 #define IPPROTO_PIM	103
 #endif
 
 	case Q_PIM:
-		b1 = gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
 
 #ifndef IPPROTO_VRRP
 #define IPPROTO_VRRP	112
 #endif
 
 	case Q_VRRP:
-		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP);
-		break;
+		return gen_proto(cstate, IPPROTO_VRRP, Q_IP);
 
 #ifndef IPPROTO_CARP
 #define IPPROTO_CARP	112
 #endif
 
 	case Q_CARP:
-		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP);
-		break;
+		return gen_proto(cstate, IPPROTO_CARP, Q_IP);
 
 	case Q_IP:
-		b1 = gen_linktype(cstate, ETHERTYPE_IP);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_IP);
 
 	case Q_ARP:
-		b1 = gen_linktype(cstate, ETHERTYPE_ARP);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_ARP);
 
 	case Q_RARP:
-		b1 = gen_linktype(cstate, ETHERTYPE_REVARP);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_REVARP);
 
 	case Q_LINK:
 		break; // invalid syntax
 
 	case Q_ATALK:
-		b1 = gen_linktype(cstate, ETHERTYPE_ATALK);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_ATALK);
 
 	case Q_AARP:
-		b1 = gen_linktype(cstate, ETHERTYPE_AARP);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_AARP);
 
 	case Q_DECNET:
-		b1 = gen_linktype(cstate, ETHERTYPE_DN);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_DN);
 
 	case Q_SCA:
-		b1 = gen_linktype(cstate, ETHERTYPE_SCA);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_SCA);
 
 	case Q_LAT:
-		b1 = gen_linktype(cstate, ETHERTYPE_LAT);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_LAT);
 
 	case Q_MOPDL:
-		b1 = gen_linktype(cstate, ETHERTYPE_MOPDL);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_MOPDL);
 
 	case Q_MOPRC:
-		b1 = gen_linktype(cstate, ETHERTYPE_MOPRC);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_MOPRC);
 
 	case Q_IPV6:
-		b1 = gen_linktype(cstate, ETHERTYPE_IPV6);
-		break;
+		return gen_linktype(cstate, ETHERTYPE_IPV6);
 
 #ifndef IPPROTO_ICMPV6
 #define IPPROTO_ICMPV6	58
 #endif
 	case Q_ICMPV6:
-		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
-		break;
+		return gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
 
 #ifndef IPPROTO_AH
 #define IPPROTO_AH	51
 #endif
 	case Q_AH:
-		b1 = gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
 
 #ifndef IPPROTO_ESP
 #define IPPROTO_ESP	50
 #endif
 	case Q_ESP:
-		b1 = gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
-		break;
+		return gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
 
 	case Q_ISO:
-		b1 = gen_linktype(cstate, LLCSAP_ISONS);
-		break;
+		return gen_linktype(cstate, LLCSAP_ISONS);
 
 	case Q_ESIS:
-		b1 = gen_proto(cstate, ISO9542_ESIS, Q_ISO);
-		break;
+		return gen_proto(cstate, ISO9542_ESIS, Q_ISO);
 
 	case Q_ISIS:
-		b1 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
-		break;
+		return gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
@@ -5604,7 +5569,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
@@ -5616,7 +5581,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
@@ -5624,13 +5589,13 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_LSP:
 		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_SNP:
 		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
@@ -5640,35 +5605,31 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_CSNP:
 		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_ISIS_PSNP:
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		break;
+		return b1;
 
 	case Q_CLNP:
-		b1 = gen_proto(cstate, ISO8473_CLNP, Q_ISO);
-		break;
+		return gen_proto(cstate, ISO8473_CLNP, Q_ISO);
 
 	case Q_STP:
-		b1 = gen_linktype(cstate, LLCSAP_8021D);
-		break;
+		return gen_linktype(cstate, LLCSAP_8021D);
 
 	case Q_IPX:
-		b1 = gen_linktype(cstate, LLCSAP_IPX);
-		break;
+		return gen_linktype(cstate, LLCSAP_IPX);
 
 	case Q_NETBEUI:
-		b1 = gen_linktype(cstate, LLCSAP_NETBEUI);
-		break;
+		return gen_linktype(cstate, LLCSAP_NETBEUI);
 
 	case Q_RADIO:
 		break; // invalid syntax
@@ -5676,8 +5637,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	default:
 		abort();
 	}
-	if (b1)
-		return b1;
 	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
 
@@ -8111,12 +8070,10 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 		return gen_cmp(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
 
 	case '<':
-		b = gen_cmp_lt(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
-		return b;
+		return gen_cmp_lt(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
 
 	case '>':
-		b = gen_cmp_gt(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
-		return b;
+		return gen_cmp_gt(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
 
 	case '|':
 		s = new_stmt(cstate, BPF_ALU|BPF_OR|BPF_K);
@@ -8364,8 +8321,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			gen_and(b1, b0);
 			return b0;
 		case DLT_IP_OVER_FC:
-			b0 = gen_mac_multicast(cstate, 2);
-			return b0;
+			return gen_mac_multicast(cstate, 2);
 		default:
 			break;
 		}
