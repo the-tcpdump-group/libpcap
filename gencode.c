@@ -8320,8 +8320,6 @@ require_basic_bpf_extensions(compiler_state_t *cstate, const char *keyword)
 struct block *
 gen_ifindex(compiler_state_t *cstate, int ifindex)
 {
-	register struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8335,20 +8333,18 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 	switch (cstate->linktype) {
 	case DLT_LINUX_SLL2:
 		/* match packets on this interface */
-		b0 = gen_cmp(cstate, OR_LINKHDR, 4, BPF_W, ifindex);
-		break;
+		return gen_cmp(cstate, OR_LINKHDR, 4, BPF_W, ifindex);
 	default:
 #if defined(__linux__)
 		require_basic_bpf_extensions(cstate, "ifindex");
 		/* match ifindex */
-		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
+		return gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_IFINDEX, BPF_W,
 		             ifindex);
 #else /* defined(__linux__) */
 		fail_kw_on_dlt(cstate, "ifindex");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
-	return (b0);
 }
 
 /*
@@ -8377,14 +8373,12 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 	 */
 	switch (cstate->linktype) {
 	case DLT_SLIP:
-		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B,
+		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B,
 			  outbound ? SLIPDIR_OUT : SLIPDIR_IN);
-		break;
 
 	case DLT_IPNET:
-		b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H,
+		return gen_cmp(cstate, OR_LINKHDR, 2, BPF_H,
 		    outbound ? IPNET_OUTBOUND : IPNET_INBOUND);
-		break;
 
 	case DLT_LINUX_SLL:
 		/* match outgoing packets */
@@ -8393,7 +8387,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
-		break;
+		return b0;
 
 	case DLT_LINUX_SLL2:
 		/* match outgoing packets */
@@ -8402,16 +8396,14 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
-		break;
+		return b0;
 
 	case DLT_PFLOG:
-		b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, dir), BPF_B,
+		return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, dir), BPF_B,
 		    outbound ? PF_OUT : PF_IN);
-		break;
 
 	case DLT_PPP_PPPD:
-		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, outbound ? PPP_PPPD_OUT : PPP_PPPD_IN);
-		break;
+		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, outbound ? PPP_PPPD_OUT : PPP_PPPD_IN);
 
 	case DLT_JUNIPER_MFR:
 	case DLT_JUNIPER_MLFR:
@@ -8437,8 +8429,7 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 	case DLT_JUNIPER_ATM_CEMIC:
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, outbound ? 0 : 1, 0x01);
-		break;
+		return gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, outbound ? 0 : 1, 0x01);
 
 	default:
 		/*
@@ -8465,19 +8456,18 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
+		return b0;
 #else /* defined(__linux__) */
 		fail_kw_on_dlt(cstate, outbound ? "outbound" : "inbound");
 		/*NOTREACHED*/
 #endif /* defined(__linux__) */
 	}
-	return (b0);
 }
 
 /* PF firewall log matched interface */
 struct block *
 gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 {
-	struct block *b0;
 	u_int len, off;
 
 	/*
@@ -8496,17 +8486,14 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 		    len-1);
 		/*NOTREACHED*/
 	}
-	b0 = gen_bcmp(cstate, OR_LINKHDR, off, (u_int)strlen(ifname),
+	return gen_bcmp(cstate, OR_LINKHDR, off, (u_int)strlen(ifname),
 	    (const u_char *)ifname);
-	return (b0);
 }
 
 /* PF firewall log ruleset name */
 struct block *
 gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8522,17 +8509,14 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 		/*NOTREACHED*/
 	}
 
-	b0 = gen_bcmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, ruleset),
+	return gen_bcmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, ruleset),
 	    (u_int)strlen(ruleset), (const u_char *)ruleset);
-	return (b0);
 }
 
 /* PF firewall log rule number */
 struct block *
 gen_pf_rnr(compiler_state_t *cstate, int rnr)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8542,17 +8526,14 @@ gen_pf_rnr(compiler_state_t *cstate, int rnr)
 
 	assert_pflog(cstate, "rnr");
 
-	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, rulenr), BPF_W,
+	return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, rulenr), BPF_W,
 		 (bpf_u_int32)rnr);
-	return (b0);
 }
 
 /* PF firewall log sub-rule number */
 struct block *
 gen_pf_srnr(compiler_state_t *cstate, int srnr)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8562,17 +8543,14 @@ gen_pf_srnr(compiler_state_t *cstate, int srnr)
 
 	assert_pflog(cstate, "srnr");
 
-	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, subrulenr), BPF_W,
+	return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, subrulenr), BPF_W,
 	    (bpf_u_int32)srnr);
-	return (b0);
 }
 
 /* PF firewall log reason code */
 struct block *
 gen_pf_reason(compiler_state_t *cstate, int reason)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8582,17 +8560,14 @@ gen_pf_reason(compiler_state_t *cstate, int reason)
 
 	assert_pflog(cstate, "reason");
 
-	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, reason), BPF_B,
+	return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, reason), BPF_B,
 	    (bpf_u_int32)reason);
-	return (b0);
 }
 
 /* PF firewall log action */
 struct block *
 gen_pf_action(compiler_state_t *cstate, int action)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8602,17 +8577,14 @@ gen_pf_action(compiler_state_t *cstate, int action)
 
 	assert_pflog(cstate, "action");
 
-	b0 = gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, action), BPF_B,
+	return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, action), BPF_B,
 	    (bpf_u_int32)action);
-	return (b0);
 }
 
 /* IEEE 802.11 wireless header */
 struct block *
 gen_p80211_type(compiler_state_t *cstate, bpf_u_int32 type, bpf_u_int32 mask)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8627,22 +8599,17 @@ gen_p80211_type(compiler_state_t *cstate, bpf_u_int32 type, bpf_u_int32 mask)
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
 	case DLT_PPI:
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, type, mask);
-		break;
+		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, type, mask);
 
 	default:
 		fail_kw_on_dlt(cstate, "type/subtype");
 		/*NOTREACHED*/
 	}
-
-	return (b0);
 }
 
 struct block *
 gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 {
-	struct block *b0;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8657,17 +8624,13 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
 	case DLT_PPI:
-		break;
+		return gen_mcmp(cstate, OR_LINKHDR, 1, BPF_B, fcdir,
+		    IEEE80211_FC1_DIR_MASK);
 
 	default:
 		fail_kw_on_dlt(cstate, "dir");
 		/*NOTREACHED*/
 	}
-
-	b0 = gen_mcmp(cstate, OR_LINKHDR, 1, BPF_B, fcdir,
-	    IEEE80211_FC1_DIR_MASK);
-
-	return (b0);
 }
 
 // Process an ARCnet host address string.
@@ -9719,28 +9682,23 @@ static struct block *
 gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
     bpf_u_int32 jvalue, int jtype, int reverse)
 {
-	struct block *b0;
-
 	assert_atm(cstate, atmkw(atmfield));
 
 	switch (atmfield) {
 
 	case A_VPI:
 		assert_maxval(cstate, "VPI", jvalue, UINT8_MAX);
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B,
+		return gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B,
 		    0xffffffffU, jtype, reverse, jvalue);
-		break;
 
 	case A_VCI:
 		assert_maxval(cstate, "VCI", jvalue, UINT16_MAX);
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
+		return gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
 		    0xffffffffU, jtype, reverse, jvalue);
-		break;
 
 	default:
 		abort();
 	}
-	return b0;
 }
 
 static struct block *
@@ -9807,42 +9765,42 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 1);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 2);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 3);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 4);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 5);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 16);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_LANE:
 		/* Get all LANE packets */
@@ -9863,12 +9821,11 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 14;	/* Ethernet */
 		cstate->off_nl = 0;			/* Ethernet II */
 		cstate->off_nl_nosnap = 3;		/* 802.3+802.2 */
-		break;
+		return b1;
 
 	default:
 		abort();
 	}
-	return b1;
 }
 
 /*
@@ -9895,9 +9852,8 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	switch (type) {
 
 	case M_FISU:
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
+		return gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JEQ, 0, 0U);
-		break;
 
 	case M_LSSU:
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
@@ -9905,17 +9861,15 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 0, 0U);
 		gen_and(b1, b0);
-		break;
+		return b0;
 
 	case M_MSU:
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
+		return gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 0, 2U);
-		break;
 
 	case MH_FISU:
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
+		return gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JEQ, 0, 0U);
-		break;
 
 	case MH_LSSU:
 		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
@@ -9923,17 +9877,15 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0U);
 		gen_and(b1, b0);
-		break;
+		return b0;
 
 	case MH_MSU:
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
+		return gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0x0100U);
-		break;
 
 	default:
 		abort();
 	}
-	return b0;
 }
 
 /*
@@ -9948,7 +9900,6 @@ static struct block *
 gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
     bpf_u_int32 jvalue, int jtype, int reverse)
 {
-	struct block *b0;
 	u_int newoff_sio;
 	u_int newoff_opc;
 	u_int newoff_dpc;
@@ -9977,9 +9928,8 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_SIO:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP2_SIO_MAXVAL);
 		// Here the bitmask means "do not apply a bitmask".
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
+		return gen_ncmp(cstate, OR_PACKET, newoff_sio, BPF_B, UINT32_MAX,
 		    jtype, reverse, jvalue);
-		break;
 
 	/*
 	 * See UTU-T Rec. Q.704, Section 2.2, Figure 3/Q.704.
@@ -10016,10 +9966,9 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		/* FALLTHROUGH */
 	case M_OPC:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
+		return gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
 		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
 		    SWAPLONG(jvalue << 14));
-		break;
 
 	case MH_DPC:
 		newoff_dpc += 3;
@@ -10027,10 +9976,9 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 
 	case M_DPC:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
+		return gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
 		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
 		    SWAPSHORT(jvalue));
-		break;
 
 	case MH_SLS:
 		newoff_sls += 3;
@@ -10038,15 +9986,13 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 
 	case M_SLS:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_SLS_MAXVAL);
-		b0 = gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
+		return gen_ncmp(cstate, OR_PACKET, newoff_sls, BPF_B,
 		    MTP3_SLS_MAXVAL << 4, jtype, reverse,
 		    jvalue << 4);
-		break;
 
 	default:
 		abort();
 	}
-	return b0;
 }
 
 struct block *
@@ -10098,7 +10044,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_atm_vpi(cstate, 0);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_OAMF4:
 		/* OAM F4 type */
@@ -10107,7 +10053,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_atm_vpi(cstate, 0);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_CONNECTMSG:
 		/*
@@ -10127,7 +10073,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_atmtype_abbrev(cstate, A_SC);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	case A_METACONNECT:
 		b0 = gen_msg_abbrev(cstate, SETUP);
@@ -10141,10 +10087,9 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_atmtype_abbrev(cstate, A_METAC);
 		gen_and(b0, b1);
-		break;
+		return b1;
 
 	default:
 		abort();
 	}
-	return b1;
 }
