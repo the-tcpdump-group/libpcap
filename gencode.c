@@ -679,6 +679,8 @@ static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, u_int, u_int);
 #endif
 static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
+static struct block *gen_mac48hostop(compiler_state_t *, const u_char *,
+    const int, const u_int, const u_int);
 static struct block *gen_ehostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_fhostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_thostop(compiler_state_t *, const u_char *, int);
@@ -4468,28 +4470,30 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 }
 #endif
 
+// MAC-48 address matching with the address offsets parametrised.
 static struct block *
-gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
+gen_mac48hostop(compiler_state_t *cstate, const u_char *addr, const int dir,
+    const u_int src_off, const u_int dst_off)
 {
-	register struct block *b0, *b1;
+	struct block *b0, *b1;
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 6, 6, eaddr);
+		return gen_bcmp(cstate, OR_LINKHDR, src_off, 6, addr);
 
 	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 0, 6, eaddr);
+		return gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, addr);
 
 	case Q_AND:
-		b0 = gen_ehostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ehostop(cstate, eaddr, Q_DST);
+		b0 = gen_mac48hostop(cstate, addr, Q_SRC, src_off, dst_off);
+		b1 = gen_mac48hostop(cstate, addr, Q_DST, src_off, dst_off);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		b0 = gen_ehostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ehostop(cstate, eaddr, Q_DST);
+		b0 = gen_mac48hostop(cstate, addr, Q_SRC, src_off, dst_off);
+		b1 = gen_mac48hostop(cstate, addr, Q_DST, src_off, dst_off);
 		gen_or(b0, b1);
 		return b1;
 
@@ -4504,6 +4508,12 @@ gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 	}
 	abort();
 	/*NOTREACHED*/
+}
+
+static struct block *
+gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
+{
+	return gen_mac48hostop(cstate, eaddr, dir, 6, 0);
 }
 
 /*
@@ -4512,39 +4522,9 @@ gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 static struct block *
 gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 {
-	struct block *b0, *b1;
-
-	switch (dir) {
-	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 6 + 1 + cstate->pcap_fddipad, 6, eaddr);
-
-	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 0 + 1 + cstate->pcap_fddipad, 6, eaddr);
-
-	case Q_AND:
-		b0 = gen_fhostop(cstate, eaddr, Q_SRC);
-		b1 = gen_fhostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_fhostop(cstate, eaddr, Q_SRC);
-		b1 = gen_fhostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-	}
-	abort();
-	/*NOTREACHED*/
+	return gen_mac48hostop(cstate, eaddr, dir,
+	    6 + 1 + cstate->pcap_fddipad,
+	    0 + 1 + cstate->pcap_fddipad);
 }
 
 /*
@@ -4553,39 +4533,7 @@ gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 static struct block *
 gen_thostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 {
-	register struct block *b0, *b1;
-
-	switch (dir) {
-	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 8, 6, eaddr);
-
-	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 2, 6, eaddr);
-
-	case Q_AND:
-		b0 = gen_thostop(cstate, eaddr, Q_SRC);
-		b1 = gen_thostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_thostop(cstate, eaddr, Q_SRC);
-		b1 = gen_thostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-	}
-	abort();
-	/*NOTREACHED*/
+	return gen_mac48hostop(cstate, eaddr, dir, 8, 2);
 }
 
 /*
@@ -4977,39 +4925,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 static struct block *
 gen_ipfchostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 {
-	register struct block *b0, *b1;
-
-	switch (dir) {
-	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-
-	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 2, 6, eaddr);
-
-	case Q_AND:
-		b0 = gen_ipfchostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ipfchostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_ipfchostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ipfchostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-	}
-	abort();
-	/*NOTREACHED*/
+	return gen_mac48hostop(cstate, eaddr, dir, 10, 2);
 }
 
 /*
