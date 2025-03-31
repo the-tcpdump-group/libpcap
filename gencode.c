@@ -9756,28 +9756,6 @@ gen_atm_vci(compiler_state_t *cstate, const uint16_t v)
 }
 
 static struct block *
-gen_atmtype_metac(compiler_state_t *cstate)
-{
-	struct block *b0, *b1;
-
-	b0 = gen_atm_vpi(cstate, 0);
-	b1 = gen_atm_vci(cstate, 1);
-	gen_and(b0, b1);
-	return b1;
-}
-
-static struct block *
-gen_atmtype_sc(compiler_state_t *cstate)
-{
-	struct block *b0, *b1;
-
-	b0 = gen_atm_vpi(cstate, 0);
-	b1 = gen_atm_vci(cstate, 5);
-	gen_and(b0, b1);
-	return b1;
-}
-
-static struct block *
 gen_atm_prototype(compiler_state_t *cstate, const uint8_t v)
 {
 	return gen_mcmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, v, 0x0fU);
@@ -9826,7 +9804,9 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_METAC:
 		/* Get all packets in Meta signalling Circuit */
-		b1 = gen_atmtype_metac(cstate);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 1);
+		gen_and(b0, b1);
 		break;
 
 	case A_BCC:
@@ -9852,7 +9832,9 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
-		b1 = gen_atmtype_sc(cstate);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 5);
+		gen_and(b0, b1);
 		break;
 
 	case A_ILMIC:
@@ -10143,7 +10125,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
 		gen_or(b0, b1);
-		b0 = gen_atmtype_sc(cstate);
+		b0 = gen_atmtype_abbrev(cstate, A_SC);
 		gen_and(b0, b1);
 		break;
 
@@ -10157,7 +10139,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
 		gen_or(b0, b1);
-		b0 = gen_atmtype_metac(cstate);
+		b0 = gen_atmtype_abbrev(cstate, A_METAC);
 		gen_and(b0, b1);
 		break;
 
