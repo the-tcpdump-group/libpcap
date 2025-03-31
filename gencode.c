@@ -5172,16 +5172,16 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case ETHERTYPE_IPV6:
 		/* match the bottom-of-stack bit */
 		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-		/* match the IPv4 version number */
+		/* match the IPv6 version number */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
 		gen_and(b0, b1);
 		return b1;
 
- default:
-	 /* FIXME add other L3 proto IDs */
-	 bpf_error(cstate, "unsupported protocol over mpls");
-	 /*NOTREACHED*/
- }
+	default:
+		/* FIXME add other L3 proto IDs */
+		bpf_error(cstate, "unsupported protocol over mpls");
+		/*NOTREACHED*/
+	}
 }
 
 static struct block *
