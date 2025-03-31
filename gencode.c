@@ -727,7 +727,8 @@ static struct block *gen_encap_ll_check(compiler_state_t *cstate);
 static struct block *gen_atmfield_code_internal(compiler_state_t *, int,
     bpf_u_int32, int, int);
 static struct block *gen_atmtype_llc(compiler_state_t *);
-static struct block *gen_msg_abbrev(compiler_state_t *, int type);
+static struct block *gen_msg_abbrev(compiler_state_t *, const uint8_t);
+static struct block *gen_atm_prototype(compiler_state_t *, const uint8_t);
 
 static void
 initchunks(compiler_state_t *cstate)
@@ -975,16 +976,8 @@ atmkw(const unsigned id)
 		[A_OAM] = "oam",
 		[A_OAMF4] = "oamf4",
 		[A_LANE] = "lane",
-		// no keyword for A_SETUP
-		// no keyword for A_CALLPROCEED
-		// no keyword for A_CONNECT
-		// no keyword for A_CONNECTACK
-		// no keyword for A_RELEASE
-		// no keyword for A_RELEASE_DONE
 		[A_VPI] = "vpi",
 		[A_VCI] = "vci",
-		// no keyword for A_PROTOTYPE
-		// no keyword for A_MSGTYPE
 		[A_CONNECTMSG] = "connectmsg",
 		[A_METACONNECT] = "metaconnect",
 	};
@@ -3656,7 +3649,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 *
 		 * Check for LLC encapsulation and then check the protocol.
 		 */
-		b0 = gen_atmfield_code_internal(cstate, A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+		b0 = gen_atm_prototype(cstate, PT_LLC);
 		b1 = gen_llc_linktype(cstate, ll_proto);
 		gen_and(b0, b1);
 		return b1;
@@ -9726,14 +9719,6 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 {
 	struct block *b0;
 
-	/*
-	 * This check is a no-op for A_MSGTYPE so long as the only incoming
-	 * code path is from gen_atmmulti_abbrev(), which makes the same
-	 * check first; also for A_PROTOTYPE so long as the only incoming code
-	 * paths are from gen_atmtype_abbrev(), which makes the same check
-	 * first, or from gen_llc_internal() or gen_linktype(), which restrict
-	 * it to DLT_SUNATM.
-	 */
 	assert_atm(cstate, atmkw(atmfield));
 
 	switch (atmfield) {
@@ -9747,16 +9732,6 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 	case A_VCI:
 		assert_maxval(cstate, "VCI", jvalue, UINT16_MAX);
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H,
-		    0xffffffffU, jtype, reverse, jvalue);
-		break;
-
-	case A_PROTOTYPE:
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B,
-		    0x0fU, jtype, reverse, jvalue);
-		break;
-
-	case A_MSGTYPE:
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS, BPF_B,
 		    0xffffffffU, jtype, reverse, jvalue);
 		break;
 
@@ -9789,11 +9764,17 @@ gen_atmtype_sc(compiler_state_t *cstate)
 }
 
 static struct block *
+gen_atm_prototype(compiler_state_t *cstate, const uint8_t v)
+{
+	return gen_mcmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, v, 0x0fU);
+}
+
+static struct block *
 gen_atmtype_llc(compiler_state_t *cstate)
 {
 	struct block *b0;
 
-	b0 = gen_atmfield_code_internal(cstate, A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+	b0 = gen_atm_prototype(cstate, PT_LLC);
 	cstate->linktype = cstate->prevlinktype;
 	return b0;
 }
@@ -9869,7 +9850,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_LANE:
 		/* Get all LANE packets */
-		b1 = gen_atmfield_code_internal(cstate, A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
+		b1 = gen_atm_prototype(cstate, PT_LANE);
 
 		/*
 		 * Arrange that all subsequent tests assume LANE
@@ -10088,44 +10069,14 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 }
 
 static struct block *
-gen_msg_abbrev(compiler_state_t *cstate, int type)
+gen_msg_abbrev(compiler_state_t *cstate, const uint8_t type)
 {
-	struct block *b1;
-
 	/*
 	 * Q.2931 signalling protocol messages for handling virtual circuits
 	 * establishment and teardown
 	 */
-	switch (type) {
-
-	case A_SETUP:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, SETUP, BPF_JEQ, 0);
-		break;
-
-	case A_CALLPROCEED:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, CALL_PROCEED, BPF_JEQ, 0);
-		break;
-
-	case A_CONNECT:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, CONNECT, BPF_JEQ, 0);
-		break;
-
-	case A_CONNECTACK:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, CONNECT_ACK, BPF_JEQ, 0);
-		break;
-
-	case A_RELEASE:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, RELEASE, BPF_JEQ, 0);
-		break;
-
-	case A_RELEASE_DONE:
-		b1 = gen_atmfield_code_internal(cstate, A_MSGTYPE, RELEASE_DONE, BPF_JEQ, 0);
-		break;
-
-	default:
-		abort();
-	}
-	return b1;
+	return gen_cmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS,
+	    BPF_B, type);
 }
 
 struct block *
@@ -10167,30 +10118,30 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 * Get Q.2931 signalling messages for switched
 		 * virtual connection
 		 */
-		b0 = gen_msg_abbrev(cstate, A_SETUP);
-		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
+		b0 = gen_msg_abbrev(cstate, SETUP);
+		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_CONNECT);
+		b0 = gen_msg_abbrev(cstate, CONNECT);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_CONNECTACK);
+		b0 = gen_msg_abbrev(cstate, CONNECT_ACK);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_RELEASE);
+		b0 = gen_msg_abbrev(cstate, RELEASE);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_RELEASE_DONE);
+		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
 		gen_or(b0, b1);
 		b0 = gen_atmtype_sc(cstate);
 		gen_and(b0, b1);
 		break;
 
 	case A_METACONNECT:
-		b0 = gen_msg_abbrev(cstate, A_SETUP);
-		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
+		b0 = gen_msg_abbrev(cstate, SETUP);
+		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_CONNECT);
+		b0 = gen_msg_abbrev(cstate, CONNECT);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_RELEASE);
+		b0 = gen_msg_abbrev(cstate, RELEASE);
 		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, A_RELEASE_DONE);
+		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
 		gen_or(b0, b1);
 		b0 = gen_atmtype_metac(cstate);
 		gen_and(b0, b1);

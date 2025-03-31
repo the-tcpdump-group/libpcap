@@ -161,19 +161,9 @@
 #define A_OAMF4		29	/* OAM F4 cells: Segment + End-to-end */
 #define A_LANE		30	/* LANE traffic */
 
-/* Based on Q.2931 signalling protocol */
-#define A_SETUP		41	/* Setup message */
-#define A_CALLPROCEED	42	/* Call proceeding message */
-#define A_CONNECT	43	/* Connect message */
-#define A_CONNECTACK	44	/* Connect Ack message */
-#define A_RELEASE	45	/* Release message */
-#define A_RELEASE_DONE	46	/* Release message */
-
 /* ATM field types */
 #define A_VPI		51
 #define A_VCI		52
-#define A_PROTOTYPE	53
-#define A_MSGTYPE	54
 
 #define A_CONNECTMSG	70	/* returns Q.2931 signalling messages for
 				   establishing and destroying switched
