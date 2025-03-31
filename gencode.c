@@ -729,6 +729,8 @@ static struct block *gen_atmfield_code_internal(compiler_state_t *, int,
 static struct block *gen_atmtype_llc(compiler_state_t *);
 static struct block *gen_msg_abbrev(compiler_state_t *, const uint8_t);
 static struct block *gen_atm_prototype(compiler_state_t *, const uint8_t);
+static struct block *gen_atm_vpi(compiler_state_t *, const uint8_t);
+static struct block *gen_atm_vci(compiler_state_t *, const uint16_t);
 
 static void
 initchunks(compiler_state_t *cstate)
@@ -9742,12 +9744,24 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 }
 
 static struct block *
+gen_atm_vpi(compiler_state_t *cstate, const uint8_t v)
+{
+	return gen_atmfield_code_internal(cstate, A_VPI, v, BPF_JEQ, 0);
+}
+
+static struct block *
+gen_atm_vci(compiler_state_t *cstate, const uint16_t v)
+{
+	return gen_atmfield_code_internal(cstate, A_VCI, v, BPF_JEQ, 0);
+}
+
+static struct block *
 gen_atmtype_metac(compiler_state_t *cstate)
 {
 	struct block *b0, *b1;
 
-	b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-	b1 = gen_atmfield_code_internal(cstate, A_VCI, 1, BPF_JEQ, 0);
+	b0 = gen_atm_vpi(cstate, 0);
+	b1 = gen_atm_vci(cstate, 1);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -9757,8 +9771,8 @@ gen_atmtype_sc(compiler_state_t *cstate)
 {
 	struct block *b0, *b1;
 
-	b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-	b1 = gen_atmfield_code_internal(cstate, A_VCI, 5, BPF_JEQ, 0);
+	b0 = gen_atm_vpi(cstate, 0);
+	b1 = gen_atm_vci(cstate, 5);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -9817,22 +9831,22 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 2, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 2);
 		gen_and(b0, b1);
 		break;
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 3);
 		gen_and(b0, b1);
 		break;
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 4);
 		gen_and(b0, b1);
 		break;
 
@@ -9843,8 +9857,8 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 16, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
+		b1 = gen_atm_vci(cstate, 16);
 		gen_and(b0, b1);
 		break;
 
@@ -10097,19 +10111,19 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAM:
 		/* OAM F4 type */
-		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
+		b0 = gen_atm_vci(cstate, 3);
+		b1 = gen_atm_vci(cstate, 4);
 		gen_or(b0, b1);
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
 		gen_and(b0, b1);
 		break;
 
 	case A_OAMF4:
 		/* OAM F4 type */
-		b0 = gen_atmfield_code_internal(cstate, A_VCI, 3, BPF_JEQ, 0);
-		b1 = gen_atmfield_code_internal(cstate, A_VCI, 4, BPF_JEQ, 0);
+		b0 = gen_atm_vci(cstate, 3);
+		b1 = gen_atm_vci(cstate, 4);
 		gen_or(b0, b1);
-		b0 = gen_atmfield_code_internal(cstate, A_VPI, 0, BPF_JEQ, 0);
+		b0 = gen_atm_vpi(cstate, 0);
 		gen_and(b0, b1);
 		break;
 
