@@ -699,22 +699,24 @@ static struct block *gen_gateway(compiler_state_t *, const u_char *,
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ipfrag(compiler_state_t *);
-static struct block *gen_portatom(compiler_state_t *, int, bpf_u_int32);
-static struct block *gen_portrangeatom(compiler_state_t *, u_int, bpf_u_int32,
-    bpf_u_int32);
-static struct block *gen_portatom6(compiler_state_t *, int, bpf_u_int32);
-static struct block *gen_portrangeatom6(compiler_state_t *, u_int, bpf_u_int32,
-    bpf_u_int32);
-static struct block *gen_portop(compiler_state_t *, u_int, uint8_t, int);
-static struct block *gen_port(compiler_state_t *, u_int, int, int);
-static struct block *gen_portrangeop(compiler_state_t *, u_int, u_int,
+static struct block *gen_portatom(compiler_state_t *, int, uint16_t);
+static struct block *gen_portrangeatom(compiler_state_t *, u_int, uint16_t,
+    uint16_t);
+static struct block *gen_portatom6(compiler_state_t *, int, uint16_t);
+static struct block *gen_portrangeatom6(compiler_state_t *, u_int, uint16_t,
+    uint16_t);
+static struct block *gen_portop(compiler_state_t *, uint16_t, uint8_t, int);
+static struct block *gen_port(compiler_state_t *, uint16_t, int, int);
+static struct block *gen_portrangeop(compiler_state_t *, uint16_t, uint16_t,
     uint8_t, int);
-static struct block *gen_portrange(compiler_state_t *, u_int, u_int, int, int);
-struct block *gen_portop6(compiler_state_t *, u_int, uint8_t, int);
-static struct block *gen_port6(compiler_state_t *, u_int, int, int);
-static struct block *gen_portrangeop6(compiler_state_t *, u_int, u_int,
+static struct block *gen_portrange(compiler_state_t *, uint16_t, uint16_t,
+    int, int);
+static struct block *gen_portop6(compiler_state_t *, uint16_t, uint8_t, int);
+static struct block *gen_port6(compiler_state_t *, uint16_t, int, int);
+static struct block *gen_portrangeop6(compiler_state_t *, uint16_t, uint16_t,
     uint8_t, int);
-static struct block *gen_portrange6(compiler_state_t *, u_int, u_int, int, int);
+static struct block *gen_portrange6(compiler_state_t *, uint16_t, uint16_t,
+    int, int);
 static int lookup_proto(compiler_state_t *, const char *, int);
 #if !defined(NO_PROTOCHAIN)
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
@@ -5696,19 +5698,19 @@ gen_ipfrag(compiler_state_t *cstate)
  * headers).
  */
 static struct block *
-gen_portatom(compiler_state_t *cstate, int off, bpf_u_int32 v)
+gen_portatom(compiler_state_t *cstate, int off, uint16_t v)
 {
 	return gen_cmp(cstate, OR_TRAN_IPV4, off, BPF_H, v);
 }
 
 static struct block *
-gen_portatom6(compiler_state_t *cstate, int off, bpf_u_int32 v)
+gen_portatom6(compiler_state_t *cstate, int off, uint16_t v)
 {
 	return gen_cmp(cstate, OR_TRAN_IPV6, off, BPF_H, v);
 }
 
 static struct block *
-gen_portop(compiler_state_t *cstate, u_int port, uint8_t proto, int dir)
+gen_portop(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
 
@@ -5758,7 +5760,7 @@ gen_portop(compiler_state_t *cstate, u_int port, uint8_t proto, int dir)
 }
 
 static struct block *
-gen_port(compiler_state_t *cstate, u_int port, int proto, int dir)
+gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
 
@@ -5804,7 +5806,7 @@ gen_port(compiler_state_t *cstate, u_int port, int proto, int dir)
 }
 
 struct block *
-gen_portop6(compiler_state_t *cstate, u_int port, uint8_t proto, int dir)
+gen_portop6(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
 
@@ -5843,7 +5845,7 @@ gen_portop6(compiler_state_t *cstate, u_int port, uint8_t proto, int dir)
 }
 
 static struct block *
-gen_port6(compiler_state_t *cstate, u_int port, int proto, int dir)
+gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
 
@@ -5874,8 +5876,8 @@ gen_port6(compiler_state_t *cstate, u_int port, int proto, int dir)
 
 /* gen_portrange code */
 static struct block *
-gen_portrangeatom(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
-    bpf_u_int32 v2)
+gen_portrangeatom(compiler_state_t *cstate, u_int off, uint16_t v1,
+    uint16_t v2)
 {
 	if (v1 == v2)
 		return gen_portatom(cstate, off, v1);
@@ -5891,7 +5893,7 @@ gen_portrangeatom(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
 }
 
 static struct block *
-gen_portrangeop(compiler_state_t *cstate, u_int port1, u_int port2,
+gen_portrangeop(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
     uint8_t proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
@@ -5942,7 +5944,7 @@ gen_portrangeop(compiler_state_t *cstate, u_int port1, u_int port2,
 }
 
 static struct block *
-gen_portrange(compiler_state_t *cstate, u_int port1, u_int port2,
+gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
     int proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
@@ -5974,8 +5976,8 @@ gen_portrange(compiler_state_t *cstate, u_int port1, u_int port2,
 }
 
 static struct block *
-gen_portrangeatom6(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
-    bpf_u_int32 v2)
+gen_portrangeatom6(compiler_state_t *cstate, u_int off, uint16_t v1,
+    uint16_t v2)
 {
 	if (v1 == v2)
 		return gen_portatom6(cstate, off, v1);
@@ -5991,7 +5993,7 @@ gen_portrangeatom6(compiler_state_t *cstate, u_int off, bpf_u_int32 v1,
 }
 
 static struct block *
-gen_portrangeop6(compiler_state_t *cstate, u_int port1, u_int port2,
+gen_portrangeop6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
     uint8_t proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
@@ -6031,7 +6033,7 @@ gen_portrangeop6(compiler_state_t *cstate, u_int port1, u_int port2,
 }
 
 static struct block *
-gen_portrange6(compiler_state_t *cstate, u_int port1, u_int port2,
+gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
     int proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
@@ -7068,8 +7070,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		if (port > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port);
 		// real_proto can be PROTO_UNDEF
-		b = gen_port(cstate, port, real_proto, dir);
-		gen_or(gen_port6(cstate, port, real_proto, dir), b);
+		b = gen_port(cstate, (uint16_t)port, real_proto, dir);
+		gen_or(gen_port6(cstate, (uint16_t)port, real_proto, dir), b);
 		return b;
 
 	case Q_PORTRANGE:
@@ -7108,8 +7110,10 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			bpf_error(cstate, "illegal port number %d > 65535", port2);
 
 		// real_proto can be PROTO_UNDEF
-		b = gen_portrange(cstate, port1, port2, real_proto, dir);
-		gen_or(gen_portrange6(cstate, port1, port2, real_proto, dir), b);
+		b = gen_portrange(cstate, (uint16_t)port1, (uint16_t)port2,
+		    real_proto, dir);
+		gen_or(gen_portrange6(cstate, (uint16_t)port1, (uint16_t)port2,
+		    real_proto, dir), b);
 		return b;
 
 	case Q_GATEWAY:
@@ -7297,8 +7301,8 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		// proto can be PROTO_UNDEF
 	    {
 		struct block *b;
-		b = gen_port(cstate, v, proto, dir);
-		gen_or(gen_port6(cstate, v, proto, dir), b);
+		b = gen_port(cstate, (uint16_t)v, proto, dir);
+		gen_or(gen_port6(cstate, (uint16_t)v, proto, dir), b);
 		return b;
 	    }
 
@@ -7311,8 +7315,10 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		// proto can be PROTO_UNDEF
 	    {
 		struct block *b;
-		b = gen_portrange(cstate, v, v, proto, dir);
-		gen_or(gen_portrange6(cstate, v, v, proto, dir), b);
+		b = gen_portrange(cstate, (uint16_t)v, (uint16_t)v,
+		    proto, dir);
+		gen_or(gen_portrange6(cstate, (uint16_t)v, (uint16_t)v,
+		    proto, dir), b);
 		return b;
 	    }
 
@@ -9303,7 +9309,7 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
  * specified. Parameterized to handle both IPv4 and IPv6. */
 static struct block *
 gen_geneve_check(compiler_state_t *cstate,
-    struct block *(*gen_portfn)(compiler_state_t *, u_int, int, int),
+    struct block *(*gen_portfn)(compiler_state_t *, uint16_t, int, int),
     enum e_offrel offrel, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
@@ -9572,7 +9578,7 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
  * specified. Parameterized to handle both IPv4 and IPv6. */
 static struct block *
 gen_vxlan_check(compiler_state_t *cstate,
-    struct block *(*gen_portfn)(compiler_state_t *, u_int, int, int),
+    struct block *(*gen_portfn)(compiler_state_t *, uint16_t, int, int),
     enum e_offrel offrel, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
