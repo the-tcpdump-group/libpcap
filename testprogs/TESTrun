@@ -13830,16 +13830,34 @@ my @reject_tests = (
 		errstr => 'unknown ip proto',
 	},
 	{
+		name => 'proto_256',
+		DLT => 'RAW',
+		expr => 'proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
 		name => 'ip_proto_invalid',
 		DLT => 'RAW',
 		expr => 'ip proto nosuchprotocol',
 		errstr => 'unknown ip proto',
 	},
 	{
+		name => 'ip_proto_256',
+		DLT => 'RAW',
+		expr => 'ip proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
 		name => 'ip6_proto_invalid',
 		DLT => 'RAW',
 		expr => 'ip6 proto nosuchprotocol',
 		errstr => 'unknown ip proto',
+	},
+	{
+		name => 'ip6_proto_256',
+		DLT => 'RAW',
+		expr => 'ip6 proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
 	},
 	{
 		name => 'proto_1_2_3_4',
