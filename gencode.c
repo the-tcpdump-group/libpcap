@@ -6414,6 +6414,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		return gen_linktype(cstate, v);
 
 	case Q_IP:
+		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
 		/*
 		 * For FDDI, RFC 1188 says that SNAP encapsulation is used,
 		 * not LLC encapsulation with LLCSAP_IP.
@@ -6451,6 +6452,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		break; // invalid qualifier
 
 	case Q_IPV6:
+		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 		/*
 		 * Also check for a fragment header before the final
