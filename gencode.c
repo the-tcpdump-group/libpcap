@@ -705,16 +705,12 @@ static struct block *gen_portrangeatom(compiler_state_t *, u_int, uint16_t,
 static struct block *gen_portatom6(compiler_state_t *, int, uint16_t);
 static struct block *gen_portrangeatom6(compiler_state_t *, u_int, uint16_t,
     uint16_t);
-static struct block *gen_portop(compiler_state_t *, uint16_t, uint8_t, int);
 static struct block *gen_port(compiler_state_t *, uint16_t, int, int);
-static struct block *gen_portrangeop(compiler_state_t *, uint16_t, uint16_t,
-    uint8_t, int);
+static struct block *gen_port_common(compiler_state_t *, int, struct block *);
 static struct block *gen_portrange(compiler_state_t *, uint16_t, uint16_t,
     int, int);
-static struct block *gen_portop6(compiler_state_t *, uint16_t, uint8_t, int);
 static struct block *gen_port6(compiler_state_t *, uint16_t, int, int);
-static struct block *gen_portrangeop6(compiler_state_t *, uint16_t, uint16_t,
-    uint8_t, int);
+static struct block *gen_port6_common(compiler_state_t *, int, struct block *);
 static struct block *gen_portrange6(compiler_state_t *, uint16_t, uint16_t,
     int, int);
 static int lookup_proto(compiler_state_t *, const char *, int);
@@ -5710,14 +5706,9 @@ gen_portatom6(compiler_state_t *cstate, int off, uint16_t v)
 }
 
 static struct block *
-gen_portop(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
+gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 {
-	struct block *b0, *b1, *tmp;
-
-	/* ip proto 'proto' and not a fragment other than the first fragment */
-	tmp = gen_ip_proto(cstate, proto);
-	b0 = gen_ipfrag(cstate);
-	gen_and(tmp, b0);
+	struct block *b1, *tmp;
 
 	switch (dir) {
 	case Q_SRC:
@@ -5754,15 +5745,14 @@ gen_portop(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
 		abort();
 		/*NOTREACHED*/
 	}
-	gen_and(b0, b1);
 
-	return b1;
+	return gen_port_common(cstate, proto, b1);
 }
 
 static struct block *
-gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
+gen_port_common(compiler_state_t *cstate, int proto, struct block *b1)
 {
-	struct block *b0, *b1, *tmp;
+	struct block *b0, *tmp;
 
 	/*
 	 * ether proto ip
@@ -5780,39 +5770,47 @@ gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 	 * encapsulation with LLCSAP_IP.
 	 *
 	 * So we always check for ETHERTYPE_IP.
+	 *
+	 * At the time of this writing all three L4 protocols the "port" and
+	 * "portrange" primitives support (TCP, UDP and SCTP) have the source
+	 * and the destination ports identically encoded in the transport
+	 * protocol header.  So without a proto qualifier the only difference
+	 * between the implemented cases is the protocol number and all other
+	 * checks need to be made exactly once.
+	 *
+	 * If the expression syntax in future starts to support ports for
+	 * another L4 protocol that has unsigned integer ports encoded using a
+	 * different size and/or offset, this will require a different code.
 	 */
-	b0 = gen_linktype(cstate, ETHERTYPE_IP);
-
 	switch (proto) {
 	case IPPROTO_UDP:
 	case IPPROTO_TCP:
 	case IPPROTO_SCTP:
-		b1 = gen_portop(cstate, port, (uint8_t)proto, dir);
+		tmp = gen_ip_proto(cstate, (uint8_t)proto);
 		break;
 
 	case PROTO_UNDEF:
-		tmp = gen_portop(cstate, port, IPPROTO_TCP, dir);
-		b1 = gen_portop(cstate, port, IPPROTO_UDP, dir);
-		gen_or(tmp, b1);
-		tmp = gen_portop(cstate, port, IPPROTO_SCTP, dir);
-		gen_or(tmp, b1);
+		tmp = gen_ip_proto(cstate, IPPROTO_UDP);
+		gen_or(gen_ip_proto(cstate, IPPROTO_TCP), tmp);
+		gen_or(gen_ip_proto(cstate, IPPROTO_SCTP), tmp);
 		break;
 
 	default:
 		abort();
 	}
+	// Not a fragment other than the first fragment.
+	b0 = gen_ipfrag(cstate);
+	gen_and(tmp, b0);
 	gen_and(b0, b1);
+	// "link proto \ip"
+	gen_and(gen_linktype(cstate, ETHERTYPE_IP), b1);
 	return b1;
 }
 
-struct block *
-gen_portop6(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
+static struct block *
+gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 {
-	struct block *b0, *b1, *tmp;
-
-	/* ip6 proto 'proto' */
-	/* XXX - catch the first fragment of a fragmented packet? */
-	b0 = gen_ip6_proto(cstate, proto);
+	struct block *b1, *tmp;
 
 	switch (dir) {
 	case Q_SRC:
@@ -5839,38 +5837,37 @@ gen_portop6(compiler_state_t *cstate, uint16_t port, uint8_t proto, int dir)
 	default:
 		abort();
 	}
-	gen_and(b0, b1);
 
-	return b1;
+	return gen_port6_common(cstate, proto, b1);
 }
 
 static struct block *
-gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
+gen_port6_common(compiler_state_t *cstate, int proto, struct block *b1)
 {
-	struct block *b0, *b1, *tmp;
+	struct block *tmp;
 
-	/* link proto ip6 */
-	b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-
+	// "ip6 proto 'ip_proto'"
 	switch (proto) {
 	case IPPROTO_UDP:
 	case IPPROTO_TCP:
 	case IPPROTO_SCTP:
-		b1 = gen_portop6(cstate, port, (uint8_t)proto, dir);
+		tmp = gen_ip6_proto(cstate, (uint8_t)proto);
 		break;
 
 	case PROTO_UNDEF:
-		tmp = gen_portop6(cstate, port, IPPROTO_TCP, dir);
-		b1 = gen_portop6(cstate, port, IPPROTO_UDP, dir);
-		gen_or(tmp, b1);
-		tmp = gen_portop6(cstate, port, IPPROTO_SCTP, dir);
-		gen_or(tmp, b1);
+		// Same as in gen_port_common().
+		tmp = gen_ip6_proto(cstate, IPPROTO_UDP);
+		gen_or(gen_ip6_proto(cstate, IPPROTO_TCP), tmp);
+		gen_or(gen_ip6_proto(cstate, IPPROTO_SCTP), tmp);
 		break;
 
 	default:
 		abort();
 	}
-	gen_and(b0, b1);
+	// XXX - catch the first fragment of a fragmented packet?
+	gen_and(tmp, b1);
+	// "link proto \ip6"
+	gen_and(gen_linktype(cstate, ETHERTYPE_IPV6), b1);
 	return b1;
 }
 
@@ -5893,15 +5890,10 @@ gen_portrangeatom(compiler_state_t *cstate, u_int off, uint16_t v1,
 }
 
 static struct block *
-gen_portrangeop(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
-    uint8_t proto, int dir)
+gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
+    int proto, int dir)
 {
-	struct block *b0, *b1, *tmp;
-
-	/* ip proto 'proto' and not a fragment other than the first fragment */
-	tmp = gen_ip_proto(cstate, proto);
-	b0 = gen_ipfrag(cstate);
-	gen_and(tmp, b0);
+	struct block *b1, *tmp;
 
 	switch (dir) {
 	case Q_SRC:
@@ -5938,41 +5930,8 @@ gen_portrangeop(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 		abort();
 		/*NOTREACHED*/
 	}
-	gen_and(b0, b1);
 
-	return b1;
-}
-
-static struct block *
-gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
-    int proto, int dir)
-{
-	struct block *b0, *b1, *tmp;
-
-	/* link proto ip */
-	b0 = gen_linktype(cstate, ETHERTYPE_IP);
-
-	switch (proto) {
-	case IPPROTO_UDP:
-	case IPPROTO_TCP:
-	case IPPROTO_SCTP:
-		b1 = gen_portrangeop(cstate, port1, port2, (uint8_t)proto,
-		    dir);
-		break;
-
-	case PROTO_UNDEF:
-		tmp = gen_portrangeop(cstate, port1, port2, IPPROTO_TCP, dir);
-		b1 = gen_portrangeop(cstate, port1, port2, IPPROTO_UDP, dir);
-		gen_or(tmp, b1);
-		tmp = gen_portrangeop(cstate, port1, port2, IPPROTO_SCTP, dir);
-		gen_or(tmp, b1);
-		break;
-
-	default:
-		abort();
-	}
-	gen_and(b0, b1);
-	return b1;
+	return gen_port_common(cstate, proto, b1);
 }
 
 static struct block *
@@ -5993,14 +5952,10 @@ gen_portrangeatom6(compiler_state_t *cstate, u_int off, uint16_t v1,
 }
 
 static struct block *
-gen_portrangeop6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
-    uint8_t proto, int dir)
+gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
+    int proto, int dir)
 {
-	struct block *b0, *b1, *tmp;
-
-	/* ip6 proto 'proto' */
-	/* XXX - catch the first fragment of a fragmented packet? */
-	b0 = gen_ip6_proto(cstate, proto);
+	struct block *b1, *tmp;
 
 	switch (dir) {
 	case Q_SRC:
@@ -6027,41 +5982,8 @@ gen_portrangeop6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 	default:
 		abort();
 	}
-	gen_and(b0, b1);
 
-	return b1;
-}
-
-static struct block *
-gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
-    int proto, int dir)
-{
-	struct block *b0, *b1, *tmp;
-
-	/* link proto ip6 */
-	b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-
-	switch (proto) {
-	case IPPROTO_UDP:
-	case IPPROTO_TCP:
-	case IPPROTO_SCTP:
-		b1 = gen_portrangeop6(cstate, port1, port2, (uint8_t)proto,
-		    dir);
-		break;
-
-	case PROTO_UNDEF:
-		tmp = gen_portrangeop6(cstate, port1, port2, IPPROTO_TCP, dir);
-		b1 = gen_portrangeop6(cstate, port1, port2, IPPROTO_UDP, dir);
-		gen_or(tmp, b1);
-		tmp = gen_portrangeop6(cstate, port1, port2, IPPROTO_SCTP, dir);
-		gen_or(tmp, b1);
-		break;
-
-	default:
-		abort();
-	}
-	gen_and(b0, b1);
-	return b1;
+	return gen_port6_common(cstate, proto, b1);
 }
 
 static int
