@@ -13108,6 +13108,9 @@ foreach my $test (@accept_blocks) {
 		next if defined $test->{$_};
 		die "Internal error: accept test block '$test->{name}' does not define key '$_'";
 	}
+	if ($test->{DLT} eq '') {
+		die "Internal error: key 'DLT' is an empty string in apply test block '$test->{name}'";
+	}
 	if (! scalar @{$test->{aliases}}) {
 		die "Internal error: accept test block '$test->{name}' defines zero aliases";
 	} else {
