@@ -89,19 +89,20 @@ sub usage_text {
 	my $detailed = shift;
 	my $myname = $FindBin::Script;
 
-	my $ret = "Usage: ${myname} [--passed]
+	my $ret = "Usage: ${myname} [--passed] [--skipped]
        (run all tests)
   or:  ${myname} --list
        (print all test labels)
-  or:  ${myname} --one <test_label> [--passed]
-       (run one test only)
+  or:  ${myname} --one <test_label>
+       (run one test only and print the details)
   or:  ${myname} --config
        (print the parsed contents of config.h)
   or:  ${myname} --help
        (print the detailed help screen)
 
 Options:
-  --passed        print the passed tests as well (with timings)
+  --passed        print the passed tests details
+  --skipped       print the skipped tests details
 ";
 	return $ret unless $detailed;
 	$ret .="
@@ -128,10 +129,12 @@ my $config_h = defined $ENV{CONFIG_H} ? $ENV{CONFIG_H} : './config.h';
 my $only_one = undef;
 my $only_list = 0;
 my $print_passed = 0;
+my $print_skipped = 0;
 if (! GetOptions (
 	'one=s' => \$only_one,
 	'list' => \$only_list,
 	'passed' => \$print_passed,
+	'skipped' => \$print_skipped,
 	'config' => sub {
 		my %config = read_config_h $config_h;
 		printf "%-50s %s\n", $_, $config{$_} foreach sort keys %config;
@@ -142,6 +145,7 @@ if (! GetOptions (
 	print STDERR usage_text 0;
 	exit EX_USAGE;
 };
+$print_passed = $print_skipped = 1 if $only_one;
 
 # Initialize now so that the skip functions in TESTlib.pm (and therefore the
 # test declarations below) work as intended.
@@ -13131,7 +13135,7 @@ foreach my $test (@accept_blocks) {
 				push @ready_to_run, {
 					label => $label,
 					func => \&run_skip_test,
-					skip => $skip_reason,
+					skip => $print_skipped ? $skip_reason : '',
 				};
 				$skip_reason = '';
 			}
@@ -13187,7 +13191,7 @@ foreach my $block (@apply_blocks) {
 			push @ready_to_run, {
 				label => $label,
 				func => \&run_skip_test,
-				skip => $skip_reason,
+				skip => $print_skipped ? $skip_reason : '',
 			};
 			$skip_reason = '';
 			next;
@@ -13219,7 +13223,7 @@ foreach my $test (@reject_tests) {
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_skip_test,
-			skip => $test->{skip},
+			skip => $print_skipped ? $test->{skip} : '',
 		};
 	} else {
 		push @ready_to_run, {
