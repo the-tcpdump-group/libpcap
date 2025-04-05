@@ -10265,6 +10265,30 @@ my @accept_blocks = (
 			(018) ret      #262144
 			(019) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 8
+			(004) ldh      [54]
+			(005) jeq      #0x19            jt 20	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x19            jt 20	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x6             jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jeq      #0x19            jt 20	jf 17
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jeq      #0x19            jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # tcp_port
 	{
 		name => 'tcp_src_port',
@@ -10297,6 +10321,25 @@ my @accept_blocks = (
 			(014) ret      #262144
 			(015) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 6
+			(004) ldh      [54]
+			(005) jeq      #0x19            jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x6             jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 14]
+			(014) jeq      #0x19            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
 	}, # tcp_src_port
 	{
 		name => 'tcp_dst_port',
@@ -10328,6 +10371,25 @@ my @accept_blocks = (
 			(013) jeq      #0x19            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 6
+			(004) ldh      [56]
+			(005) jeq      #0x19            jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x6             jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 16]
+			(014) jeq      #0x19            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
 			',
 	}, # tcp_dst_port
 	{
@@ -10376,6 +10438,40 @@ my @accept_blocks = (
 			(021) ret      #262144
 			(022) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 12
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x35            jt 8	jf 30
+			(008) ldh      [56]
+			(009) jge      #0x19            jt 10	jf 12
+			(010) ldh      [56]
+			(011) jgt      #0x35            jt 12	jf 30
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 31
+			(014) ldb      [23]
+			(015) jeq      #0x6             jt 16	jf 31
+			(016) ldh      [20]
+			(017) jset     #0x1fff          jt 31	jf 18
+			(018) ldxb     4*([14]&0xf)
+			(019) ldh      [x + 14]
+			(020) jge      #0x19            jt 21	jf 24
+			(021) ldxb     4*([14]&0xf)
+			(022) ldh      [x + 14]
+			(023) jgt      #0x35            jt 24	jf 30
+			(024) ldxb     4*([14]&0xf)
+			(025) ldh      [x + 16]
+			(026) jge      #0x19            jt 27	jf 31
+			(027) ldxb     4*([14]&0xf)
+			(028) ldh      [x + 16]
+			(029) jgt      #0x35            jt 31	jf 30
+			(030) ret      #262144
+			(031) ret      #0
+			',
 	}, # tcp_portrange
 	{
 		name => 'tcp_src_portrange',
@@ -10409,6 +10505,30 @@ my @accept_blocks = (
 			(015) ret      #262144
 			(016) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 8
+			(004) ldh      [54]
+			(005) jge      #0x19            jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x35            jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x6             jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x19            jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 14]
+			(019) jgt      #0x35            jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # tcp_src_portrange
 	{
 		name => 'tcp_dst_portrange',
@@ -10441,6 +10561,30 @@ my @accept_blocks = (
 			(014) jgt      #0x35            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x6             jt 4	jf 8
+			(004) ldh      [56]
+			(005) jge      #0x19            jt 6	jf 8
+			(006) ldh      [56]
+			(007) jgt      #0x35            jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x6             jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 16]
+			(016) jge      #0x19            jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jgt      #0x35            jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
 			',
 	}, # tcp_dst_portrange
 	# In the tests below "domain" depends on getaddrinfo().
@@ -10487,6 +10631,30 @@ my @accept_blocks = (
 			(018) ret      #262144
 			(019) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 8
+			(004) ldh      [54]
+			(005) jeq      #0x35            jt 20	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x35            jt 20	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x11            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jeq      #0x35            jt 20	jf 17
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jeq      #0x35            jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # udp_port
 	{
 		name => 'udp_src_port',
@@ -10519,6 +10687,25 @@ my @accept_blocks = (
 			(014) ret      #262144
 			(015) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 6
+			(004) ldh      [54]
+			(005) jeq      #0x35            jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x11            jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 14]
+			(014) jeq      #0x35            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
 	}, # udp_src_port
 	{
 		name => 'udp_dst_port',
@@ -10550,6 +10737,25 @@ my @accept_blocks = (
 			(013) jeq      #0x35            jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 6
+			(004) ldh      [56]
+			(005) jeq      #0x35            jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x11            jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 16]
+			(014) jeq      #0x35            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
 			',
 	}, # udp_dst_port
 	{
@@ -10598,6 +10804,40 @@ my @accept_blocks = (
 			(021) ret      #262144
 			(022) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 12
+			(004) ldh      [54]
+			(005) jge      #0x43            jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x44            jt 8	jf 30
+			(008) ldh      [56]
+			(009) jge      #0x43            jt 10	jf 12
+			(010) ldh      [56]
+			(011) jgt      #0x44            jt 12	jf 30
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 31
+			(014) ldb      [23]
+			(015) jeq      #0x11            jt 16	jf 31
+			(016) ldh      [20]
+			(017) jset     #0x1fff          jt 31	jf 18
+			(018) ldxb     4*([14]&0xf)
+			(019) ldh      [x + 14]
+			(020) jge      #0x43            jt 21	jf 24
+			(021) ldxb     4*([14]&0xf)
+			(022) ldh      [x + 14]
+			(023) jgt      #0x44            jt 24	jf 30
+			(024) ldxb     4*([14]&0xf)
+			(025) ldh      [x + 16]
+			(026) jge      #0x43            jt 27	jf 31
+			(027) ldxb     4*([14]&0xf)
+			(028) ldh      [x + 16]
+			(029) jgt      #0x44            jt 31	jf 30
+			(030) ret      #262144
+			(031) ret      #0
+			',
 	}, # udp_portrange
 	{
 		name => 'udp_src_portrange',
@@ -10631,6 +10871,30 @@ my @accept_blocks = (
 			(015) ret      #262144
 			(016) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 8
+			(004) ldh      [54]
+			(005) jge      #0x43            jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x44            jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x11            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x43            jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 14]
+			(019) jgt      #0x44            jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # udp_src_portrange
 	{
 		name => 'udp_dst_portrange',
@@ -10663,6 +10927,30 @@ my @accept_blocks = (
 			(014) jgt      #0x44            jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x11            jt 4	jf 8
+			(004) ldh      [56]
+			(005) jge      #0x43            jt 6	jf 8
+			(006) ldh      [56]
+			(007) jgt      #0x44            jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x11            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 16]
+			(016) jge      #0x43            jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jgt      #0x44            jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
 			',
 	}, # udp_dst_portrange
 	# SCTP tests below do not use service names because the translation is
@@ -10702,6 +10990,30 @@ my @accept_blocks = (
 			(018) ret      #262144
 			(019) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 8
+			(004) ldh      [54]
+			(005) jeq      #0x1628          jt 20	jf 6
+			(006) ldh      [56]
+			(007) jeq      #0x1628          jt 20	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x84            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jeq      #0x1628          jt 20	jf 17
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jeq      #0x1628          jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # sctp_port
 	{
 		name => 'sctp_src_port',
@@ -10730,6 +11042,25 @@ my @accept_blocks = (
 			(014) ret      #262144
 			(015) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 6
+			(004) ldh      [54]
+			(005) jeq      #0x1628          jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x84            jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 14]
+			(014) jeq      #0x1628          jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
 	}, # sctp_src_port
 	{
 		name => 'sctp_dst_port',
@@ -10757,6 +11088,25 @@ my @accept_blocks = (
 			(013) jeq      #0x1628          jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 6
+			(004) ldh      [56]
+			(005) jeq      #0x1628          jt 15	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x800           jt 8	jf 16
+			(008) ldb      [23]
+			(009) jeq      #0x84            jt 10	jf 16
+			(010) ldh      [20]
+			(011) jset     #0x1fff          jt 16	jf 12
+			(012) ldxb     4*([14]&0xf)
+			(013) ldh      [x + 16]
+			(014) jeq      #0x1628          jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
 			',
 	}, # sctp_dst_port
 	{
@@ -10793,6 +11143,40 @@ my @accept_blocks = (
 			(021) ret      #262144
 			(022) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 12
+			(004) ldh      [54]
+			(005) jge      #0x1             jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x3ff           jt 8	jf 30
+			(008) ldh      [56]
+			(009) jge      #0x1             jt 10	jf 12
+			(010) ldh      [56]
+			(011) jgt      #0x3ff           jt 12	jf 30
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 31
+			(014) ldb      [23]
+			(015) jeq      #0x84            jt 16	jf 31
+			(016) ldh      [20]
+			(017) jset     #0x1fff          jt 31	jf 18
+			(018) ldxb     4*([14]&0xf)
+			(019) ldh      [x + 14]
+			(020) jge      #0x1             jt 21	jf 24
+			(021) ldxb     4*([14]&0xf)
+			(022) ldh      [x + 14]
+			(023) jgt      #0x3ff           jt 24	jf 30
+			(024) ldxb     4*([14]&0xf)
+			(025) ldh      [x + 16]
+			(026) jge      #0x1             jt 27	jf 31
+			(027) ldxb     4*([14]&0xf)
+			(028) ldh      [x + 16]
+			(029) jgt      #0x3ff           jt 31	jf 30
+			(030) ret      #262144
+			(031) ret      #0
+			',
 	}, # sctp_portrange
 	{
 		name => 'sctp_src_portrange',
@@ -10820,6 +11204,30 @@ my @accept_blocks = (
 			(015) ret      #262144
 			(016) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 8
+			(004) ldh      [54]
+			(005) jge      #0x1             jt 6	jf 8
+			(006) ldh      [54]
+			(007) jgt      #0x3ff           jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x84            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 14]
+			(016) jge      #0x1             jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 14]
+			(019) jgt      #0x3ff           jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
 	}, # sctp_src_portrange
 	{
 		name => 'sctp_dst_portrange',
@@ -10846,6 +11254,30 @@ my @accept_blocks = (
 			(014) jgt      #0x3ff           jt 16	jf 15
 			(015) ret      #262144
 			(016) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 8
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 4	jf 8
+			(004) ldh      [56]
+			(005) jge      #0x1             jt 6	jf 8
+			(006) ldh      [56]
+			(007) jgt      #0x3ff           jt 8	jf 20
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 21
+			(010) ldb      [23]
+			(011) jeq      #0x84            jt 12	jf 21
+			(012) ldh      [20]
+			(013) jset     #0x1fff          jt 21	jf 14
+			(014) ldxb     4*([14]&0xf)
+			(015) ldh      [x + 16]
+			(016) jge      #0x1             jt 17	jf 21
+			(017) ldxb     4*([14]&0xf)
+			(018) ldh      [x + 16]
+			(019) jgt      #0x3ff           jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
 			',
 	}, # sctp_dst_portrange
 	{
@@ -10885,6 +11317,38 @@ my @accept_blocks = (
 			(022) ret      #262144
 			(023) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 12
+			(008) ldh      [54]
+			(009) jeq      #0x7             jt 28	jf 10
+			(010) ldh      [56]
+			(011) jeq      #0x7             jt 28	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 29
+			(014) ldb      [23]
+			(015) jeq      #0x84            jt 20	jf 16
+			(016) ldb      [23]
+			(017) jeq      #0x6             jt 20	jf 18
+			(018) ldb      [23]
+			(019) jeq      #0x11            jt 20	jf 29
+			(020) ldh      [20]
+			(021) jset     #0x1fff          jt 29	jf 22
+			(022) ldxb     4*([14]&0xf)
+			(023) ldh      [x + 14]
+			(024) jeq      #0x7             jt 28	jf 25
+			(025) ldxb     4*([14]&0xf)
+			(026) ldh      [x + 16]
+			(027) jeq      #0x7             jt 28	jf 29
+			(028) ret      #262144
+			(029) ret      #0
+			',
 	}, # port
 	{
 		name => 'src_port',
@@ -10917,6 +11381,33 @@ my @accept_blocks = (
 			(018) ret      #262144
 			(019) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 10
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 10
+			(008) ldh      [54]
+			(009) jeq      #0x7             jt 23	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x800           jt 12	jf 24
+			(012) ldb      [23]
+			(013) jeq      #0x84            jt 18	jf 14
+			(014) ldb      [23]
+			(015) jeq      #0x6             jt 18	jf 16
+			(016) ldb      [23]
+			(017) jeq      #0x11            jt 18	jf 24
+			(018) ldh      [20]
+			(019) jset     #0x1fff          jt 24	jf 20
+			(020) ldxb     4*([14]&0xf)
+			(021) ldh      [x + 14]
+			(022) jeq      #0x7             jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
 	}, # src_port
 	{
 		name => 'dst_port',
@@ -10948,6 +11439,33 @@ my @accept_blocks = (
 			(017) jeq      #0x7             jt 18	jf 19
 			(018) ret      #262144
 			(019) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 10
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 10
+			(008) ldh      [56]
+			(009) jeq      #0x7             jt 23	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x800           jt 12	jf 24
+			(012) ldb      [23]
+			(013) jeq      #0x84            jt 18	jf 14
+			(014) ldb      [23]
+			(015) jeq      #0x6             jt 18	jf 16
+			(016) ldb      [23]
+			(017) jeq      #0x11            jt 18	jf 24
+			(018) ldh      [20]
+			(019) jset     #0x1fff          jt 24	jf 20
+			(020) ldxb     4*([14]&0xf)
+			(021) ldh      [x + 16]
+			(022) jeq      #0x7             jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
 			',
 	}, # dst_port
 	{
@@ -10986,6 +11504,48 @@ my @accept_blocks = (
 			(025) ret      #262144
 			(026) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 16
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 16
+			(008) ldh      [54]
+			(009) jge      #0x1             jt 10	jf 12
+			(010) ldh      [54]
+			(011) jgt      #0x3ff           jt 12	jf 38
+			(012) ldh      [56]
+			(013) jge      #0x1             jt 14	jf 16
+			(014) ldh      [56]
+			(015) jgt      #0x3ff           jt 16	jf 38
+			(016) ldh      [12]
+			(017) jeq      #0x800           jt 18	jf 39
+			(018) ldb      [23]
+			(019) jeq      #0x84            jt 24	jf 20
+			(020) ldb      [23]
+			(021) jeq      #0x6             jt 24	jf 22
+			(022) ldb      [23]
+			(023) jeq      #0x11            jt 24	jf 39
+			(024) ldh      [20]
+			(025) jset     #0x1fff          jt 39	jf 26
+			(026) ldxb     4*([14]&0xf)
+			(027) ldh      [x + 14]
+			(028) jge      #0x1             jt 29	jf 32
+			(029) ldxb     4*([14]&0xf)
+			(030) ldh      [x + 14]
+			(031) jgt      #0x3ff           jt 32	jf 38
+			(032) ldxb     4*([14]&0xf)
+			(033) ldh      [x + 16]
+			(034) jge      #0x1             jt 35	jf 39
+			(035) ldxb     4*([14]&0xf)
+			(036) ldh      [x + 16]
+			(037) jgt      #0x3ff           jt 39	jf 38
+			(038) ret      #262144
+			(039) ret      #0
+			',
 	}, # portrange
 	{
 		name => 'src_portrange',
@@ -11017,6 +11577,38 @@ my @accept_blocks = (
 			(019) ret      #262144
 			(020) ret      #0
 			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 12
+			(008) ldh      [54]
+			(009) jge      #0x1             jt 10	jf 12
+			(010) ldh      [54]
+			(011) jgt      #0x3ff           jt 12	jf 28
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 29
+			(014) ldb      [23]
+			(015) jeq      #0x84            jt 20	jf 16
+			(016) ldb      [23]
+			(017) jeq      #0x6             jt 20	jf 18
+			(018) ldb      [23]
+			(019) jeq      #0x11            jt 20	jf 29
+			(020) ldh      [20]
+			(021) jset     #0x1fff          jt 29	jf 22
+			(022) ldxb     4*([14]&0xf)
+			(023) ldh      [x + 14]
+			(024) jge      #0x1             jt 25	jf 29
+			(025) ldxb     4*([14]&0xf)
+			(026) ldh      [x + 14]
+			(027) jgt      #0x3ff           jt 29	jf 28
+			(028) ret      #262144
+			(029) ret      #0
+			',
 	}, # src_portrange
 	{
 		name => 'dst_portrange',
@@ -11047,6 +11639,38 @@ my @accept_blocks = (
 			(018) jgt      #0x3ff           jt 20	jf 19
 			(019) ret      #262144
 			(020) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ldb      [20]
+			(003) jeq      #0x84            jt 8	jf 4
+			(004) ldb      [20]
+			(005) jeq      #0x6             jt 8	jf 6
+			(006) ldb      [20]
+			(007) jeq      #0x11            jt 8	jf 12
+			(008) ldh      [56]
+			(009) jge      #0x1             jt 10	jf 12
+			(010) ldh      [56]
+			(011) jgt      #0x3ff           jt 12	jf 28
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 29
+			(014) ldb      [23]
+			(015) jeq      #0x84            jt 20	jf 16
+			(016) ldb      [23]
+			(017) jeq      #0x6             jt 20	jf 18
+			(018) ldb      [23]
+			(019) jeq      #0x11            jt 20	jf 29
+			(020) ldh      [20]
+			(021) jset     #0x1fff          jt 29	jf 22
+			(022) ldxb     4*([14]&0xf)
+			(023) ldh      [x + 16]
+			(024) jge      #0x1             jt 25	jf 29
+			(025) ldxb     4*([14]&0xf)
+			(026) ldh      [x + 16]
+			(027) jgt      #0x3ff           jt 29	jf 28
+			(028) ret      #262144
+			(029) ret      #0
 			',
 	}, # dst_portrange
 	{
@@ -12335,16 +12959,34 @@ my @reject_tests = (
 		errstr => 'unknown ip proto',
 	},
 	{
+		name => 'proto_256',
+		DLT => 'RAW',
+		expr => 'proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
 		name => 'ip_proto_invalid',
 		DLT => 'RAW',
 		expr => 'ip proto nosuchprotocol',
 		errstr => 'unknown ip proto',
 	},
 	{
+		name => 'ip_proto_256',
+		DLT => 'RAW',
+		expr => 'ip proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
 		name => 'ip6_proto_invalid',
 		DLT => 'RAW',
 		expr => 'ip6 proto nosuchprotocol',
 		errstr => 'unknown ip proto',
+	},
+	{
+		name => 'ip6_proto_256',
+		DLT => 'RAW',
+		expr => 'ip6 proto 256',
+		errstr => 'protocol number 256 greater than maximum 255',
 	},
 	{
 		name => 'proto_1_2_3_4',
