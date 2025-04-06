@@ -318,6 +318,14 @@ sub skip_no_networks_casecmp {
 		skip_os ('solaris');
 }
 
+sub skip_big_endian {
+	return pack ('S', 0x4245) eq 'BE' ? 'big-endian' : '';
+}
+
+sub skip_little_endian {
+	return pack ('S', 0x454c) eq 'LE' ? 'little-endian' : '';
+}
+
 # In accept_blocks the top-level keys are test block names.  Each test block
 # defines one or more tests.  When possible, a test block name should be easy
 # to relate with the main filter expression, for example, ip_multicast for
@@ -2896,6 +2904,8 @@ my @accept_blocks = (
 			',
 	}, # ether_dst_host_NAME
 
+	# 3 DLTs lead to gen_ether_linktype(), which implements 7 code paths,
+	# let's test these for DLT_EN10MB only.
 	{
 		name => 'ether_proto_aarp',
 		DLT => 'EN10MB',
@@ -2965,6 +2975,7 @@ my @accept_blocks = (
 	{
 		name => 'ether_proto_ip',
 		DLT => 'EN10MB',
+		# gen_ether_linktype() default case
 		aliases => [
 			'ether proto \ip',
 			'ip',
@@ -2976,6 +2987,19 @@ my @accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ether_proto_ip
+	{
+		name => 'ether_proto_6',
+		DLT => 'EN10MB',
+		aliases => ['ether proto 6'], # gen_ether_linktype() LLCSAP_IP
+		unopt => '
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldh      [14]
+			(003) jeq      #0x606           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ether_proto_6
 	{
 		name => 'ether_proto_ip6',
 		DLT => 'EN10MB',
@@ -3152,6 +3176,1477 @@ my @accept_blocks = (
 			(005) ret      #0
 			',
 	}, # ether_proto_stp
+
+	# The complete cartesian product of all DLTs and all link-layer protocol
+	# numbers in gen_linktype() is not a practicable test space.  Try testing
+	# all unique code paths and eliminate/coalesce code points as necessary.
+	{
+		name => 'link_proto_ip_NETANALYZER',
+		DLT => 'NETANALYZER',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_NETANALYZER
+	{
+		name => 'link_proto_ip_NETANALYZER_TRANSPARENT',
+		DLT => 'NETANALYZER_TRANSPARENT',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [24]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_NETANALYZER_TRANSPARENT
+	{
+		name => 'link_proto_ip_C_HDLC',
+		DLT => 'C_HDLC',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_C_HDLC
+	{
+		name => 'link_proto_iso_C_HDLC',
+		DLT => 'C_HDLC',
+		aliases => ['link proto \iso'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0xfefe          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_iso_C_HDLC
+	{
+		name => 'link_proto_ip_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 18
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 18
+			(017) ret      #262144
+			(018) ret      #0
+			',
+	}, # link_proto_ip_IEEE802_11
+	{
+		name => 'link_proto_ip_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[0]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[1]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[1]
+			(016) add      #2
+			(017) st       M[1]
+			(018) ldx      M[0]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 26
+			(022) ldx      M[1]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x800           jt 25	jf 26
+			(025) ret      #262144
+			(026) ret      #0
+			',
+	}, # link_proto_ip_PRISM_HEADER
+	{
+		name => 'link_proto_ip_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[0]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[1]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[1]
+			(015) add      #2
+			(016) st       M[1]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[1]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[1]
+			(029) ldx      M[0]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 37
+			(033) ldx      M[1]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x800           jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # link_proto_ip_IEEE802_11_RADIO
+	{
+		name => 'link_proto_ip_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [4]
+			(001) st       M[0]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[1]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[1]
+			(011) add      #2
+			(012) st       M[1]
+			(013) ldx      M[0]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 21
+			(017) ldx      M[1]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x800           jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # link_proto_ip_IEEE802_11_RADIO_AVS
+	{
+		name => 'link_proto_ip_PPI',
+		DLT => 'PPI',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 27
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[0]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[1]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[1]
+			(017) add      #2
+			(018) st       M[1]
+			(019) ldx      M[0]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 27
+			(023) ldx      M[1]
+			(024) ldh      [x + 6]
+			(025) jeq      #0x800           jt 26	jf 27
+			(026) ret      #262144
+			(027) ret      #0
+			',
+	}, # link_proto_ip_PPI
+	{
+		name => 'link_proto_ip_FDDI',
+		DLT => 'FDDI',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_FDDI
+	# 11 DLTs lead to gen_llc_linktype(), which implements 6 code paths,
+	# let's test these for DLT_IEEE802 only.
+	{
+		name => 'link_proto_ip_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \ip'], # gen_llc_linktype() default case
+		unopt => '
+			(000) ldh      [20]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_IEEE802
+	{
+		name => 'link_proto_6_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto 6'], # gen_llc_linktype() LLCSAP_IP
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x606           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_6_IEEE802
+	{
+		name => 'link_proto_iso_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \iso'],
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0xfefe          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_iso_IEEE802
+	{
+		name => 'link_proto_netbeui_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \netbeui'],
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0xf0f0          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_netbeui_IEEE802
+	{
+		name => 'link_proto_ipx_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \ipx'],
+		unopt => '
+			(000) ldb      [14]
+			(001) jeq      #0xe0            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ipx_IEEE802
+	{
+		name => 'link_proto_atalk_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \atalk'],
+		unopt => '
+			(000) ld       [18]
+			(001) jeq      #0x7809b         jt 2	jf 5
+			(002) ld       [14]
+			(003) jeq      #0xaaaa0308      jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_atalk_IEEE802
+	{
+		name => 'link_proto_aarp_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \aarp'],
+		unopt => '
+			(000) ldh      [20]
+			(001) jeq      #0x80f3          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_aarp_IEEE802
+	{
+		name => 'link_proto_stp_IEEE802',
+		DLT => 'IEEE802',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ldb      [14]
+			(001) jeq      #0x42            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_IEEE802
+	{
+		name => 'link_proto_ip_ATM_RFC1483',
+		DLT => 'ATM_RFC1483',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [6]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_ATM_RFC1483
+	{
+		name => 'link_proto_ip_ATM_CLIP',
+		DLT => 'ATM_CLIP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [6]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_ATM_CLIP
+	{
+		name => 'link_proto_ip_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_IP_OVER_FC
+	{
+		name => 'link_proto_ip_SUNATM',
+		DLT => 'SUNATM',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x2             jt 3	jf 6
+			(003) ldh      [10]
+			(004) jeq      #0x800           jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # link_proto_ip_SUNATM
+	{
+		name => 'lane_and_link_proto_ip_SUNATM',
+		DLT => 'SUNATM',
+		aliases => ['lane and link proto \ip'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf
+			(002) jeq      #0x1             jt 3	jf 8
+			(003) ldh      [4]
+			(004) jeq      #0xff00          jt 8	jf 5
+			(005) ldh      [18]
+			(006) jeq      #0x800           jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # lane_and_link_proto_ip_SUNATM
+	{
+		name => 'link_proto_ip_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \ip'], # gen_linux_sll_linktype() default case
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_LINUX_SLL
+	{
+		name => 'link_proto_ip_LINUX_SLL2',
+		DLT => 'LINUX_SLL2', # gen_linktype() default case
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [0]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_LINUX_SLL
+	{
+		name => 'link_proto_ip6_LINUX_SLL',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \ip6'], # gen_linux_sll_linktype() default case
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x86dd          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_LINUX_SLL
+	{
+		name => 'link_proto_6_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto 6'], # gen_linux_sll_linktype() LLCSAP_IP
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x4             jt 2	jf 5
+			(002) ldh      [16]
+			(003) jeq      #0x606           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_6_LINUX_SLL
+	{
+		name => 'link_proto_iso_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \iso'],
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x4             jt 2	jf 5
+			(002) ldh      [16]
+			(003) jeq      #0xfefe          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_iso_LINUX_SLL
+	{
+		name => 'link_proto_netbeui_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \netbeui'],
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x4             jt 2	jf 5
+			(002) ldh      [16]
+			(003) jeq      #0xf0f0          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_netbeui_LINUX_SLL
+	{
+		name => 'link_proto_ipx_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \ipx'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x8137          jt 10	jf 2
+			(002) jeq      #0x1             jt 10	jf 3
+			(003) jeq      #0x4             jt 4	jf 11
+			(004) ldb      [16]
+			(005) jeq      #0xe0            jt 10	jf 6
+			(006) ld       [20]
+			(007) jeq      #0x8137          jt 8	jf 11
+			(008) ld       [16]
+			(009) jeq      #0xaaaa0300      jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_proto_ipx_LINUX_SLL
+	{
+		name => 'link_proto_atalk_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \atalk'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x809b          jt 7	jf 2
+			(002) jeq      #0x4             jt 3	jf 8
+			(003) ld       [20]
+			(004) jeq      #0x7809b         jt 5	jf 8
+			(005) ld       [16]
+			(006) jeq      #0xaaaa0308      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # link_proto_atalk_LINUX_SLL
+	{
+		name => 'link_proto_aarp_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link proto \aarp'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x80f3          jt 7	jf 2
+			(002) jeq      #0x4             jt 3	jf 8
+			(003) ld       [20]
+			(004) jeq      #0x80f3          jt 5	jf 8
+			(005) ld       [16]
+			(006) jeq      #0xaaaa0300      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # link_proto_aarp_LINUX_SLL
+	{
+		name => 'link_proto_ip_SLIP',
+		DLT => 'SLIP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_SLIP
+	{
+		name => 'link_proto_ip_SLIP_BSDOS',
+		DLT => 'SLIP_BSDOS',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_SLIP_BSDOS
+	{
+		name => 'link_proto_ip_RAW',
+		DLT => 'RAW',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_RAW
+	{
+		name => 'link_proto_ip6_RAW',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'RAW',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip6_RAW
+	{
+		name => 'link_proto_stp_RAW',
+		DLT => 'RAW',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_RAW
+	{
+		name => 'link_proto_ip_IPV4',
+		DLT => 'IPV4',
+		aliases => ['link proto \ip'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # link_proto_ip_IPV4
+	{
+		name => 'link_proto_ip6_IPV4',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'IPV4',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_IPV4
+	{
+		name => 'link_proto_ip6_IPV6',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'IPV6',
+		aliases => ['link proto \ip6'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # link_proto_ip6_IPV6
+	{
+		name => 'link_proto_ip_IPV6',
+		DLT => 'IPV6',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_IPV6
+	# 4 DLTs lead to ethertype_to_ppptype(), which implements 9 code paths,
+	# let's test these for DLT_PPP only.
+	{
+		name => 'link_proto_ip_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x21            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_PPP
+	{
+		name => 'link_proto_ip6_PPP',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'PPP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x57            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_PPP
+	{
+		name => 'link_proto_decnet_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \decnet'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x27            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_decnet_PPP
+	{
+		name => 'link_proto_atalk_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \atalk'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x29            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_atalk_PPP
+	{
+		name => 'link_proto_xnsidp_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto 0x0600'], # ethertype_to_ppptype() ETHERTYPE_NS
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x25            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_xnsidp_PPP
+	{
+		name => 'link_proto_iso_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \iso'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x23            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_iso_PPP
+	{
+		name => 'link_proto_stp_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x31            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_PPP
+	{
+		name => 'link_proto_lat_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \lat'], # ethertype_to_ppptype() default case
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x6004          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_lat_PPP
+	{
+		name => 'link_proto_ipx_PPP',
+		DLT => 'PPP',
+		aliases => ['link proto \ipx'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x2b            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ipx_PPP
+	{
+		name => 'link_proto_ip_PPP_PPPD',
+		DLT => 'PPP_PPPD',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x21            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_PPP_PPPD
+	{
+		name => 'link_proto_ip_PPP_SERIAL',
+		DLT => 'PPP_SERIAL',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x21            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_PPP_SERIAL
+	{
+		name => 'link_proto_ip_PPP_ETHER',
+		DLT => 'PPP_ETHER',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [6]
+			(001) jeq      #0x21            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_PPP_ETHER
+	{
+		name => 'link_proto_ip_PPP_BSDOS',
+		DLT => 'PPP_BSDOS',
+		aliases => ['link proto \ip'],
+		opt => '
+			(000) ldh      [5]
+			(001) jeq      #0x21            jt 4	jf 2
+			(002) jeq      #0x2d            jt 4	jf 3
+			(003) jeq      #0x2f            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_ip_PPP_BSDOS
+	{
+		name => 'link_proto_ip6_PPP_BSDOS',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'PPP_BSDOS',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldh      [5]
+			(001) jeq      #0x57            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_PPP_BSDOS
+
+	# DLT_NULL and DLT_ENC depend on the values of AF_INET and AF_INET6,
+	# which are OS-specific, and on the host byte order.  Exercise these
+	# dimensions completely for DLT_NULL only.
+	{
+		name => 'link_proto_ip_1LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os_not ('haiku'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_1LE_NULL
+	{
+		name => 'link_proto_ip_2LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os ('haiku'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_2LE_NULL
+	{
+		name => 'link_proto_ip_2BE_NULL',
+		skip => skip_little_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_2BE_NULL
+	{
+		name => 'link_proto_ip6_5LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os_not ('haiku') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x5000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_5LE_NULL
+	{
+		name => 'link_proto_ip6_10LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os_not ('linux') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0xa000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_10LE_NULL
+	{
+		name => 'link_proto_ip6_10BE_NULL',
+		skip => skip_little_endian() ||
+			skip_os_not ('linux') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_10BE_NULL
+	{
+		name => 'link_proto_ip6_22BE_NULL',
+		skip => skip_little_endian() ||
+			skip_os_not ('hpux') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x16            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_22BE_NULL
+	{
+		name => 'link_proto_ip6_24LE_NULL',
+		skip => skip_big_endian() ||
+			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x18000000      jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_24LE_NULL
+	{
+		name => 'link_proto_ip6_24BE_NULL',
+		skip => skip_little_endian() ||
+			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x18            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_24BE_NULL
+	{
+		name => 'link_proto_ip6_26LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os_not ('solaris') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1a000000      jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_26LE_NULL
+	{
+		name => 'link_proto_ip6_26BE_NULL',
+		skip => skip_little_endian() ||
+			skip_os_not ('solaris') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1a            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_26BE_NULL
+	{
+		name => 'link_proto_ip6_28LE_NULL',
+		skip => skip_big_endian() ||
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1c000000      jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_28LE_NULL
+	{
+		name => 'link_proto_ip6_28BE_NULL',
+		skip => skip_little_endian() ||
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1c            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_28BE_NULL
+	{
+		name => 'link_proto_ip6_30LE_NULL',
+		skip => skip_big_endian() ||
+			skip_os_not ('darwin') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e000000      jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_30LE_NULL
+	{
+		name => 'link_proto_ip6_30BE_NULL',
+		skip => skip_little_endian() ||
+			skip_os_not ('darwin') ||
+			skip_config_undef ('INET6'),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_30BE_NULL
+	{
+		name => 'link_proto_stp_NULL',
+		# The same code path for DLT_ENC and DLT_LOOP.
+		DLT => 'NULL',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_NULL
+	{
+		name => 'link_proto_ip_2LE_ENC',
+		skip => skip_big_endian() ||
+			skip_os_not ('linux'),
+		DLT => 'ENC',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_2LE_ENC
+	{
+		name => 'link_proto_ip6_28LE_ENC',
+		skip => skip_big_endian() ||
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'ENC',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1c000000      jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_28LE_ENC
+	# DLT_LOOP and DLT_PFLOG depend on the values of AF_INET and AF_INET6,
+	# which are OS-specific.  Exercise this dimension completely for
+	# DLT_LOOP only.
+	{
+		name => 'link_proto_ip_1_LOOP',
+		skip => skip_os_not ('haiku'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_1_LOOP
+	{
+		name => 'link_proto_ip_2_LOOP',
+		skip => skip_os ('haiku'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_2_LOOP
+	{
+		name => 'link_proto_ip6_5_LOOP',
+		skip => skip_os_not ('haiku') ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x5             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_5_LOOP
+	{
+		name => 'link_proto_ip6_10_LOOP',
+		skip => skip_os_not ('linux') ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0xa             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_10_LOOP
+	{
+		name => 'link_proto_ip6_22_LOOP',
+		skip => skip_os_not ('hpux') ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x16            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_22_LOOP
+	{
+		name => 'link_proto_ip6_24_LOOP',
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x18            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_24_LOOP
+	{
+		name => 'link_proto_ip6_26_LOOP',
+		skip => skip_os_not ('solaris') ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1a            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_26_LOOP
+	{
+		name => 'link_proto_ip6_28_LOOP',
+		skip => (skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1c            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_28_LOOP
+	{
+		name => 'link_proto_ip6_30_LOOP',
+		skip => skip_os_not ('darwin') ||
+			skip_config_undef ('INET6'),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_30_LOOP
+	{
+		name => 'link_proto_ip_2_PFLOG',
+		skip => skip_os ('haiku'),
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_2_PFLOG
+	{
+		name => 'link_proto_ip6_24_PFLOG',
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
+			skip_config_undef ('INET6'),
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x18            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_PFLOG
+	{
+		name => 'link_proto_stp_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_PFLOG
+	{
+		name => 'link_proto_stp_ARCNET',
+		DLT => 'ARCNET',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_ARCNET
+	{
+		name => 'link_proto_ip6_ARCNET',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'ARCNET',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xc4            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_ARCNET
+	{
+		name => 'link_proto_ip_ARCNET',
+		DLT => 'ARCNET',
+		aliases => ['link proto \ip'],
+		opt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd4            jt 3	jf 2
+			(002) jeq      #0xf0            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_ARCNET
+	{
+		name => 'link_proto_arp_ARCNET',
+		DLT => 'ARCNET',
+		aliases => ['link proto \arp'],
+		opt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd5            jt 3	jf 2
+			(002) jeq      #0xf1            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_arp_ARCNET
+	{
+		name => 'link_proto_rarp_ARCNET',
+		DLT => 'ARCNET',
+		aliases => ['link proto \rarp'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xd6            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_rarp_ARCNET
+	{
+		name => 'link_proto_atalk_ARCNET',
+		DLT => 'ARCNET',
+		aliases => ['link proto \atalk'],
+		unopt => '
+			(000) ldb      [2]
+			(001) jeq      #0xdd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_atalk_ARCNET
+	{
+		name => 'link_proto_ip6_ARCNET_LINUX',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xc4            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_ARCNET_LINUX
+	{
+		name => 'link_proto_ip_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link proto \ip'],
+		opt => '
+			(000) ldb      [4]
+			(001) jeq      #0xd4            jt 3	jf 2
+			(002) jeq      #0xf0            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_ARCNET_LINUX
+	{
+		name => 'link_proto_arp_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link proto \arp'],
+		opt => '
+			(000) ldb      [4]
+			(001) jeq      #0xd5            jt 3	jf 2
+			(002) jeq      #0xf1            jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_arp_ARCNET_LINUX
+	{
+		name => 'link_proto_rarp_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link proto \rarp'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xd6            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_rarp_ARCNET_LINUX
+	{
+		name => 'link_proto_atalk_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link proto \atalk'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xdd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_atalk_ARCNET_LINUX
+	{
+		name => 'link_proto_atalk_LTALK',
+		DLT => 'LTALK',
+		aliases => ['link proto \atalk'],
+		opt => '
+			(000) ret      #262144
+			',
+	}, # link_proto_atalk_LTALK
+	{
+		name => 'link_proto_ip_LTALK',
+		DLT => 'LTALK',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_LTALK
+	{
+		name => 'link_proto_ip_FRELAY',
+		DLT => 'FRELAY',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x3cc           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_FRELAY
+	{
+		name => 'link_proto_ip6_FRELAY',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'FRELAY',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x38e           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_FRELAY
+	{
+		name => 'link_proto_iso_FRELAY',
+		DLT => 'FRELAY',
+		aliases => ['link proto \iso'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x381           jt 4	jf 2
+			(002) jeq      #0x382           jt 4	jf 3
+			(003) jeq      #0x383           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_iso_FRELAY
+	{
+		name => 'link_proto_stp_FRELAY',
+		DLT => 'FRELAY',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_arp_FRELAY
+	{
+		name => 'link_proto_ip_JUNIPER_MFR',
+		DLT => 'JUNIPER_MFR',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) and      #0xffffff00
+			(002) jeq      #0x4d474300      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_JUNIPER_MFR
+	{
+		name => 'link_proto_ip_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ld       [0]
+			(001) and      #0xffff0000
+			(002) jeq      #0x55ff0000      jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+	}, # link_proto_ip_BACNET_MS_TP
+	{
+		name => 'link_proto_ip_IPNET',
+		DLT => 'IPNET',
+		aliases => ['link proto \ip'],
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_IPNET
+	{
+		name => 'link_proto_ip6_IPNET',
+		skip => skip_config_undef ('INET6'),
+		DLT => 'IPNET',
+		aliases => ['link proto \ip6'],
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x1a            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_IPNET
+	{
+		name => 'link_proto_stp_IPNET',
+		DLT => 'IPNET',
+		aliases => ['link proto \stp'],
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_stp_IPNET
+
+	# Edge cases for LLC/EtherType.
+	{
+		name => 'link_proto_0_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['link proto 0'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldb      [14]
+			(003) jeq      #0x0             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_0_EN10MB
+	{
+		name => 'link_proto_255_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['link proto 255'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldb      [14]
+			(003) jeq      #0xff            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_255_EN10MB
+	{
+		name => 'link_proto_1501_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['link proto 1501'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x5dd           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_1501_EN10MB
+	{
+		name => 'link_proto_65535_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['link proto 65535'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0xffff          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_65535_EN10MB
 
 	# ARP and RARP tests are interleaved for ease of cross-reference
 	# because ARP filter programs and RARP filter programs differ in the
