@@ -668,7 +668,7 @@ static struct slist *gen_load_ppi_llprefixlen(compiler_state_t *);
 static void insert_compute_vloffsets(compiler_state_t *, struct block *);
 static struct slist *gen_abs_offset_varpart(compiler_state_t *,
     bpf_abs_offset *);
-static bpf_u_int32 ethertype_to_ppptype(bpf_u_int32);
+static uint16_t ethertype_to_ppptype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_snap(compiler_state_t *, bpf_u_int32, bpf_u_int32);
 static struct block *gen_llc_linktype(compiler_state_t *, bpf_u_int32);
@@ -2511,6 +2511,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 	default:
 		if (ll_proto <= ETHERMTU) {
+			assert_maxval(cstate, "LLC DSAP", ll_proto, UINT8_MAX);
 			/*
 			 * This is an LLC SAP value, so the frames
 			 * that match would be 802.2 frames.
@@ -2524,6 +2525,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			gen_and(b0, b1);
 			return b1;
 		} else {
+			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			/*
 			 * This is an Ethernet type, so compare
 			 * the length/type field with it (if
@@ -2723,6 +2725,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 	default:
 		if (ll_proto <= ETHERMTU) {
+			assert_maxval(cstate, "LLC DSAP", ll_proto, UINT8_MAX);
 			/*
 			 * This is an LLC SAP value, so the frames
 			 * that match would be 802.2 frames.
@@ -2736,6 +2739,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			gen_and(b0, b1);
 			return b1;
 		} else {
+			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			/*
 			 * This is an Ethernet type, so compare
 			 * the length/type field with it (if
@@ -3477,8 +3481,8 @@ gen_abs_offset_varpart(compiler_state_t *cstate, bpf_abs_offset *off)
 /*
  * Map an Ethernet type to the equivalent PPP type.
  */
-static bpf_u_int32
-ethertype_to_ppptype(bpf_u_int32 ll_proto)
+static uint16_t
+ethertype_to_ppptype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	switch (ll_proto) {
 
@@ -3511,7 +3515,8 @@ ethertype_to_ppptype(bpf_u_int32 ll_proto)
 	case LLCSAP_IPX:
 		return PPP_IPX;
 	}
-	return (ll_proto);
+	assert_maxval(cstate, "PPP protocol", ll_proto, UINT16_MAX);
+	return (uint16_t)ll_proto;
 }
 
 /*
@@ -3591,6 +3596,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 	case DLT_C_HDLC:
 	case DLT_HDLC:
+		assert_maxval(cstate, "HDLC protocol", ll_proto, UINT16_MAX);
 		switch (ll_proto) {
 
 		case LLCSAP_ISONS:
@@ -3716,7 +3722,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * map them to the corresponding PPP protocol types.
 		 */
 		return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H,
-		    ethertype_to_ppptype(ll_proto));
+		    ethertype_to_ppptype(cstate, ll_proto));
 		/*NOTREACHED*/
 
 	case DLT_PPP_BSDOS:
@@ -3740,7 +3746,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 
 		default:
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H,
-			    ethertype_to_ppptype(ll_proto));
+			    ethertype_to_ppptype(cstate, ll_proto));
 		}
 		/*NOTREACHED*/
 
@@ -4017,6 +4023,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 * it's not, it needs to be handled specially
 			 * above.)
 			 */
+			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ll_proto);
 			/*NOTREACHED */
 		}
@@ -4320,12 +4327,14 @@ gen_llc_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * here, but should we check for the IPX Ethertype?
 		 */
 		if (ll_proto <= ETHERMTU) {
+			assert_maxval(cstate, "LLC DSAP", ll_proto, UINT8_MAX);
 			/*
 			 * This is an LLC SAP value, so check
 			 * the DSAP.
 			 */
 			return gen_cmp(cstate, OR_LLC, 0, BPF_B, ll_proto);
 		} else {
+			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			/*
 			 * This is an Ethernet type; we assume that it's
 			 * unlikely that it'll appear in the right place

@@ -14234,6 +14234,70 @@ my @reject_tests = (
 		expr => 'geneve 123456789',
 		errstr => 'Geneve VNI 123456789 greater than maximum 16777215',
 	},
+	# gen_linktype()
+	{
+		name => 'link_proto_65536_C_HDLC',
+		DLT => 'C_HDLC',
+		expr => 'link proto 65536',
+		errstr => 'HDLC protocol 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_65536_PPP',
+		DLT => 'PPP',
+		expr => 'link proto 65536',
+		errstr => 'PPP protocol 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_65536_PPP_BSDOS',
+		DLT => 'PPP_BSDOS',
+		expr => 'link proto 65536',
+		errstr => 'PPP protocol 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_65536_APPLE_IP_OVER_IEEE1394',
+		DLT => 'APPLE_IP_OVER_IEEE1394', # the default case
+		expr => 'link proto 65536',
+		errstr => 'EtherType 65536 greater than maximum 65535',
+	},
+	# gen_ether_linktype()
+	{
+		name => 'link_proto_65536_EN10MB',
+		DLT => 'EN10MB',
+		expr => 'link proto 65536',
+		errstr => 'EtherType 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_1500_EN10MB',
+		DLT => 'EN10MB',
+		expr => 'link proto 1500',
+		errstr => 'LLC DSAP 1500 greater than maximum 255',
+	},
+	# gen_llc_linktype
+	{
+		name => 'link_proto_65536_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		expr => 'link proto 65536',
+		errstr => 'EtherType 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_1500_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		expr => 'link proto 1500',
+		errstr => 'LLC DSAP 1500 greater than maximum 255',
+	},
+	# gen_linux_sll_linktype
+	{
+		name => 'link_proto_65536_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		expr => 'link proto 65536',
+		errstr => 'EtherType 65536 greater than maximum 65535',
+	},
+	{
+		name => 'link_proto_1500_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		expr => 'link proto 1500',
+		errstr => 'LLC DSAP 1500 greater than maximum 255',
+	},
 );
 
 push @reject_tests, {
