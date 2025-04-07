@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "27 March 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "7 April 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -247,12 +247,13 @@ form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
 where each "x" is a hex digit (0-9, a-f, or A-F).
 .IP "\fBgateway\fP \fIhost\fP"
 True if the packet used \fIhost\fP as a gateway.
-I.e., the source or the destination Ethernet address was
+I.e., the source or the destination Ethernet-like address is
 .I host
-but neither the source nor the destination ARP/IPv4/RARP address was
+but neither the source nor the destination ARP/IPv4/RARP address is
 .IR host .
-In this implementation this primitive is not available in IPv6-enabled
-configuration.  May be qualified with a specific protocol
+This primitive is valid only for the same link-layer types as the
+.B "ether host"
+primitive above.  May be qualified with a specific protocol
 .RB ( arp ,
 .BR ip ,
 .BR rarp ).

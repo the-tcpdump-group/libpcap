@@ -691,10 +691,8 @@ static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
 #endif
-#ifndef INET6
 static struct block *gen_gateway(compiler_state_t *, const u_char *,
     struct addrinfo *, int);
-#endif
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ipfrag(compiler_state_t *);
@@ -5310,7 +5308,6 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	return b0;
 }
 
-#ifndef INET6
 /*
  * This primitive is non-directional by design, so the grammar does not allow
  * to qualify it with a direction.
@@ -5379,7 +5376,6 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
 	/*NOTREACHED*/
 }
-#endif
 
 static struct block *
 gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
@@ -6920,7 +6916,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_GATEWAY:
-#ifndef INET6
 		if (! is_mac48_linktype(cstate->linktype))
 			fail_kw_on_dlt(cstate, "gateway");
 		eaddrp = pcap_ether_hostton(name);
@@ -6939,9 +6934,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		if (b == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
 		return b;
-#else
-		bpf_error(cstate, "'gateway' not supported in this configuration");
-#endif /*INET6*/
 
 	case Q_PROTO:
 		real_proto = lookup_proto(cstate, name, proto);

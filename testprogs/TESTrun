@@ -9271,8 +9271,7 @@ my @accept_blocks = (
 	# DLT_NETANALYZER_TRANSPARENT in all DLT_EN10MB gateway tests.
 	{
 		name => 'gateway_name_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9309,8 +9308,7 @@ my @accept_blocks = (
 	}, # gateway_name_en10mb
 	{
 		name => 'gateway_NAME_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9344,8 +9342,7 @@ my @accept_blocks = (
 	}, # gateway_NAME_en10mb
 	{
 		name => 'ip_gateway_name_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9373,8 +9370,7 @@ my @accept_blocks = (
 	}, # ip_gateway_name_en10mb
 	{
 		name => 'ip_gateway_NAME_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9402,8 +9398,7 @@ my @accept_blocks = (
 	}, # ip_gateway_NAME_en10mb
 	{
 		name => 'arp_gateway_name_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9431,8 +9426,7 @@ my @accept_blocks = (
 	}, # arp_gateway_name_en10mb
 	{
 		name => 'arp_gateway_NAME_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9460,8 +9454,7 @@ my @accept_blocks = (
 	}, # arp_gateway_NAME_en10mb
 	{
 		name => 'rarp_gateway_name_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9489,8 +9482,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_en10mb
 	{
 		name => 'rarp_gateway_NAME_en10mb',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'EN10MB',
 		aliases => [
@@ -9518,8 +9510,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_NAME_en10mb
 	{
 		name => 'gateway_name_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9553,8 +9544,7 @@ my @accept_blocks = (
 	}, # gateway_name_fddi
 	{
 		name => 'gateway_NAME_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9588,8 +9578,7 @@ my @accept_blocks = (
 	}, # gateway_NAME_fddi
 	{
 		name => 'ip_gateway_name_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9617,8 +9606,7 @@ my @accept_blocks = (
 	}, # ip_gateway_name_fddi
 	{
 		name => 'ip_gateway_NAME_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9646,8 +9634,7 @@ my @accept_blocks = (
 	}, # ip_gateway_NAME_fddi
 	{
 		name => 'arp_gateway_name_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9675,8 +9662,7 @@ my @accept_blocks = (
 	}, # arp_gateway_name_fddi
 	{
 		name => 'arp_gateway_NAME_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9704,8 +9690,7 @@ my @accept_blocks = (
 	}, # arp_gateway_NAME_fddi
 	{
 		name => 'rarp_gateway_name_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9733,8 +9718,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_fddi
 	{
 		name => 'rarp_gateway_NAME_fddi',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'FDDI',
 		aliases => [
@@ -9762,8 +9746,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_NAME_fddi
 	{
 		name => 'gateway_name_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9797,8 +9780,7 @@ my @accept_blocks = (
 	}, # gateway_name_ieee802
 	{
 		name => 'gateway_NAME_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9832,8 +9814,7 @@ my @accept_blocks = (
 	}, # gateway_NAME_ieee802
 	{
 		name => 'ip_gateway_name_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9861,8 +9842,7 @@ my @accept_blocks = (
 	}, # ip_gateway_name_ieee802
 	{
 		name => 'ip_gateway_NAME_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9890,8 +9870,7 @@ my @accept_blocks = (
 	}, # ip_gateway_NAME_ieee802
 	{
 		name => 'arp_gateway_name_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9919,8 +9898,7 @@ my @accept_blocks = (
 	}, # arp_gateway_name_ieee802
 	{
 		name => 'arp_gateway_NAME_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9948,8 +9926,7 @@ my @accept_blocks = (
 	}, # arp_gateway_NAME_ieee802
 	{
 		name => 'rarp_gateway_name_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -9977,8 +9954,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_ieee802
 	{
 		name => 'rarp_gateway_NAME_ieee802',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802',
 		aliases => [
@@ -10008,8 +9984,7 @@ my @accept_blocks = (
 	# DLT_IEEE802_11_RADIO and DLT_PPI in all DLT_IEEE802_11 gateway tests.
 	{
 		name => 'gateway_name_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10122,8 +10097,7 @@ my @accept_blocks = (
 	}, # gateway_name_ieee802_11
 	{
 		name => 'gateway_NAME_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10236,8 +10210,7 @@ my @accept_blocks = (
 	}, # gateway_NAME_ieee802_11
 	{
 		name => 'ip_gateway_name_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10326,8 +10299,7 @@ my @accept_blocks = (
 	}, # ip_gateway_name_ieee802_11
 	{
 		name => 'ip_gateway_NAME_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10416,8 +10388,7 @@ my @accept_blocks = (
 	}, # ip_gateway_NAME_ieee802_11
 	{
 		name => 'arp_gateway_name_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10506,8 +10477,7 @@ my @accept_blocks = (
 	}, # arp_gateway_name_ieee802_11
 	{
 		name => 'arp_gateway_NAME_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10596,8 +10566,7 @@ my @accept_blocks = (
 	}, # arp_gateway_NAME_ieee802_11
 	{
 		name => 'rarp_gateway_name_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10686,8 +10655,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_ieee802_11
 	{
 		name => 'rarp_gateway_NAME_ieee802_11',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -10776,8 +10744,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_NAME_ieee802_11
 	{
 		name => 'gateway_name_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10811,8 +10778,7 @@ my @accept_blocks = (
 	}, # gateway_name_ip_over_fc
 	{
 		name => 'gateway_NAME_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10846,8 +10812,7 @@ my @accept_blocks = (
 	}, # gateway_NAME_ip_over_fc
 	{
 		name => 'ip_gateway_name_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10875,8 +10840,7 @@ my @accept_blocks = (
 	}, # ip_gateway_name_ip_over_fc
 	{
 		name => 'ip_gateway_NAME_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10904,8 +10868,7 @@ my @accept_blocks = (
 	}, # ip_gateway_NAME_ip_over_fc
 	{
 		name => 'arp_gateway_name_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10933,8 +10896,7 @@ my @accept_blocks = (
 	}, # arp_gateway_name_ip_over_fc
 	{
 		name => 'arp_gateway_NAME_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10962,8 +10924,7 @@ my @accept_blocks = (
 	}, # arp_gateway_NAME_ip_over_fc
 	{
 		name => 'rarp_gateway_name_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -10991,8 +10952,7 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_ip_over_fc
 	{
 		name => 'rarp_gateway_NAME_ip_over_fc',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers_casecmp() ||
+		skip => skip_no_ethers_casecmp() ||
 			skip_no_hosts_casecmp(),
 		DLT => 'IP_OVER_FC',
 		aliases => [
@@ -14653,8 +14613,7 @@ my @reject_tests = (
 	# Invokes bpf_error() after pcap_ether_hostton().
 	{
 		name => 'gateway_noipv4_noipv6',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers(),
+		skip => skip_no_ethers(),
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
 		errstr => 'unknown host', # no IPv4 address in /etc/hosts
@@ -14663,8 +14622,7 @@ my @reject_tests = (
 	# Invokes bpf_error() after pcap_ether_hostton().
 	{
 		name => 'gateway_noipv4_ipv6',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
@@ -14672,8 +14630,7 @@ my @reject_tests = (
 	},
 	{
 		name => 'src_gateway',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'src gateway eth-ipv4-noipv6.host123.libpcap.test',
@@ -14681,8 +14638,7 @@ my @reject_tests = (
 	},
 	{
 		name => 'dst_gateway',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
@@ -14736,53 +14692,38 @@ my @reject_tests = (
 		expr => 'dst protochain \tcp',
 		errstr => 'syntax error',
 	},
-	# If "gateway" begins to support IPv6 in future, the reject tests below will
-	# fail and will need to be replaced with accept tests.
-	{
-		name => 'gateway_INET6',
-		skip => skip_config_undef ('INET6'),
-		DLT => 'EN10MB',
-		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
-		errstr => 'not supported in this configuration',
-	},
 	{
 		name => 'gateway_1',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway 1',
 		errstr => '\'gateway\' requires a name',
 	},
 	{
 		name => 'gateway_1_2',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2',
 		errstr => '\'gateway\' requires a name',
 	},
 	{
 		name => 'gateway_1_2_3',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2.3',
 		errstr => '\'gateway\' requires a name',
 	},
 	{
 		name => 'gateway_1_2_3_4',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2.3.4',
 		errstr => '\'gateway\' requires a name',
 	},
 	{
 		name => 'gateway_mac48',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway 11:22:33:44:55:66',
 		errstr => 'ethernet address used in non-ether expression',
 	},
 	{
 		name => 'gateway_arcnet',
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => 'gateway $af',
 		errstr => 'aid supported only on ARCnet',
@@ -15861,8 +15802,7 @@ foreach (pquals_without 'host') {
 # Invokes bpf_error() after pcap_ether_hostton().
 foreach (pquals_without 'gateway') {
 	push @reject_tests, {
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		name => "inv_qual_${_}_gateway_ipv4name",
 		DLT => 'EN10MB',
@@ -15876,8 +15816,7 @@ foreach (DLTs_without 'link_host_mac48') {
 	# Invokes bpf_error() after pcap_ether_hostton().
 	push @reject_tests, {
 		name => "gateway_ipv4_noipv6_${_}",
-			skip => skip_config_def1 ('INET6') ||
-				skip_no_ethers() ||
+			skip => skip_no_ethers() ||
 				skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
@@ -15887,8 +15826,7 @@ foreach (DLTs_without 'link_host_mac48') {
 	# Invokes bpf_error() after pcap_ether_hostton().
 	push @reject_tests, {
 		name => "gateway_ipv4_ipv6_${_}",
-			skip => skip_config_def1 ('INET6') ||
-				skip_no_ethers() ||
+			skip => skip_no_ethers() ||
 				skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
@@ -15900,7 +15838,6 @@ foreach my $pq (pquals_without '') {
 	# HID -> gen_ncode() -> case Q_GATEWAY
 	push @reject_tests, {
 		name => "${pq}_gateway_HID",
-		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.13.14",
 		errstr => $pq eq 'decnet' ?
@@ -16145,8 +16082,7 @@ foreach (DLTs_without 'link_host_mac48') {
 	# gen_scode() -> case Q_GATEWAY -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "gateway_name_${_}",
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
+		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
@@ -16173,8 +16109,7 @@ foreach (DLTs_with 'link_host_mac48') {
 	# gen_scode() -> case Q_GATEWAY -> eaddrp == NULL
 	push @reject_tests, {
 		name => "gateway_nonex_${_}",
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
 		errstr => "unknown Ethernet-like host 'noeth-ipv4-noipv6.host123.libpcap.test'",

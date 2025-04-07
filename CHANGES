@@ -61,6 +61,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "link proto" argument value to be within range.
       Require "(ip|ip6) proto" value to be within range.
       Require "protochain" value to be within range.
+      Always enable the "gateway" primitive.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
