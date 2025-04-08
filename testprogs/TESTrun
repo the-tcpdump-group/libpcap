@@ -14786,15 +14786,6 @@ my @reject_tests = (
 		errstr => 'not supported in this configuration',
 	},
 	{
-		name => 'ip6_gateway',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
-			skip_no_hosts(),
-		DLT => 'EN10MB',
-		expr => "ip6 gateway eth-ipv4-ipv6.host123.libpcap.test",
-		errstr => '\'ip6\' is not a valid qualifier for \'gateway\'',
-	},
-	{
 		name => 'gateway_1',
 		skip => skip_config_def1 ('INET6'),
 		DLT => 'EN10MB',
@@ -15895,6 +15886,94 @@ foreach (pquals_without 'gateway') {
 		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
 		errstr => "'${_}' is not a valid qualifier for 'gateway'",
 	};
+}
+
+foreach my $pq (pqual_names) {
+	# HID -> gen_ncode() -> case Q_GATEWAY
+	push @reject_tests, {
+		name => "${pq}_gateway_HID",
+		skip => skip_config_def1 ('INET6'),
+		DLT => 'EN10MB',
+		expr => "$pq gateway 11.12.13.14",
+		errstr => $pq eq 'decnet' ?
+			'invalid DECnet address \'11.12.13.14\'' :
+			'\'gateway\' requires a name',
+	};
+	# HID
+	push @reject_tests, {
+		name => "${pq}_${_}_HID",
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
+		DLT => 'EN10MB',
+		expr => "$pq $_ 11.12.13.14",
+		errstr => "'$_' qualifier applied to IPv4 address",
+	} foreach qw(port portrange proto protochain);
+	# HID '/' NUM -> gen_mcode() -> default
+	push @reject_tests, {
+		name => "${pq}_gateway_HID_NUM",
+		DLT => 'EN10MB',
+		expr => "$pq gateway 11.12.0.0/16",
+		errstr => 'Mask syntax for networks only',
+	};
+	# HID '/' NUM
+	push @reject_tests, {
+		name => "${pq}_${_}_HID_NUM",
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
+		DLT => 'EN10MB',
+		expr => "$pq $_ 11.12.0.0/16",
+		errstr => "'$_' qualifier applied to IPv4 address and prefix length",
+	} foreach qw(port portrange proto protochain);
+	# HID NETMASK HID -> gen_mcode() -> default
+	push @reject_tests, {
+		name => "${pq}_gateway_HID_mask_HID",
+		DLT => 'EN10MB',
+		expr => "$pq gateway 11.12.0.0 mask 255.255.0.0",
+		errstr => 'Mask syntax for networks only',
+	};
+	# HID NETMASK HID
+	push @reject_tests, {
+		name => "${pq}_${_}_HID_mask_HID",
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
+		DLT => 'EN10MB',
+		expr => "$pq $_ 11.12.0.0 mask 255.255.0.0",
+		errstr => "'$_' qualifier applied to IPv4 address and netmask",
+	} foreach qw(port portrange proto protochain);
+	# HID6 -> gen_mcode6() -> default
+	push @reject_tests, {
+		name => "${pq}_gateway_HID6",
+		skip => skip_config_undef ('INET6'),
+		DLT => 'EN10MB',
+		expr => "$pq gateway fe80::0",
+		errstr => 'invalid qualifier against IPv6 address',
+	};
+	# HID6
+	push @reject_tests, {
+		name => "${pq}_${_}_HID6",
+		skip => $_ eq 'protochain' ?
+			(skip_config_def1 ('NO_PROTOCHAIN') || skip_config_undef ('INET6')) :
+			skip_config_undef ('INET6'),
+		DLT => 'EN10MB',
+		expr => "$pq $_ fe80::0",
+		errstr => "'$_' qualifier applied to IPv6 address",
+	} foreach qw(port portrange proto protochain);
+	# HID6 '/' NUM -> gen_mcode6() -> default
+	push @reject_tests, {
+		name => "${pq}_gateway_HID6_NUM",
+		skip => skip_config_undef ('INET6'),
+		DLT => 'EN10MB',
+		expr => "$pq gateway fe80::0/64",
+		errstr => 'invalid qualifier against IPv6 address',
+	};
+	# HID6 '/' NUM
+	push @reject_tests, {
+		name => "${pq}_${_}_HID6_NUM",
+		skip => $_ eq 'protochain' ?
+			(skip_config_def1 ('NO_PROTOCHAIN') || skip_config_undef ('INET6')) :
+			skip_config_undef ('INET6'),
+		DLT => 'EN10MB',
+		expr => "$pq $_ fe80::0/64",
+		errstr => "'$_' qualifier applied to IPv6 address and prefix length",
+	} foreach qw(port portrange proto protochain);
+	last if $only_short;
 }
 
 # Use a separate foreach loop for each feature because different loops skip
