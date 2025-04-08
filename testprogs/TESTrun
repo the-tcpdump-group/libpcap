@@ -15085,30 +15085,152 @@ my @reject_tests = (
 	},
 );
 
-push @reject_tests, {
-	name => "noindex_${_}",
-	DLT => 'EN10MB',
-	expr => "${_}[0] == 0",
-	errstr => "'${_}' does not support the index operation",
-} foreach (qw{
-	ah
-	esp
-	aarp
-	iso
-	esis
-	isis
-	clnp
-	stp
-	ipx
-	netbeui
-	l1
-	l2
-	iih
-	snp
-	csnp
-	psnp
-	lsp
-});
+# "proto" qualifiers without any lexer-level aliases (the entries correspond
+# to Q_LINK~Q_CARP from gencode.h and are ordered by name).
+my %pqual_features = (
+	aarp => {
+	},
+	ah => {
+	},
+	arp => {
+		index => 1,
+		host => 1,
+		gateway => 1,
+	},
+	atalk => {
+		index => 1,
+	},
+	carp => {
+		index => 1,
+	},
+	clnp => {
+	},
+	csnp => {
+	},
+	decnet => {
+		index => 1,
+		host => 1,
+	},
+	esis => {
+	},
+	esp => {
+	},
+	icmp => {
+		index => 1,
+	},
+	icmp6 => {
+		index => 1,
+	},
+	igmp => {
+		index => 1,
+	},
+	igrp => {
+		index => 1,
+	},
+	iih => {
+	},
+	ip => {
+		index => 1,
+		host => 1,
+		gateway => 1,
+	},
+	ip6 => {
+		index => 1,
+		host => 1,
+	},
+	ipx => {
+	},
+	isis => {
+	},
+	iso => {
+	},
+	l1 => {
+	},
+	l2 => {
+	},
+	lat => {
+		index => 1,
+	},
+	link => {
+		index => 1,
+		host => 1,
+	},
+	lsp => {
+	},
+	mopdl => {
+		index => 1,
+	},
+	moprc => {
+		index => 1,
+	},
+	netbeui => {
+	},
+	pim => {
+		index => 1,
+	},
+	psnp => {
+	},
+	radio => {
+		index => 1,
+	},
+	rarp => {
+		index => 1,
+		host => 1,
+		gateway => 1,
+	},
+	sca => {
+		index => 1,
+	},
+	sctp => {
+		index => 1,
+	},
+	snp => {
+	},
+	stp => {
+	},
+	tcp => {
+		index => 1,
+	},
+	udp => {
+		index => 1,
+	},
+	vrrp => {
+		index => 1,
+	},
+);
+
+sub pqual_feature {
+	my $name = shift;
+	my $feature = shift;
+	die if not exists $pqual_features{$name};
+	return exists $pqual_features{$name}{$feature} && $pqual_features{$name}{$feature} == 1;
+}
+
+sub pqual_names {
+	return keys %pqual_features;
+}
+
+sub pquals_with {
+	my $feature = shift;
+	my @ret;
+	foreach (pqual_names) {
+		next unless pqual_feature $_, $feature;
+		push @ret, $_;
+		last if $only_short;
+	}
+	return @ret;
+}
+
+sub pquals_without {
+	my $feature = shift;
+	my @ret;
+	foreach (pqual_names) {
+		next if pqual_feature $_, $feature;
+		push @ret, $_;
+		last if $only_short;
+	}
+	return @ret;
+}
 
 # All DLTs pcap_datalink_name_to_val() recognizes, ordered by name.
 my %DLTfeatures = (
@@ -15641,61 +15763,37 @@ sub DLTs_without {
 	return @ret;
 }
 
+# gen_load_internal() -> default
+foreach (pquals_without 'index') {
+	push @reject_tests, {
+		name => "noindex_${_}",
+		DLT => 'EN10MB',
+		expr => "${_}[0] == 0",
+		errstr => "'${_}' does not support the index operation",
+	};
+}
+
 # "link host IPV4ADDR" and "link net IPV4ADDR" use a different code path with
 # a different error message and are tested above.  "link net NAME" uses yet
 # another different code path with yet another different error message and is
 # tested above.  "(link|ip|rarp|arp|decnet|ip6) host" can be valid syntax or
 # not (depending on the primitive ID), which is tested above.
-foreach (qw(
-	sctp
-	tcp
-	udp
-	icmp
-	igmp
-	igrp
-	atalk
-	lat
-	sca
-	moprc
-	mopdl
-	icmp6
-	ah
-	esp
-	pim
-	vrrp
-	aarp
-	iso
-	esis
-	isis
-	clnp
-	stp
-	ipx
-	netbeui
-	l1
-	l2
-	iih
-	snp
-	csnp
-	psnp
-	lsp
-	radio
-	carp
-)) {
-	# HID -> gen_ncode() -> gen_host()
+foreach (pquals_without 'host') {
+	# HID -> gen_ncode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.4",
 		errstr => "'${_}' is not a valid qualifier for 'ip host'",
 	};
-	# HID -> gen_ncode() -> gen_host()
+	# HID -> gen_ncode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.4",
 		errstr => "'${_}' is not a valid qualifier for 'ip net'",
 	};
-	# HID6 -> gen_mcode6() -> gen_host6()
+	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_host_ipv6addr",
@@ -15703,7 +15801,7 @@ foreach (qw(
 		expr => "${_} host fe80::",
 		errstr => "'${_}' is not a valid qualifier for 'ip6 host'",
 	};
-	# HID6 -> gen_mcode6() -> gen_host6()
+	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_net_ipv6addr",
@@ -15712,14 +15810,14 @@ foreach (qw(
 		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
 	};
 
-	# HID NETMASK HID -> gen_mcode()
+	# HID NETMASK HID -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4mask",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0 mask 255.255.255.0",
 		errstr => 'Mask syntax for networks only',
 	};
-	# HID NETMASK HID -> gen_mcode() -> gen_host()
+	# HID NETMASK HID -> gen_mcode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4mask",
 		DLT => 'EN10MB',
@@ -15728,21 +15826,21 @@ foreach (qw(
 	};
 	# ("mask" is IPv4-only)
 
-	# HID '/' NUM -> gen_mcode()
+	# HID '/' NUM -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4cidr",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0/24",
 		errstr => 'Mask syntax for networks only',
 	};
-	# HID '/' NUM -> gen_mcode() -> gen_host()
+	# HID '/' NUM -> gen_mcode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0/24",
 		errstr => "'${_}' is not a valid qualifier for 'ip net'",
 	};
-	# HID6 '/' NUM -> gen_mcode6()
+	# HID6 '/' NUM -> gen_mcode6() -> default
 	push @reject_tests, {
 		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_host_ipv6cidr",
@@ -15750,7 +15848,7 @@ foreach (qw(
 		expr => "${_} host fe80::/16",
 		errstr => 'Mask syntax for networks only',
 	};
-	# HID6 '/' NUM -> gen_mcode6() -> gen_host6()
+	# HID6 '/' NUM -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_net_ipv6cidr",
@@ -15759,7 +15857,7 @@ foreach (qw(
 		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
 	};
 
-	# ID -> gen_scode() -> gen_host()
+	# ID -> gen_scode() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv4name",
@@ -15767,7 +15865,7 @@ foreach (qw(
 		expr => "${_} host noeth-ipv4-noipv6.host123.libpcap.test",
 		errstr => "'${_}' is not a valid qualifier for 'ip host'",
 	};
-	# ID -> gen_scode() -> gen_host()
+	# ID -> gen_scode() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_networks(),
 		name => "inv_qual_${_}_net_ipv4name",
@@ -15775,7 +15873,7 @@ foreach (qw(
 		expr => "${_} net net-10-20-30-0.libpcap.test",
 		errstr => "'${_}' is not a valid qualifier for 'ip net'",
 	};
-	# ID -> gen_scode() -> gen_host6()
+	# ID -> gen_scode() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_config_undef ('INET6') || skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv6name",
@@ -15786,45 +15884,8 @@ foreach (qw(
 	# (IPv6 networks cannot have names)
 }
 
-foreach (qw(
-	link
-	sctp
-	tcp
-	udp
-	icmp
-	igmp
-	igrp
-	atalk
-	decnet
-	lat
-	sca
-	moprc
-	mopdl
-	ip6
-	icmp6
-	ah
-	esp
-	pim
-	vrrp
-	aarp
-	iso
-	esis
-	isis
-	clnp
-	stp
-	ipx
-	netbeui
-	l1
-	l2
-	iih
-	snp
-	csnp
-	psnp
-	lsp
-	radio
-	carp
-)) {
-	# ID -> gen_scode() -> gen_host6()
+# ID -> gen_scode() -> gen_gateway() -> default
+foreach (pquals_without 'gateway') {
 	push @reject_tests, {
 		skip => skip_config_def1 ('INET6') ||
 			skip_no_ethers() ||
