@@ -14509,19 +14509,6 @@ my @reject_tests = (
 		errstr => "netmask not known, so 'ip broadcast' not supported",
 	},
 	{
-		name => 'arp_protochain',
-		skip => skip_config_def1 ('NO_PROTOCHAIN'),
-		DLT => 'EN10MB',
-		expr => 'arp protochain 17',
-		errstr => '\'arp\' is not a valid qualifier for \'protochain\'',
-	},
-	{
-		name => 'arp_proto',
-		DLT => 'EN10MB',
-		expr => 'arp proto 17',
-		errstr => '\'arp\' is not a valid qualifier for \'proto\'',
-	},
-	{
 		name => 'arp_host_ipv4_ipv6',
 		skip => skip_config_undef ('INET6') ||
 			skip_no_hosts(),
@@ -14774,6 +14761,54 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_proto_NUM',
+		DLT => 'EN10MB',
+		expr => 'src proto 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_proto_NUM',
+		DLT => 'EN10MB',
+		expr => 'dst proto 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_proto_ID',
+		DLT => 'EN10MB',
+		expr => 'src proto \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_proto_ID',
+		DLT => 'EN10MB',
+		expr => 'dst proto \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_protochain_NUM',
+		DLT => 'EN10MB',
+		expr => 'src protochain 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_protochain_NUM',
+		DLT => 'EN10MB',
+		expr => 'dst protochain 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_protochain_ID',
+		DLT => 'EN10MB',
+		expr => 'src protochain \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_protochain_ID',
+		DLT => 'EN10MB',
+		expr => 'dst protochain \tcp',
 		errstr => 'syntax error',
 	},
 	# If "gateway" begins to support IPv6 in future, the reject tests below will
@@ -15124,16 +15159,22 @@ my %pqual_features = (
 		index => 1,
 		host => 1,
 		gateway => 1,
+		protochain => 1,
+		proto => 1,
 	},
 	ip6 => {
 		index => 1,
 		host => 1,
+		protochain => 1,
+		proto => 1,
 	},
 	ipx => {
 	},
 	isis => {
+		proto => 1,
 	},
 	iso => {
+		proto => 1,
 	},
 	l1 => {
 	},
@@ -15145,6 +15186,7 @@ my %pqual_features = (
 	link => {
 		index => 1,
 		host => 1,
+		proto => 1,
 	},
 	lsp => {
 	},
@@ -15973,6 +16015,49 @@ foreach my $pq (pqual_names) {
 		expr => "$pq $_ fe80::0/64",
 		errstr => "'$_' qualifier applied to IPv6 address and prefix length",
 	} foreach qw(port portrange proto protochain);
+	last if $only_short;
+}
+
+foreach (pquals_without 'protochain') {
+	# pnum -> gen_ncode() -> case Q_PROTOCHAIN -> gen_protochain() -> default
+	push @reject_tests, {
+		name => "${_}_protochain_17",
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => "${_} protochain 17",
+		errstr => $_ eq 'decnet' ?
+			'invalid DECnet address \'17\'' :
+			"'${_}' is not a valid qualifier for 'protochain'",
+	};
+	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto()
+	push @reject_tests, {
+		name => "${_}_protochain_tcp",
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => "${_} protochain \\tcp",
+		errstr => $_ eq 'iso' ? 'unknown osi proto \'tcp\'' :
+			$_ eq 'link' ? 'unknown ether proto \'tcp\'' :
+			'unknown protocol: tcp',
+	};
+}
+
+foreach (pquals_without 'proto') {
+	# pnum -> gen_ncode() -> case Q_PROTO -> gen_proto() -> default
+	push @reject_tests, {
+		name => "${_}_proto_17",
+		DLT => 'EN10MB',
+		expr => "${_} proto 17",
+		errstr => $_ eq 'decnet' ?
+			'invalid DECnet address \'17\'' :
+			"'${_}' is not a valid qualifier for 'proto'",
+	};
+	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto()
+	push @reject_tests, {
+		name => "${_}_proto_tcp",
+		DLT => 'EN10MB',
+		expr => "${_} proto \\tcp",
+		errstr => 'unknown protocol: tcp',
+	};
 	last if $only_short;
 }
 
