@@ -14763,6 +14763,54 @@ my @reject_tests = (
 		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
 		errstr => 'syntax error',
 	},
+	{
+		name => 'src_proto_NUM',
+		DLT => 'EN10MB',
+		expr => 'src proto 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_proto_NUM',
+		DLT => 'EN10MB',
+		expr => 'dst proto 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_proto_ID',
+		DLT => 'EN10MB',
+		expr => 'src proto \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_proto_ID',
+		DLT => 'EN10MB',
+		expr => 'dst proto \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_protochain_NUM',
+		DLT => 'EN10MB',
+		expr => 'src protochain 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_protochain_NUM',
+		DLT => 'EN10MB',
+		expr => 'dst protochain 1',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'src_protochain_ID',
+		DLT => 'EN10MB',
+		expr => 'src protochain \tcp',
+		errstr => 'syntax error',
+	},
+	{
+		name => 'dst_protochain_ID',
+		DLT => 'EN10MB',
+		expr => 'dst protochain \tcp',
+		errstr => 'syntax error',
+	},
 	# If "gateway" begins to support IPv6 in future, the reject tests below will
 	# fail and will need to be replaced with accept tests.
 	{
