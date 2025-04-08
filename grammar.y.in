@@ -546,7 +546,7 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 					bpf_set_error(cstate, "'portrange' qualifier applied to IPv6 address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-					bpf_set_error(cstate, "'proto' qualifier applied to 'ip6addr/prefixlen");
+					bpf_set_error(cstate, "'proto' qualifier applied to IPv6 address");
 					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
 					bpf_set_error(cstate, "'protochain' qualifier applied to IPv6 address");
