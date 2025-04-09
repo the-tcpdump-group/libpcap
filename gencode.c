@@ -6000,6 +6000,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	switch (proto) {
 	case Q_IP:
 	case Q_IPV6:
+		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
 		break;
 	case Q_DEFAULT:
 		b0 = gen_protochain(cstate, v, Q_IP);

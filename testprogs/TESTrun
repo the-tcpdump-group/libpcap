@@ -14541,6 +14541,27 @@ my @reject_tests = (
 		errstr => 'unknown ip proto',
 	},
 	{
+		name => 'protochain_256',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'protochain 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
+		name => 'ip_protochain_256',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'ip protochain 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
+		name => 'ip6_protochain_256',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'RAW',
+		expr => 'ip6 protochain 256',
+		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
 		name => 'proto_invalid',
 		DLT => 'RAW',
 		expr => 'proto nosuchprotocol',
