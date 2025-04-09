@@ -307,9 +307,7 @@ pcap_nametoport(const char *name, int *port, int *proto)
 	struct addrinfo hints, *res, *ai;
 	int error;
 	struct sockaddr_in *in4;
-#ifdef INET6
 	struct sockaddr_in6 *in6;
-#endif
 	int tcp_port = -1;
 	int udp_port = -1;
 
@@ -349,13 +347,11 @@ pcap_nametoport(const char *name, int *port, int *proto)
 					tcp_port = ntohs(in4->sin_port);
 					break;
 				}
-#ifdef INET6
 				if (ai->ai_addr->sa_family == AF_INET6) {
 					in6 = (struct sockaddr_in6 *)ai->ai_addr;
 					tcp_port = ntohs(in6->sin6_port);
 					break;
 				}
-#endif
 			}
 		}
 		freeaddrinfo(res);
@@ -393,13 +389,11 @@ pcap_nametoport(const char *name, int *port, int *proto)
 					udp_port = ntohs(in4->sin_port);
 					break;
 				}
-#ifdef INET6
 				if (ai->ai_addr->sa_family == AF_INET6) {
 					in6 = (struct sockaddr_in6 *)ai->ai_addr;
 					udp_port = ntohs(in6->sin6_port);
 					break;
 				}
-#endif
 			}
 		}
 		freeaddrinfo(res);
@@ -576,9 +570,7 @@ PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "atalk", ETHERTYPE_ATALK },
 	{ "decnet", ETHERTYPE_DN },
 	{ "ip", ETHERTYPE_IP },
-#ifdef INET6
 	{ "ip6", ETHERTYPE_IPV6 },
-#endif
 	{ "lat", ETHERTYPE_LAT },
 	{ "loopback", ETHERTYPE_LOOPBACK },
 	{ "mopdl", ETHERTYPE_MOPDL },

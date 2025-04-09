@@ -64,7 +64,6 @@
     /* Defines BPF extensions for Npcap */
     #include <npcap-bpf.h>
   #endif
-  #ifdef INET6
     #if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 /* IPv6 address */
 struct in6_addr
@@ -108,7 +107,6 @@ struct addrinfo {
 };
       #endif /* EAI_ADDRFAMILY */
     #endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
-  #endif /* INET6 */
 #else /* _WIN32 */
   #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
@@ -674,10 +672,8 @@ static struct block *gen_snap(compiler_state_t *, bpf_u_int32, bpf_u_int32);
 static struct block *gen_llc_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, u_int, u_int);
-#ifdef INET6
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, u_int, u_int);
-#endif
 static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_wlanhostop(compiler_state_t *, const u_char *, int);
 static unsigned char is_mac48_linktype(const int);
@@ -687,10 +683,8 @@ static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, int, int);
-#ifdef INET6
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
-#endif
 static struct block *gen_gateway(compiler_state_t *, const u_char *,
     struct addrinfo *, int);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
@@ -4407,7 +4401,6 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	return gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
 }
 
-#ifdef INET6
 static struct block *
 gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int dir, u_int src_off, u_int dst_off)
@@ -4478,7 +4471,6 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 	}
 	return b1 ? b1 : gen_true(cstate);
 }
-#endif
 
 /*
  * Like gen_mac48host(), but for DLT_IEEE802_11 (802.11 wireless LAN) and
@@ -5139,7 +5131,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	/*NOTREACHED*/
 }
 
-#ifdef INET6
 static struct block *
 gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int proto, int dir, int type)
@@ -5208,7 +5199,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	    type == Q_NET ? "ip6 net" : "ip6 host");
 	/*NOTREACHED*/
 }
-#endif
 
 static unsigned char
 is_mac48_linktype(const int linktype)
@@ -6450,9 +6440,7 @@ nametoport(compiler_state_t *cstate, const char *name, int ipproto)
 	struct addrinfo hints, *res, *ai;
 	int error;
 	struct sockaddr_in *in4;
-#ifdef INET6
 	struct sockaddr_in6 *in6;
-#endif
 	int port = -1;
 
 	/*
@@ -6526,13 +6514,11 @@ nametoport(compiler_state_t *cstate, const char *name, int ipproto)
 					port = ntohs(in4->sin_port);
 					break;
 				}
-#ifdef INET6
 				if (ai->ai_addr->sa_family == AF_INET6) {
 					in6 = (struct sockaddr_in6 *)ai->ai_addr;
 					port = ntohs(in6->sin6_port);
 					break;
 				}
-#endif
 			}
 		}
 		freeaddrinfo(res);
@@ -6720,11 +6706,9 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	bpf_u_int32 mask, addr;
 	struct addrinfo *res, *res0;
 	struct sockaddr_in *sin4;
-#ifdef INET6
 	int tproto6;
 	struct sockaddr_in6 *sin6;
 	struct in6_addr mask128;
-#endif /*INET6*/
 	struct block *b, *tmp;
 	int port, real_proto;
 	bpf_u_int32 port1, port2;
@@ -6770,39 +6754,30 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			 */
 			bpf_error(cstate, "invalid DECnet address '%s'", name);
 		} else {
-#ifdef INET6
 			memset(&mask128, 0xff, sizeof(mask128));
-#endif
 			res0 = res = pcap_nametoaddrinfo(name);
 			if (res == NULL)
 				bpf_error(cstate, "unknown host '%s'", name);
 			cstate->ai = res;
 			b = tmp = NULL;
 			tproto = proto;
-#ifdef INET6
 			tproto6 = proto;
-#endif
 			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT) {
 				tproto = Q_IP;
-#ifdef INET6
 				tproto6 = Q_IPV6;
-#endif
 			}
 			for (res = res0; res; res = res->ai_next) {
 				switch (res->ai_family) {
 				case AF_INET:
-#ifdef INET6
 					if (tproto == Q_IPV6)
 						continue;
-#endif
 
 					sin4 = (struct sockaddr_in *)
 						res->ai_addr;
 					tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
 						0xffffffff, tproto, dir, q.addr);
 					break;
-#ifdef INET6
 				case AF_INET6:
 					if (tproto6 == Q_IP)
 						continue;
@@ -6812,7 +6787,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 					tmp = gen_host6(cstate, &sin6->sin6_addr,
 						&mask128, tproto6, dir, q.addr);
 					break;
-#endif
 				default:
 					continue;
 				}
@@ -7143,7 +7117,6 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	/*NOTREACHED*/
 }
 
-#ifdef INET6
 struct block *
 gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
     struct qual q)
@@ -7205,7 +7178,6 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		/*NOTREACHED*/
 	}
 }
-#endif /*INET6*/
 
 struct block *
 gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)

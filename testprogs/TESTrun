@@ -3007,7 +3007,6 @@ my @accept_blocks = (
 	{
 		name => 'ether_proto_ip6',
 		DLT => 'EN10MB',
-		skip => skip_config_undef ('INET6'),
 		aliases => ['ether proto \ip6'],
 		unopt => '
 			(000) ldh      [12]
@@ -3587,7 +3586,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_LINUX_SLL
 	{
 		name => 'link_proto_ip6_LINUX_SLL',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'LINUX_SLL',
 		aliases => ['link proto \ip6'], # gen_linux_sll_linktype() default case
 		unopt => '
@@ -3725,7 +3723,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_RAW
 	{
 		name => 'link_proto_ip6_RAW',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -3757,7 +3754,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_IPV4
 	{
 		name => 'link_proto_ip6_IPV4',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'IPV4',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -3769,7 +3765,6 @@ my @accept_blocks = (
 	}, # link_proto_ip6_IPV4
 	{
 		name => 'link_proto_ip6_IPV6',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'IPV6',
 		aliases => ['link proto \ip6'],
 		opt => '
@@ -3802,7 +3797,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_PPP
 	{
 		name => 'link_proto_ip6_PPP',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'PPP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -3937,7 +3931,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_PPP_BSDOS
 	{
 		name => 'link_proto_ip6_PPP_BSDOS',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'PPP_BSDOS',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -3992,8 +3985,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_5LE_NULL',
 		skip => skip_big_endian() ||
-			skip_os_not ('haiku') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('haiku'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4006,8 +3998,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_10LE_NULL',
 		skip => skip_big_endian() ||
-			skip_os_not ('linux') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('linux'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4020,8 +4011,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_10BE_NULL',
 		skip => skip_little_endian() ||
-			skip_os_not ('linux') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('linux'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4034,8 +4024,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_22BE_NULL',
 		skip => skip_little_endian() ||
-			skip_os_not ('hpux') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('hpux'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4048,8 +4037,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_24LE_NULL',
 		skip => skip_big_endian() ||
-			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
-			skip_config_undef ('INET6'),
+			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4062,8 +4050,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_24BE_NULL',
 		skip => skip_little_endian() ||
-			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
-			skip_config_undef ('INET6'),
+			(skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4076,8 +4063,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_26LE_NULL',
 		skip => skip_big_endian() ||
-			skip_os_not ('solaris') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('solaris'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4090,8 +4076,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_26BE_NULL',
 		skip => skip_little_endian() ||
-			skip_os_not ('solaris') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('solaris'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4104,8 +4089,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_28LE_NULL',
 		skip => skip_big_endian() ||
-			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
-			skip_config_undef ('INET6'),
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4118,8 +4102,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_28BE_NULL',
 		skip => skip_little_endian() ||
-			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
-			skip_config_undef ('INET6'),
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4132,8 +4115,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_30LE_NULL',
 		skip => skip_big_endian() ||
-			skip_os_not ('darwin') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('darwin'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4146,8 +4128,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_30BE_NULL',
 		skip => skip_little_endian() ||
-			skip_os_not ('darwin') ||
-			skip_config_undef ('INET6'),
+			skip_os_not ('darwin'),
 		DLT => 'NULL',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4185,8 +4166,7 @@ my @accept_blocks = (
 	{
 		name => 'link_proto_ip6_28LE_ENC',
 		skip => skip_big_endian() ||
-			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
-			skip_config_undef ('INET6'),
+			(skip_os_not ('dragonfly') && skip_os_not ('freebsd')),
 		DLT => 'ENC',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4225,8 +4205,7 @@ my @accept_blocks = (
 	}, # link_proto_ip_2_LOOP
 	{
 		name => 'link_proto_ip6_5_LOOP',
-		skip => skip_os_not ('haiku') ||
-			skip_config_undef ('INET6'),
+		skip => skip_os_not ('haiku'),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4238,8 +4217,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_5_LOOP
 	{
 		name => 'link_proto_ip6_10_LOOP',
-		skip => skip_os_not ('linux') ||
-			skip_config_undef ('INET6'),
+		skip => skip_os_not ('linux'),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4251,8 +4229,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_10_LOOP
 	{
 		name => 'link_proto_ip6_22_LOOP',
-		skip => skip_os_not ('hpux') ||
-			skip_config_undef ('INET6'),
+		skip => skip_os_not ('hpux'),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4264,8 +4241,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_22_LOOP
 	{
 		name => 'link_proto_ip6_24_LOOP',
-		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
-			skip_config_undef ('INET6'),
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4277,8 +4253,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_24_LOOP
 	{
 		name => 'link_proto_ip6_26_LOOP',
-		skip => skip_os_not ('solaris') ||
-			skip_config_undef ('INET6'),
+		skip => skip_os_not ('solaris'),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4290,8 +4265,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_26_LOOP
 	{
 		name => 'link_proto_ip6_28_LOOP',
-		skip => (skip_os_not ('dragonfly') && skip_os_not ('freebsd')) ||
-			skip_config_undef ('INET6'),
+		skip => (skip_os_not ('dragonfly') && skip_os_not ('freebsd')),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4303,8 +4277,7 @@ my @accept_blocks = (
 	}, # link_proto_ip6_28_LOOP
 	{
 		name => 'link_proto_ip6_30_LOOP',
-		skip => skip_os_not ('darwin') ||
-			skip_config_undef ('INET6'),
+		skip => skip_os_not ('darwin'),
 		DLT => 'LOOP',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4328,8 +4301,7 @@ my @accept_blocks = (
 	}, # link_proto_ip_2_PFLOG
 	{
 		name => 'link_proto_ip6_24_PFLOG',
-		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')) ||
-			skip_config_undef ('INET6'),
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
 		DLT => 'PFLOG',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4363,7 +4335,6 @@ my @accept_blocks = (
 	}, # link_proto_stp_ARCNET
 	{
 		name => 'link_proto_ip6_ARCNET',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'ARCNET',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4421,7 +4392,6 @@ my @accept_blocks = (
 	}, # link_proto_atalk_ARCNET
 	{
 		name => 'link_proto_ip6_ARCNET_LINUX',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'ARCNET_LINUX',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4509,7 +4479,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_FRELAY
 	{
 		name => 'link_proto_ip6_FRELAY',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'FRELAY',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -4580,7 +4549,6 @@ my @accept_blocks = (
 	}, # link_proto_ip_IPNET
 	{
 		name => 'link_proto_ip6_IPNET',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'IPNET',
 		aliases => ['link proto \ip6'],
 		unopt => '
@@ -11237,7 +11205,6 @@ my @accept_blocks = (
 
 	{
 		name => 'ip6_host_addr',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 host ::1',
@@ -11293,7 +11260,7 @@ my @accept_blocks = (
 	}, # ip6_host_addr
 	{
 		name => 'ip6_host_name',
-		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 host noeth-noipv4-ipv6.host123.libpcap.test',
@@ -11332,7 +11299,7 @@ my @accept_blocks = (
 	}, # ip6_host_name
 	{
 		name => 'ip6_host_NAME',
-		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		skip => skip_no_hosts_casecmp(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
@@ -11371,7 +11338,6 @@ my @accept_blocks = (
 	}, # ip6_host_NAME
 	{
 		name => 'ip6_src_host_addr',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 src host fe80::1122:33ff:fe44:5566',
@@ -11402,7 +11368,7 @@ my @accept_blocks = (
 	}, # ip6_src_host_addr
 	{
 		name => 'ip6_src_host_name',
-		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 src host noeth-noipv4-ipv6.host123.libpcap.test',
@@ -11430,7 +11396,7 @@ my @accept_blocks = (
 	}, # ip6_src_host_name
 	{
 		name => 'ip6_src_host_NAME',
-		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		skip => skip_no_hosts_casecmp(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 src host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
@@ -11458,7 +11424,6 @@ my @accept_blocks = (
 	}, # ip6_src_host_NAME
 	{
 		name => 'ip6_dst_host_addr',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 dst host fe80::7788:99ff:feaa:bbcc',
@@ -11489,7 +11454,7 @@ my @accept_blocks = (
 	}, # ip6_dst_host_addr
 	{
 		name => 'ip6_dst_host_name',
-		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 dst host noeth-noipv4-ipv6.host123.libpcap.test',
@@ -11517,7 +11482,7 @@ my @accept_blocks = (
 	}, # ip6_dst_host_name
 	{
 		name => 'ip6_dst_host_NAME',
-		skip => skip_config_undef ('INET6') || skip_no_hosts_casecmp(),
+		skip => skip_no_hosts_casecmp(),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
@@ -11545,7 +11510,6 @@ my @accept_blocks = (
 	}, # ip6_dst_host_NAME
 	{
 		name => 'ip6_net',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 net fe80::/10',
@@ -11569,7 +11533,6 @@ my @accept_blocks = (
 	}, # ip6_net
 	{
 		name => 'ip6_src_net',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => [
 			'ip6 src net 2000::/3',
@@ -11588,7 +11551,6 @@ my @accept_blocks = (
 	}, # ip6_src_net
 	{
 		name => 'ip6_dst_net_0',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ::/0'],
 		unopt => '
@@ -11601,7 +11563,6 @@ my @accept_blocks = (
 	}, # ip6_dst_net_0
 	{
 		name => 'ip6_dst_net_8',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff00::/8'],
 		unopt => '
@@ -11617,7 +11578,6 @@ my @accept_blocks = (
 	}, # ip6_dst_net_8
 	{
 		name => 'ip6_dst_net_40',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff11:2233:4400::/40'],
 		unopt => '
@@ -11635,7 +11595,6 @@ my @accept_blocks = (
 	}, # ip6_dst_net_40
 	{
 		name => 'ip6_dst_net_80',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff11:2233:4455:6677:8899::/80'],
 		unopt => '
@@ -11655,7 +11614,6 @@ my @accept_blocks = (
 	}, # ip6_dst_net_80
 	{
 		name => 'ip6_dst_net_120',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		aliases => ['ip6 dst net ff11:2233:4455:6677:8899:aabb:ccdd:ee00/120'],
 		unopt => '
@@ -13712,35 +13670,30 @@ my @apply_blocks = (
 	},
 	{
 		name => 'ip6',
-		skip => skip_config_undef ('INET6'),
 		savefile => 'vrrp.pcap',
 		expr => 'ip6',
 		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 65535, 65535, 0, 0],
 	},
 	{
 		name => 'ip6_src_1',
-		skip => skip_config_undef ('INET6'),
 		savefile => 'vrrp.pcap',
 		expr => 'ip6 src fe80::d6ca:6dff:fe66:cf60',
 		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 0, 0, 0, 0],
 	},
 	{
 		name => 'ip6_src_2',
-		skip => skip_config_undef ('INET6'),
 		savefile => 'pim-packet-assortment.pcap',
 		expr => 'ip6 src 10::1',
 		results => [0, 0, 0, 0, 0, 0, 0, 65535, 65535, 65535],
 	},
 	{
 		name => 'ip6_dst_1',
-		skip => skip_config_undef ('INET6'),
 		savefile => 'vrrp.pcap',
 		expr => 'ip6 dst ff02::12',
 		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 65535, 65535, 0, 0],
 	},
 	{
 		name => 'ip6_dst_2',
-		skip => skip_config_undef ('INET6'),
 		savefile => 'pim-packet-assortment.pcap',
 		expr => 'ip6 dst 10::1',
 		results => [0, 0, 0, 0, 0, 0, 65535, 0, 0, 0],
@@ -14212,21 +14165,19 @@ my @reject_tests = (
 	},
 	{
 		name => 'ip6_host_toolong',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => 'syntax error',
 	},
 	{
 		name => 'ip6_host_ipv4addr',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 host 1.2.3.4',
 		errstr => '\'ip6\' is not a valid qualifier for \'ip host\'',
 	},
 	{
 		name => 'ip6_host_ipv4name',
-		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'RAW',
 		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
 		errstr => "unknown host \'noeth-ipv4-noipv6.host123.libpcap.test' for specified address family",
@@ -14240,13 +14191,6 @@ my @reject_tests = (
 #		expr => 'ip6 host fe80:0:0:0:0:0:0:g',
 #		errstr => 'unknown host',
 #	},
-	{
-		name => 'ip6_host_disabled',
-		skip => skip_config_def1 ('INET6'),
-		DLT => 'RAW',
-		expr => 'ip6 host fe80:0:0:0:0:0:0:0',
-		errstr => 'not supported',
-	},
 	{
 		name => 'ip_net_bits1',
 		DLT => 'RAW',
@@ -14327,28 +14271,18 @@ my @reject_tests = (
 	},
 	{
 		name => 'ip6_net_prefix',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0:0/64',
 		errstr => 'syntax error',
 	},
 	{
 		name => 'ip6_net_masklen',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0/129',
 		errstr => 'mask length must be <= 128',
 	},
 	{
-		name => 'ip6_net_disabled',
-		skip => skip_config_def1 ('INET6'),
-		DLT => 'RAW',
-		expr => 'ip6 net fe80:0:0:0:0:0:0:0/64',
-		errstr => 'not supported',
-	},
-	{
 		name => 'ip6_net_bits',
-		skip => skip_config_undef ('INET6'),
 		DLT => 'RAW',
 		expr => 'net fe80:1234:5678::/32',
 		errstr => 'non-network bits set in',
@@ -14470,16 +14404,14 @@ my @reject_tests = (
 	},
 	{
 		name => 'arp_host_ipv4_ipv6',
-		skip => skip_config_undef ('INET6') ||
-			skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'arp host eth-ipv4-ipv6.host123.libpcap.test',
 		errstr => '\'arp\' is not a valid qualifier for \'ip6 host\'',
 	},
 	{
 		name => 'rarp_host_ipv4_ipv6',
-		skip => skip_config_undef ('INET6') ||
-			skip_no_hosts(),
+		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'rarp host eth-ipv4-ipv6.host123.libpcap.test',
 		errstr => '\'rarp\' is not a valid qualifier for \'ip6 host\'',
@@ -14777,14 +14709,12 @@ my @reject_tests = (
 		errstr => 'illegal link layer address',
 	},
 	{
-		skip => skip_config_undef ('INET6'),
 		name => 'link_host_ipv6addr',
 		DLT => 'RAW',
 		expr => 'link host fe80::',
 		errstr => '\'link\' is not a valid qualifier for \'ip6 host\'',
 	},
 	{
-		skip => skip_config_undef ('INET6'),
 		name => 'link_net_ipv6addr',
 		DLT => 'RAW',
 		expr => 'link net fe80::',
@@ -15709,7 +15639,6 @@ foreach (pquals_without 'host') {
 	};
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
-		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_host_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::",
@@ -15717,7 +15646,6 @@ foreach (pquals_without 'host') {
 	};
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
-		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_net_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::",
@@ -15756,7 +15684,6 @@ foreach (pquals_without 'host') {
 	};
 	# HID6 '/' NUM -> gen_mcode6() -> default
 	push @reject_tests, {
-		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_host_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::/16",
@@ -15764,7 +15691,6 @@ foreach (pquals_without 'host') {
 	};
 	# HID6 '/' NUM -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
-		skip => skip_config_undef ('INET6'),
 		name => "inv_qual_${_}_net_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::/16",
@@ -15789,7 +15715,7 @@ foreach (pquals_without 'host') {
 	};
 	# ID -> gen_scode() -> gen_host6() -> default
 	push @reject_tests, {
-		skip => skip_config_undef ('INET6') || skip_no_hosts(),
+		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv6name",
 		DLT => 'EN10MB',
 		expr => "${_} host noeth-noipv4-ipv6.host123.libpcap.test",
@@ -15885,7 +15811,6 @@ foreach my $pq (pquals_without '') {
 	# HID6 -> gen_mcode6() -> default
 	push @reject_tests, {
 		name => "${pq}_gateway_HID6",
-		skip => skip_config_undef ('INET6'),
 		DLT => 'EN10MB',
 		expr => "$pq gateway fe80::0",
 		errstr => 'invalid qualifier against IPv6 address',
@@ -15893,9 +15818,7 @@ foreach my $pq (pquals_without '') {
 	# HID6
 	push @reject_tests, {
 		name => "${pq}_${_}_HID6",
-		skip => $_ eq 'protochain' ?
-			(skip_config_def1 ('NO_PROTOCHAIN') || skip_config_undef ('INET6')) :
-			skip_config_undef ('INET6'),
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
 		DLT => 'EN10MB',
 		expr => "$pq $_ fe80::0",
 		errstr => "'$_' qualifier applied to IPv6 address",
@@ -15903,7 +15826,6 @@ foreach my $pq (pquals_without '') {
 	# HID6 '/' NUM -> gen_mcode6() -> default
 	push @reject_tests, {
 		name => "${pq}_gateway_HID6_NUM",
-		skip => skip_config_undef ('INET6'),
 		DLT => 'EN10MB',
 		expr => "$pq gateway fe80::0/64",
 		errstr => 'invalid qualifier against IPv6 address',
@@ -15911,9 +15833,7 @@ foreach my $pq (pquals_without '') {
 	# HID6 '/' NUM
 	push @reject_tests, {
 		name => "${pq}_${_}_HID6_NUM",
-		skip => $_ eq 'protochain' ?
-			(skip_config_def1 ('NO_PROTOCHAIN') || skip_config_undef ('INET6')) :
-			skip_config_undef ('INET6'),
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
 		DLT => 'EN10MB',
 		expr => "$pq $_ fe80::0/64",
 		errstr => "'$_' qualifier applied to IPv6 address and prefix length",

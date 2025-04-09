@@ -474,7 +474,6 @@ else()
     set(LIBRARY_NAME pcap)
 endif()
 
-option(INET6 "Enable IPv6" ON)
 if(WIN32)
     option(USE_STATIC_RT "Use static Runtime" ON)
 endif(WIN32)
@@ -1375,10 +1374,6 @@ elseif(SIZEOF_TIME_T EQUAL 8)
   message(STATUS "64-bit time_t")
 endif()
 cmake_pop_check_state()
-
-if(INET6)
-    message(STATUS "Support IPv6")
-endif(INET6)
 
 #
 # Pthreads.

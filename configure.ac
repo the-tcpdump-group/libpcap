@@ -1357,18 +1357,6 @@ AC_CHECK_TYPES(socklen_t,,,
 	#include <sys/socket.h>
     ])
 
-AC_ARG_ENABLE(ipv6,
-AS_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
-    [],
-    [enable_ipv6=yes])
-if test "$enable_ipv6" != "no"; then
-	#
-	# We've already made sure we have getaddrinfo above in
-	# AC_LBL_LIBRARY_NET.
-	#
-	AC_DEFINE(INET6,1,[IPv6])
-fi
-
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AS_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),

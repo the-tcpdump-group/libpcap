@@ -510,7 +510,6 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				}
 	| HID6 '/' NUM		{
 				  CHECK_PTR_VAL($1);
-#ifdef INET6
 				  /* Check whether HID6/NUM is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
@@ -528,15 +527,9 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  }
 				  /* The default case in gen_mcode6() catches Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, $3, $$.q)));
-#else
-				  bpf_set_error(cstate, "IPv6 addresses not supported "
-					"in this configuration");
-				  YYABORT;
-#endif /*INET6*/
 				}
 	| HID6			{
 				  CHECK_PTR_VAL($1);
-#ifdef INET6
 				  /* Check whether HID6 is being used when appropriate */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
@@ -554,11 +547,6 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  }
 				  /* The default case in gen_mcode6() catches Q_GATEWAY. */
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 128, $$.q)));
-#else
-				  bpf_set_error(cstate, "IPv6 addresses not supported "
-					"in this configuration");
-				  YYABORT;
-#endif /*INET6*/
 				}
 	| EID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_ecode(cstate, $1, $$.q = $<blk>0.q))); }
 	| AID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_acode(cstate, $1, $$.q = $<blk>0.q))); }
