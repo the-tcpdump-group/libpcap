@@ -121,8 +121,6 @@ stoulen_ret stoulen(const char *string, size_t stringlen, bpf_u_int32 *val,
 int pcap_get_column(yyscan_t);
 void pcap_set_column(int, yyscan_t);
 
-#ifdef INET6
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -130,8 +128,6 @@ void pcap_set_column(int, yyscan_t);
 #include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
 #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
-
-#endif /*INET6*/
 
 #include <pcap/namedb.h>
 #include "grammar.h"
@@ -392,7 +388,6 @@ ${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
 			yylval->s = sdup(yyextra, (char *)yytext); return HID; }
 {V6}			{
-#ifdef INET6
 			  struct addrinfo hints, *res;
 			  memset(&hints, 0, sizeof(hints));
 			  hints.ai_family = AF_INET6;
@@ -404,10 +399,6 @@ ${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
 				freeaddrinfo(res);
 				yylval->s = sdup(yyextra, (char *)yytext);
 			  }
-#else
-			  bpf_set_error(yyextra, "IPv6 address %s not supported", yytext);
-			  yylval->s = NULL;
-#endif /*INET6*/
 			  return HID6;
 			}
 {B}:+({B}:+)+		{ bpf_set_error(yyextra, "bogus ethernet address %s", yytext); yylval->s = NULL; return EID; }
