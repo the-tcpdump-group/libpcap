@@ -679,13 +679,10 @@ static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, u_int, u_int);
 #endif
 static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
-static struct block *gen_mac48hostop(compiler_state_t *, const u_char *,
-    const int, const u_int, const u_int);
-static struct block *gen_ehostop(compiler_state_t *, const u_char *, int);
-static struct block *gen_fhostop(compiler_state_t *, const u_char *, int);
-static struct block *gen_thostop(compiler_state_t *, const u_char *, int);
 static struct block *gen_wlanhostop(compiler_state_t *, const u_char *, int);
-static struct block *gen_ipfchostop(compiler_state_t *, const u_char *, int);
+static unsigned char is_mac48_linktype(const int);
+static struct block *gen_mac48host(compiler_state_t *, const u_char *,
+    const u_char, const char *);
 static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
@@ -1069,6 +1066,7 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
+#define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -4488,74 +4486,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 }
 #endif
 
-// MAC-48 address matching with the address offsets parametrised.
-static struct block *
-gen_mac48hostop(compiler_state_t *cstate, const u_char *addr, const int dir,
-    const u_int src_off, const u_int dst_off)
-{
-	struct block *b0, *b1;
-
-	switch (dir) {
-	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, src_off, 6, addr);
-
-	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, addr);
-
-	case Q_AND:
-		b0 = gen_mac48hostop(cstate, addr, Q_SRC, src_off, dst_off);
-		b1 = gen_mac48hostop(cstate, addr, Q_DST, src_off, dst_off);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_mac48hostop(cstate, addr, Q_SRC, src_off, dst_off);
-		b1 = gen_mac48hostop(cstate, addr, Q_DST, src_off, dst_off);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-	}
-	abort();
-	/*NOTREACHED*/
-}
-
-static struct block *
-gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
-{
-	return gen_mac48hostop(cstate, eaddr, dir, 6, 0);
-}
-
 /*
- * Like gen_ehostop, but for DLT_FDDI
- */
-static struct block *
-gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
-{
-	return gen_mac48hostop(cstate, eaddr, dir,
-	    6 + 1 + cstate->pcap_fddipad,
-	    0 + 1 + cstate->pcap_fddipad);
-}
-
-/*
- * Like gen_ehostop, but for DLT_IEEE802 (Token Ring)
- */
-static struct block *
-gen_thostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
-{
-	return gen_mac48hostop(cstate, eaddr, dir, 8, 2);
-}
-
-/*
- * Like gen_ehostop, but for DLT_IEEE802_11 (802.11 wireless LAN) and
+ * Like gen_mac48host(), but for DLT_IEEE802_11 (802.11 wireless LAN) and
  * various 802.11 + radio headers.
  */
 static struct block *
@@ -4936,17 +4868,6 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 }
 
 /*
- * Like gen_ehostop, but for RFC 2625 IP-over-Fibre-Channel.
- * (We assume that the addresses are IEEE 48-bit MAC addresses,
- * as the RFC states.)
- */
-static struct block *
-gen_ipfchostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
-{
-	return gen_mac48hostop(cstate, eaddr, dir, 10, 2);
-}
-
-/*
  * This is quite tricky because there may be pad bytes in front of the
  * DECNET header, and then there are two possible data packet formats that
  * carry both src and dst addresses, plus 5 packet types in a format that
@@ -5295,6 +5216,104 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 }
 #endif
 
+static unsigned char
+is_mac48_linktype(const int linktype)
+{
+	switch (linktype) {
+	case DLT_EN10MB:
+	case DLT_FDDI:
+	case DLT_IEEE802:
+	case DLT_IEEE802_11:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IP_OVER_FC:
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_PPI:
+	case DLT_PRISM_HEADER:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+static struct block *
+gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
+    const char *keyword)
+{
+	struct block *b1 = NULL;
+	u_int src_off, dst_off;
+
+	switch (cstate->linktype) {
+	case DLT_EN10MB:
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
+		b1 = gen_prevlinkhdr_check(cstate);
+		src_off = 6;
+		dst_off = 0;
+		break;
+	case DLT_FDDI:
+		src_off = 6 + 1 + cstate->pcap_fddipad;
+		dst_off = 0 + 1 + cstate->pcap_fddipad;
+		break;
+	case DLT_IEEE802:
+		src_off = 8;
+		dst_off = 2;
+		break;
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_PPI:
+		return gen_wlanhostop(cstate, eaddr, dir);
+	case DLT_IP_OVER_FC:
+		/*
+		 * Assume that the addresses are IEEE 48-bit MAC addresses,
+		 * as RFC 2625 states.
+		 */
+		src_off = 10;
+		dst_off = 2;
+		break;
+	case DLT_SUNATM:
+		/*
+		 * This is LLC-multiplexed traffic; if it were
+		 * LANE, cstate->linktype would have been set to
+		 * DLT_EN10MB.
+		 */
+		 /* FALLTHROUGH */
+	default:
+		fail_kw_on_dlt(cstate, keyword);
+	}
+
+	struct block *b0, *tmp;
+
+	switch (dir) {
+	case Q_SRC:
+		b0 = gen_bcmp(cstate, OR_LINKHDR, src_off, 6, eaddr);
+		break;
+	case Q_DST:
+		b0 = gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, eaddr);
+		break;
+	case Q_AND:
+		tmp = gen_bcmp(cstate, OR_LINKHDR, src_off, 6, eaddr);
+		b0 = gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, eaddr);
+		gen_and(tmp, b0);
+		break;
+	case Q_DEFAULT:
+	case Q_OR:
+		tmp = gen_bcmp(cstate, OR_LINKHDR, src_off, 6, eaddr);
+		b0 = gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, eaddr);
+		gen_or(tmp, b0);
+		break;
+	default:
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
+	}
+
+	if (b1 != NULL)
+		gen_and(b1, b0);
+	return b0;
+}
+
 #ifndef INET6
 /*
  * This primitive is non-directional by design, so the grammar does not allow
@@ -5313,42 +5332,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		switch (cstate->linktype) {
-		case DLT_EN10MB:
-		case DLT_NETANALYZER:
-		case DLT_NETANALYZER_TRANSPARENT:
-			b1 = gen_prevlinkhdr_check(cstate);
-			b0 = gen_ehostop(cstate, eaddr, Q_OR);
-			if (b1 != NULL)
-				gen_and(b1, b0);
-			break;
-		case DLT_FDDI:
-			b0 = gen_fhostop(cstate, eaddr, Q_OR);
-			break;
-		case DLT_IEEE802:
-			b0 = gen_thostop(cstate, eaddr, Q_OR);
-			break;
-		case DLT_IEEE802_11:
-		case DLT_PRISM_HEADER:
-		case DLT_IEEE802_11_RADIO_AVS:
-		case DLT_IEEE802_11_RADIO:
-		case DLT_PPI:
-			b0 = gen_wlanhostop(cstate, eaddr, Q_OR);
-			break;
-		case DLT_IP_OVER_FC:
-			b0 = gen_ipfchostop(cstate, eaddr, Q_OR);
-			break;
-		case DLT_SUNATM:
-			/*
-			 * This is LLC-multiplexed traffic; if it were
-			 * LANE, cstate->linktype would have been set to
-			 * DLT_EN10MB.
-			 */
-			 /* FALLTHROUGH */
-		default:
-			bpf_error(cstate,
-			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-		}
+		b0 = gen_mac48host(cstate, eaddr, Q_OR, "gateway");
 		b1 = NULL;
 		for (ai = alist; ai != NULL; ai = ai->ai_next) {
 			/*
@@ -6777,69 +6761,15 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_DEFAULT:
 	case Q_HOST:
 		if (proto == Q_LINK) {
-			switch (cstate->linktype) {
-
-			case DLT_EN10MB:
-			case DLT_NETANALYZER:
-			case DLT_NETANALYZER_TRANSPARENT:
-				eaddrp = pcap_ether_hostton(name);
-				if (eaddrp == NULL)
-					bpf_error(cstate,
-					    "unknown ether host '%s'", name);
-				memcpy(eaddr, eaddrp, sizeof(eaddr));
-				free(eaddrp);
-				tmp = gen_prevlinkhdr_check(cstate);
-				b = gen_ehostop(cstate, eaddr, dir);
-				if (tmp != NULL)
-					gen_and(tmp, b);
-				return b;
-
-			case DLT_FDDI:
-				eaddrp = pcap_ether_hostton(name);
-				if (eaddrp == NULL)
-					bpf_error(cstate,
-					    "unknown FDDI host '%s'", name);
-				memcpy(eaddr, eaddrp, sizeof(eaddr));
-				free(eaddrp);
-				b = gen_fhostop(cstate, eaddr, dir);
-				return b;
-
-			case DLT_IEEE802:
-				eaddrp = pcap_ether_hostton(name);
-				if (eaddrp == NULL)
-					bpf_error(cstate,
-					    "unknown token ring host '%s'", name);
-				memcpy(eaddr, eaddrp, sizeof(eaddr));
-				free(eaddrp);
-				b = gen_thostop(cstate, eaddr, dir);
-				return b;
-
-			case DLT_IEEE802_11:
-			case DLT_PRISM_HEADER:
-			case DLT_IEEE802_11_RADIO_AVS:
-			case DLT_IEEE802_11_RADIO:
-			case DLT_PPI:
-				eaddrp = pcap_ether_hostton(name);
-				if (eaddrp == NULL)
-					bpf_error(cstate,
-					    "unknown 802.11 host '%s'", name);
-				memcpy(eaddr, eaddrp, sizeof(eaddr));
-				free(eaddrp);
-				b = gen_wlanhostop(cstate, eaddr, dir);
-				return b;
-
-			case DLT_IP_OVER_FC:
-				eaddrp = pcap_ether_hostton(name);
-				if (eaddrp == NULL)
-					bpf_error(cstate,
-					    "unknown Fibre Channel host '%s'", name);
-				memcpy(eaddr, eaddrp, sizeof(eaddr));
-				free(eaddrp);
-				b = gen_ipfchostop(cstate, eaddr, dir);
-				return b;
-			}
-
-			bpf_error(cstate, "only ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel supports link-level host name");
+			const char *context = "link host NAME";
+			if (! is_mac48_linktype(cstate->linktype))
+				fail_kw_on_dlt(cstate, context);
+			eaddrp = pcap_ether_hostton(name);
+			if (eaddrp == NULL)
+				bpf_error(cstate, ERRSTR_UNKNOWN_MAC48HOST, name);
+			memcpy(eaddr, eaddrp, sizeof(eaddr));
+			free(eaddrp);
+			return gen_mac48host(cstate, eaddr, q.dir, context);
 		} else if (proto == Q_DECNET) {
 			/*
 			 * A long time ago on Ultrix libpcap supported
@@ -6995,9 +6925,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 	case Q_GATEWAY:
 #ifndef INET6
+		if (! is_mac48_linktype(cstate->linktype))
+			fail_kw_on_dlt(cstate, "gateway");
 		eaddrp = pcap_ether_hostton(name);
 		if (eaddrp == NULL)
-			bpf_error(cstate, "unknown ether host: %s", name);
+			bpf_error(cstate, ERRSTR_UNKNOWN_MAC48HOST, name);
 		memcpy(eaddr, eaddrp, sizeof(eaddr));
 		free(eaddrp);
 
@@ -7290,8 +7222,6 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 struct block *
 gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 {
-	struct block *b, *tmp;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -7300,40 +7230,13 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 		return (NULL);
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
+		const char *context = "link host XX:XX:XX:XX:XX:XX";
+		if (! is_mac48_linktype(cstate->linktype))
+			fail_kw_on_dlt(cstate, context);
 		cstate->e = pcap_ether_aton(s);
 		if (cstate->e == NULL)
 			bpf_error(cstate, "malloc");
-		switch (cstate->linktype) {
-		case DLT_EN10MB:
-		case DLT_NETANALYZER:
-		case DLT_NETANALYZER_TRANSPARENT:
-			tmp = gen_prevlinkhdr_check(cstate);
-			b = gen_ehostop(cstate, cstate->e, (int)q.dir);
-			if (tmp != NULL)
-				gen_and(tmp, b);
-			break;
-		case DLT_FDDI:
-			b = gen_fhostop(cstate, cstate->e, (int)q.dir);
-			break;
-		case DLT_IEEE802:
-			b = gen_thostop(cstate, cstate->e, (int)q.dir);
-			break;
-		case DLT_IEEE802_11:
-		case DLT_PRISM_HEADER:
-		case DLT_IEEE802_11_RADIO_AVS:
-		case DLT_IEEE802_11_RADIO:
-		case DLT_PPI:
-			b = gen_wlanhostop(cstate, cstate->e, (int)q.dir);
-			break;
-		case DLT_IP_OVER_FC:
-			b = gen_ipfchostop(cstate, cstate->e, (int)q.dir);
-			break;
-		default:
-			free(cstate->e);
-			cstate->e = NULL;
-			bpf_error(cstate, "ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-			/*NOTREACHED*/
-		}
+		struct block *b = gen_mac48host(cstate, cstate->e, q.dir, context);
 		free(cstate->e);
 		cstate->e = NULL;
 		return (b);
@@ -8031,28 +7934,8 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET_LINUX:
 			// ARCnet broadcast is [8-bit] destination address 0.
 			return gen_ahostop(cstate, 0, Q_DST);
-		case DLT_EN10MB:
-		case DLT_NETANALYZER:
-		case DLT_NETANALYZER_TRANSPARENT:
-			b1 = gen_prevlinkhdr_check(cstate);
-			b0 = gen_ehostop(cstate, ebroadcast, Q_DST);
-			if (b1 != NULL)
-				gen_and(b1, b0);
-			return b0;
-		case DLT_FDDI:
-			return gen_fhostop(cstate, ebroadcast, Q_DST);
-		case DLT_IEEE802:
-			return gen_thostop(cstate, ebroadcast, Q_DST);
-		case DLT_IEEE802_11:
-		case DLT_PRISM_HEADER:
-		case DLT_IEEE802_11_RADIO_AVS:
-		case DLT_IEEE802_11_RADIO:
-		case DLT_PPI:
-			return gen_wlanhostop(cstate, ebroadcast, Q_DST);
-		case DLT_IP_OVER_FC:
-			return gen_ipfchostop(cstate, ebroadcast, Q_DST);
 		}
-		fail_kw_on_dlt(cstate, "broadcast");
+		return gen_mac48host(cstate, ebroadcast, Q_DST, "broadcast");
 		/*NOTREACHED*/
 
 	case Q_IP:
