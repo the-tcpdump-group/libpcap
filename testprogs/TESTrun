@@ -5779,6 +5779,22 @@ my @accept_blocks = (
 			(006) ret      #0
 			',
 	}, # mpls_ppp_unary
+	{
+		name => 'pppoes_mpls_unary',
+		DLT => 'EN10MB',
+		aliases => ['pppoes and mpls 123'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8864          jt 2	jf 8
+			(002) ldh      [20]
+			(003) jeq      #0x281           jt 4	jf 8
+			(004) ld       [22]
+			(005) and      #0xfffff000
+			(006) jeq      #0x7b000         jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # pppoes_mpls_unary
 
 	{
 		name => 'vxlan_nullary',
@@ -14365,6 +14381,12 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'vlan',
 		errstr => 'no VLAN support',
+	},
+	{
+		name => 'pppoes_and_vlan',
+		DLT => 'EN10MB',
+		expr => 'pppoes and vlan',
+		errstr => 'no VLAN support for',
 	},
 	{
 		name => 'vlan_invalid_id1',
