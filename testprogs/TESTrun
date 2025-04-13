@@ -105,7 +105,7 @@ Options:
   --skipped       print the skipped tests details
 ";
 	return $ret unless $detailed;
-	$ret .="
+	$ret .= "
 Set FILTERTEST_TIMEOUT to 0 to disable the timeout completely or to any other
 value to override the default timeout.  The timeout applies to every test.
 If TIMEOUT_BIN is not set, the timeout applies iff the default \"timeout\"
@@ -121,6 +121,9 @@ Autoconf and CMake, both in-tree and out-of-tree builds.
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
 TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
+
+TESTRUN_SHORT=1 generates a shorter list of tests (not recommended unless the
+host is very slow and time is a factor).
 ";
 	return $ret;
 }
@@ -130,6 +133,7 @@ my $only_one = undef;
 my $only_list = 0;
 my $print_passed = 0;
 my $print_skipped = 0;
+my $only_short = defined $ENV{TESTRUN_SHORT} ? $ENV{TESTRUN_SHORT} : 0;
 if (! GetOptions (
 	'one=s' => \$only_one,
 	'list' => \$only_list,
@@ -14033,12 +14037,6 @@ my @reject_tests = (
 		errstr => 'PPPoE session number 65536 greater than maximum 65535',
 	},
 	{
-		name => 'mtp2_on_mtp3',
-		DLT => 'MTP3',
-		expr => 'fisu',
-		errstr => '\'fisu\' supported only on SS7',
-	},
-	{
 		name => 'mtp2_sio',
 		DLT => 'MTP2',
 		expr => 'sio 256',
@@ -14097,12 +14095,6 @@ my @reject_tests = (
 		DLT => 'SUNATM',
 		expr => 'vci 65536',
 		errstr => 'VCI 65536 greater than maximum 65535',
-	},
-	{
-		name => 'wlan_on_eth',
-		DLT => 'EN10MB',
-		expr => 'type data',
-		errstr => '\'type/subtype\' not supported on Ethernet',
 	},
 	{
 		name => 'wlan_type',
@@ -14187,18 +14179,6 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
 		errstr => "unknown host \'noeth-ipv4-noipv6.host123.libpcap.test' for specified address family",
-	},
-	{
-		name => 'broadcast_not_supported',
-		DLT => 'SLIP',
-		expr => 'broadcast',
-		errstr => '\'broadcast\' not supported on SLIP',
-	},
-	{
-		name => 'multicast_not_supported',
-		DLT => 'SLIP',
-		expr => 'multicast',
-		errstr => '\'multicast\' not supported on SLIP',
 	},
 # This test has been flaky because it depends on an external effect (DNS
 # lookup), which sometimes times out.  Let's disable it until there is a good
@@ -14377,12 +14357,6 @@ my @reject_tests = (
 		errstr => 'illegal port number',
 	},
 	{
-		name => 'vlan_not_supported',
-		DLT => 'RAW',
-		expr => 'vlan',
-		errstr => 'no VLAN support',
-	},
-	{
 		name => 'pppoes_and_vlan',
 		DLT => 'EN10MB',
 		expr => 'pppoes and vlan',
@@ -14401,58 +14375,10 @@ my @reject_tests = (
 		errstr => 'syntax error',
 	},
 	{
-		name => 'mpls_not_supported',
-		DLT => 'RAW',
-		expr => 'mpls',
-		errstr => 'no MPLS support',
-	},
-	{
 		name => 'mpls_invalid_id',
 		DLT => 'EN10MB',
 		expr => 'mpls 1048576',
 		errstr => 'greater than maximum',
-	},
-	{
-		name => 'inbound_not_supported_linux',
-		skip => skip_os_not ('linux'),
-		DLT => 'EN10MB',
-		expr => 'inbound',
-		errstr => 'not a live capture',
-	},
-	{
-		name => 'outbound_not_supported_linux',
-		skip => skip_os_not ('linux'),
-		DLT => 'EN10MB',
-		expr => 'outbound',
-		errstr => 'not a live capture',
-	},
-	{
-		name => 'ifindex_not_supported_linux',
-		skip => skip_os_not ('linux'),
-		DLT => 'LINUX_SLL',
-		expr => 'ifindex 1',
-		errstr => 'not a live capture',
-	},
-	{
-		name => 'inbound_not_supported_other',
-		skip => skip_os ('linux'),
-		DLT => 'EN10MB',
-		expr => 'inbound',
-		errstr => 'not supported',
-	},
-	{
-		name => 'outbound_not_supported_other',
-		skip => skip_os ('linux'),
-		DLT => 'EN10MB',
-		expr => 'outbound',
-		errstr => 'not supported',
-	},
-	{
-		name => 'ifindex_not_supported_other',
-		skip => skip_os ('linux'),
-		DLT => 'EN10MB',
-		expr => 'ifindex 1',
-		errstr => 'not supported',
 	},
 	{
 		name => 'arcnet_address1',
@@ -14745,24 +14671,6 @@ my @reject_tests = (
 		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
 		errstr => 'syntax error',
 	},
-	{
-		name => 'gateway_sunatm',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
-			skip_no_hosts(),
-		DLT => 'SUNATM',
-		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
-		errstr => '\'gateway\' supported only on',
-	},
-	{
-		name => 'gateway_raw',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
-			skip_no_hosts(),
-		DLT => 'RAW',
-		expr => "gateway eth-ipv4-ipv6.host123.libpcap.test",
-		errstr => '\'gateway\' supported only on',
-	},
 	# If "gateway" begins to support IPv6 in future, the reject tests below will
 	# fail and will need to be replaced with accept tests.
 	{
@@ -14891,12 +14799,6 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'link net net-10-20-30-0.libpcap.test',
 		errstr => '\'link\' is not a valid qualifier for \'ip net\'',
-	},
-	{
-		name => 'reason_congestion',
-		DLT => 'RAW',
-		expr => 'reason congestion',
-		errstr => '\'reason\' supported only on PFLOG linktype',
 	},
 	{
 		name => 'reason_invalid_PFLOG',
@@ -15103,6 +15005,510 @@ push @reject_tests, {
 	lsp
 });
 
+# All DLTs pcap_datalink_name_to_val() recognizes, ordered by name.
+my %DLTfeatures = (
+	A429 => {
+	},
+	A653_ICM => {
+	},
+	AOS => {
+	},
+	APPLE_IP_OVER_IEEE1394 => {
+		link_proto => 1, # gen_linktype() default case
+	},
+	ARCNET => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac8 => 1,
+	},
+	ARCNET_LINUX => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac8 => 1,
+	},
+	ATM_CLIP => {
+		link_proto => 1,
+	},
+	ATM_RFC1483 => {
+		link_proto => 1,
+		llc => 1,
+	},
+	ATSC_ALP => {
+	},
+	AUERSWALD_LOG => {
+	},
+	AX25_KISS => {
+	},
+	BACNET_MS_TP => {
+		link_proto => 1,
+	},
+	BLUETOOTH_BREDR_BB => {
+	},
+	BLUETOOTH_HCI_H4 => {
+	},
+	BLUETOOTH_HCI_H4_WITH_PHDR => {
+	},
+	BLUETOOTH_LE_LL => {
+	},
+	BLUETOOTH_LE_LL_WITH_PHDR => {
+	},
+	BLUETOOTH_LINUX_MONITOR => {
+	},
+	CAN20B => {
+	},
+	CAN_SOCKETCAN => {
+	},
+	C_HDLC => {
+		link_proto => 1,
+		mpls => 1,
+	},
+	DBUS => {
+	},
+	DECT => {
+	},
+	DECT_NR => {
+	},
+	DISPLAYPORT_AUX => {
+	},
+	DOCSIS => {
+	},
+	DOCSIS31_XRA31 => {
+	},
+	DSA_TAG_BRCM => {
+	},
+	DSA_TAG_BRCM_PREPEND => {
+	},
+	DSA_TAG_DSA => {
+	},
+	DSA_TAG_EDSA => {
+	},
+	DVB_CI => {
+	},
+	EBHSCR => {
+	},
+	ELEE => {
+	},
+	EN10MB => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		mpls => 1,
+		llc => 1,
+	},
+	ENC => {
+		link_proto => 1,
+	},
+	EPON => {
+	},
+	ERF => {
+		ss7 => 1,
+	},
+	ERF_ETH => {
+	},
+	ERF_POS => {
+	},
+	ETHERNET_MPACKET => {
+	},
+	ETW => {
+	},
+	FC_2 => {
+	},
+	FC_2_WITH_FRAME_DELIMS => {
+	},
+	FDDI => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		llc => 1,
+	},
+	FIRA_UCI => {
+	},
+	FRELAY => {
+		link_proto => 1,
+	},
+	GPF_F => {
+	},
+	GPF_T => {
+	},
+	GPRS_LLC => {
+	},
+	I2C_LINUX => {
+	},
+	IEEE802 => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		llc => 1,
+	},
+	IEEE802_11 => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		llc => 1,
+		wlan => 1,
+	},
+	IEEE802_11_RADIO => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		llc => 1,
+		wlan => 1,
+	},
+	IEEE802_11_RADIO_AVS => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		llc => 1,
+		wlan => 1,
+	},
+	IEEE802_15_4 => {
+	},
+	IEEE802_15_4_LINUX => {
+	},
+	IEEE802_15_4_NOFCS => {
+	},
+	IEEE802_15_4_NONASK_PHY => {
+	},
+	IEEE802_15_4_TAP => {
+	},
+	IEEE802_16_MAC_CPS => {
+	},
+	IEEE802_16_MAC_CPS_RADIO => {
+	},
+	INFINIBAND => {
+	},
+	IPMB_KONTRON => {
+	},
+	IPMI_HPM_2 => {
+	},
+	IPNET => {
+		link_proto => 1,
+		inout => 1,
+	},
+	IPOIB => {
+	},
+	IP_OVER_FC => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+	},
+	IPV4 => {
+		link_proto => 1,
+	},
+	IPV6 => {
+		link_proto => 1,
+	},
+	ISO_14443 => {
+	},
+	JUNIPER_ATM1 => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ATM2 => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ATM_CEMIC => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_CHDLC => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ES => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ETHER => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_FIBRECHANNEL => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_FRELAY => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_GGSN => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ISM => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_MFR => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_MLFR => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_MLPPP => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_MONITOR => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_PIC_PEER => {
+	},
+	JUNIPER_PPP => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_PPPOE => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_PPPOE_ATM => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_SERVICES => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_SRX_E2E => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_ST => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_VP => {
+		link_proto => 1,
+		inout => 1,
+	},
+	JUNIPER_VS => {
+		link_proto => 1,
+		inout => 1,
+	},
+	LINUX_EVDEV => {
+	},
+	LINUX_IRDA => {
+	},
+	LINUX_LAPD => {
+	},
+	LINUX_SLL => {
+		link_proto => 1,
+		inout => 1,
+	},
+	LINUX_SLL2 => {
+		link_proto => 1, # gen_linktype() default case
+		inout => 1,
+		ifindex => 1,
+	},
+	LOOP => {
+		link_proto => 1,
+	},
+	LTALK => {
+		link_proto => 1,
+	},
+	MDB => {
+	},
+	MFR => {
+	},
+	MPEG_2_TS => {
+	},
+	MPLS => {
+	},
+	MTP2 => {
+		ss7 => 1,
+	},
+	MTP2_WITH_PHDR => {
+		ss7 => 1,
+	},
+	MTP3 => {
+	},
+	MUX27010 => {
+	},
+	NETANALYZER => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		mpls => 1,
+	},
+	NETANALYZER_NG => {
+	},
+	NETANALYZER_TRANSPARENT => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		mpls => 1,
+	},
+	NETLINK => {
+	},
+	NFC_LLCP => {
+	},
+	NFLOG => {
+	},
+	NG40 => {
+	},
+	NORDIC_BLE => {
+	},
+	NULL => {
+		link_proto => 1,
+	},
+	OPENFLOW => {
+	},
+	OPENVIZSLA => {
+	},
+	PFLOG => {
+		link_proto => 1,
+		inout => 1,
+		pflog => 1,
+	},
+	PFSYNC => {
+	},
+	PKTAP => {
+	},
+	PPI => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		llc => 1,
+		wlan => 1,
+	},
+	PPP => {
+		link_proto => 1,
+		mpls => 1,
+	},
+	PPP_BSDOS => {
+		link_proto => 1,
+	},
+	PPP_ETHER => {
+		link_proto => 1,
+	},
+	PPP_PPPD => {
+		link_proto => 1,
+		inout => 1,
+	},
+	PPP_SERIAL => {
+		link_proto => 1,
+	},
+	PRISM_HEADER => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		llc => 1,
+		wlan => 1,
+	},
+	PROFIBUS_DL => {
+	},
+	RAIF1 => {
+	},
+	RAW => {
+		link_proto => 1,
+	},
+	RDS => {
+	},
+	RTAC_SERIAL => {
+	},
+	SCCP => {
+	},
+	SCTP => {
+	},
+	SDLC => {
+	},
+	SILABS_DEBUG_CHANNEL => {
+	},
+	SITA => {
+	},
+	SLIP => {
+		link_proto => 1,
+		inout => 1,
+	},
+	SLIP_BSDOS => {
+		link_proto => 1,
+	},
+	STANAG_5066_D_PDU => {
+	},
+	SUNATM => {
+		link_proto => 1,
+		llc => 1,
+		atm => 1,
+	},
+	SYMANTEC_FIREWALL => {
+		link_proto => 1, # gen_linktype() default case
+	},
+	TI_LLN_SNIFFER => {
+	},
+	USB_2_0 => {
+	},
+	USB_2_0_FULL_SPEED => {
+	},
+	USB_2_0_HIGH_SPEED => {
+	},
+	USB_2_0_LOW_SPEED => {
+	},
+	USB_DARWIN => {
+	},
+	USB_FREEBSD => {
+	},
+	USB_LINUX => {
+	},
+	USB_LINUX_MMAPPED => {
+	},
+	USBPCAP => {
+	},
+	VPP_DISPATCH => {
+	},
+	VSOCK => {
+	},
+	WATTSTOPPER_DLM => {
+	},
+	WIHART => {
+	},
+	ZBOSS_NCP => {
+	},
+	ZWAVE_R1_R2 => {
+	},
+	ZWAVE_R3 => {
+	},
+	Z_WAVE_SERIAL => {
+	},
+	ZWAVE_TAP => {
+	},
+);
+
+sub DLT_names {
+	return keys %DLTfeatures;
+}
+
+sub DLT_feature {
+	my $name = shift;
+	my $feature = shift;
+	die if not exists $DLTfeatures{$name};
+	return exists $DLTfeatures{$name}{$feature} && $DLTfeatures{$name}{$feature} == 1;
+}
+
 # "link host IPV4ADDR" and "link net IPV4ADDR" use a different code path with
 # a different error message and are tested above.  "link net NAME" uses yet
 # another different code path with yet another different error message and is
@@ -15296,6 +15702,225 @@ foreach (qw(
 		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
 		errstr => "'${_}' is not a valid qualifier for 'gateway'",
 	};
+}
+
+# Use a separate foreach loop for each feature because different loops skip
+# different DLTs and can terminate early.
+
+# gen_linktype() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'link_proto';
+	push @reject_tests, {
+		name => "link_proto_1_${_}",
+		DLT => $_,
+		expr => 'link proto 1',
+		errstr => 'link-layer type filtering not implemented for',
+	};
+	last if $only_short;
+}
+
+# gen_broadcast() -> case Q_LINK -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'link_broadcast';
+	push @reject_tests, {
+		name => "link_broadcast_${_}",
+		DLT => $_,
+		expr => 'link broadcast',
+		errstr => '\'broadcast\' not supported on',
+	};
+	last if $only_short;
+}
+
+# gen_multicast() -> case Q_LINK -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'link_multicast';
+	push @reject_tests, {
+		name => "link_multicast_${_}",
+		DLT => $_,
+		expr => 'link multicast',
+		errstr => '\'multicast\' not supported on',
+	};
+	last if $only_short;
+}
+
+# gen_vlan() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'vlan';
+	push @reject_tests, {
+		name => "vlan_${_}",
+		DLT => $_,
+		expr => 'vlan',
+		errstr => 'no VLAN support for',
+	};
+	last if $only_short;
+}
+
+# gen_mpls_internal() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'mpls';
+	push @reject_tests, {
+		name => "mpls_${_}",
+		DLT => $_,
+		expr => 'mpls',
+		errstr => 'no MPLS support for',
+	};
+	last if $only_short;
+}
+
+# gen_llc_internal() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'llc';
+	push @reject_tests, {
+		name => "llc_${_}",
+		DLT => $_,
+		expr => 'llc',
+		errstr => '\'llc\' not supported on',
+	};
+	last if $only_short;
+}
+
+foreach (DLT_names) {
+	next if DLT_feature $_, 'wlan';
+	# gen_p80211_type() -> default
+	push @reject_tests, {
+		name => "type_data_${_}",
+		DLT => $_,
+		expr => 'type data',
+		errstr => '\'type/subtype\' not supported on',
+	};
+	# gen_p80211_fcdir() -> default
+	push @reject_tests, {
+		name => "dir_fromds_${_}",
+		DLT => $_,
+		expr => 'dir fromds',
+		errstr => '\'dir\' not supported on',
+	};
+	last if $only_short;
+}
+
+# gen_acode() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'link_host_mac8';
+	push @reject_tests, {
+		name => "link_host_21_${_}",
+		DLT => $_,
+		expr => 'link host $21',
+		errstr => 'aid supported only on ARCnet',
+	};
+	last if $only_short;
+}
+
+# assert_ss7() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'ss7';
+	push @reject_tests, {
+		name => "fisu_${_}",
+		DLT => $_,
+		expr => 'fisu',
+		errstr => '\'fisu\' supported only on SS7',
+	};
+	last if $only_short;
+}
+
+foreach (DLT_names) {
+	next if DLT_feature $_, 'link_host_mac48';
+	# gen_gateway() -> case Q_DEFAULT -> default
+	push @reject_tests, {
+		name => "gateway_name_${_}",
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		errstr => '\'gateway\' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel',
+	};
+	# gen_scode() -> case Q_DEFAULT -> Q_LINK
+	push @reject_tests, {
+		name => "link_host_name_${_}",
+		skip => skip_no_ethers(),
+		DLT => $_,
+		expr => 'link host eth-noipv4-noipv6.host123.libpcap.test',
+		errstr => 'only ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel supports link-level host name',
+	};
+	last if $only_short;
+}
+
+# gen_inbound_outbound() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'inout';
+	push @reject_tests, {
+		name => "inbound_linux_${_}",
+		skip => skip_os_not ('linux'),
+		DLT => $_,
+		expr => 'inbound',
+		errstr => 'not a live capture',
+	};
+	push @reject_tests, {
+		name => "outbound_linux_${_}",
+		skip => skip_os_not ('linux'),
+		DLT => $_,
+		expr => 'outbound',
+		errstr => 'not a live capture',
+	};
+	push @reject_tests, {
+		name => "inbound_other_${_}",
+		skip => skip_os ('linux'),
+		DLT => $_,
+		expr => 'inbound',
+		errstr => 'not supported on',
+	};
+	push @reject_tests, {
+		name => "outbound_other_${_}",
+		skip => skip_os ('linux'),
+		DLT => $_,
+		expr => 'outbound',
+		errstr => 'not supported on',
+	};
+	last if $only_short;
+}
+
+# assert_pflog() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'pflog';
+	push @reject_tests, {
+		name => "reason_congestion_${_}",
+		DLT => $_,
+		expr => 'reason congestion',
+		errstr => '\'reason\' supported only on PFLOG linktype',
+	};
+	last if $only_short;
+}
+
+# assert_atm() -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'atm';
+	push @reject_tests, {
+		name => "vpi_1_${_}",
+		DLT => $_,
+		expr => 'vpi 1',
+		errstr => '\'vpi\' supported only on SUNATM',
+	};
+	last if $only_short;
+}
+
+# gen_ifindex -> default
+foreach (DLT_names) {
+	next if DLT_feature $_, 'ifindex';
+	push @reject_tests, {
+		name => "ifindex_1_${_}",
+		skip => skip_os ('linux'),
+		DLT => $_,
+		expr => 'ifindex 1',
+		errstr => '\'ifindex\' not supported on',
+	};
+	push @reject_tests, {
+		name => "ifindex_2_${_}",
+		skip => skip_os_not ('linux'),
+		DLT => $_,
+		expr => 'ifindex 2',
+		errstr => 'not a live capture',
+	};
+	last if $only_short;
 }
 
 sub accept_test_label {
