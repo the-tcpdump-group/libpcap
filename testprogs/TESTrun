@@ -14017,6 +14017,88 @@ my @apply_blocks = (
 		expr => 'geneve 11',
 		results => [0, 262144, 262144, 0, 262144, 0, 262144, 262144, 0, 262144],
 	},
+	{
+		name => 'ip_protochain_17_deepstack',
+		savefile => 'ipv6_ext_headers.pcap',
+		expr => 'ip protochain 17',
+		results => [0],
+	},
+	{
+		name => 'ip6_protochain_17_deepstack',
+		savefile => 'ipv6_ext_headers.pcap',
+		expr => 'ip6 protochain 17',
+		results => [65535],
+	},
+	{
+		name => 'ip6_protochain_51_tunnel',
+		savefile => 'AH-IPcomp-IPv6.pcap',
+		expr => 'ip6 protochain 51',
+		# AH is the first protocol header.
+		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'ip6_protochain_41_tunnel',
+		savefile => 'AH-IPcomp-IPv6.pcap',
+		expr => 'ip6 protochain 41',
+		# When an IPComp header is present, it precedes the inner
+		# IPv6 header, which no longer matches.
+		results => [65535, 65535, 0, 0, 0, 0, 0, 65535, 0, 0, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'ip6_protochain_108_tunnel',
+		savefile => 'AH-IPcomp-IPv6.pcap',
+		expr => 'ip6 protochain 108',
+		results => [0, 0, 65535, 65535, 65535, 65535, 65535, 0, 65535, 65535, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip6_protochain_6_tunnel',
+		savefile => 'AH-IPcomp-IPv6.pcap',
+		expr => 'ip6 protochain 6',
+		# All TCP packets have the TCP header behind the inner IPv6 header (41).
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip6_protochain_17_mixed',
+		savefile => 'ipv6_ah_modes.pcap',
+		expr => 'ip6 protochain 17',
+		results => [65535, 0],
+	},
+	{
+		name => 'ip6_protochain_41_mixed',
+		savefile => 'ipv6_ah_modes.pcap',
+		expr => 'ip6 protochain 41',
+		results => [0, 65535],
+	},
+	{
+		name => 'ip_protochain_51_tunnel',
+		savefile => 'AH-IPcomp-IPv4.pcap',
+		expr => 'ip protochain 51',
+		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'ip_protochain_4_tunnel',
+		savefile => 'AH-IPcomp-IPv4.pcap',
+		expr => 'ip protochain 4',
+		results => [65535, 65535, 0, 0, 0, 65535, 0, 65535, 65535, 65535],
+	},
+	{
+		name => 'ip_protochain_108_tunnel',
+		savefile => 'AH-IPcomp-IPv4.pcap',
+		expr => 'ip protochain 108',
+		results => [0, 0, 65535, 65535, 65535, 0, 65535, 0, 0, 0],
+	},
+	{
+		name => 'ip_protochain_51_transport',
+		savefile => 'ah-ipip-ping.pcap',
+		expr => 'ip protochain 51',
+		results => [65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'ip_protochain_1_transport',
+		savefile => 'ah-ipip-ping.pcap',
+		expr => 'ip protochain 1',
+		results => [65535, 0, 0, 0],
+	},
 );
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
@@ -14508,6 +14590,20 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 protochain 256',
 		errstr => 'protocol number 256 greater than maximum 255',
+	},
+	{
+		name => 'geneve_and_protochain_4',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => 'geneve and protochain 4',
+		errstr => '\'protochain\' not supported with variable length headers',
+	},
+	{
+		name => 'vxlan_and_protochain_4',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => 'vxlan and protochain 4',
+		errstr => '\'protochain\' not supported with variable length headers',
 	},
 	{
 		name => 'proto_invalid',
@@ -15154,6 +15250,7 @@ my %DLTfeatures = (
 		vlan => 1,
 		llc => 1,
 		wlan => 1,
+		var_off_linkpl => 1,
 	},
 	IEEE802_11_RADIO => {
 		link_proto => 1,
@@ -15163,6 +15260,7 @@ my %DLTfeatures = (
 		vlan => 1,
 		llc => 1,
 		wlan => 1,
+		var_off_linkpl => 1,
 	},
 	IEEE802_11_RADIO_AVS => {
 		link_proto => 1,
@@ -15172,6 +15270,7 @@ my %DLTfeatures = (
 		vlan => 1,
 		llc => 1,
 		wlan => 1,
+		var_off_linkpl => 1,
 	},
 	IEEE802_15_4 => {
 	},
@@ -15393,6 +15492,7 @@ my %DLTfeatures = (
 		link_host_mac48 => 1,
 		llc => 1,
 		wlan => 1,
+		var_off_linkpl => 1,
 	},
 	PPP => {
 		link_proto => 1,
@@ -15419,6 +15519,7 @@ my %DLTfeatures = (
 		vlan => 1,
 		llc => 1,
 		wlan => 1,
+		var_off_linkpl => 1,
 	},
 	PROFIBUS_DL => {
 	},
@@ -15919,6 +16020,19 @@ foreach (DLT_names) {
 		DLT => $_,
 		expr => 'ifindex 2',
 		errstr => 'not a live capture',
+	};
+	last if $only_short;
+}
+
+# the prerequisite in gen_protochain()
+foreach (DLT_names) {
+	next unless DLT_feature $_, 'var_off_linkpl';
+	push @reject_tests, {
+		name => "protochain_4_${_}",
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => $_,
+		expr => 'protochain 4',
+		errstr => '\'protochain\' not supported with variable length headers',
 	};
 	last if $only_short;
 }
