@@ -14643,75 +14643,6 @@ my @reject_tests = (
 		expr => 'proto 1.2.3.4',
 		errstr => '\'proto\' qualifier applied to IPv4 address',
 	},
-	# In the tests below the hostname normally should not matter because the
-	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
-	# use a hostname that does not exist on the Internet, just in case.
-	{
-		name => 'link_host_en10mb',
-		DLT => 'EN10MB',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown ether host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_netanalyzer',
-		DLT => 'NETANALYZER',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown ether host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_netanalyzer_transparent',
-		DLT => 'NETANALYZER_TRANSPARENT',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown ether host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_fddi',
-		DLT => 'FDDI',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown FDDI host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_ieee802',
-		DLT => 'IEEE802',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown token ring host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_802_11',
-		DLT => 'IEEE802_11',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown 802.11 host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_802_11_radio',
-		DLT => 'IEEE802_11_RADIO_AVS',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown 802.11 host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_802_11_radio_avs',
-		DLT => 'IEEE802_11_RADIO_AVS',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown 802.11 host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_prism_header',
-		DLT => 'PRISM_HEADER',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown 802.11 host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_ip_over_fc',
-		DLT => 'IP_OVER_FC',
-		expr => "link host ${nonexistent}",
-		errstr => "unknown Fibre Channel host '${nonexistent}'",
-	},
-	{
-		name => 'link_host_other',
-		DLT => 'ARCNET',
-		expr => "link host ${nonexistent}",
-		errstr => 'supports link-level host name',
-	},
 	{
 		name => 'decnet_host',
 		DLT => 'EN10MB',
@@ -14735,15 +14666,6 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
 		errstr => 'unknown host', # no IPv4 address in /etc/hosts
-	},
-	{
-		name => 'gateway_noeth',
-		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
-			skip_no_hosts(),
-		DLT => 'EN10MB',
-		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => 'unknown ether host', # not in /etc/ethers
 	},
 	{
 		name => 'src_gateway',
@@ -16162,7 +16084,7 @@ foreach (DLTs_without 'ss7') {
 }
 
 foreach (DLTs_without 'link_host_mac48') {
-	# gen_gateway() -> case Q_DEFAULT -> default
+	# gen_scode() -> case Q_GATEWAY
 	push @reject_tests, {
 		name => "gateway_name_${_}",
 		skip => skip_config_def1 ('INET6') ||
@@ -16170,7 +16092,7 @@ foreach (DLTs_without 'link_host_mac48') {
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => '\'gateway\' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel',
+		errstr => '\'gateway\' not supported on',
 	};
 	# gen_scode() -> case Q_DEFAULT -> Q_LINK
 	push @reject_tests, {
@@ -16178,7 +16100,30 @@ foreach (DLTs_without 'link_host_mac48') {
 		skip => skip_no_ethers(),
 		DLT => $_,
 		expr => 'link host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => 'only ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel supports link-level host name',
+		errstr => '\'link host NAME\' not supported on',
+	};
+}
+
+foreach (DLTs_with 'link_host_mac48') {
+	# gen_scode() -> case Q_GATEWAY
+	push @reject_tests, {
+		name => "gateway_nonex_${_}",
+		skip => skip_config_def1 ('INET6') ||
+			skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
+		errstr => "unknown Ethernet-like host 'noeth-ipv4-noipv6.host123.libpcap.test'", # not in /etc/ethers
+	};
+	# In the test below the hostname normally should not matter because the
+	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
+	# use a hostname that does not exist on the Internet, just in case.
+	# gen_scode() -> case Q_HOST -> Q_LINK -> eaddr
+	push @reject_tests, {
+		name => "link_host_nonex_${_}",
+		DLT => $_,
+		expr => "link host ${nonexistent}",
+		errstr => "unknown Ethernet-like host '${nonexistent}'",
 	};
 }
 
