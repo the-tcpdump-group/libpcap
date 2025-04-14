@@ -6207,12 +6207,10 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * A = P[X];
 	 * X = X + (P[X + 1] + 2) * 4;
 	 */
-	/* A = X */
-	s[i - 1]->s.jt = s[i] = new_stmt(cstate, BPF_MISC|BPF_TXA);
-	i++;
 	/* A = P[X + packet head]; */
 	s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
 	s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+	s[i - 1]->s.jt = s[i];
 	i++;
 	/* MEM[reg2] = A */
 	s[i] = new_stmt(cstate, BPF_ST);
