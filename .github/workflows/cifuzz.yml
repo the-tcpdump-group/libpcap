@@ -36,7 +36,6 @@ jobs:
        language: c
        fuzz-seconds: 600
        sanitizer: ${{ matrix.sanitizer }}
-       
    - name: Upload Crash
      uses: actions/upload-artifact@v3
      if: failure() && steps.build.outcome == 'success'
