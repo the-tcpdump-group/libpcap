@@ -1,11 +1,10 @@
 #!/bin/sh -e
 
-# This script runs one build with setup environment variables: CC, CMAKE, IPV6
-# and REMOTE.
+# This script runs one build with the setup environment variables below.
 : "${CC:=gcc}"
 : "${CMAKE:=no}"
-: "${IPV6:=no}"
 : "${REMOTE:=no}"
+: "${PROTOCHAIN:=yes}"
 : "${LIBPCAP_TAINTED:=no}"
 : "${LIBPCAP_CMAKE_TAINTED:=no}"
 : "${MAKE_BIN:=make}"
@@ -105,7 +104,7 @@ esac
 
 if [ "$CMAKE" = no ]; then
     run_after_echo ./autogen.sh
-    run_after_echo ./configure --prefix="$PREFIX" --enable-ipv6="$IPV6" --enable-remote="$REMOTE"
+    run_after_echo ./configure --prefix="$PREFIX" --enable-protochain="$PROTOCHAIN" --enable-remote="$REMOTE"
 else
     # Remove the leftovers from any earlier in-source builds, so this
     # out-of-source build does not break because of that.
@@ -119,7 +118,7 @@ else
     run_after_echo cmake --version
     run_after_echo cmake ${CFLAGS:+-DEXTRA_CFLAGS="$CFLAGS"} \
         ${CMAKE_OPTIONS:+"$CMAKE_OPTIONS"} \
-        -DCMAKE_INSTALL_PREFIX="$PREFIX" -DINET6="$IPV6" -DENABLE_REMOTE="$REMOTE" ..
+        -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_PROTOCHAIN="$PROTOCHAIN" -DENABLE_REMOTE="$REMOTE" ..
 fi
 run_after_echo "$MAKE_BIN" -s clean
 if [ "$CMAKE" = no ]; then

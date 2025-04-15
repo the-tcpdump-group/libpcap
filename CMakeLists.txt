@@ -474,7 +474,6 @@ else()
     set(LIBRARY_NAME pcap)
 endif()
 
-option(INET6 "Enable IPv6" ON)
 if(WIN32)
     option(USE_STATIC_RT "Use static Runtime" ON)
 endif(WIN32)
@@ -487,7 +486,12 @@ endif(WIN32)
 option(ENABLE_PROFILING "Enable code profiling" OFF)
 
 # To pacify those who hate the protochain instruction
-option(NO_PROTOCHAIN "Disable protochain instruction" OFF)
+option(ENABLE_PROTOCHAIN "Enable protochain instruction" ON)
+if(ENABLE_PROTOCHAIN)
+    set(NO_PROTOCHAIN OFF)
+else()
+    set(NO_PROTOCHAIN ON)
+endif()
 
 #
 # Start out with the capture mechanism type unspecified; the user
@@ -1370,10 +1374,6 @@ elseif(SIZEOF_TIME_T EQUAL 8)
   message(STATUS "64-bit time_t")
 endif()
 cmake_pop_check_state()
-
-if(INET6)
-    message(STATUS "Support IPv6")
-endif(INET6)
 
 #
 # Pthreads.

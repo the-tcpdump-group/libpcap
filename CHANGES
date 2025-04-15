@@ -61,6 +61,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "link proto" argument value to be within range.
       Require "(ip|ip6) proto" value to be within range.
       Require "protochain" value to be within range.
+      Always enable the "gateway" primitive.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
@@ -108,6 +109,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       filtertest: Add "-l" flag to use Linux BPF extensions.
       filtertest: Use ntohl() on the netmask to fix the -m option.
       filtertest: Add support for stdin as "-" to the -F option.
+      Rename CMake option to ENABLE_PROTOCHAIN to match Autoconf.
+      Remove the "disable IPv6" build option.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

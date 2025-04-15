@@ -206,9 +206,6 @@
 /* Define to 1 if you have the `PacketGetInfo' function. */
 #cmakedefine HAVE_PACKET_GET_INFO 1
 
-/* IPv6 */
-#cmakedefine INET6 1
-
 /* Define to 1 if netinet/ether.h declares `ether_hostton' */
 #cmakedefine NETINET_ETHER_H_DECLARES_ETHER_HOSTTON 1
 
