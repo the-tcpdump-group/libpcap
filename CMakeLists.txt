@@ -487,7 +487,12 @@ endif(WIN32)
 option(ENABLE_PROFILING "Enable code profiling" OFF)
 
 # To pacify those who hate the protochain instruction
-option(NO_PROTOCHAIN "Disable protochain instruction" OFF)
+option(ENABLE_PROTOCHAIN "Enable protochain instruction" ON)
+if(ENABLE_PROTOCHAIN)
+    set(NO_PROTOCHAIN OFF)
+else()
+    set(NO_PROTOCHAIN ON)
+endif()
 
 #
 # Start out with the capture mechanism type unspecified; the user
