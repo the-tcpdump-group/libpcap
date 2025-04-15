@@ -14015,18 +14015,21 @@ my @apply_blocks = (
 	},
 	{
 		name => 'ip_protochain_17_deepstack',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ext_headers.pcap',
 		expr => 'ip protochain 17',
 		results => [0],
 	},
 	{
 		name => 'ip6_protochain_17_deepstack',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ext_headers.pcap',
 		expr => 'ip6 protochain 17',
 		results => [65535],
 	},
 	{
 		name => 'ip6_protochain_51_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv6.pcap',
 		expr => 'ip6 protochain 51',
 		# AH is the first protocol header.
@@ -14034,6 +14037,7 @@ my @apply_blocks = (
 	},
 	{
 		name => 'ip6_protochain_41_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv6.pcap',
 		expr => 'ip6 protochain 41',
 		# When an IPComp header is present, it precedes the inner
@@ -14042,12 +14046,14 @@ my @apply_blocks = (
 	},
 	{
 		name => 'ip6_protochain_108_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv6.pcap',
 		expr => 'ip6 protochain 108',
 		results => [0, 0, 65535, 65535, 65535, 65535, 65535, 0, 65535, 65535, 0, 0, 0, 0, 0],
 	},
 	{
 		name => 'ip6_protochain_6_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv6.pcap',
 		expr => 'ip6 protochain 6',
 		# All TCP packets have the TCP header behind the inner IPv6 header (41).
@@ -14055,42 +14061,49 @@ my @apply_blocks = (
 	},
 	{
 		name => 'ip6_protochain_17_mixed',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ah_modes.pcap',
 		expr => 'ip6 protochain 17',
 		results => [65535, 0],
 	},
 	{
 		name => 'ip6_protochain_41_mixed',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ah_modes.pcap',
 		expr => 'ip6 protochain 41',
 		results => [0, 65535],
 	},
 	{
 		name => 'ip_protochain_51_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv4.pcap',
 		expr => 'ip protochain 51',
 		results => [65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
 	},
 	{
 		name => 'ip_protochain_4_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv4.pcap',
 		expr => 'ip protochain 4',
 		results => [65535, 65535, 0, 0, 0, 65535, 0, 65535, 65535, 65535],
 	},
 	{
 		name => 'ip_protochain_108_tunnel',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'AH-IPcomp-IPv4.pcap',
 		expr => 'ip protochain 108',
 		results => [0, 0, 65535, 65535, 65535, 0, 65535, 0, 0, 0],
 	},
 	{
 		name => 'ip_protochain_51_transport',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ah-ipip-ping.pcap',
 		expr => 'ip protochain 51',
 		results => [65535, 65535, 65535, 65535],
 	},
 	{
 		name => 'ip_protochain_1_transport',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ah-ipip-ping.pcap',
 		expr => 'ip protochain 1',
 		results => [65535, 0, 0, 0],
