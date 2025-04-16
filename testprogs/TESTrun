@@ -15232,37 +15232,33 @@ my %pqual_features = (
 	},
 );
 
-sub pqual_feature {
-	my $name = shift;
+sub item_with_without {
+	my $hashref = shift;
 	my $feature = shift;
-	die if not exists $pqual_features{$name};
-	return exists $pqual_features{$name}{$feature} && $pqual_features{$name}{$feature} == 1;
+	my $wanted_with = shift;
+	my $actual_with = exists $hashref->{$feature} && $hashref->{$feature} == 1;
+	return $wanted_with == $actual_with;
 }
 
-sub pqual_names {
-	return keys %pqual_features;
+sub list_with_without {
+	my $hohref = shift;
+	my $feature = shift;
+	my $wanted_with = shift;
+	my @ret;
+	foreach (sort keys %$hohref) {
+		next unless item_with_without $hohref->{$_}, $feature, $wanted_with;
+		push @ret, $_;
+		last if $only_short;
+	}
+	return @ret;
 }
 
 sub pquals_with {
-	my $feature = shift;
-	my @ret;
-	foreach (pqual_names) {
-		next unless pqual_feature $_, $feature;
-		push @ret, $_;
-		last if $only_short;
-	}
-	return @ret;
+	return list_with_without \%pqual_features, shift, 1;
 }
 
 sub pquals_without {
-	my $feature = shift;
-	my @ret;
-	foreach (pqual_names) {
-		next if pqual_feature $_, $feature;
-		push @ret, $_;
-		last if $only_short;
-	}
-	return @ret;
+	return list_with_without \%pqual_features, shift, 0;
 }
 
 # All DLTs pcap_datalink_name_to_val() recognizes, ordered by name.
@@ -15763,37 +15759,12 @@ my %DLTfeatures = (
 	},
 );
 
-sub DLT_names {
-	return keys %DLTfeatures;
-}
-
-sub DLT_feature {
-	my $name = shift;
-	my $feature = shift;
-	die if not exists $DLTfeatures{$name};
-	return exists $DLTfeatures{$name}{$feature} && $DLTfeatures{$name}{$feature} == 1;
-}
-
 sub DLTs_with {
-	my $feature = shift;
-	my @ret;
-	foreach (DLT_names) {
-		next unless DLT_feature $_, $feature;
-		push @ret, $_;
-		last if $only_short;
-	}
-	return @ret;
+	return list_with_without \%DLTfeatures, shift, 1;
 }
 
 sub DLTs_without {
-	my $feature = shift;
-	my @ret;
-	foreach (DLT_names) {
-		next if DLT_feature $_, $feature;
-		push @ret, $_;
-		last if $only_short;
-	}
-	return @ret;
+	return list_with_without \%DLTfeatures, shift, 0;
 }
 
 # gen_load_internal() -> default
@@ -15930,7 +15901,7 @@ foreach (pquals_without 'gateway') {
 	};
 }
 
-foreach my $pq (pqual_names) {
+foreach my $pq (pquals_without '') {
 	# HID -> gen_ncode() -> case Q_GATEWAY
 	push @reject_tests, {
 		name => "${pq}_gateway_HID",
