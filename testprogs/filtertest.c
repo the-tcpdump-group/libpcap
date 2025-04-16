@@ -493,28 +493,28 @@ usage(FILE *f)
 	(void)fprintf(f, "       (print the filter program result for each packet)\n");
 	(void)fprintf(f, "  or:  %s -h\n", program_name);
 	(void)fprintf(f, "       (print the detailed help screen)\n");
-	if (f == stdout) {
-		(void)fprintf(f, "\nOptions specific to %s:\n", program_name);
-		(void)fprintf(f, "  <dlt>           a valid DLT name, e.g. 'EN10MB'\n");
-		(void)fprintf(f, "  <expr>          a valid filter expression, e.g. 'tcp port 80'\n");
+	if (f != stdout)
+		exit(EX_USAGE);
+	(void)fprintf(f, "\nOptions specific to %s:\n", program_name);
+	(void)fprintf(f, "  <dlt>           a valid DLT name, e.g. 'EN10MB'\n");
+	(void)fprintf(f, "  <expr>          a valid filter expression, e.g. 'tcp port 80'\n");
 #ifdef __linux__
-		(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
+	(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
 #endif
 #ifdef BDEBUG
-		(void)fprintf(f, "  -g              print Graphviz dot graphs for the optimizer steps\n");
+	(void)fprintf(f, "  -g              print Graphviz dot graphs for the optimizer steps\n");
 #endif
-		(void)fprintf(f, "  -m <netmask>    use this netmask for pcap_compile(), e.g. 255.255.255.0\n");
-		(void)fprintf(f, "\n");
-		(void)fprintf(f, "Options common with tcpdump:\n");
-		(void)fprintf(f, "  -d              change output format (accumulates, one -d is implicit)\n");
-		(void)fprintf(f, "  -O              do not optimize the filter program\n");
-		(void)fprintf(f, "  -F <file>       read the filter expression from the specified file\n");
-		(void)fprintf(f, "                  (\"-\" means stdin and allows at most %u characters)\n", MAX_STDIN);
-		(void)fprintf(f, "  -s <snaplen>    set the snapshot length\n");
-		(void)fprintf(f, "  -r <file>       read the packets from this savefile\n");
-		(void)fprintf(f, "\nIf no filter expression is specified, it defaults to an empty string, which\n");
-		(void)fprintf(f, "accepts all packets.  If the -F option is in use, it replaces any filter\n");
-		(void)fprintf(f, "expression specified as a command-line argument.\n");
-	}
-	exit(f == stdout ? EX_OK : EX_USAGE);
+	(void)fprintf(f, "  -m <netmask>    use this netmask for pcap_compile(), e.g. 255.255.255.0\n");
+	(void)fprintf(f, "\n");
+	(void)fprintf(f, "Options common with tcpdump:\n");
+	(void)fprintf(f, "  -d              change output format (accumulates, one -d is implicit)\n");
+	(void)fprintf(f, "  -O              do not optimize the filter program\n");
+	(void)fprintf(f, "  -F <file>       read the filter expression from the specified file\n");
+	(void)fprintf(f, "                  (\"-\" means stdin and allows at most %u characters)\n", MAX_STDIN);
+	(void)fprintf(f, "  -s <snaplen>    set the snapshot length\n");
+	(void)fprintf(f, "  -r <file>       read the packets from this savefile\n");
+	(void)fprintf(f, "\nIf no filter expression is specified, it defaults to an empty string, which\n");
+	(void)fprintf(f, "accepts all packets.  If the -F option is in use, it replaces any filter\n");
+	(void)fprintf(f, "expression specified as a command-line argument.\n");
+	exit(EX_OK);
 }
