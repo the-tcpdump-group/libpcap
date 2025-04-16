@@ -99,6 +99,25 @@ static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 #define O_BINARY	0
 #endif
 
+static char *cmdbuf;
+static pcap_t *pd;
+static struct bpf_program fcode;
+
+/*
+ * atexit() is broken on Linux/ARMv7 with TinyCC, work around by calling this
+ * function explicitly just before exit() if there is a possibility any of
+ * these resources have been allocated.
+ */
+static void
+cleanup(void)
+{
+	if (cmdbuf)
+		free(cmdbuf);
+	pcap_freecode (&fcode);
+	if (pd)
+		pcap_close(pd);
+}
+
 // Replace "# comment" with spaces.
 static void
 blank_comments(char *cp, const size_t size)
@@ -110,7 +129,7 @@ blank_comments(char *cp, const size_t size)
 	}
 }
 
-static char *
+static void
 read_infile(char *fname)
 {
 	int fd, cc;
@@ -135,6 +154,7 @@ read_infile(char *fname)
 		error(EX_DATAERR, "%s is larger than %d bytes; that's too large", fname,
 		    INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
+	cmdbuf = cp;
 	if (cp == NULL)
 		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
@@ -147,29 +167,24 @@ read_infile(char *fname)
 	close(fd);
 	blank_comments(cp, (size_t)cc);
 	cp[cc] = '\0';
-	return (cp);
 }
 
 // Copy stdin into a size-limited buffer.
-static char *
+static void
 read_stdin(void)
 {
 	char *buf = calloc(1, MAX_STDIN + 1);
+	cmdbuf = buf;
 	if (buf == NULL)
 		error(EX_OSERR, "%s: calloc", __func__);
 	size_t readsize = fread(buf, 1, MAX_STDIN, stdin);
-	if (! feof(stdin)) {
-		free(buf);
+	if (! feof(stdin))
 		error(EX_DATAERR, "received more than %u bytes on stdin", MAX_STDIN);
-	}
-	if (ferror(stdin)) {
-		free(buf);
+	if (ferror(stdin))
 		error(EX_IOERR, "failed reading from stdin after %zd bytes", readsize);
-	}
 	fclose(stdin);
 	// No error, all data is within the buffer and NUL-terminated.
 	blank_comments(buf, readsize);
-	return buf;
 }
 
 /* VARARGS */
@@ -187,6 +202,7 @@ error(const int status, const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
+	cleanup();
 	exit(status);
 	/* NOTREACHED */
 }
@@ -211,7 +227,7 @@ warn(const char *fmt, ...)
 /*
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
-static char *
+static void
 copy_argv(register char **argv)
 {
 	register char **p;
@@ -221,12 +237,13 @@ copy_argv(register char **argv)
 
 	p = argv;
 	if (*p == 0)
-		return 0;
+		return;
 
 	while (*p)
 		len += strlen(*p++) + 1;
 
 	buf = (char *)malloc(len);
+	cmdbuf = buf;
 	if (buf == NULL)
 		error(EX_OSERR, "%s: malloc", __func__);
 
@@ -238,8 +255,6 @@ copy_argv(register char **argv)
 		dst[-1] = ' ';
 	}
 	dst[-1] = '\0';
-
-	return buf;
 }
 
 int
@@ -260,9 +275,6 @@ main(int argc, char **argv)
 	int snaplen = MAXIMUM_SNAPLEN;
 	char *p;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
-	char *cmdbuf;
-	pcap_t *pd;
-	struct bpf_program fcode;
 
 #ifdef _WIN32
 	WSADATA wsaData;
@@ -413,10 +425,12 @@ main(int argc, char **argv)
 #endif
 	}
 
-	if (infile)
-		cmdbuf = strcmp(infile, "-") ? read_infile(infile) : read_stdin();
+	if (! infile)
+		copy_argv(&argv[optind]);
+	else if (strcmp(infile, "-"))
+		read_infile(infile);
 	else
-		cmdbuf = copy_argv(&argv[optind]);
+		read_stdin();
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error(EX_DATAERR, "%s", pcap_geterr(pd));
@@ -449,9 +463,7 @@ main(int argc, char **argv)
 				error(EX_IOERR, "pcap_next_ex() failed: %d", ret);
 		}
 	}
-	free(cmdbuf);
-	pcap_freecode (&fcode);
-	pcap_close(pd);
+	cleanup();
 #ifdef _WIN32
 	WSACleanup();
 #endif
