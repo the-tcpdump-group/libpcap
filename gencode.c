@@ -1146,9 +1146,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	initchunks(&cstate);
 	cstate.no_optimize = 0;
-#ifdef INET6
 	cstate.ai = NULL;
-#endif
 	cstate.e = NULL;
 	cstate.ic.root = NULL;
 	cstate.ic.cur_mark = 0;
@@ -1185,10 +1183,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		goto quit;
 	}
 	if (pcap_parse(scanner, &cstate) != 0) {
-#ifdef INET6
 		if (cstate.ai != NULL)
 			freeaddrinfo(cstate.ai);
-#endif
 		if (cstate.e != NULL)
 			free(cstate.e);
 		rc = PCAP_ERROR;
