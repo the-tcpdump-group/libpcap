@@ -6739,7 +6739,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	int proto = q.proto;
 	int dir = q.dir;
 	int tproto;
-	u_char *eaddr;
+	u_char *eaddrp;
+	u_char eaddr[6];
 	bpf_u_int32 mask, addr;
 	struct addrinfo *res, *res0;
 	struct sockaddr_in *sin4;
@@ -6781,33 +6782,36 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			case DLT_EN10MB:
 			case DLT_NETANALYZER:
 			case DLT_NETANALYZER_TRANSPARENT:
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
+				eaddrp = pcap_ether_hostton(name);
+				if (eaddrp == NULL)
 					bpf_error(cstate,
 					    "unknown ether host '%s'", name);
+				memcpy(eaddr, eaddrp, sizeof(eaddr));
+				free(eaddrp);
 				tmp = gen_prevlinkhdr_check(cstate);
 				b = gen_ehostop(cstate, eaddr, dir);
 				if (tmp != NULL)
 					gen_and(tmp, b);
-				free(eaddr);
 				return b;
 
 			case DLT_FDDI:
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
+				eaddrp = pcap_ether_hostton(name);
+				if (eaddrp == NULL)
 					bpf_error(cstate,
 					    "unknown FDDI host '%s'", name);
+				memcpy(eaddr, eaddrp, sizeof(eaddr));
+				free(eaddrp);
 				b = gen_fhostop(cstate, eaddr, dir);
-				free(eaddr);
 				return b;
 
 			case DLT_IEEE802:
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
+				eaddrp = pcap_ether_hostton(name);
+				if (eaddrp == NULL)
 					bpf_error(cstate,
 					    "unknown token ring host '%s'", name);
+				memcpy(eaddr, eaddrp, sizeof(eaddr));
+				free(eaddrp);
 				b = gen_thostop(cstate, eaddr, dir);
-				free(eaddr);
 				return b;
 
 			case DLT_IEEE802_11:
@@ -6815,21 +6819,23 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			case DLT_IEEE802_11_RADIO_AVS:
 			case DLT_IEEE802_11_RADIO:
 			case DLT_PPI:
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
+				eaddrp = pcap_ether_hostton(name);
+				if (eaddrp == NULL)
 					bpf_error(cstate,
 					    "unknown 802.11 host '%s'", name);
+				memcpy(eaddr, eaddrp, sizeof(eaddr));
+				free(eaddrp);
 				b = gen_wlanhostop(cstate, eaddr, dir);
-				free(eaddr);
 				return b;
 
 			case DLT_IP_OVER_FC:
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
+				eaddrp = pcap_ether_hostton(name);
+				if (eaddrp == NULL)
 					bpf_error(cstate,
 					    "unknown Fibre Channel host '%s'", name);
+				memcpy(eaddr, eaddrp, sizeof(eaddr));
+				free(eaddrp);
 				b = gen_ipfchostop(cstate, eaddr, dir);
-				free(eaddr);
 				return b;
 			}
 
@@ -6989,9 +6995,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 	case Q_GATEWAY:
 #ifndef INET6
-		eaddr = pcap_ether_hostton(name);
-		if (eaddr == NULL)
+		eaddrp = pcap_ether_hostton(name);
+		if (eaddrp == NULL)
 			bpf_error(cstate, "unknown ether host: %s", name);
+		memcpy(eaddr, eaddrp, sizeof(eaddr));
+		free(eaddrp);
 
 		res = pcap_nametoaddrinfo(name);
 		cstate->ai = res;
@@ -7000,7 +7008,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		b = gen_gateway(cstate, eaddr, res, proto);
 		cstate->ai = NULL;
 		freeaddrinfo(res);
-		free(eaddr);
 		if (b == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
 		return b;
