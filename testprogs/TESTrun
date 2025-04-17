@@ -14718,15 +14718,18 @@ my @reject_tests = (
 		expr => "decnet host ${nonexistent}",
 		errstr => "invalid DECnet address '${nonexistent}'",
 	},
+	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
+	# Invokes bpf_error() after pcap_ether_hostton().
 	{
 		name => 'gateway_noipv4_noipv6',
 		skip => skip_config_def1 ('INET6') ||
-			skip_no_ethers() ||
-			skip_no_hosts(),
+			skip_no_ethers(),
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
 		errstr => 'unknown host', # no IPv4 address in /etc/hosts
 	},
+	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
+	# Invokes bpf_error() after pcap_ether_hostton().
 	{
 		name => 'gateway_noipv4_ipv6',
 		skip => skip_config_def1 ('INET6') ||
@@ -15261,6 +15264,44 @@ sub pquals_without {
 	return list_with_without \%pqual_features, shift, 0;
 }
 
+# "dir" qualifiers
+my %dqual_features = (
+	src => {
+	},
+	dst => {
+	},
+	'src or dst' => {
+	},
+	'src and dst' => {
+	},
+	addr1 => {
+		wlan => 1,
+	},
+	addr2 => {
+		wlan => 1,
+	},
+	addr3 => {
+		wlan => 1,
+	},
+	addr4 => {
+		wlan => 1,
+	},
+	ra => {
+		wlan => 1,
+	},
+	ta => {
+		wlan => 1,
+	},
+);
+
+sub dquals_with {
+	return list_with_without \%dqual_features, shift, 1;
+}
+
+sub dquals_without {
+	return list_with_without \%dqual_features, shift, 0;
+}
+
 # All DLTs pcap_datalink_name_to_val() recognizes, ordered by name.
 my %DLTfeatures = (
 	A429 => {
@@ -15767,6 +15808,12 @@ sub DLTs_without {
 	return list_with_without \%DLTfeatures, shift, 0;
 }
 
+sub DLT_feature {
+	my $name = shift;
+	my $feature = shift;
+	return item_with_without $DLTfeatures{$name}, $feature, 1;
+}
+
 # gen_load_internal() -> default
 foreach (pquals_without 'index') {
 	push @reject_tests, {
@@ -15888,7 +15935,8 @@ foreach (pquals_without 'host') {
 	# (IPv6 networks cannot have names)
 }
 
-# ID -> gen_scode() -> gen_gateway() -> default
+# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> default
+# Invokes bpf_error() after pcap_ether_hostton().
 foreach (pquals_without 'gateway') {
 	push @reject_tests, {
 		skip => skip_config_def1 ('INET6') ||
@@ -15898,6 +15946,31 @@ foreach (pquals_without 'gateway') {
 		DLT => 'EN10MB',
 		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
 		errstr => "'${_}' is not a valid qualifier for 'gateway'",
+	};
+}
+
+foreach (DLTs_without 'link_host_mac48') {
+	# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> case Q_DEFAULT -> default
+	# Invokes bpf_error() after pcap_ether_hostton().
+	push @reject_tests, {
+		name => "gateway_ipv4_noipv6_${_}",
+			skip => skip_config_def1 ('INET6') ||
+				skip_no_ethers() ||
+				skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		errstr => '\'gateway\' supported only on',
+	};
+	# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> case Q_DEFAULT -> default
+	# Invokes bpf_error() after pcap_ether_hostton().
+	push @reject_tests, {
+		name => "gateway_ipv4_ipv6_${_}",
+			skip => skip_config_def1 ('INET6') ||
+				skip_no_ethers() ||
+				skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
+		errstr => '\'gateway\' supported only on',
 	};
 }
 
@@ -16110,6 +16183,20 @@ foreach (DLTs_without 'wlan') {
 		expr => 'dir fromds',
 		errstr => '\'dir\' not supported on',
 	};
+}
+
+# gen_scode() -> case Q_HOST -> proto == Q_LINK -> non-WLAN case -> gen_mac48hostop() -> default case
+# Invokes bpf_error() after pcap_ether_hostton().
+foreach my $DLT (DLTs_without '') {
+	next if ! DLT_feature ($DLT, 'link_host_mac48') || DLT_feature ($DLT, 'wlan');
+	push @reject_tests, {
+		name => "link_${_}_name_${DLT}",
+		skip => skip_no_ethers(),
+		DLT => $DLT,
+		expr => "link $_ eth-noipv4-noipv6.host123.libpcap.test",
+		errstr => "'$_' is valid for 802.11 syntax only",
+	} foreach dquals_with 'wlan';
+	last if $only_short;
 }
 
 # gen_acode() -> default
