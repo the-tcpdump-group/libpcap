@@ -624,12 +624,16 @@ if_type_cb(struct nl_msg *msg, void* arg)
 	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
 		genlmsg_attrlen(gnlh, 0), NULL);
 
-	if (!tb_msg[NL80211_ATTR_IFTYPE]) {
-		return NL_SKIP;
+	/* We sent a message asking for info about a single index.
+	 * To be really paranoid, we could check if the index matched
+	 * by examining nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]).
+	 */
+
+	if (tb_msg[NL80211_ATTR_IFTYPE]) {
+		*type = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
 	}
 
-	*type = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
-	return NL_STOP;
+	return NL_SKIP;
 }
 
 static int
@@ -654,11 +658,12 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
-		    0, NL80211_CMD_GET_INTERFACE, 0);
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
+		    NLM_F_ACK, NL80211_CMD_GET_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_auto(state->nl_sock, msg);
 	if (err < 0) {
 		if (err == -NLE_FAILURE) {
 			/*
@@ -669,6 +674,7 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 * about that.)
 			 */
 			nlmsg_free(msg);
+			nl_cb_put(cb);
 			return 0;
 		} else {
 			/*
@@ -679,16 +685,36 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			    "%s: nl_send_auto_complete failed getting interface type: %s",
 			    device, nl_geterror(-err));
 			nlmsg_free(msg);
+			nl_cb_put(cb);
 			return PCAP_ERROR;
 		}
 	}
 
-	nl_recvmsgs(state->nl_sock, cb);
+	err = nl_recvmsgs(state->nl_sock, cb);
+	if (err < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_recvmsgs failed getting interface type: %s",
+		    device, nl_geterror(-err));
+		nlmsg_free(msg);
+		nl_cb_put(cb);
+		return PCAP_ERROR;
+	}
+
+	err = nl_wait_for_ack(state->nl_sock);
+	if (err < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_wait_for_ack failed getting interface type: %s",
+		    device, nl_geterror(-err));
+		nlmsg_free(msg);
+		nl_cb_put(cb);
+		return PCAP_ERROR;
+	}
 
 	/*
 	 * Success.
 	 */
 	nlmsg_free(msg);
+	nl_cb_put(cb);
 
 	return 1;
 
@@ -728,7 +754,7 @@ DIAG_OFF_NARROWING
 DIAG_ON_NARROWING
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_auto(state->nl_sock, msg);
 	if (err < 0) {
 		if (err == -NLE_FAILURE) {
 			/*
