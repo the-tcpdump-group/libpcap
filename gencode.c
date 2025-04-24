@@ -409,13 +409,6 @@ struct _compiler_state {
 	struct addrinfo *ai;
 
 	/*
-	 * Another thing that's allocated is the result of pcap_ether_aton();
-	 * it must be freed with free().  This variable points to any
-	 * address that would need to be freed.
-	 */
-	u_char *e;
-
-	/*
 	 * Various code constructs need to know the layout of the packet.
 	 * These values give the necessary offsets from the beginning
 	 * of the packet data.
@@ -1139,7 +1132,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	initchunks(&cstate);
 	cstate.no_optimize = 0;
 	cstate.ai = NULL;
-	cstate.e = NULL;
 	cstate.ic.root = NULL;
 	cstate.ic.cur_mark = 0;
 	cstate.bpf_pcap = p;
@@ -1177,8 +1169,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (pcap_parse(scanner, &cstate) != 0) {
 		if (cstate.ai != NULL)
 			freeaddrinfo(cstate.ai);
-		if (cstate.e != NULL)
-			free(cstate.e);
 		rc = PCAP_ERROR;
 		goto quit;
 	}
@@ -7189,20 +7179,21 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		const char *context = "link host XX:XX:XX:XX:XX:XX";
-		if (! is_mac48_linktype(cstate->linktype))
-			fail_kw_on_dlt(cstate, context);
-		cstate->e = pcap_ether_aton(s);
-		if (cstate->e == NULL)
-			bpf_error(cstate, "malloc");
-		struct block *b = gen_mac48host(cstate, cstate->e, q.dir, context);
-		free(cstate->e);
-		cstate->e = NULL;
-		return (b);
-	}
-	bpf_error(cstate, "ethernet address used in non-ether expression");
-	/*NOTREACHED*/
+	const char *context = "link host XX:XX:XX:XX:XX:XX";
+
+	if (! ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK))
+		bpf_error(cstate, "ethernet address used in non-ether expression");
+	if (! is_mac48_linktype(cstate->linktype))
+		fail_kw_on_dlt(cstate, context);
+
+	u_char *eaddrp = pcap_ether_aton(s);
+	if (eaddrp == NULL)
+		bpf_error(cstate, "malloc");
+	u_char eaddr[6];
+	memcpy(eaddr, eaddrp, sizeof(eaddr));
+	free(eaddrp);
+
+	return gen_mac48host(cstate, eaddr, q.dir, context);
 }
 
 void
