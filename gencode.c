@@ -672,13 +672,15 @@ static struct block *gen_wlanhostop(compiler_state_t *, const u_char *, int);
 static unsigned char is_mac48_linktype(const int);
 static struct block *gen_mac48host(compiler_state_t *, const u_char *,
     const u_char, const char *);
+static struct block *gen_mac48host_byname(compiler_state_t *, const char *,
+    const u_char, const char *);
 static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, int, int);
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
-static struct block *gen_gateway(compiler_state_t *, const u_char *,
+static struct block *gen_gateway(compiler_state_t *, const char *,
     struct addrinfo *, int);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
@@ -5288,12 +5290,29 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	return b0;
 }
 
+static struct block *
+gen_mac48host_byname(compiler_state_t *cstate, const char *name,
+    const u_char dir, const char *context)
+{
+	if (! is_mac48_linktype(cstate->linktype))
+		fail_kw_on_dlt(cstate, context);
+
+	u_char *eaddrp = pcap_ether_hostton(name);
+	if (eaddrp == NULL)
+		bpf_error(cstate, ERRSTR_UNKNOWN_MAC48HOST, name);
+	u_char eaddr[6];
+	memcpy(eaddr, eaddrp, sizeof(eaddr));
+	free(eaddrp);
+
+	return gen_mac48host(cstate, eaddr, dir, context);
+}
+
 /*
  * This primitive is non-directional by design, so the grammar does not allow
  * to qualify it with a direction.
  */
 static struct block *
-gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
+gen_gateway(compiler_state_t *cstate, const char *name,
     struct addrinfo *alist, int proto)
 {
 	struct block *b0, *b1, *tmp;
@@ -5305,7 +5324,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		b0 = gen_mac48host(cstate, eaddr, Q_OR, "gateway");
+		b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
 		b1 = NULL;
 		for (ai = alist; ai != NULL; ai = ai->ai_next) {
 			/*
@@ -6691,8 +6710,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	int proto = q.proto;
 	int dir = q.dir;
 	int tproto;
-	u_char *eaddrp;
-	u_char eaddr[6];
 	bpf_u_int32 mask, addr;
 	struct addrinfo *res, *res0;
 	struct sockaddr_in *sin4;
@@ -6727,15 +6744,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_DEFAULT:
 	case Q_HOST:
 		if (proto == Q_LINK) {
-			const char *context = "link host NAME";
-			if (! is_mac48_linktype(cstate->linktype))
-				fail_kw_on_dlt(cstate, context);
-			eaddrp = pcap_ether_hostton(name);
-			if (eaddrp == NULL)
-				bpf_error(cstate, ERRSTR_UNKNOWN_MAC48HOST, name);
-			memcpy(eaddr, eaddrp, sizeof(eaddr));
-			free(eaddrp);
-			return gen_mac48host(cstate, eaddr, q.dir, context);
+			return gen_mac48host_byname(cstate, name, q.dir, "link host NAME");
 		} else if (proto == Q_DECNET) {
 			/*
 			 * A long time ago on Ultrix libpcap supported
@@ -6880,19 +6889,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_GATEWAY:
-		if (! is_mac48_linktype(cstate->linktype))
-			fail_kw_on_dlt(cstate, "gateway");
-		eaddrp = pcap_ether_hostton(name);
-		if (eaddrp == NULL)
-			bpf_error(cstate, ERRSTR_UNKNOWN_MAC48HOST, name);
-		memcpy(eaddr, eaddrp, sizeof(eaddr));
-		free(eaddrp);
-
 		res = pcap_nametoaddrinfo(name);
 		cstate->ai = res;
 		if (res == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
-		b = gen_gateway(cstate, eaddr, res, proto);
+		b = gen_gateway(cstate, name, res, proto);
 		cstate->ai = NULL;
 		freeaddrinfo(res);
 		if (b == NULL)
