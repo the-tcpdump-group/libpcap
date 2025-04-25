@@ -127,7 +127,6 @@
 
 #ifndef NTOHL
 #define NTOHL(x) (x) = ntohl(x)
-#define NTOHS(x) (x) = ntohs(x)
 #endif
 
 /*
