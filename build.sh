@@ -42,7 +42,7 @@ clang-3.4/Linux-*)
     # gencode.c:7061:3: warning: will never be executed [-Wunreachable-code]
     LIBPCAP_TAINTED=yes
     ;;
-suncc-5.15/SunOS-5.10)
+suncc-5.14/SunOS-5.10|suncc-5.15/SunOS-5.10)
     # (Sun C 5.15 on Solaris 11.4 does not generate any of these warnings.)
     # "./gencode.c", line 599: warning: function "bpf_error" marked as not
     #   returning, might return
