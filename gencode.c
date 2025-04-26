@@ -7112,10 +7112,8 @@ struct block *
 gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
     struct qual q)
 {
-	struct addrinfo *res;
-	struct in6_addr *addr;
+	struct in6_addr addr;
 	struct in6_addr mask;
-	struct block *b;
 	bpf_u_int32 a[4], m[4]; /* Same as in gen_hostop6(). */
 
 	/*
@@ -7125,13 +7123,12 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	res = pcap_nametoaddrinfo(s);
-	if (!res)
-		bpf_error(cstate, "invalid ip6 address %s", s);
-	cstate->ai = res;
-	if (res->ai_next)
-		bpf_error(cstate, "%s resolved to multiple address", s);
-	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
+	/*
+	 * If everything works correctly, this call never fails: a string that
+	 * is valid for HID6 in the lexer is valid for inet_pton().
+	 */
+	if (1 != inet_pton(AF_INET6, s, &addr))
+		bpf_error(cstate, "'%s' is not a valid IPv6 address", s);
 
 	if (masklen > sizeof(mask.s6_addr) * 8)
 		bpf_error(cstate, "mask length must be <= %zu", sizeof(mask.s6_addr) * 8);
@@ -7142,7 +7139,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 			(0xff << (8 - masklen % 8)) & 0xff;
 	}
 
-	memcpy(a, addr, sizeof(a));
+	memcpy(a, &addr, sizeof(a));
 	memcpy(m, &mask, sizeof(m));
 	if ((a[0] & ~m[0]) || (a[1] & ~m[1])
 	 || (a[2] & ~m[2]) || (a[3] & ~m[3])) {
@@ -7158,10 +7155,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		/* FALLTHROUGH */
 
 	case Q_NET:
-		b = gen_host6(cstate, addr, &mask, q.proto, q.dir, q.addr);
-		cstate->ai = NULL;
-		freeaddrinfo(res);
-		return b;
+		return gen_host6(cstate, &addr, &mask, q.proto, q.dir, q.addr);
 
 	default:
 		// Q_GATEWAY only (see the grammar)
