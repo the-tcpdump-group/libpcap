@@ -935,7 +935,7 @@ pqkw(const unsigned id)
 static const char *
 dqkw(const unsigned id)
 {
-	const char * map[] = {
+	const char * tokens[] = {
 		[Q_SRC] = "src",
 		[Q_DST] = "dst",
 		[Q_OR] = "src or dst",
@@ -947,7 +947,7 @@ dqkw(const unsigned id)
 		[Q_RA] = "ra",
 		[Q_TA] = "ta",
 	};
-	return qual2kw("dir", id, map, sizeof(map) / sizeof(map[0]));
+	return qual2kw("dir", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
 
 // ATM keywords
