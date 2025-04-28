@@ -141,6 +141,7 @@ run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static
 run_after_echo "$PREFIX/bin/pcap-config" --libs --static-pcap-only
 run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static-pcap-only
 
+[ "$REMOTE" = yes ] && print_so_deps "$PREFIX/sbin/rpcapd"
 [ "$REMOTE" = yes ] && run_after_echo "$PREFIX/sbin/rpcapd" -h
 
 # VALGRIND_CMD is meant either to collapse or to expand.
