@@ -3345,6 +3345,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USER13, "Private use 13"),
 	DLT_CHOICE(USER14, "Private use 14"),
 	DLT_CHOICE(USER15, "Private use 15"),
+	DLT_CHOICE(EDK2_MM, "edk2 mm request serialization protocol"),
 	DLT_CHOICE_SENTINEL
 };
 

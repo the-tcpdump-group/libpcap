@@ -1665,6 +1665,15 @@
 #define DLT_DECT_NR		301
 
 /*
+ * Request serialization protocol used by edk2 firmware to communicate between
+ * normal mode and management mode ('MM' for short).
+ *
+ * The qemu uefi variable store implementation reuses the request serialization
+ * protocol for firmware <-> qemu communication.
+ */
+#define DLT_EDK2_MM		302
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1675,6 +1684,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	301	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	302	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
