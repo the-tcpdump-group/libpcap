@@ -1090,13 +1090,18 @@ pcap_activate_npf(pcap_t *p)
 	}
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
-#if defined(HAVE_PACKET_GET_INFO) && defined(NPF_GETINFO_BPFEXT) && defined(SKF_AD_VLAN_TAG_PRESENT)
+/* Npcap SDK 1.15 defined SKF_AD_* constants; later versions prefer NPCAP_AD_* */
+#if !defined(NPCAP_AD_VLAN_TAG_PRESENT) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#define NPCAP_AD_VLAN_TAG_PRESENT SKF_AD_VLAN_TAG_PRESENT
+#endif
+
+#if defined(HAVE_PACKET_GET_INFO) && defined(NPF_GETINFO_BPFEXT) && defined(NPCAP_AD_VLAN_TAG_PRESENT)
 
 	/* Can we generate special code for VLAN checks? */
 	oid_data_arg->Oid = NPF_GETINFO_BPFEXT;
 	oid_data_arg->Length = sizeof(ULONG);
 	if (PacketGetInfo(pw->adapter, oid_data_arg)) {
-		if (*((ULONG *)oid_data_arg->Data) >= SKF_AD_VLAN_TAG_PRESENT) {
+		if (*((ULONG *)oid_data_arg->Data) >= NPCAP_AD_VLAN_TAG_PRESENT) {
 			/* Yes, we can.  Request that we do so. */
 			p->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
