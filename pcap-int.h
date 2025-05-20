@@ -184,6 +184,7 @@ typedef int	(*getnonblock_op_t)(pcap_t *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 typedef void	(*breakloop_op_t)(pcap_t *);
+typedef int	(*set_control_keepalive_op_t)(pcap_t *, int, int, int, int);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
@@ -325,6 +326,7 @@ struct pcap {
 	setnonblock_op_t setnonblock_op;
 	stats_op_t stats_op;
 	breakloop_op_t breakloop_op;
+	set_control_keepalive_op_t set_control_keepalive_op;
 
 	/*
 	 * Routine to use as callback for pcap_next()/pcap_next_ex().
