@@ -100,6 +100,9 @@
 #ifndef ETHERTYPE_IPV6
 #define ETHERTYPE_IPV6		0x86dd
 #endif
+#ifndef ETHERTYPE_SLOW
+#define ETHERTYPE_SLOW		0x8809
+#endif
 #ifndef ETHERTYPE_MPLS
 #define ETHERTYPE_MPLS		0x8847
 #endif
@@ -114,6 +117,9 @@
 #endif
 #ifndef ETHERTYPE_8021AD
 #define ETHERTYPE_8021AD	0x88a8
+#endif
+#ifndef ETHERTYPE_LLDP
+#define ETHERTYPE_LLDP		0x88cc
 #endif
 #ifndef	ETHERTYPE_LOOPBACK
 #define ETHERTYPE_LOOPBACK	0x9000
