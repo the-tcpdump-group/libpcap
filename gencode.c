@@ -640,6 +640,9 @@ static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
+static struct block *gen_vncmp(compiler_state_t *, const enum e_offrel,
+    const u_int, const u_int, const bpf_u_int32, const int, const unsigned,
+    uint8_t, va_list);
 static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
     u_int, u_int);
 static struct slist *gen_load_a(compiler_state_t *, enum e_offrel, u_int,
@@ -713,7 +716,7 @@ static struct block *gen_encap_ll_check(compiler_state_t *cstate);
 static struct block *gen_atmfield_code_internal(compiler_state_t *, int,
     bpf_u_int32, int, int);
 static struct block *gen_atmtype_llc(compiler_state_t *);
-static struct block *gen_msg_abbrev(compiler_state_t *, const uint8_t);
+static struct block *gen_msg_abbrev(compiler_state_t *, const uint8_t, ...);
 static struct block *gen_atm_prototype(compiler_state_t *, const uint8_t);
 static struct block *gen_atm_vpi(compiler_state_t *, const uint8_t);
 static struct block *gen_atm_vci(compiler_state_t *, const uint16_t);
@@ -1392,10 +1395,33 @@ gen_not(struct block *b)
 }
 
 static struct block *
+gen_ncmp_any(compiler_state_t *cstate, const enum e_offrel offrel,
+    const u_int offset, const u_int size, const bpf_u_int32 mask,
+    const int jtype, const unsigned reverse, const uint8_t nval, ...)
+{
+	va_list ap;
+	va_start(ap, nval);
+	struct block *b = gen_vncmp(cstate, offrel, offset, size, mask, jtype, reverse, nval, ap);
+	va_end(ap);
+	return b;
+}
+
+static struct block *
+gen_cmp_any(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
+    u_int size, const uint8_t nval, ...)
+{
+	va_list ap;
+	va_start(ap, nval);
+	struct block *b = gen_vncmp(cstate, offrel, offset, size, 0xffffffff, BPF_JEQ, 0, nval, ap);
+	va_end(ap);
+	return b;
+}
+
+static struct block *
 gen_cmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 v)
 {
-	return gen_ncmp(cstate, offrel, offset, size, 0xffffffff, BPF_JEQ, 0, v);
+	return gen_cmp_any(cstate, offrel, offset, size, 1, v);
 }
 
 static struct block *
@@ -1530,6 +1556,7 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 mask, int jtype, int reverse,
     bpf_u_int32 v)
 {
+//	return gen_ncmp_va(cstate, offrel, offset, size, mask, jtype, reverse, 1, v);
 	struct slist *s, *s2;
 	struct block *b;
 
@@ -1542,6 +1569,40 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	}
 
 	b = gen_jmp(cstate, jtype, v, s);
+	if (reverse)
+		gen_not(b);
+	return b;
+}
+
+// Test whether any of the specified values satisfies the condition.
+static struct block *
+gen_vncmp(compiler_state_t *cstate, const enum e_offrel offrel,
+    const u_int offset, const u_int size, const bpf_u_int32 mask,
+    const int jtype, const unsigned reverse, uint8_t nval, va_list ap)
+{
+	struct slist *s = gen_load_a(cstate, offrel, offset, size);
+
+	if (mask != UINT32_MAX) {
+		struct slist *s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
+		s2->s.k = mask;
+		sappend(s, s2);
+	}
+
+	if (! nval)
+		bpf_error(cstate, "Internal error in %s", __func__);
+
+	struct block *b = NULL;
+	while (nval--) {
+		bpf_u_int32 v = va_arg(ap, bpf_u_int32);
+		if (! b) {
+			b = gen_jmp(cstate, jtype, v, s);
+		} else {
+			struct block *tmp = gen_jmp(cstate, jtype, v, NULL);
+			gen_or(b, tmp);
+			b = tmp;
+		}
+	}
+
 	if (reverse)
 		gen_not(b);
 	return b;
@@ -3725,12 +3786,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 * Also check for Van Jacobson-compressed IP.
 			 * XXX - do this for other forms of PPP?
 			 */
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_IP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_VJC);
-			gen_or(b0, b1);
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_VJNC);
-			gen_or(b1, b0);
-			return b0;
+			return gen_cmp_any(cstate, OR_LINKTYPE, 0, BPF_H, 3,
+			    PPP_IP, PPP_VJC, PPP_VJNC);
 
 		default:
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H,
@@ -3847,20 +3904,12 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 				ARCTYPE_INET6));
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_IP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_IP_OLD);
-			gen_or(b0, b1);
-			return (b1);
+			return gen_cmp_any(cstate, OR_LINKTYPE, 0, BPF_B,
+			    2, ARCTYPE_IP, ARCTYPE_IP_OLD);
 
 		case ETHERTYPE_ARP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_ARP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_ARP_OLD);
-			gen_or(b0, b1);
-			return (b1);
+			return gen_cmp_any(cstate, OR_LINKTYPE, 0, BPF_B,
+			    2, ARCTYPE_ARP, ARCTYPE_ARP_OLD);
 
 		case ETHERTYPE_REVARP:
 			return (gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
@@ -9801,14 +9850,18 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 }
 
 static struct block *
-gen_msg_abbrev(compiler_state_t *cstate, const uint8_t type)
+gen_msg_abbrev(compiler_state_t *cstate, const uint8_t nval, ...)
 {
 	/*
 	 * Q.2931 signalling protocol messages for handling virtual circuits
 	 * establishment and teardown
 	 */
-	return gen_cmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS,
-	    BPF_B, type);
+	va_list ap;
+	va_start(ap, nval);
+	struct block *b = gen_vncmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS,
+	    BPF_B, 0xffffffff, BPF_JEQ, 0, nval, ap);
+	va_end(ap);
+	return b;
 }
 
 struct block *
@@ -9850,31 +9903,13 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 * Get Q.2931 signalling messages for switched
 		 * virtual connection
 		 */
-		b0 = gen_msg_abbrev(cstate, SETUP);
-		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, CONNECT);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, CONNECT_ACK);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, RELEASE);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
-		gen_or(b0, b1);
+		b1 = gen_msg_abbrev(cstate, 6, RELEASE_DONE, RELEASE, CONNECT_ACK, CONNECT, SETUP, CALL_PROCEED);
 		b0 = gen_atmtype_abbrev(cstate, A_SC);
 		gen_and(b0, b1);
 		return b1;
 
 	case A_METACONNECT:
-		b0 = gen_msg_abbrev(cstate, SETUP);
-		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, CONNECT);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, RELEASE);
-		gen_or(b0, b1);
-		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
-		gen_or(b0, b1);
+		b1 = gen_msg_abbrev(cstate, 5, RELEASE_DONE, RELEASE, CONNECT, SETUP, CALL_PROCEED);
 		b0 = gen_atmtype_abbrev(cstate, A_METAC);
 		gen_and(b0, b1);
 		return b1;
