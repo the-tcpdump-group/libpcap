@@ -614,9 +614,6 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	if (ifindex == -1)
 		return PCAP_ERROR;
 
-	struct nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
-	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, if_type_cb, (void*)type);
-
 	msg = nlmsg_alloc();
 	if (!msg) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -653,7 +650,10 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		}
 	}
 
+	struct nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, if_type_cb, (void*)type);
 	nl_recvmsgs(state->nl_sock, cb);
+	nl_cb_put(cb);
 
 	/*
 	 * Success.
@@ -665,6 +665,7 @@ nla_put_failure:
 	    "%s: nl_put failed getting interface type",
 	    device);
 	nlmsg_free(msg);
+	// Do not call nl_cb_put(): nl_cb_alloc() has not been called.
 	return PCAP_ERROR;
 }
 
