@@ -726,7 +726,10 @@ DIAG_ON_NARROWING
 
 	err = nl_send_sync(state->nl_sock, msg); // calls nlmsg_free()
 	if (err < 0) {
-		if (err == -NLE_FAILURE) {
+		switch (err) {
+
+		case -NLE_FAILURE:
+		case -NLE_AGAIN:
 			/*
 			 * Device not available; our caller should just
 			 * keep trying.  (libnl 2.x maps ENFILE to
@@ -735,10 +738,20 @@ DIAG_ON_NARROWING
 			 * about that.)
 			 */
 			return 0;
-		} else {
+
+		case -NLE_OPNOTSUPP:
+			/*
+			 * Device is a mac80211 device but adding it as a
+			 * monitor mode device isn't supported.  Report our
+			 * error.
+			 */
+			return PCAP_ERROR_RFMON_NOTSUP;
+
+		default:
 			/*
 			 * Real failure, not just "that device is not
-			 * available.
+			 * available."  Report a generic error, using the
+			 * error message from libnl.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_send_sync failed adding %s interface: %s",

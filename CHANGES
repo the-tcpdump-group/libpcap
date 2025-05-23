@@ -16,6 +16,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Don't create monitor-mode interface if we're capturing on one.
       Expand the table of DSA tag types to include all current types.
       Fix an error message when deleting a monN interface.
+      Fix returning PCAP_ERROR_RFMON_NOTSUP with libnl.
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
