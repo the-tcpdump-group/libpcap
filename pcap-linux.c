@@ -624,11 +624,13 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_GET_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_auto(state->nl_sock, msg);
+	nlmsg_free(msg);
 	if (err < 0) {
 		if (err == -NLE_FAILURE) {
 			/*
@@ -638,7 +640,6 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 * to that, but there's not much we can do
 			 * about that.)
 			 */
-			nlmsg_free(msg);
 			return 0;
 		} else {
 			/*
@@ -646,9 +647,8 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 * available.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_send_auto_complete failed getting interface type: %s",
+			    "%s: nl_send_auto failed getting interface type: %s",
 			    device, nl_geterror(-err));
-			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
@@ -658,8 +658,6 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
-
 	return 1;
 
 nla_put_failure:
@@ -690,7 +688,8 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_NEW_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 DIAG_OFF_NARROWING
@@ -698,7 +697,7 @@ DIAG_OFF_NARROWING
 DIAG_ON_NARROWING
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_sync(state->nl_sock, msg); // calls nlmsg_free()
 	if (err < 0) {
 		if (err == -NLE_FAILURE) {
 			/*
@@ -708,7 +707,6 @@ DIAG_ON_NARROWING
 			 * to that, but there's not much we can do
 			 * about that.)
 			 */
-			nlmsg_free(msg);
 			return 0;
 		} else {
 			/*
@@ -716,33 +714,8 @@ DIAG_ON_NARROWING
 			 * available.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_send_auto_complete failed adding %s interface: %s",
+			    "%s: nl_send_sync failed adding %s interface: %s",
 			    device, mondevice, nl_geterror(-err));
-			nlmsg_free(msg);
-			return PCAP_ERROR;
-		}
-	}
-	err = nl_wait_for_ack(state->nl_sock);
-	if (err < 0) {
-		if (err == -NLE_FAILURE) {
-			/*
-			 * Device not available; our caller should just
-			 * keep trying.  (libnl 2.x maps ENFILE to
-			 * NLE_FAILURE; it can also map other errors
-			 * to that, but there's not much we can do
-			 * about that.)
-			 */
-			nlmsg_free(msg);
-			return 0;
-		} else {
-			/*
-			 * Real failure, not just "that device is not
-			 * available.
-			 */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_wait_for_ack failed adding %s interface: %s",
-			    device, mondevice, nl_geterror(-err));
-			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
@@ -750,7 +723,6 @@ DIAG_ON_NARROWING
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
 
 	/*
 	 * Try to remember the monitor device.
@@ -794,31 +766,22 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_DEL_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_sync(state->nl_sock, msg); // calls nlmsg_free()
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: nl_send_auto_complete failed deleting %s interface: %s",
+		    "%s: nl_send_sync failed deleting %s interface: %s",
 		    device, mondevice, nl_geterror(-err));
-		nlmsg_free(msg);
-		return PCAP_ERROR;
-	}
-	err = nl_wait_for_ack(state->nl_sock);
-	if (err < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: nl_wait_for_ack failed deleting %s interface: %s",
-		    device, mondevice, nl_geterror(-err));
-		nlmsg_free(msg);
 		return PCAP_ERROR;
 	}
 
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
 	return 1;
 
 nla_put_failure:
