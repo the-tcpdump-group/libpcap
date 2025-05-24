@@ -624,12 +624,17 @@ if_type_cb(struct nl_msg *msg, void* arg)
 	nla_parse(tb_msg, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
 		genlmsg_attrlen(gnlh, 0), NULL);
 
-	if (!tb_msg[NL80211_ATTR_IFTYPE]) {
-		return NL_SKIP;
+	/*
+	 * We sent a message asking for info about a single index.
+	 * To be really paranoid, we could check if the index matched
+	 * by examining nla_get_u32(tb_msg[NL80211_ATTR_IFINDEX]).
+	 */
+
+	if (tb_msg[NL80211_ATTR_IFTYPE]) {
+		*type = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
 	}
 
-	*type = nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE]);
-	return NL_STOP;
+	return NL_SKIP;
 }
 
 static int
@@ -644,9 +649,6 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	if (ifindex == -1)
 		return PCAP_ERROR;
 
-	struct nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
-	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, if_type_cb, (void*)type);
-
 	msg = nlmsg_alloc();
 	if (!msg) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -654,11 +656,13 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_GET_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_auto(state->nl_sock, msg);
+	nlmsg_free(msg);
 	if (err < 0) {
 		if (err == -NLE_FAILURE) {
 			/*
@@ -668,7 +672,6 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 * to that, but there's not much we can do
 			 * about that.)
 			 */
-			nlmsg_free(msg);
 			return 0;
 		} else {
 			/*
@@ -676,20 +679,41 @@ get_if_type(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 * available.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_send_auto_complete failed getting interface type: %s",
+			    "%s: nl_send_auto failed getting interface type: %s",
 			    device, nl_geterror(-err));
-			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
 
-	nl_recvmsgs(state->nl_sock, cb);
+	struct nl_cb *cb = nl_cb_alloc(NL_CB_DEFAULT);
+	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, if_type_cb, (void*)type);
+	err = nl_recvmsgs(state->nl_sock, cb);
+	nl_cb_put(cb);
+
+	if (err < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_recvmsgs failed getting interface type: %s",
+		    device, nl_geterror(-err));
+		return PCAP_ERROR;
+	}
+
+	/*
+	* If this is a mac80211 device not in monitor mode, nl_sock will be
+	* reused for add_mon_if. So we must wait for the ACK here so that
+	* add_mon_if does not receive it instead and incorrectly interpret
+	* the ACK as its NEW_INTERFACE command succeeding, even when it fails.
+	*/
+	err = nl_wait_for_ack(state->nl_sock);
+	if (err < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_wait_for_ack failed getting interface type: %s",
+		    device, nl_geterror(-err));
+		return PCAP_ERROR;
+	}
 
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
-
 	return 1;
 
 nla_put_failure:
@@ -697,6 +721,7 @@ nla_put_failure:
 	    "%s: nl_put failed getting interface type",
 	    device);
 	nlmsg_free(msg);
+	// Do not call nl_cb_put(): nl_cb_alloc() has not been called.
 	return PCAP_ERROR;
 }
 
@@ -720,7 +745,8 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_NEW_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 DIAG_OFF_NARROWING
@@ -728,9 +754,12 @@ DIAG_OFF_NARROWING
 DIAG_ON_NARROWING
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_sync(state->nl_sock, msg); // calls nlmsg_free()
 	if (err < 0) {
-		if (err == -NLE_FAILURE) {
+		switch (err) {
+
+		case -NLE_FAILURE:
+		case -NLE_AGAIN:
 			/*
 			 * Device not available; our caller should just
 			 * keep trying.  (libnl 2.x maps ENFILE to
@@ -738,41 +767,25 @@ DIAG_ON_NARROWING
 			 * to that, but there's not much we can do
 			 * about that.)
 			 */
-			nlmsg_free(msg);
 			return 0;
-		} else {
+
+		case -NLE_OPNOTSUPP:
+			/*
+			 * Device is a mac80211 device but adding it as a
+			 * monitor mode device isn't supported.  Report our
+			 * error.
+			 */
+			return PCAP_ERROR_RFMON_NOTSUP;
+
+		default:
 			/*
 			 * Real failure, not just "that device is not
-			 * available.
+			 * available."  Report a generic error, using the
+			 * error message from libnl.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_send_auto_complete failed adding %s interface: %s",
+			    "%s: nl_send_sync failed adding %s interface: %s",
 			    device, mondevice, nl_geterror(-err));
-			nlmsg_free(msg);
-			return PCAP_ERROR;
-		}
-	}
-	err = nl_wait_for_ack(state->nl_sock);
-	if (err < 0) {
-		if (err == -NLE_FAILURE) {
-			/*
-			 * Device not available; our caller should just
-			 * keep trying.  (libnl 2.x maps ENFILE to
-			 * NLE_FAILURE; it can also map other errors
-			 * to that, but there's not much we can do
-			 * about that.)
-			 */
-			nlmsg_free(msg);
-			return 0;
-		} else {
-			/*
-			 * Real failure, not just "that device is not
-			 * available.
-			 */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_wait_for_ack failed adding %s interface: %s",
-			    device, mondevice, nl_geterror(-err));
-			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
@@ -780,7 +793,6 @@ DIAG_ON_NARROWING
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
 
 	/*
 	 * Try to remember the monitor device.
@@ -824,31 +836,22 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		return PCAP_ERROR;
 	}
 
-	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
+	genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ,
+		    genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_DEL_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_sock, msg);
+	err = nl_send_sync(state->nl_sock, msg); // calls nlmsg_free()
 	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: nl_send_auto_complete failed deleting %s interface: %s",
+		    "%s: nl_send_sync failed deleting %s interface: %s",
 		    device, mondevice, nl_geterror(-err));
-		nlmsg_free(msg);
-		return PCAP_ERROR;
-	}
-	err = nl_wait_for_ack(state->nl_sock);
-	if (err < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: nl_wait_for_ack failed deleting %s interface: %s",
-		    device, mondevice, nl_geterror(-err));
-		nlmsg_free(msg);
 		return PCAP_ERROR;
 	}
 
 	/*
 	 * Success.
 	 */
-	nlmsg_free(msg);
 	return 1;
 
 nla_put_failure:

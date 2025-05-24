@@ -121,6 +121,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Linux:
       Do not use ether_hostton() from musl libc.
       Fix propagation of getprotobyname_r() errors.
+      Fix returning PCAP_ERROR_RFMON_NOTSUP with libnl.
     Haiku:
       Look for ethers(5) in /boot/system/settings/network/.
     DAG:
