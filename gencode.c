@@ -4912,7 +4912,7 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	}
 	/*
 	 * In a DECnet message inside an Ethernet frame the first two bytes
-	 * immediately after EtherType are the [litle-endian] DECnet message
+	 * immediately after EtherType are the [little-endian] DECnet message
 	 * length, which is irrelevant in this context.
 	 *
 	 * "pad = 1" means the third byte equals 0x81, thus it is the PLENGTH
