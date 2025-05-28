@@ -14437,26 +14437,13 @@ my @reject_tests = (
 		expr => 'protochain 17',
 		errstr => 'protochain not supported',
 	},
+	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
 	{
-		name => 'protochain_invalid',
+		name => 'protochain_nosuchprotocol',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'protochain nosuchprotocol',
-		errstr => 'unknown ip proto',
-	},
-	{
-		name => 'ip_protochain_invalid',
-		skip => skip_config_def1 ('NO_PROTOCHAIN'),
-		DLT => 'RAW',
-		expr => 'ip protochain nosuchprotocol',
-		errstr => 'unknown ip proto',
-	},
-	{
-		name => 'ip6_protochain_invalid',
-		skip => skip_config_def1 ('NO_PROTOCHAIN'),
-		DLT => 'RAW',
-		expr => 'ip6 protochain nosuchprotocol',
-		errstr => 'unknown ip proto',
+		errstr => 'unknown \'protochain\' value \'nosuchprotocol\'',
 	},
 	{
 		name => 'protochain_256',
@@ -14493,11 +14480,12 @@ my @reject_tests = (
 		expr => 'vxlan and protochain 4',
 		errstr => '\'protochain\' not supported with variable length headers',
 	},
+	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
 	{
-		name => 'proto_invalid',
+		name => 'proto_nosuchprotocol',
 		DLT => 'RAW',
 		expr => 'proto nosuchprotocol',
-		errstr => 'unknown ip proto',
+		errstr => 'unknown \'proto\' value \'nosuchprotocol\'',
 	},
 	{
 		name => 'proto_256',
@@ -14506,22 +14494,10 @@ my @reject_tests = (
 		errstr => 'protocol number 256 greater than maximum 255',
 	},
 	{
-		name => 'ip_proto_invalid',
-		DLT => 'RAW',
-		expr => 'ip proto nosuchprotocol',
-		errstr => 'unknown ip proto',
-	},
-	{
 		name => 'ip_proto_256',
 		DLT => 'RAW',
 		expr => 'ip proto 256',
 		errstr => 'protocol number 256 greater than maximum 255',
-	},
-	{
-		name => 'ip6_proto_invalid',
-		DLT => 'RAW',
-		expr => 'ip6 proto nosuchprotocol',
-		errstr => 'unknown ip proto',
 	},
 	{
 		name => 'ip6_proto_256',
@@ -15852,16 +15828,7 @@ foreach (pquals_without 'protochain') {
 			'invalid DECnet address \'17\'' :
 			"'${_}' is not a valid qualifier for 'protochain'",
 	};
-	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto()
-	push @reject_tests, {
-		name => "${_}_protochain_tcp",
-		skip => skip_config_def1 ('NO_PROTOCHAIN'),
-		DLT => 'EN10MB',
-		expr => "${_} protochain \\tcp",
-		errstr => $_ eq 'iso' ? 'unknown osi proto \'tcp\'' :
-			$_ eq 'link' ? 'unknown ether proto \'tcp\'' :
-			'unknown protocol: tcp',
-	};
+	last if $only_short;
 }
 
 foreach (pquals_without 'proto') {
@@ -15874,12 +15841,24 @@ foreach (pquals_without 'proto') {
 			'invalid DECnet address \'17\'' :
 			"'${_}' is not a valid qualifier for 'proto'",
 	};
-	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto()
+	last if $only_short;
+}
+
+foreach (pquals_without '') {
+	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
 	push @reject_tests, {
-		name => "${_}_proto_tcp",
+		name => "${_}_proto_nosuchprotocol",
 		DLT => 'EN10MB',
-		expr => "${_} proto \\tcp",
-		errstr => 'unknown protocol: tcp',
+		expr => "${_} proto nosuchprotocol",
+		errstr => "unknown '$_ proto' value 'nosuchprotocol'",
+	};
+	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
+	push @reject_tests, {
+		name => "${_}_protochain_nosuchprotocol",
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => "${_} protochain nosuchprotocol",
+		errstr => "unknown '$_ protochain' value 'nosuchprotocol'",
 	};
 	last if $only_short;
 }

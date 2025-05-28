@@ -699,7 +699,7 @@ static struct block *gen_port6(compiler_state_t *, uint16_t, int, int);
 static struct block *gen_port6_common(compiler_state_t *, int, struct block *);
 static struct block *gen_portrange6(compiler_state_t *, uint16_t, uint16_t,
     int, int);
-static int lookup_proto(compiler_state_t *, const char *, int);
+static int lookup_proto(compiler_state_t *, const char *, const struct qual);
 #if !defined(NO_PROTOCHAIN)
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
 #endif /* !defined(NO_PROTOCHAIN) */
@@ -948,6 +948,22 @@ dqkw(const unsigned id)
 		[Q_TA] = "ta",
 	};
 	return qual2kw("dir", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
+}
+
+// type (in the man page) / address (in the code) qualifier keywords
+static const char *
+tqkw(const unsigned id)
+{
+	const char * tokens[] = {
+		[Q_HOST] = "host",
+		[Q_NET] = "net",
+		[Q_PORT] = "port",
+		[Q_GATEWAY] = "gateway",
+		[Q_PROTO] = "proto",
+		[Q_PROTOCHAIN] = "protochain",
+		[Q_PORTRANGE] = "portrange",
+	};
+	return qual2kw("type", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
 
 // ATM keywords
@@ -5912,28 +5928,37 @@ gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 }
 
 static int
-lookup_proto(compiler_state_t *cstate, const char *name, int proto)
+lookup_proto(compiler_state_t *cstate, const char *name, const struct qual q)
 {
-	register int v;
+	/*
+	 * Do not check here whether q.proto is valid (e.g. in "udp proto abc"
+	 * fail the "abc", but not the "udp proto").  Likewise, do not check
+	 * here whether the combination of q.proto and q.addr is valid (e.g.
+	 * in "(link|iso|isis) protochain abc" fail the "abc", but not the
+	 * "(link|iso|isis) protochain").
+	 *
+	 * On the one hand, this avoids a layering violation: gen_proto() and
+	 * gen_protochain() implement the semantic checks.  On the other hand,
+	 * the protocol name lookup error arguably is a problem smaller than
+	 * the semantic error, hence the latter ought to be the reported cause
+	 * of failure in both cases.  In future this potentially could be made
+	 * more consistent by attempting the lookup after the semantic checks.
+	 */
 
-	switch (proto) {
+	int v = PROTO_UNDEF;
+	switch (q.proto) {
 
 	case Q_DEFAULT:
 	case Q_IP:
 	case Q_IPV6:
 		v = pcap_nametoproto(name);
-		if (v == PROTO_UNDEF)
-			bpf_error(cstate, "unknown ip proto '%s'", name);
 		break;
 
 	case Q_LINK:
 		/* XXX should look up h/w protocol type based on cstate->linktype */
 		v = pcap_nametoeproto(name);
-		if (v == PROTO_UNDEF) {
+		if (v == PROTO_UNDEF)
 			v = pcap_nametollc(name);
-			if (v == PROTO_UNDEF)
-				bpf_error(cstate, "unknown ether proto '%s'", name);
-		}
 		break;
 
 	case Q_ISO:
@@ -5943,15 +5968,19 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 			v = ISO10589_ISIS;
 		else if (strcmp(name, "clnp") == 0)
 			v = ISO8473_CLNP;
-		else
-			bpf_error(cstate, "unknown osi proto '%s'", name);
 		break;
 
-	default:
-		v = PROTO_UNDEF;
-		break;
+	// "isis proto" is a valid syntax, but it takes only numeric IDs.
 	}
-	return v;
+	// In theory, the only possible negative value of v is PROTO_UNDEF.
+	if (v >= 0)
+		return v;
+
+	if (q.proto == Q_DEFAULT)
+		bpf_error(cstate, "unknown '%s' value '%s'",
+		    tqkw(q.addr), name);
+	bpf_error(cstate, "unknown '%s %s' value '%s'",
+	    pqkw(q.proto), tqkw(q.addr), name);
 }
 
 #if !defined(NO_PROTOCHAIN)
@@ -6901,19 +6930,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_PROTO:
-		real_proto = lookup_proto(cstate, name, proto);
-		if (real_proto >= 0)
-			return gen_proto(cstate, real_proto, proto);
-		else
-			bpf_error(cstate, "unknown protocol: %s", name);
+		return gen_proto(cstate, lookup_proto(cstate, name, q), proto);
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
-		real_proto = lookup_proto(cstate, name, proto);
-		if (real_proto >= 0)
-			return gen_protochain(cstate, real_proto, proto);
-		else
-			bpf_error(cstate, "unknown protocol: %s", name);
+		return gen_protochain(cstate, lookup_proto(cstate, name, q), proto);
 #endif /* !defined(NO_PROTOCHAIN) */
 
 	case Q_UNDEF:
