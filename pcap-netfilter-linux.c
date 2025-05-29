@@ -92,12 +92,6 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	 * Has "pcap_breakloop()" been called?
 	 */
 	if (handle->break_loop) {
-		/*
-		 * Yes - clear the flag that indicates that it
-		 * has, and return PCAP_ERROR_BREAK to indicate
-		 * that we were told to break out of the loop.
-		 */
-		handle->break_loop = 0;
 		return PCAP_ERROR_BREAK;
 	}
 	cc = handle->cc;
@@ -116,7 +110,6 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		do {
 			read_ret = recv(handle->fd, handle->buffer, handle->bufsize, 0);
 			if (handle->break_loop) {
-				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			}
 			if (read_ret == -1 && errno == ENOBUFS)
@@ -165,7 +158,6 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			handle->bp = bp;
 			handle->cc = (u_int)(ep - bp);
 			if (count == 0) {
-				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			} else
 				return count;
