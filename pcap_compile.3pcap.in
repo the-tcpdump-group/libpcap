@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_COMPILE 3PCAP "31 January 2025"
+.TH PCAP_COMPILE 3PCAP "29 May 2025"
 .SH NAME
 pcap_compile \- compile a filter expression
 .SH SYNOPSIS
@@ -50,13 +50,15 @@ specifies the IPv4 netmask (in host byte order) of the network on which
 packets are being
 captured; it is used only when checking for IPv4 broadcast addresses in
 the filter program.  If the netmask of the network on which packets are
-being captured isn't known to the program, or if packets are being
-captured on the Linux "any" pseudo-interface that can capture on more
-than one network, a value of
+being captured isn't known to the program, or if the network interface
+does not have exactly one IPv4 netmask, or if packets are being
+captured on the Linux "any" pseudo-interface, which can capture on more
+than one network interface, a value of
 .B PCAP_NETMASK_UNKNOWN
-can be supplied; tests
-for IPv4 broadcast addresses will fail to compile, but all other tests in
-the filter program will be OK.
+can be supplied; in this case an attempt to compile a filter expression
+that contains the
+.B "ip broadcast"
+primitive will fail.
 .PP
 On Linux, if the
 .B pcap_t
