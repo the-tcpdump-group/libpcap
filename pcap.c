@@ -3324,6 +3324,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(FIRA_UCI, "Ultra-wideband controller interface protocol"),
 	DLT_CHOICE(MDB, "Multi-Drop Bus"),
 	DLT_CHOICE(DECT_NR, "DECT New Radio"),
+	DLT_CHOICE(OASIS, "OASIS Send/Receive"),
 	DLT_CHOICE_SENTINEL
 };
 

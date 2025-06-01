@@ -1300,7 +1300,16 @@
  */
 #define LINKTYPE_DECT_NR	301
 
-#define LINKTYPE_HIGH_MATCHING_MAX	301		/* highest value in the "matching" range */
+/*
+ * OASIS Send / Receive Protocol
+ *
+ * https://cpm80.com/oasis-send-recv-protocol.html
+ *
+ * Requested by Howard M. Harte <hharte@magicandroidapps.com>.
+ */
+#define LINKTYPE_OASIS		302
+
+#define LINKTYPE_HIGH_MATCHING_MAX	302		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
