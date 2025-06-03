@@ -8435,9 +8435,19 @@ my @accept_blocks = (
 		opt => '
 			(000) ld       #0x0
 			(001) ldb      [16]
-			(002) jge      #0xe0            jt 3	jf 4
-			(003) ret      #1000
-			(004) ret      #0
+			(002) and      #0xf0
+			(003) jeq      #0xe0            jt 4	jf 5
+			(004) ret      #1000
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) jeq      #0x0             jt 2	jf 6
+			(002) ldb      [16]
+			(003) and      #0xf0
+			(004) jeq      #0xe0            jt 5	jf 6
+			(005) ret      #1000
+			(006) ret      #0
 			',
 	}, # ip_multicast
 	{

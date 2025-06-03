@@ -62,6 +62,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "(ip|ip6) proto" value to be within range.
       Require "protochain" value to be within range.
       Always enable the "gateway" primitive.
+      Fix IPv4 multicast filtering to only include 224.0.0.0/4.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
