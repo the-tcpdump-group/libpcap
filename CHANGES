@@ -16,6 +16,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make the chunk allocator's alignment more general and
         platform-independent.
       IEEE 802.11: Fix three undefined behaviors in grammar.y.
+      Fix IPv4 multicast filtering to only include 224.0.0.0/4.
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.

@@ -8578,7 +8578,12 @@ gen_multicast(compiler_state_t *cstate, int proto)
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-		b1 = gen_cmp_ge(cstate, OR_LINKPL, 16, BPF_B, 224);
+
+		/*
+		 * Compare address with 224.0.0.0/4
+		 */
+		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_B, 0xe0, 0xf0);
+
 		gen_and(b0, b1);
 		return b1;
 
