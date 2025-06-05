@@ -13557,6 +13557,61 @@ my @apply_blocks = (
 		expr => 'link host not $c0',
 		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 65535],
 	},
+	# This primitive is not specific to ARCnet protocol ID, so the
+	# difference between RFC 1051 and RFC 1201 is irrelevant.
+	{
+		name => 'arcnet_broadcast',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'broadcast',
+		results => [65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	# For RFC 1051 encoding the current implementation is able to tell ARP
+	# and IPv4 from other protocols, but uses incorrect offsets for the
+	# protocol headers (bug 1516).  This is why "(arp|ip)" work correctly,
+	# but "(arp|ip) (src|dst) (host|net)" do not.  The latter will likely
+	# not be fixed, so do not test it.
+	# cases.
+	{
+		name => 'rfc1051_arp',
+		savefile => 'arcnet-rfc1051-arp-icmp-http.pcap',
+		expr => 'arp',
+		results => [65535, 65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1051_ip',
+		savefile => 'arcnet-rfc1051-arp-icmp-http.pcap',
+		expr => 'ip',
+		results => [0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	# For RFC 1201 encoding the current implementation works correctly for
+	# IPv4, but ARP header parsing is incorrect (bug 1515).  The latter
+	# may be fixed later, so test it such that if somebody fixes the bug
+	# later, the test case will fail and make it obvious that the fixed
+	# code needs a working test.
+	{
+		name => 'rfc1201_arp',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'arp',
+		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1201_arp_src_host',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'arp src host 10.80.131.1',
+		results => [0, 65535, 0, 0, 0, 0, 65535, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1201_ip',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'ip',
+		results => [0, 0, 65535, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'rfc1201_tcp_dst_port',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp dst port 80',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 65535],
+	},
 	{
 		name => 'ip_broadcast',
 		savefile => 'dhcp-rfc3004.pcap',
