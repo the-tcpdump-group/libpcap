@@ -645,10 +645,9 @@ pcapint_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * return the number of packets we've processed so far.
 		 */
 		if (p->break_loop) {
-			if (n == 0) {
-				p->break_loop = 0;
-				return (-2);
-			} else
+			if (n == 0)
+				return (PCAP_ERROR_BREAK);
+			else
 				return (n);
 		}
 
