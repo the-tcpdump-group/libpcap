@@ -1300,7 +1300,16 @@
  */
 #define LINKTYPE_DECT_NR	301
 
-#define LINKTYPE_HIGH_MATCHING_MAX	301		/* highest value in the "matching" range */
+/*
+ * Request serialization protocol used by edk2 firmware to communicate between
+ * normal mode and management mode ('MM' for short).
+ *
+ * The qemu uefi variable store implementation reuses the request serialization
+ * protocol for firmware <-> qemu communication.
+ */
+#define LINKTYPE_EDK2_MM	302
+
+#define LINKTYPE_HIGH_MATCHING_MAX	302		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
