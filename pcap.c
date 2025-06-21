@@ -3383,6 +3383,22 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(FIRA_UCI, "Ultra-wideband controller interface protocol"),
 	DLT_CHOICE(MDB, "Multi-Drop Bus"),
 	DLT_CHOICE(DECT_NR, "DECT New Radio"),
+	DLT_CHOICE(USER0, "Private use 0"),
+	DLT_CHOICE(USER1, "Private use 1"),
+	DLT_CHOICE(USER2, "Private use 2"),
+	DLT_CHOICE(USER3, "Private use 3"),
+	DLT_CHOICE(USER4, "Private use 4"),
+	DLT_CHOICE(USER5, "Private use 5"),
+	DLT_CHOICE(USER6, "Private use 6"),
+	DLT_CHOICE(USER7, "Private use 7"),
+	DLT_CHOICE(USER8, "Private use 8"),
+	DLT_CHOICE(USER9, "Private use 9"),
+	DLT_CHOICE(USER10, "Private use 10"),
+	DLT_CHOICE(USER11, "Private use 11"),
+	DLT_CHOICE(USER12, "Private use 12"),
+	DLT_CHOICE(USER13, "Private use 13"),
+	DLT_CHOICE(USER14, "Private use 14"),
+	DLT_CHOICE(USER15, "Private use 15"),
 	DLT_CHOICE_SENTINEL
 };
 
