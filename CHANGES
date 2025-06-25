@@ -7,6 +7,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         warnings.
       gencode: Fix an undefined behavior in gen_mcode().
       gencode: Add a missing free() in gen_scode().
+      Remove "DLT_" from the descriptions of two dlt_choices[] entries.
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
