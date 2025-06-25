@@ -72,7 +72,8 @@ typedef struct {
 } pcap_can_socketcan_xl_hdr;
 
 /* Bits in the flags field */
-#define CANXL_SEC   0x01 /* Simple Extended Context */
-#define CANXL_XLF   0x80 /* mark to distinguish CAN XL from CAN/CAN FD frames */
+#define CANXL_SEC 0x01 /* Simple Extended Content (security/segmentation) */
+#define CANXL_RRS 0x02 /* Remote Request Substitution */
+#define CANXL_XLF 0x80 /* mark to distinguish CAN XL from CAN/CAN FD frames */
 
 #endif
