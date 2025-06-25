@@ -183,7 +183,7 @@ typedef int	(*set_datalink_op_t)(pcap_t *, int);
 typedef int	(*getnonblock_op_t)(pcap_t *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
-typedef void	(*breakloop_op_t)(pcap_t *);
+typedef void	(*breakloop_op_t)(pcap_t *, int);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
@@ -198,6 +198,12 @@ typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
 typedef int	(*live_dump_ended_op_t)(pcap_t *, int);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
+
+enum {
+	PCAPINT_BREAK_RUN = 0,
+	PCAPINT_BREAK_IMMEDIATE,
+	PCAPINT_BREAK_FLUSH,
+};
 
 /*
  * We put all the stuff used in the read code path at the beginning,
@@ -228,7 +234,8 @@ struct pcap {
 	u_char *bp;
 	u_int cc;
 
-	sig_atomic_t break_loop; /* flag set to force break from packet-reading loop */
+	/* break packet-reading loop, will be set to one of PCAPINT_BREAK_* */
+	sig_atomic_t break_loop;
 
 	void *priv;		/* private data for methods */
 
@@ -433,7 +440,7 @@ void	pcapint_add_to_pcaps_to_close(pcap_t *);
 void	pcapint_remove_from_pcaps_to_close(pcap_t *);
 void	pcapint_cleanup_live_common(pcap_t *);
 int	pcapint_check_activated(pcap_t *);
-void	pcapint_breakloop_common(pcap_t *);
+void	pcapint_breakloop_common(pcap_t *, int mode);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".
