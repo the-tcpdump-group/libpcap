@@ -16473,12 +16473,22 @@ if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
 	exit 2;
 }
 
-# Every test in this file uses an expression that under normal conditions takes
-# well under one second to process, so if a filtertest invocation is taking
-# longer, it is likely a regression.  Or an invocation via Valgrind, which
-# demands a sensible host-specific override of the timeout value.
+# Every test in this file uses an expression that under normal
+# conditions should take under one second to process; however,
+# "normal conditions" may not always apply, due, for example,
+# to a significant load on the system running the tests, so
+# we allow five seconds for the test, to avoid failures due
+# to glitches of that sort.
+#
+# If a filtertest invocation is taking longer, it is likely a
+# regression.
+#
+# However, an invocation via Valgrind demands a sensible host-specific
+# override of the timeout value, which is done by setting the
+# FILTERTEST_TIMEOUT environment variable. The build_matrix.sh
+# script uses that variable for this purpose.
 $test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
-	$ENV{FILTERTEST_TIMEOUT} : 1;
+	$ENV{FILTERTEST_TIMEOUT} : 5;
 
 if ($test_timeout eq '0') {
 	print "INFO: Not using a test timeout (FILTERTEST_TIMEOUT=0).\n";
