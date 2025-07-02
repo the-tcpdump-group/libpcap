@@ -166,8 +166,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 		 */
 		if (p->break_loop) {
 			if (n == 0) {
-				p->break_loop = 0;
-				return (-2);
+				return PCAP_ERROR_BREAK;
 			} else {
 				p->bp = bufp;
 				p->cc = ep - bufp;
