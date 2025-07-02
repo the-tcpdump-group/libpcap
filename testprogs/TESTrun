@@ -14086,6 +14086,60 @@ my @apply_blocks = (
 		expr => 'ip protochain 1',
 		results => [65535, 0, 0, 0],
 	},
+	{
+		name => 'llc',
+		savefile => 'llc.pcap',
+		expr => 'llc',
+		results => [262144, 262144, 0, 262144, 0, 262144, 0, 0, 262144, 262144],
+	},
+	{
+		name => 'llc_i',
+		savefile => 'llc.pcap',
+		expr => 'llc i',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 262144],
+	},
+	{
+		name => 'llc_s',
+		savefile => 'llc.pcap',
+		expr => 'llc s',
+		results => [0, 0, 0, 0, 0, 262144, 0, 0, 262144, 0],
+	},
+	{
+		name => 'llc_rr',
+		savefile => 'llc.pcap',
+		expr => 'llc rr',
+		results => [0, 0, 0, 0, 0, 262144, 0, 0, 262144, 0],
+	},
+	{
+		name => 'llc_rnr',
+		savefile => 'llc.pcap',
+		expr => 'llc rnr',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'llc_u',
+		savefile => 'llc.pcap',
+		expr => 'llc u',
+		results => [262144, 262144, 0, 262144, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'llc_ui',
+		savefile => 'llc.pcap',
+		expr => 'llc ui',
+		results => [262144, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'llc_sabme',
+		savefile => 'llc.pcap',
+		expr => 'llc sabme',
+		results => [0, 262144, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'llc_ua',
+		savefile => 'llc.pcap',
+		expr => 'llc ua',
+		results => [0, 0, 0, 262144, 0, 0, 0, 0, 0, 0],
+	},
 );
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
