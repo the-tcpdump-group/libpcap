@@ -917,12 +917,12 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
  * The author has found no straightforward way to check for support.
  */
 static long long int
-linux_get_stat(const char * if_name, const char * stat) {
+linux_get_stat(const char * if_name, const char * stat_name) {
 	ssize_t bytes_read;
 	int fd;
 	char buffer[PATH_MAX];
 
-	snprintf(buffer, sizeof(buffer), "/sys/class/net/%s/statistics/%s", if_name, stat);
+	snprintf(buffer, sizeof(buffer), "/sys/class/net/%s/statistics/%s", if_name, stat_name);
 	fd = open(buffer, O_RDONLY);
 	if (fd == -1)
 		return 0;
