@@ -93,8 +93,8 @@
  * Check whether this is Clang major.minor or a later release.
  */
 
-#if !defined(__clang__)
-  /* Not Clang */
+#if !defined(__clang__) || !defined(__clang_major__) || !defined(__clang_minor__)
+  /* Not Clang or very old Clang that does not define the version macros. */
   #define PCAP_IS_AT_LEAST_CLANG_VERSION(major, minor) 0
 #else
   /* Clang */
