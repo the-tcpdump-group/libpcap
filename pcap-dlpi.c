@@ -122,6 +122,12 @@
 
 #define	MAXDLBUF	8192
 
+/*
+ * Maximum number of outstanding connection indication messages for DLPI.
+ * For libpcap packet capture, we use 1 since we only need simple capture.
+ */
+#define DLPI_MAX_CONIND	1
+
 /* Forwards */
 static char *split_dname(char *, u_int *, char *);
 static int dl_doattach(int, int, char *);
@@ -1454,7 +1460,7 @@ dlbindreq(int fd, bpf_u_int32 sap, char *ebuf)
 	req.dl_primitive = DL_BIND_REQ;
 	/* XXX - what if neither of these are defined? */
 #if defined(DL_HP_RAWDLS)
-	req.dl_max_conind = 1;			/* XXX magic number */
+	req.dl_max_conind = DLPI_MAX_CONIND;
 	req.dl_service_mode = DL_HP_RAWDLS;
 #elif defined(DL_CLDLS)
 	req.dl_service_mode = DL_CLDLS;
