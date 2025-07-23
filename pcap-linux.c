@@ -2464,9 +2464,9 @@ setup_socket(pcap_t *handle, int is_any_device)
 			 * Other error.
 			 */
 			status = PCAP_ERROR;
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "socket");
 		}
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
 		return status;
 	}
 
