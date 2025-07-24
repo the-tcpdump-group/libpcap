@@ -2700,6 +2700,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 		if (handle->dlt_list == NULL) {
 			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "malloc");
+			close(sock_fd);
 			return (PCAP_ERROR);
 		}
 		handle->dlt_list[0] = DLT_LINUX_SLL;
