@@ -26,6 +26,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Solaris:
       Fix not to ignore logical interfaces in fad-gifc.c and
         fad-glifc.c.
+      Fix attempts to open all-numeric device names with DLPI to
+        return "no such device".
+    HP-UX:
+      Fix attempts to open all-numeric device names to return
+        "no such device".
     Windows:
       Fix filtering for VLAN-tagged frames.
     D-Bus:

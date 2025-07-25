@@ -957,6 +957,11 @@ split_dname(char *device, u_int *unitp, char *ebuf)
 	/* Digits at end of string are unit number */
 	while (cp-1 >= device && *(cp-1) >= '0' && *(cp-1) <= '9')
 		cp--;
+	if (cp == device || *(cp-1) == '/') {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s has only a unit number",
+		    device);
+		return (NULL);
+	}
 
 	errno = 0;
 	unit = strtol(cp, &eos, 10);
