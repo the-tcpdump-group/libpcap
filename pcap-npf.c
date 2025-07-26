@@ -1294,6 +1294,25 @@ pcap_activate_npf(pcap_t *p)
 	}
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
+#ifdef PACKET_MODE_NANO 
+	/*
+	 * If nanosecond timestamp resolution is requested, set
+	 * the packet mode to enable it.
+	 *
+	 * XXX - it's not nanosecond resolution, as the internal
+	 * NT clock has 100 ns resolution, but we can't indicate
+	 * that.  An updated-for-pcapng API should support that.
+	 */
+	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
+		res = PacketSetMode(pw->adapter, PACKET_MODE_NANO);
+		if(res == FALSE){
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Error setting nanosecond capture mode");
+			return (-1);
+		}
+	}
+#endif /* PACKET_MODE_NANO */
+
 #if defined(HAVE_PACKET_GET_INFO) && defined(NPF_GETINFO_BPFEXT) && defined(SKF_AD_VLAN_TAG_PRESENT)
 
 	/* Can we generate special code for VLAN checks? */
@@ -1926,6 +1945,24 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 		pcap_close(p);
 		return (NULL);
 	}
+
+#ifdef PACKET_MODE_NANO 
+	/*
+	 * We claim that we support microsecond and nanosecond time
+	 * stamps.
+	 */
+	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
+	if (p->tstamp_precision_list == NULL) {
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
+		pcap_close(p);
+		return (NULL);
+	}
+	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+	p->tstamp_precision_count = 2;
+#endif /* PACKET_MODE_NANO */
+
 	return (p);
 }
 

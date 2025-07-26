@@ -33,6 +33,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         "no such device".
     Windows:
       Fix filtering for VLAN-tagged frames.
+      Add support for nanosecond-resolution time stamps in captures.
     D-Bus:
       Fix message leak.
     Capture file writing:
