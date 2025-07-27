@@ -316,13 +316,31 @@ pcap_cleanup_dlpi(pcap_t *p)
 }
 
 static int
-open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
+handle_dlpi_device_open_error(const char *device, int error, char *errbuf)
 {
 	int status;
+
+	if (error == EPERM || error == EACCES) {
+		status = PCAP_ERROR_PERM_DENIED;
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Attempt to open %s failed with %s - root privilege may be required",
+		    device, (error == EPERM) ? "EPERM" : "EACCES");
+	} else {
+		status = PCAP_ERROR;
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    error, "Attempt to open %s failed", device);
+	}
+	return (status);
+}
+
+static int
+open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
+{
 	char dname[100];
 	char *cp, *cq;
 	int fd;
 #ifdef HAVE_DEV_DLPI
+	int status;
 	u_int unit;
 #else
 	char dname2[100];
@@ -389,19 +407,8 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * device number, rather than hardwiring "/dev/dlpi".
 	 */
 	cp = "/dev/dlpi";
-	if ((fd = open(cp, O_RDWR)) < 0) {
-		if (errno == EPERM || errno == EACCES) {
-			status = PCAP_ERROR_PERM_DENIED;
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Attempt to open %s failed with %s - root privilege may be required",
-			    cp, (errno == EPERM) ? "EPERM" : "EACCES");
-		} else {
-			status = PCAP_ERROR;
-			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "Attempt to open %s failed", cp);
-		}
-		return (status);
-	}
+	if ((fd = open(cp, O_RDWR)) < 0)
+		return (handle_dlpi_device_open_error(cp, errno, errbuf));
 
 	/*
 	 * Get a table of all PPAs for that device, and search that
@@ -472,27 +479,12 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 
 	/* Try device without unit number */
 	if ((fd = open(dname, O_RDWR)) < 0) {
-		if (errno != ENOENT) {
-			if (errno == EPERM || errno == EACCES) {
-				status = PCAP_ERROR_PERM_DENIED;
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "Attempt to open %s failed with %s - root privilege may be required",
-				    dname,
-				    (errno == EPERM) ? "EPERM" : "EACCES");
-			} else {
-				status = PCAP_ERROR;
-				pcapint_fmt_errmsg_for_errno(errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "Attempt to open %s failed", dname);
-			}
-			return (status);
-		}
+		if (errno != ENOENT)
+			return (handle_dlpi_device_open_error(dname, errno, errbuf));
 
 		/* Try again with unit number */
 		if ((fd = open(dname2, O_RDWR)) < 0) {
 			if (errno == ENOENT) {
-				status = PCAP_ERROR_NO_SUCH_DEVICE;
-
 				/*
 				 * We provide an error message even
 				 * for this error, for diagnostic
@@ -518,22 +510,9 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 				 */
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", name);
-			} else {
-				if (errno == EPERM || errno == EACCES) {
-					status = PCAP_ERROR_PERM_DENIED;
-					snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "Attempt to open %s failed with %s - root privilege may be required",
-					    dname2,
-					    (errno == EPERM) ? "EPERM" : "EACCES");
-				} else {
-					status = PCAP_ERROR;
-					pcapint_fmt_errmsg_for_errno(errbuf,
-					    PCAP_ERRBUF_SIZE, errno,
-					    "Attempt to open %s failed",
-					    dname2);
-				}
-			}
-			return (status);
+				return (PCAP_ERROR_NO_SUCH_DEVICE);
+			} else
+				return (handle_dlpi_device_open_error(dname2, errno, errbuf));
 		}
 		/* XXX Assume unit zero */
 		*ppa = 0;
