@@ -20,6 +20,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix returning PCAP_ERROR_RFMON_NOTSUP with libnl.
       Fix the error message when capure permission is denied.
       Fix the error message if PF_PACKET sockets aren't supported.
+      Fix a file descriptor leak in an error case (pull request #1537).
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
@@ -28,9 +29,16 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         fad-glifc.c.
       Fix attempts to open all-numeric device names with DLPI to
         return "no such device".
+      Fix error returns and messages when an interface has no DLPI
+        device.
+      Return all interfaces in pcap_findalldevs() even if they can't be
+        opened.
     HP-UX:
       Fix attempts to open all-numeric device names to return
         "no such device".
+      Fix error message if there's no /dev/dlpi device.
+      Return all interfaces in pcap_findalldevs() even if they can't be
+        opened.
     Windows:
       Fix filtering for VLAN-tagged frames.
       Add support for Npcap's nanosecond-resolution time stamps in
