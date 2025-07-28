@@ -905,7 +905,7 @@ dlpi)
 	#
 	# Checks for some header files.
 	#
-	AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
+	AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h zone.h)
 
 	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.

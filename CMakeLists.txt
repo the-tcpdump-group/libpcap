@@ -2007,6 +2007,7 @@ else(WIN32)
         #
         check_include_file(sys/bufmod.h HAVE_SYS_BUFMOD_H)
         check_include_file(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
+        check_include_file(zone.h HAVE_ZONE_H)
 
         #
         # Checks to see if Solaris has the public libdlpi(3LIB) library.
