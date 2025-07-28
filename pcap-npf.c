@@ -1090,7 +1090,7 @@ pcap_activate_npf(pcap_t *p)
 	}
 #endif /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 
-#ifdef PACKET_MODE_NANO 
+#ifdef PACKET_MODE_NANO
 	/*
 	 * If nanosecond timestamp resolution is requested, set
 	 * the packet mode to enable it.
@@ -1678,7 +1678,7 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 		return (NULL);
 	}
 
-#ifdef PACKET_MODE_NANO 
+#ifdef PACKET_MODE_NANO
 	/*
 	 * We claim that we support microsecond and nanosecond time
 	 * stamps.
