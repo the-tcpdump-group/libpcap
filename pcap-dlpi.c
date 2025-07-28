@@ -414,7 +414,7 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 		 * an appropriate error.
 		 */
 		close(sockfd);
-					
+
 		/*
 		 * Is this a loopback device?
 		 */
@@ -487,7 +487,7 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 		close(sockfd);
 		return (PCAP_ERROR);
 	}
-				
+
 	/*
 	 * That name doesn't appear to correspond to an interface.
 	 * No more detail is needed for the error message.
