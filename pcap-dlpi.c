@@ -20,7 +20,7 @@
  *
  * This code contributed by Atanu Ghosh (atanu@cs.ucl.ac.uk),
  * University College London, and subsequently modified by
- * Guy Harris (guy@alum.mit.edu), Mark Pizzolato
+ * Guy Harris, Mark Pizzolato
  * <List-tcpdump-workers@subscriptions.pizzolato.net>,
  * Mark C. Brown (mbrown@hp.com), and Sagun Shakya <Sagun.Shakya@Sun.COM>.
  */
@@ -355,6 +355,9 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 	 * Was that due to a permission error?
 	 */
 	if (error == EPERM || error == EACCES) {
+		/*
+		 * Yes; report it as such.
+		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Attempt to open %s failed with %s - root privilege may be required",
 		    device, (error == EPERM) ? "EPERM" : "EACCES");
