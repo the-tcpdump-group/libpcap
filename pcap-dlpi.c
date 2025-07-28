@@ -1118,52 +1118,16 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 }
 
 /*
- * Not all interfaces are DLPI interfaces, and thus not all interfaces
- * can be opened with DLPI (for example, the loopback interface is not
- * a DLPI interface on Solaris prior to Solaris 11), so try to open
- * the specified interface; return 0 if we fail with PCAP_ERROR_NO_SUCH_DEVICE
- * and 1 otherwise.
+ * Show all interfaces, so users don't ask "why is this interface not
+ * showing up?" or "why are no interfaces showing up?"  We report
+ * PCAP_ERROR_CAPTURE_NOTSUP if there's no DLPI device, with an
+ * error message that tries to explain the source of the problem,
+ * which is some flavor of "sorry, that's simply not supported by
+ * your OS".
  */
 static int
-is_dlpi_interface(const char *name)
+show_them_all(const char *name _U_)
 {
-	int fd;
-	u_int ppa;
-	char errbuf[PCAP_ERRBUF_SIZE];
-
-	fd = open_dlpi_device(name, &ppa, errbuf);
-	if (fd < 0) {
-		/*
-		 * Error - was it PCAP_ERROR_NO_SUCH_DEVICE?
-		 */
-		if (fd == PCAP_ERROR_NO_SUCH_DEVICE) {
-			/*
-			 * Yes, so we can't open this because it's
-			 * not a DLPI interface.
-			 */
-			return (0);
-		}
-		/*
-		 * No, so, in the case where there's a single DLPI
-		 * device for all interfaces of this type ("style
-		 * 2" providers?), we don't know whether it's a DLPI
-		 * interface or not, as we didn't try an attach.
-		 * Say it is a DLPI device, so that the user can at
-		 * least try to open it and report the error (which
-		 * is probably "you don't have permission to open that
-		 * DLPI device"; reporting those interfaces means
-		 * users will ask "why am I getting a permissions error
-		 * when I try to capture" rather than "why am I not
-		 * seeing any interfaces", making the underlying problem
-		 * clearer).
-		 */
-		return (1);
-	}
-
-	/*
-	 * Success.
-	 */
-	close(fd);
 	return (1);
 }
 
@@ -1207,7 +1171,7 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcapint_findalldevs_interfaces(devlistp, errbuf, is_dlpi_interface,
+	if (pcapint_findalldevs_interfaces(devlistp, errbuf, show_them_all,
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
