@@ -94,16 +94,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-#ifdef HAVE_ZONE_H
-#include <zone.h>
-#endif
-
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/sockio.h>
-
-#include <net/if.h>
-
 #include "pcap-int.h"
 #include "dlpisubs.h"
 
@@ -325,6 +315,101 @@ pcap_cleanup_dlpi(pcap_t *p)
 	pcapint_cleanup_live_common(p);
 }
 
+#ifdef HAVE_DEV_DLPI
+static int
+handle_dev_dlpi_open_error(const char *ifname, int error, char *errbuf)
+{
+	/*
+	 * An attempt to open /dev/dlpi failed.
+	 * Report the appropriate error.
+	 */
+	if (error == ENOENT) {
+		/*
+		 * Missing; I guess that means we don't support
+		 * opening DLPI devices, and thus can't capture
+		 * traffic at all.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Capturing network traffic not supported - /dev/dlpi doesn't exist");
+		return (PCAP_ERROR_CAPTURE_NOTSUP);
+	} else if (error == EPERM || error == EACCES) {
+		/*
+		 * We lack permission to open it.
+		 *
+		 * If the interface exists, report the permission error,
+		 * otherwise report "no such interface".
+		 */
+		int fd;
+		struct ifreq ifr;
+
+		if (strlen(ifname) >= sizeof(ifr.ifr_name)) {
+			/*
+			 * The name is too long, so it can't possibly exist.
+			 * Report that.
+			 *
+			 * There's nothing more to say, so clear
+			 * the error message.
+			 */
+			errbuf[0] = '\0';
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+		}
+
+		/*
+		 * Try to get a socket on which to do an ioctl to get the
+		 * interface's flags.
+		 */
+		fd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (fd < 0) {
+			/* That failed; report that as the error. */
+			pcapint_fmt_errmsg_for_errno(errbuf,  PCAP_ERRBUF_SIZE,
+			    errno, "Can't open socket to get interface flags");
+			return (PCAP_ERROR);
+		}
+
+		pcapint_strlcpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
+			if (errno == ENXIO || errno == EINVAL) {
+				/*
+				 * macOS, *BSD, and Solaris return one of
+				 * those two errors if the device doesn't
+				 * exist. Report that.
+				 * XXX - what about HP-UX?
+				 *
+				 * There's nothing more to say, so clear
+				 * the error message.
+				 */
+				errbuf[0] = '\0';
+				close(fd);
+				return (PCAP_ERROR_NO_SUCH_DEVICE);
+			}
+
+			/*
+			 * Some other error.
+			 */
+			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "Can't get interface flags");
+			close(fd);
+			return (PCAP_ERROR);
+		}
+
+		/*
+		 * The device exists; report this as a permissions problem.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Attempt to open /dev/dlpi failed with %s - root privilege may be required",
+		    (error == EPERM) ? "EPERM" : "EACCES");
+		close(fd);
+		return (PCAP_ERROR_PERM_DENIED);
+	} else {
+		/*
+		 * Soe other error.
+		 */
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    error, "Attempt to open /dev/dlpi failed");
+		return (PCAP_ERROR);
+	}
+}
+#else /* HAVE_DEV_DLPI */
 static int
 handle_dlpi_device_open_error(const char *ifname, const char *device,
     int error, char *errbuf)
@@ -335,7 +420,11 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 	 */
 	if (error == EPERM || error == EACCES) {
 		/*
-		 * Yes; report it as such.
+		 * We lack permission to open it.
+		 *
+		 * If the interface doesn't exist, there wouldn't be
+		 * a DLPI device corresponding to it, so we wouldn't
+		 * have gotten a permissions error.
 		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Attempt to open %s failed with %s - root privilege may be required",
@@ -344,7 +433,7 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 	}
 
 	/*
-	 * Was that due to the device not existing?
+	 * Was that due to the DLPI device not existing?
 	 */
 	if (error != ENOENT) {
 		/*
@@ -359,126 +448,14 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 
 	/*
 	 * Yes.  That means we can't do DLPI capturing, at least not
-	 * on that device.  Figure out what the cause is, and provide
-	 * an error message, for diagnostic purposes (so that, for example,
-	 * the app can show the message if the user requests it).
-	 */
-#ifdef HAVE_DEV_DLPI
-	/*
-	 * We're using /dev/dlpi; if that's missing, I guess that means
-	 * we don't support opening DLPI devices.
-	 */
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "/dev/dlpi doesn't exist");
-	return (PCAP_ERROR_CAPTURE_NOTSUP);
-#else /* HAVE_DEV_DLPI */
-	/*
-	 * We're using individual devices for individual interfaces.
+	 * on that interface.
 	 *
-	 * Check to see if there is such interface, by trying to get
-	 * its interface falgs.  If so, the problem isn't that there's
-	 * no such interface, the problem is that we don't have a DLPI
-	 * device for it.
+	 * Test whether it exists and, if it does, whether it's
+	 * a loopback interface.
 	 */
-	int sockfd;
-	struct lifreq lifrflags;
-
-	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sockfd < 0) {
-		pcapint_fmt_errmsg_for_errno(errbuf,  PCAP_ERRBUF_SIZE,
-		    errno, "socket");
-		return (PCAP_ERROR);
-	}
-
-	pcapint_strlcpy(lifrflags.lifr_name, ifname, sizeof(lifrflags.lifr_name));
-	if (ioctl(sockfd, SIOCGLIFFLAGS, (char *)&lifrflags) == 0) {
-		/*
-		 * The interface exists, but it has no DLPI device.  Report
-		 * an appropriate error.
-		 */
-		close(sockfd);
-
-		/*
-		 * Is this a loopback device?
-		 */
-		if (lifrflags.lifr_flags & IFF_LOOPBACK) {
-			/*
-			 * Yes.  This is a very common problem; note that
-			 * capturing isn't supported on the loopback device.
-			 */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Capturing on the loopback device is only supported on Solaris 11 and later");
-			return (PCAP_ERROR_CAPTURE_NOTSUP);
-		}
-
-#ifdef HAVE_ZONE_H
-		/*
-		 * No.
-		 *
-		 * If we're not in a global zone, the problem is probably
-		 * that the zone we're in doesn't happen to have any
-		 * DLPI devices.  Exclusive-IP non-global zones have
-		 * their own interfaces and have DLPI devices for them:
-		 *
-		 *    https://docs.oracle.com/cd/E37838_01/html/E61040/z.config.ov-6.html#VLZCRgekkb
-		 *
-		 *    https://docs.oracle.com/cd/E19044-01/sol.containers/817-1592/geprv/index.html
-		 *
-		 * but shared-IP non-global zones don't:
-		 *
-		 *    https://docs.oracle.com/cd/E37838_01/html/E61040/z.config.ov-6.html#VLZCRgekku
-		 */
-		if (getzoneid() != GLOBAL_ZONEID) {
-			/*
-			 * Not a global zone; note that capturing on network
-			 * interfaces is only supported for interfaces
-			 * in an exclusive-IP zone.
-			 */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "Capturing on interfaces in a non-global zone is supported only for interfaces in exclusive-IP zones");
-			return (PCAP_ERROR_CAPTURE_NOTSUP);
-		}
-#endif /* HAVE_ZONE_H */
-
-		/*
-		 * Some other problem; just report it as not having
-		 * a DLPI device.  We don't report the DLPI device
-		 * name, so people don't get confused and think, for
-		 * example, that if they can't capture on that interface
-		 * on Solaris prior to Solaris 11 the fix is to change
-		 * libpcap (or the application that uses it) to look
-		 * for something other than "/dev/{ifname}", as the fix
-		 * is to use Solaris 11 or some operating system other
-		 * than Solaris - you just *can't* capture on that
-		 * interface on Solaris prior to Solaris 11, the lack
-		 * of a DLPI device for the loopback interface is just
-		 * a symptom of that inability.
-		 */
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: No DLPI device found",
-		    ifname);
-		return (PCAP_ERROR_CAPTURE_NOTSUP);
-	}
-
-	if (errno != ENXIO) {
-		/*
-		 * The ioctl failed for a reason other than "no such device";
-		 * report the error.
-		 */
-		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
-		    "SIOCGIFFLAGS: %.*s", (int)sizeof(lifrflags.lifr_name),
-		    lifrflags.lifr_name);
-		close(sockfd);
-		return (PCAP_ERROR);
-	}
-
-	/*
-	 * That name doesn't appear to correspond to an interface.
-	 * No more detail is needed for the error message.
-	 */
-	close(sockfd);
-	strlcpy(errbuf, "", PCAP_ERRBUF_SIZE);
-	return (PCAP_ERROR_NO_SUCH_DEVICE);
-#endif /* HAVE_DEV_DLPI */
+	return (handle_nonexistent_dlpi_device(ifname, errbuf));
 }
+#endif /* not HAVE_DEV_DLPI */
 
 static int
 open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
@@ -553,9 +530,8 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * search "/dev" for the appropriate device with that major
 	 * device number, rather than hardwiring "/dev/dlpi".
 	 */
-	cp = "/dev/dlpi";
-	if ((fd = open(cp, O_RDWR)) < 0)
-		return (handle_dlpi_device_open_error(name, cp, errno, errbuf));
+	if ((fd = open("/dev/dlpi", O_RDWR)) < 0)
+		return (handle_dev_dlpi_open_error(name, errno, errbuf));
 
 	/*
 	 * Get a table of all PPAs for that device, and search that
