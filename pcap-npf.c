@@ -1104,7 +1104,7 @@ pcap_activate_npf(pcap_t *p)
 		if(res == FALSE){
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Error setting nanosecond capture mode");
-			return (-1);
+			goto bad;
 		}
 	}
 #endif /* PACKET_MODE_NANO */
