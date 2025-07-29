@@ -367,14 +367,14 @@ handle_dlpi_device_open_error(const char *ifname, const char *device,
 	/*
 	 * Was that due to the device not existing?
 	 */
-	if (errno != ENOENT) {
+	if (error != ENOENT) {
 		/*
 		 * No; report it as a generic error, giving the error
 		 * message for the error code and the name of the
 		 * device we tried to open.
 		 */
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Attempt to open %s failed", device);
+		    error, "Attempt to open %s failed", device);
 		return (PCAP_ERROR);
 	}
 
