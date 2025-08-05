@@ -110,6 +110,7 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include <rte_mempool.h>
 #include <rte_mbuf.h>
 #include <rte_bus.h>
+#include <rte_version.h>
 
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
@@ -195,6 +196,7 @@ struct pcap_dpdk{
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
 };
 
+#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
 		.split_hdr_size = 0,
@@ -203,6 +205,13 @@ static struct rte_eth_conf port_conf = {
 		.mq_mode = ETH_MQ_TX_NONE,
 	},
 };
+#else
+static struct rte_eth_conf port_conf = {
+	.txmode = {
+		.mq_mode = RTE_ETH_MQ_TX_NONE,
+	},
+};
+#endif
 
 static void	dpdk_fmt_errmsg_for_rte_errno(char *, size_t, int,
     PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(4, 5);
@@ -497,7 +506,11 @@ static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
 	// wait up to 9 seconds to get link status
 	rte_eth_link_get(portid, plink);
+#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 	return plink->link_status == ETH_LINK_UP;
+#else
+	return plink->link_status == RTE_ETH_LINK_UP;
+#endif
 }
 static void eth_addr_str(ETHER_ADDR_TYPE *addrp, char* mac_str, int len)
 {
@@ -833,10 +846,17 @@ static int pcap_dpdk_activate(pcap_t *p)
 		}
 		// config dev
 		rte_eth_dev_info_get(portid, &dev_info);
+#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 		if (dev_info.tx_offload_capa & DEV_TX_OFFLOAD_MBUF_FAST_FREE)
 		{
 			local_port_conf.txmode.offloads |=DEV_TX_OFFLOAD_MBUF_FAST_FREE;
 		}
+#else
+		if (dev_info.tx_offload_capa & RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE)
+		{
+			local_port_conf.txmode.offloads |=RTE_ETH_TX_OFFLOAD_MBUF_FAST_FREE;
+		}
+#endif
 		// only support 1 queue
 		ret = rte_eth_dev_configure(portid, 1, 1, &local_port_conf);
 		if (ret < 0)
@@ -970,7 +990,11 @@ static int pcap_dpdk_activate(pcap_t *p)
 		RTE_LOG(INFO, USER1,"Port %d device: %s, MAC:%s, PCI:%s\n", portid, p->opt.device, pd->mac_addr, pd->pci_addr);
 		RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
 							portid, link.link_speed,
+#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 					(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
+#else
+					(link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX) ?
+#endif
 						("full-duplex") : ("half-duplex\n"));
 	}
 	return ret;
