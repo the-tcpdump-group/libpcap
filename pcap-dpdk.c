@@ -196,22 +196,20 @@ struct pcap_dpdk{
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
 };
 
-#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 static struct rte_eth_conf port_conf = {
+#if (RTE_VERSION < RTE_VERSION_NUM(22, 0, 0, 0))
 	.rxmode = {
 		.split_hdr_size = 0,
 	},
 	.txmode = {
 		.mq_mode = ETH_MQ_TX_NONE,
 	},
-};
 #else
-static struct rte_eth_conf port_conf = {
 	.txmode = {
 		.mq_mode = RTE_ETH_MQ_TX_NONE,
 	},
-};
 #endif
+};
 
 static void	dpdk_fmt_errmsg_for_rte_errno(char *, size_t, int,
     PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(4, 5);
