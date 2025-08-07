@@ -2522,7 +2522,7 @@ fi
 
 # Check for DPDK support.
 AC_ARG_WITH([dpdk],
-AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+AS_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=no@:>@]),
 [
 	if test "$withval" = no
 	then
