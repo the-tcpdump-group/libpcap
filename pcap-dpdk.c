@@ -112,6 +112,8 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include <rte_bus.h>
 #include <rte_version.h>
 
+#include "diag-control.h"
+
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
 
@@ -781,18 +783,22 @@ static int pcap_dpdk_activate(pcap_t *p)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't open device %s: %s",
 			    p->opt.device, dpdk_pre_init_errbuf);
+DIAG_ON_FORMAT_TRUNCATION
 			// ret is set to the correct error
 			break;
 		}
 		if (ret == 0)
 		{
 			// This means DPDK isn't available on this machine.
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't open device %s: DPDK is not available on this machine",
 			    p->opt.device);
+DIAG_ON_FORMAT_TRUNCATION
 			return PCAP_ERROR_NO_SUCH_DEVICE;
 		}
 
@@ -809,17 +815,21 @@ static int pcap_dpdk_activate(pcap_t *p)
 		nb_ports = rte_eth_dev_count_avail();
 		if (nb_ports == 0)
 		{
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: No Ethernet ports");
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR;
 			break;
 		}
 
 		portid = portid_by_device(p->opt.device);
 		if (portid == DPDK_PORTID_MAX){
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			break;
 		}
@@ -836,9 +846,11 @@ static int pcap_dpdk_activate(pcap_t *p)
 			rte_socket_id());
 		if (pd->pktmbuf_pool == NULL)
 		{
+DIAG_OFF_FORMAT_TRUNCATION
 			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
 			    PCAP_ERRBUF_SIZE, rte_errno,
 			    "dpdk error: Cannot init mbuf pool");
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -919,8 +931,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer == NULL)
 		{
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: Cannot allocate buffer for tx on port %u", portid);
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -944,8 +958,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		// check link status
 		is_port_up = check_link_status(portid, &link);
 		if (!is_port_up){
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: link is down, port=%u",portid);
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR_IFACE_NOT_UP;
 			break;
 		}
@@ -1033,9 +1049,11 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
+DIAG_OFF_FORMAT_TRUNCATION
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Can't look for DPDK devices: %s",
 			    dpdk_pre_init_errbuf);
+DIAG_ON_FORMAT_TRUNCATION
 			ret = PCAP_ERROR;
 			break;
 		}
