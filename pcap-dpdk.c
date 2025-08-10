@@ -473,10 +473,9 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	calculate_timestamp(&(pd->ts_helper), &(pd->curr_ts));
 	rte_eth_stats_get(pd->portid,&(pd->curr_stats));
 	if (ps){
-		ps->ps_recv = pd->curr_stats.ipackets;
-		ps->ps_drop = pd->curr_stats.ierrors;
-		ps->ps_drop += pd->bpf_drop;
-		ps->ps_ifdrop = pd->curr_stats.imissed;
+		ps->ps_recv = (u_int)pd->curr_stats.ipackets;
+		ps->ps_drop = (u_int)(pd->curr_stats.ierrors + pd->bpf_drop);
+		ps->ps_ifdrop = (u_int)pd->curr_stats.imissed;
 	}
 	uint64_t delta_pkt = pd->curr_stats.ipackets - pd->prev_stats.ipackets;
 	struct timeval delta_tm;
