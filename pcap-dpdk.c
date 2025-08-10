@@ -549,7 +549,7 @@ static uint16_t portid_by_device(char * device)
 		return ret;
 	}
 	//check all chars are digital
-	for (int i=prefix_len; device[i]; i++){
+	for (size_t i=prefix_len; device[i]; i++){
 		if (device[i]<'0' || device[i]>'9'){
 			return ret;
 		}
