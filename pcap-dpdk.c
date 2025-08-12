@@ -280,7 +280,7 @@ static inline void calculate_timestamp(struct dpdk_ts_helper *helper,struct time
 	timeradd(&(helper->start_time), &cur_time, ts);
 }
 
-static uint32_t dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_mbuf *mbuf)
+static void dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_mbuf *mbuf)
 {
 	uint32_t total_len = 0;
 	while (mbuf && (total_len+mbuf->data_len) < len ){
@@ -288,7 +288,6 @@ static uint32_t dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_m
 		total_len+=mbuf->data_len;
 		mbuf=mbuf->next;
 	}
-	return total_len;
 }
 
 
@@ -334,7 +333,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	uint32_t caplen = 0;
 	u_char *bp = NULL;
 	int i=0;
-	unsigned int gather_len =0;
 	int pkt_cnt = 0;
 	u_char *large_buffer=NULL;
 	int timeout_ms = p->opt.timeout;
@@ -403,12 +401,12 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 				// use fast buffer pcap_tmp_buf if pkt_len is small, no need to call malloc and free
 				if ( pkt_len <= RTE_ETH_PCAP_SNAPLEN)
 				{
-					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
+					dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
 					bp = pd->pcap_tmp_buf;
 				}else{
 					// need call free later
 					large_buffer = (u_char *)malloc(caplen*sizeof(u_char));
-					gather_len = dpdk_gather_data(large_buffer, caplen, m);
+					dpdk_gather_data(large_buffer, caplen, m);
 					bp = large_buffer;
 				}
 
