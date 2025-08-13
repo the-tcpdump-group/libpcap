@@ -8786,6 +8786,8 @@ my @accept_blocks = (
 			'ip src or dst noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			# This does not mean "arp host" or "rarp host" because for
+			# DLT_RAW off_linktype.constant_part == OFFSET_NOT_SET.
 			'host noeth-ipv4-noipv6.host123.libpcap.test',
 			'src or dst noeth-ipv4-noipv6.host123.libpcap.test',
 			'src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
