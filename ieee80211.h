@@ -110,39 +110,4 @@
 #define	IEEE80211_QOS_ESOP_S			4
 #define	IEEE80211_QOS_TID			0x0fU
 
-#define IEEE80211_MGT_SUBTYPE_NAMES {			\
-	"assoc-req",		"assoc-resp",		\
-	"reassoc-req",		"reassoc-resp",		\
-	"probe-req",		"probe-resp",		\
-	"reserved#6",		"reserved#7",		\
-	"beacon",		"atim",			\
-	"disassoc",		"auth",			\
-	"deauth",		"reserved#13",		\
-	"reserved#14",		"reserved#15"		\
-}
-
-#define IEEE80211_CTL_SUBTYPE_NAMES {			\
-	"reserved#0",		"reserved#1",		\
-	"reserved#2",		"reserved#3",		\
-	"reserved#3",		"reserved#5",		\
-	"reserved#6",		"reserved#7",		\
-	"bar",			"ba",			\
-	"ps-poll",		"rts",			\
-	"cts",			"ack",			\
-	"cf-end",		"cf-end-ack"		\
-}
-
-#define IEEE80211_DATA_SUBTYPE_NAMES {			\
-	"data",			"data-cf-ack",		\
-	"data-cf-poll",		"data-cf-ack-poll",	\
-	"null",			"cf-ack",		\
-	"cf-poll",		"cf-ack-poll",		\
-	"qos-data",		"qos-data-cf-ack",	\
-	"qos-data-cf-poll",	"qos-data-cf-ack-poll",	\
-	"qos",			"reserved#13",		\
-	"qos-cf-poll",		"qos-cf-ack-poll"	\
-}
-
-#define IEEE80211_TYPE_NAMES	{ "mgt", "ctl", "data", "reserved#4" }
-
 #endif /* _NET80211_IEEE80211_H_ */
