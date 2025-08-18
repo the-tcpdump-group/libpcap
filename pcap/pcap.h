@@ -608,6 +608,9 @@ PCAP_API int	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
 PCAP_AVAILABLE_0_8
 PCAP_API void	pcap_breakloop(pcap_t *);
 
+PCAP_AVAILABLE_1_11
+PCAP_API void	pcap_breakloop_flush(pcap_t *);
+
 PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *)
 	    PCAP_WARN_UNUSED_RESULT;
