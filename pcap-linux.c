@@ -4946,15 +4946,15 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 		nl80211_cleanup(&nlstate);
 		return ret;
 	}
-        if (type == NL80211_IFTYPE_MONITOR) {
+	if (type == NL80211_IFTYPE_MONITOR) {
 		/*
 		 * OK, it's already a monitor mode device; just use it.
 		 * There's no point in creating another monitor device
 		 * that will have to be cleaned up.
 		 */
-                nl80211_cleanup(&nlstate);
-                return ret;
-        }
+		nl80211_cleanup(&nlstate);
+		return ret;
+	}
 
 	/*
 	 * OK, it's apparently a mac80211 device but not a monitor device.
