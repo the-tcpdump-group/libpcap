@@ -571,11 +571,13 @@ PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "ip", ETHERTYPE_IP },
 	{ "ip6", ETHERTYPE_IPV6 },
 	{ "lat", ETHERTYPE_LAT },
+	{ "lldp", ETHERTYPE_LLDP },
 	{ "loopback", ETHERTYPE_LOOPBACK },
 	{ "mopdl", ETHERTYPE_MOPDL },
 	{ "moprc", ETHERTYPE_MOPRC },
 	{ "rarp", ETHERTYPE_REVARP },
 	{ "sca", ETHERTYPE_SCA },
+	{ "slow", ETHERTYPE_SLOW },
 	{ (char *)0, 0 }
 };
 
