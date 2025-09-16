@@ -40,9 +40,6 @@
 #ifndef ETHERTYPE_NS
 #define ETHERTYPE_NS		0x0600
 #endif
-#ifndef ETHERTYPE_TRAIL
-#define ETHERTYPE_TRAIL		0x1000
-#endif
 #ifndef	ETHERTYPE_MOPDL
 #define ETHERTYPE_MOPDL		0x6001
 #endif
