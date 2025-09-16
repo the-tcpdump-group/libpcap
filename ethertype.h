@@ -31,9 +31,6 @@
  * <netinet/if_ether.h> if all it needs are ETHERTYPE_ values.
  */
 
-#ifndef ETHERTYPE_PUP
-#define ETHERTYPE_PUP		0x0200	/* PUP protocol */
-#endif
 #ifndef ETHERTYPE_IP
 #define ETHERTYPE_IP		0x0800	/* IP protocol */
 #endif
