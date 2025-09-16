@@ -61,21 +61,6 @@
 #ifndef ETHERTYPE_REVARP
 #define ETHERTYPE_REVARP	0x8035	/* reverse Addr. resolution protocol */
 #endif
-#ifndef	ETHERTYPE_LANBRIDGE
-#define ETHERTYPE_LANBRIDGE	0x8038
-#endif
-#ifndef	ETHERTYPE_DECDNS
-#define ETHERTYPE_DECDNS	0x803c
-#endif
-#ifndef	ETHERTYPE_DECDTS
-#define ETHERTYPE_DECDTS	0x803e
-#endif
-#ifndef	ETHERTYPE_VEXP
-#define ETHERTYPE_VEXP		0x805b
-#endif
-#ifndef	ETHERTYPE_VPROD
-#define ETHERTYPE_VPROD		0x805c
-#endif
 #ifndef ETHERTYPE_ATALK
 #define ETHERTYPE_ATALK		0x809b
 #endif
