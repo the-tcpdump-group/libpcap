@@ -629,8 +629,8 @@ True if the packet is an IPv6 multicast packet.
 True if the packet is of ether type \fIprotocol\fR.
 \fIProtocol\fP can be a number or one of the names
 \fBaarp\fP, \fBarp\fP, \fBatalk\fP, \fBdecnet\fP, \fBip\fP, \fBip6\fP,
-\fBipx\fP, \fBiso\fP, \fBlat\fP, \fBloopback\fP, \fBmopdl\fP, \fBmoprc\fP, \fBnetbeui\fP,
-\fBrarp\fP, \fBsca\fP or \fBstp\fP.
+\fBipx\fP, \fBiso\fP, \fBlat\fP, \fBlldp\fP, \fBloopback\fP, \fBmopdl\fP, \fBmoprc\fP, \fBnetbeui\fP,
+\fBrarp\fP, \fBsca\fP, \fBslow\fP or \fBstp\fP.
 Note these identifiers (except \fBloopback\fP) are also keywords
 and must be escaped via backslash (\\).
 .IP
