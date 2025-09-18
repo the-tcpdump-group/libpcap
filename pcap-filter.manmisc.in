@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "7 April 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "18 September 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -685,8 +685,8 @@ IEEE Slow Protools
 IEEE Spanning Tree Protocol
 .RE
 .IP
-Note these identifiers (except \fBloopback\fP) are also keywords
-and must be escaped via backslash (\\).
+Note these identifiers (except \fBlldp\fP, \fBloopback\fP and \fBslow\fP)
+are also keywords and must be escaped via backslash (\\).
 .IP
 [In the case of FDDI (e.g., `\fBfddi proto \\arp\fR'), Token Ring
 (e.g., `\fBtr proto \\arp\fR'), and IEEE 802.11 wireless LANs (e.g.,
@@ -1852,6 +1852,12 @@ keyword became available in libpcap 1.10.0.
 The
 .B vxlan
 keyword became available in libpcap 1.11.0.
+.PP
+The
+.B lldp
+and
+.B slow
+protocols became available for "ether proto" in libpcap 1.11.0.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS
