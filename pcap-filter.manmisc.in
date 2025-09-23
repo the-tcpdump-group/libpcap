@@ -652,7 +652,7 @@ IPv6
 Novell IPX
 .TP
 .B iso
-OSI protcols
+OSI protocols
 .TP
 .B lat
 DEC Local Area Transport (LAT)
