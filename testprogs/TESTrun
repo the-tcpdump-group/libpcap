@@ -15000,6 +15000,18 @@ my @reject_tests = (
 		expr => 'link proto 1500',
 		errstr => 'LLC DSAP 1500 greater than maximum 255',
 	},
+	{
+		name => 'bare_loopback',
+		DLT => 'EN10MB',
+		expr => 'loopback',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
+	{
+		name => 'esc_loopback',
+		DLT => 'EN10MB',
+		expr => '\loopback',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
 );
 
 # "proto" qualifiers without any lexer-level aliases (the entries correspond
