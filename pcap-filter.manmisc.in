@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "18 September 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "25 September 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1692,6 +1692,7 @@ l1		yes	no	no
 l2		yes	no	no
 lat		yes	yes	no	link proto \\lat
 link		no	yes	yes
+lldp					link proto lldp
 loopback					link proto loopback
 lsp		yes	no	no
 mopdl		yes	yes	no	link proto \\mopdl
@@ -1705,6 +1706,7 @@ rarp		yes	yes	yes	link proto \\rarp
 sca		yes	yes	no	link proto \\sca
 sctp		yes	yes	yes	[ip|ip6] proto \\sctp
 slip	link
+slow					link proto slow
 snp		yes	no	no
 stp		yes	no	no	link proto \\stp
 tcp		yes	yes	yes	[ip|ip6] proto \\tcp

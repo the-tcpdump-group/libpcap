@@ -3080,6 +3080,18 @@ my @accept_blocks = (
 			',
 	}, # ether_proto_lat
 	{
+		name => 'ether_proto_lldp',
+		DLT => 'EN10MB',
+		# No backslash escaping and no alias (the identifier is not a keyword).
+		aliases => ['ether proto lldp'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x88cc          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # ether_proto_lat
+	{
 		name => 'ether_proto_loopback',
 		DLT => 'EN10MB',
 		# No backslash escaping and no alias (the identifier is not a keyword).
@@ -3163,6 +3175,18 @@ my @accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ether_proto_sca
+	{
+		name => 'ether_proto_slow',
+		DLT => 'EN10MB',
+		# No backslash escaping and no alias (the identifier is not a keyword).
+		aliases => ['ether proto slow'],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8809          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # ether_proto_lat
 	{
 		name => 'ether_proto_stp',
 		DLT => 'EN10MB',
@@ -15001,6 +15025,18 @@ my @reject_tests = (
 		errstr => 'LLC DSAP 1500 greater than maximum 255',
 	},
 	{
+		name => 'bare_lldp',
+		DLT => 'EN10MB',
+		expr => 'lldp',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
+	{
+		name => 'esc_lldp',
+		DLT => 'EN10MB',
+		expr => '\lldp',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
+	{
 		name => 'bare_loopback',
 		DLT => 'EN10MB',
 		expr => 'loopback',
@@ -15010,6 +15046,18 @@ my @reject_tests = (
 		name => 'esc_loopback',
 		DLT => 'EN10MB',
 		expr => '\loopback',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
+	{
+		name => 'bare_slow',
+		DLT => 'EN10MB',
+		expr => 'slow',
+		errstr => 'can\'t parse filter expression: syntax error',
+	},
+	{
+		name => 'esc_slow',
+		DLT => 'EN10MB',
+		expr => '\slow',
 		errstr => 'can\'t parse filter expression: syntax error',
 	},
 );
