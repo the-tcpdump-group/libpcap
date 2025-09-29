@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "25 September 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "29 September 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1642,27 +1642,28 @@ which should not be confused with
 .SH PROTOCOL NAMES IN VARIOUS CONTEXTS
 The table below shows which protocol names can be used in which contexts of
 the currently implemented syntax.  The "name" column contains a protocol name,
-which often can be used as an ID in primitives that take a protocol name
-argument; in all cases except
-.BR \%loopback
-the protocol name is also a keyword.  If the keyword is an alias, the "see"
-column refers to the main keyword.  The "abbr" column tells whether the
-keyword can be used as an abbreviation (that is, if the keyword is the only
-contents of a primitive, it means a more complex expression).  The "PDA"
-column tells whether the keyword can be used in a packet data accessor.  The
-"pqual" column tells whether the keyword can be used as a case of the
-.I proto
-qualifier kind.  If the name can be used as an ID for the
+which can be used as a keyword and/or as an ID for the
 .B proto
 case of the
 .I type
-qualifier kind, the "tqual ID" column shows the valid context(s).
+qualifier kind.
+.LP
+For keywords: if the keyword is an alias, the "K/see" column refers to the
+main keyword; the "K/abbr" column tells whether the keyword can be used as an
+abbreviation (that is, if the keyword is the only contents of a primitive, it
+means a more complex expression); the "K/PDA" column tells whether the keyword
+can be used in a packet data accessor; the "K/pqual" column tells whether the
+keyword can be used as a case of the
+.I proto
+qualifier kind.
+.LP
+For IDs: the "ID/tqual" column shows the valid context(s).
 
 .TS
 box;
 l	|l	|l	|l	|l	|l
 lB	|lB	|l	|l	|l	|lB.
-name	see	abbr	PDA	pqual	tqual ID
+name	K/see	K/abbr	K/PDA	K/pqual	ID/tqual
 _
 aarp		yes	no	no	link proto \\aarp
 ah		yes	no	no	[ip|ip6] proto \\ah
