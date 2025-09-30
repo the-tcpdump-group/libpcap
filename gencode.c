@@ -6943,10 +6943,19 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+
+		/*
+		 * These two checks are redundant at this point: here name is
+		 * a string that the lexer does not recognize as a number
+		 * hence did not attempt stoulen(), pcap_nametoport() does not
+		 * use stoulen() and has successfully translated the string to
+		 * an uint16_t value using getaddrinfo().
+		 */
 		if (port < 0)
 			bpf_error(cstate, "illegal port number %d < 0", port);
 		if (port > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port);
+
 		// real_proto can be PROTO_UNDEF
 		b = gen_port(cstate, (uint16_t)port, real_proto, dir);
 		gen_or(gen_port6(cstate, (uint16_t)port, real_proto, dir), b);
@@ -6982,6 +6991,19 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+
+		/*
+		 * When name is a string of the form "str1-str2", these two
+		 * checks are redundant at this point: in both stringtoport()
+		 * invocations stoulen() has rejected the argument and
+		 * getaddrinfo() has successfully translated it to an uint16_t
+		 * value.
+		 *
+		 * When name is a string of the form "num1-num2", "num-str" or
+		 * "str-num", these two checks are necessary: in at least one
+		 * stringtoport() invocation stoulen() can return any uint32_t
+		 * value if it has accepted the argument.
+		 */
 		if (port1 > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port1);
 		if (port2 > 65535)
@@ -7156,6 +7178,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_PORT:
 		proto = port_pq_to_ipproto(cstate, proto, "port");
 
+		// This check is necessary: v can hold any uint32_t value.
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
@@ -7170,6 +7193,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_PORTRANGE:
 		proto = port_pq_to_ipproto(cstate, proto, "portrange");
 
+		// This check is necessary: v can hold any uint32_t value.
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
