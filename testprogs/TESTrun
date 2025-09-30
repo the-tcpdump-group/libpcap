@@ -3090,7 +3090,7 @@ my @accept_blocks = (
 			(002) ret      #262144
 			(003) ret      #0
 			',
-	}, # ether_proto_lat
+	}, # ether_proto_lldp
 	{
 		name => 'ether_proto_loopback',
 		DLT => 'EN10MB',
@@ -3186,7 +3186,7 @@ my @accept_blocks = (
 			(002) ret      #262144
 			(003) ret      #0
 			',
-	}, # ether_proto_lat
+	}, # ether_proto_slow
 	{
 		name => 'ether_proto_stp',
 		DLT => 'EN10MB',
