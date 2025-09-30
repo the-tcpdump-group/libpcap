@@ -14165,6 +14165,37 @@ my @apply_blocks = (
 	},
 );
 
+# yyerror()
+sub errstr_syntax {
+	return 'can\'t parse filter expression: syntax error';
+}
+
+# ERRSTR_INVALID_QUAL
+sub errstr_invqual {
+	return sprintf ('\'%s\' is not a valid qualifier for \'%s\'', shift, shift);
+}
+
+# gen_scode() case Q_NET
+sub errstr_nonet {
+	return sprintf ('unknown network \'%s\'', shift);
+}
+
+# gen_ncode() case Q_PORT, case Q_PORTRANGE
+# gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
+sub errstr_invport {
+	return sprintf ('illegal port number %u > 65535', shift);
+}
+
+# assert_maxval()
+sub errstr_val_too_high {
+	return sprintf ('%s greater than maximum %u', shift, shift);
+}
+
+# fail_kw_on_dlt()
+sub errstr_kw_notsup_on {
+	return sprintf ('\'%s\' not supported on ', shift);
+}
+
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
@@ -14180,67 +14211,67 @@ my @reject_tests = (
 		name => 'pppoes_value',
 		DLT => 'EN10MB',
 		expr => 'pppoes 65536',
-		errstr => 'PPPoE session number 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('PPPoE session number 65536', 65535),
 	},
 	{
 		name => 'mtp2_sio',
 		DLT => 'MTP2',
 		expr => 'sio 256',
-		errstr => 'sio 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('sio 256', 255),
 	},
 	{
 		name => 'mtp3_dpc',
 		DLT => 'MTP2',
 		expr => 'dpc 16384',
-		errstr => 'dpc 16384 greater than maximum 16383',
+		errstr => errstr_val_too_high ('dpc 16384', 16383),
 	},
 	{
 		name => 'mtp3_opc',
 		DLT => 'MTP2',
 		expr => 'opc 16384',
-		errstr => 'opc 16384 greater than maximum 16383',
+		errstr => errstr_val_too_high ('opc 16384', 16383),
 	},
 	{
 		name => 'mtp3_sls',
 		DLT => 'MTP2',
 		expr => 'sls 16',
-		errstr => 'sls 16 greater than maximum 15',
+		errstr => errstr_val_too_high ('sls 16', 15),
 	},
 	{
 		name => 'mtp2_hsio',
 		DLT => 'MTP2',
 		expr => 'hsio 256',
-		errstr => 'hsio 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('hsio 256', 255),
 	},
 	{
 		name => 'mtp3_hdpc',
 		DLT => 'MTP2',
 		expr => 'hdpc 16384',
-		errstr => 'hdpc 16384 greater than maximum 16383',
+		errstr => errstr_val_too_high ('hdpc 16384', 16383),
 	},
 	{
 		name => 'mtp3_hopc',
 		DLT => 'MTP2',
 		expr => 'hopc 16384',
-		errstr => 'hopc 16384 greater than maximum 16383',
+		errstr => errstr_val_too_high ('hopc 16384', 16383),
 	},
 	{
 		name => 'mtp3_hsls',
 		DLT => 'MTP2',
 		expr => 'hsls 16',
-		errstr => 'hsls 16 greater than maximum 15',
+		errstr => errstr_val_too_high ('hsls 16', 15),
 	},
 	{
 		name => 'atm_vpi',
 		DLT => 'SUNATM',
 		expr => 'vpi 256',
-		errstr => 'VPI 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('VPI 256', 255),
 	},
 	{
 		name => 'atm_vci',
 		DLT => 'SUNATM',
 		expr => 'vci 65536',
-		errstr => 'VCI 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('VCI 65536', 65535),
 	},
 	{
 		name => 'wlan_type',
@@ -14254,7 +14285,7 @@ my @reject_tests = (
 		DLT => 'IEEE802_11',
 		# Invalid syntax (numeric subtype is ambiguous and requires a type).
 		expr => 'wlan subtype 0',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'wlan_type_subtype',
@@ -14279,13 +14310,13 @@ my @reject_tests = (
 		name => 'pppoed_unary',
 		DLT => 'EN10MB',
 		expr => 'pppoed 1234',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'llc_noneth',
 		DLT => 'RAW',
 		expr => 'llc',
-		errstr => 'not supported',
+		errstr => errstr_kw_notsup_on ('llc'),
 	},
 	{
 		name => 'decnet_area',
@@ -14309,13 +14340,13 @@ my @reject_tests = (
 		name => 'ip6_host_toolong',
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip6_host_ipv4addr',
 		DLT => 'RAW',
 		expr => 'ip6 host 1.2.3.4',
-		errstr => '\'ip6\' is not a valid qualifier for \'ip host\'',
+		errstr => errstr_invqual ('ip6', 'ip host'),
 	},
 	{
 		name => 'ip6_host_ipv4name',
@@ -14349,73 +14380,73 @@ my @reject_tests = (
 		name => 'ip_net_nonhid1',
 		DLT => 'RAW',
 		expr => 'net 10 mask 255.0.0.0',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip_net_nonhid2',
 		DLT => 'RAW',
 		expr => 'net 10/8',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip_net_mask_nonhid',
 		DLT => 'RAW',
 		expr => 'net 10.0.0.0 mask 255',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip_net_nonhid_mask_nonhid',
 		DLT => 'RAW',
 		expr => 'net 10 mask 255',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip_net_unknown',
 		DLT => 'EN10MB',
 		expr => "ip net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'ip_src_net_unknown',
 		DLT => 'EN10MB',
 		expr => "ip src net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'ip_dst_net_unknown',
 		DLT => 'EN10MB',
 		expr => "ip dst net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'net_unknown',
 		DLT => 'EN10MB',
 		expr => "net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'src_net_unknown',
 		DLT => 'EN10MB',
 		expr => "src net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'dst_net_unknown',
 		DLT => 'EN10MB',
 		expr => "dst net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'src_or_dst_net_unknown',
 		DLT => 'EN10MB',
 		expr => "src or dst net ${nonexistent}",
-		errstr => "unknown network '${nonexistent}'",
+		errstr => errstr_nonet ($nonexistent),
 	},
 	{
 		name => 'ip6_net_prefix',
 		DLT => 'RAW',
 		expr => 'ip6 net fe80:0:0:0:0:0:0:0:0/64',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'ip6_net_masklen',
@@ -14433,55 +14464,55 @@ my @reject_tests = (
 		name => 'tcp_port',
 		DLT => 'IPV4',
 		expr => 'tcp port 70000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'udp_port',
 		DLT => 'IPV4',
 		expr => 'udp port 70000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'sctp_port',
 		DLT => 'IPV4',
 		expr => 'sctp port 70000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'tcp_portrange1',
 		DLT => 'IPV4',
 		expr => 'tcp portrange 1-70000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'tcp_portrange2',
 		DLT => 'IPV4',
 		expr => 'tcp portrange 23-',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'tcp_portrange3',
 		DLT => 'IPV4',
 		expr => 'tcp portrange -512',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'tcp_portrange4',
 		DLT => 'IPV4',
 		expr => 'tcp portrange 70000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'udp_portrange',
 		DLT => 'IPV4',
 		expr => 'udp portrange 70000-1',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'sctp_portrange',
 		DLT => 'IPV4',
 		expr => 'sctp portrange 70000-80000',
-		errstr => 'illegal port number',
+		errstr => errstr_invport (70000),
 	},
 	{
 		name => 'pppoes_and_vlan',
@@ -14493,37 +14524,37 @@ my @reject_tests = (
 		name => 'vlan_invalid_id1',
 		DLT => 'EN10MB',
 		expr => 'vlan 4096',
-		errstr => 'greater than maximum',
+		errstr => errstr_val_too_high ('VLAN tag 4096', 4095),
 	},
 	{
 		name => 'vlan_invalid_id2',
 		DLT => 'EN10MB',
 		expr => 'vlan any',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'mpls_invalid_id',
 		DLT => 'EN10MB',
 		expr => 'mpls 1048576',
-		errstr => 'greater than maximum',
+		errstr => errstr_val_too_high ('MPLS label 1048576', 1048575),
 	},
 	{
 		name => 'arcnet_address1',
 		DLT => 'ARCNET',
 		expr => 'link host $123',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'arcnet_address2',
 		DLT => 'ARCNET',
 		expr => 'link host $x',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'arcnet_address3',
 		DLT => 'ARCNET',
 		expr => 'link host $',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'arcnet_address4',
@@ -14549,14 +14580,14 @@ my @reject_tests = (
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'arp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => '\'arp\' is not a valid qualifier for \'ip6 host\'',
+		errstr => errstr_invqual ('arp', 'ip6 host'),
 	},
 	{
 		name => 'rarp_host_ipv4_ipv6',
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'rarp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => '\'rarp\' is not a valid qualifier for \'ip6 host\'',
+		errstr => errstr_invqual ('rarp', 'ip6 host'),
 	},
 	{
 		name => 'arp_host_noipv4_noipv6',
@@ -14592,21 +14623,21 @@ my @reject_tests = (
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'protochain 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'ip_protochain_256',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'ip protochain 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'ip6_protochain_256',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'RAW',
 		expr => 'ip6 protochain 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'geneve_and_protochain_4',
@@ -14633,19 +14664,19 @@ my @reject_tests = (
 		name => 'proto_256',
 		DLT => 'RAW',
 		expr => 'proto 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'ip_proto_256',
 		DLT => 'RAW',
 		expr => 'ip proto 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'ip6_proto_256',
 		DLT => 'RAW',
 		expr => 'ip6 proto 256',
-		errstr => 'protocol number 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('protocol number 256', 255),
 	},
 	{
 		name => 'proto_1_2_3_4',
@@ -14684,7 +14715,7 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'src gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_gateway',
@@ -14692,55 +14723,55 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'src_proto_NUM',
 		DLT => 'EN10MB',
 		expr => 'src proto 1',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_proto_NUM',
 		DLT => 'EN10MB',
 		expr => 'dst proto 1',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'src_proto_ID',
 		DLT => 'EN10MB',
 		expr => 'src proto \tcp',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_proto_ID',
 		DLT => 'EN10MB',
 		expr => 'dst proto \tcp',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'src_protochain_NUM',
 		DLT => 'EN10MB',
 		expr => 'src protochain 1',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_protochain_NUM',
 		DLT => 'EN10MB',
 		expr => 'dst protochain 1',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'src_protochain_ID',
 		DLT => 'EN10MB',
 		expr => 'src protochain \tcp',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_protochain_ID',
 		DLT => 'EN10MB',
 		expr => 'dst protochain \tcp',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'gateway_1',
@@ -14782,7 +14813,7 @@ my @reject_tests = (
 		name => 'index_size_neg',
 		DLT => 'RAW',
 		expr => 'link[0:-1] != 0',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'index_size_0',
@@ -14830,20 +14861,20 @@ my @reject_tests = (
 		name => 'link_host_ipv6addr',
 		DLT => 'RAW',
 		expr => 'link host fe80::',
-		errstr => '\'link\' is not a valid qualifier for \'ip6 host\'',
+		errstr => errstr_invqual ('link', 'ip6 host'),
 	},
 	{
 		name => 'link_net_ipv6addr',
 		DLT => 'RAW',
 		expr => 'link net fe80::',
-		errstr => '\'link\' is not a valid qualifier for \'ip6 net\'',
+		errstr => errstr_invqual ('link', 'ip6 net'),
 	},
 	{
 		skip => skip_no_networks(),
 		name => 'link_net_ipv4name',
 		DLT => 'RAW',
 		expr => 'link net net-10-20-30-0.libpcap.test',
-		errstr => '\'link\' is not a valid qualifier for \'ip net\'',
+		errstr => errstr_invqual ('link', 'ip net'),
 	},
 	{
 		name => 'reason_invalid_PFLOG',
@@ -14861,203 +14892,203 @@ my @reject_tests = (
 		name => 'iso_proto_256',
 		DLT => 'EN10MB',
 		expr => 'iso proto 256',
-		errstr => 'ISO protocol 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('ISO protocol 256', 255),
 	},
 	{
 		name => 'isis_proto_32',
 		DLT => 'EN10MB',
 		expr => 'isis proto 32',
-		errstr => 'IS-IS PDU type 32 greater than maximum 31',
+		errstr => errstr_val_too_high ('IS-IS PDU type 32', 31),
 	},
 	{
 		name => 'byte_ne',
 		DLT => 'IPV4',
 		expr => 'byte 1 != 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_le',
 		DLT => 'IPV4',
 		expr => 'byte 1 <= 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_ge',
 		DLT => 'IPV4',
 		expr => 'byte 1 >= 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_xor',
 		DLT => 'IPV4',
 		expr => 'byte 1 ^ 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_lsh',
 		DLT => 'IPV4',
 		expr => 'byte 1 << 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_rsh',
 		DLT => 'IPV4',
 		expr => 'byte 1 >> 2',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'byte_eq_256',
 		DLT => 'IPV4',
 		expr => 'byte 1 = 256',
-		errstr => 'byte argument 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('byte argument 256', 255),
 	},
 	{
 		name => 'byte_lt_256',
 		DLT => 'IPV4',
 		expr => 'byte 1 < 256',
-		errstr => 'byte argument 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('byte argument 256', 255),
 	},
 	{
 		name => 'byte_gt_256',
 		DLT => 'IPV4',
 		expr => 'byte 1 > 256',
-		errstr => 'byte argument 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('byte argument 256', 255),
 	},
 	{
 		name => 'byte_and_256',
 		DLT => 'IPV4',
 		expr => 'byte 1 & 256',
-		errstr => 'byte argument 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('byte argument 256', 255),
 	},
 	{
 		name => 'byte_or_256',
 		DLT => 'IPV4',
 		expr => 'byte 1 | 256',
-		errstr => 'byte argument 256 greater than maximum 255',
+		errstr => errstr_val_too_high ('byte argument 256', 255),
 	},
 	{
 		name => 'vxlan_invalid',
 		DLT => 'EN10MB',
 		expr => 'vxlan invalid',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'vxlan_123456789',
 		DLT => 'EN10MB',
 		expr => 'vxlan 123456789',
-		errstr => 'VXLAN VNI 123456789 greater than maximum 16777215',
+		errstr => errstr_val_too_high ('VXLAN VNI 123456789', 16777215),
 	},
 	{
 		name => 'geneve_invalid',
 		DLT => 'EN10MB',
 		expr => 'geneve invalid',
-		errstr => 'syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'geneve_123456789',
 		DLT => 'EN10MB',
 		expr => 'geneve 123456789',
-		errstr => 'Geneve VNI 123456789 greater than maximum 16777215',
+		errstr => errstr_val_too_high ('Geneve VNI 123456789', 16777215),
 	},
 	# gen_linktype()
 	{
 		name => 'link_proto_65536_C_HDLC',
 		DLT => 'C_HDLC',
 		expr => 'link proto 65536',
-		errstr => 'HDLC protocol 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('HDLC protocol 65536', 65535),
 	},
 	{
 		name => 'link_proto_65536_PPP',
 		DLT => 'PPP',
 		expr => 'link proto 65536',
-		errstr => 'PPP protocol 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('PPP protocol 65536', 65535),
 	},
 	{
 		name => 'link_proto_65536_PPP_BSDOS',
 		DLT => 'PPP_BSDOS',
 		expr => 'link proto 65536',
-		errstr => 'PPP protocol 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('PPP protocol 65536', 65535),
 	},
 	{
 		name => 'link_proto_65536_APPLE_IP_OVER_IEEE1394',
 		DLT => 'APPLE_IP_OVER_IEEE1394', # the default case
 		expr => 'link proto 65536',
-		errstr => 'EtherType 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('EtherType 65536', 65535),
 	},
 	# gen_ether_linktype()
 	{
 		name => 'link_proto_65536_EN10MB',
 		DLT => 'EN10MB',
 		expr => 'link proto 65536',
-		errstr => 'EtherType 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('EtherType 65536', 65535),
 	},
 	{
 		name => 'link_proto_1500_EN10MB',
 		DLT => 'EN10MB',
 		expr => 'link proto 1500',
-		errstr => 'LLC DSAP 1500 greater than maximum 255',
+		errstr => errstr_val_too_high ('LLC DSAP 1500', 255),
 	},
 	# gen_llc_linktype
 	{
 		name => 'link_proto_65536_IP_OVER_FC',
 		DLT => 'IP_OVER_FC',
 		expr => 'link proto 65536',
-		errstr => 'EtherType 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('EtherType 65536', 65535),
 	},
 	{
 		name => 'link_proto_1500_IP_OVER_FC',
 		DLT => 'IP_OVER_FC',
 		expr => 'link proto 1500',
-		errstr => 'LLC DSAP 1500 greater than maximum 255',
+		errstr => errstr_val_too_high ('LLC DSAP 1500', 255),
 	},
 	# gen_linux_sll_linktype
 	{
 		name => 'link_proto_65536_LINUX_SLL',
 		DLT => 'LINUX_SLL',
 		expr => 'link proto 65536',
-		errstr => 'EtherType 65536 greater than maximum 65535',
+		errstr => errstr_val_too_high ('EtherType 65536', 65535),
 	},
 	{
 		name => 'link_proto_1500_LINUX_SLL',
 		DLT => 'LINUX_SLL',
 		expr => 'link proto 1500',
-		errstr => 'LLC DSAP 1500 greater than maximum 255',
+		errstr => errstr_val_too_high ('LLC DSAP 1500', 255),
 	},
 	{
 		name => 'bare_lldp',
 		DLT => 'EN10MB',
 		expr => 'lldp',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'esc_lldp',
 		DLT => 'EN10MB',
 		expr => '\lldp',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'bare_loopback',
 		DLT => 'EN10MB',
 		expr => 'loopback',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'esc_loopback',
 		DLT => 'EN10MB',
 		expr => '\loopback',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'bare_slow',
 		DLT => 'EN10MB',
 		expr => 'slow',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 	{
 		name => 'esc_slow',
 		DLT => 'EN10MB',
 		expr => '\slow',
-		errstr => 'can\'t parse filter expression: syntax error',
+		errstr => errstr_syntax,
 	},
 );
 
@@ -15782,28 +15813,28 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_host_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.4",
-		errstr => "'${_}' is not a valid qualifier for 'ip host'",
+		errstr => errstr_invqual ($_, 'ip host'),
 	};
 	# HID -> gen_ncode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.4",
-		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+		errstr => errstr_invqual ($_, 'ip net'),
 	};
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::",
-		errstr => "'${_}' is not a valid qualifier for 'ip6 host'",
+		errstr => errstr_invqual ($_, 'ip6 host'),
 	};
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::",
-		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
+		errstr => errstr_invqual ($_, 'ip6 net'),
 	};
 
 	# HID NETMASK HID -> gen_mcode() -> default
@@ -15818,7 +15849,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_net_ipv4mask",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0 mask 255.255.255.0",
-		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+		errstr => errstr_invqual ($_, 'ip net'),
 	};
 	# ("mask" is IPv4-only)
 
@@ -15834,7 +15865,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_net_ipv4cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0/24",
-		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+		errstr => errstr_invqual ($_, 'ip net'),
 	};
 	# HID6 '/' NUM -> gen_mcode6() -> default
 	push @reject_tests, {
@@ -15848,7 +15879,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_net_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::/16",
-		errstr => "'${_}' is not a valid qualifier for 'ip6 net'",
+		errstr => errstr_invqual ($_, 'ip6 net'),
 	};
 
 	# ID -> gen_scode() -> gen_host() -> default
@@ -15857,7 +15888,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_host_ipv4name",
 		DLT => 'EN10MB',
 		expr => "${_} host noeth-ipv4-noipv6.host123.libpcap.test",
-		errstr => "'${_}' is not a valid qualifier for 'ip host'",
+		errstr => errstr_invqual ($_, 'ip host'),
 	};
 	# ID -> gen_scode() -> gen_host() -> default
 	push @reject_tests, {
@@ -15865,7 +15896,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_net_ipv4name",
 		DLT => 'EN10MB',
 		expr => "${_} net net-10-20-30-0.libpcap.test",
-		errstr => "'${_}' is not a valid qualifier for 'ip net'",
+		errstr => errstr_invqual ($_, 'ip net'),
 	};
 	# ID -> gen_scode() -> gen_host6() -> default
 	push @reject_tests, {
@@ -15873,7 +15904,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_host_ipv6name",
 		DLT => 'EN10MB',
 		expr => "${_} host noeth-noipv4-ipv6.host123.libpcap.test",
-		errstr => "'${_}' is not a valid qualifier for 'ip6 host'",
+		errstr => errstr_invqual ($_, 'ip6 host'),
 	};
 	# (IPv6 networks cannot have names)
 }
@@ -15887,7 +15918,7 @@ foreach (pquals_without 'gateway') {
 		name => "inv_qual_${_}_gateway_ipv4name",
 		DLT => 'EN10MB',
 		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
-		errstr => "'${_}' is not a valid qualifier for 'gateway'",
+		errstr => errstr_invqual ($_, 'gateway'),
 	};
 }
 
@@ -15900,7 +15931,7 @@ foreach (DLTs_without 'link_host_mac48') {
 				skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => '\'gateway\' not supported on',
+		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 	# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> case Q_DEFAULT -> default
 	# Invokes bpf_error() after pcap_ether_hostton().
@@ -15910,7 +15941,7 @@ foreach (DLTs_without 'link_host_mac48') {
 				skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => '\'gateway\' not supported on',
+		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 }
 
@@ -16004,7 +16035,7 @@ foreach (pquals_without 'protochain') {
 		expr => "${_} protochain 17",
 		errstr => $_ eq 'decnet' ?
 			'invalid DECnet address \'17\'' :
-			"'${_}' is not a valid qualifier for 'protochain'",
+			errstr_invqual ($_, 'protochain'),
 	};
 	last if $only_short;
 }
@@ -16017,7 +16048,7 @@ foreach (pquals_without 'proto') {
 		expr => "${_} proto 17",
 		errstr => $_ eq 'decnet' ?
 			'invalid DECnet address \'17\'' :
-			"'${_}' is not a valid qualifier for 'proto'",
+			errstr_invqual ($_, 'proto'),
 	};
 	last if $only_short;
 }
@@ -16060,7 +16091,7 @@ foreach (DLTs_without 'link_broadcast') {
 		name => "link_broadcast_${_}",
 		DLT => $_,
 		expr => 'link broadcast',
-		errstr => '\'broadcast\' not supported on',
+		errstr => errstr_kw_notsup_on ('broadcast'),
 	};
 }
 
@@ -16070,7 +16101,7 @@ foreach (DLTs_without 'link_multicast') {
 		name => "link_multicast_${_}",
 		DLT => $_,
 		expr => 'link multicast',
-		errstr => '\'multicast\' not supported on',
+		errstr => errstr_kw_notsup_on ('multicast'),
 	};
 }
 
@@ -16100,7 +16131,7 @@ foreach (DLTs_without 'llc') {
 		name => "llc_${_}",
 		DLT => $_,
 		expr => 'llc',
-		errstr => '\'llc\' not supported on',
+		errstr => errstr_kw_notsup_on ('llc'),
 	};
 }
 
@@ -16110,14 +16141,14 @@ foreach (DLTs_without 'wlan') {
 		name => "type_data_${_}",
 		DLT => $_,
 		expr => 'type data',
-		errstr => '\'type/subtype\' not supported on',
+		errstr => errstr_kw_notsup_on ('type/subtype'),
 	};
 	# gen_p80211_fcdir() -> default
 	push @reject_tests, {
 		name => "dir_fromds_${_}",
 		DLT => $_,
 		expr => 'dir fromds',
-		errstr => '\'dir\' not supported on',
+		errstr => errstr_kw_notsup_on ('dir'),
 	};
 }
 
@@ -16163,7 +16194,7 @@ foreach (DLTs_without 'link_host_mac48') {
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => '\'gateway\' not supported on',
+		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 	# gen_scode() -> case Q_DEFAULT -> Q_LINK -> fail_kw_on_dlt()
 	push @reject_tests, {
@@ -16171,14 +16202,14 @@ foreach (DLTs_without 'link_host_mac48') {
 		skip => skip_no_ethers(),
 		DLT => $_,
 		expr => 'link host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => '\'link host NAME\' not supported on',
+		errstr => errstr_kw_notsup_on ('link host NAME'),
 	};
 	# gen_ecode() -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "link_host_mac48_${_}",
 		DLT => $_,
 		expr => 'link host a:b:c:d:e:f',
-		errstr => '\'link host XX:XX:XX:XX:XX:XX\' not supported on',
+		errstr => errstr_kw_notsup_on ('link host XX:XX:XX:XX:XX:XX'),
 	};
 }
 
@@ -16224,14 +16255,14 @@ foreach (DLTs_without 'inout') {
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'inbound',
-		errstr => 'not supported on',
+		errstr => errstr_kw_notsup_on ('inbound'),
 	};
 	push @reject_tests, {
 		name => "outbound_other_${_}",
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'outbound',
-		errstr => 'not supported on',
+		errstr => errstr_kw_notsup_on ('outbound'),
 	};
 }
 
@@ -16262,7 +16293,7 @@ foreach (DLTs_without 'ifindex') {
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'ifindex 1',
-		errstr => '\'ifindex\' not supported on',
+		errstr => errstr_kw_notsup_on ('ifindex'),
 	};
 	push @reject_tests, {
 		name => "ifindex_2_${_}",
