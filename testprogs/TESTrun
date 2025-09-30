@@ -50,7 +50,6 @@ use subs qw(
 	result_timed_out
 	run_skip_test
 	skip_config_def1
-	skip_config_have_decl
 	skip_config_not_def1
 	skip_os
 	skip_os_not
@@ -5657,7 +5656,7 @@ my @accept_blocks = (
 	}, # vlan_netanalyzer_unary
 	{
 		name => 'vlan_eth_linuxext_nullary',
-		skip => skip_os_not ('linux') || skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0),
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		aliases => ['vlan'],
@@ -5674,7 +5673,7 @@ my @accept_blocks = (
 	}, # vlan_eth_linuxext_nullary
 	{
 		name => 'vlan_eth_linuxext_unary',
-		skip => skip_os_not ('linux') || skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0),
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		aliases => ['vlan 10'],
@@ -5698,7 +5697,7 @@ my @accept_blocks = (
 	}, # vlan_eth_linuxext_unary
 	{
 		name => 'vlan_and_vlan_eth_linuxext',
-		skip => skip_os_not ('linux') || skip_config_have_decl ('SKF_AD_VLAN_TAG_PRESENT', 0),
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
 		DLT => 'EN10MB',
 		linuxext => 1,
 		aliases => ['vlan and vlan'],
