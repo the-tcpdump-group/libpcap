@@ -51,7 +51,7 @@ use subs qw(
 	run_skip_test
 	skip_config_def1
 	skip_config_have_decl
-	skip_config_undef
+	skip_config_not_def1
 	skip_os
 	skip_os_not
 	string_in_file
@@ -182,8 +182,8 @@ sub skip_unless_file_contains_lines {
 # Skip if running on Linux with musl libc.
 sub skip_musl_libc {
 	return skip_os ('linux') &&
-		skip_config_undef ('HAVE_GLIBC') &&
-		skip_config_undef ('HAVE_UCLIBC') &&
+		skip_config_not_def1 ('HAVE_GLIBC') &&
+		skip_config_not_def1 ('HAVE_UCLIBC') &&
 		'musl libc';
 }
 
@@ -14575,7 +14575,7 @@ my @reject_tests = (
 	},
 	{
 		name => 'protochain_disabled',
-		skip => skip_config_undef ('NO_PROTOCHAIN'),
+		skip => skip_config_not_def1 ('NO_PROTOCHAIN'),
 		DLT => 'EN10MB',
 		expr => 'protochain 17',
 		errstr => 'protochain not supported',

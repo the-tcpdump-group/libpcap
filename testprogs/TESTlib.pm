@@ -144,7 +144,7 @@ sub skip_config_def1 {
 		"$symbol==1" : '';
 }
 
-sub skip_config_undef {
+sub skip_config_not_def1 {
 	my $symbol = shift;
 	return (! defined $config{$symbol} || $config{$symbol} ne '1') ?
 		"${symbol}!=1" : '';
