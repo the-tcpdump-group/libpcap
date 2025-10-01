@@ -69,6 +69,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         another incorporate-remote-capture project. (issue #1120)
       rpcapd: Refine SSL options in printusage().
       Fix a possible buffer overflow (Coverity CID 1619148).
+      Add API to customize the keepalives parameters of a rpcap control socket
     Documentation:
       Document a standard format for writing out BPF filter programs.
       Add a README.hurd.md file.

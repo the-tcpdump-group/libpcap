@@ -41,6 +41,11 @@
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
 #include <limits.h>		/* for INT_MAX */
+
+#ifndef _WIN32
+  #include <netinet/tcp.h>		/* for TCP_KEEP* */
+#endif
+
 #include "sockutils.h"
 #include "pcap-int.h"
 #include "pcap-util.h"
@@ -178,6 +183,7 @@ static int rpcap_recv(PCAP_SOCKET sock, SSL *, void *buffer, size_t toread, uint
 static void rpcap_msg_err(PCAP_SOCKET sockctrl, SSL *, uint32_t plen, char *remote_errbuf);
 static int rpcap_discard(PCAP_SOCKET sock, SSL *, uint32_t len, char *errbuf);
 static int rpcap_read_packet_msg(struct pcap_rpcap const *, pcap_t *p, size_t size);
+static int pcap_set_control_keepalive_rpcap(pcap_t *p, int enable, int keepcnt, int keepidle, int keepintvl);
 
 /****************************************************
  *                                                  *
@@ -2646,6 +2652,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 #ifdef _WIN32
 	fp->stats_ex_op = pcap_stats_ex_rpcap;
 #endif
+	fp->set_control_keepalive_op = pcap_set_control_keepalive_rpcap;
 	fp->cleanup_op = pcap_cleanup_rpcap;
 
 	fp->activated = 1;
@@ -3716,5 +3723,48 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t 
 	}
 	p->bp = bp;
 	p->cc = cc;
+	return 0;
+}
+
+/*
+ * Set the keepalives parameters on the control socket.
+ * An rpcap-based application may detect more rapidly a network error.
+ *
+ * It may not be necessary to set them on the data socket as it may use UDP.
+ * See pcap_read_nocb_remote for the select logic that will take into
+ * account the error on the control socket.
+ */
+static int
+pcap_set_control_keepalive_rpcap(pcap_t *p, int enable, int keepcnt, int keepidle, int keepintvl)
+{
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
+
+	if (setsockopt(pr->rmt_sockctrl, SOL_SOCKET, SO_KEEPALIVE, (char *)&enable, sizeof(enable)) < 0)
+	{
+		sock_geterrmsg(p->errbuf, PCAP_ERRBUF_SIZE, "setsockopt(): ");
+		return PCAP_ERROR;
+	}
+
+	/* when SO_KEEPALIVE isn't active, the following options aren't used */
+	if (!enable)
+		return 0;
+
+#if defined(TCP_KEEPCNT) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
+	if (setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPCNT, (char *)&keepcnt, sizeof(keepcnt)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPIDLE, (char *)&keepidle, sizeof(keepidle)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, IPPROTO_TCP, TCP_KEEPINTVL, (char *)&keepintvl, sizeof(keepintvl)) < 0)
+	{
+		sock_geterrmsg(p->errbuf, PCAP_ERRBUF_SIZE, "setsockopt(): ");
+		return PCAP_ERROR;
+	}
+#else
+	if (keepcnt || keepidle || keepintvl)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "TCP_KEEPCNT, TCP_KEEPIDLE or TCP_KEEPINTVL not supported on this platform");
+		return PCAP_ERROR;
+	}
+#endif
+
 	return 0;
 }

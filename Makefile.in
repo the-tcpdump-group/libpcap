@@ -203,6 +203,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_offline_filter.3pcap \
 	pcap_open_live.3pcap \
 	pcap_set_buffer_size.3pcap \
+	pcap_set_control_keepalive.3pcap \
 	pcap_set_datalink.3pcap \
 	pcap_set_promisc.3pcap \
 	pcap_set_protocol_linux.3pcap \
