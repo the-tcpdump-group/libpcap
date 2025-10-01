@@ -353,7 +353,6 @@ static int	iface_get_ts_types(const char *device, pcap_t *handle,
 static int	iface_get_offload(pcap_t *handle);
 
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
-static int	fix_offset(pcap_t *handle, struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
 static int	reset_kernel_filter(pcap_t *handle);
 
@@ -5880,12 +5879,119 @@ fix_dlt_can_socketcan(const u_int len _U_, struct bpf_insn insn[] _U_)
 #endif // __BYTE_ORDER == __LITTLE_ENDIAN
 
 static int
+fix_cooked(const u_int len, struct bpf_insn insn[], int(*fixfunc)(struct bpf_insn *))
+{
+	for (u_int i = 0; i < len; ++i) {
+		/*
+		 * If this is a load instruction that loads from the packet,
+		 * fix it if possible, otherwise request userland filtering.
+		 */
+		switch (BPF_CLASS(insn[i].code) | BPF_MODE(insn[i].code)) {
+		case BPF_LD|BPF_ABS:
+		case BPF_LD|BPF_IND:
+		case BPF_LDX|BPF_MSH:
+			/*
+			 * Existing references to auxiliary data shouldn't be adjusted.
+			 *
+			 * Note that SKF_AD_OFF is negative, but p->k is unsigned, so
+			 * we use >= and cast SKF_AD_OFF to unsigned.
+			 */
+			if (insn[i].k >= (bpf_u_int32)SKF_AD_OFF)
+				break;
+
+			if (fixfunc(insn + i) < 0)
+				return 0; // Userland filtering only.
+			// Fixed now.
+			break;
+		}
+	}
+	return 1;
+}
+
+static int
+fix_offset_sll(struct bpf_insn *p)
+{
+	/*
+	 * What's the offset?
+	 */
+	if (p->k >= SLL_HDR_LEN) {
+		/*
+		 * It's within the link-layer payload; that starts
+		 * at an offset of 0, as far as the kernel packet
+		 * filter is concerned, so subtract the length of
+		 * the link-layer header.
+		 */
+		p->k -= SLL_HDR_LEN;
+	} else if (p->k == 0) {
+		/*
+		 * It's the packet type field; map it to the
+		 * special magic kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
+	} else if (p->k == 14) {
+		/*
+		 * It's the protocol field; map it to the
+		 * special magic kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+	} else if ((bpf_int32)(p->k) > 0) {
+		/*
+		 * It's within the header, but it's not one of
+		 * those fields; we can't do that in the kernel,
+		 * so punt to userland.
+		 */
+		return -1;
+	}
+	return 0;
+}
+
+static int
+fix_offset_sll2(struct bpf_insn *p)
+{
+	/*
+	 * What's the offset?
+	 */
+	if (p->k >= SLL2_HDR_LEN) {
+		/*
+		 * It's within the link-layer payload; that starts
+		 * at an offset of 0, as far as the kernel packet
+		 * filter is concerned, so subtract the length of
+		 * the link-layer header.
+		 */
+		p->k -= SLL2_HDR_LEN;
+	} else if (p->k == 0) {
+		/*
+		 * It's the protocol field; map it to the
+		 * special magic kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+	} else if (p->k == 4) {
+		/*
+		 * It's the ifindex field; map it to the
+		 * special magic kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_IFINDEX;
+	} else if (p->k == 10) {
+		/*
+		 * It's the packet type field; map it to the
+		 * special magic kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
+	} else if ((bpf_int32)(p->k) > 0) {
+		/*
+		 * It's within the header, but it's not one of
+		 * those fields; we can't do that in the kernel,
+		 * so punt to userland.
+		 */
+		return -1;
+	}
+	return 0;
+}
+
+static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
-	struct pcap_linux *handlep = handle->priv;
 	size_t prog_size;
-	register int i;
-	register struct bpf_insn *p;
 	struct bpf_insn *f;
 	int len;
 
@@ -5914,134 +6020,13 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode)
 		 * DLT_LINUX_SLL2.
 		 */
 		return fix_dlt_can_socketcan(len, f);
+	case DLT_LINUX_SLL:
+		return fix_cooked(len, f, fix_offset_sll);
+	case DLT_LINUX_SLL2:
+		return fix_cooked(len, f, fix_offset_sll2);
 	}
 
-	for (i = 0; i < len; ++i) {
-		p = &f[i];
-		/*
-		 * What type of instruction is this?
-		 */
-		switch (BPF_CLASS(p->code)) {
-
-		case BPF_LD:
-		case BPF_LDX:
-			/*
-			 * It's a load instruction; is it loading
-			 * from the packet?
-			 */
-			switch (BPF_MODE(p->code)) {
-
-			case BPF_ABS:
-			case BPF_IND:
-			case BPF_MSH:
-				/*
-				 * Yes; are we in cooked mode?
-				 */
-				if (handlep->cooked) {
-					/*
-					 * Yes, so we need to fix this
-					 * instruction.
-					 */
-					if (fix_offset(handle, p) < 0) {
-						/*
-						 * We failed to do so.
-						 * Return 0, so our caller
-						 * knows to punt to userland.
-						 */
-						return 0;
-					}
-				}
-				break;
-			}
-			break;
-		}
-	}
 	return 1;	/* we succeeded */
-}
-
-static int
-fix_offset(pcap_t *handle, struct bpf_insn *p)
-{
-	/*
-	 * Existing references to auxiliary data shouldn't be adjusted.
-	 *
-	 * Note that SKF_AD_OFF is negative, but p->k is unsigned, so
-	 * we use >= and cast SKF_AD_OFF to unsigned.
-	 */
-	if (p->k >= (bpf_u_int32)SKF_AD_OFF)
-		return 0;
-	if (handle->linktype == DLT_LINUX_SLL2) {
-		/*
-		 * What's the offset?
-		 */
-		if (p->k >= SLL2_HDR_LEN) {
-			/*
-			 * It's within the link-layer payload; that starts
-			 * at an offset of 0, as far as the kernel packet
-			 * filter is concerned, so subtract the length of
-			 * the link-layer header.
-			 */
-			p->k -= SLL2_HDR_LEN;
-		} else if (p->k == 0) {
-			/*
-			 * It's the protocol field; map it to the
-			 * special magic kernel offset for that field.
-			 */
-			p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
-		} else if (p->k == 4) {
-			/*
-			 * It's the ifindex field; map it to the
-			 * special magic kernel offset for that field.
-			 */
-			p->k = SKF_AD_OFF + SKF_AD_IFINDEX;
-		} else if (p->k == 10) {
-			/*
-			 * It's the packet type field; map it to the
-			 * special magic kernel offset for that field.
-			 */
-			p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
-		} else if ((bpf_int32)(p->k) > 0) {
-			/*
-			 * It's within the header, but it's not one of
-			 * those fields; we can't do that in the kernel,
-			 * so punt to userland.
-			 */
-			return -1;
-		}
-	} else {
-		/*
-		 * What's the offset?
-		 */
-		if (p->k >= SLL_HDR_LEN) {
-			/*
-			 * It's within the link-layer payload; that starts
-			 * at an offset of 0, as far as the kernel packet
-			 * filter is concerned, so subtract the length of
-			 * the link-layer header.
-			 */
-			p->k -= SLL_HDR_LEN;
-		} else if (p->k == 0) {
-			/*
-			 * It's the packet type field; map it to the
-			 * special magic kernel offset for that field.
-			 */
-			p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
-		} else if (p->k == 14) {
-			/*
-			 * It's the protocol field; map it to the
-			 * special magic kernel offset for that field.
-			 */
-			p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
-		} else if ((bpf_int32)(p->k) > 0) {
-			/*
-			 * It's within the header, but it's not one of
-			 * those fields; we can't do that in the kernel,
-			 * so punt to userland.
-			 */
-			return -1;
-		}
-	}
-	return 0;
 }
 
 static int
