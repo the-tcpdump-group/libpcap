@@ -16216,7 +16216,7 @@ foreach (DLTs_without 'link_host_mac48') {
 foreach (DLTs_with 'link_host_mac48') {
 	# gen_scode() -> case Q_GATEWAY -> eaddrp == NULL
 	push @reject_tests, {
-		name => "gateway_nonex_${_}",
+		name => "gateway_noeth_${_}",
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
