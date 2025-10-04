@@ -476,7 +476,7 @@ parses the
 .IR \%/etc/protocols
 file to translate protocol names to numbers, and the
 .B "getent protocols"
-command lists the protocols recognised by the function.  This is not entirely
+command lists the protocols recognized by the function.  This is not entirely
 so in AIX (which does not have the command), Haiku (which has the file at
 .IR \%/system/data/network/protocols
 and does not have the command), on Linux with musl libc (which hard-codes the

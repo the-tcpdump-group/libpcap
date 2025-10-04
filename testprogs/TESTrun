@@ -343,8 +343,8 @@ sub skip_little_endian {
 #   each string is a filter expression and must produce exactly the same
 #   bytecode (applies to "opt" and "unopt" separately)
 # * snaplen (optional, int): the snapshot length to use for the test
-# * opt (optional, [multi-line] string): the expected optimised bytecode
-# * unopt (optional, [multi-line] string): the expected unoptimised bytecode
+# * opt (optional, [multi-line] string): the expected optimized bytecode
+# * unopt (optional, [multi-line] string): the expected unoptimized bytecode
 # * skip (optional, string): if defined and is not equal to an empty string,
 #   causes the test to skip using the string as the reason
 # * linuxext (optional, int): if defined and is equal to 1, use Linux BPF
