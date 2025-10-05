@@ -1180,10 +1180,10 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	struct pcap_bpf *pb = p->priv;
 	u_int cc;
 	int n = 0;
-	register u_char *bp, *ep;
+	u_char *bp, *ep;
 	u_char *datap;
 #ifdef PCAP_FDDIPAD
-	register u_int pad;
+	u_int pad;
 #endif
 
  again:
@@ -1332,7 +1332,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	pad = p->fddipad;
 #endif
 	while (bp < ep) {
-		register u_int caplen, hdrlen;
+		u_int caplen, hdrlen;
 		size_t packet_bytes;
 
 		/*

@@ -1547,8 +1547,8 @@ int
 pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
     char *errbuf)
 {
-	register int fd;
-	register struct sockaddr_in *sin4;
+	int fd;
+	struct sockaddr_in *sin4;
 	struct ifreq ifr;
 
 	/*
@@ -2898,7 +2898,7 @@ pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 int
 pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	register int n;
+	int n;
 
 	for (;;) {
 		if (p->rfile != NULL) {
@@ -3140,7 +3140,7 @@ static const u_char charmap[] = {
 int
 pcapint_strcasecmp(const char *s1, const char *s2)
 {
-	register const u_char	*cm = charmap,
+	const u_char	*cm = charmap,
 				*us1 = (const u_char *)s1,
 				*us2 = (const u_char *)s2;
 

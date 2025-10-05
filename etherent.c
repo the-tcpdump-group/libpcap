@@ -72,7 +72,7 @@ skip_line(FILE *f)
 struct pcap_etherent *
 pcap_next_etherent(FILE *fp)
 {
-	register int c, i;
+	int c, i;
 	u_char d;
 	char *bp;
 	size_t namesize;

@@ -84,7 +84,7 @@ static int
 netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
 	struct pcap_netfilter *handlep = handle->priv;
-	register u_char *bp, *ep;
+	u_char *bp, *ep;
 	int count = 0;
 	u_int cc;
 

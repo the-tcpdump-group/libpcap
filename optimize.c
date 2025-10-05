@@ -262,8 +262,8 @@ typedef struct {
  */
 #define SET_INTERSECT(a, b, n)\
 {\
-	register bpf_u_int32 *_x = a, *_y = b;\
-	register u_int _n = n;\
+	bpf_u_int32 *_x = a, *_y = b;\
+	u_int _n = n;\
 	do *_x++ &= *_y++; while (--_n != 0);\
 }
 
@@ -273,8 +273,8 @@ typedef struct {
  */
 #define SET_SUBTRACT(a, b, n)\
 {\
-	register bpf_u_int32 *_x = a, *_y = b;\
-	register u_int _n = n;\
+	bpf_u_int32 *_x = a, *_y = b;\
+	u_int _n = n;\
 	do *_x++ &=~ *_y++; while (--_n != 0);\
 }
 
@@ -284,8 +284,8 @@ typedef struct {
  */
 #define SET_UNION(a, b, n)\
 {\
-	register bpf_u_int32 *_x = a, *_y = b;\
-	register u_int _n = n;\
+	bpf_u_int32 *_x = a, *_y = b;\
+	u_int _n = n;\
 	do *_x++ |= *_y++; while (--_n != 0);\
 }
 
@@ -499,7 +499,7 @@ find_closure(opt_state_t *opt_state, struct block *root)
 static int
 atomuse(struct stmt *s)
 {
-	register int c = s->code;
+	int c = s->code;
 
 	if (c == NOP)
 		return -1;
@@ -1385,9 +1385,9 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 }
 
 static void
-deadstmt(opt_state_t *opt_state, register struct stmt *s, register struct stmt *last[])
+deadstmt(opt_state_t *opt_state, struct stmt *s, struct stmt *last[])
 {
-	register int atom;
+	int atom;
 
 	atom = atomuse(s);
 	if (atom >= 0) {
@@ -1413,10 +1413,10 @@ deadstmt(opt_state_t *opt_state, register struct stmt *s, register struct stmt *
 }
 
 static void
-opt_deadstores(opt_state_t *opt_state, register struct block *b)
+opt_deadstores(opt_state_t *opt_state, struct block *b)
 {
-	register struct slist *s;
-	register int atom;
+	struct slist *s;
+	int atom;
 	struct stmt *last[N_ATOMS];
 
 	memset((char *)last, 0, sizeof last);
@@ -1659,8 +1659,8 @@ fold_edge(struct block *child, struct edge *ep)
 static void
 opt_j(opt_state_t *opt_state, struct edge *ep)
 {
-	register u_int i, k;
-	register struct block *target;
+	u_int i, k;
+	struct block *target;
 
 	/*
 	 * Does this edge go to a block where, if the test
@@ -1719,7 +1719,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
  top:
 	for (i = 0; i < opt_state->edgewords; ++i) {
 		/* i'th word in the bitset of dominators */
-		register bpf_u_int32 x = ep->edom[i];
+		bpf_u_int32 x = ep->edom[i];
 
 		while (x != 0) {
 			/* Find the next dominator in that word and mark it as found */
@@ -2612,7 +2612,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	}
 	opt_state->all_edge_sets = p;
 	for (i = 0; i < n; ++i) {
-		register struct block *b = opt_state->blocks[i];
+		struct block *b = opt_state->blocks[i];
 
 		b->et.edom = p;
 		p += opt_state->edgewords;

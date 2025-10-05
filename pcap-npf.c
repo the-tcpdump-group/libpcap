@@ -546,7 +546,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	PACKET Packet;
 	u_int cc;
 	int n;
-	register u_char *bp, *ep;
+	u_char *bp, *ep;
 	u_char *datap;
 	struct pcap_win *pw = p->priv;
 
@@ -653,7 +653,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	n = 0;
 	ep = bp + cc;
 	for (;;) {
-		register u_int caplen, hdrlen;
+		u_int caplen, hdrlen;
 		size_t packet_bytes;
 
 		/*

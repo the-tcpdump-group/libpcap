@@ -1313,7 +1313,7 @@ backpatch(struct block *list, struct block *target)
 static void
 merge(struct block *b0, struct block *b1)
 {
-	register struct block **p = &b0;
+	struct block **p = &b0;
 
 	/* Find end of list. */
 	while (*p)
@@ -1480,11 +1480,11 @@ static struct block *
 gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, const u_char *v)
 {
-	register struct block *b, *tmp;
+	struct block *b, *tmp;
 
 	b = NULL;
 	while (size >= 4) {
-		register const u_char *p = &v[size - 4];
+		const u_char *p = &v[size - 4];
 
 		tmp = gen_cmp(cstate, offrel, offset + size - 4, BPF_W,
 		    EXTRACT_BE_U_4(p));
@@ -1494,7 +1494,7 @@ gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		size -= 4;
 	}
 	while (size >= 2) {
-		register const u_char *p = &v[size - 2];
+		const u_char *p = &v[size - 2];
 
 		tmp = gen_cmp(cstate, offrel, offset + size - 2, BPF_H,
 		    EXTRACT_BE_U_2(p));
@@ -4564,8 +4564,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 static struct block *
 gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 {
-	register struct block *b0, *b1, *b2;
-	register struct slist *s;
+	struct block *b0, *b1, *b2;
+	struct slist *s;
 
 #ifdef ENABLE_WLAN_FILTERING_PATCH
 	/*
@@ -7048,7 +7048,7 @@ struct block *
 gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
     bpf_u_int32 masklen, struct qual q)
 {
-	register int nlen, mlen;
+	int nlen, mlen;
 	bpf_u_int32 n, m;
 	uint64_t m64;
 
@@ -7104,7 +7104,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	bpf_u_int32 mask;
 	int proto;
 	int dir;
-	register int vlen;
+	int vlen;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8033,7 +8033,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 static struct block *
 gen_mac_multicast(compiler_state_t *cstate, int offset)
 {
-	register struct slist *s;
+	struct slist *s;
 
 	/* link[offset] & 1 != 0 */
 	s = gen_load_a(cstate, OR_LINKHDR, offset, BPF_B);
@@ -8043,8 +8043,8 @@ gen_mac_multicast(compiler_state_t *cstate, int offset)
 struct block *
 gen_multicast(compiler_state_t *cstate, int proto)
 {
-	register struct block *b0, *b1, *b2;
-	register struct slist *s;
+	struct block *b0, *b1, *b2;
+	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8276,7 +8276,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 struct block *
 gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 {
-	register struct block *b0;
+	struct block *b0;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8591,7 +8591,7 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 static struct block *
 gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
 {
-	register struct block *b0, *b1;
+	struct block *b0, *b1;
 
 	switch (dir) {
 	/*

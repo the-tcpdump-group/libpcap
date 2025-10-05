@@ -131,8 +131,8 @@ int
 pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
-	register int fd;
-	register struct ifreq *ifrp, *ifend, *ifnext;
+	int fd;
+	struct ifreq *ifrp, *ifend, *ifnext;
 	size_t n;
 	struct ifconf ifc;
 	char *buf = NULL;
