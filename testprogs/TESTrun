@@ -14180,6 +14180,22 @@ sub errstr_nonet {
 	return sprintf ('unknown network \'%s\'', shift);
 }
 
+# gen_scode() case Q_HOST -> b == NULL -> proto == Q_DEFAULT
+# gen_scode() case Q_GATEWAY
+sub errstr_nohost {
+	return sprintf ('unknown host \'%s\'', shift);
+}
+
+# gen_scode() case Q_HOST -> b == NULL -> proto != Q_DEFAULT
+sub errstr_nohost_af {
+	return sprintf ('unknown host \'%s\' for specified address family', shift);
+}
+
+# ERRSTR_UNKNOWN_MAC48HOST
+sub errstr_nomac48host {
+	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
+}
+
 # gen_ncode() case Q_PORT, case Q_PORTRANGE
 # gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
 sub errstr_invport {
@@ -14353,7 +14369,7 @@ my @reject_tests = (
 		skip => skip_no_hosts(),
 		DLT => 'RAW',
 		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => "unknown host \'noeth-ipv4-noipv6.host123.libpcap.test' for specified address family",
+		errstr => errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test'),
 	},
 # This test has been flaky because it depends on an external effect (DNS
 # lookup), which sometimes times out.  Let's disable it until there is a good
@@ -14594,14 +14610,14 @@ my @reject_tests = (
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'arp host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => 'unknown host',
+		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
 	},
 	{
 		name => 'rarp_host_noipv4_noipv6',
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
 		expr => 'rarp host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => 'unknown host',
+		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
 	},
 	{
 		name => 'protochain_disabled',
@@ -14697,7 +14713,8 @@ my @reject_tests = (
 		skip => skip_no_ethers(),
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => 'unknown host', # no IPv4 address in /etc/hosts
+		# no IPv4 address in /etc/hosts
+		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
 	},
 	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
 	# Invokes bpf_error() after pcap_ether_hostton().
@@ -14707,7 +14724,8 @@ my @reject_tests = (
 			skip_no_hosts(),
 		DLT => 'EN10MB',
 		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
-		errstr => 'unknown host', # no IPv4 address in /etc/hosts
+		# no IPv4 address in /etc/hosts
+		errstr => errstr_nohost ('eth-noipv4-ipv6.host123.libpcap.test'),
 	},
 	{
 		name => 'src_gateway',
@@ -16220,7 +16238,7 @@ foreach (DLTs_with 'link_host_mac48') {
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => "unknown Ethernet-like host 'noeth-ipv4-noipv6.host123.libpcap.test'",
+		errstr => errstr_nomac48host ('noeth-ipv4-noipv6.host123.libpcap.test'),
 	};
 	# In the test below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
@@ -16230,7 +16248,7 @@ foreach (DLTs_with 'link_host_mac48') {
 		name => "link_host_nonex_${_}",
 		DLT => $_,
 		expr => "link host ${nonexistent}",
-		errstr => "unknown Ethernet-like host '${nonexistent}'",
+		errstr => errstr_nomac48host ($nonexistent),
 	};
 }
 
