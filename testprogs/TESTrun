@@ -14706,25 +14706,6 @@ my @reject_tests = (
 		expr => "decnet host ${nonexistent}",
 		errstr => "invalid DECnet address '${nonexistent}'",
 	},
-	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
-	{
-		name => 'gateway_noipv4_noipv6',
-		skip => skip_no_ethers(),
-		DLT => 'EN10MB',
-		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
-		# no IPv4 address in /etc/hosts
-		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
-	},
-	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
-	{
-		name => 'gateway_noipv4_ipv6',
-		skip => skip_no_ethers() ||
-			skip_no_hosts(),
-		DLT => 'EN10MB',
-		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
-		# no IPv4 address in /etc/hosts
-		errstr => errstr_nohost ('eth-noipv4-ipv6.host123.libpcap.test'),
-	},
 	{
 		name => 'src_gateway',
 		skip => skip_no_ethers() ||
@@ -15925,7 +15906,7 @@ foreach (pquals_without 'host') {
 	# (IPv6 networks cannot have names)
 }
 
-# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> default
+# ID -> gen_scode() -> gen_gateway() -> default
 foreach (pquals_without 'gateway') {
 	push @reject_tests, {
 		skip => skip_no_ethers() ||
@@ -15934,27 +15915,6 @@ foreach (pquals_without 'gateway') {
 		DLT => 'EN10MB',
 		expr => "${_} gateway eth-ipv4-noipv6.host123.libpcap.test",
 		errstr => errstr_invqual ($_, 'gateway'),
-	};
-}
-
-foreach (DLTs_without 'link_host_mac48') {
-	# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> case Q_DEFAULT -> default
-	push @reject_tests, {
-		name => "gateway_ipv4_noipv6_${_}",
-			skip => skip_no_ethers() ||
-				skip_no_hosts(),
-		DLT => $_,
-		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
-	};
-	# ID -> gen_scode() -> case Q_GATEWAY -> gen_gateway() -> case Q_DEFAULT -> default
-	push @reject_tests, {
-		name => "gateway_ipv4_ipv6_${_}",
-			skip => skip_no_ethers() ||
-				skip_no_hosts(),
-		DLT => $_,
-		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 }
 
@@ -16199,15 +16159,68 @@ foreach (DLTs_without 'ss7') {
 }
 
 foreach (DLTs_without 'link_host_mac48') {
-	# gen_scode() -> case Q_GATEWAY -> fail_kw_on_dlt()
+	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
 	push @reject_tests, {
-		name => "gateway_name_${_}",
+		name => "gateway_noeth_noipv4_noipv6_${_}",
+		DLT => $_,
+		expr => "gateway $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
+	};
+	push @reject_tests, {
+		name => "gateway_eth_noipv4_noipv6_${_}",
+		skip => skip_no_ethers(),
+		DLT => $_,
+		expr => "gateway eth-noipv4-noipv6.host123.libpcap.test",
+		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
+	};
+
+	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> fail_kw_on_dlt()
+	push @reject_tests, {
+		name => "gateway_noeth_noipv4_ipv6_${_}",
+		skip => skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_kw_notsup_on ('gateway'),
+	};
+	push @reject_tests, {
+		name => "gateway_noeth_ipv4_noipv6_${_}",
+		skip => skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
+		errstr => errstr_kw_notsup_on ('gateway'),
+	};
+	push @reject_tests, {
+		name => "gateway_noeth_ipv4_ipv6_${_}",
+		skip => skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-ipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_kw_notsup_on ('gateway'),
+	};
+	push @reject_tests, {
+		name => "gateway_eth_ipv4_noipv6_${_}",
 		skip => skip_no_ethers() ||
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
 		errstr => errstr_kw_notsup_on ('gateway'),
 	};
+	push @reject_tests, {
+		name => "gateway_eth_noipv4_ipv6_${_}",
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_kw_notsup_on ('gateway'),
+	};
+	push @reject_tests, {
+		name => "gateway_eth_ipv4_ipv6_${_}",
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_kw_notsup_on ('gateway'),
+	};
+
 	# gen_scode() -> case Q_DEFAULT -> Q_LINK -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "link_host_name_${_}",
@@ -16226,14 +16239,54 @@ foreach (DLTs_without 'link_host_mac48') {
 }
 
 foreach (DLTs_with 'link_host_mac48') {
-	# gen_scode() -> case Q_GATEWAY -> eaddrp == NULL
+	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
 	push @reject_tests, {
-		name => "gateway_noeth_${_}",
+		name => "gateway_noeth_noipv4_noipv6_${_}",
+		DLT => $_,
+		expr => "gateway $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
+	};
+	push @reject_tests, {
+		name => "gateway_eth_noipv4_noipv6_${_}",
+		skip => skip_no_ethers(),
+		DLT => $_,
+		expr => 'gateway eth-noipv4-noipv6.host123.libpcap.test',
+		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
+	};
+
+	# gen_scode() -> case Q_GATEWAY -> gen_gateway() == NULL
+	push @reject_tests, {
+		name => "gateway_eth_noipv4_ipv6_${_}",
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_nohost ('eth-noipv4-ipv6.host123.libpcap.test'),
+	};
+
+	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> pcap_ether_hostton() == NULL
+	push @reject_tests, {
+		name => "gateway_noeth_noipv4_ipv6_${_}",
+		skip => skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_nomac48host ('noeth-noipv4-ipv6.host123.libpcap.test'),
+	};
+	push @reject_tests, {
+		name => "gateway_noeth_ipv4_noipv6_${_}",
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
 		errstr => errstr_nomac48host ('noeth-ipv4-noipv6.host123.libpcap.test'),
 	};
+	push @reject_tests, {
+		name => "gateway_noeth_ipv4_ipv6_${_}",
+		skip => skip_no_hosts(),
+		DLT => $_,
+		expr => 'gateway noeth-ipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_nomac48host ('noeth-ipv4-ipv6.host123.libpcap.test'),
+	};
+
 	# In the test below the hostname normally should not matter because the
 	# lookup would be made not in the IPv4/IPv6 space, or not at all.  Still
 	# use a hostname that does not exist on the Internet, just in case.
