@@ -17,6 +17,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         platform-independent.
       IEEE 802.11: Fix three undefined behaviors in grammar.y.
       Fix IPv4 multicast filtering to only include 224.0.0.0/4.
+      Fix "(arp|rarp) host NAME" to ignore IPv6 quietly.
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.

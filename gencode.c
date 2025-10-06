@@ -7191,6 +7191,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				switch (res->ai_family) {
 				case AF_INET:
 #ifdef INET6
+					/*
+					 * Ignore any IPv4 addresses when resolving
+					 * "ip6 host NAME", validate all other proto
+					 * qualifiers in gen_host().
+					 */
 					if (tproto == Q_IPV6)
 						continue;
 #endif
@@ -7202,7 +7207,13 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 					break;
 #ifdef INET6
 				case AF_INET6:
-					if (tproto6 == Q_IP)
+					/*
+					 * Ignore any IPv6 addresses when resolving
+					 * "(arp|ip|rarp) host NAME", validate all
+					 * other proto qualifiers in gen_host6().
+					 */
+					if (tproto6 == Q_ARP || tproto6 == Q_IP ||
+					    tproto6 == Q_RARP)
 						continue;
 
 					sin6 = (struct sockaddr_in6 *)
