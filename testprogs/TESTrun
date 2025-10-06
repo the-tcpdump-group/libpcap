@@ -14364,13 +14364,7 @@ my @reject_tests = (
 		expr => 'ip6 host 1.2.3.4',
 		errstr => errstr_invqual ('ip6', 'ip host'),
 	},
-	{
-		name => 'ip6_host_ipv4name',
-		skip => skip_no_hosts(),
-		DLT => 'RAW',
-		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test'),
-	},
+
 # This test has been flaky because it depends on an external effect (DNS
 # lookup), which sometimes times out.  Let's disable it until there is a good
 # way to address it.
@@ -14591,34 +14585,83 @@ my @reject_tests = (
 		expr => 'ip broadcast',
 		errstr => "netmask not known, so 'ip broadcast' not supported",
 	},
+
+	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_ARP
 	{
-		name => 'arp_host_ipv4_ipv6',
+		name => 'arp_host_noeth_ipv4_ipv6',
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
-		expr => 'arp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('arp', 'ip6 host'),
+		expr => 'arp host noeth-ipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_invqual ('arp', 'ip6 host'), # bug!
 	},
 	{
-		name => 'rarp_host_ipv4_ipv6',
+		name => 'arp_host_noeth_noipv4_ipv6',
+		skip => skip_no_hosts(),
+		DLT => 'NETANALYZER',
+		expr => 'arp host noeth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_invqual ('arp', 'ip6 host'), # bug!
+	},
+
+	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_IP
+	{
+		name => 'ip_host_noeth_noipv4_ipv6',
+		skip => skip_no_hosts(),
+		DLT => 'IEEE802_11_RADIO',
+		expr => 'ip host noeth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
+	},
+
+	# gen_scode() -> case Q_HOST -> case AF_INET -> tproto4 == Q_IPV6
+	{
+		name => 'ip6_host_noeth_ipv4_noipv6',
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
+		errstr => errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test'),
+	},
+
+	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_RARP
+	{
+		name => 'rarp_host_noeth_ipv4_ipv6',
 		skip => skip_no_hosts(),
 		DLT => 'FDDI',
-		expr => 'rarp host eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('rarp', 'ip6 host'),
+		expr => 'rarp host noeth-ipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_invqual ('rarp', 'ip6 host'), # bug!
 	},
 	{
-		name => 'arp_host_noipv4_noipv6',
+		name => 'rarp_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
+		DLT => 'PPI',
+		expr => 'rarp host noeth-noipv4-ipv6.host123.libpcap.test',
+		errstr => errstr_invqual ('rarp', 'ip6 host'), # bug!
+	},
+
+	# gen_scode() -> case Q_HOST -> pcap_nametoaddrinfo() == NULL
+	{
+		name => 'arp_host_nonexistent',
 		DLT => 'FDDI',
-		expr => 'arp host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
+		expr => "arp host $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
 	},
 	{
-		name => 'rarp_host_noipv4_noipv6',
-		skip => skip_no_hosts(),
+		name => 'ip_host_nonexistent',
 		DLT => 'FDDI',
-		expr => 'rarp host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
+		expr => "ip host $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
 	},
+	{
+		name => 'ip6_host_nonexistent',
+		DLT => 'FDDI',
+		expr => "ip6 host $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
+	},
+	{
+		name => 'rarp_host_nonexistent',
+		DLT => 'FDDI',
+		expr => "rarp host $nonexistent",
+		errstr => errstr_nohost ($nonexistent),
+	},
+
 	{
 		name => 'protochain_disabled',
 		skip => skip_config_not_def1 ('NO_PROTOCHAIN'),
