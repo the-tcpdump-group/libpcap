@@ -4693,6 +4693,10 @@ my @accept_blocks = (
 			'arp host noeth-ipv4-noipv6.host123.libpcap.test',
 			'arp src or dst noeth-ipv4-noipv6.host123.libpcap.test',
 			'arp src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			# Expect the presence of the IPv6 address to make no difference.
+			'arp host noeth-ipv4-ipv6.host123.libpcap.test',
+			'arp src or dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'arp src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
 		],
 		unopt => '
 			(000) ldh      [12]
@@ -4713,6 +4717,10 @@ my @accept_blocks = (
 			'rarp host noeth-ipv4-noipv6.host123.libpcap.test',
 			'rarp src or dst noeth-ipv4-noipv6.host123.libpcap.test',
 			'rarp src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			# Expect the presence of the IPv6 address to make no difference.
+			'rarp host noeth-ipv4-ipv6.host123.libpcap.test',
+			'rarp src or dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'rarp src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
 		],
 		unopt => '
 			(000) ldh      [12]
@@ -14588,18 +14596,11 @@ my @reject_tests = (
 
 	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_ARP
 	{
-		name => 'arp_host_noeth_ipv4_ipv6',
-		skip => skip_no_hosts(),
-		DLT => 'FDDI',
-		expr => 'arp host noeth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('arp', 'ip6 host'), # bug!
-	},
-	{
 		name => 'arp_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
 		DLT => 'NETANALYZER',
 		expr => 'arp host noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('arp', 'ip6 host'), # bug!
+		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
 	},
 
 	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_IP
@@ -14622,18 +14623,11 @@ my @reject_tests = (
 
 	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_RARP
 	{
-		name => 'rarp_host_noeth_ipv4_ipv6',
-		skip => skip_no_hosts(),
-		DLT => 'FDDI',
-		expr => 'rarp host noeth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('rarp', 'ip6 host'), # bug!
-	},
-	{
 		name => 'rarp_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
 		DLT => 'PPI',
 		expr => 'rarp host noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_invqual ('rarp', 'ip6 host'), # bug!
+		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
 	},
 
 	# gen_scode() -> case Q_HOST -> pcap_nametoaddrinfo() == NULL

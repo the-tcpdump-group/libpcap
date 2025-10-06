@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "29 September 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "6 October 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -226,8 +226,33 @@ for Ethernet-like link-layer types is equivalent to
 .in -.5i
 .IP
 .I hostnameaddr
-may be either an address or a name.  If it is a name with multiple IPv4/IPv6 addresses,
-each address will be checked for a match.
+may be either an address or a name.  If it is a name, the name must resolve
+to at least one IPv4 address for
+.BR "arp host" ,
+.B "ip host"
+and
+.BR "rarp host" ,
+at least one IPv6 address for
+.B "ip6 host"
+and at least one IPv4/IPv6 address for
+.BR "host" .
+.IP
+When not qualified with a protocol, this primitive matches all protocols that
+make sense for the address families of the specified/resolved addresses.  For
+example, for a name that resolves only to an IPv6 address
+.B "arp host"
+returns an error, but
+.B host
+is valid and means IPv6;
+likewise, for a name that resolves only to an IPv4 address
+.B "ip6 host"
+returns an error, but
+.B host
+is valid and means ARP/IPv4/RARP.
+.IP
+Whether qualified with a protocol or not, this primitive evaluates to true if
+the name resolves to more than one address and at least one of the addresses
+matches the packet.
 .IP "\fBether host \fIethernameaddr\fP"
 True if the source or the destination Ethernet/802.11/IPFC/ATM LANE/FDDI/Token Ring
 address of the packet is

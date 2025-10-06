@@ -63,6 +63,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "protochain" value to be within range.
       Always enable the "gateway" primitive.
       Fix IPv4 multicast filtering to only include 224.0.0.0/4.
+      Fix "(arp|rarp) host NAME" to ignore IPv6 quietly.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
