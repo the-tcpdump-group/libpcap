@@ -14189,7 +14189,7 @@ sub errstr_nonet {
 }
 
 # gen_scode() case Q_HOST -> b == NULL -> proto == Q_DEFAULT
-# gen_scode() case Q_GATEWAY
+# gen_gateway()
 sub errstr_nohost {
 	return sprintf ('unknown host \'%s\'', shift);
 }
@@ -16196,22 +16196,21 @@ foreach (DLTs_without 'ss7') {
 }
 
 foreach (DLTs_without 'link_host_mac48') {
-	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
+	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "gateway_noeth_noipv4_noipv6_${_}",
 		DLT => $_,
 		expr => "gateway $nonexistent",
-		errstr => errstr_nohost ($nonexistent),
+		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
 		DLT => $_,
 		expr => "gateway eth-noipv4-noipv6.host123.libpcap.test",
-		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
+		errstr => errstr_kw_notsup_on ('gateway'),
 	};
 
-	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "gateway_noeth_noipv4_ipv6_${_}",
 		skip => skip_no_hosts(),
@@ -16276,13 +16275,7 @@ foreach (DLTs_without 'link_host_mac48') {
 }
 
 foreach (DLTs_with 'link_host_mac48') {
-	# gen_scode() -> case Q_GATEWAY -> pcap_nametoaddrinfo() == NULL
-	push @reject_tests, {
-		name => "gateway_noeth_noipv4_noipv6_${_}",
-		DLT => $_,
-		expr => "gateway $nonexistent",
-		errstr => errstr_nohost ($nonexistent),
-	};
+	# gen_scode() -> gen_gateway() -> pcap_nametoaddrinfo() == NULL
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
@@ -16291,7 +16284,7 @@ foreach (DLTs_with 'link_host_mac48') {
 		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
 	};
 
-	# gen_scode() -> case Q_GATEWAY -> gen_gateway() == NULL
+	# gen_scode() -> gen_gateway() -> b1 == NULL
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_ipv6_${_}",
 		skip => skip_no_ethers() ||
@@ -16302,6 +16295,12 @@ foreach (DLTs_with 'link_host_mac48') {
 	};
 
 	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> pcap_ether_hostton() == NULL
+	push @reject_tests, {
+		name => "gateway_noeth_noipv4_noipv6_${_}",
+		DLT => $_,
+		expr => "gateway $nonexistent",
+		errstr => errstr_nomac48host ($nonexistent),
+	};
 	push @reject_tests, {
 		name => "gateway_noeth_noipv4_ipv6_${_}",
 		skip => skip_no_hosts(),

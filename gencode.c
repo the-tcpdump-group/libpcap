@@ -680,8 +680,7 @@ static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, int, int);
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
-static struct block *gen_gateway(compiler_state_t *, const char *,
-    struct addrinfo *, int);
+static struct block *gen_gateway(compiler_state_t *, const char *, const u_char);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ipfrag(compiler_state_t *);
@@ -5405,68 +5404,66 @@ gen_mac48host_byname(compiler_state_t *cstate, const char *name,
  * to qualify it with a direction.
  */
 static struct block *
-gen_gateway(compiler_state_t *cstate, const char *name,
-    struct addrinfo *alist, int proto)
+gen_gateway(compiler_state_t *cstate, const char *name, const u_char proto)
 {
-	struct block *b0, *b1, *tmp;
-	struct addrinfo *ai;
-	struct sockaddr_in *sin;
-
 	switch (proto) {
 	case Q_DEFAULT:
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
-		b1 = NULL;
-		for (ai = alist; ai != NULL; ai = ai->ai_next) {
-			/*
-			 * Does it have an address?
-			 */
-			if (ai->ai_addr != NULL) {
-				/*
-				 * Yes.  Is it an IPv4 address?
-				 */
-				if (ai->ai_addr->sa_family == AF_INET) {
-					/*
-					 * Generate an entry for it.
-					 */
-					sin = (struct sockaddr_in *)ai->ai_addr;
-					tmp = gen_host(cstate,
-					    ntohl(sin->sin_addr.s_addr),
-					    0xffffffff, proto, Q_OR, Q_HOST);
-					/*
-					 * Is it the *first* IPv4 address?
-					 */
-					if (b1 == NULL) {
-						/*
-						 * Yes, so start with it.
-						 */
-						b1 = tmp;
-					} else {
-						/*
-						 * No, so OR it into the
-						 * existing set of
-						 * addresses.
-						 */
-						gen_or(b1, tmp);
-						b1 = tmp;
-					}
-				}
-			}
-		}
+		break;
+	default:
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
+	}
+
+	struct block *b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
+
+	cstate->ai = pcap_nametoaddrinfo(name);
+	if (cstate->ai == NULL)
+		bpf_error(cstate, "unknown host '%s'", name);
+	struct block *b1 = NULL;
+	for (struct addrinfo *ai = cstate->ai; ai != NULL; ai = ai->ai_next) {
+		// Pick IPv4 addresses only.
+		if (ai->ai_family != AF_INET)
+			continue;
+		/*
+		 * Generate an entry for it.
+		 */
+		struct sockaddr_in *sin =
+		    (struct sockaddr_in *)ai->ai_addr;
+		struct block *tmp = gen_host(cstate,
+		    ntohl(sin->sin_addr.s_addr),
+		    0xffffffff, proto, Q_OR, Q_HOST);
+		/*
+		 * Is it the *first* IPv4 address?
+		 */
 		if (b1 == NULL) {
 			/*
-			 * No IPv4 addresses found.
+			 * Yes, so start with it.
 			 */
-			return (NULL);
+			b1 = tmp;
+		} else {
+			/*
+			 * No, so OR it into the
+			 * existing set of
+			 * addresses.
+			 */
+			gen_or(b1, tmp);
+			b1 = tmp;
 		}
-		gen_not(b1);
-		gen_and(b0, b1);
-		return b1;
 	}
-	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
-	/*NOTREACHED*/
+	freeaddrinfo(cstate->ai);
+	cstate->ai = NULL;
+
+	if (b1 == NULL) {
+		/*
+		 * No IPv4 addresses found.
+		 */
+		bpf_error(cstate, "unknown host '%s'", name);
+	}
+	gen_not(b1);
+	gen_and(b0, b1);
+	return b1;
 }
 
 static struct block *
@@ -7028,16 +7025,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		return b;
 
 	case Q_GATEWAY:
-		res = pcap_nametoaddrinfo(name);
-		cstate->ai = res;
-		if (res == NULL)
-			bpf_error(cstate, "unknown host '%s'", name);
-		b = gen_gateway(cstate, name, res, proto);
-		cstate->ai = NULL;
-		freeaddrinfo(res);
-		if (b == NULL)
-			bpf_error(cstate, "unknown host '%s'", name);
-		return b;
+		return gen_gateway(cstate, name, q.proto);
 
 	case Q_PROTO:
 		return gen_proto(cstate, lookup_proto(cstate, name, q), proto);
