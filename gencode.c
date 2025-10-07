@@ -680,6 +680,8 @@ static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, int, int);
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
+static struct block *gen_host46_byname(compiler_state_t *, const char *,
+    const u_char, const u_char, const u_char);
 static struct block *gen_gateway(compiler_state_t *, const char *, const u_char);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
@@ -5284,6 +5286,63 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	/*NOTREACHED*/
 }
 
+static struct block *
+gen_host46_byname(compiler_state_t *cstate, const char *name,
+    const u_char proto4, const u_char proto6, const u_char dir)
+{
+	if ((cstate->ai = pcap_nametoaddrinfo(name)) == NULL)
+		bpf_error(cstate, "unknown host '%s'", name);
+	struct block *ret = NULL;
+	struct in6_addr mask128;
+	memset(&mask128, 0xff, sizeof(mask128));
+	for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+		struct block *tmp = NULL;
+		switch (ai->ai_family) {
+		case AF_INET:
+			/*
+			 * Ignore any IPv4 addresses when resolving
+			 * "ip6 host NAME", validate all other proto
+			 * qualifiers in gen_host().
+			 */
+			if (proto4 == Q_IPV6)
+				continue;
+			struct sockaddr_in *sin4 =
+			    (struct sockaddr_in *)ai->ai_addr;
+			tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
+			    0xffffffff, proto4, dir, Q_HOST);
+			break;
+		case AF_INET6:
+			/*
+			 * Ignore any IPv6 addresses when resolving
+			 * "(arp|ip|rarp) host NAME", validate all
+			 * other proto qualifiers in gen_host6().
+			 */
+			if (proto6 == Q_ARP || proto6 == Q_IP ||
+			    proto6 == Q_RARP)
+				continue;
+			struct sockaddr_in6 *sin6 =
+			    (struct sockaddr_in6 *)ai->ai_addr;
+			tmp = gen_host6(cstate, &sin6->sin6_addr,
+			    &mask128, proto6, dir, Q_HOST);
+			break;
+		}
+		if (! tmp)
+			continue;
+		if (ret)
+			gen_or(ret, tmp);
+		ret = tmp;
+	}
+	freeaddrinfo(cstate->ai);
+	cstate->ai = NULL;
+
+	if (! ret)
+		bpf_error(cstate, "unknown host '%s'%s", name,
+		    proto4 == Q_DEFAULT
+		    ? ""
+		    : " for specified address family");
+	return ret;
+}
+
 static unsigned char
 is_mac48_linktype(const int linktype)
 {
@@ -5417,50 +5476,12 @@ gen_gateway(compiler_state_t *cstate, const char *name, const u_char proto)
 	}
 
 	struct block *b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
-
-	cstate->ai = pcap_nametoaddrinfo(name);
-	if (cstate->ai == NULL)
-		bpf_error(cstate, "unknown host '%s'", name);
-	struct block *b1 = NULL;
-	for (struct addrinfo *ai = cstate->ai; ai != NULL; ai = ai->ai_next) {
-		// Pick IPv4 addresses only.
-		if (ai->ai_family != AF_INET)
-			continue;
-		/*
-		 * Generate an entry for it.
-		 */
-		struct sockaddr_in *sin =
-		    (struct sockaddr_in *)ai->ai_addr;
-		struct block *tmp = gen_host(cstate,
-		    ntohl(sin->sin_addr.s_addr),
-		    0xffffffff, proto, Q_OR, Q_HOST);
-		/*
-		 * Is it the *first* IPv4 address?
-		 */
-		if (b1 == NULL) {
-			/*
-			 * Yes, so start with it.
-			 */
-			b1 = tmp;
-		} else {
-			/*
-			 * No, so OR it into the
-			 * existing set of
-			 * addresses.
-			 */
-			gen_or(b1, tmp);
-			b1 = tmp;
-		}
-	}
-	freeaddrinfo(cstate->ai);
-	cstate->ai = NULL;
-
-	if (b1 == NULL) {
-		/*
-		 * No IPv4 addresses found.
-		 */
-		bpf_error(cstate, "unknown host '%s'", name);
-	}
+	/*
+	 * For "gateway NAME" not qualified with a protocol skip the IPv6 leg
+	 * of the name-to-address translation to match the documented
+	 * IPv4-only behaviour.
+	 */
+	struct block *b1 = gen_host46_byname(cstate, name, proto, Q_IP, Q_OR);
 	gen_not(b1);
 	gen_and(b0, b1);
 	return b1;
@@ -6812,14 +6833,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 {
 	int proto = q.proto;
 	int dir = q.dir;
-	int tproto;
 	bpf_u_int32 mask, addr;
-	struct addrinfo *res, *res0;
-	struct sockaddr_in *sin4;
-	int tproto6;
-	struct sockaddr_in6 *sin6;
-	struct in6_addr mask128;
-	struct block *b, *tmp;
+	struct block *b;
 	int port, real_proto;
 	bpf_u_int32 port1, port2;
 
@@ -6856,66 +6871,21 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			 */
 			bpf_error(cstate, "invalid DECnet address '%s'", name);
 		} else {
-			memset(&mask128, 0xff, sizeof(mask128));
-			res0 = res = pcap_nametoaddrinfo(name);
-			if (res == NULL)
-				bpf_error(cstate, "unknown host '%s'", name);
-			cstate->ai = res;
-			b = tmp = NULL;
-			tproto = proto;
-			tproto6 = proto;
+			u_char tproto = q.proto;
+			u_char tproto6 = q.proto;
 			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT) {
+				/*
+				 * For certain DLTs have "host NAME" mean
+				 * "ip host NAME or ip6 host NAME", but not
+				 * "arp host NAME or rarp host NAME" (here may
+				 * be not the best place for this though).
+				 */
 				tproto = Q_IP;
 				tproto6 = Q_IPV6;
 			}
-			for (res = res0; res; res = res->ai_next) {
-				switch (res->ai_family) {
-				case AF_INET:
-					/*
-					 * Ignore any IPv4 addresses when resolving
-					 * "ip6 host NAME", validate all other proto
-					 * qualifiers in gen_host().
-					 */
-					if (tproto == Q_IPV6)
-						continue;
-
-					sin4 = (struct sockaddr_in *)
-						res->ai_addr;
-					tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
-						0xffffffff, tproto, dir, q.addr);
-					break;
-				case AF_INET6:
-					/*
-					 * Ignore any IPv6 addresses when resolving
-					 * "(arp|ip|rarp) host NAME", validate all
-					 * other proto qualifiers in gen_host6().
-					 */
-					if (tproto6 == Q_ARP || tproto6 == Q_IP ||
-					    tproto6 == Q_RARP)
-						continue;
-
-					sin6 = (struct sockaddr_in6 *)
-						res->ai_addr;
-					tmp = gen_host6(cstate, &sin6->sin6_addr,
-						&mask128, tproto6, dir, q.addr);
-					break;
-				default:
-					continue;
-				}
-				if (b)
-					gen_or(b, tmp);
-				b = tmp;
-			}
-			cstate->ai = NULL;
-			freeaddrinfo(res0);
-			if (b == NULL) {
-				bpf_error(cstate, "unknown host '%s'%s", name,
-				    (proto == Q_DEFAULT)
-					? ""
-					: " for specified address family");
-			}
-			return b;
+			return gen_host46_byname(cstate, name, tproto,
+			    tproto6, q.dir);
 		}
 
 	case Q_PORT:

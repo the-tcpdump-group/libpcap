@@ -8817,6 +8817,8 @@ my @accept_blocks = (
 			'ip src or dst noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			# This does not mean "arp host" or "rarp host" because for
+			# DLT_RAW off_linktype.constant_part == OFFSET_NOT_SET.
 			'host noeth-ipv4-noipv6.host123.libpcap.test',
 			'src or dst noeth-ipv4-noipv6.host123.libpcap.test',
 			'src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
@@ -14188,13 +14190,13 @@ sub errstr_nonet {
 	return sprintf ('unknown network \'%s\'', shift);
 }
 
-# gen_scode() case Q_HOST -> b == NULL -> proto == Q_DEFAULT
-# gen_gateway()
+# gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
+# gen_host46_byname() -> ret == NULL && proto4 == Q_DEFAULT
 sub errstr_nohost {
 	return sprintf ('unknown host \'%s\'', shift);
 }
 
-# gen_scode() case Q_HOST -> b == NULL -> proto != Q_DEFAULT
+# gen_host46_byname() -> ret == NULL && proto4 != Q_DEFAULT
 sub errstr_nohost_af {
 	return sprintf ('unknown host \'%s\' for specified address family', shift);
 }
@@ -14594,7 +14596,7 @@ my @reject_tests = (
 		errstr => "netmask not known, so 'ip broadcast' not supported",
 	},
 
-	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_ARP
+	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_ARP -> ret == NULL
 	{
 		name => 'arp_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
@@ -14603,7 +14605,7 @@ my @reject_tests = (
 		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
 	},
 
-	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_IP
+	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_IP -> ret == NULL
 	{
 		name => 'ip_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
@@ -14612,7 +14614,7 @@ my @reject_tests = (
 		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
 	},
 
-	# gen_scode() -> case Q_HOST -> case AF_INET -> tproto4 == Q_IPV6
+	# gen_scode() -> gen_host46_byname() -> case AF_INET -> proto4 == Q_IPV6 -> ret == NULL
 	{
 		name => 'ip6_host_noeth_ipv4_noipv6',
 		skip => skip_no_hosts(),
@@ -14621,7 +14623,7 @@ my @reject_tests = (
 		errstr => errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test'),
 	},
 
-	# gen_scode() -> case Q_HOST -> case AF_INET6 -> tproto6 == Q_RARP
+	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_RARP -> ret == NULL
 	{
 		name => 'rarp_host_noeth_noipv4_ipv6',
 		skip => skip_no_hosts(),
@@ -14630,7 +14632,7 @@ my @reject_tests = (
 		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
 	},
 
-	# gen_scode() -> case Q_HOST -> pcap_nametoaddrinfo() == NULL
+	# gen_scode() -> gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 	{
 		name => 'arp_host_nonexistent',
 		DLT => 'FDDI',
@@ -16275,7 +16277,7 @@ foreach (DLTs_without 'link_host_mac48') {
 }
 
 foreach (DLTs_with 'link_host_mac48') {
-	# gen_scode() -> gen_gateway() -> pcap_nametoaddrinfo() == NULL
+	# gen_scode() -> gen_gateway() -> gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
@@ -16284,7 +16286,7 @@ foreach (DLTs_with 'link_host_mac48') {
 		errstr => errstr_nohost ('eth-noipv4-noipv6.host123.libpcap.test'),
 	};
 
-	# gen_scode() -> gen_gateway() -> b1 == NULL
+	# gen_scode() -> gen_gateway() -> gen_host46_byname() -> ret == NULL
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_ipv6_${_}",
 		skip => skip_no_ethers() ||
