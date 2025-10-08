@@ -2443,7 +2443,7 @@ my @accept_blocks = (
 		name => 'atm_connectmsg',
 		DLT => 'SUNATM',
 		aliases => ['connectmsg'],
-		opt => '
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 12
 			(002) ldh      [2]
@@ -2463,7 +2463,7 @@ my @accept_blocks = (
 		name => 'atm_metaconnect',
 		DLT => 'SUNATM',
 		aliases => ['metaconnect'],
-		opt => '
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0x0             jt 2	jf 11
 			(002) ldh      [2]
@@ -3943,7 +3943,7 @@ my @accept_blocks = (
 		name => 'link_proto_ip_PPP_BSDOS',
 		DLT => 'PPP_BSDOS',
 		aliases => ['link proto \ip'],
-		opt => '
+		unopt => '
 			(000) ldh      [5]
 			(001) jeq      #0x21            jt 4	jf 2
 			(002) jeq      #0x2d            jt 4	jf 3
@@ -5590,6 +5590,16 @@ my @accept_blocks = (
 			(003) jeq      #0x9100          jt 4	jf 5
 			(004) ret      #262144
 			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [12]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x9100          jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
 			',
 	}, # vlan_eth_nullary
 	{
