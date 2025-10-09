@@ -15091,6 +15091,79 @@ my @reject_tests = (
 		errstr => errstr_val_too_high ('LLC DSAP 1500', 255),
 	},
 	{
+		name => 'stoulen_0040000000000',
+		DLT => 'RAW',
+		# Note the additional leading zero to prevent matching a MAC address.
+		expr => '0040000000000', # UINT32_MAX + 1
+		errstr => 'octal number 0040000000000 overflows 32 bits',
+	},
+	{
+		name => 'stoulen_08',
+		DLT => 'RAW',
+		expr => '08',
+		errstr => 'number 08 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_09',
+		DLT => 'RAW',
+		expr => '09',
+		errstr => 'number 09 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_0037777777778',
+		DLT => 'RAW',
+		expr => '0037777777778',
+		errstr => 'number 0037777777778 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_0037777777779',
+		DLT => 'RAW',
+		expr => '0037777777779',
+		errstr => 'number 0037777777779 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_00377777777778',
+		DLT => 'RAW',
+		expr => '00377777777778',
+		errstr => 'number 00377777777778 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_00377777777779',
+		DLT => 'RAW',
+		expr => '00377777777779',
+		errstr => 'number 00377777777779 contains non-octal digit',
+	},
+	{
+		name => 'stoulen_003777777777778',
+		DLT => 'RAW',
+		expr => '003777777777778',
+		errstr => 'octal number 003777777777778 overflows 32 bits',
+	},
+	{
+		name => 'stoulen_003777777777779',
+		DLT => 'RAW',
+		expr => '003777777777779',
+		errstr => 'octal number 003777777777779 overflows 32 bits',
+	},
+	{
+		name => 'stoulen_4294967296',
+		DLT => 'RAW',
+		expr => '4294967296', # UINT32_MAX + 1
+		errstr => 'decimal number 4294967296 overflows 32 bits',
+	},
+	{
+		name => 'stoulen_0x100000000',
+		DLT => 'RAW',
+		expr => '0x100000000', # UINT32_MAX + 1
+		errstr => 'hexadecimal number 0x100000000 overflows 32 bits',
+	},
+	{
+		name => 'stoulen_0X100000000',
+		DLT => 'RAW',
+		expr => '0X100000000', # UINT32_MAX + 1
+		errstr => 'hexadecimal number 0X100000000 overflows 32 bits',
+	},
+	{
 		name => 'bare_lldp',
 		DLT => 'EN10MB',
 		expr => 'lldp',

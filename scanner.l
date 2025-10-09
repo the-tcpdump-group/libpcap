@@ -48,8 +48,8 @@ typedef enum {
 	STOULEN_ERROR
 } stoulen_ret;
 
-stoulen_ret stoulen(const char *string, size_t stringlen, bpf_u_int32 *val,
-    compiler_state_t *cstate);
+stoulen_ret stoulen(const char *, const size_t, bpf_u_int32 *,
+    compiler_state_t *);
 }
 
 /*
@@ -235,6 +235,12 @@ V6004		::{N}\.{N}\.{N}\.{N}
 
 V6		({V680}|{V670}|{V671}|{V672}|{V673}|{V674}|{V675}|{V676}|{V677}|{V660}|{V661}|{V662}|{V663}|{V664}|{V665}|{V666}|{V650}|{V651}|{V652}|{V653}|{V654}|{V655}|{V640}|{V641}|{V642}|{V643}|{V644}|{V630}|{V631}|{V632}|{V633}|{V620}|{V621}|{V622}|{V610}|{V611}|{V600}|{V6604}|{V6504}|{V6514}|{V6524}|{V6534}|{V6544}|{V6554}|{V6404}|{V6414}|{V6424}|{V6434}|{V6444}|{V6304}|{V6314}|{V6324}|{V6334}|{V6204}|{V6214}|{V6224}|{V6104}|{V6114}|{V6004})
 
+	/*
+	 * In the regexp below the "{B2}{3}" form matches all octal numbers in
+	 * the [010000000000 .. 077777777777] interval that use a single leading
+	 * zero.  The interval includes both integer values that fit into 32
+	 * bits and values that don't.
+	 */
 MAC		({B}:{B}:{B}:{B}:{B}:{B}|{B}\-{B}\-{B}\-{B}\-{B}\-{B}|{B}\.{B}\.{B}\.{B}\.{B}\.{B}|{B2}\.{B2}\.{B2}|{B2}{3})
 
 
@@ -473,13 +479,16 @@ tcp-cwr			{ yylval->h = 0x80; return NUM; }
  */
 DIAG_ON_FLEX
 
+#define FORMAT_OVERFLOWS_32_BITS "%s number %.*s overflows 32 bits"
+
 stoulen_ret
-stoulen(const char *string, size_t string_len, bpf_u_int32 *val,
+stoulen(const char *string, const size_t orig_string_len, bpf_u_int32 *val,
     compiler_state_t *cstate)
 {
 	bpf_u_int32 n = 0;
 	unsigned int digit;
 	const char *s = string;
+	size_t string_len = orig_string_len;
 
 	/*
 	 * string is guaranteed either to be a string of decimal digits
@@ -525,8 +534,8 @@ stoulen(const char *string, size_t string_len, bpf_u_int32 *val,
 					 * in 32 bits.
 					 */
 					bpf_set_error(cstate,
-					    "number %.*s overflows 32 bits",
-					   (int)string_len, string);
+					    FORMAT_OVERFLOWS_32_BITS,
+					    "hexadecimal", (int)orig_string_len, string);
 					return STOULEN_ERROR;
 				}
 				n = (n << 4) + digit;
@@ -560,10 +569,16 @@ stoulen(const char *string, size_t string_len, bpf_u_int32 *val,
 					 * number, and are about to add
 					 * 3 more; that won't fit in
 					 * 32 bits.
+					 *
+					 * This code path depends on using more
+					 * than one leading zero for all values
+					 * in the [040000000000 .. 077777777777]
+					 * interval, otherwise the MAC regexp
+					 * above consumes the string first.
 					 */
 					bpf_set_error(cstate,
-					    "number %.*s overflows 32 bits",
-					   (int)string_len, string);
+					    FORMAT_OVERFLOWS_32_BITS,
+					    "octal", (int)orig_string_len, string);
 					return STOULEN_ERROR;
 				}
 				n = (n << 3) + digit;
@@ -596,8 +611,8 @@ stoulen(const char *string, size_t string_len, bpf_u_int32 *val,
 				 * number that won't fit in 32 bits.
 				 */
 				bpf_set_error(cstate,
-				    "number %.*s overflows 32 bits",
-				   (int)string_len, string);
+				    FORMAT_OVERFLOWS_32_BITS,
+				    "decimal", (int)orig_string_len, string);
 				return STOULEN_ERROR;
 			}
 			n = (n * 10) + digit;

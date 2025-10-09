@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "6 October 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "9 October 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1472,6 +1472,13 @@ a length operator, and packet data accessors.  All arithmetic expressions
 regardless of the complexity and composition resolve to an integer value.
 Note that all comparisons are unsigned, so that, for example, both 0x80000000
 and 0xffffffff are > 0.
+.LP
+Note that 32-bit octal integer constants in the [010000000000 .. 037777777777]
+interval, which includes 75% of all 32-bit integers, are interpreted as MAC-48
+addresses when prepended with a single zero (e.g., 012345670123 means
+01:23:45:67:01:23).  To disambiguate the expression, prepend such an octal
+number with more zeroes (0012345670123) or represent the same value using a
+decimal (1402433619) or hexadecimal (0x53977053) number.
 .LP
 The
 .B %
