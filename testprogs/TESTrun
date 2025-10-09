@@ -16389,7 +16389,7 @@ foreach (DLTs_without 'atm') {
 	};
 }
 
-# gen_ifindex -> default
+# gen_ifindex() -> default
 foreach (DLTs_without 'ifindex') {
 	push @reject_tests, {
 		name => "ifindex_1_${_}",
