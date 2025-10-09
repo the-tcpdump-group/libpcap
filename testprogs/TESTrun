@@ -15233,6 +15233,8 @@ my %pqual_features = (
 	},
 	sctp => {
 		index => 1,
+		port => 1,
+		portrange => 1,
 	},
 	snp => {
 	},
@@ -15240,9 +15242,13 @@ my %pqual_features = (
 	},
 	tcp => {
 		index => 1,
+		port => 1,
+		portrange => 1,
 	},
 	udp => {
 		index => 1,
+		port => 1,
+		portrange => 1,
 	},
 	vrrp => {
 		index => 1,
@@ -16061,6 +16067,46 @@ foreach (pquals_without 'proto') {
 		errstr => $_ eq 'decnet' ?
 			'invalid DECnet address \'17\'' :
 			errstr_invqual ($_, 'proto'),
+	};
+	last if $only_short;
+}
+
+foreach (pquals_without 'port') {
+	# pnum -> gen_ncode() -> case Q_PORT -> port_pq_to_ipproto()
+	push @reject_tests, {
+		name => "${_}_port_80",
+		DLT => 'EN10MB',
+		expr => "${_} port 80",
+		errstr => $_ eq 'decnet' ?
+			'invalid DECnet address \'80\'' :
+			errstr_invqual ($_, 'port'),
+	};
+	# pnum -> gen_scode() -> case Q_PORT -> port_pq_to_ipproto()
+	push @reject_tests, {
+		name => "${_}_port_nosuchport",
+		DLT => 'EN10MB',
+		expr => "${_} port nosuchport",
+		errstr => errstr_invqual ($_, 'port'),
+	};
+	last if $only_short;
+}
+
+foreach (pquals_without 'portrange') {
+	# pnum -> gen_ncode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
+	push @reject_tests, {
+		name => "${_}_portrange_80",
+		DLT => 'EN10MB',
+		expr => "${_} portrange 80",
+		errstr => $_ eq 'decnet' ?
+			'invalid DECnet address \'80\'' :
+			errstr_invqual ($_, 'portrange'),
+	};
+	# pnum -> gen_scode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
+	push @reject_tests, {
+		name => "${_}_portrange_nosuchport",
+		DLT => 'EN10MB',
+		expr => "${_} portrange nosuchport",
+		errstr => errstr_invqual ($_, 'portrange'),
 	};
 	last if $only_short;
 }
