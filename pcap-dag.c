@@ -1754,6 +1754,6 @@ pcapint_create_interface(const char *device _U_, char *errbuf)
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING " (DAG-only)");
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO("DAG-only"));
 }
 #endif
