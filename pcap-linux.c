@@ -6209,18 +6209,18 @@ pcap_set_protocol_linux(pcap_t *p, int protocol)
 /*
  * Libpcap version string.
  */
+#if defined(HAVE_TPACKET3) && defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V3 and netmap"
+#elif defined(HAVE_TPACKET3)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V3"
+#elif defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V2 and netmap"
+#else
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V2"
+#endif
+
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING
-#if defined(HAVE_TPACKET3) && defined(PCAP_SUPPORT_NETMAP)
-		" (with TPACKET_V3 and netmap)"
-#elif defined(HAVE_TPACKET3)
-		" (with TPACKET_V3)"
-#elif defined(PCAP_SUPPORT_NETMAP)
-		" (with TPACKET_V2 and netmap)"
-#else
-		" (with TPACKET_V2)"
-#endif
-	);
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO(ADDITIONAL_INFO_STRING));
 }

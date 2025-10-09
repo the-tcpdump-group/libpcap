@@ -147,12 +147,14 @@ run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static-pcap-only
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
+    run_after_echo $VALGRIND_CMD testprogs/versiontest
     FILTERTEST_BIN="$VALGRIND_CMD testprogs/filtertest"
     export FILTERTEST_BIN
     run_after_echo "$MAKE_BIN" -s check
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
+    run_after_echo $VALGRIND_CMD run/versiontest
     FILTERTEST_BIN="$VALGRIND_CMD run/filtertest"
     export FILTERTEST_BIN
     run_after_echo "$MAKE_BIN" -s check

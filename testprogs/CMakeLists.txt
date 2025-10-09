@@ -34,6 +34,7 @@ add_test_executable(findalldevstest)
 add_test_executable(findalldevstest-perf)
 add_test_executable(opentest)
 add_test_executable(reactivatetest)
+add_test_executable(versiontest)
 add_test_executable(writecaptest)
 
 if(NOT WIN32)

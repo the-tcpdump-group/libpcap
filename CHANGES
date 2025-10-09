@@ -153,6 +153,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       gencode: Fix an undefined behavior in gen_mcode().
       gencode: Add a missing free() in gen_scode().
       Remove "DLT_" from the descriptions of two dlt_choices[] entries.
+      Report the size of time_t in the version string.
     Source code:
       Remove some unneeded includes.
       pcapint_find_function() changed to return "void *" to avoid

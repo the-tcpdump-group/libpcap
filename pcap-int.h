@@ -68,10 +68,28 @@
 #endif
 
 /*
- * Version string.
- * Uses PACKAGE_VERSION from config.h.
+ * Version string trailer.
+ * Uses SIZEOF_TIME_T from config.h.
+ * (There's no need to announce the pointer size; if it doesn't
+ * match the pointer size in code linked with libpcap, either
+ * build-time linking or run-time linking will fail.)
  */
-#define PCAP_VERSION_STRING "libpcap version " PACKAGE_VERSION
+#if SIZEOF_TIME_T == 8
+  #define PCAP_SIZEOF_TIME_T_BITS_STRING "64"
+#elif SIZEOF_TIME_T == 4
+  #define PCAP_SIZEOF_TIME_T_BITS_STRING "32"
+#else
+  #error Unknown time_t size
+#endif
+
+/*
+ * Version string.
+ * Uses PACKAGE_VERSION from config.h and PCAP_SIZEOF_TIME_T_BITS_STRING.
+ */
+#define PCAP_VERSION_STRING \
+	"libpcap version " PACKAGE_VERSION " (" PCAP_SIZEOF_TIME_T_BITS_STRING "-bit time_t)"
+#define PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO(additional_info) \
+	"libpcap version " PACKAGE_VERSION " (" PCAP_SIZEOF_TIME_T_BITS_STRING "-bit time_t, " additional_info ")"
 
 #ifdef __cplusplus
 extern "C" {
