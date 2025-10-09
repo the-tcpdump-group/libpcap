@@ -7237,12 +7237,15 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s, masklen);
 	}
 
+	char buf[INET6_ADDRSTRLEN + sizeof("/128")];
 	switch (q.addr) {
 
 	case Q_DEFAULT:
 	case Q_HOST:
-		if (masklen != 128)
-			bpf_error(cstate, "Mask syntax for networks only");
+		if (masklen != 128) {
+			snprintf(buf, sizeof(buf), "%s/%u", s, masklen);
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, "host", buf);
+		}
 		/* FALLTHROUGH */
 
 	case Q_NET:
@@ -7250,7 +7253,12 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 
 	default:
 		// Q_GATEWAY only (see the grammar)
-		bpf_error(cstate, "invalid qualifier against IPv6 address");
+		if (masklen == 128)
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), s);
+		else {
+			snprintf(buf, sizeof(buf), "%s/%u", s, masklen);
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), buf);
+		}
 		/*NOTREACHED*/
 	}
 }

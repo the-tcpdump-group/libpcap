@@ -15908,7 +15908,7 @@ foreach (pquals_without 'host') {
 		name => "inv_qual_${_}_host_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::/16",
-		errstr => 'Mask syntax for networks only',
+		errstr => errstr_invqual ('host', 'fe80::/16'),
 	};
 	# HID6 '/' NUM -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
@@ -16010,7 +16010,7 @@ foreach my $pq (pquals_without '') {
 		name => "${pq}_gateway_HID6",
 		DLT => 'EN10MB',
 		expr => "$pq gateway fe80::0",
-		errstr => 'invalid qualifier against IPv6 address',
+		errstr => errstr_invqual ('gateway', 'fe80::0'),
 	};
 	# HID6
 	push @reject_tests, {
@@ -16025,7 +16025,7 @@ foreach my $pq (pquals_without '') {
 		name => "${pq}_gateway_HID6_NUM",
 		DLT => 'EN10MB',
 		expr => "$pq gateway fe80::0/64",
-		errstr => 'invalid qualifier against IPv6 address',
+		errstr => errstr_invqual ('gateway', 'fe80::0/64'),
 	};
 	# HID6 '/' NUM
 	push @reject_tests, {
