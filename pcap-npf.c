@@ -2822,7 +2822,7 @@ pcap_lib_version(void)
 		char *full_pcap_version_string;
 
 		if (pcapint_asprintf(&full_pcap_version_string,
-		    PCAP_VERSION_STRING " (packet.dll version %s)",
+		    PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO("packet.dll version %s"),
 		    PacketGetVersion()) != -1) {
 			/* Success */
 			pcap_lib_version_string = full_pcap_version_string;

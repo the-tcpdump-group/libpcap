@@ -3682,18 +3682,20 @@ pcap_set_datalink_bpf(pcap_t *p _U_, int dlt _U_)
 /*
  * Platform-specific information.
  */
+#if defined(HAVE_ZEROCOPY_BPF) && defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with zerocopy and netmap support"
+#elif defined(HAVE_ZEROCOPY_BPF)
+  #define ADDITIONAL_INFO_STRING	"with zerocopy support"
+#elif defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with netmap support"
+#endif
+
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING
-#if defined(HAVE_ZEROCOPY_BPF) && defined(PCAP_SUPPORT_NETMAP)
-		" (with zerocopy and netmap support)"
-#elif defined(HAVE_ZEROCOPY_BPF)
-		" (with zerocopy support)"
-#elif defined(PCAP_SUPPORT_NETMAP)
-		" (with netmap support)"
+#ifdef ADDITIONAL_INFO_STRING
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO(ADDITIONAL_INFO_STRING));
 #else
-		""
+	return (PCAP_VERSION_STRING);
 #endif
-	);
 }

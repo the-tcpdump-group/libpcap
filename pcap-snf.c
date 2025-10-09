@@ -609,6 +609,6 @@ pcapint_create_interface(const char *device, char *errbuf)
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING " (SNF-only)");
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO("SNF-only"));
 }
 #endif

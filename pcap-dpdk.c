@@ -1078,6 +1078,6 @@ pcapint_create_interface(const char *device, char *errbuf)
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING " (DPDK-only)");
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO("DPDK-only"));
 }
 #endif
