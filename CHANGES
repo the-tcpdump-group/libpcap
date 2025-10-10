@@ -17,7 +17,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove outdated code related to AirPcap HW.
         The Riverbed AirPcap Product has reached End of Availability
         (EOA) as of December 31, 2017
-      Mind netmap support in pcap_lib_version().
       Make pcap_compile() error messages more uniform and consistent.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
@@ -159,6 +158,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
       Clean up code that computes the length of a netmask.
+      Mind netmap support in pcap_lib_version().
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
