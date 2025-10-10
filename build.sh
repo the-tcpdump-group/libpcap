@@ -98,7 +98,7 @@ if [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
-    run_after_echo $VALGRIND_CMD testprogs/versiontest
+    run_after_echo $VALGRIND_CMD run/versiontest
     run_after_echo $VALGRIND_CMD run/findalldevstest
 fi
 handle_matrix_debug
