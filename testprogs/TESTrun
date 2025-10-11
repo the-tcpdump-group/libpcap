@@ -14760,7 +14760,7 @@ my @reject_tests = (
 		name => 'decnet_host',
 		DLT => 'EN10MB',
 		expr => "decnet host ${nonexistent}",
-		errstr => "invalid DECnet address '${nonexistent}'",
+		errstr => errstr_invqual ('decnet', 'host'),
 	},
 	{
 		name => 'src_gateway',
@@ -16041,6 +16041,7 @@ foreach (pquals_without 'host') {
 	# (IPv6 networks cannot have names)
 }
 
+# gen_scode() -> q.proto == Q_DECNET
 # ID -> gen_scode() -> gen_gateway() -> default
 foreach (pquals_without 'gateway') {
 	push @reject_tests, {
@@ -16054,13 +16055,13 @@ foreach (pquals_without 'gateway') {
 }
 
 foreach my $pq (pquals_without '') {
+	# HID -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# HID -> gen_ncode() -> case Q_GATEWAY
 	push @reject_tests, {
 		name => "${pq}_gateway_HID",
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.13.14",
-		errstr => $pq eq 'decnet' ?
-			'invalid DECnet address \'11.12.13.14\'' :
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
 			'\'gateway\' requires a name',
 	};
 	# HID
@@ -16071,12 +16072,14 @@ foreach my $pq (pquals_without '') {
 		expr => "$pq $_ 11.12.13.14",
 		errstr => "'$_' qualifier applied to IPv4 address",
 	} foreach qw(port portrange proto protochain);
+	# HID '/' NUM -> gen_mcode() -> q.proto == Q_DECNET
 	# HID '/' NUM -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "${pq}_gateway_HID_NUM",
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.0.0/16",
-		errstr => 'Mask syntax for networks only',
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
+			'Mask syntax for networks only',
 	};
 	# HID '/' NUM
 	push @reject_tests, {
@@ -16086,12 +16089,14 @@ foreach my $pq (pquals_without '') {
 		expr => "$pq $_ 11.12.0.0/16",
 		errstr => "'$_' qualifier applied to IPv4 address and prefix length",
 	} foreach qw(port portrange proto protochain);
+	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
 	# HID NETMASK HID -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "${pq}_gateway_HID_mask_HID",
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.0.0 mask 255.255.0.0",
-		errstr => 'Mask syntax for networks only',
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
+			'Mask syntax for networks only',
 	};
 	# HID NETMASK HID
 	push @reject_tests, {
@@ -16135,42 +16140,40 @@ foreach my $pq (pquals_without '') {
 }
 
 foreach (pquals_without 'protochain') {
+	# pnum -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# pnum -> gen_ncode() -> case Q_PROTOCHAIN -> gen_protochain() -> default
 	push @reject_tests, {
 		name => "${_}_protochain_17",
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'EN10MB',
 		expr => "${_} protochain 17",
-		errstr => $_ eq 'decnet' ?
-			'invalid DECnet address \'17\'' :
-			errstr_invqual ($_, 'protochain'),
+		errstr => errstr_invqual ($_, 'protochain'),
 	};
 	last if $only_short;
 }
 
 foreach (pquals_without 'proto') {
+	# pnum -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# pnum -> gen_ncode() -> case Q_PROTO -> gen_proto() -> default
 	push @reject_tests, {
 		name => "${_}_proto_17",
 		DLT => 'EN10MB',
 		expr => "${_} proto 17",
-		errstr => $_ eq 'decnet' ?
-			'invalid DECnet address \'17\'' :
-			errstr_invqual ($_, 'proto'),
+		errstr => errstr_invqual ($_, 'proto'),
 	};
 	last if $only_short;
 }
 
 foreach (pquals_without 'port') {
+	# pnum -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# pnum -> gen_ncode() -> case Q_PORT -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_port_80",
 		DLT => 'EN10MB',
 		expr => "${_} port 80",
-		errstr => $_ eq 'decnet' ?
-			'invalid DECnet address \'80\'' :
-			errstr_invqual ($_, 'port'),
+		errstr => errstr_invqual ($_, 'port'),
 	};
+	# gen_scode() -> q.proto == Q_DECNET
 	# pnum -> gen_scode() -> case Q_PORT -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_port_nosuchport",
@@ -16182,15 +16185,15 @@ foreach (pquals_without 'port') {
 }
 
 foreach (pquals_without 'portrange') {
+	# pnum -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# pnum -> gen_ncode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_portrange_80",
 		DLT => 'EN10MB',
 		expr => "${_} portrange 80",
-		errstr => $_ eq 'decnet' ?
-			'invalid DECnet address \'80\'' :
-			errstr_invqual ($_, 'portrange'),
+		errstr => errstr_invqual ($_, 'portrange'),
 	};
+	# gen_scode() -> q.proto == Q_DECNET
 	# pnum -> gen_scode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_portrange_nosuchport",
@@ -16202,20 +16205,24 @@ foreach (pquals_without 'portrange') {
 }
 
 foreach (pquals_without '') {
+	# gen_scode() -> q.proto == Q_DECNET
 	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
 	push @reject_tests, {
 		name => "${_}_proto_nosuchprotocol",
 		DLT => 'EN10MB',
 		expr => "${_} proto nosuchprotocol",
-		errstr => "unknown '$_ proto' value 'nosuchprotocol'",
+		errstr => $_ eq 'decnet' ? errstr_invqual ('decnet', 'proto') :
+			"unknown '$_ proto' value 'nosuchprotocol'",
 	};
+	# gen_scode() -> q.proto == Q_DECNET
 	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
 	push @reject_tests, {
 		name => "${_}_protochain_nosuchprotocol",
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		DLT => 'EN10MB',
 		expr => "${_} protochain nosuchprotocol",
-		errstr => "unknown '$_ protochain' value 'nosuchprotocol'",
+		errstr => $_ eq 'decnet' ? errstr_invqual ('decnet', 'protochain') :
+			"unknown '$_ protochain' value 'nosuchprotocol'",
 	};
 	last if $only_short;
 }

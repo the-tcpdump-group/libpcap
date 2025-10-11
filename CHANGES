@@ -44,6 +44,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         request #1273).
       Eliminate trailing space in bpf_image() result.
       Fix DECnet packet filtering on big-endian hosts.
+      Fix various failures to reject invalid DECnet primitives.
       Require "vpi" and "vci" values to be within valid ranges.
       Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.

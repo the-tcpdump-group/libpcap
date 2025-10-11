@@ -6845,6 +6845,18 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	if (q.proto == Q_DECNET) {
+		/*
+		 * A long time ago on Ultrix libpcap supported translation of
+		 * DECnet host names into DECnet addresses, but this feature
+		 * is history now.  The current implementation does not define
+		 * any primitives that have "decnet" as the protocol qualifier
+		 * and a name as the ID.
+		 */
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+		          tqkw(q.addr == Q_DEFAULT ? Q_HOST : q.addr));
+	}
+
 	switch (q.addr) {
 
 	case Q_NET:
@@ -6863,13 +6875,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_HOST:
 		if (proto == Q_LINK) {
 			return gen_mac48host_byname(cstate, name, q.dir, "link host NAME");
-		} else if (proto == Q_DECNET) {
-			/*
-			 * A long time ago on Ultrix libpcap supported
-			 * translation of DECnet host names into DECnet
-			 * addresses, but this feature is history now.
-			 */
-			bpf_error(cstate, "invalid DECnet address '%s'", name);
 		} else {
 			u_char tproto = q.proto;
 			u_char tproto6 = q.proto;
@@ -7028,6 +7033,16 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	if (q.proto == Q_DECNET) {
+		/*
+		 * libpcap has never defined any primitives that have "decnet"
+		 * as the protocol qualifier and an IPv4 network with a
+		 * netmask as the ID.
+		 */
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+		          tqkw(q.addr == Q_DEFAULT ? Q_HOST : q.addr));
+	}
+
 	nlen = pcapint_atoin(s1, &n);
 	if (nlen < 0)
 		bpf_error(cstate, "invalid IPv4 address '%s'", s1);
@@ -7082,23 +7097,30 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	proto = q.proto;
-	dir = q.dir;
-	if (s == NULL) {
+	if (q.proto == Q_DECNET) {
 		/*
-		 * v contains a 32-bit unsigned parsed from a string of the
-		 * form {N}, which could be decimal, hexadecimal or octal.
-		 * Although it would be possible to use the value as a raw
-		 * 16-bit DECnet address when the value fits into 16 bits, this
-		 * would be a questionable feature: DECnet address wire
-		 * encoding is little-endian, so this would not work as
-		 * intuitively as the same works for [big-endian] IPv4
-		 * addresses (0x01020304 means 1.2.3.4).
+		 * libpcap defines exactly one primitive that has "decnet" as
+		 * the protocol qualifier: "decnet host AREANUMBER.NODENUMBER".
 		 */
-		if (proto == Q_DECNET)
+		if (q.addr != Q_DEFAULT && q.addr != Q_HOST)
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+			          tqkw(q.addr));
+
+		if (s == NULL) {
+			/*
+			 * v contains a 32-bit unsigned parsed from a string
+			 * of the form {N}, which could be decimal, hexadecimal
+			 * or octal.  Although it would be possible to use the
+			 * value as a raw 16-bit DECnet address when the value
+			 * fits into 16 bits, this would be a questionable
+			 * feature: DECnet address wire encoding is
+			 * little-endian, so this would not work as intuitively
+			 * as the same works for [big-endian] IPv4 addresses
+			 * (0x01020304 means 1.2.3.4).
+			 */
 			bpf_error(cstate, "invalid DECnet address '%u'", v);
-		vlen = 32;
-	} else if (proto == Q_DECNET) {
+		}
+
 		/*
 		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
 		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
@@ -7107,11 +7129,24 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		vlen = pcapint_atodn(s, &v);
 		if (vlen == 0)
 			bpf_error(cstate, "invalid DECnet address '%s'", s);
+
+		return gen_host(cstate, v, 0, q.proto, q.dir, q.addr);
+	}
+
+	proto = q.proto;
+	dir = q.dir;
+	if (s == NULL) {
+		/*
+		 * v contains a 32-bit unsigned parsed from a string of the
+		 * form {N}, which could be decimal, hexadecimal or octal.
+		 * This is a valid IPv4 address, in the sense of inet_aton(3).
+		 */
+		vlen = 32;
 	} else {
 		/*
 		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
 		 * {N}.{N}.{N}.{N}, all of which potentially stand for a valid
-		 * IPv4 address.
+		 * IPv4 address, in the sense of inet_aton(3).
 		 */
 		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
@@ -7123,9 +7158,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_DEFAULT:
 	case Q_HOST:
 	case Q_NET:
-		if (proto == Q_DECNET)
-			return gen_host(cstate, v, 0, proto, dir, q.addr);
-		else if (proto == Q_LINK) {
+		if (proto == Q_LINK) {
 			if (s)
 				// "link (host|net) IPV4ADDR" and variations thereof
 				bpf_error(cstate, "illegal link-layer address '%s'", s);
