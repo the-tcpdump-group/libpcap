@@ -2383,9 +2383,9 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		handle->linktype = DLT_RAW;
 		break;
 
-       case ARPHRD_IEEE802154:
-               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
-               break;
+	case ARPHRD_IEEE802154:
+		handle->linktype = DLT_IEEE802_15_4_NOFCS;
+		break;
 
 	case ARPHRD_NETLINK:
 		handle->linktype = DLT_NETLINK;
