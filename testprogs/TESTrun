@@ -14206,6 +14206,11 @@ sub errstr_nomac48host {
 	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
 }
 
+# gen_ncode() -> proto == Q_LINK
+sub errstr_invlinkaddr {
+	return sprintf ('illegal link-layer address \'%s\'', shift);
+}
+
 # gen_ncode() case Q_PORT, case Q_PORTRANGE
 # gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
 sub errstr_invport {
@@ -14580,7 +14585,19 @@ my @reject_tests = (
 		name => 'arcnet_address4',
 		DLT => 'ARCNET',
 		expr => 'link host 120',
-		errstr => 'illegal link layer address',
+		errstr => errstr_invlinkaddr ('120'),
+	},
+	{
+		name => 'arcnet_address5',
+		DLT => 'ARCNET',
+		expr => 'link host 10.120',
+		errstr => errstr_invlinkaddr ('10.120'),
+	},
+	{
+		name => 'arcnet_address6',
+		DLT => 'ARCNET',
+		expr => 'link host 10.20.120',
+		errstr => errstr_invlinkaddr ('10.20.120'),
 	},
 	{
 		name => 'ip_broadcast_implicit',
@@ -14885,13 +14902,13 @@ my @reject_tests = (
 		name => 'link_host_ipv4addr',
 		DLT => 'RAW',
 		expr => 'link host 1.2.3.4',
-		errstr => 'illegal link layer address',
+		errstr => errstr_invlinkaddr ('1.2.3.4'),
 	},
 	{
 		name => 'link_net_ipv4addr',
 		DLT => 'RAW',
 		expr => 'link net 1.2.3.4',
-		errstr => 'illegal link layer address',
+		errstr => errstr_invlinkaddr ('1.2.3.4'),
 	},
 	{
 		name => 'link_host_ipv6addr',

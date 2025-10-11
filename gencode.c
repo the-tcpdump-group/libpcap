@@ -7126,8 +7126,12 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		if (proto == Q_DECNET)
 			return gen_host(cstate, v, 0, proto, dir, q.addr);
 		else if (proto == Q_LINK) {
-			// "link (host|net) IPV4ADDR" and variations thereof
-			bpf_error(cstate, "illegal link layer address");
+			if (s)
+				// "link (host|net) IPV4ADDR" and variations thereof
+				bpf_error(cstate, "illegal link-layer address '%s'", s);
+			else
+				// link host NUMBER
+				bpf_error(cstate, "illegal link-layer address '%u'", v);
 		} else {
 			mask = 0xffffffff;
 			if (s == NULL && q.addr == Q_NET) {
