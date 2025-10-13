@@ -345,6 +345,7 @@ static const struct timeval netdown_timeout = {
 static int	iface_get_id(int fd, const char *device, char *ebuf);
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int	iface_get_arptype(int fd, const char *device, char *ebuf);
+static int	iface_exists(const char *device, char *ebuf);
 static int	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
@@ -2425,6 +2426,17 @@ setup_socket(pcap_t *handle, int is_any_device)
 	int			val;
 	int			err = 0;
 	struct packet_mreq	mr;
+
+	/*
+	 * Check if the interface exists before attempting to open
+	 * the privileged packet socket, so we can return the correct
+	 * error for non-existent interfaces.
+	 */
+	if (!is_any_device) {
+		status = iface_exists(device, handle->errbuf);
+		if (status != 0)
+			return status;
+	}
 
 	/*
 	 * Open a socket with protocol family packet. If cooked is true,
@@ -4813,6 +4825,50 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 }
 
 /*
+ * Check if the given interface exists. Return 0 on success,
+ * PCAP_ERROR_NO_SUCH_DEVICE if the interface doesn't exist,
+ * or PCAP_ERROR on other failures.
+ */
+static int
+iface_exists(const char *device, char *ebuf)
+{
+	int fd;
+	struct ifreq ifr;
+
+	if (strlen(device) >= sizeof(ifr.ifr_name)) {
+		ebuf[0] = '\0';
+		return PCAP_ERROR_NO_SUCH_DEVICE;
+	}
+
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return PCAP_ERROR;
+	}
+
+	memset(&ifr, 0, sizeof(ifr));
+	pcapint_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+
+	if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
+		int save_errno = errno;
+		close(fd);
+
+		if (save_errno == ENODEV) {
+			ebuf[0] = '\0';
+			return PCAP_ERROR_NO_SUCH_DEVICE;
+		} else {
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    save_errno, "SIOCGIFINDEX on %s", device);
+			return PCAP_ERROR;
+		}
+	}
+
+	close(fd);
+	return 0;
+}
+
+/*
  *  Return the index of the given device name. Fill ebuf and return
  *  -1 on failure.
  */
@@ -5164,13 +5220,13 @@ iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 
 		case ENODEV:
 			/*
-			 * OK, no such device.
-			 * The user will find that out when they try to
-			 * activate the device; just return an empty
-			 * list of time stamp types.
+			 * No such device.
+			 *
+			 * There's nothing more to say, so clear the
+			 * error message.
 			 */
-			handle->tstamp_type_list = NULL;
-			return 0;
+			ebuf[0] = '\0';
+			return PCAP_ERROR_NO_SUCH_DEVICE;
 
 		default:
 			/*
