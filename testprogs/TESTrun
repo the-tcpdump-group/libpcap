@@ -14682,7 +14682,7 @@ my @reject_tests = (
 		expr => 'protochain 17',
 		errstr => 'protochain not supported',
 	},
-	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
+	# gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
 	{
 		name => 'protochain_nosuchprotocol',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
@@ -14725,7 +14725,7 @@ my @reject_tests = (
 		expr => 'vxlan and protochain 4',
 		errstr => '\'protochain\' not supported with variable length headers',
 	},
-	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
+	# gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto == Q_DEFAULT, v == PROTO_UNDEF
 	{
 		name => 'proto_nosuchprotocol',
 		DLT => 'RAW',
@@ -16014,7 +16014,7 @@ foreach (pquals_without 'host') {
 		errstr => errstr_invqual ($_, 'ip6 net'),
 	};
 
-	# ID -> gen_scode() -> gen_host() -> default
+	# gen_scode() -> gen_host46_byname() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv4name",
@@ -16022,7 +16022,7 @@ foreach (pquals_without 'host') {
 		expr => "${_} host noeth-ipv4-noipv6.host123.libpcap.test",
 		errstr => errstr_invqual ($_, 'ip host'),
 	};
-	# ID -> gen_scode() -> gen_host() -> default
+	# gen_scode() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_networks(),
 		name => "inv_qual_${_}_net_ipv4name",
@@ -16030,7 +16030,7 @@ foreach (pquals_without 'host') {
 		expr => "${_} net net-10-20-30-0.libpcap.test",
 		errstr => errstr_invqual ($_, 'ip net'),
 	};
-	# ID -> gen_scode() -> gen_host6() -> default
+	# gen_scode() -> gen_host46_byname() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv6name",
@@ -16042,7 +16042,7 @@ foreach (pquals_without 'host') {
 }
 
 # gen_scode() -> q.proto == Q_DECNET
-# ID -> gen_scode() -> gen_gateway() -> default
+# gen_scode() -> gen_gateway() -> default
 foreach (pquals_without 'gateway') {
 	push @reject_tests, {
 		skip => skip_no_ethers() ||
@@ -16174,7 +16174,7 @@ foreach (pquals_without 'port') {
 		errstr => errstr_invqual ($_, 'port'),
 	};
 	# gen_scode() -> q.proto == Q_DECNET
-	# pnum -> gen_scode() -> case Q_PORT -> port_pq_to_ipproto()
+	# gen_scode() -> case Q_PORT -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_port_nosuchport",
 		DLT => 'EN10MB',
@@ -16194,7 +16194,7 @@ foreach (pquals_without 'portrange') {
 		errstr => errstr_invqual ($_, 'portrange'),
 	};
 	# gen_scode() -> q.proto == Q_DECNET
-	# pnum -> gen_scode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
+	# gen_scode() -> case Q_PORTRANGE -> port_pq_to_ipproto()
 	push @reject_tests, {
 		name => "${_}_portrange_nosuchport",
 		DLT => 'EN10MB',
@@ -16206,7 +16206,7 @@ foreach (pquals_without 'portrange') {
 
 foreach (pquals_without '') {
 	# gen_scode() -> q.proto == Q_DECNET
-	# ID -> gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
+	# gen_scode() -> case Q_PROTO -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
 	push @reject_tests, {
 		name => "${_}_proto_nosuchprotocol",
 		DLT => 'EN10MB',
@@ -16215,7 +16215,7 @@ foreach (pquals_without '') {
 			"unknown '$_ proto' value 'nosuchprotocol'",
 	};
 	# gen_scode() -> q.proto == Q_DECNET
-	# ID -> gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
+	# gen_scode() -> case Q_PROTOCHAIN -> lookup_proto() -> q.proto != Q_DEFAULT, v == PROTO_UNDEF
 	push @reject_tests, {
 		name => "${_}_protochain_nosuchprotocol",
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
