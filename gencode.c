@@ -1071,6 +1071,7 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
+#define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -7045,14 +7046,14 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 
 	nlen = pcapint_atoin(s1, &n);
 	if (nlen < 0)
-		bpf_error(cstate, "invalid IPv4 address '%s'", s1);
+		bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s1);
 	/* Promote short ipaddr */
 	n <<= 32 - nlen;
 
 	if (s2 != NULL) {
 		mlen = pcapint_atoin(s2, &m);
 		if (mlen < 0)
-			bpf_error(cstate, "invalid IPv4 address '%s'", s2);
+			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s2);
 		/* Promote short ipaddr */
 		m <<= 32 - mlen;
 		if ((n & ~m) != 0)
@@ -7150,7 +7151,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 */
 		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
-			bpf_error(cstate, "invalid IPv4 address '%s'", s);
+			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s);
 	}
 
 	switch (q.addr) {
