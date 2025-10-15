@@ -14201,6 +14201,17 @@ sub errstr_nohost_af {
 	return sprintf ('unknown host \'%s\' for specified address family', shift);
 }
 
+# gen_scode()
+# gen_ncode()
+sub errstr_invhost_dn {
+	return sprintf ('invalid DECnet address \'%s\'', shift);
+}
+
+# ERRSTR_INVALID_IPV4_ADDR
+sub errstr_invhost_ipv4 {
+	return sprintf ('invalid IPv4 address \'%s\'', shift);
+}
+
 # ERRSTR_UNKNOWN_MAC48HOST
 sub errstr_nomac48host {
 	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
@@ -14209,6 +14220,11 @@ sub errstr_nomac48host {
 # gen_ncode() -> proto == Q_LINK
 sub errstr_invlinkaddr {
 	return sprintf ('illegal link-layer address \'%s\'', shift);
+}
+
+# gen_ecode()
+sub errstr_mac48_noether {
+	return 'ethernet address used in non-ether expression';
 }
 
 # gen_ncode() case Q_PORT, case Q_PORTRANGE
@@ -14353,31 +14369,25 @@ my @reject_tests = (
 		name => 'decnet_area',
 		DLT => 'EN10MB',
 		expr => 'decnet host 64.120',
-		errstr => 'invalid DECnet address',
+		errstr => errstr_invhost_dn ('64.120'),
 	},
 	{
 		name => 'decnet_node',
 		DLT => 'EN10MB',
 		expr => 'decnet host 17.1024',
-		errstr => 'invalid DECnet address',
+		errstr => errstr_invhost_dn ('17.1024'),
 	},
 	{
 		name => 'ip_host',
 		DLT => 'RAW',
 		expr => 'ip host 256.256.256.256',
-		errstr => 'invalid IPv4 address',
+		errstr => errstr_invhost_ipv4 ('256.256.256.256'),
 	},
 	{
 		name => 'ip6_host_toolong',
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => errstr_syntax,
-	},
-	{
-		name => 'ip6_host_ipv4addr',
-		DLT => 'RAW',
-		expr => 'ip6 host 1.2.3.4',
-		errstr => errstr_invqual ('ip6', 'ip host'),
 	},
 
 # This test has been flaky because it depends on an external effect (DNS
@@ -14613,42 +14623,6 @@ my @reject_tests = (
 		errstr => "netmask not known, so 'ip broadcast' not supported",
 	},
 
-	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_ARP -> ret == NULL
-	{
-		name => 'arp_host_noeth_noipv4_ipv6',
-		skip => skip_no_hosts(),
-		DLT => 'NETANALYZER',
-		expr => 'arp host noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
-	},
-
-	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_IP -> ret == NULL
-	{
-		name => 'ip_host_noeth_noipv4_ipv6',
-		skip => skip_no_hosts(),
-		DLT => 'IEEE802_11_RADIO',
-		expr => 'ip host noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
-	},
-
-	# gen_scode() -> gen_host46_byname() -> case AF_INET -> proto4 == Q_IPV6 -> ret == NULL
-	{
-		name => 'ip6_host_noeth_ipv4_noipv6',
-		skip => skip_no_hosts(),
-		DLT => 'RAW',
-		expr => 'ip6 host noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test'),
-	},
-
-	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> proto6 == Q_RARP -> ret == NULL
-	{
-		name => 'rarp_host_noeth_noipv4_ipv6',
-		skip => skip_no_hosts(),
-		DLT => 'PPI',
-		expr => 'rarp host noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test'),
-	},
-
 	# gen_scode() -> gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 	{
 		name => 'arp_host_nonexistent',
@@ -14854,7 +14828,7 @@ my @reject_tests = (
 		name => 'gateway_mac48',
 		DLT => 'EN10MB',
 		expr => 'gateway 11:22:33:44:55:66',
-		errstr => 'ethernet address used in non-ether expression',
+		errstr => errstr_mac48_noether,
 	},
 	{
 		name => 'gateway_arcnet',
@@ -14897,37 +14871,6 @@ my @reject_tests = (
 		DLT => 'IEEE802_11_RADIO',
 		expr => 'link',
 		errstr => '\'link\' cannot be used as an abbreviation',
-	},
-	{
-		name => 'link_host_ipv4addr',
-		DLT => 'RAW',
-		expr => 'link host 1.2.3.4',
-		errstr => errstr_invlinkaddr ('1.2.3.4'),
-	},
-	{
-		name => 'link_net_ipv4addr',
-		DLT => 'RAW',
-		expr => 'link net 1.2.3.4',
-		errstr => errstr_invlinkaddr ('1.2.3.4'),
-	},
-	{
-		name => 'link_host_ipv6addr',
-		DLT => 'RAW',
-		expr => 'link host fe80::',
-		errstr => errstr_invqual ('link', 'ip6 host'),
-	},
-	{
-		name => 'link_net_ipv6addr',
-		DLT => 'RAW',
-		expr => 'link net fe80::',
-		errstr => errstr_invqual ('link', 'ip6 net'),
-	},
-	{
-		skip => skip_no_networks(),
-		name => 'link_net_ipv4name',
-		DLT => 'RAW',
-		expr => 'link net net-10-20-30-0.libpcap.test',
-		errstr => errstr_invqual ('link', 'ip net'),
 	},
 	{
 		name => 'reason_invalid_PFLOG',
@@ -15227,7 +15170,8 @@ my %pqual_features = (
 	},
 	arp => {
 		index => 1,
-		host => 1,
+		host_ipv4 => 1,
+		net_ipv4 => 1,
 		gateway => 1,
 	},
 	atalk => {
@@ -15242,7 +15186,7 @@ my %pqual_features = (
 	},
 	decnet => {
 		index => 1,
-		host => 1,
+		host_decnet => 1,
 	},
 	esis => {
 	},
@@ -15264,14 +15208,16 @@ my %pqual_features = (
 	},
 	ip => {
 		index => 1,
-		host => 1,
+		host_ipv4 => 1,
+		net_ipv4 => 1,
 		gateway => 1,
 		protochain => 1,
 		proto => 1,
 	},
 	ip6 => {
 		index => 1,
-		host => 1,
+		host_ipv6 => 1,
+		net_ipv6 => 1,
 		protochain => 1,
 		proto => 1,
 	},
@@ -15292,7 +15238,8 @@ my %pqual_features = (
 	},
 	link => {
 		index => 1,
-		host => 1,
+		host_mac48 => 1,
+		host_arcnet => 1,
 		proto => 1,
 	},
 	lsp => {
@@ -15315,7 +15262,8 @@ my %pqual_features = (
 	},
 	rarp => {
 		index => 1,
-		host => 1,
+		host_ipv4 => 1,
+		net_ipv4 => 1,
 		gateway => 1,
 	},
 	sca => {
@@ -15372,6 +15320,12 @@ sub pquals_with {
 
 sub pquals_without {
 	return list_with_without \%pqual_features, shift, 0;
+}
+
+sub pqual_has {
+	my $proto = shift;
+	my $feature = shift;
+	return item_with_without $pqual_features{$proto}, $feature, 1;
 }
 
 # "dir" qualifiers
@@ -15934,111 +15888,173 @@ foreach (pquals_without 'index') {
 	};
 }
 
-# "link host IPV4ADDR" and "link net IPV4ADDR" use a different code path with
-# a different error message and are tested above.  "link net NAME" uses yet
-# another different code path with yet another different error message and is
-# tested above.  "(link|ip|rarp|arp|decnet|ip6) host" can be valid syntax or
-# not (depending on the primitive ID), which is tested above.
-foreach (pquals_without 'host') {
+foreach (pquals_without '') {
+	# HID -> gen_ncode() -> q.proto == Q_DECNET
+	# HID -> gen_ncode() -> q.proto == Q_LINK
 	# HID -> gen_ncode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.4",
-		errstr => errstr_invqual ($_, 'ip host'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invhost_dn ('1.2.3.4') :
+			$_ eq 'link' ? errstr_invlinkaddr ('1.2.3.4') :
+			errstr_invqual ($_, 'ip host'),
+	} unless pqual_has ($_, 'host_ipv4');
+
+	# HID -> gen_ncode() -> q.proto == Q_DECNET
+	# HID -> gen_ncode() -> q.proto == Q_LINK
 	# HID -> gen_ncode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4addr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.4",
-		errstr => errstr_invqual ($_, 'ip net'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
+			$_ eq 'link' ? errstr_invlinkaddr ('1.2.3.4') :
+			errstr_invqual ($_, 'ip net'),
+	} unless pqual_has ($_, 'net_ipv4');
+
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::",
 		errstr => errstr_invqual ($_, 'ip6 host'),
-	};
-	# HID6 -> gen_mcode6() -> gen_host6() -> default
+	} unless pqual_has ($_, 'host_ipv6');
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::",
 		errstr => errstr_invqual ($_, 'ip6 net'),
-	};
+	} unless pqual_has ($_, 'net_ipv6');
 
+	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
 	# HID NETMASK HID -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4mask",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0 mask 255.255.255.0",
-		errstr => 'Mask syntax for networks only',
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
+			'Mask syntax for networks only',
+	} unless pqual_has ($_, 'host_ipv4');
+
+	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
 	# HID NETMASK HID -> gen_mcode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4mask",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0 mask 255.255.255.0",
-		errstr => errstr_invqual ($_, 'ip net'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
+			errstr_invqual ($_, 'ip net'),
+	} unless pqual_has ($_, 'net_ipv4');
 	# ("mask" is IPv4-only)
 
+	# HID '/' NUM -> gen_mcode() -> q.proto == Q_DECNET
 	# HID '/' NUM -> gen_mcode() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv4cidr",
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0/24",
-		errstr => 'Mask syntax for networks only',
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
+			'Mask syntax for networks only',
+	} unless pqual_has ($_, 'host_ipv4');
+
+	# HID '/' NUM -> gen_mcode() -> q.proto == Q_DECNET
 	# HID '/' NUM -> gen_mcode() -> gen_host() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv4cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0/24",
-		errstr => errstr_invqual ($_, 'ip net'),
-	};
-	# HID6 '/' NUM -> gen_mcode6() -> default
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
+			errstr_invqual ($_, 'ip net'),
+	} unless pqual_has ($_, 'net_ipv4');
+
+	# HID6 '/' NUM -> gen_mcode6() -> case Q_HOST -> masklen != 128
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::/16",
 		errstr => errstr_invqual ('host', 'fe80::/16'),
-	};
+	} unless pqual_has ($_, 'host_ipv6');
+
 	# HID6 '/' NUM -> gen_mcode6() -> gen_host6() -> default
 	push @reject_tests, {
 		name => "inv_qual_${_}_net_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::/16",
 		errstr => errstr_invqual ($_, 'ip6 net'),
-	};
+	} unless pqual_has ($_, 'net_ipv6');
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_ipv6addr128",
+		DLT => 'EN10MB',
+		expr => "${_} host fe80::/128",
+		errstr => errstr_invqual ($_, 'ip6 host'),
+	} unless pqual_has ($_, 'host_ipv6');
 
+	# gen_scode() -> q.proto == Q_DECNET
+	# gen_scode() -> gen_mac48host_byname -> pcap_ether_hostton() == NULL
+	# gen_scode() -> gen_host46_byname() -> case AF_INET -> continue -> ret == NULL
 	# gen_scode() -> gen_host46_byname() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv4name",
 		DLT => 'EN10MB',
 		expr => "${_} host noeth-ipv4-noipv6.host123.libpcap.test",
-		errstr => errstr_invqual ($_, 'ip host'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
+			$_ eq 'link' ? errstr_nomac48host ('noeth-ipv4-noipv6.host123.libpcap.test') :
+			pqual_has ($_, 'host_ipv6') ? errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test') :
+			errstr_invqual ($_, 'ip host'),
+	} unless pqual_has ($_, 'host_ipv4');
+
+	# gen_scode() -> q.proto == Q_DECNET
 	# gen_scode() -> gen_host() -> default
 	push @reject_tests, {
 		skip => skip_no_networks(),
 		name => "inv_qual_${_}_net_ipv4name",
 		DLT => 'EN10MB',
 		expr => "${_} net net-10-20-30-0.libpcap.test",
-		errstr => errstr_invqual ($_, 'ip net'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
+			errstr_invqual ($_, 'ip net'),
+	} unless pqual_has ($_, 'net_ipv4');
+
+	# gen_scode() -> q.proto == Q_DECNET
+	# gen_scode() -> gen_mac48host_byname() -> pcap_ether_hostton() == NULL
+	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> continue -> ret == NULL
 	# gen_scode() -> gen_host46_byname() -> gen_host6() -> default
 	push @reject_tests, {
 		skip => skip_no_hosts(),
 		name => "inv_qual_${_}_host_ipv6name",
 		DLT => 'EN10MB',
 		expr => "${_} host noeth-noipv4-ipv6.host123.libpcap.test",
-		errstr => errstr_invqual ($_, 'ip6 host'),
-	};
+		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
+			$_ eq 'link' ? errstr_nomac48host ('noeth-noipv4-ipv6.host123.libpcap.test') :
+			pqual_has ($_, 'host_ipv4') ? errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test') :
+			errstr_invqual ($_, 'ip6 host'),
+	} unless pqual_has ($_, 'host_ipv6');
 	# (IPv6 networks cannot have names)
+
+	# gen_ecode() -> q.proto != Q_LINK
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_mac48",
+		DLT => 'EN10MB',
+		expr => "${_} host aa:bb:cc:dd:ee:ff",
+		errstr => errstr_mac48_noether,
+	} unless pqual_has ($_, 'host_mac48');
+
+	# gen_acode() -> q.proto != Q_LINK
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_arcnet",
+		DLT => 'ARCNET_LINUX',
+		expr => "${_} host \$fe",
+		errstr => 'ARCnet address used in non-arc expression',
+	} unless pqual_has ($_, 'host_arcnet');
+
+	# HID -> gen_ncode() -> q.proto != Q_DECNET -> pcapint_atoin() < 0
+	push @reject_tests, {
+		name => "inv_qual_${_}_host_decnet",
+		DLT => 'EN10MB',
+		expr => "${_} host 12.500",
+		errstr => errstr_invhost_ipv4 ('12.500'),
+	} unless pqual_has ($_, 'host_decnet');
 }
 
 # gen_scode() -> q.proto == Q_DECNET
