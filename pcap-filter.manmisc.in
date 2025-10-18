@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "9 October 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "18 October 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -226,8 +226,14 @@ for Ethernet-like link-layer types is equivalent to
 .in -.5i
 .IP
 .I hostnameaddr
-may be either an address or a name.  If it is a name, the name must resolve
-to at least one IPv4 address for
+may be either an address or a name.  If it is an IPv6 address, it may use both
+the zero compression
+.RB ( :: )
+and the IPv4-mapped
+.RB ( x:x:x:x:x:x:d.d.d.d )
+notations as discussed in
+.BR inet_pton (3).
+If it is a name, the name must resolve to at least one IPv4 address for
 .BR "arp host" ,
 .B "ip host"
 and
@@ -326,7 +332,10 @@ dotted triple (e.g., 192.168.1), dotted pair (e.g, 172.16), or single
 number (e.g., 10); the netmask is 255.255.255.255 (/32) for a dotted quad
 (which means that it's really a host match), 255.255.255.0 (/24) for a dotted
 triple, 255.255.0.0 (/16) for a dotted pair, or 255.0.0.0 (/8) for a single number.
-An IPv6 network number must be written out fully; the netmask is
+.IP
+An IPv6 network number is an IPv6 address as discussed for the
+.B host
+primitive above; the implicit netmask is
 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff (/128), so in this primitive IPv6
 "network" matches are really always host matches.  For an actual IPv6 network
 match see the `\fBnet \fInetaddr\fR/\fIlen\fR' primitive below.
@@ -398,11 +407,9 @@ is the same as the above.  For IPv6,
 .I len
 is an integer between 0 and 128 (both inclusive) and
 .I netaddr
-is an IPv6 address.  For the latter zero compression notation
-.RB ( :: )
-is valid, but IPv4-mapped notation
-.RB ( x:x:x:x:x:x:d.d.d.d )
-is not.  For both IPv4 and IPv6 the maximum value of
+is an IPv6 address as discussed for the
+.B host
+primitive above.  For both IPv4 and IPv6 the maximum value of
 .I len
 is equivalent to a host match and the 0 value (which implies an all-zeroes
 value of

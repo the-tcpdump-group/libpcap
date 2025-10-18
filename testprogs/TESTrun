@@ -11276,6 +11276,27 @@ my @accept_blocks = (
 			'host ::1/128',
 			'src or dst host ::1/128',
 			'src or dst ::1/128',
+			# IPv4-mapped notation of everything above
+			'ip6 host ::0.0.0.1',
+			'ip6 src or dst host ::0.0.0.1',
+			'ip6 src or dst ::0.0.0.1',
+			'host ::0.0.0.1',
+			'src or dst host ::0.0.0.1',
+			'src or dst ::0.0.0.1',
+			'ip6 net ::0.0.0.1/128',
+			'ip6 src or dst net ::0.0.0.1/128',
+			'net ::0.0.0.1/128',
+			'src or dst net ::0.0.0.1/128',
+			'ip6 net ::0.0.0.1',
+			'ip6 src or dst net ::0.0.0.1',
+			'net ::0.0.0.1',
+			'src or dst net ::0.0.0.1',
+			'ip6 host ::0.0.0.1/128',
+			'ip6 src or dst host ::0.0.0.1/128',
+			'ip6 src or dst ::0.0.0.1/128',
+			'host ::0.0.0.1/128',
+			'src or dst host ::0.0.0.1/128',
+			'src or dst ::0.0.0.1/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11392,6 +11413,15 @@ my @accept_blocks = (
 			'ip6 src fe80::1122:33ff:fe44:5566/128',
 			'src host fe80::1122:33ff:fe44:5566/128',
 			'src fe80::1122:33ff:fe44:5566/128',
+			# IPv4-mapped notation of everything above
+			'ip6 src host fe80::1122:33ff:254.68.85.102',
+			'ip6 src fe80::1122:33ff:254.68.85.102',
+			'src host fe80::1122:33ff:254.68.85.102',
+			'src fe80::1122:33ff:254.68.85.102',
+			'ip6 src host fe80::1122:33ff:254.68.85.102/128',
+			'ip6 src fe80::1122:33ff:254.68.85.102/128',
+			'src host fe80::1122:33ff:254.68.85.102/128',
+			'src fe80::1122:33ff:254.68.85.102/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11478,6 +11508,15 @@ my @accept_blocks = (
 			'ip6 dst fe80::7788:99ff:feaa:bbcc/128',
 			'dst host fe80::7788:99ff:feaa:bbcc/128',
 			'dst fe80::7788:99ff:feaa:bbcc/128',
+			# IPv4-mapped notation of everything above
+			'ip6 dst host fe80::7788:99ff:254.170.187.204',
+			'ip6 dst fe80::7788:99ff:254.170.187.204',
+			'dst host fe80::7788:99ff:254.170.187.204',
+			'dst fe80::7788:99ff:254.170.187.204',
+			'ip6 dst host fe80::7788:99ff:254.170.187.204/128',
+			'ip6 dst fe80::7788:99ff:254.170.187.204/128',
+			'dst host fe80::7788:99ff:254.170.187.204/128',
+			'dst fe80::7788:99ff:254.170.187.204/128',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11559,6 +11598,11 @@ my @accept_blocks = (
 			'net fe80::/10',
 			'src or dst net fe80::/10',
 			'ip6 src or dst net fe80::/10',
+			# IPv4-mapped notation of everything above
+			'ip6 net fe80::0.0.0.0/10',
+			'net fe80::0.0.0.0/10',
+			'src or dst net fe80::0.0.0.0/10',
+			'ip6 src or dst net fe80::0.0.0.0/10',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11580,6 +11624,9 @@ my @accept_blocks = (
 		aliases => [
 			'ip6 src net 2000::/3',
 			'src net 2000::/3',
+			# IPv4-mapped notation of everything above
+			'ip6 src net 2000::0.0.0.0/3',
+			'src net 2000::0.0.0.0/3',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -11595,7 +11642,11 @@ my @accept_blocks = (
 	{
 		name => 'ip6_dst_net_0',
 		DLT => 'RAW',
-		aliases => ['ip6 dst net ::/0'],
+		aliases => [
+			'ip6 dst net ::/0',
+			# IPv4-mapped notation of everything above
+			'ip6 dst net ::0.0.0.0/0',
+		],
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
@@ -11658,7 +11709,11 @@ my @accept_blocks = (
 	{
 		name => 'ip6_dst_net_120',
 		DLT => 'RAW',
-		aliases => ['ip6 dst net ff11:2233:4455:6677:8899:aabb:ccdd:ee00/120'],
+		aliases => [
+			'ip6 dst net ff11:2233:4455:6677:8899:aabb:ccdd:ee00/120',
+			# IPv4-mapped notation of everything above
+			'ip6 dst net ff11:2233:4455:6677:8899:aabb:204.221.238.0/120',
+		],
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
@@ -14212,6 +14267,11 @@ sub errstr_invhost_ipv4 {
 	return sprintf ('invalid IPv4 address \'%s\'', shift);
 }
 
+# scanner.l
+sub errstr_invhost_ipv6 {
+	return sprintf ('bogus IPv6 address %s', shift);
+}
+
 # ERRSTR_UNKNOWN_MAC48HOST
 sub errstr_nomac48host {
 	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
@@ -14388,6 +14448,30 @@ my @reject_tests = (
 		DLT => 'RAW',
 		expr => 'ip6 host fe80:0:0:0:0:0:0:0:0',
 		errstr => errstr_syntax,
+	},
+	{
+		name => 'ip6_host_mapped_octet1',
+		DLT => 'RAW',
+		expr => 'ip6 host fe80::256.20.30.40',
+		errstr => errstr_invhost_ipv6 ('fe80::256.20.30.40'),
+	},
+	{
+		name => 'ip6_host_mapped_octet2',
+		DLT => 'RAW',
+		expr => 'ip6 host fe80::10.256.30.40',
+		errstr => errstr_invhost_ipv6 ('fe80::10.256.30.40'),
+	},
+	{
+		name => 'ip6_host_mapped_octet3',
+		DLT => 'RAW',
+		expr => 'ip6 host fe80::10.20.256.40',
+		errstr => errstr_invhost_ipv6 ('fe80::10.20.256.40'),
+	},
+	{
+		name => 'ip6_host_mapped_octet4',
+		DLT => 'RAW',
+		expr => 'ip6 host fe80::10.20.30.256',
+		errstr => errstr_invhost_ipv6 ('fe80::10.20.30.256'),
 	},
 
 # This test has been flaky because it depends on an external effect (DNS
