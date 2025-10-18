@@ -142,7 +142,7 @@ void fileconf_read(void)
 			// Is the next character alphabetic?  If not,
 			// this isn't a valid parameter name.
 			//
-			if (FILECONF_ISALPHA(*ptr))
+			if (! FILECONF_ISALPHA(*ptr))
 			{
 				rpcapd_log(LOGPRIO_ERROR,
 				    "%s, line %u doesn't have a valid parameter name",
