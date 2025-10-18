@@ -286,16 +286,17 @@ int main(int argc, char *argv[])
 
 					pcapint_strlcpy(activelist[i].address, tmpaddress, sizeof (activelist[i].address));
 
-					if ((tmpport == NULL) || (strcmp(tmpport, "DEFAULT") == 0)) // the user choose a custom port
+					if ((tmpport == NULL) || (strcmp(tmpport, "DEFAULT") == 0))
+						// The default port.
 						pcapint_strlcpy(activelist[i].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof (activelist[i].port));
 					else
+						// A custom port.
 						pcapint_strlcpy(activelist[i].port, tmpport, sizeof (activelist[i].port));
 
 					tmpaddress = pcapint_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 
 					i++;
 				}
-
 				if (i > MAX_ACTIVE_LIST)
 					rpcapd_log(LOGPRIO_ERROR, "Only MAX_ACTIVE_LIST active connections are currently supported.");
 

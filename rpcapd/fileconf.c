@@ -333,9 +333,11 @@ void fileconf_read(void)
 					    (unsigned int)(sizeof(activelist[num_active_clients].address) - 1));
 					continue;
 				}
-				if (strcmp(port, "DEFAULT") == 0) // the user choose a custom port
+				if (strcmp(port, "DEFAULT") == 0)
+					// The default port.
 					result = pcapint_strlcpy(activelist[num_active_clients].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof(activelist[num_active_clients].port));
 				else
+					// A custom port.
 					result = pcapint_strlcpy(activelist[num_active_clients].port, port, sizeof(activelist[num_active_clients].port));
 				if (result >= sizeof(activelist[num_active_clients].address))
 				{
