@@ -7154,6 +7154,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s);
 	}
 
+	struct block *b, *b6;
 	switch (q.addr) {
 
 	case Q_DEFAULT:
@@ -7190,12 +7191,10 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
 		// proto can be PROTO_UNDEF
-	    {
-		struct block *b;
 		b = gen_port(cstate, (uint16_t)v, proto, dir);
-		gen_or(gen_port6(cstate, (uint16_t)v, proto, dir), b);
+		b6 = gen_port6(cstate, (uint16_t)v, proto, dir);
+		gen_or(b6, b);
 		return b;
-	    }
 
 	case Q_PORTRANGE:
 		proto = port_pq_to_ipproto(cstate, proto, "portrange");
@@ -7205,14 +7204,12 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
 		// proto can be PROTO_UNDEF
-	    {
-		struct block *b;
 		b = gen_portrange(cstate, (uint16_t)v, (uint16_t)v,
 		    proto, dir);
-		gen_or(gen_portrange6(cstate, (uint16_t)v, (uint16_t)v,
-		    proto, dir), b);
+		b6 = gen_portrange6(cstate, (uint16_t)v, (uint16_t)v,
+		    proto, dir);
+		gen_or(b6, b);
 		return b;
-	    }
 
 	case Q_GATEWAY:
 		bpf_error(cstate, "'gateway' requires a name");
