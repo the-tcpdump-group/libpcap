@@ -15484,6 +15484,8 @@ my %DLTfeatures = (
 	},
 	AUERSWALD_LOG => {
 	},
+	AX25 => {
+	},
 	AX25_KISS => {
 	},
 	BACNET_MS_TP => {
@@ -15504,6 +15506,8 @@ my %DLTfeatures = (
 	CAN20B => {
 	},
 	CAN_SOCKETCAN => {
+	},
+	CHAOS => {
 	},
 	C_HDLC => {
 		link_proto => 1,
@@ -15534,6 +15538,8 @@ my %DLTfeatures = (
 	EBHSCR => {
 	},
 	ELEE => {
+	},
+	EN3MB => {
 	},
 	EN10MB => {
 		link_proto => 1,
@@ -15872,10 +15878,14 @@ my %DLTfeatures = (
 	},
 	PROFIBUS_DL => {
 	},
+	PRONET => {
+	},
 	RAIF1 => {
 	},
 	RAW => {
 		link_proto => 1,
+	},
+	REDBACK_SMARTEDGE => {
 	},
 	RDS => {
 	},
