@@ -275,6 +275,11 @@ struct block {
 	atomset out_use;
 	int oval;		/* value ID for value tested in branch stmt */
 	bpf_u_int32 val[N_ATOMS];
+	enum {
+		IS_UNCERTAIN = 0, // must be the default
+		IS_TRUE,
+		IS_FALSE,
+	} meaning;
 };
 
 /*
@@ -305,8 +310,42 @@ struct arth *gen_loadlen(compiler_state_t *);
 struct arth *gen_neg(compiler_state_t *, struct arth *);
 struct arth *gen_arth(compiler_state_t *, int, struct arth *, struct arth *);
 
-struct block *gen_and(struct block *, struct block *);
-struct block *gen_or(struct block *, struct block *);
+/*
+ * For a very long time gen_and() and gen_or() used to be void functions that
+ * combined two blocks and always stored the result in the second block.  Now
+ * these functions return the result, which can be either of the blocks,
+ * intact, if one of the blocks is a Boolean constant.  Thus any invocation
+ * that discards the result of these two functions is almost certainly a bug.
+ *
+ * Note that invoking these functions in the following style can produce
+ * slightly different (therefore not trivially testable) filter programs in
+ * different builds of libpcap:
+ *
+ * return gen_and(gen_atm_vpi(cstate, 0), gen_atm_vci(cstate, 1));
+ *
+ * Specifically, the memory register numbers can be different because a C
+ * compiler can (and indeed does) evaluate the nested function calls in any
+ * order, and many such functions explicitly or implicitly allocate memory
+ * registers.  The simplest way to avoid this problem is not to have more
+ * than one function-call argument:
+ *
+ * b = gen_atm_vpi(cstate, 0);
+ * return gen_and(b, gen_atm_vci(cstate, 1));
+ *
+ * or even:
+ *
+ * b0 = gen_atm_vpi(cstate, 0);
+ * b1 = gen_atm_vci(cstate, 1);
+ * return gen_and(b0, b1);
+ */
+struct block *gen_and(struct block *, struct block *)
+    PCAP_WARN_UNUSED_RESULT;
+struct block *gen_or(struct block *, struct block *)
+    PCAP_WARN_UNUSED_RESULT;
+/*
+ * gen_not() always returns its only argument, so the style of invocation is a
+ * matter of preference.
+ */
 struct block *gen_not(struct block *);
 
 struct block *gen_scode(compiler_state_t *, const char *, struct qual);
