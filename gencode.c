@@ -6775,21 +6775,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		if (proto == Q_LINK) {
 			return gen_mac48host_byname(cstate, name, q.dir, "link host NAME");
 		} else {
-			u_char tproto = q.proto;
-			u_char tproto6 = q.proto;
-			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
-			    tproto == Q_DEFAULT) {
-				/*
-				 * For certain DLTs have "host NAME" mean
-				 * "ip host NAME or ip6 host NAME", but not
-				 * "arp host NAME or rarp host NAME" (here may
-				 * be not the best place for this though).
-				 */
-				tproto = Q_IP;
-				tproto6 = Q_IPV6;
-			}
-			return gen_host46_byname(cstate, name, tproto,
-			    tproto6, q.dir);
+			return gen_host46_byname(cstate, name, q.proto,
+			    q.proto, q.dir);
 		}
 
 	case Q_PORT:
