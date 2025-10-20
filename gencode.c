@@ -1428,6 +1428,20 @@ finish_parse(compiler_state_t *cstate, struct block *p_arg)
 struct block *
 gen_and(struct block *b0, struct block *b1)
 {
+	// False and X is false.
+	if (b0->meaning == IS_FALSE)
+		return b0;
+	// X and false is false.
+	if (b1->meaning == IS_FALSE)
+		return b1;
+	// True and X is X.
+	if (b0->meaning == IS_TRUE)
+		return b1;
+	// X and true is X.
+	if (b1->meaning == IS_TRUE)
+		return b0;
+
+	// b0->meaning == IS_UNCERTAIN && b1->meaning == IS_UNCERTAIN
 	backpatch(b0, b1->head);
 	b0->sense = !b0->sense;
 	b1->sense = !b1->sense;
@@ -1440,6 +1454,20 @@ gen_and(struct block *b0, struct block *b1)
 struct block *
 gen_or(struct block *b0, struct block *b1)
 {
+	// False or X is X.
+	if (b0->meaning == IS_FALSE)
+		return b1;
+	// X or false is X.
+	if (b1->meaning == IS_FALSE)
+		return b0;
+	// True or X is true.
+	if (b0->meaning == IS_TRUE)
+		return b1;
+	// X or true is true.
+	if (b1->meaning == IS_TRUE)
+		return b0;
+
+	// b0->meaning == IS_UNCERTAIN && b1->meaning == IS_UNCERTAIN
 	b0->sense = !b0->sense;
 	backpatch(b0, b1->head);
 	b0->sense = !b0->sense;
@@ -1452,6 +1480,11 @@ struct block *
 gen_not(struct block *b)
 {
 	b->sense = !b->sense;
+	// A switch on an enum is a source of compiler warnings.
+	if (b->meaning == IS_TRUE)
+		b->meaning = IS_FALSE;
+	else if (b->meaning == IS_FALSE)
+		b-> meaning = IS_TRUE;
 	return b;
 }
 
@@ -2501,7 +2534,9 @@ gen_uncond(compiler_state_t *cstate, int rsense)
 
 	s = new_stmt(cstate, BPF_LD|BPF_IMM);
 	s->s.k = !rsense;
-	return gen_jmp_k(cstate, BPF_JEQ, 0, s);
+	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0, s);
+	ret->meaning = rsense ? IS_TRUE : IS_FALSE;
+	return ret;
 }
 
 static inline struct block *
