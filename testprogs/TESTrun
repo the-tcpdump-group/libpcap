@@ -4992,7 +4992,7 @@ my @accept_blocks = (
 			',
 	}, # arp_host_addr_c_hdlc
 	{
-		name => 'arp_host_addr_c_hdlc',
+		name => 'rarp_host_addr_c_hdlc',
 		DLT => 'C_HDLC',
 		aliases => ['rarp host 1.2.3.4'],
 		unopt => '
@@ -16833,7 +16833,7 @@ foreach my $test (@accept_blocks) {
 		die "Internal error: accept test block '$test->{name}' defines neither 'unopt' nor 'opt'";
 	}
 	# Make the number of skip requests equal to the number of tests, but
-	# provide the reason for the first skip request only.  This avoid wasting
+	# provide the reason for the first skip request only.  This avoids wasting
 	# the vertical scroll space when skipping test blocks with many aliases.
 	my $skip_reason = (defined $test->{skip} && $test->{skip} ne '') ?
 		$test->{skip} : undef;
