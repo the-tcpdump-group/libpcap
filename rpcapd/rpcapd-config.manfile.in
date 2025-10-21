@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH RPCAPD-CONFIG @MAN_FILE_FORMATS@ "18 October 2025"
+.TH RPCAPD-CONFIG @MAN_FILE_FORMATS@ "21 October 2025"
 .SH NAME
 rpcapd-config \- rpcapd configuration file format
 .SH DESCRIPTION
@@ -63,7 +63,7 @@ should connect in active mode.
 is a host name or IP address.
 Each
 .B PassiveClient
-line adds the host and port to the list of clients addresses and ports
+line adds the host to the list of client addresses
 that are allowed to connect to the server in passive mode.
 .TP
 .B NullAuthPermit
