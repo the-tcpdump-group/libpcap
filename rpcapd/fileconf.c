@@ -345,7 +345,7 @@ void fileconf_read(void)
 					// It didn't fit.
 					//
 					rpcapd_log(LOGPRIO_ERROR,
-					    "%s, line %u has an %s parameter with an port with more than %u characters",
+					    "%s, line %u has an %s parameter with a port with more than %u characters",
 					    loadfile, lineno, PARAM_ACTIVECLIENT,
 					    (unsigned int)(sizeof(activelist[num_active_clients].port) - 1));
 					continue;
