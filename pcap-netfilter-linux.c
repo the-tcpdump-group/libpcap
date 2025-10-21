@@ -31,7 +31,6 @@
 #include <config.h>
 
 #include "pcap-int.h"
-#include "diag-control.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -351,10 +350,6 @@ netfilter_send_config_msg(const pcap_t *handle, uint16_t msg_type, int ack, u_in
 	struct sockaddr_nl snl;
 	static unsigned int seq_id;
 
-	if (!seq_id)
-DIAG_OFF_NARROWING
-		seq_id = time(NULL);
-DIAG_ON_NARROWING
 	++seq_id;
 
 	nlh->nlmsg_len = NLMSG_LENGTH(sizeof(struct nfgenmsg));
