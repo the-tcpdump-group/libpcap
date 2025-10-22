@@ -274,7 +274,17 @@ struct addrinfo {
 #include "os-proto.h"
 #endif
 
-#define JMP(c) ((c)|BPF_JMP|BPF_K)
+/*
+ * A valid jump instruction code is a bitwise OR of three values and one of the
+ * values is BPF_JMP.  To make sure both of the other two values are always
+ * present, define a macro of two arguments and use it instead of ORing the
+ * values in place.
+ *
+ * Note that "ja L" (documented as "jmp L" in the 1993 BPF paper) does not quite
+ * follow the pattern and there is no "ja x", but internally it works very much
+ * like "ja #k", so JMP(BPF_JA, BPF_K) is appropriate enough.
+ */
+#define JMP(jtype, src) (BPF_JMP | (jtype) | (src))
 
 /*
  * "Push" the current value of the link-layer header type and link-layer
@@ -634,8 +644,9 @@ static struct block *gen_mcmp_ne(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, bpf_u_int32);
 static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, const u_char *);
-static struct block *gen_jmp(compiler_state_t *, int, bpf_u_int32,
-    struct slist *);
+static struct block *gen_jmp_k(compiler_state_t *, const int,
+    const bpf_u_int32, struct slist *);
+static struct block *gen_jmp_x(compiler_state_t *, const int, struct slist *);
 static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
@@ -1514,11 +1525,28 @@ gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	return b;
 }
 
+/*
+ * Generate an instruction block for one of {"jeq #k", "jgt #k", "jge #k",
+ * "jset #k", "ja L"}.
+ */
 static struct block *
-gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
+gen_jmp_k(compiler_state_t *cstate, const int jtype, const bpf_u_int32 v,
+          struct slist *stmts)
 {
-	struct block *b = new_block(cstate, JMP(jtype));
+	struct block *b = new_block(cstate, JMP(jtype, BPF_K));
 	b->s.k = v;
+	b->stmts = stmts;
+	return b;
+}
+
+/*
+ * Generate an instruction block for one of {"jeq x", "jgt x", "jge x",
+ * "jset x"}.
+ */
+static struct block *
+gen_jmp_x(compiler_state_t *cstate, const int jtype, struct slist *stmts)
+{
+	struct block *b = new_block(cstate, JMP(jtype, BPF_X));
 	b->stmts = stmts;
 	return b;
 }
@@ -1526,7 +1554,7 @@ gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
 static struct block *
 gen_set(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
 {
-	return gen_jmp(cstate, BPF_JSET, v, stmts);
+	return gen_jmp_k(cstate, BPF_JSET, v, stmts);
 }
 
 static struct block *
@@ -1559,7 +1587,7 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		sappend(s, s2);
 	}
 
-	b = gen_jmp(cstate, jtype, v, s);
+	b = gen_jmp_k(cstate, jtype, v, s);
 	if (reverse)
 		gen_not(b);
 	return b;
@@ -2433,7 +2461,7 @@ gen_uncond(compiler_state_t *cstate, int rsense)
 
 	s = new_stmt(cstate, BPF_LD|BPF_IMM);
 	s->s.k = !rsense;
-	return gen_jmp(cstate, BPF_JEQ, 0, s);
+	return gen_jmp_k(cstate, BPF_JEQ, 0, s);
 }
 
 static inline struct block *
@@ -2940,7 +2968,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Compare with 0x80211000.
 		 */
-		sjeq_avs_cookie = new_stmt(cstate, JMP(BPF_JEQ));
+		sjeq_avs_cookie = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		sjeq_avs_cookie->s.k = 0x80211000;
 		sappend(s1, sjeq_avs_cookie);
 
@@ -2964,7 +2992,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * it's added to the PC, so, as we're jumping
 		 * over a single instruction, it should be 1.)
 		 */
-		sjcommon = new_stmt(cstate, JMP(BPF_JA));
+		sjcommon = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 		sjcommon->s.k = 1;
 		sappend(s1, sjcommon);
 
@@ -3253,7 +3281,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * a data frame has the 0x08 bit (b3) in that field set and the
 	 * 0x04 bit (b2) clear.
 	 */
-	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_data_frame_1->s.k = IEEE80211_FC0_TYPE_DATA;
 	sappend(s, sjset_data_frame_1);
 
@@ -3261,7 +3289,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * If b3 is set, test b2, otherwise go to the first statement of
 	 * the rest of the program.
 	 */
-	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_data_frame_2->s.k = IEEE80211_FC0_TYPE_CTL;
 	sappend(s, sjset_data_frame_2);
 	sjset_data_frame_1->s.jf = snext;
@@ -3272,7 +3300,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * program.
 	 */
 	sjset_data_frame_2->s.jt = snext;
-	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_qos->s.k = IEEE80211_FC0_SUBTYPE_QOS;
 	sappend(s, sjset_qos);
 
@@ -3320,7 +3348,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s2->s.k = 4;
 		sappend(s, s2);
 
-		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_flags_present->s.k = SWAPLONG(0x00000002);
 		sappend(s, sjset_radiotap_flags_present);
 
@@ -3332,7 +3360,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the "extension" bit set in that word?
 		 */
-		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_ext_present->s.k = SWAPLONG(0x80000000);
 		sappend(s, sjset_radiotap_ext_present);
 		sjset_radiotap_flags_present->s.jt = sjset_radiotap_ext_present;
@@ -3345,7 +3373,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
 		 */
-		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_tsft_present->s.k = SWAPLONG(0x00000001);
 		sappend(s, sjset_radiotap_tsft_present);
 		sjset_radiotap_ext_present->s.jf = sjset_radiotap_tsft_present;
@@ -3364,7 +3392,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jt = s2;
 
-		sjset_tsft_datapad = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_tsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_tsft_datapad->s.k = 0x20;
 		sappend(s, sjset_tsft_datapad);
 
@@ -3381,7 +3409,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jf = s2;
 
-		sjset_notsft_datapad = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_notsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_notsft_datapad->s.k = 0x20;
 		sappend(s, sjset_notsft_datapad);
 
@@ -6182,7 +6210,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/* again: if (A == v) goto end; else fall through; */
 	again = i;
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.k = v;
 	s[i]->s.jt = NULL;		/*later*/
 	s[i]->s.jf = NULL;		/*update in next stmt*/
@@ -6193,7 +6221,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 #define IPPROTO_NONE	59
 #endif
 	/* if (A == IPPROTO_NONE) goto end */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*update in next stmt*/
 	s[i]->s.k = IPPROTO_NONE;
@@ -6206,26 +6234,26 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 		v6start = i;
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
-		s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_HOPOPTS;
 		s[fix2]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_DSTOPTS;
 		i++;
 		/* if (A == IPPROTO_ROUTING) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_ROUTING;
 		i++;
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*later*/
 		s[i]->s.k = IPPROTO_FRAGMENT;
@@ -6274,7 +6302,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 
 		/* goto again; (must use BPF_JA for backward jump) */
-		s[i] = new_stmt(cstate, BPF_JMP|BPF_JA);
+		s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 		s[i]->s.k = again - i - 1;
 		s[i - 1]->s.jf = s[i];
 		i++;
@@ -6293,7 +6321,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/* ahcheck: */
 	ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*later*/
 	s[i]->s.k = IPPROTO_AH;
@@ -6347,7 +6375,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	i++;
 
 	/* goto again; (must use BPF_JA for backward jump) */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JA);
+	s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 	s[i]->s.k = again - i - 1;
 	i++;
 
@@ -6372,7 +6400,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * emit final check
 	 * Remember, s[0] is dummy.
 	 */
-	b = gen_jmp(cstate, BPF_JEQ, v, s[1]);
+	b = gen_jmp_k(cstate, BPF_JEQ, v, s[1]);
 
 	free_reg(cstate, reg2);
 
@@ -7661,11 +7689,11 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
 	s1 = xfer_to_a(cstate, a0);
 	if (code == BPF_JEQ) {
 		s2 = new_stmt(cstate, BPF_ALU|BPF_SUB|BPF_X);
-		b = new_block(cstate, JMP(code));
+		b = new_block(cstate, JMP(code, BPF_K));
 		sappend(s1, s2);
 	}
 	else
-		b = new_block(cstate, BPF_JMP|code|BPF_X);
+		b = new_block(cstate, JMP(code, BPF_X));
 	if (reversed)
 		gen_not(b);
 
@@ -7898,7 +7926,7 @@ gen_len(compiler_state_t *cstate, int jmp, int n)
 	struct slist *s;
 
 	s = new_stmt(cstate, BPF_LD|BPF_LEN);
-	return gen_jmp(cstate, jmp, n, s);
+	return gen_jmp_k(cstate, jmp, n, s);
 }
 
 struct block *
@@ -7985,7 +8013,7 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	// Load the required byte first.
 	struct slist *s0 = gen_load_a(cstate, OR_LINKHDR, idx, BPF_B);
 	sappend(s0, s);
-	b = gen_jmp(cstate, BPF_JEQ, 0, s0);
+	b = gen_jmp_k(cstate, BPF_JEQ, 0, s0);
 	gen_not(b);
 
 	return b;
@@ -8750,7 +8778,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
 	/* true -> next instructions, false -> beginning of b_vid */
-	sjeq = new_stmt(cstate, JMP(BPF_JEQ));
+	sjeq = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	sjeq->s.k = 1;
 	sjeq->s.jf = b_vid->stmts;
 	sappend(s, sjeq);
@@ -8767,7 +8795,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)
 		cnt++;
-	s2 = new_stmt(cstate, JMP(BPF_JA));
+	s2 = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 	s2->s.k = cnt - 1;
 	sappend(s, s2);
 
@@ -8796,7 +8824,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
-	b0 = gen_jmp(cstate, BPF_JEQ, 1, s);
+	b0 = gen_jmp_k(cstate, BPF_JEQ, 1, s);
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
@@ -9165,7 +9193,7 @@ gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
 	gen_and(b0, b1);
 
@@ -9202,7 +9230,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
 	gen_and(b0, b1);
 
@@ -9304,7 +9332,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	/* Check if the EtherType is Transparent Ethernet Bridging. At the
 	 * end of this check, we should have the total length in X. In
 	 * the non-Ethernet case, it's already there. */
-	s_proto = new_stmt(cstate, JMP(BPF_JEQ));
+	s_proto = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s_proto->s.k = ETHERTYPE_TEB;
 	sappend(s, s_proto);
 
@@ -9433,7 +9461,7 @@ gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
 	gen_and(b0, b1);
 
@@ -9470,7 +9498,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
 	gen_and(b0, b1);
 
@@ -9601,7 +9629,7 @@ gen_encap_ll_check(compiler_state_t *cstate)
 	s1->s.k = cstate->off_linkpl.reg;
 	sappend(s, s1);
 
-	b0 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b0 = gen_jmp_x(cstate, BPF_JEQ, s);
 	gen_not(b0);
 
 	return b0;
