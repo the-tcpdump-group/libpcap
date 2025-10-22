@@ -66,6 +66,7 @@
 
 #define NFLOG_IFACE "nflog"
 #define NFQUEUE_IFACE "nfqueue"
+#define MAX_GROUP 32
 
 typedef enum { OTHER = -1, NFLOG, NFQUEUE } nftype_t;
 
@@ -522,7 +523,7 @@ static int
 netfilter_activate(pcap_t* handle)
 {
 	const char *dev = handle->opt.device;
-	unsigned short groups[32];
+	unsigned short groups[MAX_GROUP];
 	int group_count = 0;
 	nftype_t type = OTHER;
 	int i;
@@ -542,10 +543,10 @@ netfilter_activate(pcap_t* handle)
 			long int group_id;
 			char *end_dev;
 
-			if (group_count == 32) {
+			if (group_count == MAX_GROUP) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-						"Maximum 32 netfilter groups! dev: %s",
-						handle->opt.device);
+						"Maximum %u netfilter groups! dev: %s",
+						MAX_GROUP, handle->opt.device);
 				return PCAP_ERROR;
 			}
 
