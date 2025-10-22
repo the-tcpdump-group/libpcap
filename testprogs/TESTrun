@@ -14228,6 +14228,156 @@ my @apply_blocks = (
 		expr => 'llc ua',
 		results => [0, 0, 0, 262144, 0, 0, 0, 0, 0, 0],
 	},
+	# The "gateway_or_not.pcap" savefile was captured on host1 in a
+	# testbed with the following topology:
+	#
+	# * segment A
+	#   * host0 aa:00:04:00:14:0e 10.20.30.40/24 fd00:a1b2:c3d4:0:1020:3040:5060:7080/64
+	#   * host1 08:00:27:e5:28:d1 10.20.30.41/24 fd00:a1b2:c3d4:0:1020:3040:5060:7081/64
+	#   * host2 08:00:27:28:16:69 10.20.30.42/24 fd00:a1b2:c3d4:0:1020:3040:5060:7082/64
+	# * segment B
+	#   * host0 08:00:27:02:f2:f1 10.20.230.240/24 fd00:e5f6::f0/64
+	#   * host3 08:00:27:7a:2d:ae 10.20.230.243/24 fd00:e5f6::f3/64
+	#
+	# The savefile comprises the following exchanges:
+	# * host1 <- ARP -> host0 (direct within segment A)
+	# * host1 <- ICMP -> host0 (direct within segment A)
+	# * host1 <- ICMP -> host2 (direct within segment A)
+	# * host1 <- ICMP -> host3 (forwarded by host0 between the segments)
+	# * host1 <- ICMPv6 -> host0 (direct within segment B)
+	# * host1 <- ICMPv6 -> host2 (direct within segment B)
+	# * host1 <- ICMPv6 -> host3 (forwarded by host0 between the segments)
+	#
+	# The captured packets are as follows:
+	#  1. host1 -> host0 ICMP echo-request
+	#  2. host0 -> host1 ICMP echo-reply
+	#  3. host1 -> host2 ICMP echo-request
+	#  4. host2 -> host1 ICMP echo-reply
+	#  5. host1 -> host0 (host3) ICMPv6 echo-request
+	#  6. host1 -> host2 ICMPv6 echo-request
+	#  7. host2 -> host1 ICMPv6 echo-reply
+	#  8. (host3) host0 -> host1 ICMPv6 echo-reply
+	#  9. host1 -> host0 ARP who-has
+	# 10. host1 -> host0 (host3) ICMP echo-request
+	# 11. host0 -> host1 ARP is-at
+	# 12. (host3) host0 -> host1 ICMP echo-reply
+	# 13. host1 -> host0 ICMPv6 echo-request
+	# 14. host0 -> host1 ICMPv6 echo-reply
+	{
+		name => 'gateway_eth_ipv4_ipv6',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		savefile => 'gateway_or_not.pcap',
+		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
+		results => [
+			0,
+			0,
+			0,
+			0,
+			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			0,
+			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			262144,
+			0,
+			262144,
+			262144, # BUG: not ARP/IPv4/RARP
+			262144, # BUG: not ARP/IPv4/RARP
+		],
+	},
+	{
+		name => 'gateway_eth_ipv4_noipv6',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		savefile => 'gateway_or_not.pcap',
+		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
+		results => [
+			0,
+			0,
+			0,
+			0,
+			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			0,
+			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			262144,
+			0,
+			262144,
+			262144, # BUG: not ARP/IPv4/RARP
+			262144, # BUG: not ARP/IPv4/RARP
+		],
+	},
+	{
+		name => 'ip_gateway_eth_ipv4_ipv6',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		savefile => 'gateway_or_not.pcap',
+		expr => 'ip gateway eth-ipv4-ipv6.host123.libpcap.test',
+		results => [
+			0,
+			0,
+			0,
+			0,
+			262144, # BUG: not IPv4
+			0,
+			0,
+			262144, # BUG: not IPv4
+			262144, # BUG: not IPv4
+			262144,
+			262144, # BUG: not IPv4
+			262144,
+			262144, # BUG: not IPv4
+			262144, # BUG: not IPv4
+		],
+	},
+	{
+		name => 'arp_gateway_eth_ipv4_ipv6',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		savefile => 'gateway_or_not.pcap',
+		expr => 'arp gateway eth-ipv4-ipv6.host123.libpcap.test',
+		results => [
+			262144, # BUG: not ARP
+			262144, # BUG: not ARP
+			0,
+			0,
+			262144, # BUG: not ARP
+			0,
+			0,
+			262144, # BUG: not ARP
+			0,
+			262144, # BUG: not ARP
+			0,
+			262144, # BUG: not ARP
+			262144, # BUG: not ARP
+			262144, # BUG: not ARP
+		],
+	},
+	{
+		name => 'rarp_gateway_eth_ipv4_ipv6',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		savefile => 'gateway_or_not.pcap',
+		expr => 'rarp gateway eth-ipv4-ipv6.host123.libpcap.test',
+		results => [
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			0,
+			0,
+			262144, # BUG: not RARP
+			0,
+			0,
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+			262144, # BUG: not RARP
+		],
+	},
 );
 
 # yyerror()
