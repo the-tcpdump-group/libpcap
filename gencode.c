@@ -7682,26 +7682,18 @@ static struct block *
 gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
     struct arth *a1, int reversed)
 {
-	struct slist *s0, *s1, *s2;
+	struct slist *s0, *s1;
 	struct block *b, *tmp;
 
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
-	if (code == BPF_JEQ) {
-		s2 = new_stmt(cstate, BPF_ALU|BPF_SUB|BPF_X);
-		b = new_block(cstate, JMP(code, BPF_K));
-		sappend(s1, s2);
-	}
-	else
-		b = new_block(cstate, JMP(code, BPF_X));
-	if (reversed)
-		gen_not(b);
-
 	sappend(s0, s1);
 	sappend(a1->s, s0);
 	sappend(a0->s, a1->s);
 
-	b->stmts = a0->s;
+	b = gen_jmp_x(cstate, code, a0->s);
+	if (reversed)
+		gen_not(b);
 
 	free_reg(cstate, a0->regno);
 	free_reg(cstate, a1->regno);
