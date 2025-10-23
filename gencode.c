@@ -4592,16 +4592,13 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 	/* this order is important */
 	memcpy(a, addr, sizeof(a));
 	memcpy(m, mask, sizeof(m));
-	b1 = NULL;
+	b1 = gen_true(cstate);
 	for (int i = 3; i >= 0; i--) {
-		// Same as the Q_IP case in gen_host().
-		if (m[i] == 0 && a[i] == 0)
-			continue;
 		b0 = gen_mcmp(cstate, OR_LINKPL, offset + 4 * i, BPF_W,
 		    ntohl(a[i]), ntohl(m[i]));
-		b1 = b1 ? gen_and(b0, b1) : b0;
+		b1 = gen_and(b0, b1);
 	}
-	return b1 ? b1 : gen_true(cstate);
+	return b1;
 }
 
 /*
@@ -5153,31 +5150,16 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-		/*
-		 * Belt and braces: if other code works correctly, any host
-		 * bits are clear and mask == 0 means addr == 0.  In this case
-		 * the call to gen_hostop() would produce an "always true"
-		 * instruction block and ANDing it with the link type check
-		 * would be a no-op.
-		 */
-		if (mask == 0 && addr == 0)
-			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 12, 16);
 		return gen_and(b0, b1);
 
 	case Q_RARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_REVARP);
-		// Same as for Q_IP above.
-		if (mask == 0 && addr == 0)
-			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		return gen_and(b0, b1);
 
 	case Q_ARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_ARP);
-		// Same as for Q_IP above.
-		if (mask == 0 && addr == 0)
-			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		return gen_and(b0, b1);
 
@@ -5202,12 +5184,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	case Q_DEFAULT:
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-		// Same as the Q_IP case in gen_host().
-		if (
-			! memcmp(mask, &in6addr_any, sizeof(struct in6_addr)) &&
-			! memcmp(addr, &in6addr_any, sizeof(struct in6_addr))
-		)
-			return b0;
 		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
 		return gen_and(b0, b1);
 	}
