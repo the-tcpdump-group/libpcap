@@ -474,10 +474,9 @@ my @accept_blocks = (
 			(006) st       M[2]
 			(007) ldx      M[2]
 			(008) ld       M[1]
-			(009) sub      x
-			(010) jeq      #0x0             jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # link_index_byte
 	{
@@ -508,10 +507,9 @@ my @accept_blocks = (
 			(006) st       M[2]
 			(007) ldx      M[2]
 			(008) ld       M[1]
-			(009) sub      x
-			(010) jeq      #0x0             jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # link_index_halfword
 	{
@@ -542,10 +540,9 @@ my @accept_blocks = (
 			(006) st       M[2]
 			(007) ldx      M[2]
 			(008) ld       M[1]
-			(009) sub      x
-			(010) jeq      #0x0             jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # link_index_word
 
@@ -574,13 +571,13 @@ my @accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 23
+			(001) jeq      #0x800           jt 2	jf 22
 			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 23
+			(003) jeq      #0x800           jt 4	jf 22
 			(004) ldb      [23]
-			(005) jeq      #0x1             jt 6	jf 23
+			(005) jeq      #0x1             jt 6	jf 22
 			(006) ldh      [20]
-			(007) jset     #0x1fff          jt 23	jf 8
+			(007) jset     #0x1fff          jt 22	jf 8
 			(008) ld       #0x0
 			(009) st       M[0]
 			(010) ldxb     4*([14]&0xf)
@@ -593,10 +590,9 @@ my @accept_blocks = (
 			(017) st       M[2]
 			(018) ldx      M[2]
 			(019) ld       M[1]
-			(020) sub      x
-			(021) jeq      #0x0             jt 23	jf 22
-			(022) ret      #16000
-			(023) ret      #0
+			(020) jeq      x                jt 22	jf 21
+			(021) ret      #16000
+			(022) ret      #0
 			',
 	}, # icmp_index_icmptype
 	{
@@ -623,13 +619,13 @@ my @accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 23
+			(001) jeq      #0x800           jt 2	jf 22
 			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 23
+			(003) jeq      #0x800           jt 4	jf 22
 			(004) ldb      [23]
-			(005) jeq      #0x1             jt 6	jf 23
+			(005) jeq      #0x1             jt 6	jf 22
 			(006) ldh      [20]
-			(007) jset     #0x1fff          jt 23	jf 8
+			(007) jset     #0x1fff          jt 22	jf 8
 			(008) ld       #0x1
 			(009) st       M[0]
 			(010) ldxb     4*([14]&0xf)
@@ -642,10 +638,9 @@ my @accept_blocks = (
 			(017) st       M[2]
 			(018) ldx      M[2]
 			(019) ld       M[1]
-			(020) sub      x
-			(021) jeq      #0x0             jt 23	jf 22
-			(022) ret      #16000
-			(023) ret      #0
+			(020) jeq      x                jt 22	jf 21
+			(021) ret      #16000
+			(022) ret      #0
 			',
 	}, # icmp_index_icmpcode
 	{
@@ -668,9 +663,9 @@ my @accept_blocks = (
 			',
 		unopt => '
 			(000) ld       #0x0
-			(001) jeq      #0x0             jt 2	jf 16
+			(001) jeq      #0x0             jt 2	jf 15
 			(002) ldb      [6]
-			(003) jeq      #0x3a            jt 4	jf 16
+			(003) jeq      #0x3a            jt 4	jf 15
 			(004) ld       #0x0
 			(005) st       M[0]
 			(006) ldx      M[0]
@@ -680,10 +675,9 @@ my @accept_blocks = (
 			(010) st       M[2]
 			(011) ldx      M[2]
 			(012) ld       M[1]
-			(013) sub      x
-			(014) jeq      #0x0             jt 16	jf 15
-			(015) ret      #10000
-			(016) ret      #0
+			(013) jeq      x                jt 15	jf 14
+			(014) ret      #10000
+			(015) ret      #0
 			',
 	}, # icmp6_index_icmp6type
 	{
@@ -706,9 +700,9 @@ my @accept_blocks = (
 			',
 		unopt => '
 			(000) ld       #0x0
-			(001) jeq      #0x0             jt 2	jf 16
+			(001) jeq      #0x0             jt 2	jf 15
 			(002) ldb      [6]
-			(003) jeq      #0x3a            jt 4	jf 16
+			(003) jeq      #0x3a            jt 4	jf 15
 			(004) ld       #0x1
 			(005) st       M[0]
 			(006) ldx      M[0]
@@ -718,10 +712,9 @@ my @accept_blocks = (
 			(010) st       M[2]
 			(011) ldx      M[2]
 			(012) ld       M[1]
-			(013) sub      x
-			(014) jeq      #0x0             jt 16	jf 15
-			(015) ret      #10000
-			(016) ret      #0
+			(013) jeq      x                jt 15	jf 14
+			(014) ret      #10000
+			(015) ret      #0
 			',
 	}, # icmp6_index_icmp6code
 	{
@@ -747,7 +740,7 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 34
+			(002) jeq      #0x40            jt 3	jf 33
 			(003) ldb      [0]
 			(004) and      #0xf0
 			(005) jeq      #0x40            jt 6	jf 8
@@ -755,15 +748,15 @@ my @accept_blocks = (
 			(007) jeq      #0x11            jt 17	jf 8
 			(008) ldb      [0]
 			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 34
+			(010) jeq      #0x60            jt 11	jf 33
 			(011) ldb      [6]
 			(012) jeq      #0x11            jt 17	jf 13
 			(013) ldb      [6]
-			(014) jeq      #0x2c            jt 15	jf 34
+			(014) jeq      #0x2c            jt 15	jf 33
 			(015) ldb      [40]
-			(016) jeq      #0x11            jt 17	jf 34
+			(016) jeq      #0x11            jt 17	jf 33
 			(017) ldh      [6]
-			(018) jset     #0x1fff          jt 34	jf 19
+			(018) jset     #0x1fff          jt 33	jf 19
 			(019) ld       #0x8
 			(020) st       M[0]
 			(021) ldxb     4*([0]&0xf)
@@ -776,10 +769,9 @@ my @accept_blocks = (
 			(028) st       M[2]
 			(029) ldx      M[2]
 			(030) ld       M[1]
-			(031) sub      x
-			(032) jeq      #0x0             jt 33	jf 34
-			(033) ret      #65535
-			(034) ret      #0
+			(031) jeq      x                jt 32	jf 33
+			(032) ret      #65535
+			(033) ret      #0
 			',
 	}, # udp_index_halfword
 	{
@@ -809,7 +801,7 @@ my @accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 34
+			(002) jeq      #0x40            jt 3	jf 33
 			(003) ldb      [0]
 			(004) and      #0xf0
 			(005) jeq      #0x40            jt 6	jf 8
@@ -817,15 +809,15 @@ my @accept_blocks = (
 			(007) jeq      #0x6             jt 17	jf 8
 			(008) ldb      [0]
 			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 34
+			(010) jeq      #0x60            jt 11	jf 33
 			(011) ldb      [6]
 			(012) jeq      #0x6             jt 17	jf 13
 			(013) ldb      [6]
-			(014) jeq      #0x2c            jt 15	jf 34
+			(014) jeq      #0x2c            jt 15	jf 33
 			(015) ldb      [40]
-			(016) jeq      #0x6             jt 17	jf 34
+			(016) jeq      #0x6             jt 17	jf 33
 			(017) ldh      [6]
-			(018) jset     #0x1fff          jt 34	jf 19
+			(018) jset     #0x1fff          jt 33	jf 19
 			(019) ld       #0xd
 			(020) st       M[0]
 			(021) ldxb     4*([0]&0xf)
@@ -838,10 +830,9 @@ my @accept_blocks = (
 			(028) st       M[2]
 			(029) ldx      M[2]
 			(030) ld       M[1]
-			(031) sub      x
-			(032) jeq      #0x0             jt 33	jf 34
-			(033) ret      #262144
-			(034) ret      #0
+			(031) jeq      x                jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
 			',
 	}, # tcp_index_byte
 	{
@@ -13624,122 +13615,107 @@ my @accept_blocks = (
 			(003) st       M[1]
 			(004) ldx      M[1]
 			(005) ld       M[0]
-			(006) sub      x
-			(007) jeq      #0x0             jt 8	jf 121
-			(008) ld       #0x3
-			(009) st       M[1]
-			(010) ld       #0x3
-			(011) st       M[2]
-			(012) ldx      M[2]
-			(013) ld       M[1]
-			(014) sub      x
-			(015) jeq      #0x0             jt 16	jf 121
+			(006) jeq      x                jt 7	jf 106
+			(007) ld       #0x3
+			(008) st       M[1]
+			(009) ld       #0x3
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 106
+			(014) ld       #0x4
+			(015) st       M[2]
 			(016) ld       #0x4
-			(017) st       M[2]
-			(018) ld       #0x4
-			(019) st       M[3]
-			(020) ldx      M[3]
-			(021) ld       M[2]
-			(022) sub      x
-			(023) jeq      #0x0             jt 24	jf 121
-			(024) ld       #0x5
-			(025) st       M[3]
-			(026) ld       #0x5
-			(027) st       M[4]
-			(028) ldx      M[4]
-			(029) ld       M[3]
-			(030) sub      x
-			(031) jeq      #0x0             jt 32	jf 121
-			(032) ld       #0x8
-			(033) st       M[4]
-			(034) ld       #0x8
-			(035) st       M[5]
-			(036) ldx      M[5]
-			(037) ld       M[4]
-			(038) sub      x
-			(039) jeq      #0x0             jt 40	jf 121
-			(040) ld       #0x9
-			(041) st       M[5]
-			(042) ld       #0x9
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[2]
+			(020) jeq      x                jt 21	jf 106
+			(021) ld       #0x5
+			(022) st       M[3]
+			(023) ld       #0x5
+			(024) st       M[4]
+			(025) ldx      M[4]
+			(026) ld       M[3]
+			(027) jeq      x                jt 28	jf 106
+			(028) ld       #0x8
+			(029) st       M[4]
+			(030) ld       #0x8
+			(031) st       M[5]
+			(032) ldx      M[5]
+			(033) ld       M[4]
+			(034) jeq      x                jt 35	jf 106
+			(035) ld       #0x9
+			(036) st       M[5]
+			(037) ld       #0x9
+			(038) st       M[6]
+			(039) ldx      M[6]
+			(040) ld       M[5]
+			(041) jeq      x                jt 42	jf 106
+			(042) ld       #0xa
 			(043) st       M[6]
-			(044) ldx      M[6]
-			(045) ld       M[5]
-			(046) sub      x
-			(047) jeq      #0x0             jt 48	jf 121
-			(048) ld       #0xa
-			(049) st       M[6]
-			(050) ld       #0xa
-			(051) st       M[7]
-			(052) ldx      M[7]
-			(053) ld       M[6]
-			(054) sub      x
-			(055) jeq      #0x0             jt 56	jf 121
-			(056) ld       #0xb
-			(057) st       M[7]
-			(058) ld       #0xb
-			(059) st       M[8]
-			(060) ldx      M[8]
-			(061) ld       M[7]
-			(062) sub      x
-			(063) jeq      #0x0             jt 64	jf 121
-			(064) ld       #0xc
-			(065) st       M[8]
-			(066) ld       #0xc
-			(067) st       M[9]
-			(068) ldx      M[9]
-			(069) ld       M[8]
-			(070) sub      x
-			(071) jeq      #0x0             jt 72	jf 121
-			(072) ld       #0xd
-			(073) st       M[9]
-			(074) ld       #0xd
-			(075) st       M[10]
-			(076) ldx      M[10]
-			(077) ld       M[9]
-			(078) sub      x
-			(079) jeq      #0x0             jt 80	jf 121
-			(080) ld       #0xe
-			(081) st       M[10]
-			(082) ld       #0xe
-			(083) st       M[11]
-			(084) ldx      M[11]
-			(085) ld       M[10]
-			(086) sub      x
-			(087) jeq      #0x0             jt 88	jf 121
-			(088) ld       #0xf
-			(089) st       M[11]
-			(090) ld       #0xf
-			(091) st       M[12]
-			(092) ldx      M[12]
-			(093) ld       M[11]
-			(094) sub      x
-			(095) jeq      #0x0             jt 96	jf 121
-			(096) ld       #0x10
-			(097) st       M[12]
-			(098) ld       #0x10
-			(099) st       M[13]
-			(100) ldx      M[13]
-			(101) ld       M[12]
-			(102) sub      x
-			(103) jeq      #0x0             jt 104	jf 121
-			(104) ld       #0x11
-			(105) st       M[13]
-			(106) ld       #0x11
-			(107) st       M[14]
-			(108) ldx      M[14]
-			(109) ld       M[13]
-			(110) sub      x
-			(111) jeq      #0x0             jt 112	jf 121
-			(112) ld       #0x12
-			(113) st       M[14]
-			(114) ld       #0x12
-			(115) st       M[15]
-			(116) ldx      M[15]
-			(117) ld       M[14]
-			(118) sub      x
-			(119) jeq      #0x0             jt 120	jf 121
-			(120) ret      #262144
-			(121) ret      #0
+			(044) ld       #0xa
+			(045) st       M[7]
+			(046) ldx      M[7]
+			(047) ld       M[6]
+			(048) jeq      x                jt 49	jf 106
+			(049) ld       #0xb
+			(050) st       M[7]
+			(051) ld       #0xb
+			(052) st       M[8]
+			(053) ldx      M[8]
+			(054) ld       M[7]
+			(055) jeq      x                jt 56	jf 106
+			(056) ld       #0xc
+			(057) st       M[8]
+			(058) ld       #0xc
+			(059) st       M[9]
+			(060) ldx      M[9]
+			(061) ld       M[8]
+			(062) jeq      x                jt 63	jf 106
+			(063) ld       #0xd
+			(064) st       M[9]
+			(065) ld       #0xd
+			(066) st       M[10]
+			(067) ldx      M[10]
+			(068) ld       M[9]
+			(069) jeq      x                jt 70	jf 106
+			(070) ld       #0xe
+			(071) st       M[10]
+			(072) ld       #0xe
+			(073) st       M[11]
+			(074) ldx      M[11]
+			(075) ld       M[10]
+			(076) jeq      x                jt 77	jf 106
+			(077) ld       #0xf
+			(078) st       M[11]
+			(079) ld       #0xf
+			(080) st       M[12]
+			(081) ldx      M[12]
+			(082) ld       M[11]
+			(083) jeq      x                jt 84	jf 106
+			(084) ld       #0x10
+			(085) st       M[12]
+			(086) ld       #0x10
+			(087) st       M[13]
+			(088) ldx      M[13]
+			(089) ld       M[12]
+			(090) jeq      x                jt 91	jf 106
+			(091) ld       #0x11
+			(092) st       M[13]
+			(093) ld       #0x11
+			(094) st       M[14]
+			(095) ldx      M[14]
+			(096) ld       M[13]
+			(097) jeq      x                jt 98	jf 106
+			(098) ld       #0x12
+			(099) st       M[14]
+			(100) ld       #0x12
+			(101) st       M[15]
+			(102) ldx      M[15]
+			(103) ld       M[14]
+			(104) jeq      x                jt 105	jf 106
+			(105) ret      #262144
+			(106) ret      #0
 			',
 	}, # icmp_types
 	{
@@ -13786,234 +13762,205 @@ my @accept_blocks = (
 			(003) st       M[1]
 			(004) ldx      M[1]
 			(005) ld       M[0]
-			(006) sub      x
-			(007) jeq      #0x0             jt 8	jf 233
-			(008) ld       #0x2
-			(009) st       M[1]
-			(010) ld       #0x2
-			(011) st       M[2]
-			(012) ldx      M[2]
-			(013) ld       M[1]
-			(014) sub      x
-			(015) jeq      #0x0             jt 16	jf 233
+			(006) jeq      x                jt 7	jf 204
+			(007) ld       #0x2
+			(008) st       M[1]
+			(009) ld       #0x2
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 204
+			(014) ld       #0x3
+			(015) st       M[2]
 			(016) ld       #0x3
-			(017) st       M[2]
-			(018) ld       #0x3
-			(019) st       M[3]
-			(020) ldx      M[3]
-			(021) ld       M[2]
-			(022) sub      x
-			(023) jeq      #0x0             jt 24	jf 233
-			(024) ld       #0x4
-			(025) st       M[3]
-			(026) ld       #0x4
-			(027) st       M[4]
-			(028) ldx      M[4]
-			(029) ld       M[3]
-			(030) sub      x
-			(031) jeq      #0x0             jt 32	jf 233
-			(032) ld       #0x80
-			(033) st       M[4]
-			(034) ld       #0x80
-			(035) st       M[5]
-			(036) ldx      M[5]
-			(037) ld       M[4]
-			(038) sub      x
-			(039) jeq      #0x0             jt 40	jf 233
-			(040) ld       #0x81
-			(041) st       M[5]
-			(042) ld       #0x81
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[2]
+			(020) jeq      x                jt 21	jf 204
+			(021) ld       #0x4
+			(022) st       M[3]
+			(023) ld       #0x4
+			(024) st       M[4]
+			(025) ldx      M[4]
+			(026) ld       M[3]
+			(027) jeq      x                jt 28	jf 204
+			(028) ld       #0x80
+			(029) st       M[4]
+			(030) ld       #0x80
+			(031) st       M[5]
+			(032) ldx      M[5]
+			(033) ld       M[4]
+			(034) jeq      x                jt 35	jf 204
+			(035) ld       #0x81
+			(036) st       M[5]
+			(037) ld       #0x81
+			(038) st       M[6]
+			(039) ldx      M[6]
+			(040) ld       M[5]
+			(041) jeq      x                jt 42	jf 204
+			(042) ld       #0x82
 			(043) st       M[6]
-			(044) ldx      M[6]
-			(045) ld       M[5]
-			(046) sub      x
-			(047) jeq      #0x0             jt 48	jf 233
-			(048) ld       #0x82
-			(049) st       M[6]
-			(050) ld       #0x82
-			(051) st       M[7]
-			(052) ldx      M[7]
-			(053) ld       M[6]
-			(054) sub      x
-			(055) jeq      #0x0             jt 56	jf 233
-			(056) ld       #0x83
-			(057) st       M[7]
-			(058) ld       #0x83
-			(059) st       M[8]
-			(060) ldx      M[8]
-			(061) ld       M[7]
-			(062) sub      x
-			(063) jeq      #0x0             jt 64	jf 233
-			(064) ld       #0x84
-			(065) st       M[8]
-			(066) ld       #0x84
-			(067) st       M[9]
-			(068) ldx      M[9]
-			(069) ld       M[8]
-			(070) sub      x
-			(071) jeq      #0x0             jt 72	jf 233
-			(072) ld       #0x85
-			(073) st       M[9]
-			(074) ld       #0x85
-			(075) st       M[10]
-			(076) ldx      M[10]
-			(077) ld       M[9]
-			(078) sub      x
-			(079) jeq      #0x0             jt 80	jf 233
-			(080) ld       #0x86
-			(081) st       M[10]
-			(082) ld       #0x86
-			(083) st       M[11]
-			(084) ldx      M[11]
-			(085) ld       M[10]
-			(086) sub      x
-			(087) jeq      #0x0             jt 88	jf 233
-			(088) ld       #0x87
-			(089) st       M[11]
-			(090) ld       #0x87
-			(091) st       M[12]
-			(092) ldx      M[12]
-			(093) ld       M[11]
-			(094) sub      x
-			(095) jeq      #0x0             jt 96	jf 233
-			(096) ld       #0x88
-			(097) st       M[12]
-			(098) ld       #0x88
-			(099) st       M[13]
-			(100) ldx      M[13]
-			(101) ld       M[12]
-			(102) sub      x
-			(103) jeq      #0x0             jt 104	jf 233
-			(104) ld       #0x89
-			(105) st       M[13]
-			(106) ld       #0x89
-			(107) st       M[14]
-			(108) ldx      M[14]
-			(109) ld       M[13]
-			(110) sub      x
-			(111) jeq      #0x0             jt 112	jf 233
-			(112) ld       #0x8a
-			(113) st       M[14]
-			(114) ld       #0x8a
-			(115) st       M[15]
-			(116) ldx      M[15]
-			(117) ld       M[14]
-			(118) sub      x
-			(119) jeq      #0x0             jt 120	jf 233
-			(120) ld       #0x8b
-			(121) st       M[15]
-			(122) ld       #0x8b
-			(123) st       M[0]
-			(124) ldx      M[0]
-			(125) ld       M[15]
-			(126) sub      x
-			(127) jeq      #0x0             jt 128	jf 233
-			(128) ld       #0x8c
-			(129) st       M[0]
-			(130) ld       #0x8c
-			(131) st       M[1]
-			(132) ldx      M[1]
-			(133) ld       M[0]
-			(134) sub      x
-			(135) jeq      #0x0             jt 136	jf 233
-			(136) ld       #0x8d
-			(137) st       M[1]
-			(138) ld       #0x8d
-			(139) st       M[2]
-			(140) ldx      M[2]
-			(141) ld       M[1]
-			(142) sub      x
-			(143) jeq      #0x0             jt 144	jf 233
-			(144) ld       #0x8e
-			(145) st       M[2]
-			(146) ld       #0x8e
-			(147) st       M[3]
-			(148) ldx      M[3]
-			(149) ld       M[2]
-			(150) sub      x
-			(151) jeq      #0x0             jt 152	jf 233
-			(152) ld       #0x8f
-			(153) st       M[3]
-			(154) ld       #0x8f
-			(155) st       M[4]
-			(156) ldx      M[4]
-			(157) ld       M[3]
-			(158) sub      x
-			(159) jeq      #0x0             jt 160	jf 233
-			(160) ld       #0x90
-			(161) st       M[4]
-			(162) ld       #0x90
-			(163) st       M[5]
-			(164) ldx      M[5]
-			(165) ld       M[4]
-			(166) sub      x
-			(167) jeq      #0x0             jt 168	jf 233
-			(168) ld       #0x91
-			(169) st       M[5]
-			(170) ld       #0x91
-			(171) st       M[6]
-			(172) ldx      M[6]
-			(173) ld       M[5]
-			(174) sub      x
-			(175) jeq      #0x0             jt 176	jf 233
-			(176) ld       #0x92
-			(177) st       M[6]
-			(178) ld       #0x92
-			(179) st       M[7]
-			(180) ldx      M[7]
-			(181) ld       M[6]
-			(182) sub      x
-			(183) jeq      #0x0             jt 184	jf 233
-			(184) ld       #0x93
-			(185) st       M[7]
-			(186) ld       #0x93
-			(187) st       M[8]
-			(188) ldx      M[8]
-			(189) ld       M[7]
-			(190) sub      x
-			(191) jeq      #0x0             jt 192	jf 233
-			(192) ld       #0x94
-			(193) st       M[8]
-			(194) ld       #0x94
-			(195) st       M[9]
-			(196) ldx      M[9]
-			(197) ld       M[8]
-			(198) sub      x
-			(199) jeq      #0x0             jt 200	jf 233
-			(200) ld       #0x95
-			(201) st       M[9]
-			(202) ld       #0x95
-			(203) st       M[10]
-			(204) ldx      M[10]
-			(205) ld       M[9]
-			(206) sub      x
-			(207) jeq      #0x0             jt 208	jf 233
-			(208) ld       #0x97
-			(209) st       M[10]
-			(210) ld       #0x97
-			(211) st       M[11]
-			(212) ldx      M[11]
-			(213) ld       M[10]
-			(214) sub      x
-			(215) jeq      #0x0             jt 216	jf 233
-			(216) ld       #0x98
-			(217) st       M[11]
-			(218) ld       #0x98
-			(219) st       M[12]
-			(220) ldx      M[12]
-			(221) ld       M[11]
-			(222) sub      x
-			(223) jeq      #0x0             jt 224	jf 233
-			(224) ld       #0x99
-			(225) st       M[12]
-			(226) ld       #0x99
-			(227) st       M[13]
-			(228) ldx      M[13]
-			(229) ld       M[12]
-			(230) sub      x
-			(231) jeq      #0x0             jt 232	jf 233
-			(232) ret      #262144
-			(233) ret      #0
+			(044) ld       #0x82
+			(045) st       M[7]
+			(046) ldx      M[7]
+			(047) ld       M[6]
+			(048) jeq      x                jt 49	jf 204
+			(049) ld       #0x83
+			(050) st       M[7]
+			(051) ld       #0x83
+			(052) st       M[8]
+			(053) ldx      M[8]
+			(054) ld       M[7]
+			(055) jeq      x                jt 56	jf 204
+			(056) ld       #0x84
+			(057) st       M[8]
+			(058) ld       #0x84
+			(059) st       M[9]
+			(060) ldx      M[9]
+			(061) ld       M[8]
+			(062) jeq      x                jt 63	jf 204
+			(063) ld       #0x85
+			(064) st       M[9]
+			(065) ld       #0x85
+			(066) st       M[10]
+			(067) ldx      M[10]
+			(068) ld       M[9]
+			(069) jeq      x                jt 70	jf 204
+			(070) ld       #0x86
+			(071) st       M[10]
+			(072) ld       #0x86
+			(073) st       M[11]
+			(074) ldx      M[11]
+			(075) ld       M[10]
+			(076) jeq      x                jt 77	jf 204
+			(077) ld       #0x87
+			(078) st       M[11]
+			(079) ld       #0x87
+			(080) st       M[12]
+			(081) ldx      M[12]
+			(082) ld       M[11]
+			(083) jeq      x                jt 84	jf 204
+			(084) ld       #0x88
+			(085) st       M[12]
+			(086) ld       #0x88
+			(087) st       M[13]
+			(088) ldx      M[13]
+			(089) ld       M[12]
+			(090) jeq      x                jt 91	jf 204
+			(091) ld       #0x89
+			(092) st       M[13]
+			(093) ld       #0x89
+			(094) st       M[14]
+			(095) ldx      M[14]
+			(096) ld       M[13]
+			(097) jeq      x                jt 98	jf 204
+			(098) ld       #0x8a
+			(099) st       M[14]
+			(100) ld       #0x8a
+			(101) st       M[15]
+			(102) ldx      M[15]
+			(103) ld       M[14]
+			(104) jeq      x                jt 105	jf 204
+			(105) ld       #0x8b
+			(106) st       M[15]
+			(107) ld       #0x8b
+			(108) st       M[0]
+			(109) ldx      M[0]
+			(110) ld       M[15]
+			(111) jeq      x                jt 112	jf 204
+			(112) ld       #0x8c
+			(113) st       M[0]
+			(114) ld       #0x8c
+			(115) st       M[1]
+			(116) ldx      M[1]
+			(117) ld       M[0]
+			(118) jeq      x                jt 119	jf 204
+			(119) ld       #0x8d
+			(120) st       M[1]
+			(121) ld       #0x8d
+			(122) st       M[2]
+			(123) ldx      M[2]
+			(124) ld       M[1]
+			(125) jeq      x                jt 126	jf 204
+			(126) ld       #0x8e
+			(127) st       M[2]
+			(128) ld       #0x8e
+			(129) st       M[3]
+			(130) ldx      M[3]
+			(131) ld       M[2]
+			(132) jeq      x                jt 133	jf 204
+			(133) ld       #0x8f
+			(134) st       M[3]
+			(135) ld       #0x8f
+			(136) st       M[4]
+			(137) ldx      M[4]
+			(138) ld       M[3]
+			(139) jeq      x                jt 140	jf 204
+			(140) ld       #0x90
+			(141) st       M[4]
+			(142) ld       #0x90
+			(143) st       M[5]
+			(144) ldx      M[5]
+			(145) ld       M[4]
+			(146) jeq      x                jt 147	jf 204
+			(147) ld       #0x91
+			(148) st       M[5]
+			(149) ld       #0x91
+			(150) st       M[6]
+			(151) ldx      M[6]
+			(152) ld       M[5]
+			(153) jeq      x                jt 154	jf 204
+			(154) ld       #0x92
+			(155) st       M[6]
+			(156) ld       #0x92
+			(157) st       M[7]
+			(158) ldx      M[7]
+			(159) ld       M[6]
+			(160) jeq      x                jt 161	jf 204
+			(161) ld       #0x93
+			(162) st       M[7]
+			(163) ld       #0x93
+			(164) st       M[8]
+			(165) ldx      M[8]
+			(166) ld       M[7]
+			(167) jeq      x                jt 168	jf 204
+			(168) ld       #0x94
+			(169) st       M[8]
+			(170) ld       #0x94
+			(171) st       M[9]
+			(172) ldx      M[9]
+			(173) ld       M[8]
+			(174) jeq      x                jt 175	jf 204
+			(175) ld       #0x95
+			(176) st       M[9]
+			(177) ld       #0x95
+			(178) st       M[10]
+			(179) ldx      M[10]
+			(180) ld       M[9]
+			(181) jeq      x                jt 182	jf 204
+			(182) ld       #0x97
+			(183) st       M[10]
+			(184) ld       #0x97
+			(185) st       M[11]
+			(186) ldx      M[11]
+			(187) ld       M[10]
+			(188) jeq      x                jt 189	jf 204
+			(189) ld       #0x98
+			(190) st       M[11]
+			(191) ld       #0x98
+			(192) st       M[12]
+			(193) ldx      M[12]
+			(194) ld       M[11]
+			(195) jeq      x                jt 196	jf 204
+			(196) ld       #0x99
+			(197) st       M[12]
+			(198) ld       #0x99
+			(199) st       M[13]
+			(200) ldx      M[13]
+			(201) ld       M[12]
+			(202) jeq      x                jt 203	jf 204
+			(203) ret      #262144
+			(204) ret      #0
 			',
 	}, # icmp6_types
 
@@ -14040,66 +13987,58 @@ my @accept_blocks = (
 			(003) st       M[1]
 			(004) ldx      M[1]
 			(005) ld       M[0]
-			(006) sub      x
-			(007) jeq      #0x0             jt 8	jf 65
-			(008) ld       #0x2
-			(009) st       M[1]
-			(010) ld       #0x2
-			(011) st       M[2]
-			(012) ldx      M[2]
-			(013) ld       M[1]
-			(014) sub      x
-			(015) jeq      #0x0             jt 16	jf 65
+			(006) jeq      x                jt 7	jf 57
+			(007) ld       #0x2
+			(008) st       M[1]
+			(009) ld       #0x2
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 57
+			(014) ld       #0x4
+			(015) st       M[2]
 			(016) ld       #0x4
-			(017) st       M[2]
-			(018) ld       #0x4
-			(019) st       M[3]
-			(020) ldx      M[3]
-			(021) ld       M[2]
-			(022) sub      x
-			(023) jeq      #0x0             jt 24	jf 65
-			(024) ld       #0x8
-			(025) st       M[3]
-			(026) ld       #0x8
-			(027) st       M[4]
-			(028) ldx      M[4]
-			(029) ld       M[3]
-			(030) sub      x
-			(031) jeq      #0x0             jt 32	jf 65
-			(032) ld       #0x10
-			(033) st       M[4]
-			(034) ld       #0x10
-			(035) st       M[5]
-			(036) ldx      M[5]
-			(037) ld       M[4]
-			(038) sub      x
-			(039) jeq      #0x0             jt 40	jf 65
-			(040) ld       #0x20
-			(041) st       M[5]
-			(042) ld       #0x20
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[2]
+			(020) jeq      x                jt 21	jf 57
+			(021) ld       #0x8
+			(022) st       M[3]
+			(023) ld       #0x8
+			(024) st       M[4]
+			(025) ldx      M[4]
+			(026) ld       M[3]
+			(027) jeq      x                jt 28	jf 57
+			(028) ld       #0x10
+			(029) st       M[4]
+			(030) ld       #0x10
+			(031) st       M[5]
+			(032) ldx      M[5]
+			(033) ld       M[4]
+			(034) jeq      x                jt 35	jf 57
+			(035) ld       #0x20
+			(036) st       M[5]
+			(037) ld       #0x20
+			(038) st       M[6]
+			(039) ldx      M[6]
+			(040) ld       M[5]
+			(041) jeq      x                jt 42	jf 57
+			(042) ld       #0x40
 			(043) st       M[6]
-			(044) ldx      M[6]
-			(045) ld       M[5]
-			(046) sub      x
-			(047) jeq      #0x0             jt 48	jf 65
-			(048) ld       #0x40
-			(049) st       M[6]
-			(050) ld       #0x40
-			(051) st       M[7]
-			(052) ldx      M[7]
-			(053) ld       M[6]
-			(054) sub      x
-			(055) jeq      #0x0             jt 56	jf 65
-			(056) ld       #0x80
-			(057) st       M[7]
-			(058) ld       #0x80
-			(059) st       M[8]
-			(060) ldx      M[8]
-			(061) ld       M[7]
-			(062) sub      x
-			(063) jeq      #0x0             jt 64	jf 65
-			(064) ret      #262144
-			(065) ret      #0
+			(044) ld       #0x40
+			(045) st       M[7]
+			(046) ldx      M[7]
+			(047) ld       M[6]
+			(048) jeq      x                jt 49	jf 57
+			(049) ld       #0x80
+			(050) st       M[7]
+			(051) ld       #0x80
+			(052) st       M[8]
+			(053) ldx      M[8]
+			(054) ld       M[7]
+			(055) jeq      x                jt 56	jf 57
+			(056) ret      #262144
+			(057) ret      #0
 			',
 	}, # tcp_flags
 
@@ -14123,42 +14062,37 @@ my @accept_blocks = (
 			(003) st       M[1]
 			(004) ldx      M[1]
 			(005) ld       M[0]
-			(006) sub      x
-			(007) jeq      #0x0             jt 8	jf 41
-			(008) ld       #0x1
-			(009) st       M[1]
-			(010) ld       #0x1
-			(011) st       M[2]
-			(012) ldx      M[2]
-			(013) ld       M[1]
-			(014) sub      x
-			(015) jeq      #0x0             jt 16	jf 41
+			(006) jeq      x                jt 7	jf 36
+			(007) ld       #0x1
+			(008) st       M[1]
+			(009) ld       #0x1
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 36
+			(014) ld       #0x0
+			(015) st       M[2]
 			(016) ld       #0x0
-			(017) st       M[2]
-			(018) ld       #0x0
-			(019) st       M[3]
-			(020) ldx      M[3]
-			(021) ld       M[2]
-			(022) sub      x
-			(023) jeq      #0x0             jt 24	jf 41
-			(024) ld       #0x1
-			(025) st       M[3]
-			(026) ld       #0x1
-			(027) st       M[4]
-			(028) ldx      M[4]
-			(029) ld       M[3]
-			(030) sub      x
-			(031) jeq      #0x0             jt 32	jf 41
-			(032) ld       #0xd
-			(033) st       M[4]
-			(034) ld       #0xd
-			(035) st       M[5]
-			(036) ldx      M[5]
-			(037) ld       M[4]
-			(038) sub      x
-			(039) jeq      #0x0             jt 40	jf 41
-			(040) ret      #262144
-			(041) ret      #0
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[2]
+			(020) jeq      x                jt 21	jf 36
+			(021) ld       #0x1
+			(022) st       M[3]
+			(023) ld       #0x1
+			(024) st       M[4]
+			(025) ldx      M[4]
+			(026) ld       M[3]
+			(027) jeq      x                jt 28	jf 36
+			(028) ld       #0xd
+			(029) st       M[4]
+			(030) ld       #0xd
+			(031) st       M[5]
+			(032) ldx      M[5]
+			(033) ld       M[4]
+			(034) jeq      x                jt 35	jf 36
+			(035) ret      #262144
+			(036) ret      #0
 			',
 	}, # offsets
 
