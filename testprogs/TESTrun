@@ -364,39 +364,81 @@ my @accept_blocks = (
 	},
 
 	{
-		name => 'greater',
+		name => 'greater_100',
+		DLT => 'RAW',
+		snaplen => 200,
+		aliases => ['greater 100'],
+		unopt => '
+			(000) ld       #pktlen
+			(001) jge      #0x64            jt 2	jf 3
+			(002) ret      #200
+			(003) ret      #0
+			',
+	}, # greater_100
+	{
+		name => 'len_ge_100',
 		DLT => 'RAW',
 		snaplen => 200,
 		aliases => [
-			'greater 100',
 			'len >= 100',
 			'length >= 100',
 		],
-		# Only the optimized bytecode is equivalent!
 		opt => '
 			(000) ld       #pktlen
 			(001) jge      #0x64            jt 2	jf 3
 			(002) ret      #200
 			(003) ret      #0
 			',
-	}, # greater
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       #0x64
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jge      x                jt 7	jf 8
+			(007) ret      #200
+			(008) ret      #0
+			',
+	}, # len_ge_100
 	{
-		name => 'less',
+		name => 'less_200',
+		DLT => 'RAW',
+		snaplen => 200,
+		aliases => ['less 200'],
+		unopt => '
+			(000) ld       #pktlen
+			(001) jgt      #0xc8            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #200
+			',
+	}, # less_200
+	{
+		name => 'len_le_200',
 		DLT => 'RAW',
 		snaplen => 200,
 		aliases => [
-			'less 200',
 			'len <= 200',
 			'length <= 200',
 		],
-		# Only the optimized bytecode is equivalent!
 		opt => '
 			(000) ld       #pktlen
 			(001) jgt      #0xc8            jt 2	jf 3
 			(002) ret      #0
 			(003) ret      #200
 			',
-	}, # less
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       #0xc8
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jgt      x                jt 7	jf 8
+			(007) ret      #0
+			(008) ret      #200
+			',
+	}, # len_le_200
 
 	{
 		name => 'link_index_byte',
@@ -1468,9 +1510,8 @@ my @accept_blocks = (
 			'dpc = 0x31d6',
 			'dpc == 0x31d6',
 			'dpc (0x31d6)',
-			'dpc (0x31d6 or 0x31d6)',
 		],
-		opt => '
+		unopt => '
 			(000) ldh      [4]
 			(001) and      #0xff3f
 			(002) jeq      #0xd631          jt 3	jf 4
@@ -1564,9 +1605,8 @@ my @accept_blocks = (
 			'opc = 0x3b35',
 			'opc == 0x3b35',
 			'opc (0x3b35)',
-			'opc (0x3b35 or 0x3b35)',
 		],
-		opt => '
+		unopt => '
 			(000) ld       [4]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x40cd0e        jt 3	jf 4
@@ -1660,9 +1700,8 @@ my @accept_blocks = (
 			'sls = 3',
 			'sls == 3',
 			'sls (3)',
-			'sls (3 or 3)',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [7]
 			(001) and      #0xf0
 			(002) jeq      #0x30            jt 3	jf 4
@@ -1794,9 +1833,8 @@ my @accept_blocks = (
 			'hsio = 0x41',
 			'hsio == 0x41',
 			'hsio (0x41)',
-			'hsio (0x41 or 0x41)',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [6]
 			(001) jeq      #0x41            jt 2	jf 3
 			(002) ret      #262144
@@ -1879,9 +1917,8 @@ my @accept_blocks = (
 			'hdpc = 0x0ab5',
 			'hdpc == 0x0ab5',
 			'hdpc (0x0ab5)',
-			'hdpc (0x0ab5 or 0x0ab5)',
 		],
-		opt => '
+		unopt => '
 			(000) ldh      [7]
 			(001) and      #0xff3f
 			(002) jeq      #0xb50a          jt 3	jf 4
@@ -1975,9 +2012,8 @@ my @accept_blocks = (
 			'hopc = 0x3aba',
 			'hopc == 0x3aba',
 			'hopc (0x3aba)',
-			'hopc (0x3aba or 0x3aba)',
 		],
-		opt => '
+		unopt => '
 			(000) ld       [7]
 			(001) and      #0xc0ff0f
 			(002) jeq      #0x80ae0e        jt 3	jf 4
@@ -2071,9 +2107,8 @@ my @accept_blocks = (
 			'hsls = 5',
 			'hsls == 5',
 			'hsls (5)',
-			'hsls (5 or 5)',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [10]
 			(001) and      #0xf0
 			(002) jeq      #0x50            jt 3	jf 4
@@ -2168,9 +2203,8 @@ my @accept_blocks = (
 			'vpi = 10',
 			'vpi == 10',
 			'vpi (10)',
-			'vpi (10 or 10)',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [1]
 			(001) jeq      #0xa             jt 2	jf 3
 			(002) ret      #262144
@@ -2255,9 +2289,8 @@ my @accept_blocks = (
 			'vci = 20',
 			'vci == 20',
 			'vci (20)',
-			'vci (20 or 20)',
 		],
-		opt => '
+		unopt => '
 			(000) ldh      [2]
 			(001) jeq      #0x14            jt 2	jf 3
 			(002) ret      #262144
@@ -8550,7 +8583,7 @@ my @accept_blocks = (
 			(004) ret      #262144
 			(005) ret      #0
 			',
-	}, # ip6_proto
+	}, # ip_proto
 	{
 		name => 'ip6_proto',
 		DLT => 'EN10MB',
@@ -8768,7 +8801,12 @@ my @accept_blocks = (
 			'host 3232279251',
 			'src or dst 3232279251',
 			'src or dst host 3232279251',
-			# No aliases for 030052125323, which matches a MAC address.
+			'ip host 0030052125323',
+			'ip src or dst 0030052125323',
+			'ip src or dst host 0030052125323',
+			'host 0030052125323',
+			'src or dst 0030052125323',
+			'src or dst host 0030052125323',
 			# "net" without an explicit netmask defaults to /32.
 			'ip net 192.168.170.211/32',
 			'ip src or dst net 192.168.170.211/ 32',
@@ -8786,6 +8824,10 @@ my @accept_blocks = (
 			'ip src or dst net 3232279251',
 			'net 3232279251',
 			'src or dst net 3232279251',
+			'ip net 0030052125323',
+			'ip src or dst net 0030052125323',
+			'net 0030052125323',
+			'src or dst net 0030052125323',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -8975,7 +9017,10 @@ my @accept_blocks = (
 			'ip dst 2886818078',
 			'dst host 2886818078',
 			'dst 2886818078',
-			# No aliases for 025404254436, which matches a MAC address.
+			'ip dst host 0025404254436',
+			'ip dst 0025404254436',
+			'dst host 0025404254436',
+			'dst 0025404254436',
 			# "net" /32
 			'ip dst net 172.17.89.30 /  32',
 			'dst net 172.17.89.30  / 32',
@@ -8985,6 +9030,8 @@ my @accept_blocks = (
 			'dst net 0Xac11591e',
 			'ip dst net 2886818078',
 			'dst net 2886818078',
+			'ip dst net 0025404254436',
+			'dst net 0025404254436',
 		],
 		opt => '
 			(000) ldb      [0]
