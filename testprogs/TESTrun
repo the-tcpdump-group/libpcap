@@ -10216,6 +10216,1910 @@ my @accept_blocks = (
 			(057) ret      #0
 			',
 	}, # protochain
+
+	{
+		name => 'net_ipv4addr_16bit_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'net 192.168.0.0/16',
+			'src or dst net 192.168.0.0/16',
+			'dst or src net 192.168.0.0/16',
+			'net 192.168/16',
+			'src or dst net 192.168/16',
+			'dst or src net 192.168/16',
+			'net 192.168.0.0 mask 255.255.0.0',
+			'src or dst net 192.168.0.0 mask 255.255.0.0',
+			'dst or src net 192.168.0.0 mask 255.255.0.0',
+			'net 192.168.0.0 mask 255.255',
+			'src or dst net 192.168.0.0 mask 255.255',
+			'dst or src net 192.168.0.0 mask 255.255',
+			'net 192.168 mask 255.255.0.0',
+			'src or dst net 192.168 mask 255.255.0.0',
+			'dst or src net 192.168 mask 255.255.0.0',
+			'net 192.168 mask 255.255',
+			'src or dst net 192.168 mask 255.255',
+			'dst or src net 192.168 mask 255.255',
+			'net 192.168',
+			'src or dst net 192.168',
+			'dst or src net 192.168',
+		],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 8
+			(002) ld       [36]
+			(003) and      #0xffff0000
+			(004) jeq      #0xc0a80000      jt 16	jf 5
+			(005) ld       [40]
+			(006) and      #0xffff0000
+			(007) jeq      #0xc0a80000      jt 16	jf 17
+			(008) jeq      #0x806           jt 10	jf 9
+			(009) jeq      #0x8035          jt 10	jf 17
+			(010) ld       [38]
+			(011) and      #0xffff0000
+			(012) jeq      #0xc0a80000      jt 16	jf 13
+			(013) ld       [48]
+			(014) and      #0xffff0000
+			(015) jeq      #0xc0a80000      jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 8
+			(002) ld       [36]
+			(003) and      #0xffff0000
+			(004) jeq      #0xc0a80000      jt 24	jf 5
+			(005) ld       [40]
+			(006) and      #0xffff0000
+			(007) jeq      #0xc0a80000      jt 24	jf 8
+			(008) ldh      [22]
+			(009) jeq      #0x806           jt 10	jf 16
+			(010) ld       [38]
+			(011) and      #0xffff0000
+			(012) jeq      #0xc0a80000      jt 24	jf 13
+			(013) ld       [48]
+			(014) and      #0xffff0000
+			(015) jeq      #0xc0a80000      jt 24	jf 16
+			(016) ldh      [22]
+			(017) jeq      #0x8035          jt 18	jf 25
+			(018) ld       [38]
+			(019) and      #0xffff0000
+			(020) jeq      #0xc0a80000      jt 24	jf 21
+			(021) ld       [48]
+			(022) and      #0xffff0000
+			(023) jeq      #0xc0a80000      jt 24	jf 25
+			(024) ret      #262144
+			(025) ret      #0
+			',
+	}, # net_ipv4addr_16bit_IP_OVER_FC
+	{
+		name => 'src_net_ipv4addr_24bit_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'src net 10.0.1.0/24',
+			'src net 10.0.1/24',
+			'src net 10.0.1.0 mask 255.255.255.0',
+			'src net 10.0.1.0 mask 255.255.255',
+			'src net 10.0.1 mask 255.255.255.0',
+			'src net 10.0.1 mask 255.255.255',
+			'src net 10.0.1',
+		],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ld       [36]
+			(003) and      #0xffffff00
+			(004) jeq      #0xa000100       jt 10	jf 11
+			(005) jeq      #0x806           jt 7	jf 6
+			(006) jeq      #0x8035          jt 7	jf 11
+			(007) ld       [38]
+			(008) and      #0xffffff00
+			(009) jeq      #0xa000100       jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ld       [36]
+			(003) and      #0xffffff00
+			(004) jeq      #0xa000100       jt 15	jf 5
+			(005) ldh      [22]
+			(006) jeq      #0x806           jt 7	jf 10
+			(007) ld       [38]
+			(008) and      #0xffffff00
+			(009) jeq      #0xa000100       jt 15	jf 10
+			(010) ldh      [22]
+			(011) jeq      #0x8035          jt 12	jf 16
+			(012) ld       [38]
+			(013) and      #0xffffff00
+			(014) jeq      #0xa000100       jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # src_net_ipv4addr_24bit_IP_OVER_FC
+	{
+		name => 'dst_net_ipv4addr_8bit_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'dst net 10.0.0.0/8',
+			'dst net 10.0.0.0 mask 255.0.0.0',
+			# "net 10/<any masklength>", "net 10 mask <any mask>" and
+			# "net <any net> mask 255" are invalid syntax.
+			'dst net 10',
+		],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ld       [40]
+			(003) and      #0xff000000
+			(004) jeq      #0xa000000       jt 10	jf 11
+			(005) jeq      #0x806           jt 7	jf 6
+			(006) jeq      #0x8035          jt 7	jf 11
+			(007) ld       [48]
+			(008) and      #0xff000000
+			(009) jeq      #0xa000000       jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ld       [40]
+			(003) and      #0xff000000
+			(004) jeq      #0xa000000       jt 15	jf 5
+			(005) ldh      [22]
+			(006) jeq      #0x806           jt 7	jf 10
+			(007) ld       [48]
+			(008) and      #0xff000000
+			(009) jeq      #0xa000000       jt 15	jf 10
+			(010) ldh      [22]
+			(011) jeq      #0x8035          jt 12	jf 16
+			(012) ld       [48]
+			(013) and      #0xff000000
+			(014) jeq      #0xa000000       jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # dst_net_ipv4addr_8bit_IP_OVER_FC
+	{
+		name => 'src_and_dst_net_ipv4addr_12bit_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'src and dst net 172.16.0.0/12',
+			'dst and src net 172.16.0.0/12',
+			'src and dst net 172.16/12',
+			'dst and src net 172.16/12',
+			'src and dst net 172.16.0.0 mask 255.240.0.0',
+			'dst and src net 172.16.0.0 mask 255.240.0.0',
+			'src and dst net 172.16.0.0 mask 255.240',
+			'dst and src net 172.16.0.0 mask 255.240',
+			'src and dst net 172.16 mask 255.240.0.0',
+			'dst and src net 172.16 mask 255.240.0.0',
+			'src and dst net 172.16 mask 255.240',
+			'dst and src net 172.16 mask 255.240',
+		],
+		opt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 8
+			(002) ld       [36]
+			(003) and      #0xfff00000
+			(004) jeq      #0xac100000      jt 5	jf 17
+			(005) ld       [40]
+			(006) and      #0xfff00000
+			(007) jeq      #0xac100000      jt 16	jf 17
+			(008) jeq      #0x806           jt 10	jf 9
+			(009) jeq      #0x8035          jt 10	jf 17
+			(010) ld       [38]
+			(011) and      #0xfff00000
+			(012) jeq      #0xac100000      jt 13	jf 17
+			(013) ld       [48]
+			(014) and      #0xfff00000
+			(015) jeq      #0xac100000      jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x800           jt 2	jf 8
+			(002) ld       [36]
+			(003) and      #0xfff00000
+			(004) jeq      #0xac100000      jt 5	jf 8
+			(005) ld       [40]
+			(006) and      #0xfff00000
+			(007) jeq      #0xac100000      jt 24	jf 8
+			(008) ldh      [22]
+			(009) jeq      #0x806           jt 10	jf 16
+			(010) ld       [38]
+			(011) and      #0xfff00000
+			(012) jeq      #0xac100000      jt 13	jf 16
+			(013) ld       [48]
+			(014) and      #0xfff00000
+			(015) jeq      #0xac100000      jt 24	jf 16
+			(016) ldh      [22]
+			(017) jeq      #0x8035          jt 18	jf 25
+			(018) ld       [38]
+			(019) and      #0xfff00000
+			(020) jeq      #0xac100000      jt 21	jf 25
+			(021) ld       [48]
+			(022) and      #0xfff00000
+			(023) jeq      #0xac100000      jt 24	jf 25
+			(024) ret      #262144
+			(025) ret      #0
+			',
+	}, # src_and_dst_net_ipv4addr_12bit_IP_OVER_FC
+	{
+		name => 'src_and_dst_net_ipv4addr_12bit_RAW',
+		DLT => 'RAW',
+		aliases => [
+			'src and dst net 172.16.0.0/12',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 10
+			(003) ld       [12]
+			(004) and      #0xfff00000
+			(005) jeq      #0xac100000      jt 6	jf 10
+			(006) ld       [16]
+			(007) and      #0xfff00000
+			(008) jeq      #0xac100000      jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 9
+			(003) ld       [12]
+			(004) and      #0xfff00000
+			(005) jeq      #0xac100000      jt 6	jf 9
+			(006) ld       [16]
+			(007) and      #0xfff00000
+			(008) jeq      #0xac100000      jt 25	jf 9
+			(009) ld       #0x1
+			(010) jeq      #0x0             jt 11	jf 17
+			(011) ld       [14]
+			(012) and      #0xfff00000
+			(013) jeq      #0xac100000      jt 14	jf 17
+			(014) ld       [24]
+			(015) and      #0xfff00000
+			(016) jeq      #0xac100000      jt 25	jf 17
+			(017) ld       #0x1
+			(018) jeq      #0x0             jt 19	jf 26
+			(019) ld       [14]
+			(020) and      #0xfff00000
+			(021) jeq      #0xac100000      jt 22	jf 26
+			(022) ld       [24]
+			(023) and      #0xfff00000
+			(024) jeq      #0xac100000      jt 25	jf 26
+			(025) ret      #262144
+			(026) ret      #0
+			',
+	}, # src_and_dst_net_ipv4addr_12bit_RAW
+
+	{
+		name => 'net_ipv6addr_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'net fe80::/10',
+			'src or dst net fe80::/10',
+			'dst or src net fe80::/10',
+			# IPv4-mapped notation of everything above
+			'net fe80::0.0.0.0/10',
+			'src or dst net fe80::0.0.0.0/10',
+			'dst or src net fe80::0.0.0.0/10',
+		],
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x86dd          jt 2	jf 9
+			(002) ld       [32]
+			(003) and      #0xffc00000
+			(004) jeq      #0xfe800000      jt 8	jf 5
+			(005) ld       [48]
+			(006) and      #0xffc00000
+			(007) jeq      #0xfe800000      jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # net_ipv6addr_IP_OVER_FC
+	{
+		name => 'src_net_ipv6addr_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'src net 2000::/3',
+			# IPv4-mapped notation of everything above
+			'src net 2000::0.0.0.0/3',
+		],
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x86dd          jt 2	jf 6
+			(002) ld       [32]
+			(003) and      #0xe0000000
+			(004) jeq      #0x20000000      jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # src_net_ipv6addr_IP_OVER_FC
+	{
+		name => 'dst_net_ipv6addr_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'dst net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:c7c8::/120',
+			# IPv4-mapped notation of everything above
+			'dst net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:199.200.0.0/120',
+		],
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ld       [48]
+			(003) jeq      #0xabcde0e1      jt 4	jf 12
+			(004) ld       [52]
+			(005) jeq      #0xe3e4e5e6      jt 6	jf 12
+			(006) ld       [56]
+			(007) jeq      #0xe7e8e9ea      jt 8	jf 12
+			(008) ld       [60]
+			(009) and      #0xffffff00
+			(010) jeq      #0xc7c80000      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # dst_net_ipv6addr_IP_OVER_FC
+	{
+		name => 'src_and_dst_net_ipv6addr_IP_OVER_FC',
+		DLT => 'IP_OVER_FC',
+		aliases => [
+			'src and dst net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:c7c8::/120',
+			'dst and src net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:c7c8::/120',
+			# IPv4-mapped notation of everything above
+			'src and dst net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:199.200.0.0/120',
+			'dst and src net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:199.200.0.0/120',
+		],
+		unopt => '
+			(000) ldh      [22]
+			(001) jeq      #0x86dd          jt 2	jf 21
+			(002) ld       [32]
+			(003) jeq      #0xabcde0e1      jt 4	jf 21
+			(004) ld       [36]
+			(005) jeq      #0xe3e4e5e6      jt 6	jf 21
+			(006) ld       [40]
+			(007) jeq      #0xe7e8e9ea      jt 8	jf 21
+			(008) ld       [44]
+			(009) and      #0xffffff00
+			(010) jeq      #0xc7c80000      jt 11	jf 21
+			(011) ld       [48]
+			(012) jeq      #0xabcde0e1      jt 13	jf 21
+			(013) ld       [52]
+			(014) jeq      #0xe3e4e5e6      jt 15	jf 21
+			(015) ld       [56]
+			(016) jeq      #0xe7e8e9ea      jt 17	jf 21
+			(017) ld       [60]
+			(018) and      #0xffffff00
+			(019) jeq      #0xc7c80000      jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # src_and_dst_net_ipv6addr_IP_OVER_FC
+	{
+		name => 'src_and_dst_net_ipv6addr_RAW',
+		DLT => 'RAW',
+		aliases => [
+			'src and dst net abcd:e0e1:e3e4:e5e6:e7e8:e9ea:c7c8::/120',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 22
+			(003) ld       [8]
+			(004) jeq      #0xabcde0e1      jt 5	jf 22
+			(005) ld       [12]
+			(006) jeq      #0xe3e4e5e6      jt 7	jf 22
+			(007) ld       [16]
+			(008) jeq      #0xe7e8e9ea      jt 9	jf 22
+			(009) ld       [20]
+			(010) and      #0xffffff00
+			(011) jeq      #0xc7c80000      jt 12	jf 22
+			(012) ld       [24]
+			(013) jeq      #0xabcde0e1      jt 14	jf 22
+			(014) ld       [28]
+			(015) jeq      #0xe3e4e5e6      jt 16	jf 22
+			(016) ld       [32]
+			(017) jeq      #0xe7e8e9ea      jt 18	jf 22
+			(018) ld       [36]
+			(019) and      #0xffffff00
+			(020) jeq      #0xc7c80000      jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # src_and_dst_net_ipv6addr_RAW
+
+	{
+		name => 'net_name_EN10MB',
+		skip => skip_no_networks(),
+		DLT => 'EN10MB',
+		aliases => [
+			'net net-10-20-0-0.libpcap.test',
+			'src or dst net net-10-20-0-0.libpcap.test',
+			'dst or src net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 12	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa140000       jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [28]
+			(009) jeq      #0xa140000       jt 12	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa140000       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 18	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa140000       jt 18	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa140000       jt 18	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa140000       jt 18	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [28]
+			(015) jeq      #0xa140000       jt 18	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xa140000       jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # net_name_EN10MB
+	{
+		name => 'src_net_name_EN10MB',
+		skip => skip_no_networks(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [28]
+			(007) jeq      #0xa140000       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 12	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xa140000       jt 12	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [28]
+			(011) jeq      #0xa140000       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # src_net_name_EN10MB
+	{
+		name => 'dst_net_name_EN10MB',
+		skip => skip_no_networks(),
+		DLT => 'EN10MB',
+		aliases => [
+			'dst net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa140000       jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [38]
+			(007) jeq      #0xa140000       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa140000       jt 12	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xa140000       jt 12	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [38]
+			(011) jeq      #0xa140000       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # dst_net_name_EN10MB
+	{
+		name => 'src_and_dst_net_name_EN10MB',
+		skip => skip_no_networks(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src and dst net net-10-20-0-0.libpcap.test',
+			'dst and src net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 4	jf 13
+			(004) ld       [30]
+			(005) jeq      #0xa140000       jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [28]
+			(009) jeq      #0xa140000       jt 10	jf 13
+			(010) ld       [38]
+			(011) jeq      #0xa140000       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa140000       jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xa140000       jt 18	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa140000       jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xa140000       jt 18	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [28]
+			(015) jeq      #0xa140000       jt 16	jf 19
+			(016) ld       [38]
+			(017) jeq      #0xa140000       jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # src_and_dst_net_name_EN10MB
+	{
+		name => 'src_and_dst_net_name_RAW',
+		skip => skip_no_networks(),
+		DLT => 'RAW',
+		aliases => [
+			'src and dst net net-10-20-0-0.libpcap.test',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa140000       jt 5	jf 8
+			(005) ld       [16]
+			(006) jeq      #0xa140000       jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 7
+			(003) ld       [12]
+			(004) jeq      #0xa140000       jt 5	jf 7
+			(005) ld       [16]
+			(006) jeq      #0xa140000       jt 19	jf 7
+			(007) ld       #0x1
+			(008) jeq      #0x0             jt 9	jf 13
+			(009) ld       [14]
+			(010) jeq      #0xa140000       jt 11	jf 13
+			(011) ld       [24]
+			(012) jeq      #0xa140000       jt 19	jf 13
+			(013) ld       #0x1
+			(014) jeq      #0x0             jt 15	jf 20
+			(015) ld       [14]
+			(016) jeq      #0xa140000       jt 17	jf 20
+			(017) ld       [24]
+			(018) jeq      #0xa140000       jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # src_and_dst_net_name_RAW
+
+	{
+		name => 'host_ipv4addr_FDDI',
+		DLT => 'FDDI',
+		aliases => [
+			'host 192.168.170.211',
+			'src or dst 192.168.170.211',
+			'dst or src 192.168.170.211',
+			'src or dst host 192.168.170.211',
+			'dst or src host 192.168.170.211',
+			'host 0xc0a8aad3',
+			'src or dst 0xc0a8aad3',
+			'dst or src 0xc0a8aad3',
+			'src or dst host 0xc0a8aad3',
+			'dst or src host 0xc0a8aad3',
+			'host 3232279251',
+			'src or dst 3232279251',
+			'dst or src 3232279251',
+			'src or dst host 3232279251',
+			'dst or src host 3232279251',
+			'host 0030052125323',
+			'src or dst 0030052125323',
+			'dst or src 0030052125323',
+			'src or dst host 0030052125323',
+			'dst or src host 0030052125323',
+			# "net" without an explicit netmask defaults to /32.
+			'net 192.168.170.211 /32',
+			'src or dst net 192.168.170.211 / 32',
+			'dst or src net 192.168.170.211 / 32',
+			'net 192.168.170.211',
+			'src or dst net 192.168.170.211',
+			'dst or src net 192.168.170.211',
+			'net 0xc0a8aad3',
+			'src or dst net 0xc0a8aad3',
+			'dst or src net 0xc0a8aad3',
+			'net 3232279251',
+			'src or dst net 3232279251',
+			'dst or src net 3232279251',
+			'net 0030052125323',
+			'src or dst net 0030052125323',
+			'dst or src net 0030052125323',
+		],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [33]
+			(003) jeq      #0xc0a8aad3      jt 12	jf 4
+			(004) ld       [37]
+			(005) jeq      #0xc0a8aad3      jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [35]
+			(009) jeq      #0xc0a8aad3      jt 12	jf 10
+			(010) ld       [45]
+			(011) jeq      #0xc0a8aad3      jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [33]
+			(003) jeq      #0xc0a8aad3      jt 18	jf 4
+			(004) ld       [37]
+			(005) jeq      #0xc0a8aad3      jt 18	jf 6
+			(006) ldh      [19]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [35]
+			(009) jeq      #0xc0a8aad3      jt 18	jf 10
+			(010) ld       [45]
+			(011) jeq      #0xc0a8aad3      jt 18	jf 12
+			(012) ldh      [19]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [35]
+			(015) jeq      #0xc0a8aad3      jt 18	jf 16
+			(016) ld       [45]
+			(017) jeq      #0xc0a8aad3      jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # host_ipv4addr_FDDI
+	{
+		name => 'src_host_ipv4addr_FDDI',
+		DLT => 'FDDI',
+		aliases => [
+			'src host 10.0.0.2',
+			'src 10.0.0.2',
+			'src host 0X0a000002',
+			'src 0X0A000002',
+			'src host 0Xa000002',
+			'src 0XA000002',
+			'src host 167772162',
+			'src 167772162',
+			'src host 01200000002',
+			'src 01200000002',
+			# "net" /32
+			'src net 10.0.0.2  /32',
+			'src net 10.0.0.2',
+			'src net 0X0a000002',
+			'src net 0Xa000002',
+			'src net 167772162',
+			'src net 01200000002',
+		],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [33]
+			(003) jeq      #0xa000002       jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [35]
+			(007) jeq      #0xa000002       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [33]
+			(003) jeq      #0xa000002       jt 12	jf 4
+			(004) ldh      [19]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [35]
+			(007) jeq      #0xa000002       jt 12	jf 8
+			(008) ldh      [19]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [35]
+			(011) jeq      #0xa000002       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # src_host_ipv4addr_FDDI
+	{
+		name => 'dst_host_ipv4addr_FDDI',
+		DLT => 'FDDI',
+		aliases => [
+			'dst host 172.17.89.30',
+			'dst 172.17.89.30',
+			'dst host 0Xac11591e',
+			'dst 0XAC11591E',
+			'dst host 2886818078',
+			'dst 2886818078',
+			'dst host 0025404254436',
+			'dst 0025404254436',
+			# "net" /32
+			'dst net 172.17.89.30  / 32',
+			'dst net 172.17.89.30',
+			'dst net 0Xac11591e',
+			'dst net 2886818078',
+			'dst net 0025404254436',
+		],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [37]
+			(003) jeq      #0xac11591e      jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [45]
+			(007) jeq      #0xac11591e      jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [37]
+			(003) jeq      #0xac11591e      jt 12	jf 4
+			(004) ldh      [19]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [45]
+			(007) jeq      #0xac11591e      jt 12	jf 8
+			(008) ldh      [19]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [45]
+			(011) jeq      #0xac11591e      jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # dst_host_ipv4addr_FDDI
+	{
+		name => 'src_and_dst_host_ipv4addr_FDDI',
+		DLT => 'FDDI',
+		aliases => [
+			'src and dst host 192.0.2.20',
+			'dst and src host 192.0.2.20',
+			'src and dst 192.0.2.20',
+			'dst and src 192.0.2.20',
+			'src and dst host 0xC0000214',
+			'dst and src host 0xC0000214',
+			'src and dst 0xC0000214',
+			'dst and src 0xC0000214',
+			'src and dst host 3221226004',
+			'dst and src host 3221226004',
+			'src and dst 3221226004',
+			'dst and src 3221226004',
+			'src and dst host 0030000001024',
+			'dst and src host 0030000001024',
+			'src and dst 0030000001024',
+			'dst and src 0030000001024',
+			# "net" /32
+			'src and dst net 192.0.2.20/32',
+			'dst and src net 192.0.2.20/32',
+			'src and dst net 192.0.2.20',
+			'dst and src net 192.0.2.20',
+			'src and dst net 0xC0000214',
+			'dst and src net 0xC0000214',
+			'src and dst net 3221226004',
+			'dst and src net 3221226004',
+			'src and dst net 0030000001024',
+			'dst and src net 0030000001024',
+		],
+		opt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [33]
+			(003) jeq      #0xc0000214      jt 4	jf 13
+			(004) ld       [37]
+			(005) jeq      #0xc0000214      jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [35]
+			(009) jeq      #0xc0000214      jt 10	jf 13
+			(010) ld       [45]
+			(011) jeq      #0xc0000214      jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [19]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [33]
+			(003) jeq      #0xc0000214      jt 4	jf 6
+			(004) ld       [37]
+			(005) jeq      #0xc0000214      jt 18	jf 6
+			(006) ldh      [19]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [35]
+			(009) jeq      #0xc0000214      jt 10	jf 12
+			(010) ld       [45]
+			(011) jeq      #0xc0000214      jt 18	jf 12
+			(012) ldh      [19]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [35]
+			(015) jeq      #0xc0000214      jt 16	jf 19
+			(016) ld       [45]
+			(017) jeq      #0xc0000214      jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # src_and_dst_host_ipv4addr_FDDI
+	{
+		name => 'src_and_dst_host_ipv4addr_RAW',
+		DLT => 'RAW',
+		aliases => [
+			'src and dst host 192.0.2.20',
+		],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xc0000214      jt 5	jf 8
+			(005) ld       [16]
+			(006) jeq      #0xc0000214      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 7
+			(003) ld       [12]
+			(004) jeq      #0xc0000214      jt 5	jf 7
+			(005) ld       [16]
+			(006) jeq      #0xc0000214      jt 19	jf 7
+			(007) ld       #0x1
+			(008) jeq      #0x0             jt 9	jf 13
+			(009) ld       [14]
+			(010) jeq      #0xc0000214      jt 11	jf 13
+			(011) ld       [24]
+			(012) jeq      #0xc0000214      jt 19	jf 13
+			(013) ld       #0x1
+			(014) jeq      #0x0             jt 15	jf 20
+			(015) ld       [14]
+			(016) jeq      #0xc0000214      jt 17	jf 20
+			(017) ld       [24]
+			(018) jeq      #0xc0000214      jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # src_and_dst_host_ipv4addr_RAW
+
+	{
+		name => 'host_ipv6addr_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'host ::1',
+			'src or dst host ::1',
+			'dst or src host ::1',
+			'src or dst ::1',
+			'dst or src ::1',
+			'net ::1/128',
+			'src or dst net ::1/128',
+			'dst or src net ::1/128',
+			# "...so in this primitive IPv6 "network" matches are really always
+			# host matches"
+			'net ::1',
+			'src or dst net ::1',
+			'dst or src net ::1',
+			# This syntax is not documented and seems to be an unintended edge case
+			# in the invocation of gen_mcode6() from the grammar.  It may become
+			# invalid syntax later, in which case the aliases below will need to be
+			# converted to reject tests.
+			'host ::1/128',
+			'src or dst host ::1/128',
+			'dst or src host ::1/128',
+			'src or dst ::1/128',
+			'dst or src ::1/128',
+			# IPv4-mapped notation of everything above
+			'host ::0.0.0.1',
+			'src or dst host ::0.0.0.1',
+			'dst or src host ::0.0.0.1',
+			'src or dst ::0.0.0.1',
+			'dst or src ::0.0.0.1',
+			'net ::0.0.0.1/128',
+			'src or dst net ::0.0.0.1/128',
+			'dst or src net ::0.0.0.1/128',
+			'net ::0.0.0.1',
+			'src or dst net ::0.0.0.1',
+			'dst or src net ::0.0.0.1',
+			'host ::0.0.0.1/128',
+			'src or dst host ::0.0.0.1/128',
+			'dst or src host ::0.0.0.1/128',
+			'src or dst ::0.0.0.1/128',
+			'dst or src ::0.0.0.1/128',
+		],
+		unopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 42
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x86dd          jt 17	jf 42
+			(017) ldx      M[0]
+			(018) ld       [x + 16]
+			(019) jeq      #0x0             jt 20	jf 29
+			(020) ldx      M[0]
+			(021) ld       [x + 20]
+			(022) jeq      #0x0             jt 23	jf 29
+			(023) ldx      M[0]
+			(024) ld       [x + 24]
+			(025) jeq      #0x0             jt 26	jf 29
+			(026) ldx      M[0]
+			(027) ld       [x + 28]
+			(028) jeq      #0x1             jt 41	jf 29
+			(029) ldx      M[0]
+			(030) ld       [x + 32]
+			(031) jeq      #0x0             jt 32	jf 42
+			(032) ldx      M[0]
+			(033) ld       [x + 36]
+			(034) jeq      #0x0             jt 35	jf 42
+			(035) ldx      M[0]
+			(036) ld       [x + 40]
+			(037) jeq      #0x0             jt 38	jf 42
+			(038) ldx      M[0]
+			(039) ld       [x + 44]
+			(040) jeq      #0x1             jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
+			',
+	}, # host_ipv6addr_IEEE802_11
+	{
+		name => 'src_host_ipv6addr_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'src host fe80::1122:33ff:fe44:5566',
+			'src fe80::1122:33ff:fe44:5566',
+			# same as above
+			'src host fe80::1122:33ff:fe44:5566/128',
+			'src fe80::1122:33ff:fe44:5566/128',
+			# IPv4-mapped notation of everything above
+			'src host fe80::1122:33ff:254.68.85.102',
+			'src fe80::1122:33ff:254.68.85.102',
+			'src host fe80::1122:33ff:254.68.85.102/128',
+			'src fe80::1122:33ff:254.68.85.102/128',
+		],
+		unopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 30
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x86dd          jt 17	jf 30
+			(017) ldx      M[0]
+			(018) ld       [x + 16]
+			(019) jeq      #0xfe800000      jt 20	jf 30
+			(020) ldx      M[0]
+			(021) ld       [x + 20]
+			(022) jeq      #0x0             jt 23	jf 30
+			(023) ldx      M[0]
+			(024) ld       [x + 24]
+			(025) jeq      #0x112233ff      jt 26	jf 30
+			(026) ldx      M[0]
+			(027) ld       [x + 28]
+			(028) jeq      #0xfe445566      jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # src_host_ipv6addr_IEEE802_11
+	{
+		name => 'dst_host_ipv6addr_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'dst host fe80::7788:99ff:feaa:bbcc',
+			'dst fe80::7788:99ff:feaa:bbcc',
+			'dst host fe80::7788:99ff:feaa:bbcc/128',
+			'dst fe80::7788:99ff:feaa:bbcc/128',
+			# IPv4-mapped notation of everything above
+			'dst host fe80::7788:99ff:254.170.187.204',
+			'dst fe80::7788:99ff:254.170.187.204',
+			'dst host fe80::7788:99ff:254.170.187.204/128',
+			'dst fe80::7788:99ff:254.170.187.204/128',
+		],
+		unopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 30
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x86dd          jt 17	jf 30
+			(017) ldx      M[0]
+			(018) ld       [x + 32]
+			(019) jeq      #0xfe800000      jt 20	jf 30
+			(020) ldx      M[0]
+			(021) ld       [x + 36]
+			(022) jeq      #0x0             jt 23	jf 30
+			(023) ldx      M[0]
+			(024) ld       [x + 40]
+			(025) jeq      #0x778899ff      jt 26	jf 30
+			(026) ldx      M[0]
+			(027) ld       [x + 44]
+			(028) jeq      #0xfeaabbcc      jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # dst_host_ipv6addr_IEEE802_11
+	{
+		name => 'src_and_dst_host_ipv6addr_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'src and dst host 2001:db8:1011:1213:1415:1617:1819:1a1b',
+			'dst and src host 2001:db8:1011:1213:1415:1617:1819:1a1b',
+			'src and dst 2001:db8:1011:1213:1415:1617:1819:1a1b',
+			'dst and src 2001:db8:1011:1213:1415:1617:1819:1a1b',
+			'src and dst host 2001:db8:1011:1213:1415:1617:1819:1a1b/128',
+			'dst and src host 2001:db8:1011:1213:1415:1617:1819:1a1b/128',
+			'src and dst 2001:db8:1011:1213:1415:1617:1819:1a1b/128',
+			'dst and src 2001:db8:1011:1213:1415:1617:1819:1a1b/128',
+			# IPv4-mapped notation of everything above
+			'src and dst host 2001:db8:1011:1213:1415:1617:24.25.26.27',
+			'dst and src host 2001:db8:1011:1213:1415:1617:24.25.26.27',
+			'src and dst 2001:db8:1011:1213:1415:1617:24.25.26.27',
+			'dst and src 2001:db8:1011:1213:1415:1617:24.25.26.27',
+			'src and dst host 2001:db8:1011:1213:1415:1617:24.25.26.27/128',
+			'dst and src host 2001:db8:1011:1213:1415:1617:24.25.26.27/128',
+			'src and dst 2001:db8:1011:1213:1415:1617:24.25.26.27/128',
+			'dst and src 2001:db8:1011:1213:1415:1617:24.25.26.27/128',
+		],
+		unopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[0]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[0]
+			(009) add      #2
+			(010) st       M[0]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 42
+			(014) ldx      M[0]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x86dd          jt 17	jf 42
+			(017) ldx      M[0]
+			(018) ld       [x + 16]
+			(019) jeq      #0x20010db8      jt 20	jf 42
+			(020) ldx      M[0]
+			(021) ld       [x + 20]
+			(022) jeq      #0x10111213      jt 23	jf 42
+			(023) ldx      M[0]
+			(024) ld       [x + 24]
+			(025) jeq      #0x14151617      jt 26	jf 42
+			(026) ldx      M[0]
+			(027) ld       [x + 28]
+			(028) jeq      #0x18191a1b      jt 29	jf 42
+			(029) ldx      M[0]
+			(030) ld       [x + 32]
+			(031) jeq      #0x20010db8      jt 32	jf 42
+			(032) ldx      M[0]
+			(033) ld       [x + 36]
+			(034) jeq      #0x10111213      jt 35	jf 42
+			(035) ldx      M[0]
+			(036) ld       [x + 40]
+			(037) jeq      #0x14151617      jt 38	jf 42
+			(038) ldx      M[0]
+			(039) ld       [x + 44]
+			(040) jeq      #0x18191a1b      jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
+			',
+	}, # src_and_dst_host_ipv6addr_IEEE802_11
+	{
+		name => 'src_and_dst_host_ipv6addr_RAW',
+		DLT => 'RAW',
+		aliases => [
+			'src and dst host 2001:db8:1011:1213:1415:1617:1819:1a1b',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 20
+			(003) ld       [8]
+			(004) jeq      #0x20010db8      jt 5	jf 20
+			(005) ld       [12]
+			(006) jeq      #0x10111213      jt 7	jf 20
+			(007) ld       [16]
+			(008) jeq      #0x14151617      jt 9	jf 20
+			(009) ld       [20]
+			(010) jeq      #0x18191a1b      jt 11	jf 20
+			(011) ld       [24]
+			(012) jeq      #0x20010db8      jt 13	jf 20
+			(013) ld       [28]
+			(014) jeq      #0x10111213      jt 15	jf 20
+			(015) ld       [32]
+			(016) jeq      #0x14151617      jt 17	jf 20
+			(017) ld       [36]
+			(018) jeq      #0x18191a1b      jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # src_and_dst_host_ipv6addr_RAW
+
+	# Proto-unqualified host (net) tests use more descriptive names because
+	# it often matters which AF(s) the name resolves to.  They also use a DLT
+	# that supports both ARP and IPv4 and IPv6 and RARP, this way it is possible
+	# to relate the resolved AF(s) and the protocol(s)s that the filter program
+	# matches.
+	{
+		name => 'host_noeth_ipv4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'host noeth-ipv4-noipv6.host123.libpcap.test',
+			'src or dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst or src noeth-ipv4-noipv6.host123.libpcap.test',
+			'src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst or src host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 12	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 12	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 18	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 18	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 18	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 18	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [28]
+			(015) jeq      #0xa141e28       jt 18	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # host_noeth_ipv4_noipv6_EN10MB
+	{
+		name => 'host_noeth_noipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src or dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst or src host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src or dst noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst or src noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 19
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 10
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 10
+			(006) ld       [30]
+			(007) jeq      #0x10203040      jt 8	jf 10
+			(008) ld       [34]
+			(009) jeq      #0x50607080      jt 18	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 19
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 19
+			(014) ld       [46]
+			(015) jeq      #0x10203040      jt 16	jf 19
+			(016) ld       [50]
+			(017) jeq      #0x50607080      jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # host_noeth_noipv4_ipv6_EN10MB
+	{
+		name => 'host_noeth_ipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'host noeth-ipv4-ipv6.host123.libpcap.test',
+			'src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst or src host noeth-ipv4-ipv6.host123.libpcap.test',
+			'src or dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst or src noeth-ipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 29	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 29	jf 30
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 29	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 29	jf 30
+			(012) jeq      #0x86dd          jt 13	jf 30
+			(013) ld       [22]
+			(014) jeq      #0xfd00a1b2      jt 15	jf 21
+			(015) ld       [26]
+			(016) jeq      #0xc3d40000      jt 17	jf 21
+			(017) ld       [30]
+			(018) jeq      #0x10203040      jt 19	jf 21
+			(019) ld       [34]
+			(020) jeq      #0x50607080      jt 29	jf 21
+			(021) ld       [38]
+			(022) jeq      #0xfd00a1b2      jt 23	jf 30
+			(023) ld       [42]
+			(024) jeq      #0xc3d40000      jt 25	jf 30
+			(025) ld       [46]
+			(026) jeq      #0x10203040      jt 27	jf 30
+			(027) ld       [50]
+			(028) jeq      #0x50607080      jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 36	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 36	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 36	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 36	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xa141e28       jt 36	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 36	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x86dd          jt 20	jf 37
+			(020) ld       [22]
+			(021) jeq      #0xfd00a1b2      jt 22	jf 28
+			(022) ld       [26]
+			(023) jeq      #0xc3d40000      jt 24	jf 28
+			(024) ld       [30]
+			(025) jeq      #0x10203040      jt 26	jf 28
+			(026) ld       [34]
+			(027) jeq      #0x50607080      jt 36	jf 28
+			(028) ld       [38]
+			(029) jeq      #0xfd00a1b2      jt 30	jf 37
+			(030) ld       [42]
+			(031) jeq      #0xc3d40000      jt 32	jf 37
+			(032) ld       [46]
+			(033) jeq      #0x10203040      jt 34	jf 37
+			(034) ld       [50]
+			(035) jeq      #0x50607080      jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # host_noeth_ipv4_ipv6_EN10MB
+
+	{
+		name => 'src_host_noeth_ipv4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src host noeth-ipv4-noipv6.host123.libpcap.test',
+			'src noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [28]
+			(007) jeq      #0xa141e28       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 12	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xa141e28       jt 12	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # src_host_noeth_ipv4_noipv6_EN10MB
+	{
+		name => 'src_host_noeth_noipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 11
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 11
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 11
+			(006) ld       [30]
+			(007) jeq      #0x10203040      jt 8	jf 11
+			(008) ld       [34]
+			(009) jeq      #0x50607080      jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # src_host_noeth_noipv4_ipv6_EN10MB
+	{
+		name => 'src_host_noeth_ipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src host noeth-ipv4-ipv6.host123.libpcap.test',
+			'src noeth-ipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 17	jf 18
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xa141e28       jt 17	jf 18
+			(008) jeq      #0x86dd          jt 9	jf 18
+			(009) ld       [22]
+			(010) jeq      #0xfd00a1b2      jt 11	jf 18
+			(011) ld       [26]
+			(012) jeq      #0xc3d40000      jt 13	jf 18
+			(013) ld       [30]
+			(014) jeq      #0x10203040      jt 15	jf 18
+			(015) ld       [34]
+			(016) jeq      #0x50607080      jt 17	jf 18
+			(017) ret      #262144
+			(018) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 22	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xa141e28       jt 22	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [28]
+			(011) jeq      #0xa141e28       jt 22	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x86dd          jt 14	jf 23
+			(014) ld       [22]
+			(015) jeq      #0xfd00a1b2      jt 16	jf 23
+			(016) ld       [26]
+			(017) jeq      #0xc3d40000      jt 18	jf 23
+			(018) ld       [30]
+			(019) jeq      #0x10203040      jt 20	jf 23
+			(020) ld       [34]
+			(021) jeq      #0x50607080      jt 22	jf 23
+			(022) ret      #262144
+			(023) ret      #0
+			',
+	}, # src_host_noeth_ipv4_ipv6_EN10MB
+
+	{
+		name => 'dst_host_noeth_ipv4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa141e28       jt 8	jf 9
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 9
+			(006) ld       [38]
+			(007) jeq      #0xa141e28       jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa141e28       jt 12	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xa141e28       jt 12	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 13
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # dst_host_noeth_ipv4_noipv6_EN10MB
+	{
+		name => 'dst_host_noeth_noipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 11
+			(002) ld       [38]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 11
+			(004) ld       [42]
+			(005) jeq      #0xc3d40000      jt 6	jf 11
+			(006) ld       [46]
+			(007) jeq      #0x10203040      jt 8	jf 11
+			(008) ld       [50]
+			(009) jeq      #0x50607080      jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # dst_host_noeth_noipv4_ipv6_EN10MB
+	{
+		name => 'dst_host_noeth_ipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst noeth-ipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa141e28       jt 17	jf 18
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xa141e28       jt 17	jf 18
+			(008) jeq      #0x86dd          jt 9	jf 18
+			(009) ld       [38]
+			(010) jeq      #0xfd00a1b2      jt 11	jf 18
+			(011) ld       [42]
+			(012) jeq      #0xc3d40000      jt 13	jf 18
+			(013) ld       [46]
+			(014) jeq      #0x10203040      jt 15	jf 18
+			(015) ld       [50]
+			(016) jeq      #0x50607080      jt 17	jf 18
+			(017) ret      #262144
+			(018) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xa141e28       jt 22	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xa141e28       jt 22	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 22	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x86dd          jt 14	jf 23
+			(014) ld       [38]
+			(015) jeq      #0xfd00a1b2      jt 16	jf 23
+			(016) ld       [42]
+			(017) jeq      #0xc3d40000      jt 18	jf 23
+			(018) ld       [46]
+			(019) jeq      #0x10203040      jt 20	jf 23
+			(020) ld       [50]
+			(021) jeq      #0x50607080      jt 22	jf 23
+			(022) ret      #262144
+			(023) ret      #0
+			',
+	}, # dst_host_noeth_ipv4_ipv6_EN10MB
+
+	{
+		name => 'src_and_dst_host_noeth_ipv4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src and dst host noeth-ipv4-noipv6.host123.libpcap.test',
+			'src and dst noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst and src host noeth-ipv4-noipv6.host123.libpcap.test',
+			'dst and src noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 4	jf 13
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 12	jf 13
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 13
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 10	jf 13
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 18	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 18	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 19
+			(014) ld       [28]
+			(015) jeq      #0xa141e28       jt 16	jf 19
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # src_and_dst_host_noeth_ipv4_noipv6_EN10MB
+	{
+		name => 'src_and_dst_host_noeth_noipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src and dst host noeth-noipv4-ipv6.host123.libpcap.test',
+			'src and dst noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst and src host noeth-noipv4-ipv6.host123.libpcap.test',
+			'dst and src noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 19
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 19
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 19
+			(006) ld       [30]
+			(007) jeq      #0x10203040      jt 8	jf 19
+			(008) ld       [34]
+			(009) jeq      #0x50607080      jt 10	jf 19
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 19
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 19
+			(014) ld       [46]
+			(015) jeq      #0x10203040      jt 16	jf 19
+			(016) ld       [50]
+			(017) jeq      #0x50607080      jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+	}, # src_and_dst_host_noeth_noipv4_ipv6_EN10MB
+	{
+		name => 'src_and_dst_host_noeth_ipv4_ipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'src and dst host noeth-ipv4-ipv6.host123.libpcap.test',
+			'src and dst noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst and src host noeth-ipv4-ipv6.host123.libpcap.test',
+			'dst and src noeth-ipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 4	jf 30
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 29	jf 30
+			(006) jeq      #0x806           jt 8	jf 7
+			(007) jeq      #0x8035          jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 10	jf 30
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 29	jf 30
+			(012) jeq      #0x86dd          jt 13	jf 30
+			(013) ld       [22]
+			(014) jeq      #0xfd00a1b2      jt 15	jf 30
+			(015) ld       [26]
+			(016) jeq      #0xc3d40000      jt 17	jf 30
+			(017) ld       [30]
+			(018) jeq      #0x10203040      jt 19	jf 30
+			(019) ld       [34]
+			(020) jeq      #0x50607080      jt 21	jf 30
+			(021) ld       [38]
+			(022) jeq      #0xfd00a1b2      jt 23	jf 30
+			(023) ld       [42]
+			(024) jeq      #0xc3d40000      jt 25	jf 30
+			(025) ld       [46]
+			(026) jeq      #0x10203040      jt 27	jf 30
+			(027) ld       [50]
+			(028) jeq      #0x50607080      jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xa141e28       jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xa141e28       jt 36	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xa141e28       jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xa141e28       jt 36	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xa141e28       jt 16	jf 18
+			(016) ld       [38]
+			(017) jeq      #0xa141e28       jt 36	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x86dd          jt 20	jf 37
+			(020) ld       [22]
+			(021) jeq      #0xfd00a1b2      jt 22	jf 37
+			(022) ld       [26]
+			(023) jeq      #0xc3d40000      jt 24	jf 37
+			(024) ld       [30]
+			(025) jeq      #0x10203040      jt 26	jf 37
+			(026) ld       [34]
+			(027) jeq      #0x50607080      jt 28	jf 37
+			(028) ld       [38]
+			(029) jeq      #0xfd00a1b2      jt 30	jf 37
+			(030) ld       [42]
+			(031) jeq      #0xc3d40000      jt 32	jf 37
+			(032) ld       [46]
+			(033) jeq      #0x10203040      jt 34	jf 37
+			(034) ld       [50]
+			(035) jeq      #0x50607080      jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # src_and_dst_host_noeth_ipv4_ipv6_EN10MB
+
+	{
+		name => 'src_and_dst_host_noeth_ipv4_noipv6_RAW',
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		aliases => [
+			'src and dst host noeth-ipv4-noipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 8
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 5	jf 8
+			(005) ld       [16]
+			(006) jeq      #0xa141e28       jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # src_and_dst_host_noeth_ipv4_noipv6_RAW
+	{
+		name => 'src_and_dst_host_noeth_noipv4_ipv6_RAW',
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		aliases => [
+			'src and dst host noeth-noipv4-ipv6.host123.libpcap.test',
+		],
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 20
+			(003) ld       [8]
+			(004) jeq      #0xfd00a1b2      jt 5	jf 20
+			(005) ld       [12]
+			(006) jeq      #0xc3d40000      jt 7	jf 20
+			(007) ld       [16]
+			(008) jeq      #0x10203040      jt 9	jf 20
+			(009) ld       [20]
+			(010) jeq      #0x50607080      jt 11	jf 20
+			(011) ld       [24]
+			(012) jeq      #0xfd00a1b2      jt 13	jf 20
+			(013) ld       [28]
+			(014) jeq      #0xc3d40000      jt 15	jf 20
+			(015) ld       [32]
+			(016) jeq      #0x10203040      jt 17	jf 20
+			(017) ld       [36]
+			(018) jeq      #0x50607080      jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # src_and_dst_host_noeth_noipv4_ipv6_RAW
+	{
+		name => 'src_and_dst_host_noeth_ipv4_ipv6_RAW',
+		skip => skip_no_hosts(),
+		DLT => 'RAW',
+		aliases => [
+			'src and dst host noeth-ipv4-ipv6.host123.libpcap.test',
+		],
+		# Note the two earlier returns in the optimized program: if the
+		# packet is an IPv4 packet, but the IPv4 address does not match,
+		# do not bother to test whether it is an IPv6 packet because the
+		# latter is never true because the packet is an IPv4 packet.
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 7
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 5	jf 27
+			(005) ld       [16]
+			(006) jeq      #0xa141e28       jt 26	jf 27
+			(007) ldb      [0]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 27
+			(010) ld       [8]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 27
+			(012) ld       [12]
+			(013) jeq      #0xc3d40000      jt 14	jf 27
+			(014) ld       [16]
+			(015) jeq      #0x10203040      jt 16	jf 27
+			(016) ld       [20]
+			(017) jeq      #0x50607080      jt 18	jf 27
+			(018) ld       [24]
+			(019) jeq      #0xfd00a1b2      jt 20	jf 27
+			(020) ld       [28]
+			(021) jeq      #0xc3d40000      jt 22	jf 27
+			(022) ld       [32]
+			(023) jeq      #0x10203040      jt 24	jf 27
+			(024) ld       [36]
+			(025) jeq      #0x50607080      jt 26	jf 27
+			(026) ret      #262144
+			(027) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 7
+			(003) ld       [12]
+			(004) jeq      #0xa141e28       jt 5	jf 7
+			(005) ld       [16]
+			(006) jeq      #0xa141e28       jt 26	jf 7
+			(007) ldb      [0]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 27
+			(010) ld       [8]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 27
+			(012) ld       [12]
+			(013) jeq      #0xc3d40000      jt 14	jf 27
+			(014) ld       [16]
+			(015) jeq      #0x10203040      jt 16	jf 27
+			(016) ld       [20]
+			(017) jeq      #0x50607080      jt 18	jf 27
+			(018) ld       [24]
+			(019) jeq      #0xfd00a1b2      jt 20	jf 27
+			(020) ld       [28]
+			(021) jeq      #0xc3d40000      jt 22	jf 27
+			(022) ld       [32]
+			(023) jeq      #0x10203040      jt 24	jf 27
+			(024) ld       [36]
+			(025) jeq      #0x50607080      jt 26	jf 27
+			(026) ret      #262144
+			(027) ret      #0
+			',
+	}, # src_and_dst_host_noeth_ipv4_ipv6_RAW
+
 	{
 		name => 'ip_host_addr',
 		# For this and some other single-stack qualifiers below use DLT_RAW to
@@ -10226,50 +12130,28 @@ my @accept_blocks = (
 			'ip host 192.168.170.211',
 			'ip src or dst 192.168.170.211',
 			'ip src or dst host 192.168.170.211',
-			'host 192.168.170.211',
-			'src or dst 192.168.170.211',
-			'src or dst host 192.168.170.211',
 			'ip host 0xc0a8aad3',
 			'ip src or dst 0xc0a8aad3',
 			'ip src or dst host 0xc0a8aad3',
-			'host 0xc0a8aad3',
-			'src or dst 0xc0a8aad3',
-			'src or dst host 0xc0a8aad3',
 			'ip host 3232279251',
 			'ip src or dst 3232279251',
 			'ip src or dst host 3232279251',
-			'host 3232279251',
-			'src or dst 3232279251',
-			'src or dst host 3232279251',
 			'ip host 0030052125323',
 			'ip src or dst 0030052125323',
 			'ip src or dst host 0030052125323',
-			'host 0030052125323',
-			'src or dst 0030052125323',
-			'src or dst host 0030052125323',
 			# "net" without an explicit netmask defaults to /32.
 			'ip net 192.168.170.211/32',
 			'ip src or dst net 192.168.170.211/ 32',
-			'net 192.168.170.211 /32',
-			'src or dst net 192.168.170.211 / 32',
 			'ip net 192.168.170.211',
 			'ip src or dst net 192.168.170.211',
-			'net 192.168.170.211',
-			'src or dst net 192.168.170.211',
 			'ip net 0xc0a8aad3',
 			'ip src or dst net 0xc0a8aad3',
-			'net 0xc0a8aad3',
-			'src or dst net 0xc0a8aad3',
 			'ip net 3232279251',
 			'ip src or dst net 3232279251',
-			'net 3232279251',
-			'src or dst net 3232279251',
 			'ip net 0030052125323',
 			'ip src or dst net 0030052125323',
-			'net 0030052125323',
-			'src or dst net 0030052125323',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 8
@@ -10299,11 +12181,6 @@ my @accept_blocks = (
 			'ip src or dst noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
 			'ip src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
-			# This does not mean "arp host" or "rarp host" because for
-			# DLT_RAW off_linktype.constant_part == OFFSET_NOT_SET.
-			'host noeth-ipv4-noipv6.host123.libpcap.test',
-			'src or dst noeth-ipv4-noipv6.host123.libpcap.test',
-			'src or dst host noeth-ipv4-noipv6.host123.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -10329,9 +12206,6 @@ my @accept_blocks = (
 			'ip src or dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 			'ip src or dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
-			'src or dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
-			'src or dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -10352,39 +12226,23 @@ my @accept_blocks = (
 		aliases => [
 			'ip src host 10.0.0.2',
 			'ip src 10.0.0.2',
-			'src host 10.0.0.2',
-			'src 10.0.0.2',
 			'ip src host 0x0a000002',
 			'ip src 0x0A000002',
-			'src host 0X0a000002',
-			'src 0X0A000002',
 			'ip src host 0xa000002',
 			'ip src 0xA000002',
-			'src host 0Xa000002',
-			'src 0XA000002',
 			'ip src host 167772162',
 			'ip src 167772162',
-			'src host 167772162',
-			'src 167772162',
 			'ip src host 01200000002',
 			'ip src 01200000002',
-			'src host 01200000002',
-			'src 01200000002',
 			# "net" /32
 			'ip src net 10.0.0.2/  32',
-			'src net 10.0.0.2  /32',
 			'ip src net 10.0.0.2',
-			'src net 10.0.0.2',
 			'ip src net 0x0a000002',
-			'src net 0X0a000002',
 			'ip src net 0xa000002',
-			'src net 0Xa000002',
 			'ip src net 167772162',
-			'src net 167772162',
 			'ip src net 01200000002',
-			'src net 01200000002',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 6
@@ -10404,8 +12262,6 @@ my @accept_blocks = (
 			'ip src host noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip src noeth-ipv4-noipv6.host123.libpcap.test',
 			'ip src noeth-ipv4-ipv6.host123.libpcap.test',
-			'src host noeth-ipv4-noipv6.host123.libpcap.test',
-			'src noeth-ipv4-noipv6.host123.libpcap.test',
 		],
 		unopt => '
 			(000) ldb      [0]
@@ -10427,8 +12283,6 @@ my @accept_blocks = (
 			'ip src host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 			'ip src NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'src host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
-			'src NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 		],
 		unopt => '
 			(000) ldb      [0]
@@ -10447,33 +12301,20 @@ my @accept_blocks = (
 		aliases => [
 			'ip dst host 172.17.89.30',
 			'ip dst 172.17.89.30',
-			'dst host 172.17.89.30',
-			'dst 172.17.89.30',
 			'ip dst host 0xac11591e',
 			'ip dst 0xAC11591E',
-			'dst host 0Xac11591e',
-			'dst 0XAC11591E',
 			'ip dst host 2886818078',
 			'ip dst 2886818078',
-			'dst host 2886818078',
-			'dst 2886818078',
 			'ip dst host 0025404254436',
 			'ip dst 0025404254436',
-			'dst host 0025404254436',
-			'dst 0025404254436',
 			# "net" /32
 			'ip dst net 172.17.89.30 /  32',
-			'dst net 172.17.89.30  / 32',
 			'ip dst net 172.17.89.30',
-			'dst net 172.17.89.30',
 			'ip dst net 0xac11591e',
-			'dst net 0Xac11591e',
 			'ip dst net 2886818078',
-			'dst net 2886818078',
 			'ip dst net 0025404254436',
-			'dst net 0025404254436',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 6
@@ -10493,8 +12334,6 @@ my @accept_blocks = (
 			'ip dst host noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip dst noeth-ipv4-noipv6.host123.libpcap.test',
 			'ip dst noeth-ipv4-ipv6.host123.libpcap.test',
-			'dst host noeth-ipv4-noipv6.host123.libpcap.test',
-			'dst noeth-ipv4-noipv6.host123.libpcap.test',
 		],
 		unopt => '
 			(000) ldb      [0]
@@ -10516,8 +12355,6 @@ my @accept_blocks = (
 			'ip dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 			'ip dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'dst host NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
-			'dst NOETH-IPV4-NOIPV6.HOST123.LIBPCAP.TEST',
 		],
 		unopt => '
 			(000) ldb      [0]
@@ -10536,39 +12373,20 @@ my @accept_blocks = (
 		aliases => [
 			'ip net 192.168.0.0/16',
 			'ip src or dst net 192.168.0.0/16',
-			'net 192.168.0.0/16',
-			'src or dst net 192.168.0.0/16',
 			'ip net 192.168/16',
 			'ip src or dst net 192.168/16',
-			'net 192.168/16',
-			'src or dst net 192.168/16',
 			'ip net 192.168.0.0 mask 255.255.0.0',
 			'ip src or dst net 192.168.0.0 mask 255.255.0.0',
-			'net 192.168.0.0 mask 255.255.0.0',
-			'src or dst net 192.168.0.0 mask 255.255.0.0',
 			'ip net 192.168.0.0 mask 255.255',
 			'ip src or dst net 192.168.0.0 mask 255.255',
-			'net 192.168.0.0 mask 255.255',
-			'src or dst net 192.168.0.0 mask 255.255',
 			'ip net 192.168 mask 255.255.0.0',
 			'ip src or dst net 192.168 mask 255.255.0.0',
-			'net 192.168 mask 255.255.0.0',
-			'src or dst net 192.168 mask 255.255.0.0',
 			'ip net 192.168 mask 255.255',
 			'ip src or dst net 192.168 mask 255.255',
-			'net 192.168 mask 255.255',
-			'src or dst net 192.168 mask 255.255',
 			'ip net 192.168',
 			'ip src or dst net 192.168',
-			'net 192.168',
-			'src or dst net 192.168',
 		],
-		# Only the optimized bytecode is equivalent!
-		# (This is because "net 192.168/16" means "ip net 192.168/16 or
-		# arp net 192.168/16 or rarp net 192.168/16" and on DLT_RAW each
-		# of latter two parts generates an explicit false condition,
-		# which eventually optimizes out.)
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 10
@@ -10628,22 +12446,14 @@ my @accept_blocks = (
 		snaplen => 2000,
 		aliases => [
 			'ip src net 10.0.1.0/24',
-			'src net 10.0.1.0/24',
 			'ip src net 10.0.1/24',
-			'src net 10.0.1/24',
 			'ip src net 10.0.1.0 mask 255.255.255.0',
-			'src net 10.0.1.0 mask 255.255.255.0',
 			'ip src net 10.0.1.0 mask 255.255.255',
-			'src net 10.0.1.0 mask 255.255.255',
 			'ip src net 10.0.1 mask 255.255.255.0',
-			'src net 10.0.1 mask 255.255.255.0',
 			'ip src net 10.0.1 mask 255.255.255',
-			'src net 10.0.1 mask 255.255.255',
 			'ip src net 10.0.1',
-			'src net 10.0.1',
 		],
-		# Only the optimized bytecode is equivalent!
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 7
@@ -10660,7 +12470,6 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip src net net-10-20-0-0.libpcap.test',
-			'src net net-10-20-0-0.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -10678,7 +12487,6 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip src net NET-10-20-0-0.LIBPCAP.TEST',
-			'src net NET-10-20-0-0.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -10709,16 +12517,12 @@ my @accept_blocks = (
 		snaplen => 2000,
 		aliases => [
 			'ip dst net 10.0.0.0/8',
-			'dst net 10.0.0.0/8',
 			'ip dst net 10.0.0.0 mask 255.0.0.0',
-			'dst net 10.0.0.0 mask 255.0.0.0',
 			# "net 10/<any masklength>", "net 10 mask <any mask>" and
 			# "net <any net> mask 255" are invalid syntax.
 			'ip dst net 10',
-			'dst net 10',
 		],
-		# Only the optimized bytecode is equivalent!
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x40            jt 3	jf 7
@@ -10735,7 +12539,6 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip dst net net-10-20-30-0.libpcap.test',
-			'dst net net-10-20-30-0.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -10753,7 +12556,6 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip dst net NET-10-20-30-0.LIBPCAP.TEST',
-			'dst net NET-10-20-30-0.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13100,19 +14902,12 @@ my @accept_blocks = (
 			'ip6 host ::1',
 			'ip6 src or dst host ::1',
 			'ip6 src or dst ::1',
-			'host ::1',
-			'src or dst host ::1',
-			'src or dst ::1',
 			'ip6 net ::1/128',
 			'ip6 src or dst net ::1/128',
-			'net ::1/128',
-			'src or dst net ::1/128',
 			# "...so in this primitive IPv6 "network" matches are really always
 			# host matches"
 			'ip6 net ::1',
 			'ip6 src or dst net ::1',
-			'net ::1',
-			'src or dst net ::1',
 			# This syntax is not documented and seems to be an unintended edge case
 			# in the invocation of gen_mcode6() from the grammar.  It may become
 			# invalid syntax later, in which case the aliases below will need to be
@@ -13120,32 +14915,19 @@ my @accept_blocks = (
 			'ip6 host ::1/128',
 			'ip6 src or dst host ::1/128',
 			'ip6 src or dst ::1/128',
-			'host ::1/128',
-			'src or dst host ::1/128',
-			'src or dst ::1/128',
 			# IPv4-mapped notation of everything above
 			'ip6 host ::0.0.0.1',
 			'ip6 src or dst host ::0.0.0.1',
 			'ip6 src or dst ::0.0.0.1',
-			'host ::0.0.0.1',
-			'src or dst host ::0.0.0.1',
-			'src or dst ::0.0.0.1',
 			'ip6 net ::0.0.0.1/128',
 			'ip6 src or dst net ::0.0.0.1/128',
-			'net ::0.0.0.1/128',
-			'src or dst net ::0.0.0.1/128',
 			'ip6 net ::0.0.0.1',
 			'ip6 src or dst net ::0.0.0.1',
-			'net ::0.0.0.1',
-			'src or dst net ::0.0.0.1',
 			'ip6 host ::0.0.0.1/128',
 			'ip6 src or dst host ::0.0.0.1/128',
 			'ip6 src or dst ::0.0.0.1/128',
-			'host ::0.0.0.1/128',
-			'src or dst host ::0.0.0.1/128',
-			'src or dst ::0.0.0.1/128',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 20
@@ -13180,9 +14962,6 @@ my @accept_blocks = (
 			'ip6 src or dst noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip6 src or dst host noeth-noipv4-ipv6.host123.libpcap.test',
 			'ip6 src or dst host noeth-ipv4-ipv6.host123.libpcap.test',
-			'host noeth-noipv4-ipv6.host123.libpcap.test',
-			'src or dst host noeth-noipv4-ipv6.host123.libpcap.test',
-			'src or dst noeth-noipv4-ipv6.host123.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13219,9 +14998,6 @@ my @accept_blocks = (
 			'ip6 src or dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 src or dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 src or dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'src or dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'src or dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13253,24 +15029,16 @@ my @accept_blocks = (
 		aliases => [
 			'ip6 src host fe80::1122:33ff:fe44:5566',
 			'ip6 src fe80::1122:33ff:fe44:5566',
-			'src host fe80::1122:33ff:fe44:5566',
-			'src fe80::1122:33ff:fe44:5566',
 			# same as above
 			'ip6 src host fe80::1122:33ff:fe44:5566/128',
 			'ip6 src fe80::1122:33ff:fe44:5566/128',
-			'src host fe80::1122:33ff:fe44:5566/128',
-			'src fe80::1122:33ff:fe44:5566/128',
 			# IPv4-mapped notation of everything above
 			'ip6 src host fe80::1122:33ff:254.68.85.102',
 			'ip6 src fe80::1122:33ff:254.68.85.102',
-			'src host fe80::1122:33ff:254.68.85.102',
-			'src fe80::1122:33ff:254.68.85.102',
 			'ip6 src host fe80::1122:33ff:254.68.85.102/128',
 			'ip6 src fe80::1122:33ff:254.68.85.102/128',
-			'src host fe80::1122:33ff:254.68.85.102/128',
-			'src fe80::1122:33ff:254.68.85.102/128',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
@@ -13295,8 +15063,6 @@ my @accept_blocks = (
 			'ip6 src host noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip6 src noeth-noipv4-ipv6.host123.libpcap.test',
 			'ip6 src noeth-ipv4-ipv6.host123.libpcap.test',
-			'src host noeth-noipv4-ipv6.host123.libpcap.test',
-			'src noeth-noipv4-ipv6.host123.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13323,8 +15089,6 @@ my @accept_blocks = (
 			'ip6 src host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 src NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 src NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'src host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'src NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13348,24 +15112,16 @@ my @accept_blocks = (
 		aliases => [
 			'ip6 dst host fe80::7788:99ff:feaa:bbcc',
 			'ip6 dst fe80::7788:99ff:feaa:bbcc',
-			'dst host fe80::7788:99ff:feaa:bbcc',
-			'dst fe80::7788:99ff:feaa:bbcc',
 			# same as above
 			'ip6 dst host fe80::7788:99ff:feaa:bbcc/128',
 			'ip6 dst fe80::7788:99ff:feaa:bbcc/128',
-			'dst host fe80::7788:99ff:feaa:bbcc/128',
-			'dst fe80::7788:99ff:feaa:bbcc/128',
 			# IPv4-mapped notation of everything above
 			'ip6 dst host fe80::7788:99ff:254.170.187.204',
 			'ip6 dst fe80::7788:99ff:254.170.187.204',
-			'dst host fe80::7788:99ff:254.170.187.204',
-			'dst fe80::7788:99ff:254.170.187.204',
 			'ip6 dst host fe80::7788:99ff:254.170.187.204/128',
 			'ip6 dst fe80::7788:99ff:254.170.187.204/128',
-			'dst host fe80::7788:99ff:254.170.187.204/128',
-			'dst fe80::7788:99ff:254.170.187.204/128',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 12
@@ -13390,8 +15146,6 @@ my @accept_blocks = (
 			'ip6 dst host noeth-ipv4-ipv6.host123.libpcap.test',
 			'ip6 dst noeth-noipv4-ipv6.host123.libpcap.test',
 			'ip6 dst noeth-ipv4-ipv6.host123.libpcap.test',
-			'dst host noeth-noipv4-ipv6.host123.libpcap.test',
-			'dst noeth-noipv4-ipv6.host123.libpcap.test',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13418,8 +15172,6 @@ my @accept_blocks = (
 			'ip6 dst host NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 			'ip6 dst NOETH-IPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'dst host NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
-			'dst NOETH-NOIPV4-IPV6.HOST123.LIBPCAP.TEST',
 		],
 		opt => '
 			(000) ldb      [0]
@@ -13442,16 +15194,12 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip6 net fe80::/10',
-			'net fe80::/10',
-			'src or dst net fe80::/10',
 			'ip6 src or dst net fe80::/10',
 			# IPv4-mapped notation of everything above
 			'ip6 net fe80::0.0.0.0/10',
-			'net fe80::0.0.0.0/10',
-			'src or dst net fe80::0.0.0.0/10',
 			'ip6 src or dst net fe80::0.0.0.0/10',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 10
@@ -13470,12 +15218,10 @@ my @accept_blocks = (
 		DLT => 'RAW',
 		aliases => [
 			'ip6 src net 2000::/3',
-			'src net 2000::/3',
 			# IPv4-mapped notation of everything above
 			'ip6 src net 2000::0.0.0.0/3',
-			'src net 2000::0.0.0.0/3',
 		],
-		opt => '
+		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
 			(002) jeq      #0x60            jt 3	jf 7
