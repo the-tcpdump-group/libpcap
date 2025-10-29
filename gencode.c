@@ -5182,43 +5182,57 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 	struct block *ret = NULL;
 	struct in6_addr mask128;
 	memset(&mask128, 0xff, sizeof(mask128));
-	for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
-		struct block *tmp = NULL;
-		switch (ai->ai_family) {
-		case AF_INET:
-			/*
-			 * Ignore any IPv4 addresses when resolving
-			 * "ip6 host NAME", validate all other proto
-			 * qualifiers in gen_host().
-			 */
-			if (proto4 == Q_IPV6)
+
+	/*
+	 * For a hostname that resolves to both IPv4 and IPv6 addresses the
+	 * AF_INET addresses may come before or after the AF_INET6 addresses
+	 * depending on which getaddrinfo() implementation it is, what the
+	 * resolving host's network configuration is and (on Linux with glibc)
+	 * the contents of gai.conf(5).  This is because getaddrinfo() presumes
+	 * a subsequent bind(2) or connect(2) use of the addresses, which is
+	 * not the case here, so there is no sense in preserving the order of
+	 * the AFs in the resolved addresses.  However, there is sense in
+	 * hard-coding the order of AFs when generating a match block for more
+	 * than one AF because this way the result reflects fewer external
+	 * effects and is easier to test.
+	 */
+
+	/*
+	 * Ignore any IPv4 addresses when resolving "ip6 host NAME", validate
+	 * all other proto qualifiers in gen_host().
+	 */
+	if (proto4 != Q_IPV6) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET)
 				continue;
 			struct sockaddr_in *sin4 =
 			    (struct sockaddr_in *)ai->ai_addr;
-			tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
+			struct block *host4 = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
 			    0xffffffff, proto4, dir, Q_HOST);
-			break;
-		case AF_INET6:
-			/*
-			 * Ignore any IPv6 addresses when resolving
-			 * "(arp|ip|rarp) host NAME", validate all
-			 * other proto qualifiers in gen_host6().
-			 */
-			if (proto6 == Q_ARP || proto6 == Q_IP ||
-			    proto6 == Q_RARP)
+			if (ret)
+				gen_or(ret, host4);
+			ret = host4;
+		}
+	}
+
+	/*
+	 * Ignore any IPv6 addresses when resolving "(arp|ip|rarp) host NAME",
+	 * validate all other proto qualifiers in gen_host6().
+	 */
+	if (proto6 != Q_ARP && proto6 != Q_IP && proto6 != Q_RARP) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET6)
 				continue;
 			struct sockaddr_in6 *sin6 =
 			    (struct sockaddr_in6 *)ai->ai_addr;
-			tmp = gen_host6(cstate, &sin6->sin6_addr,
+			struct block *host6 = gen_host6(cstate, &sin6->sin6_addr,
 			    &mask128, proto6, dir, Q_HOST);
-			break;
+			if (ret)
+				gen_or(ret, host6);
+			ret = host6;
 		}
-		if (! tmp)
-			continue;
-		if (ret)
-			gen_or(ret, tmp);
-		ret = tmp;
 	}
+
 	freeaddrinfo(cstate->ai);
 	cstate->ai = NULL;
 
