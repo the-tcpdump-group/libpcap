@@ -394,15 +394,11 @@ ${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
 			yylval->s = sdup(yyextra, (char *)yytext); return HID; }
 {V6}			{
-			  struct addrinfo hints, *res;
-			  memset(&hints, 0, sizeof(hints));
-			  hints.ai_family = AF_INET6;
-			  hints.ai_flags = AI_NUMERICHOST;
-			  if (getaddrinfo(yytext, NULL, &hints, &res)) {
+			  struct in6_addr addr;
+			  if (1 != inet_pton(AF_INET6, yytext, &addr)) {
 				bpf_set_error(yyextra, "bogus IPv6 address %s", yytext);
 				yylval->s = NULL;
 			  } else {
-				freeaddrinfo(res);
 				yylval->s = sdup(yyextra, (char *)yytext);
 			  }
 			  return HID6;

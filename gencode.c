@@ -7279,7 +7279,8 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 
 	/*
 	 * If everything works correctly, this call never fails: a string that
-	 * is valid for HID6 in the lexer is valid for inet_pton().
+	 * is valid for HID6 and the associated validating inet_pton() in the
+	 * lexer is valid for inet_pton() here.
 	 */
 	if (1 != inet_pton(AF_INET6, s, &addr))
 		bpf_error(cstate, "'%s' is not a valid IPv6 address", s);
