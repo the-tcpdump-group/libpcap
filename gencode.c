@@ -4500,17 +4500,8 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		gen_or(b0, b1);
 		return b1;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	return gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
@@ -4556,17 +4547,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		gen_or(b0, b1);
 		return b1;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/* this order is important */
@@ -5020,17 +5002,8 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		gen_or(b0, b1);
 		return b1;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/*
@@ -5797,17 +5770,8 @@ gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 		gen_or(tmp, b1);
 		break;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
 		/*NOTREACHED*/
 	}
 
@@ -5900,7 +5864,8 @@ gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
+		/*NOTREACHED*/
 	}
 
 	return gen_port6_common(cstate, proto, b1);
@@ -5982,17 +5947,8 @@ gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 		gen_or(tmp, b1);
 		break;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
 		/*NOTREACHED*/
 	}
 
@@ -6045,7 +6001,8 @@ gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
+		/*NOTREACHED*/
 	}
 
 	return gen_port6_common(cstate, proto, b1);
@@ -8654,17 +8611,10 @@ gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
 		gen_or(b0, b1);
 		return b1;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
+	default:
 		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
-	abort();
-	/*NOTREACHED*/
 }
 
 static struct block *
