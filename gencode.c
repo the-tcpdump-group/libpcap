@@ -5855,9 +5855,9 @@ gen_port_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	case PROTO_UNDEF:
-		tmp = gen_ip_proto(cstate, IPPROTO_UDP);
+		tmp = gen_ip_proto(cstate, IPPROTO_SCTP);
+		gen_or(gen_ip_proto(cstate, IPPROTO_UDP), tmp);
 		gen_or(gen_ip_proto(cstate, IPPROTO_TCP), tmp);
-		gen_or(gen_ip_proto(cstate, IPPROTO_SCTP), tmp);
 		break;
 
 	default:
@@ -5921,9 +5921,9 @@ gen_port6_common(compiler_state_t *cstate, int proto, struct block *b1)
 
 	case PROTO_UNDEF:
 		// Same as in gen_port_common().
-		tmp = gen_ip6_proto(cstate, IPPROTO_UDP);
+		tmp = gen_ip6_proto(cstate, IPPROTO_SCTP);
+		gen_or(gen_ip6_proto(cstate, IPPROTO_UDP), tmp);
 		gen_or(gen_ip6_proto(cstate, IPPROTO_TCP), tmp);
-		gen_or(gen_ip6_proto(cstate, IPPROTO_SCTP), tmp);
 		break;
 
 	default:

@@ -15170,18 +15170,18 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 10
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 23
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 23
 			(006) ldh      [54]
 			(007) jeq      #0x7             jt 22	jf 8
 			(008) ldh      [56]
 			(009) jeq      #0x7             jt 22	jf 23
 			(010) jeq      #0x800           jt 11	jf 23
 			(011) ldb      [23]
-			(012) jeq      #0x84            jt 15	jf 13
-			(013) jeq      #0x6             jt 15	jf 14
-			(014) jeq      #0x11            jt 15	jf 23
+			(012) jeq      #0x6             jt 15	jf 13
+			(013) jeq      #0x11            jt 15	jf 14
+			(014) jeq      #0x84            jt 15	jf 23
 			(015) ldh      [20]
 			(016) jset     #0x1fff          jt 23	jf 17
 			(017) ldxb     4*([14]&0xf)
@@ -15196,11 +15196,11 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 12
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 12
+			(007) jeq      #0x84            jt 8	jf 12
 			(008) ldh      [54]
 			(009) jeq      #0x7             jt 28	jf 10
 			(010) ldh      [56]
@@ -15208,11 +15208,11 @@ my @accept_blocks = (
 			(012) ldh      [12]
 			(013) jeq      #0x800           jt 14	jf 29
 			(014) ldb      [23]
-			(015) jeq      #0x84            jt 20	jf 16
+			(015) jeq      #0x6             jt 20	jf 16
 			(016) ldb      [23]
-			(017) jeq      #0x6             jt 20	jf 18
+			(017) jeq      #0x11            jt 20	jf 18
 			(018) ldb      [23]
-			(019) jeq      #0x11            jt 20	jf 29
+			(019) jeq      #0x84            jt 20	jf 29
 			(020) ldh      [20]
 			(021) jset     #0x1fff          jt 29	jf 22
 			(022) ldxb     4*([14]&0xf)
@@ -15238,16 +15238,16 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 19
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 19
 			(006) ldh      [54]
 			(007) jeq      #0x7             jt 18	jf 19
 			(008) jeq      #0x800           jt 9	jf 19
 			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 19
+			(010) jeq      #0x6             jt 13	jf 11
+			(011) jeq      #0x11            jt 13	jf 12
+			(012) jeq      #0x84            jt 13	jf 19
 			(013) ldh      [20]
 			(014) jset     #0x1fff          jt 19	jf 15
 			(015) ldxb     4*([14]&0xf)
@@ -15260,21 +15260,21 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 10
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 10
+			(007) jeq      #0x84            jt 8	jf 10
 			(008) ldh      [54]
 			(009) jeq      #0x7             jt 23	jf 10
 			(010) ldh      [12]
 			(011) jeq      #0x800           jt 12	jf 24
 			(012) ldb      [23]
-			(013) jeq      #0x84            jt 18	jf 14
+			(013) jeq      #0x6             jt 18	jf 14
 			(014) ldb      [23]
-			(015) jeq      #0x6             jt 18	jf 16
+			(015) jeq      #0x11            jt 18	jf 16
 			(016) ldb      [23]
-			(017) jeq      #0x11            jt 18	jf 24
+			(017) jeq      #0x84            jt 18	jf 24
 			(018) ldh      [20]
 			(019) jset     #0x1fff          jt 24	jf 20
 			(020) ldxb     4*([14]&0xf)
@@ -15297,16 +15297,16 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 19
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 19
 			(006) ldh      [56]
 			(007) jeq      #0x7             jt 18	jf 19
 			(008) jeq      #0x800           jt 9	jf 19
 			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 19
+			(010) jeq      #0x6             jt 13	jf 11
+			(011) jeq      #0x11            jt 13	jf 12
+			(012) jeq      #0x84            jt 13	jf 19
 			(013) ldh      [20]
 			(014) jset     #0x1fff          jt 19	jf 15
 			(015) ldxb     4*([14]&0xf)
@@ -15319,21 +15319,21 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 10
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 10
+			(007) jeq      #0x84            jt 8	jf 10
 			(008) ldh      [56]
 			(009) jeq      #0x7             jt 23	jf 10
 			(010) ldh      [12]
 			(011) jeq      #0x800           jt 12	jf 24
 			(012) ldb      [23]
-			(013) jeq      #0x84            jt 18	jf 14
+			(013) jeq      #0x6             jt 18	jf 14
 			(014) ldb      [23]
-			(015) jeq      #0x6             jt 18	jf 16
+			(015) jeq      #0x11            jt 18	jf 16
 			(016) ldb      [23]
-			(017) jeq      #0x11            jt 18	jf 24
+			(017) jeq      #0x84            jt 18	jf 24
 			(018) ldh      [20]
 			(019) jset     #0x1fff          jt 24	jf 20
 			(020) ldxb     4*([14]&0xf)
@@ -15354,9 +15354,9 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 11
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 26
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 26
 			(006) ldh      [54]
 			(007) jge      #0x1             jt 8	jf 9
 			(008) jgt      #0x3ff           jt 9	jf 25
@@ -15364,9 +15364,9 @@ my @accept_blocks = (
 			(010) jge      #0x1             jt 24	jf 26
 			(011) jeq      #0x800           jt 12	jf 26
 			(012) ldb      [23]
-			(013) jeq      #0x84            jt 16	jf 14
-			(014) jeq      #0x6             jt 16	jf 15
-			(015) jeq      #0x11            jt 16	jf 26
+			(013) jeq      #0x6             jt 16	jf 14
+			(014) jeq      #0x11            jt 16	jf 15
+			(015) jeq      #0x84            jt 16	jf 26
 			(016) ldh      [20]
 			(017) jset     #0x1fff          jt 26	jf 18
 			(018) ldxb     4*([14]&0xf)
@@ -15383,11 +15383,11 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 16
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 16
+			(007) jeq      #0x84            jt 8	jf 16
 			(008) ldh      [54]
 			(009) jge      #0x1             jt 10	jf 12
 			(010) ldh      [54]
@@ -15399,11 +15399,11 @@ my @accept_blocks = (
 			(016) ldh      [12]
 			(017) jeq      #0x800           jt 18	jf 39
 			(018) ldb      [23]
-			(019) jeq      #0x84            jt 24	jf 20
+			(019) jeq      #0x6             jt 24	jf 20
 			(020) ldb      [23]
-			(021) jeq      #0x6             jt 24	jf 22
+			(021) jeq      #0x11            jt 24	jf 22
 			(022) ldb      [23]
-			(023) jeq      #0x11            jt 24	jf 39
+			(023) jeq      #0x84            jt 24	jf 39
 			(024) ldh      [20]
 			(025) jset     #0x1fff          jt 39	jf 26
 			(026) ldxb     4*([14]&0xf)
@@ -15433,16 +15433,16 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 20
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 20
 			(006) ldh      [54]
 			(007) jge      #0x1             jt 18	jf 20
 			(008) jeq      #0x800           jt 9	jf 20
 			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 20
+			(010) jeq      #0x6             jt 13	jf 11
+			(011) jeq      #0x11            jt 13	jf 12
+			(012) jeq      #0x84            jt 13	jf 20
 			(013) ldh      [20]
 			(014) jset     #0x1fff          jt 20	jf 15
 			(015) ldxb     4*([14]&0xf)
@@ -15456,11 +15456,11 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 12
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 12
+			(007) jeq      #0x84            jt 8	jf 12
 			(008) ldh      [54]
 			(009) jge      #0x1             jt 10	jf 12
 			(010) ldh      [54]
@@ -15468,11 +15468,11 @@ my @accept_blocks = (
 			(012) ldh      [12]
 			(013) jeq      #0x800           jt 14	jf 29
 			(014) ldb      [23]
-			(015) jeq      #0x84            jt 20	jf 16
+			(015) jeq      #0x6             jt 20	jf 16
 			(016) ldb      [23]
-			(017) jeq      #0x6             jt 20	jf 18
+			(017) jeq      #0x11            jt 20	jf 18
 			(018) ldb      [23]
-			(019) jeq      #0x11            jt 20	jf 29
+			(019) jeq      #0x84            jt 20	jf 29
 			(020) ldh      [20]
 			(021) jset     #0x1fff          jt 29	jf 22
 			(022) ldxb     4*([14]&0xf)
@@ -15496,16 +15496,16 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 8
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 6	jf 4
-			(004) jeq      #0x6             jt 6	jf 5
-			(005) jeq      #0x11            jt 6	jf 20
+			(003) jeq      #0x6             jt 6	jf 4
+			(004) jeq      #0x11            jt 6	jf 5
+			(005) jeq      #0x84            jt 6	jf 20
 			(006) ldh      [56]
 			(007) jge      #0x1             jt 18	jf 20
 			(008) jeq      #0x800           jt 9	jf 20
 			(009) ldb      [23]
-			(010) jeq      #0x84            jt 13	jf 11
-			(011) jeq      #0x6             jt 13	jf 12
-			(012) jeq      #0x11            jt 13	jf 20
+			(010) jeq      #0x6             jt 13	jf 11
+			(011) jeq      #0x11            jt 13	jf 12
+			(012) jeq      #0x84            jt 13	jf 20
 			(013) ldh      [20]
 			(014) jset     #0x1fff          jt 20	jf 15
 			(015) ldxb     4*([14]&0xf)
@@ -15519,11 +15519,11 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x86dd          jt 2	jf 12
 			(002) ldb      [20]
-			(003) jeq      #0x84            jt 8	jf 4
+			(003) jeq      #0x6             jt 8	jf 4
 			(004) ldb      [20]
-			(005) jeq      #0x6             jt 8	jf 6
+			(005) jeq      #0x11            jt 8	jf 6
 			(006) ldb      [20]
-			(007) jeq      #0x11            jt 8	jf 12
+			(007) jeq      #0x84            jt 8	jf 12
 			(008) ldh      [56]
 			(009) jge      #0x1             jt 10	jf 12
 			(010) ldh      [56]
@@ -15531,11 +15531,11 @@ my @accept_blocks = (
 			(012) ldh      [12]
 			(013) jeq      #0x800           jt 14	jf 29
 			(014) ldb      [23]
-			(015) jeq      #0x84            jt 20	jf 16
+			(015) jeq      #0x6             jt 20	jf 16
 			(016) ldb      [23]
-			(017) jeq      #0x6             jt 20	jf 18
+			(017) jeq      #0x11            jt 20	jf 18
 			(018) ldb      [23]
-			(019) jeq      #0x11            jt 20	jf 29
+			(019) jeq      #0x84            jt 20	jf 29
 			(020) ldh      [20]
 			(021) jset     #0x1fff          jt 29	jf 22
 			(022) ldxb     4*([14]&0xf)
