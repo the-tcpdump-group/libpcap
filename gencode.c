@@ -6150,6 +6150,10 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * engine to do the protochain stuff, to support backward
 	 * branches, and backward branch support is unlikely to appear
 	 * in kernel BPF engines.)
+	 *
+	 * Hence in the current implementation the gen_abs_offset_varpart()
+	 * invocations incurred from gen_load_a() and gen_loadx_iphdrlen()
+	 * below do not affect the offset because off_linkpl.is_variable == 0.
 	 */
 	if (cstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
@@ -6181,12 +6185,10 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 
 		/* A = ip->ip_p */
-		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 9;
+		s[i] = gen_load_a(cstate, OR_LINKPL, 9, BPF_B);
 		i++;
 		/* X = ip->ip_hl << 2 */
-		s[i] = new_stmt(cstate, BPF_LDX|BPF_MSH|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
 		break;
 
@@ -6194,8 +6196,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 
 		/* A = ip6->ip_nxt */
-		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 6;
+		s[i] = gen_load_a(cstate, OR_LINKPL, 6, BPF_B);
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
