@@ -660,14 +660,15 @@ pcapint_atoin(const char *s, bpf_u_int32 *addr)
 }
 
 /*
- * If 's' is not a string that is a well-formed DECnet address (aa.nnnn),
- * return zero.  Otherwise parse the address into the low 16 bits of 'addr'
- * and return a non-zero.  The binary DECnet address consists of a 6-bit area
- * number and a 10-bit node number; neither area 0 nor node 0 are valid for
- * normal addressing purposes, but either can appear on the wire.
+ * Iff 's' is a string that is a well-formed DECnet address (aa.nnnn), parse
+ * the address into 'addr' and return 1, otherwise return 0.
+ *
+ * A binary DECnet address consists of a 6-bit area number and a 10-bit node
+ * number; neither area 0 nor node 0 are valid for normal addressing purposes,
+ * but either can potentially appear on the wire.
  */
 int
-pcapint_atodn(const char *s, bpf_u_int32 *addr)
+pcapint_atodn(const char *s, uint16_t *addr)
 {
 #define AREASHIFT 10
 #define AREAMASK 0176000
@@ -742,8 +743,9 @@ pcapint_atodn(const char *s, bpf_u_int32 *addr)
 	if (fsm_state != NODE)
 		return 0;
 
-	*addr = area << AREASHIFT | node;
-	return(32);
+	// Both 'area' and 'node' have been verified to be in range.
+	*addr = (uint16_t)(area << AREASHIFT | node);
+	return 1;
 }
 
 /*

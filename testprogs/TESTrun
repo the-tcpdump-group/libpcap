@@ -20338,7 +20338,7 @@ sub errstr_nohost_af {
 }
 
 # gen_scode()
-# gen_ncode()
+# gen_ncode() -> gen_dnhost()
 sub errstr_invhost_dn {
 	return sprintf ('invalid DECnet address \'%s\'', shift);
 }
@@ -20532,6 +20532,18 @@ my @filter_reject_tests = (
 		DLT => 'EN10MB',
 		expr => 'decnet host 17.1024',
 		errstr => errstr_invhost_dn ('17.1024'),
+	},
+	{
+		name => 'decnet_1',
+		DLT => 'EN10MB',
+		expr => 'decnet host 1',
+		errstr => errstr_invhost_dn ('1'),
+	},
+	{
+		name => 'decnet_1_2_3',
+		DLT => 'EN10MB',
+		expr => 'decnet host 1.2.3',
+		errstr => errstr_invhost_dn ('1.2.3'),
 	},
 	{
 		name => 'ip_host',
@@ -22246,7 +22258,7 @@ foreach (pquals_without 'index') {
 }
 
 foreach (pquals_without '') {
-	# HID -> gen_ncode() -> q.proto == Q_DECNET
+	# HID -> gen_ncode() -> gen_dnhost() -> ! pcapint_atodn()
 	# HID -> gen_ncode() -> q.proto == Q_LINK
 	# HID -> gen_ncode() -> gen_host() -> default
 	push @filter_reject_tests, {
@@ -22258,7 +22270,7 @@ foreach (pquals_without '') {
 			errstr_invqual ($_, 'ip host'),
 	} unless pqual_has ($_, 'host_ipv4');
 
-	# HID -> gen_ncode() -> q.proto == Q_DECNET
+	# HID -> gen_ncode() -> gen_dnhost() -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# HID -> gen_ncode() -> q.proto == Q_LINK
 	# HID -> gen_ncode() -> gen_host() -> default
 	push @filter_reject_tests, {
@@ -22738,7 +22750,7 @@ foreach my $DLT (DLTs_without 'wlan') {
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
 
-		# HID -> gen_ncode() -> q.proto == Q_DECNET -> gen_host() -> gen_dnhostop() -> default case
+		# HID -> gen_ncode() -> gen_dnhost() -> gen_dnhostop() -> default case
 		push @filter_reject_tests, {
 			name => "decnet_${dqual}_dnaddr_${DLT}",
 			DLT => $DLT,

@@ -92,12 +92,12 @@ test_pcapint_xdtoi(const char *arg)
 static int
 test_pcapint_atodn(const char *arg)
 {
-	uint32_t dnaddr;
+	uint16_t dnaddr;
 	if (! pcapint_atodn(arg, &dnaddr)) {
 		fprintf(stderr, "ERROR: 0\n");
 		return EX_DATAERR;
 	}
-	printf("OK: %u.%u\n", (dnaddr & 0xfc00) >> 10, dnaddr & 0x03ff);
+	printf("OK: %u.%u\n", dnaddr >> 10, dnaddr & 0x03ff);
 	return EX_OK;
 }
 

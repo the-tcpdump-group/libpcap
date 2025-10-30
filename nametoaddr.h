@@ -42,7 +42,7 @@ extern "C" {
  * Routines used for name-or-address-string-to-address resolution
  * that are *not* exported to code using libpcap.
  */
-extern int pcapint_atodn(const char *, bpf_u_int32 *);
+extern int pcapint_atodn(const char *, uint16_t *);
 extern int pcapint_atoin(const char *, bpf_u_int32 *);
 extern int pcapint_atoan(const char *, uint8_t *);
 extern int pcapint_atomac48(const char *, uint8_t *);

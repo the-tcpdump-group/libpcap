@@ -696,6 +696,8 @@ static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
 static struct block *gen_host46_byname(compiler_state_t *, const char *,
     const u_char, const u_char, const u_char);
+static struct block *gen_dnhost(compiler_state_t *, const char *, bpf_u_int32,
+    const struct qual);
 static struct block *gen_gateway(compiler_state_t *, const char *, const u_char);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
@@ -5154,11 +5156,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		return gen_and(b0, b1);
-
-	case Q_DECNET:
-		b0 = gen_linktype(cstate, ETHERTYPE_DN);
-		b1 = gen_dnhostop(cstate, addr, dir);
-		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip net" : "ip host");
@@ -5249,6 +5246,45 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 		    ? ""
 		    : " for specified address family");
 	return ret;
+}
+
+static struct block *
+gen_dnhost(compiler_state_t *cstate, const char *s, bpf_u_int32 v,
+    const struct qual q)
+{
+	/*
+	 * libpcap defines exactly one primitive that has "decnet" as
+	 * the protocol qualifier: "decnet host AREANUMBER.NODENUMBER".
+	 */
+	if (q.addr != Q_DEFAULT && q.addr != Q_HOST)
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet", tqkw(q.addr));
+
+	if (s == NULL) {
+		/*
+		 * v contains a 32-bit unsigned parsed from a string of the
+		 * form {N}, which could be decimal, hexadecimal or octal.
+		 * Although it would be possible to use the value as a raw
+		 * 16-bit DECnet address when the value fits into 16 bits,
+		 * this would be a questionable feature: DECnet address wire
+		 * encoding is little-endian, so this would not work as
+		 * intuitively as the same works for [big-endian] IPv4
+		 * addresses (0x01020304 means 1.2.3.4).
+		 */
+		bpf_error(cstate, "invalid DECnet address '%u'", v);
+	}
+
+	/*
+	 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
+	 * {N}.{N}.{N}.{N}, of which only the first potentially stands
+	 * for a valid DECnet address.
+	 */
+	uint16_t addr;
+	if (! pcapint_atodn(s, &addr))
+		bpf_error(cstate, "invalid DECnet address '%s'", s);
+
+	struct block *b0 = gen_linktype(cstate, ETHERTYPE_DN);
+	struct block *b1 = gen_dnhostop(cstate, addr, q.dir);
+	return gen_and(b0, b1);
 }
 
 static unsigned char
@@ -6955,41 +6991,8 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	if (q.proto == Q_DECNET) {
-		/*
-		 * libpcap defines exactly one primitive that has "decnet" as
-		 * the protocol qualifier: "decnet host AREANUMBER.NODENUMBER".
-		 */
-		if (q.addr != Q_DEFAULT && q.addr != Q_HOST)
-			bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
-			          tqkw(q.addr));
-
-		if (s == NULL) {
-			/*
-			 * v contains a 32-bit unsigned parsed from a string
-			 * of the form {N}, which could be decimal, hexadecimal
-			 * or octal.  Although it would be possible to use the
-			 * value as a raw 16-bit DECnet address when the value
-			 * fits into 16 bits, this would be a questionable
-			 * feature: DECnet address wire encoding is
-			 * little-endian, so this would not work as intuitively
-			 * as the same works for [big-endian] IPv4 addresses
-			 * (0x01020304 means 1.2.3.4).
-			 */
-			bpf_error(cstate, "invalid DECnet address '%u'", v);
-		}
-
-		/*
-		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
-		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
-		 * for a valid DECnet address.
-		 */
-		vlen = pcapint_atodn(s, &v);
-		if (vlen == 0)
-			bpf_error(cstate, "invalid DECnet address '%s'", s);
-
-		return gen_host(cstate, v, 0, q.proto, q.dir, q.addr);
-	}
+	if (q.proto == Q_DECNET)
+		return gen_dnhost(cstate, s, v, q);
 
 	proto = q.proto;
 	dir = q.dir;
