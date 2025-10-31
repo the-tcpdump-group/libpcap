@@ -1665,6 +1665,12 @@
 #define DLT_DECT_NR		301
 
 /*
+ * MaxLinear DSA ethernet switch protocol.
+ * Requested by Peter Enderborg <peterend@axis.com>.
+ */
+#define DLT_DSA_TAG_GSW1XX	302
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1675,6 +1681,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	301	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	302	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */

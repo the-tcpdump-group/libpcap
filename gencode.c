@@ -3692,6 +3692,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_GSW1XX:
+
 		/* Geneve has an EtherType regardless of whether there is an
 		 * L2 header. VXLAN always has an EtherType. */
 		if (!cstate->is_encap)
