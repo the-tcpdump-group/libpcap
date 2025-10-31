@@ -4089,39 +4089,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_IPNET:
 		return gen_ipnet_linktype(cstate, ll_proto);
 
-	case DLT_LINUX_IRDA:
-	case DLT_DOCSIS:
-	case DLT_MTP2:
-	case DLT_MTP2_WITH_PHDR:
-	case DLT_ERF:
-	case DLT_PFSYNC:
-	case DLT_LINUX_LAPD:
-	case DLT_USB_FREEBSD:
-	case DLT_USB_LINUX:
-	case DLT_USB_LINUX_MMAPPED:
-	case DLT_USBPCAP:
-	case DLT_BLUETOOTH_HCI_H4:
-	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-	case DLT_CAN20B:
-	case DLT_CAN_SOCKETCAN:
-	case DLT_IEEE802_15_4:
-	case DLT_IEEE802_15_4_LINUX:
-	case DLT_IEEE802_15_4_NONASK_PHY:
-	case DLT_IEEE802_15_4_NOFCS:
-	case DLT_IEEE802_15_4_TAP:
-	case DLT_IEEE802_16_MAC_CPS_RADIO:
-	case DLT_SITA:
-	case DLT_RAIF1:
-	case DLT_IPMB_KONTRON:
-	case DLT_I2C_LINUX:
-	case DLT_AX25_KISS:
-	case DLT_NFLOG:
-		/* Using the fixed-size NFLOG header it is possible to tell only
-		 * the address family of the packet, other meaningful data is
-		 * either missing or behind TLVs.
-		 */
-		break; // not implemented
-
 	default:
 		/*
 		 * Does this link-layer header type have a field
@@ -4140,6 +4107,11 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			/*NOTREACHED */
 		}
 	}
+	/*
+	 * For example, using the fixed-size NFLOG header it is possible
+	 * to tell only the address family of the packet, other meaningful
+	 * data is either missing or behind TLVs.
+	 */
 	bpf_error(cstate, "link-layer type filtering not implemented for %s",
 	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 }
