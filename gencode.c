@@ -1083,6 +1083,7 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
 #define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
+#define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -4946,7 +4947,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		gen_and(b2, b1);
 		return b1;
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "dir", dir);
 	/*NOTREACHED*/
 }
 
@@ -5728,7 +5729,7 @@ gen_port_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// Not a fragment other than the first fragment.
 	b0 = gen_ipfrag(cstate);
@@ -5795,7 +5796,7 @@ gen_port6_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// XXX - catch the first fragment of a fragmented packet?
 	gen_and(tmp, b1);
@@ -6858,7 +6859,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		syntax(cstate);
 		/*NOTREACHED*/
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 	/*NOTREACHED*/
 }
 
@@ -7071,7 +7072,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 		/*NOTREACHED*/
 	}
 	/*NOTREACHED*/
@@ -7798,7 +7799,7 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 
 	switch (op) {
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "op", op);
 
 	case '=':
 		return gen_cmp(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
@@ -9455,7 +9456,7 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 		    0xffffffffU, jtype, reverse, jvalue);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "atmfield", atmfield);
 	}
 }
 
@@ -9582,7 +9583,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		return b1;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9642,7 +9643,7 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		    0xff80U, BPF_JGT, 0, 0x0100U);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9749,7 +9750,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		    jvalue << 4);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "mtp3field", mtp3field);
 	}
 }
 
@@ -9848,6 +9849,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		return b1;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
