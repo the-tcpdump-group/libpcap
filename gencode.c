@@ -5130,10 +5130,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		}
 		return b0;
 
-	case Q_LINK:
-		// "link net NETNAME" and variations thereof
-		break; // invalid qualifier
-
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 		/*
@@ -5167,52 +5163,11 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-		break; // invalid qualifier
-
 	case Q_DECNET:
 		b0 = gen_linktype(cstate, ETHERTYPE_DN);
 		b1 = gen_dnhostop(cstate, addr, dir);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_IPV6:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip net" : "ip host");
@@ -5239,49 +5194,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_LINK:
-	case Q_IP:
-	case Q_RARP:
-	case Q_ARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip6 net" : "ip6 host");
@@ -5552,9 +5464,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_RARP:
 		return gen_linktype(cstate, ETHERTYPE_REVARP);
 
-	case Q_LINK:
-		break; // invalid syntax
-
 	case Q_ATALK:
 		return gen_linktype(cstate, ETHERTYPE_ATALK);
 
@@ -5677,12 +5586,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 
 	case Q_NETBEUI:
 		return gen_linktype(cstate, LLCSAP_NETBEUI);
-
-	case Q_RADIO:
-		break; // invalid syntax
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
@@ -6418,22 +6321,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_ARP:
-	case Q_RARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-		break; // invalid qualifier
-
 	case Q_IPV6:
 		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
@@ -6449,14 +6336,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_or(b2, b1);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-		break; // invalid qualifier
 
 	case Q_ISO:
 		assert_maxval(cstate, "ISO protocol", v, UINT8_MAX);
@@ -6503,9 +6382,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 			return b1;
 		}
 
-	case Q_ESIS:
-		break; // invalid qualifier
-
 	case Q_ISIS:
 		assert_maxval(cstate, "IS-IS PDU type", v, ISIS_PDU_TYPE_MAX);
 		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
@@ -6527,25 +6403,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		    v, ISIS_PDU_TYPE_MAX);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
-		/*NOTREACHED*/
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "proto");
 	/*NOTREACHED*/
