@@ -1142,11 +1142,9 @@ filters packets with an outer label of 100000 and an inner label of
 filters packets to or from 192.9.200.1 with an inner label of 1024 and
 any outer label.
 .IP \fBpppoed\fP
-True if the packet is a PPP-over-Ethernet Discovery packet (Ethernet
-type 0x8863).
+True if the packet is a PPP-over-Ethernet Discovery packet (EtherType 0x8863).
 .IP "\fBpppoes \fI[session_id]\fR"
-True if the packet is a PPP-over-Ethernet Session packet (Ethernet
-type 0x8864).
+True if the packet is a PPP-over-Ethernet Session packet (EtherType 0x8864).
 If the optional \fIsession_id\fR is specified, only true if the packet has the specified
 \fIsession_id\fR.
 Note that the first \fBpppoes\fR keyword encountered in an expression
