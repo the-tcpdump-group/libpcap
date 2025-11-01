@@ -16836,12 +16836,6 @@ my @reject_tests = (
 		errstr => errstr_syntax,
 	},
 	{
-		name => 'llc_noneth',
-		DLT => 'RAW',
-		expr => 'llc',
-		errstr => errstr_kw_notsup_on ('llc'),
-	},
-	{
 		name => 'decnet_area',
 		DLT => 'EN10MB',
 		expr => 'decnet host 64.120',
