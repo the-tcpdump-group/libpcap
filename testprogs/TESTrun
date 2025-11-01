@@ -17361,18 +17361,6 @@ my @reject_tests = (
 		errstr => 'data size must be 1, 2, or 4',
 	},
 	{
-		name => 'bare_radio',
-		DLT => 'IEEE802_11_RADIO',
-		expr => 'radio',
-		errstr => '\'radio\' cannot be used as an abbreviation',
-	},
-	{
-		name => 'bare_link',
-		DLT => 'IEEE802_11_RADIO',
-		expr => 'link',
-		errstr => '\'link\' cannot be used as an abbreviation',
-	},
-	{
 		name => 'reason_invalid_PFLOG',
 		DLT => 'PFLOG',
 		expr => 'reason invalid',
@@ -17665,48 +17653,64 @@ my @reject_tests = (
 # to Q_LINK~Q_CARP from gencode.h and are ordered by name).
 my %pqual_features = (
 	aarp => {
+		abbrev => 1,
 	},
 	ah => {
+		abbrev => 1,
 	},
 	arp => {
+		abbrev => 1,
 		index => 1,
 		host_ipv4 => 1,
 		net_ipv4 => 1,
 		gateway => 1,
 	},
 	atalk => {
+		abbrev => 1,
 		index => 1,
 	},
 	carp => {
+		abbrev => 1,
 		index => 1,
 	},
 	clnp => {
+		abbrev => 1,
 	},
 	csnp => {
+		abbrev => 1,
 	},
 	decnet => {
+		abbrev => 1,
 		index => 1,
 		host_decnet => 1,
 	},
 	esis => {
+		abbrev => 1,
 	},
 	esp => {
+		abbrev => 1,
 	},
 	icmp => {
+		abbrev => 1,
 		index => 1,
 	},
 	icmp6 => {
+		abbrev => 1,
 		index => 1,
 	},
 	igmp => {
+		abbrev => 1,
 		index => 1,
 	},
 	igrp => {
+		abbrev => 1,
 		index => 1,
 	},
 	iih => {
+		abbrev => 1,
 	},
 	ip => {
+		abbrev => 1,
 		index => 1,
 		host_ipv4 => 1,
 		net_ipv4 => 1,
@@ -17715,6 +17719,7 @@ my %pqual_features = (
 		proto => 1,
 	},
 	ip6 => {
+		abbrev => 1,
 		index => 1,
 		host_ipv6 => 1,
 		net_ipv6 => 1,
@@ -17722,18 +17727,24 @@ my %pqual_features = (
 		proto => 1,
 	},
 	ipx => {
+		abbrev => 1,
 	},
 	isis => {
+		abbrev => 1,
 		proto => 1,
 	},
 	iso => {
+		abbrev => 1,
 		proto => 1,
 	},
 	l1 => {
+		abbrev => 1,
 	},
 	l2 => {
+		abbrev => 1,
 	},
 	lat => {
+		abbrev => 1,
 		index => 1,
 	},
 	link => {
@@ -17743,52 +17754,66 @@ my %pqual_features = (
 		proto => 1,
 	},
 	lsp => {
+		abbrev => 1,
 	},
 	mopdl => {
+		abbrev => 1,
 		index => 1,
 	},
 	moprc => {
+		abbrev => 1,
 		index => 1,
 	},
 	netbeui => {
+		abbrev => 1,
 	},
 	pim => {
+		abbrev => 1,
 		index => 1,
 	},
 	psnp => {
+		abbrev => 1,
 	},
 	radio => {
 		index => 1,
 	},
 	rarp => {
+		abbrev => 1,
 		index => 1,
 		host_ipv4 => 1,
 		net_ipv4 => 1,
 		gateway => 1,
 	},
 	sca => {
+		abbrev => 1,
 		index => 1,
 	},
 	sctp => {
+		abbrev => 1,
 		index => 1,
 		port => 1,
 		portrange => 1,
 	},
 	snp => {
+		abbrev => 1,
 	},
 	stp => {
+		abbrev => 1,
 	},
 	tcp => {
+		abbrev => 1,
 		index => 1,
 		port => 1,
 		portrange => 1,
 	},
 	udp => {
+		abbrev => 1,
 		index => 1,
 		port => 1,
 		portrange => 1,
 	},
 	vrrp => {
+		abbrev => 1,
 		index => 1,
 	},
 );
@@ -18751,6 +18776,16 @@ foreach (pquals_without '') {
 			"unknown '$_ protochain' value 'nosuchprotocol'",
 	};
 	last if $only_short;
+}
+
+foreach (pquals_without 'abbrev') {
+	# pname -> gen_proto_abbrev() -> gen_proto_abbrev_internal() -> default case
+	push @reject_tests, {
+		name => "bare_${_}_IEEE802_11_RADIO",
+		DLT => 'IEEE802_11_RADIO',
+		expr => $_,
+		errstr => "'${_}' cannot be used as an abbreviation",
+	};
 }
 
 # Use a separate foreach loop for each feature because different loops skip

@@ -1083,6 +1083,7 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
 #define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
+#define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -4088,39 +4089,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_IPNET:
 		return gen_ipnet_linktype(cstate, ll_proto);
 
-	case DLT_LINUX_IRDA:
-	case DLT_DOCSIS:
-	case DLT_MTP2:
-	case DLT_MTP2_WITH_PHDR:
-	case DLT_ERF:
-	case DLT_PFSYNC:
-	case DLT_LINUX_LAPD:
-	case DLT_USB_FREEBSD:
-	case DLT_USB_LINUX:
-	case DLT_USB_LINUX_MMAPPED:
-	case DLT_USBPCAP:
-	case DLT_BLUETOOTH_HCI_H4:
-	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-	case DLT_CAN20B:
-	case DLT_CAN_SOCKETCAN:
-	case DLT_IEEE802_15_4:
-	case DLT_IEEE802_15_4_LINUX:
-	case DLT_IEEE802_15_4_NONASK_PHY:
-	case DLT_IEEE802_15_4_NOFCS:
-	case DLT_IEEE802_15_4_TAP:
-	case DLT_IEEE802_16_MAC_CPS_RADIO:
-	case DLT_SITA:
-	case DLT_RAIF1:
-	case DLT_IPMB_KONTRON:
-	case DLT_I2C_LINUX:
-	case DLT_AX25_KISS:
-	case DLT_NFLOG:
-		/* Using the fixed-size NFLOG header it is possible to tell only
-		 * the address family of the packet, other meaningful data is
-		 * either missing or behind TLVs.
-		 */
-		break; // not implemented
-
 	default:
 		/*
 		 * Does this link-layer header type have a field
@@ -4139,6 +4107,11 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			/*NOTREACHED */
 		}
 	}
+	/*
+	 * For example, using the fixed-size NFLOG header it is possible
+	 * to tell only the address family of the packet, other meaningful
+	 * data is either missing or behind TLVs.
+	 */
 	bpf_error(cstate, "link-layer type filtering not implemented for %s",
 	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 }
@@ -4946,7 +4919,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		gen_and(b2, b1);
 		return b1;
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "dir", dir);
 	/*NOTREACHED*/
 }
 
@@ -5130,10 +5103,6 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		}
 		return b0;
 
-	case Q_LINK:
-		// "link net NETNAME" and variations thereof
-		break; // invalid qualifier
-
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 		/*
@@ -5167,52 +5136,11 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-		break; // invalid qualifier
-
 	case Q_DECNET:
 		b0 = gen_linktype(cstate, ETHERTYPE_DN);
 		b1 = gen_dnhostop(cstate, addr, dir);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_IPV6:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip net" : "ip host");
@@ -5239,49 +5167,6 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_LINK:
-	case Q_IP:
-	case Q_RARP:
-	case Q_ARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip6 net" : "ip6 host");
@@ -5297,43 +5182,57 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 	struct block *ret = NULL;
 	struct in6_addr mask128;
 	memset(&mask128, 0xff, sizeof(mask128));
-	for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
-		struct block *tmp = NULL;
-		switch (ai->ai_family) {
-		case AF_INET:
-			/*
-			 * Ignore any IPv4 addresses when resolving
-			 * "ip6 host NAME", validate all other proto
-			 * qualifiers in gen_host().
-			 */
-			if (proto4 == Q_IPV6)
+
+	/*
+	 * For a hostname that resolves to both IPv4 and IPv6 addresses the
+	 * AF_INET addresses may come before or after the AF_INET6 addresses
+	 * depending on which getaddrinfo() implementation it is, what the
+	 * resolving host's network configuration is and (on Linux with glibc)
+	 * the contents of gai.conf(5).  This is because getaddrinfo() presumes
+	 * a subsequent bind(2) or connect(2) use of the addresses, which is
+	 * not the case here, so there is no sense in preserving the order of
+	 * the AFs in the resolved addresses.  However, there is sense in
+	 * hard-coding the order of AFs when generating a match block for more
+	 * than one AF because this way the result reflects fewer external
+	 * effects and is easier to test.
+	 */
+
+	/*
+	 * Ignore any IPv4 addresses when resolving "ip6 host NAME", validate
+	 * all other proto qualifiers in gen_host().
+	 */
+	if (proto4 != Q_IPV6) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET)
 				continue;
 			struct sockaddr_in *sin4 =
 			    (struct sockaddr_in *)ai->ai_addr;
-			tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
+			struct block *host4 = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
 			    0xffffffff, proto4, dir, Q_HOST);
-			break;
-		case AF_INET6:
-			/*
-			 * Ignore any IPv6 addresses when resolving
-			 * "(arp|ip|rarp) host NAME", validate all
-			 * other proto qualifiers in gen_host6().
-			 */
-			if (proto6 == Q_ARP || proto6 == Q_IP ||
-			    proto6 == Q_RARP)
+			if (ret)
+				gen_or(ret, host4);
+			ret = host4;
+		}
+	}
+
+	/*
+	 * Ignore any IPv6 addresses when resolving "(arp|ip|rarp) host NAME",
+	 * validate all other proto qualifiers in gen_host6().
+	 */
+	if (proto6 != Q_ARP && proto6 != Q_IP && proto6 != Q_RARP) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET6)
 				continue;
 			struct sockaddr_in6 *sin6 =
 			    (struct sockaddr_in6 *)ai->ai_addr;
-			tmp = gen_host6(cstate, &sin6->sin6_addr,
+			struct block *host6 = gen_host6(cstate, &sin6->sin6_addr,
 			    &mask128, proto6, dir, Q_HOST);
-			break;
+			if (ret)
+				gen_or(ret, host6);
+			ret = host6;
 		}
-		if (! tmp)
-			continue;
-		if (ret)
-			gen_or(ret, tmp);
-		ret = tmp;
 	}
+
 	freeaddrinfo(cstate->ai);
 	cstate->ai = NULL;
 
@@ -5552,9 +5451,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_RARP:
 		return gen_linktype(cstate, ETHERTYPE_REVARP);
 
-	case Q_LINK:
-		break; // invalid syntax
-
 	case Q_ATALK:
 		return gen_linktype(cstate, ETHERTYPE_ATALK);
 
@@ -5677,12 +5573,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 
 	case Q_NETBEUI:
 		return gen_linktype(cstate, LLCSAP_NETBEUI);
-
-	case Q_RADIO:
-		break; // invalid syntax
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
@@ -5825,7 +5715,7 @@ gen_port_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// Not a fragment other than the first fragment.
 	b0 = gen_ipfrag(cstate);
@@ -5892,7 +5782,7 @@ gen_port6_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// XXX - catch the first fragment of a fragmented packet?
 	gen_and(tmp, b1);
@@ -6418,22 +6308,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_ARP:
-	case Q_RARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-		break; // invalid qualifier
-
 	case Q_IPV6:
 		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
@@ -6449,14 +6323,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		gen_or(b2, b1);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-		break; // invalid qualifier
 
 	case Q_ISO:
 		assert_maxval(cstate, "ISO protocol", v, UINT8_MAX);
@@ -6503,9 +6369,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 			return b1;
 		}
 
-	case Q_ESIS:
-		break; // invalid qualifier
-
 	case Q_ISIS:
 		assert_maxval(cstate, "IS-IS PDU type", v, ISIS_PDU_TYPE_MAX);
 		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
@@ -6527,25 +6390,6 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		    v, ISIS_PDU_TYPE_MAX);
 		gen_and(b0, b1);
 		return b1;
-
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
-		/*NOTREACHED*/
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "proto");
 	/*NOTREACHED*/
@@ -7001,7 +6845,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		syntax(cstate);
 		/*NOTREACHED*/
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 	/*NOTREACHED*/
 }
 
@@ -7214,7 +7058,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 		/*NOTREACHED*/
 	}
 	/*NOTREACHED*/
@@ -7941,7 +7785,7 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 
 	switch (op) {
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "op", op);
 
 	case '=':
 		return gen_cmp(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
@@ -9598,7 +9442,7 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 		    0xffffffffU, jtype, reverse, jvalue);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "atmfield", atmfield);
 	}
 }
 
@@ -9725,7 +9569,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		return b1;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9785,7 +9629,7 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		    0xff80U, BPF_JGT, 0, 0x0100U);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9892,7 +9736,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		    jvalue << 4);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "mtp3field", mtp3field);
 	}
 }
 
@@ -9991,6 +9835,6 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		return b1;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
