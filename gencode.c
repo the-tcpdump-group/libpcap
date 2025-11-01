@@ -37,6 +37,7 @@
 #include <stddef.h>
 
 #include "pcap-int.h"
+#include "thread-local.h"
 
 #include "extract.h"
 
@@ -1023,11 +1024,39 @@ ss7kw(const unsigned id)
 	return qual2kw("MTP keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
 
+// Produce as descriptive an identification string of the DLT as possible.
+static const char *
+pcapint_datalink_val_to_string(const int dlt)
+{
+	static thread_local char ret[1024];
+	const char *name = pcap_datalink_val_to_name(dlt);
+	const char *descr = pcap_datalink_val_to_description(dlt);
+	/*
+	 * Belt and braces: if dlt_choices[] continues to be defined the way it is
+	 * defined now and everything goes well, either both pointers are NULL or
+	 * both pointers are not NULL.  But let's not rely on that.
+	 */
+	if (name) {
+		if (descr)
+			snprintf(ret, sizeof(ret), "DLT_%s (%s)", name, descr);
+		else
+			snprintf(ret, sizeof(ret), "DLT_%s", name);
+		return ret;
+	}
+	// name == NULL
+	if (descr) {
+		snprintf(ret, sizeof(ret), "DLT %d (%s)", dlt, descr);
+		return ret;
+	}
+	// Both are NULL, use a function that always returns a non-NULL.
+	return pcap_datalink_val_to_description_or_dlt(dlt);
+}
+
 static PCAP_NORETURN_DEF void
 fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
 {
 	bpf_error(cstate, "'%s' not supported on %s", keyword,
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
 static void
@@ -4113,7 +4142,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	 * data is either missing or behind TLVs.
 	 */
 	bpf_error(cstate, "link-layer type filtering not implemented for %s",
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
 /*
@@ -8063,9 +8092,9 @@ require_basic_bpf_extensions(compiler_state_t *cstate, const char *keyword)
 {
 	if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_BASIC_HANDLING)
 		return;
-	bpf_error(cstate, "%s not supported on %s (not a live capture)",
+	bpf_error(cstate, "not a live capture, '%s' not supported on %s",
 	    keyword,
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 #endif // __linux__
 
@@ -8745,8 +8774,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		break;
 
 	default:
-		bpf_error(cstate, "no VLAN support for %s",
-		      pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "vlan");
 		/*NOTREACHED*/
 	}
 
@@ -8795,8 +8823,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 			 * leave it for now */
 
 		default:
-			bpf_error(cstate, "no MPLS support for %s",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+			fail_kw_on_dlt(cstate, "mpls");
 			/*NOTREACHED*/
 		}
 	}

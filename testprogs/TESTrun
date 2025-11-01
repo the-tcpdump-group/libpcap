@@ -16716,7 +16716,11 @@ sub errstr_val_too_high {
 
 # fail_kw_on_dlt()
 sub errstr_kw_notsup_on {
-	return sprintf ('\'%s\' not supported on ', shift);
+	return sprintf ('\'%s\' not supported on DLT_%s', shift, shift);
+}
+
+sub errstr_notlive {
+	return sprintf ('not a live capture, \'%s\' not supported on DLT_%s', shift, shift);
 }
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
@@ -17047,7 +17051,7 @@ my @reject_tests = (
 		name => 'pppoes_and_vlan',
 		DLT => 'EN10MB',
 		expr => 'pppoes and vlan',
-		errstr => 'no VLAN support for',
+		errstr => errstr_kw_notsup_on ('vlan', 'PPP'), # PUSH_LINKHDR(cstate, DLT_PPP, ...
 	},
 	{
 		name => 'vlan_invalid_id1',
@@ -18791,7 +18795,7 @@ foreach (DLTs_without 'link_proto') {
 		name => "link_proto_1_${_}",
 		DLT => $_,
 		expr => 'link proto 1',
-		errstr => 'link-layer type filtering not implemented for',
+		errstr => "link-layer type filtering not implemented for DLT_${_}",
 	};
 }
 
@@ -18801,7 +18805,7 @@ foreach (DLTs_without 'link_broadcast') {
 		name => "link_broadcast_${_}",
 		DLT => $_,
 		expr => 'link broadcast',
-		errstr => errstr_kw_notsup_on ('broadcast'),
+		errstr => errstr_kw_notsup_on ('broadcast', $_),
 	};
 }
 
@@ -18811,7 +18815,7 @@ foreach (DLTs_without 'link_multicast') {
 		name => "link_multicast_${_}",
 		DLT => $_,
 		expr => 'link multicast',
-		errstr => errstr_kw_notsup_on ('multicast'),
+		errstr => errstr_kw_notsup_on ('multicast', $_),
 	};
 }
 
@@ -18821,7 +18825,7 @@ foreach (DLTs_without 'vlan') {
 		name => "vlan_${_}",
 		DLT => $_,
 		expr => 'vlan',
-		errstr => 'no VLAN support for',
+		errstr => errstr_kw_notsup_on ('vlan', $_),
 	};
 }
 
@@ -18831,7 +18835,7 @@ foreach (DLTs_without 'mpls') {
 		name => "mpls_${_}",
 		DLT => $_,
 		expr => 'mpls',
-		errstr => 'no MPLS support for',
+		errstr => errstr_kw_notsup_on ('mpls', $_),
 	};
 }
 
@@ -18841,7 +18845,7 @@ foreach (DLTs_without 'llc') {
 		name => "llc_${_}",
 		DLT => $_,
 		expr => 'llc',
-		errstr => errstr_kw_notsup_on ('llc'),
+		errstr => errstr_kw_notsup_on ('llc', $_),
 	};
 }
 
@@ -18851,14 +18855,14 @@ foreach (DLTs_without 'wlan') {
 		name => "type_data_${_}",
 		DLT => $_,
 		expr => 'type data',
-		errstr => errstr_kw_notsup_on ('type/subtype'),
+		errstr => errstr_kw_notsup_on ('type/subtype', $_),
 	};
 	# gen_p80211_fcdir() -> default
 	push @reject_tests, {
 		name => "dir_fromds_${_}",
 		DLT => $_,
 		expr => 'dir fromds',
-		errstr => errstr_kw_notsup_on ('dir'),
+		errstr => errstr_kw_notsup_on ('dir', $_),
 	};
 }
 
@@ -19025,14 +19029,14 @@ foreach (DLTs_without 'link_host_mac48') {
 		name => "gateway_noeth_noipv4_noipv6_${_}",
 		DLT => $_,
 		expr => "gateway $nonexistent",
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
 		DLT => $_,
 		expr => "gateway eth-noipv4-noipv6.host123.libpcap.test",
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 
 	push @reject_tests, {
@@ -19040,21 +19044,21 @@ foreach (DLTs_without 'link_host_mac48') {
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_noeth_ipv4_noipv6_${_}",
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_noeth_ipv4_ipv6_${_}",
 		skip => skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway noeth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_eth_ipv4_noipv6_${_}",
@@ -19062,7 +19066,7 @@ foreach (DLTs_without 'link_host_mac48') {
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_eth_noipv4_ipv6_${_}",
@@ -19070,7 +19074,7 @@ foreach (DLTs_without 'link_host_mac48') {
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-noipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @reject_tests, {
 		name => "gateway_eth_ipv4_ipv6_${_}",
@@ -19078,7 +19082,7 @@ foreach (DLTs_without 'link_host_mac48') {
 			skip_no_hosts(),
 		DLT => $_,
 		expr => 'gateway eth-ipv4-ipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('gateway'),
+		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 
 	# gen_scode() -> case Q_DEFAULT -> Q_LINK -> fail_kw_on_dlt()
@@ -19087,14 +19091,14 @@ foreach (DLTs_without 'link_host_mac48') {
 		skip => skip_no_ethers(),
 		DLT => $_,
 		expr => 'link host eth-noipv4-noipv6.host123.libpcap.test',
-		errstr => errstr_kw_notsup_on ('link host NAME'),
+		errstr => errstr_kw_notsup_on ('link host NAME', $_),
 	};
 	# gen_ecode() -> fail_kw_on_dlt()
 	push @reject_tests, {
 		name => "link_host_mac48_${_}",
 		DLT => $_,
 		expr => 'link host a:b:c:d:e:f',
-		errstr => errstr_kw_notsup_on ('link host XX:XX:XX:XX:XX:XX'),
+		errstr => errstr_kw_notsup_on ('link host XX:XX:XX:XX:XX:XX', $_),
 	};
 }
 
@@ -19166,28 +19170,28 @@ foreach (DLTs_without 'inout') {
 		skip => skip_os_not ('linux'),
 		DLT => $_,
 		expr => 'inbound',
-		errstr => 'not a live capture',
+		errstr => errstr_notlive ('inbound', $_),
 	};
 	push @reject_tests, {
 		name => "outbound_linux_${_}",
 		skip => skip_os_not ('linux'),
 		DLT => $_,
 		expr => 'outbound',
-		errstr => 'not a live capture',
+		errstr => errstr_notlive ('outbound', $_),
 	};
 	push @reject_tests, {
 		name => "inbound_other_${_}",
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'inbound',
-		errstr => errstr_kw_notsup_on ('inbound'),
+		errstr => errstr_kw_notsup_on ('inbound', $_),
 	};
 	push @reject_tests, {
 		name => "outbound_other_${_}",
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'outbound',
-		errstr => errstr_kw_notsup_on ('outbound'),
+		errstr => errstr_kw_notsup_on ('outbound', $_),
 	};
 }
 
@@ -19218,7 +19222,7 @@ foreach (DLTs_without 'ifindex') {
 		skip => skip_os ('linux'),
 		DLT => $_,
 		expr => 'ifindex 1',
-		errstr => errstr_kw_notsup_on ('ifindex'),
+		errstr => errstr_kw_notsup_on ('ifindex', $_),
 	};
 	push @reject_tests, {
 		name => "ifindex_2_${_}",
