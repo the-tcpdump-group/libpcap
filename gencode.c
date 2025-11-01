@@ -762,12 +762,11 @@ newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 			return (NULL);
 		}
 		size = CHUNK0SIZE << k;
-		cp->m = (void *)malloc(size);
+		cp->m = calloc(1, size);
 		if (cp->m == NULL) {
 			bpf_set_error(cstate, "out of memory");
 			return (NULL);
 		}
-		memset((char *)cp->m, 0, size);
 		cp->n_left = size;
 		if (n > size) {
 			bpf_set_error(cstate, "out of memory");
