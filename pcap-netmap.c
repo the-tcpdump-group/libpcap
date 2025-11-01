@@ -139,7 +139,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 		return -1;
 	}
 #endif /* __linux__ */
-	bzero(&ifr, sizeof(ifr));
+	memset(&ifr, 0, sizeof(ifr));
 	/*
 	 * ifreq.ifr_name and nmreq.nr_name have the same size and both
 	 * contain a NUL-terminated string.
