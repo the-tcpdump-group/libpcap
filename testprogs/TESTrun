@@ -2888,6 +2888,69 @@ my @accept_blocks = (
 			',
 	}, # arcnet_dst_host
 	{
+		name => 'link_broadcast_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => [
+			'broadcast',
+			'link broadcast',
+			'link dst $FF',
+		],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xff            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_broadcast_BACNET_MS_TP
+	{
+		name => 'link_host_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => ['link host $a7'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xa7            jt 4	jf 2
+			(002) ldb      [3]
+			(003) jeq      #0xa7            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_host_BACNET_MS_TP
+	{
+		name => 'link_src_host_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => ['link src host $a8'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xa8            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_src_host_BACNET_MS_TP
+	{
+		name => 'link_dst_host_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => ['link dst host $a9'],
+		unopt => '
+			(000) ldb      [3]
+			(001) jeq      #0xa9            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_dst_host_BACNET_MS_TP
+	{
+		name => 'link_src_and_dst_host_BACNET_MS_TP',
+		DLT => 'BACNET_MS_TP',
+		aliases => ['link src and dst host $b3'],
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xb3            jt 2	jf 5
+			(002) ldb      [3]
+			(003) jeq      #0xb3            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_src_and_dst_host_BACNET_MS_TP
+	{
 		name => 'fddi_broadcast',
 		DLT => 'FDDI',
 		aliases => [
@@ -15950,6 +16013,36 @@ my @apply_blocks = (
 		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 65535],
 	},
 	{
+		name => 'mstp_link_host',
+		savefile => 'mstp_20140225214217.pcap',
+		expr => 'link host $0',
+		results => [65535, 65535, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'mstp_link_src_host',
+		savefile => 'mstp_20140225214217.pcap',
+		expr => 'link src host $7e',
+		results => [65535, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'mstp_link_dst_host',
+		savefile => 'mstp_20140225214217.pcap',
+		expr => 'link dst host $7',
+		results => [0, 0, 65535, 0, 65535, 0, 0, 0, 65535, 0],
+	},
+	{
+		name => 'mstp_link_src_and_dst_host',
+		savefile => 'mstp_20140225214217.pcap',
+		expr => 'link src and dst host $1',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'mstp_link_broadcast',
+		savefile => 'mstp_20140225214217.pcap',
+		expr => 'link broadcast',
+		results => [0, 0, 0, 0, 0, 65535, 65535, 0, 0, 0],
+	},
+	{
 		name => 'ip_broadcast',
 		savefile => 'dhcp-rfc3004.pcap',
 		netmask => '255.255.255.0',
@@ -17910,6 +18003,8 @@ my %DLTfeatures = (
 	AX25_KISS => {
 	},
 	BACNET_MS_TP => {
+		link_broadcast => 1,
+		link_host_mac8 => 1,
 	},
 	BLUETOOTH_BREDR_BB => {
 	},

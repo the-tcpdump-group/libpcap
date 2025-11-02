@@ -5414,6 +5414,15 @@ gen_mac8host(compiler_state_t *cstate, const uint8_t mac8, const u_char dir,
 		src_off = 0;
 		dst_off = 1;
 		break;
+	case DLT_BACNET_MS_TP:
+		/*
+		 * MS/TP resembles both Ethernet (in that the destination
+		 * station address precedes the source station address) and
+		 * ARCnet (in that a station address is one byte long).
+		 */
+		src_off = 4;
+		dst_off = 3;
+		break;
 	default:
 		fail_kw_on_dlt(cstate, context);
 	}
@@ -7947,6 +7956,9 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET_LINUX:
 			// ARCnet broadcast is [8-bit] destination address 0.
 			return gen_mac8host(cstate, 0, Q_DST, "broadcast");
+		case DLT_BACNET_MS_TP:
+			// MS/TP broadcast is [8-bit] destination address 0xFF.
+			return gen_mac8host(cstate, 0xFF, Q_DST, "broadcast");
 		}
 		return gen_mac48host(cstate, ebroadcast, Q_DST, "broadcast");
 		/*NOTREACHED*/

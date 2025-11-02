@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "18 October 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "2 November 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1371,13 +1371,15 @@ and
 respectively, but only if the MTP2 link uses the extended sequence numbers
 encoding specified for high speed signalling links (HSL) in ITU-T
 Recommendation Q.703 Annex A.
-.IP "\fBlink host \fIarcnetaddr\fR"
-True, only for
+.IP "\fBlink host \fImac8addr\fR"
+True if the source or the destination ARCnet node ID (for
 .B \%DLT_ARCNET
-or
-.BR \%DLT_ARCNET_LINUX ,
-if the source or the destination ARCnet address of the packet is
-.IR \%arcnetaddr .
+and
+.B \%DLT_ARCNET_LINUX
+only) or MS/TP station address (for
+.B \%DLT_BACNET_MS_TP
+only) is
+.IR \%mac8addr .
 May be qualified with a different direction
 .RB ( src ,
 .BR dst ,
@@ -1386,7 +1388,7 @@ in which case the
 .B host
 keyword is optional.
 .IP
-.I \%arcnetaddr
+.I \%mac8addr
 is a string of the form
 .B $xx
 or
@@ -1403,7 +1405,11 @@ Also in ARCnet context
 and
 .B \%multicast
 are equivalent to
-.BR "\%link dst $0" .
+.BR "\%link dst $0" ,
+and in MS/TP context
+.B \%broadcast
+is equivalent to
+.BR "\%link dst $ff" .
 .IP
 Note that this address syntax clashes with the parameter expansion syntax
 in POSIX-compatible shells and elsewhere, so depending on the use case the
