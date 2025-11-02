@@ -2071,6 +2071,15 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 
 	case DLT_BACNET_MS_TP:
+		/*
+		 * The third octet of an MS/TP frame is Frame Type, but it is
+		 * the MS/TP frame type [0..7] rather than a network protocol
+		 * type.  It can be tested using "link[2]".  If in future it
+		 * becomes necessary to have a solution that matches the
+		 * problem space better, it would need to be a new special
+		 * primitive that works on MS/TP DLT(s) only and takes names
+		 * for the types, for example, "ms-tp type token".
+		 */
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = OFFSET_NOT_SET;
@@ -4110,9 +4119,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * FIXME encapsulation specific BPF_ filters
 		 */
 		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
-
-	case DLT_BACNET_MS_TP:
-		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_W, 0x55FF0000, 0xffff0000);
 
 	case DLT_IPNET:
 		return gen_ipnet_linktype(cstate, ll_proto);

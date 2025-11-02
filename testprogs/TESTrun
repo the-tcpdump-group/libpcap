@@ -5085,18 +5085,6 @@ my @accept_blocks = (
 			',
 	}, # link_proto_ip_JUNIPER_MFR
 	{
-		name => 'link_proto_ip_BACNET_MS_TP',
-		DLT => 'BACNET_MS_TP',
-		aliases => ['link proto \ip'],
-		unopt => '
-			(000) ld       [0]
-			(001) and      #0xffff0000
-			(002) jeq      #0x55ff0000      jt 3	jf 4
-			(003) ret      #262144
-			(004) ret      #0
-			',
-	}, # link_proto_ip_BACNET_MS_TP
-	{
 		name => 'link_proto_ip_IPNET',
 		DLT => 'IPNET',
 		aliases => ['link proto \ip'],
@@ -17928,7 +17916,6 @@ my %DLTfeatures = (
 	AX25_KISS => {
 	},
 	BACNET_MS_TP => {
-		link_proto => 1,
 	},
 	BLUETOOTH_BREDR_BB => {
 	},
