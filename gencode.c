@@ -679,12 +679,13 @@ static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, u_int, u_int);
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, u_int, u_int);
-static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_wlanhostop(compiler_state_t *, const u_char *, int);
 static unsigned char is_mac48_linktype(const int);
 static struct block *gen_mac48host(compiler_state_t *, const u_char *,
     const u_char, const char *);
 static struct block *gen_mac48host_byname(compiler_state_t *, const char *,
+    const u_char, const char *);
+static struct block *gen_mac8host(compiler_state_t *, const uint8_t,
     const u_char, const char *);
 static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
@@ -5393,6 +5394,53 @@ gen_mac48host_byname(compiler_state_t *cstate, const char *name,
 	return gen_mac48host(cstate, eaddr, dir, context);
 }
 
+static struct block *
+gen_mac8host(compiler_state_t *cstate, const uint8_t mac8, const u_char dir,
+    const char *context)
+{
+	u_int src_off, dst_off;
+
+	switch (cstate->linktype) {
+	case DLT_ARCNET:
+	case DLT_ARCNET_LINUX:
+		/*
+		 * ARCnet is different from Ethernet: the source address comes
+		 * before the destination address, each is one byte long.
+		 * This holds for all three "buffer formats" in RFC 1201
+		 * Section 2.1, see also page 4-10 in the 1983 edition of the
+		 * "ARCNET Designer's Handbook" published by Datapoint
+		 * (document number 61610-01).
+		 */
+		src_off = 0;
+		dst_off = 1;
+		break;
+	default:
+		fail_kw_on_dlt(cstate, context);
+	}
+
+	struct block *src, *dst;
+
+	switch (dir) {
+	case Q_SRC:
+		return gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+	case Q_DST:
+		return gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+	case Q_AND:
+		src = gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+		dst = gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+		gen_and(src, dst);
+		return dst;
+	case Q_DEFAULT:
+	case Q_OR:
+		src = gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+		dst = gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+		gen_or(src, dst);
+		return dst;
+	default:
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), context);
+	}
+}
+
 /*
  * This primitive is non-directional by design, so the grammar does not allow
  * to qualify it with a direction.
@@ -7190,6 +7238,34 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	return gen_mac48host(cstate, eaddr, q.dir, context);
 }
 
+// Process a regular primitive, the ID is a MAC-8 address string.
+struct block *
+gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
+{
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	if (q.addr != Q_HOST && q.addr != Q_DEFAULT)
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), "$XX");
+	if (q.proto != Q_LINK)
+		bpf_error(cstate, "'link' is the only valid proto qualifier for 'host $XX'");
+
+	uint8_t addr;
+	/*
+	 * The lexer currently defines the address format in a way that makes
+	 * this error condition never true.  Let's check it anyway in case this
+	 * part of the lexer changes in future.
+	 */
+	if (! pcapint_atoan(s, &addr))
+	    bpf_error(cstate, "invalid MAC-8 address '%s'", s);
+
+	return gen_mac8host(cstate, addr, q.dir, "link host $XX");
+}
+
 void
 sappend(struct slist *s0, struct slist *s1)
 {
@@ -7870,7 +7946,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			// ARCnet broadcast is [8-bit] destination address 0.
-			return gen_ahostop(cstate, 0, Q_DST);
+			return gen_mac8host(cstate, 0, Q_DST, "broadcast");
 		}
 		return gen_mac48host(cstate, ebroadcast, Q_DST, "broadcast");
 		/*NOTREACHED*/
@@ -7930,7 +8006,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			// ARCnet multicast is the same as broadcast.
-			return gen_ahostop(cstate, 0, Q_DST);
+			return gen_mac8host(cstate, 0, Q_DST, "multicast");
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -8415,82 +8491,6 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 
 	default:
 		fail_kw_on_dlt(cstate, "dir");
-		/*NOTREACHED*/
-	}
-}
-
-// Process an ARCnet host address string.
-struct block *
-gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	switch (cstate->linktype) {
-
-	case DLT_ARCNET:
-	case DLT_ARCNET_LINUX:
-		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
-		    q.proto == Q_LINK) {
-			uint8_t addr;
-			/*
-			 * The lexer currently defines the address format in a
-			 * way that makes this error condition never true.
-			 * Let's check it anyway in case this part of the lexer
-			 * changes in future.
-			 */
-			if (! pcapint_atoan(s, &addr))
-			    bpf_error(cstate, "invalid ARCnet address '%s'", s);
-			return gen_ahostop(cstate, addr, (int)q.dir);
-		} else
-			bpf_error(cstate, "ARCnet address used in non-arc expression");
-		/*NOTREACHED*/
-
-	default:
-		bpf_error(cstate, "aid supported only on ARCnet");
-		/*NOTREACHED*/
-	}
-}
-
-// Compare an ARCnet host address with the given value.
-static struct block *
-gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
-{
-	struct block *b0, *b1;
-
-	switch (dir) {
-	/*
-	 * ARCnet is different from Ethernet: the source address comes before
-	 * the destination address, each is one byte long.  This holds for all
-	 * three "buffer formats" in RFC 1201 Section 2.1, see also page 4-10
-	 * in the 1983 edition of the "ARCNET Designer's Handbook" published
-	 * by Datapoint (document number 61610-01).
-	 */
-	case Q_SRC:
-		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, eaddr);
-
-	case Q_DST:
-		return gen_cmp(cstate, OR_LINKHDR, 1, BPF_B, eaddr);
-
-	case Q_AND:
-		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ahostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ahostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	default:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 }

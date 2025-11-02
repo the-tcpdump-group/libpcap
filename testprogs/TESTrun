@@ -17317,12 +17317,6 @@ my @reject_tests = (
 		errstr => errstr_mac48_noether,
 	},
 	{
-		name => 'gateway_arcnet',
-		DLT => 'EN10MB',
-		expr => 'gateway $af',
-		errstr => 'aid supported only on ARCnet',
-	},
-	{
 		name => 'index_size_neg',
 		DLT => 'RAW',
 		expr => 'link[0:-1] != 0',
@@ -17736,7 +17730,7 @@ my %pqual_features = (
 	link => {
 		index => 1,
 		host_mac48 => 1,
-		host_arcnet => 1,
+		host_mac8 => 1,
 		proto => 1,
 	},
 	lsp => {
@@ -18560,14 +18554,6 @@ foreach (pquals_without '') {
 		errstr => errstr_mac48_noether,
 	} unless pqual_has ($_, 'host_mac48');
 
-	# gen_acode() -> q.proto != Q_LINK
-	push @reject_tests, {
-		name => "inv_qual_${_}_host_arcnet",
-		DLT => 'ARCNET_LINUX',
-		expr => "${_} host \$fe",
-		errstr => 'ARCnet address used in non-arc expression',
-	} unless pqual_has ($_, 'host_arcnet');
-
 	# HID -> gen_ncode() -> q.proto != Q_DECNET -> pcapint_atoin() < 0
 	push @reject_tests, {
 		name => "inv_qual_${_}_host_decnet",
@@ -18976,27 +18962,46 @@ foreach my $DLT (DLTs_without 'wlan') {
 	last if $only_short;
 }
 
-foreach my $DLT (DLTs_without 'wlan') {
-	next if ! DLT_feature $DLT, 'link_host_mac8';
-	foreach my $dqual (dquals_with 'wlan') {
-		# AID -> gen_acode() -> gen_ahostop() -> default case
+foreach my $DLT (DLTs_with 'link_host_mac8') {
+	# gen_acode() -> q.addr != Q_DEFAULT && q.addr != Q_HOST
+	push @reject_tests, {
+		name => "link_${_}_mac8_${DLT}",
+		skip => $_ eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : undef,
+		DLT => $DLT,
+		expr => "link $_ \$fe",
+		errstr => errstr_invqual ($_, '$XX'),
+	} foreach qw(net port gateway proto protochain portrange);
+	# gen_acode() -> q.proto != Q_LINK
+	foreach my $pqual (pquals_without 'host_mac8') {
 		push @reject_tests, {
-			name => "link_${dqual}_25_${DLT}",
+			name => "${pqual}_host_mac8_${DLT}",
 			DLT => $DLT,
-			expr => "link $dqual \$25",
-			errstr => errstr_invkw_notwlan ($dqual),
+			expr => "$pqual host \$fe",
+			errstr => '\'link\' is the only valid proto qualifier for \'host $XX\'',
 		};
+		last if $only_short;
 	}
-	last if $only_short;
 }
 
-# gen_acode() -> default
+foreach my $DLT (DLTs_with 'link_host_mac8') {
+	foreach my $dqual (dquals_with 'wlan') {
+		# gen_acode() -> gen_mac8host() -> second default case
+		push @reject_tests, {
+			name => "link_${dqual}_mac8_${DLT}",
+			DLT => $DLT,
+			expr => "link $dqual \$25",
+			errstr => errstr_invqual ($dqual, 'link host $XX'),
+		};
+	}
+}
+
+# gen_acode() -> gen_mac8host() -> first default case
 foreach (DLTs_without 'link_host_mac8') {
 	push @reject_tests, {
-		name => "link_host_21_${_}",
+		name => "link_host_mac8_${_}",
 		DLT => $_,
 		expr => 'link host $21',
-		errstr => 'aid supported only on ARCnet',
+		errstr => errstr_kw_notsup_on ('link host $XX', $_),
 	};
 }
 
