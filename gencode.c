@@ -3996,6 +3996,28 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
 		/*
+		 * In ARCnet header the 8-bit SC (System Code) field identifies
+		 * the higher-level protocol in the INFO (Information) part of
+		 * the packet, same as the 16-bit EtherType > 1500 in Ethernet.
+		 * RFC 1051 (March 1988) allocated ARCTYPE_IP_OLD to IPv4 and
+		 * ARCTYPE_ARP_OLD to ARP, RFC 1201 (February 1991) allocated
+		 * ARCTYPE_IP to IPv4 and ARCTYPE_ARP to ARP.  ARCnet header
+		 * encoding and length differ between the two specifications.
+		 *
+		 * This DLT case previously matched IPv4 and ARP by ORing, for
+		 * backward compatibility reasons, respective SCs from RFC 1051
+		 * and RFC 1201.  This worked as expected when a filter program
+		 * tested SC to tell whether a packet is an IPv4/ARP packet,
+		 * but did not access INFO (where the IPv4 or ARP header is).
+		 *
+		 * However, for filter expressions that need to access INFO the
+		 * C code that processes IPv4/ARP header fields generates
+		 * exactly one match and uses the DLT's off_linkpl, which
+		 * init_linktype() initializes to RFC 1201 encoding, so
+		 * combining that with an RFC 1051 SC match produced incorrect
+		 * filter programs.  This is why this DLT case in the current
+		 * implementation matches RFC 1201 SCs only.
+		 *
 		 * XXX should we check for first fragment if the protocol
 		 * uses PHDS?
 		 */
@@ -4009,20 +4031,12 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 				ARCTYPE_INET6));
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
+			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
 			    ARCTYPE_IP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_IP_OLD);
-			gen_or(b0, b1);
-			return (b1);
 
 		case ETHERTYPE_ARP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
+			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
 			    ARCTYPE_ARP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_ARP_OLD);
-			gen_or(b0, b1);
-			return (b1);
 
 		case ETHERTYPE_REVARP:
 			return (gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,

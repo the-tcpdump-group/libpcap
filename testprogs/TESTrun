@@ -4923,40 +4923,22 @@ my @accept_blocks = (
 		name => 'link_proto_ip_ARCNET',
 		DLT => 'ARCNET',
 		aliases => ['link proto \ip'],
-		opt => '
-			(000) ldb      [2]
-			(001) jeq      #0xd4            jt 3	jf 2
-			(002) jeq      #0xf0            jt 3	jf 4
-			(003) ret      #262144
-			(004) ret      #0
-			',
 		unopt => '
 			(000) ldb      [2]
-			(001) jeq      #0xd4            jt 4	jf 2
-			(002) ldb      [2]
-			(003) jeq      #0xf0            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0xd4            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # link_proto_ip_ARCNET
 	{
 		name => 'link_proto_arp_ARCNET',
 		DLT => 'ARCNET',
 		aliases => ['link proto \arp'],
-		opt => '
-			(000) ldb      [2]
-			(001) jeq      #0xd5            jt 3	jf 2
-			(002) jeq      #0xf1            jt 3	jf 4
-			(003) ret      #262144
-			(004) ret      #0
-			',
 		unopt => '
 			(000) ldb      [2]
-			(001) jeq      #0xd5            jt 4	jf 2
-			(002) ldb      [2]
-			(003) jeq      #0xf1            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0xd5            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # link_proto_arp_ARCNET
 	{
@@ -4996,40 +4978,22 @@ my @accept_blocks = (
 		name => 'link_proto_ip_ARCNET_LINUX',
 		DLT => 'ARCNET_LINUX',
 		aliases => ['link proto \ip'],
-		opt => '
-			(000) ldb      [4]
-			(001) jeq      #0xd4            jt 3	jf 2
-			(002) jeq      #0xf0            jt 3	jf 4
-			(003) ret      #262144
-			(004) ret      #0
-			',
 		unopt => '
 			(000) ldb      [4]
-			(001) jeq      #0xd4            jt 4	jf 2
-			(002) ldb      [4]
-			(003) jeq      #0xf0            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0xd4            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # link_proto_ip_ARCNET_LINUX
 	{
 		name => 'link_proto_arp_ARCNET_LINUX',
 		DLT => 'ARCNET_LINUX',
 		aliases => ['link proto \arp'],
-		opt => '
-			(000) ldb      [4]
-			(001) jeq      #0xd5            jt 3	jf 2
-			(002) jeq      #0xf1            jt 3	jf 4
-			(003) ret      #262144
-			(004) ret      #0
-			',
 		unopt => '
 			(000) ldb      [4]
-			(001) jeq      #0xd5            jt 4	jf 2
-			(002) ldb      [4]
-			(003) jeq      #0xf1            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0xd5            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # link_proto_arp_ARCNET_LINUX
 	{
@@ -5909,28 +5873,15 @@ my @accept_blocks = (
 		name => 'arp_host_addr_arcnet',
 		DLT => 'ARCNET',
 		aliases => ['arp host 1.2.3.4'],
-		opt => '
-			(000) ldb      [2]
-			(001) jeq      #0xd5            jt 3	jf 2
-			(002) jeq      #0xf1            jt 3	jf 8
-			(003) ld       [20]
-			(004) jeq      #0x1020304       jt 7	jf 5
-			(005) ld       [30]
-			(006) jeq      #0x1020304       jt 7	jf 8
-			(007) ret      #262144
-			(008) ret      #0
-			',
 		unopt => '
 			(000) ldb      [2]
-			(001) jeq      #0xd5            jt 4	jf 2
-			(002) ldb      [2]
-			(003) jeq      #0xf1            jt 4	jf 9
-			(004) ld       [20]
-			(005) jeq      #0x1020304       jt 8	jf 6
-			(006) ld       [30]
-			(007) jeq      #0x1020304       jt 8	jf 9
-			(008) ret      #262144
-			(009) ret      #0
+			(001) jeq      #0xd5            jt 2	jf 7
+			(002) ld       [20]
+			(003) jeq      #0x1020304       jt 6	jf 4
+			(004) ld       [30]
+			(005) jeq      #0x1020304       jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
 			',
 	}, # arp_host_addr_arcnet
 	{
@@ -15965,23 +15916,18 @@ my @apply_blocks = (
 		expr => 'broadcast',
 		results => [65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
-	# For RFC 1051 encoding the current implementation is able to tell ARP
-	# and IPv4 from other protocols, but uses incorrect offsets for the
-	# protocol headers (bug 1516).  This is why "(arp|ip)" work correctly,
-	# but "(arp|ip) (src|dst) (host|net)" do not.  The latter will likely
-	# not be fixed, so do not test it.
-	# cases.
+	# The current implementation does not support RFC 1051 encoding.
 	{
 		name => 'rfc1051_arp',
 		savefile => 'arcnet-rfc1051-arp-icmp-http.pcap',
 		expr => 'arp',
-		results => [65535, 65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
 	{
 		name => 'rfc1051_ip',
 		savefile => 'arcnet-rfc1051-arp-icmp-http.pcap',
 		expr => 'ip',
-		results => [0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
 	# For RFC 1201 encoding the current implementation works correctly for
 	# IPv4, but ARP header parsing is incorrect (bug 1515).  The latter
