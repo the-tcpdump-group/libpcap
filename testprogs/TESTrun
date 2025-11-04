@@ -4292,6 +4292,7 @@ my @accept_blocks = (
 		name => 'link_proto_stp_RAW',
 		DLT => 'RAW',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -4317,6 +4318,7 @@ my @accept_blocks = (
 		name => 'link_proto_ip6_IPV4',
 		DLT => 'IPV4',
 		aliases => ['link proto \ip6'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -4342,6 +4344,7 @@ my @accept_blocks = (
 		name => 'link_proto_ip_IPV6',
 		DLT => 'IPV6',
 		aliases => ['link proto \ip'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -4720,6 +4723,7 @@ my @accept_blocks = (
 		# The same code path for DLT_ENC and DLT_LOOP.
 		DLT => 'NULL',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -4892,6 +4896,7 @@ my @accept_blocks = (
 		name => 'link_proto_stp_PFLOG',
 		DLT => 'PFLOG',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -4903,6 +4908,7 @@ my @accept_blocks = (
 		name => 'link_proto_stp_ARCNET',
 		DLT => 'ARCNET',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -5038,6 +5044,7 @@ my @accept_blocks = (
 		name => 'link_proto_ip_LTALK',
 		DLT => 'LTALK',
 		aliases => ['link proto \ip'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -5094,6 +5101,7 @@ my @accept_blocks = (
 		name => 'link_proto_stp_FRELAY',
 		DLT => 'FRELAY',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -5139,6 +5147,7 @@ my @accept_blocks = (
 		name => 'link_proto_stp_IPNET',
 		DLT => 'IPNET',
 		aliases => ['link proto \stp'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 3
@@ -5784,7 +5793,7 @@ my @accept_blocks = (
 		name => 'arp_host_addr_raw',
 		DLT => 'RAW',
 		aliases => ['arp host 1.2.3.4'],
-		# This boils down to "ret #0", which the optimizer expectedly rejects.
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 7
@@ -5800,6 +5809,7 @@ my @accept_blocks = (
 		name => 'rarp_host_addr_raw',
 		DLT => 'RAW',
 		aliases => ['rarp host 1.2.3.4'],
+		# The "opt" leg of this block is a reject test.
 		unopt => '
 			(000) ld       #0x1
 			(001) jeq      #0x0             jt 2	jf 7
@@ -16752,6 +16762,10 @@ sub errstr_notlive {
 	return sprintf ('not a live capture, \'%s\' not supported on DLT_%s', shift, shift);
 }
 
+sub errstr_rejects_all {
+	return 'expression rejects all packets';
+}
+
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
 # * savefile: same as in apply_blocks above, but the directory is one level up.
 # * errstr (mandatory, string): a substring that must appear in standard error
@@ -17674,6 +17688,74 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => '\slow',
 		errstr => errstr_syntax,
+	},
+
+	{
+		name => 'link_proto_stp_RAW',
+		DLT => 'RAW',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_ip6_IPV4',
+		DLT => 'IPV4',
+		expr => 'link proto \ip6',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_ip_IPV6',
+		DLT => 'IPV6',
+		expr => 'link proto \ip',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_stp_NULL',
+		# The same code path for DLT_ENC and DLT_LOOP.
+		DLT => 'NULL',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_stp_PFLOG',
+		DLT => 'PFLOG',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_stp_ARCNET',
+		DLT => 'ARCNET',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_ip_LTALK',
+		DLT => 'LTALK',
+		expr => 'link proto \ip',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_stp_FRELAY',
+		DLT => 'FRELAY',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'link_proto_stp_IPNET',
+		DLT => 'IPNET',
+		expr => 'link proto \stp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'arp_host_addr_raw',
+		DLT => 'RAW',
+		expr => 'arp host 1.2.3.4',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'rarp_host_addr_raw',
+		DLT => 'RAW',
+		expr => 'rarp host 1.2.3.4',
+		errstr => errstr_rejects_all,
 	},
 
 	# Savefile-based reject tests follow.
@@ -19608,11 +19690,18 @@ foreach my $test (@reject_tests) {
 		};
 	} else {
 		# The test requires an expression only.
+
+		# As far as expression-based reject tests go, in most of these the filter
+		# expression fails before reaching the optimizer, in which case it matters
+		# not whether optimization is enabled.  However, sometimes the expression
+		# is meant to fail in the optimizer, in which case the latter must be
+		# enabled.  So enable optimization for all expression-based reject tests.
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_reject_test,
 			DLT => $test->{DLT},
 			netmask => defined $test->{netmask} ? $test->{netmask} : undef,
+			optimize => 1,
 			expr => $test->{expr},
 			expected => $test->{errstr},
 			exitstatus => EX_DATAERR,
