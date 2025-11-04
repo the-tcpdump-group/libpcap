@@ -57,7 +57,7 @@ use subs qw(
 	test_and_report
 );
 
-use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/filter/';
+use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/';
 my $filename_expected = 'expected.txt';
 my $filename_stdout = 'stdout.txt';
 my $filename_filter = 'filter.txt';
@@ -76,6 +76,8 @@ use constant {
 	# is invalid and with other status codes for other (memory/file/etc) error
 	# conditions.
 	EX_DATAERR => 65,
+	# Likewise, EX_NOINPUT if pcap_open_offline() has failed.
+	EX_NOINPUT => 66,
 };
 
 # Set these later only if running any tests.
@@ -16751,9 +16753,16 @@ sub errstr_notlive {
 }
 
 # * name, DLT, expr, netmask and skip: same as in accept_blocks above
+# * savefile: same as in apply_blocks above, but the directory is one level up.
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
 #   is what the test expects, rather than some unrelated cause).
+#
+# Reject tests that have the filter expression as the only cause of the
+# expected failure must define "DLT" and "expr", may define "netmask" and must
+# not define "savefile".  Reject tests that have the savefile as the only cause
+# of the expected failure must define "savefile" and must not define "DLT" or
+# "expr" or "netmask".
 my @reject_tests = (
 	{
 		name => 'ether_host',
@@ -17665,6 +17674,38 @@ my @reject_tests = (
 		DLT => 'EN10MB',
 		expr => '\slow',
 		errstr => errstr_syntax,
+	},
+
+	# Savefile-based reject tests follow.
+	{
+		name => 'pcap_linktype_reserved_field_not_zero',
+		savefile => 'linktype-reserved-field-not-zero.pcap',
+		errstr => 'Failed opening: savefile linktype reserved field not zero (0x00300000)',
+	},
+	{
+		name => 'pcap_invalid_version_1',
+		savefile => 'pcap-invalid-version-1.pcap',
+		errstr => 'Failed opening: archaic pcap savefile format',
+	},
+	{
+		name => 'pcap_invalid_version_2',
+		savefile => 'pcap-invalid-version-2.pcap',
+		errstr => 'Failed opening: unsupported pcap savefile version 2.5',
+	},
+	{
+		name => 'pcapng_invalid_version_1',
+		savefile => 'pcapng-invalid-vers-1.pcapng',
+		errstr => 'Failed opening: unsupported pcapng savefile version 0.1',
+	},
+	{
+		name => 'pcapng_invalid_version_2',
+		savefile => 'pcapng-invalid-vers-2.pcapng',
+		errstr => 'Failed opening: unsupported pcapng savefile version 1.1',
+	},
+	{
+		name => 'shb_option_too_long',
+		savefile => 'shb-option-too-long.pcapng',
+		errstr => 'Failed opening: block total length in header and trailer don\'t match',
 	},
 );
 
@@ -19375,11 +19416,13 @@ sub run_apply_test {
 sub run_reject_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
-	file_put_contents mytmpfile ($filename_filter), $test->{expr};
+	push @args, ('-r', SAVEFILE_DIR . $test->{savefile}) if defined $test->{savefile};
+	if (defined $test->{expr}) {
+		file_put_contents mytmpfile ($filename_filter), $test->{expr};
+		push @args, ('-F', mytmpfile ($filename_filter));
+	}
+	push @args, $test->{DLT} if defined $test->{DLT};
 	push @args, (
-		'-F',
-		mytmpfile ($filename_filter),
-		$test->{DLT},
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
@@ -19395,7 +19438,7 @@ sub run_reject_test {
 	return result_failed (
 		"filtertest status $r",
 		file_get_contents mytmpfile $filename_stdout
-	) if $r != EX_DATAERR;
+	) if $r != $test->{exitstatus};
 
 	return result_failed (
 		'error string mismatch',
@@ -19523,7 +19566,7 @@ foreach my $block (@apply_blocks) {
 			optimize => int ($optunopt eq 'opt'),
 			expr => $block->{expr},
 			expected => $multiline,
-			savefile => $block->{savefile},
+			savefile => 'filter/' . $block->{savefile},
 		};
 	}
 }
@@ -19531,9 +19574,19 @@ foreach my $test (@reject_tests) {
 	if (! defined $test->{name} || $test->{name} eq '') {
 		die "Internal error: reject test <UNKNOWN> does not define key 'name'";
 	}
-	foreach ('DLT', 'expr', 'errstr') {
-		next if defined $test->{$_} && $test->{$_} ne '';
-		die "Internal error: reject test '$test->{name}' does not define key '$_'";
+	if (! defined $test->{errstr} || $test->{errstr} eq '') {
+		die "Internal error: reject test '$test->{name}' does not define key 'errstr'";
+	}
+	if (defined $test->{savefile}) {
+		foreach ('DLT', 'expr', 'netmask') {
+			next unless exists $test->{$_};
+			die "Internal error: reject test '$test->{name}' specifies both 'savefile' and '$_'";
+		}
+	} else {
+		foreach ('DLT', 'expr') {
+			next if defined $test->{$_} && $test->{$_} ne '';
+			die "Internal error: reject test '$test->{name}' defines neither 'savefile' nor '$_'";
+		}
 	}
 	my $label = reject_test_label $test->{name};
 	next if defined $only_one && $only_one ne $label;
@@ -19544,7 +19597,17 @@ foreach my $test (@reject_tests) {
 			func => \&run_skip_test,
 			skip => $print_skipped ? $test->{skip} : '',
 		};
+	} elsif (defined $test->{savefile}) {
+		# The test requires a savefile only.
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_reject_test,
+			savefile => $test->{savefile},
+			expected => $test->{errstr},
+			exitstatus => EX_NOINPUT,
+		};
 	} else {
+		# The test requires an expression only.
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_reject_test,
@@ -19552,6 +19615,7 @@ foreach my $test (@reject_tests) {
 			netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 			expr => $test->{expr},
 			expected => $test->{errstr},
+			exitstatus => EX_DATAERR,
 		};
 	}
 }
