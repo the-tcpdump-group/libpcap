@@ -279,13 +279,6 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 		hdr.linktype = SWAPLONG(hdr.linktype);
 	}
 
-	if (hdr.version_major < PCAP_VERSION_MAJOR) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "archaic pcap savefile format");
-		*err = 1;
-		return (NULL);
-	}
-
 	/*
 	 * currently only versions 2.[0-4] are supported with
 	 * the exception of 543.0 for DG/UX tcpdump.

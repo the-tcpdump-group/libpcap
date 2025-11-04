@@ -17767,7 +17767,7 @@ my @reject_tests = (
 	{
 		name => 'pcap_invalid_version_1',
 		savefile => 'pcap-invalid-version-1.pcap',
-		errstr => 'Failed opening: archaic pcap savefile format',
+		errstr => 'Failed opening: unsupported pcap savefile version 1.4',
 	},
 	{
 		name => 'pcap_invalid_version_2',
