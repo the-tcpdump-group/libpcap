@@ -1159,20 +1159,6 @@ linux)
 		fi
 	fi
 
-	#
-	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
-	#
-	# NOTE: any failure means we conclude that it doesn't have that
-	# member, so if we don't have tpacket_auxdata, we conclude it
-	# doesn't have that member (which is OK, as either we won't be
-	# using code that would use that member, or we wouldn't compile
-	# in any case).
-	AC_CHECK_MEMBERS([struct tpacket_auxdata.tp_vlan_tci],,,
-	    [
-		#include <sys/types.h>
-		#include <linux/if_packet.h>
-	    ])
-
 	# This check is for TESTrun purposes, not for the C code.
 	AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], [], [], [[#include <linux/filter.h>]])
 	;;
