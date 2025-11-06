@@ -17240,6 +17240,146 @@ my @accept_blocks = (
 			(004) ret      #262144
 			',
 	}, # byte_and
+
+	# Assorted AND/OR reductions.
+	#
+	# On DLT_IPV4 in the current implementation:
+	# * "ip" produces a "true" block,
+	# * "ip6" produces a "false" block,
+	# * "not ip" produces a "not true" block, and
+	# * "not ip6" produces a "not false" block.
+	# The "true" and "not false" blocks comprise sequences of statements
+	# that are not identical, but have equivalent effect, the same holds
+	# for the "false" and "not true" pair.  The aliases below will have to
+	# account for these differences until these have converged.
+	{
+		name => 'bool_reduction_returns_true',
+		DLT => 'IPV4',
+		aliases => [
+			# gen_and()
+			'ip and ip',      #  [1] True      and true      is true.
+			'not ip6 and ip', #  [1] Not false and true      is true.
+			# gen_or()
+			'ip or ip6',      #  [2] True      or  false     is true.
+			'ip or not ip',   #  [2] True      or  not true  is true.
+			'ip6 or ip',      #  [3] False     or  true      is true.
+			'not ip or ip',   #  [3] Not true  or  true      is true.
+			'ip or ip',       #  [4] True      or  true      is true.
+			'not ip6 or ip',  #  [4] Not false or  true      is not false. (BUG!)
+		],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # bool_reduction_returns_true
+	{
+		name => 'bool_reduction_returns_not_false',
+		DLT => 'IPV4',
+		aliases => [
+			# gen_and()
+			'not ip6 and not ip6', #  [1] Not false and not false is not false.
+			'ip and not ip6',      #  [1] True      and not false is not false.
+			# gen_or()
+			'not ip6 or ip6',      #  [2] Not false or  false     is not false.
+			'not ip6 or not ip',   #  [2] Not false or  not true  is not false.
+			'ip6 or not ip6',      #  [3] False     or  not false is not false.
+			'not ip or not ip6',   #  [3] Not true  or  not false is not false.
+			'not ip6 or not ip6',  #  [4] Not false or  not false is not false.
+			'ip or not ip6',       #  [4] True      or  not false is true.      (BUG!)
+		],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+	}, # bool_reduction_returns_not_false
+	{
+		name => 'bool_reduction_returns_x',
+		DLT => 'IPV4',
+		aliases => [
+			# gen_and()
+			'ip and igmp',      #  [5] True      and X         is X.
+			'not ip6 and igmp', #  [5] Not false and X         is X.
+			'igmp and ip',      #  [6] X         and true      is X.
+			'igmp and not ip6', #  [6] X         and not false is X.
+			# gen_or()
+			'ip6 or igmp',      #  [7] False     or  X         is X.
+			'not ip or igmp',   #  [7] Not true  or  X         is X.
+			'igmp or ip6',      #  [8] X         or  false     is X.
+			'igmp or not ip',   #  [8] X         or  not true  is X.
+			'ip or igmp',       #  [9] True      or  X         is true.      (BUG!)
+			'not ip6 or igmp',  #  [9] Not false or  X         is not false. (BUG!)
+			'igmp or ip',       # [10] X         or  true      is true.      (BUG!)
+			'igmp or not ip6',  # [10] X         or  not false is not false. (BUG!)
+		],
+		optunopt => '
+			(000) ldb      [9]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # bool_reduction_returns_x
+	{
+		name => 'bool_reduction_returns_false',
+		DLT => 'IPV4',
+		aliases => [
+			# gen_and()
+			'ip6 and ip6',     # [11] False     and false     is false.
+			'ip6 and not ip',  # [11] False     and not true  is false.
+			'ip6 and ip',      # [12] False     and true      is false.
+			'ip6 and not ip6', # [12] False     and not false is false.
+			'ip and ip6',      # [13] True      and false     is false.
+			'not ip6 and ip6', # [13] Not false and false     is false.
+			'ip6 and igmp',    # [14] False     and X         is false.
+			'igmp and ip6',    # [15] X         and false     is false.
+			# gen_or()
+			'ip6 or ip6',      # [16] False     or  false     is false.
+			'not ip or ip6',   # [16] Not true  or  false     is false.
+		],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # bool_reduction_returns_false
+	{
+		name => 'bool_reduction_returns_not_true',
+		DLT => 'IPV4',
+		aliases => [
+			# gen_and()
+			'not ip and ip6',     # [11] Not true  and false     is not true.
+			'not ip and not ip',  # [11] Not true  and not true  is not true.
+			'not ip and ip',      # [12] Not true  and true      is not true.
+			'not ip and not ip6', # [12] Not true  and not false is not true.
+			'ip and not ip',      # [13] True      and not true  is not true.
+			'not ip6 and not ip', # [13] Not false and not true  is not true.
+			'not ip and igmp',    # [14] Not true  and X         is not true.
+			'igmp and not ip',    # [15] X         and not true  is not true.
+			# gen_or()
+			'not ip or not ip',   # [16] Not true  or  not true  is not true.
+			'ip6 or not ip',      # [16] False     or  not true  is not true.
+		],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x0
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+	}, # bool_reduction_returns_not_true
 );
 
 # In apply_blocks each test block always generates two tests: optimized and
@@ -19412,6 +19552,24 @@ my @reject_tests = (
 		name => 'shb_option_too_long',
 		savefile => 'shb-option-too-long.pcapng',
 		errstr => 'Failed opening: block total length in header and trailer don\'t match',
+	},
+
+	{
+		name => 'bool_reduction_returns_false',
+		DLT => 'IPV4',
+		# Test only one alias of the accept block: so long as the
+		# accept block passes, all accept aliases produce the same
+		# unoptimized instruction block, therefore the optimized
+		# result will be the same.
+		expr => 'ip6 and igmp',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'bool_reduction_returns_not true',
+		DLT => 'IPV4',
+		# Idem.
+		expr => 'not ip and ip6',
+		errstr => errstr_rejects_all,
 	},
 );
 
