@@ -9133,7 +9133,6 @@ struct block *
 gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9145,20 +9144,15 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	b0 = gen_geneve4(cstate, vni, has_vni);
 	b1 = gen_geneve6(cstate, vni, has_vni);
 
-	b0 = gen_or(b0, b1);
-
 	/* Later filters should act on the payload of the Geneve frame,
 	 * update all of the header pointers. Attach this code so that
 	 * it gets executed in the event that the Geneve filter matches. */
-	s = gen_geneve_offsets(cstate);
-
-	b1 = sprepend_to_block(s, gen_true(cstate));
-
-	b1 = gen_and(b0, b1);
+	struct block *offsets =
+		sprepend_to_block(gen_geneve_offsets(cstate),gen_true(cstate));
 
 	cstate->is_encap = 1;
 
-	return b1;
+	return gen_and(gen_or(b0, b1), offsets);
 }
 
 /* Check that this is VXLAN and the VNI is correct if
@@ -9321,7 +9315,6 @@ struct block *
 gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9333,20 +9326,15 @@ gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	b0 = gen_vxlan4(cstate, vni, has_vni);
 	b1 = gen_vxlan6(cstate, vni, has_vni);
 
-	b0 = gen_or(b0, b1);
-
 	/* Later filters should act on the payload of the VXLAN frame,
 	 * update all of the header pointers. Attach this code so that
 	 * it gets executed in the event that the VXLAN filter matches. */
-	s = gen_vxlan_offsets(cstate);
-
-	b1 = sprepend_to_block(s, gen_true(cstate));
-
-	b1 = gen_and(b0, b1);
+	struct block *offsets =
+		sprepend_to_block(gen_vxlan_offsets(cstate), gen_true(cstate));
 
 	cstate->is_encap = 1;
 
-	return b1;
+	return gen_and(gen_or(b0, b1), offsets);
 }
 
 /* Check that the encapsulated frame has a link layer header
