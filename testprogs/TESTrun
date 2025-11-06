@@ -17974,6 +17974,12 @@ my @apply_blocks = (
 		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 	},
 	{
+		name => 'vxlan_and_icmp_reply',
+		savefile => 'vxlan.pcap',
+		expr => 'vxlan and icmp[icmptype] == icmp-echo',
+		results => [1500, 0, 0, 0, 1500, 0, 1500, 0, 1500, 0],
+	},
+	{
 		name => 'geneve',
 		savefile => 'geneve.pcap',
 		expr => 'geneve',
@@ -17990,6 +17996,12 @@ my @apply_blocks = (
 		savefile => 'geneve.pcap',
 		expr => 'geneve 11',
 		results => [0, 262144, 262144, 0, 262144, 0, 262144, 262144, 0, 262144],
+	},
+	{
+		name => 'geneve_and_tcp_src_port',
+		savefile => 'geneve.pcap',
+		expr => 'geneve and tcp src port 22',
+		results => [0, 0, 0, 262144, 0, 262144, 0, 0, 262144, 0],
 	},
 	{
 		name => 'ip_protochain_17_deepstack',
