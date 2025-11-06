@@ -657,7 +657,7 @@ static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
 static struct slist *gen_load_a(compiler_state_t *, enum e_offrel, u_int,
     u_int);
 static struct slist *gen_loadx_iphdrlen(compiler_state_t *);
-static struct block *gen_uncond(compiler_state_t *, int);
+static struct block *gen_uncond(compiler_state_t *, const u_char, struct slist *);
 static inline struct block *gen_true(compiler_state_t *);
 static inline struct block *gen_false(compiler_state_t *);
 static struct block *gen_ether_linktype(compiler_state_t *, bpf_u_int32);
@@ -2526,29 +2526,40 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 	return s;
 }
 
-
+/*
+ * Produce an instruction block with the given optional side effect statements
+ * and a final branch statement that takes the true branch iff rsense is not
+ * zero.  Since this function detects Boolean constants for potential later
+ * use, the resulting block must not be modified directly afterwards, instead
+ * it should be used as an argument to gen_and(), gen_or() and gen_not().
+ */
 static struct block *
-gen_uncond(compiler_state_t *cstate, int rsense)
+gen_uncond(compiler_state_t *cstate, const u_char rsense, struct slist *stmts)
 {
 	struct slist *s;
 
 	s = new_stmt(cstate, BPF_LD|BPF_IMM);
 	s->s.k = !rsense;
+	if (stmts) {
+		sappend(stmts, s);
+		s = stmts;
+	}
 	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0, s);
-	ret->meaning = rsense ? IS_TRUE : IS_FALSE;
+	if (! stmts)
+		ret->meaning = rsense ? IS_TRUE : IS_FALSE;
 	return ret;
 }
 
 static inline struct block *
 gen_true(compiler_state_t *cstate)
 {
-	return gen_uncond(cstate, 1);
+	return gen_uncond(cstate, 1, NULL);
 }
 
 static inline struct block *
 gen_false(compiler_state_t *cstate)
 {
-	return gen_uncond(cstate, 0);
+	return gen_uncond(cstate, 0, NULL);
 }
 
 /*
@@ -9123,9 +9134,7 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * it gets executed in the event that the Geneve filter matches. */
 	s = gen_geneve_offsets(cstate);
 
-	b1 = gen_true(cstate);
-	sappend(s, b1->stmts);
-	b1->stmts = s;
+	b1 = gen_uncond(cstate, 1, s);
 
 	b1 = gen_and(b0, b1);
 
@@ -9313,9 +9322,7 @@ gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * it gets executed in the event that the VXLAN filter matches. */
 	s = gen_vxlan_offsets(cstate);
 
-	b1 = gen_true(cstate);
-	sappend(s, b1->stmts);
-	b1->stmts = s;
+	b1 = gen_uncond(cstate, 1, s);
 
 	b1 = gen_and(b0, b1);
 

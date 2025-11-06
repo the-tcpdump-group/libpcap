@@ -6565,18 +6565,28 @@ my @accept_blocks = (
 			(013) txa
 			(014) jeq      x                jt 26	jf 15
 			(015) ldh      [12]
-			(016) jeq      #0x86dd          jt 17	jf 27
+			(016) jeq      #0x86dd          jt 17	jf 37
 			(017) ldb      [20]
-			(018) jeq      #0x11            jt 19	jf 27
+			(018) jeq      #0x11            jt 19	jf 37
 			(019) ldh      [56]
-			(020) jeq      #0x12b5          jt 21	jf 27
+			(020) jeq      #0x12b5          jt 21	jf 37
 			(021) ldb      [62]
-			(022) jeq      #0x8             jt 23	jf 27
+			(022) jeq      #0x8             jt 23	jf 37
 			(023) ld       #0x28
 			(024) tax
-			(025) jeq      x                jt 26	jf 27
-			(026) ret      #262144
-			(027) ret      #0
+			(025) jeq      x                jt 26	jf 37
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
 			',
 	}, # vxlan_nullary
 	{
@@ -6634,21 +6644,31 @@ my @accept_blocks = (
 			(017) txa
 			(018) jeq      x                jt 33	jf 19
 			(019) ldh      [12]
-			(020) jeq      #0x86dd          jt 21	jf 34
+			(020) jeq      #0x86dd          jt 21	jf 44
 			(021) ldb      [20]
-			(022) jeq      #0x11            jt 23	jf 34
+			(022) jeq      #0x11            jt 23	jf 44
 			(023) ldh      [56]
-			(024) jeq      #0x12b5          jt 25	jf 34
+			(024) jeq      #0x12b5          jt 25	jf 44
 			(025) ldb      [62]
-			(026) jeq      #0x8             jt 27	jf 34
+			(026) jeq      #0x8             jt 27	jf 44
 			(027) ld       [66]
 			(028) and      #0xffffff00
-			(029) jeq      #0x303900        jt 30	jf 34
+			(029) jeq      #0x303900        jt 30	jf 44
 			(030) ld       #0x28
 			(031) tax
-			(032) jeq      x                jt 33	jf 34
-			(033) ret      #262144
-			(034) ret      #0
+			(032) jeq      x                jt 33	jf 44
+			(033) add      #22
+			(034) add      #8
+			(035) st       M[0]
+			(036) add      #12
+			(037) st       M[1]
+			(038) add      #2
+			(039) tax
+			(040) stx      M[2]
+			(041) ld       #0x0
+			(042) jeq      #0x0             jt 43	jf 44
+			(043) ret      #262144
+			(044) ret      #0
 			',
 	}, # vxlan_unary
 	{
@@ -6659,72 +6679,79 @@ my @accept_blocks = (
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 13
 			(002) ldb      [23]
-			(003) jeq      #0x11            jt 4	jf 68
+			(003) jeq      #0x11            jt 4	jf 75
 			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 68	jf 6
+			(005) jset     #0x1fff          jt 75	jf 6
 			(006) ldxb     4*([14]&0xf)
 			(007) ldh      [x + 16]
-			(008) jeq      #0x12b5          jt 9	jf 68
+			(008) jeq      #0x12b5          jt 9	jf 75
 			(009) ldb      [x + 22]
-			(010) jeq      #0x8             jt 11	jf 68
+			(010) jeq      #0x8             jt 11	jf 75
 			(011) txa
-			(012) jeq      x                jt 20	jf 68
-			(013) jeq      #0x86dd          jt 14	jf 68
+			(012) jeq      x                jt 23	jf 75
+			(013) jeq      #0x86dd          jt 14	jf 75
 			(014) ldb      [20]
-			(015) jeq      #0x11            jt 16	jf 68
+			(015) jeq      #0x11            jt 16	jf 75
 			(016) ldh      [56]
-			(017) jeq      #0x12b5          jt 18	jf 68
+			(017) jeq      #0x12b5          jt 18	jf 75
 			(018) ldb      [62]
-			(019) jeq      #0x8             jt 20	jf 68
-			(020) ldx      M[1]
-			(021) ldh      [x + 0]
-			(022) jeq      #0x800           jt 23	jf 52
-			(023) ldx      M[2]
-			(024) ldb      [x + 9]
-			(025) jeq      #0x11            jt 26	jf 68
-			(026) ldx      M[2]
-			(027) ldh      [x + 6]
-			(028) jset     #0x1fff          jt 68	jf 29
-			(029) ldx      M[2]
-			(030) ldb      [x + 0]
-			(031) and      #0xf
-			(032) lsh      #2
-			(033) add      x
-			(034) tax
-			(035) ldh      [x + 2]
-			(036) jeq      #0x12b5          jt 37	jf 68
-			(037) ldx      M[2]
-			(038) ldb      [x + 0]
-			(039) and      #0xf
-			(040) lsh      #2
-			(041) add      x
-			(042) tax
-			(043) ldb      [x + 8]
-			(044) jeq      #0x8             jt 45	jf 68
-			(045) ldx      M[2]
-			(046) ldb      [x + 0]
-			(047) and      #0xf
-			(048) lsh      #2
-			(049) add      x
-			(050) tax
-			(051) jeq      x                jt 67	jf 68
-			(052) jeq      #0x86dd          jt 53	jf 68
-			(053) ldx      M[2]
-			(054) ldb      [x + 6]
-			(055) jeq      #0x11            jt 56	jf 68
-			(056) ldx      M[2]
-			(057) ldh      [x + 42]
-			(058) jeq      #0x12b5          jt 59	jf 68
-			(059) ldx      M[2]
-			(060) ldb      [x + 48]
-			(061) jeq      #0x8             jt 62	jf 68
-			(062) ldx      M[2]
-			(063) ld       #0x28
-			(064) add      x
-			(065) tax
-			(066) jeq      x                jt 67	jf 68
-			(067) ret      #262144
-			(068) ret      #0
+			(019) jeq      #0x8             jt 20	jf 75
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) add      #2
+			(028) tax
+			(029) stx      M[2]
+			(030) ld       #0x0
+			(031) jeq      #0x0             jt 32	jf 32
+			(032) ldx      M[1]
+			(033) ldh      [x + 0]
+			(034) jeq      #0x800           jt 35	jf 62
+			(035) ldx      M[2]
+			(036) ldb      [x + 9]
+			(037) jeq      #0x11            jt 38	jf 75
+			(038) ldh      [x + 6]
+			(039) jset     #0x1fff          jt 75	jf 40
+			(040) ldb      [x + 0]
+			(041) and      #0xf
+			(042) lsh      #2
+			(043) add      x
+			(044) tax
+			(045) ldh      [x + 2]
+			(046) jeq      #0x12b5          jt 47	jf 75
+			(047) ldx      M[2]
+			(048) ldb      [x + 0]
+			(049) and      #0xf
+			(050) lsh      #2
+			(051) add      x
+			(052) tax
+			(053) ldb      [x + 8]
+			(054) jeq      #0x8             jt 55	jf 75
+			(055) ldx      M[2]
+			(056) ldb      [x + 0]
+			(057) and      #0xf
+			(058) lsh      #2
+			(059) add      x
+			(060) tax
+			(061) jeq      x                jt 74	jf 75
+			(062) jeq      #0x86dd          jt 63	jf 75
+			(063) ldx      M[2]
+			(064) ldb      [x + 6]
+			(065) jeq      #0x11            jt 66	jf 75
+			(066) ldh      [x + 42]
+			(067) jeq      #0x12b5          jt 68	jf 75
+			(068) ldb      [x + 48]
+			(069) jeq      #0x8             jt 70	jf 75
+			(070) ld       #0x28
+			(071) add      x
+			(072) tax
+			(073) jeq      x                jt 74	jf 75
+			(074) ret      #262144
+			(075) ret      #0
 			',
 		unopt => '
 			(000) ldh      [12]
@@ -6743,68 +6770,88 @@ my @accept_blocks = (
 			(013) txa
 			(014) jeq      x                jt 26	jf 15
 			(015) ldh      [12]
-			(016) jeq      #0x86dd          jt 17	jf 77
+			(016) jeq      #0x86dd          jt 17	jf 97
 			(017) ldb      [20]
-			(018) jeq      #0x11            jt 19	jf 77
+			(018) jeq      #0x11            jt 19	jf 97
 			(019) ldh      [56]
-			(020) jeq      #0x12b5          jt 21	jf 77
+			(020) jeq      #0x12b5          jt 21	jf 97
 			(021) ldb      [62]
-			(022) jeq      #0x8             jt 23	jf 77
+			(022) jeq      #0x8             jt 23	jf 97
 			(023) ld       #0x28
 			(024) tax
-			(025) jeq      x                jt 26	jf 77
-			(026) ldx      M[1]
-			(027) ldh      [x + 0]
-			(028) jeq      #0x800           jt 29	jf 59
-			(029) ldx      M[2]
-			(030) ldb      [x + 9]
-			(031) jeq      #0x11            jt 32	jf 59
-			(032) ldx      M[2]
-			(033) ldh      [x + 6]
-			(034) jset     #0x1fff          jt 59	jf 35
-			(035) ldx      M[2]
-			(036) ldb      [x + 0]
-			(037) and      #0xf
-			(038) lsh      #2
-			(039) add      x
-			(040) tax
-			(041) ldh      [x + 2]
-			(042) jeq      #0x12b5          jt 43	jf 59
-			(043) ldx      M[2]
-			(044) ldb      [x + 0]
-			(045) and      #0xf
-			(046) lsh      #2
-			(047) add      x
-			(048) tax
-			(049) ldb      [x + 8]
-			(050) jeq      #0x8             jt 51	jf 59
-			(051) ldx      M[2]
-			(052) ldb      [x + 0]
-			(053) and      #0xf
-			(054) lsh      #2
-			(055) add      x
-			(056) tax
-			(057) txa
-			(058) jeq      x                jt 76	jf 59
-			(059) ldx      M[1]
-			(060) ldh      [x + 0]
-			(061) jeq      #0x86dd          jt 62	jf 77
-			(062) ldx      M[2]
-			(063) ldb      [x + 6]
-			(064) jeq      #0x11            jt 65	jf 77
-			(065) ldx      M[2]
-			(066) ldh      [x + 42]
-			(067) jeq      #0x12b5          jt 68	jf 77
-			(068) ldx      M[2]
-			(069) ldb      [x + 48]
-			(070) jeq      #0x8             jt 71	jf 77
-			(071) ldx      M[2]
-			(072) ld       #0x28
-			(073) add      x
-			(074) tax
-			(075) jeq      x                jt 76	jf 77
-			(076) ret      #262144
-			(077) ret      #0
+			(025) jeq      x                jt 26	jf 97
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 97
+			(036) ldx      M[1]
+			(037) ldh      [x + 0]
+			(038) jeq      #0x800           jt 39	jf 69
+			(039) ldx      M[2]
+			(040) ldb      [x + 9]
+			(041) jeq      #0x11            jt 42	jf 69
+			(042) ldx      M[2]
+			(043) ldh      [x + 6]
+			(044) jset     #0x1fff          jt 69	jf 45
+			(045) ldx      M[2]
+			(046) ldb      [x + 0]
+			(047) and      #0xf
+			(048) lsh      #2
+			(049) add      x
+			(050) tax
+			(051) ldh      [x + 2]
+			(052) jeq      #0x12b5          jt 53	jf 69
+			(053) ldx      M[2]
+			(054) ldb      [x + 0]
+			(055) and      #0xf
+			(056) lsh      #2
+			(057) add      x
+			(058) tax
+			(059) ldb      [x + 8]
+			(060) jeq      #0x8             jt 61	jf 69
+			(061) ldx      M[2]
+			(062) ldb      [x + 0]
+			(063) and      #0xf
+			(064) lsh      #2
+			(065) add      x
+			(066) tax
+			(067) txa
+			(068) jeq      x                jt 86	jf 69
+			(069) ldx      M[1]
+			(070) ldh      [x + 0]
+			(071) jeq      #0x86dd          jt 72	jf 97
+			(072) ldx      M[2]
+			(073) ldb      [x + 6]
+			(074) jeq      #0x11            jt 75	jf 97
+			(075) ldx      M[2]
+			(076) ldh      [x + 42]
+			(077) jeq      #0x12b5          jt 78	jf 97
+			(078) ldx      M[2]
+			(079) ldb      [x + 48]
+			(080) jeq      #0x8             jt 81	jf 97
+			(081) ldx      M[2]
+			(082) ld       #0x28
+			(083) add      x
+			(084) tax
+			(085) jeq      x                jt 86	jf 97
+			(086) add      #8
+			(087) add      #8
+			(088) st       M[3]
+			(089) add      #12
+			(090) st       M[4]
+			(091) add      #2
+			(092) tax
+			(093) stx      M[5]
+			(094) ld       #0x0
+			(095) jeq      #0x0             jt 96	jf 97
+			(096) ret      #262144
+			(097) ret      #0
 			',
 	}, # vxlan_and_vxlan
 	{
@@ -6829,19 +6876,40 @@ my @accept_blocks = (
 			(014) txa
 			(015) jeq      x                jt 28	jf 16
 			(016) ldh      [12]
-			(017) jeq      #0x86dd          jt 18	jf 29
+			(017) jeq      #0x86dd          jt 18	jf 50
 			(018) ldb      [20]
-			(019) jeq      #0x11            jt 20	jf 29
+			(019) jeq      #0x11            jt 20	jf 50
 			(020) ldh      [56]
-			(021) jeq      #0x17c1          jt 22	jf 29
+			(021) jeq      #0x17c1          jt 22	jf 50
 			(022) ldb      [62]
 			(023) and      #0xc0
-			(024) jeq      #0x0             jt 25	jf 29
+			(024) jeq      #0x0             jt 25	jf 50
 			(025) ld       #0x28
 			(026) tax
-			(027) jeq      x                jt 28	jf 29
-			(028) ret      #262144
-			(029) ret      #0
+			(027) jeq      x                jt 28	jf 50
+			(028) add      #22
+			(029) tax
+			(030) add      #2
+			(031) st       M[0]
+			(032) ldb      [x + 0]
+			(033) and      #0x3f
+			(034) mul      #4
+			(035) add      #8
+			(036) add      x
+			(037) st       M[1]
+			(038) ldh      [x + 2]
+			(039) ldx      M[1]
+			(040) jeq      #0x6558          jt 41	jf 46
+			(041) txa
+			(042) add      #12
+			(043) st       M[0]
+			(044) add      #2
+			(045) tax
+			(046) stx      M[2]
+			(047) ld       #0x0
+			(048) jeq      #0x0             jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
 			',
 	}, # geneve_nullary
 	{
@@ -6870,22 +6938,43 @@ my @accept_blocks = (
 			(018) txa
 			(019) jeq      x                jt 35	jf 20
 			(020) ldh      [12]
-			(021) jeq      #0x86dd          jt 22	jf 36
+			(021) jeq      #0x86dd          jt 22	jf 57
 			(022) ldb      [20]
-			(023) jeq      #0x11            jt 24	jf 36
+			(023) jeq      #0x11            jt 24	jf 57
 			(024) ldh      [56]
-			(025) jeq      #0x17c1          jt 26	jf 36
+			(025) jeq      #0x17c1          jt 26	jf 57
 			(026) ldb      [62]
 			(027) and      #0xc0
-			(028) jeq      #0x0             jt 29	jf 36
+			(028) jeq      #0x0             jt 29	jf 57
 			(029) ld       [66]
 			(030) and      #0xffffff00
-			(031) jeq      #0x303900        jt 32	jf 36
+			(031) jeq      #0x303900        jt 32	jf 57
 			(032) ld       #0x28
 			(033) tax
-			(034) jeq      x                jt 35	jf 36
-			(035) ret      #262144
-			(036) ret      #0
+			(034) jeq      x                jt 35	jf 57
+			(035) add      #22
+			(036) tax
+			(037) add      #2
+			(038) st       M[0]
+			(039) ldb      [x + 0]
+			(040) and      #0x3f
+			(041) mul      #4
+			(042) add      #8
+			(043) add      x
+			(044) st       M[1]
+			(045) ldh      [x + 2]
+			(046) ldx      M[1]
+			(047) jeq      #0x6558          jt 48	jf 53
+			(048) txa
+			(049) add      #12
+			(050) st       M[0]
+			(051) add      #2
+			(052) tax
+			(053) stx      M[2]
+			(054) ld       #0x0
+			(055) jeq      #0x0             jt 56	jf 57
+			(056) ret      #262144
+			(057) ret      #0
 			',
 	}, # geneve_unary
 	{
@@ -6910,71 +6999,113 @@ my @accept_blocks = (
 			(014) txa
 			(015) jeq      x                jt 28	jf 16
 			(016) ldh      [12]
-			(017) jeq      #0x86dd          jt 18	jf 81
+			(017) jeq      #0x86dd          jt 18	jf 123
 			(018) ldb      [20]
-			(019) jeq      #0x11            jt 20	jf 81
+			(019) jeq      #0x11            jt 20	jf 123
 			(020) ldh      [56]
-			(021) jeq      #0x17c1          jt 22	jf 81
+			(021) jeq      #0x17c1          jt 22	jf 123
 			(022) ldb      [62]
 			(023) and      #0xc0
-			(024) jeq      #0x0             jt 25	jf 81
+			(024) jeq      #0x0             jt 25	jf 123
 			(025) ld       #0x28
 			(026) tax
-			(027) jeq      x                jt 28	jf 81
-			(028) ldx      M[0]
-			(029) ldh      [x + 0]
-			(030) jeq      #0x800           jt 31	jf 62
-			(031) ldx      M[2]
-			(032) ldb      [x + 9]
-			(033) jeq      #0x11            jt 34	jf 62
-			(034) ldx      M[2]
-			(035) ldh      [x + 6]
-			(036) jset     #0x1fff          jt 62	jf 37
-			(037) ldx      M[2]
-			(038) ldb      [x + 0]
-			(039) and      #0xf
-			(040) lsh      #2
-			(041) add      x
-			(042) tax
-			(043) ldh      [x + 2]
-			(044) jeq      #0x17c1          jt 45	jf 62
-			(045) ldx      M[2]
-			(046) ldb      [x + 0]
-			(047) and      #0xf
-			(048) lsh      #2
-			(049) add      x
-			(050) tax
-			(051) ldb      [x + 8]
-			(052) and      #0xc0
-			(053) jeq      #0x0             jt 54	jf 62
-			(054) ldx      M[2]
-			(055) ldb      [x + 0]
-			(056) and      #0xf
-			(057) lsh      #2
-			(058) add      x
-			(059) tax
-			(060) txa
-			(061) jeq      x                jt 80	jf 62
-			(062) ldx      M[0]
-			(063) ldh      [x + 0]
-			(064) jeq      #0x86dd          jt 65	jf 81
-			(065) ldx      M[2]
-			(066) ldb      [x + 6]
-			(067) jeq      #0x11            jt 68	jf 81
-			(068) ldx      M[2]
-			(069) ldh      [x + 42]
-			(070) jeq      #0x17c1          jt 71	jf 81
-			(071) ldx      M[2]
-			(072) ldb      [x + 48]
+			(027) jeq      x                jt 28	jf 123
+			(028) add      #22
+			(029) tax
+			(030) add      #2
+			(031) st       M[0]
+			(032) ldb      [x + 0]
+			(033) and      #0x3f
+			(034) mul      #4
+			(035) add      #8
+			(036) add      x
+			(037) st       M[1]
+			(038) ldh      [x + 2]
+			(039) ldx      M[1]
+			(040) jeq      #0x6558          jt 41	jf 46
+			(041) txa
+			(042) add      #12
+			(043) st       M[0]
+			(044) add      #2
+			(045) tax
+			(046) stx      M[2]
+			(047) ld       #0x0
+			(048) jeq      #0x0             jt 49	jf 123
+			(049) ldx      M[0]
+			(050) ldh      [x + 0]
+			(051) jeq      #0x800           jt 52	jf 83
+			(052) ldx      M[2]
+			(053) ldb      [x + 9]
+			(054) jeq      #0x11            jt 55	jf 83
+			(055) ldx      M[2]
+			(056) ldh      [x + 6]
+			(057) jset     #0x1fff          jt 83	jf 58
+			(058) ldx      M[2]
+			(059) ldb      [x + 0]
+			(060) and      #0xf
+			(061) lsh      #2
+			(062) add      x
+			(063) tax
+			(064) ldh      [x + 2]
+			(065) jeq      #0x17c1          jt 66	jf 83
+			(066) ldx      M[2]
+			(067) ldb      [x + 0]
+			(068) and      #0xf
+			(069) lsh      #2
+			(070) add      x
+			(071) tax
+			(072) ldb      [x + 8]
 			(073) and      #0xc0
-			(074) jeq      #0x0             jt 75	jf 81
+			(074) jeq      #0x0             jt 75	jf 83
 			(075) ldx      M[2]
-			(076) ld       #0x28
-			(077) add      x
-			(078) tax
-			(079) jeq      x                jt 80	jf 81
-			(080) ret      #262144
-			(081) ret      #0
+			(076) ldb      [x + 0]
+			(077) and      #0xf
+			(078) lsh      #2
+			(079) add      x
+			(080) tax
+			(081) txa
+			(082) jeq      x                jt 101	jf 83
+			(083) ldx      M[0]
+			(084) ldh      [x + 0]
+			(085) jeq      #0x86dd          jt 86	jf 123
+			(086) ldx      M[2]
+			(087) ldb      [x + 6]
+			(088) jeq      #0x11            jt 89	jf 123
+			(089) ldx      M[2]
+			(090) ldh      [x + 42]
+			(091) jeq      #0x17c1          jt 92	jf 123
+			(092) ldx      M[2]
+			(093) ldb      [x + 48]
+			(094) and      #0xc0
+			(095) jeq      #0x0             jt 96	jf 123
+			(096) ldx      M[2]
+			(097) ld       #0x28
+			(098) add      x
+			(099) tax
+			(100) jeq      x                jt 101	jf 123
+			(101) add      #8
+			(102) tax
+			(103) add      #2
+			(104) st       M[3]
+			(105) ldb      [x + 0]
+			(106) and      #0x3f
+			(107) mul      #4
+			(108) add      #8
+			(109) add      x
+			(110) st       M[4]
+			(111) ldh      [x + 2]
+			(112) ldx      M[4]
+			(113) jeq      #0x6558          jt 114	jf 119
+			(114) txa
+			(115) add      #12
+			(116) st       M[3]
+			(117) add      #2
+			(118) tax
+			(119) stx      M[5]
+			(120) ld       #0x0
+			(121) jeq      #0x0             jt 122	jf 123
+			(122) ret      #262144
+			(123) ret      #0
 			',
 	}, # geneve_and_geneve
 
