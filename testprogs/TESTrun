@@ -415,6 +415,7 @@ my @accept_blocks = (
 			(000) rsh      #43981                             ; 0x0074
 			(000) rsh      x                                  ; 0x007c
 			(000) ld       #pktlen                            ; 0x0080
+			(000) ldx      #pktlen                            ; 0x0081
 			(000) neg                                         ; 0x0084
 			(000) txa                                         ; 0x0087
 			(000) mod      #43981                             ; 0x0094
