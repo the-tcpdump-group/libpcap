@@ -369,6 +369,63 @@ sub skip_little_endian {
 
 my @accept_blocks = (
 	{
+		name => 'bpf_image',
+		DLT => 'EN10MB',
+		aliases => ['_enumerate_bpf_image'],
+		opt => undef,
+		unopt => '
+			(000) ld       #0xabcd                            ; 0x0000
+			(000) ldx      #0xabcd                            ; 0x0001
+			(000) st       M[43981]                           ; 0x0002
+			(000) stx      M[43981]                           ; 0x0003
+			(000) add      #43981                             ; 0x0004
+			(000) ja       43982                              ; 0x0005
+			(000) ret      #43981                             ; 0x0006
+			(000) tax                                         ; 0x0007
+			(000) add      x                                  ; 0x000c
+			(000) sub      #43981                             ; 0x0014
+			(000) jeq      #0xabcd          jt 172	jf 206     ; 0x0015
+			(000) ret                                         ; 0x0016
+			(000) sub      x                                  ; 0x001c
+			(000) jeq      x                jt 172	jf 206     ; 0x001d
+			(000) ld       [43981]                            ; 0x0020
+			(000) mul      #43981                             ; 0x0024
+			(000) jgt      #0xabcd          jt 172	jf 206     ; 0x0025
+			(000) ldh      [43981]                            ; 0x0028
+			(000) mul      x                                  ; 0x002c
+			(000) jgt      x                jt 172	jf 206     ; 0x002d
+			(000) ldb      [43981]                            ; 0x0030
+			(000) div      #43981                             ; 0x0034
+			(000) jge      #0xabcd          jt 172	jf 206     ; 0x0035
+			(000) div      x                                  ; 0x003c
+			(000) jge      x                jt 172	jf 206     ; 0x003d
+			(000) ld       [x + 43981]                        ; 0x0040
+			(000) or       #0xabcd                            ; 0x0044
+			(000) jset     #0xabcd          jt 172	jf 206     ; 0x0045
+			(000) ldh      [x + 43981]                        ; 0x0048
+			(000) or       x                                  ; 0x004c
+			(000) jset     x                jt 172	jf 206     ; 0x004d
+			(000) ldb      [x + 43981]                        ; 0x0050
+			(000) and      #0xabcd                            ; 0x0054
+			(000) and      x                                  ; 0x005c
+			(000) ld       M[43981]                           ; 0x0060
+			(000) ldx      M[43981]                           ; 0x0061
+			(000) lsh      #43981                             ; 0x0064
+			(000) lsh      x                                  ; 0x006c
+			(000) rsh      #43981                             ; 0x0074
+			(000) rsh      x                                  ; 0x007c
+			(000) ld       #pktlen                            ; 0x0080
+			(000) neg                                         ; 0x0084
+			(000) txa                                         ; 0x0087
+			(000) mod      #43981                             ; 0x0094
+			(000) mod      x                                  ; 0x009c
+			(000) xor      #0xabcd                            ; 0x00a4
+			(000) xor      x                                  ; 0x00ac
+			(000) ldxb     4*([43981]&0xf)                    ; 0x00b1
+			',
+	},
+
+	{
 		name => 'empty',
 		DLT => 'EN10MB',
 		aliases => [''],

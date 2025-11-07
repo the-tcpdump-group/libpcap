@@ -58,6 +58,8 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #define MAXIMUM_SNAPLEN		262144
 #define MAX_STDIN		(64 * 1024)
+#define BPF_IMAGE_UNIMPL	"(000) unimp"
+#define BPF_IMAGE_ARGV		"_enumerate_bpf_image"
 
 #ifdef BDEBUG
 /*
@@ -257,6 +259,22 @@ copy_argv(char **argv)
 	dst[-1] = '\0';
 }
 
+static void
+enumerate_bpf_image(void)
+{
+	struct bpf_insn insn = {
+		.code = 0x0000,
+		.jt = 0xab,
+		.jf = 0xcd,
+		.k = 0xabcd,
+	};
+	do {
+		const char *image = bpf_image(&insn, 0);
+		if (strncmp(image, BPF_IMAGE_UNIMPL, sizeof(BPF_IMAGE_UNIMPL) - 1))
+			printf("%-50s; 0x%04x\n", image, insn.code);
+	} while (insn.code++ != UINT16_MAX);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -431,6 +449,12 @@ main(int argc, char **argv)
 		read_infile(infile);
 	else
 		read_stdin();
+
+	if (! strcmp(BPF_IMAGE_ARGV, cmdbuf)) {
+		enumerate_bpf_image();
+		cleanup();
+		exit(EX_OK);
+	}
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error(EX_DATAERR, "%s", pcap_geterr(pd));
