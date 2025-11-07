@@ -1462,10 +1462,10 @@ gen_or(struct block *b0, struct block *b1)
 		return b0;
 	// True or X is true.
 	if (b0->meaning == IS_TRUE)
-		return b1;
+		return b0;
 	// X or true is true.
 	if (b1->meaning == IS_TRUE)
-		return b0;
+		return b1;
 
 	// b0->meaning == IS_UNCERTAIN && b1->meaning == IS_UNCERTAIN
 	b0->sense = !b0->sense;
