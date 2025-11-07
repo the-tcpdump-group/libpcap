@@ -883,8 +883,8 @@ static const char *
 qual2kw(const char *kind, const unsigned id, const char *tokens[],
     const size_t size)
 {
-	static char buf[4][64];
-	static int idx = 0;
+	static thread_local char buf[4][64];
+	static thread_local int idx = 0;
 
 	if (id < size && tokens[id])
 		return tokens[id];
