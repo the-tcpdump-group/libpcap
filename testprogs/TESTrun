@@ -6078,15 +6078,10 @@ my @accept_blocks = (
 		# The "opt" leg of this block is a reject test.
 		opt => undef,
 		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[0]
-			(004) tax
-			(005) ld       #0x1
-			(006) jeq      #0x0             jt 7	jf 8
-			(007) ret      #262144
-			(008) ret      #0
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # arp_host_addr_PFLOG
 	# gen_host() -> case Q_RARP
@@ -6097,15 +6092,10 @@ my @accept_blocks = (
 		# The "opt" leg of this block is a reject test.
 		opt => undef,
 		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[0]
-			(004) tax
-			(005) ld       #0x1
-			(006) jeq      #0x0             jt 7	jf 8
-			(007) ret      #262144
-			(008) ret      #0
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
 			',
 	}, # rarp_host_addr_PFLOG
 

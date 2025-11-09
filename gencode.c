@@ -5165,11 +5165,30 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 
 	case Q_RARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_REVARP);
+		/*
+		 * If this DLT does not support RARP, the result of
+		 * gen_linktype() is a Boolean false, then the subsequent
+		 * gen_and() would discard the result of gen_hostop() and
+		 * return the Boolean false.
+		 *
+		 * However, if this DLT also uses a variable-length link-layer
+		 * header (which means DLT_PFLOG only at the time of this
+		 * writing), a side effect of the gen_hostop() invocation
+		 * would be registering a demand for a variable-length offset
+		 * preamble, which a Boolean constant never needs, so in this
+		 * case return early and have one fewer reasons to produce the
+		 * preamble in insert_compute_vloffsets().
+		 */
+		if (b0->meaning == IS_FALSE)
+			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		return gen_and(b0, b1);
 
 	case Q_ARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_ARP);
+		// same as for Q_RARP
+		if (b0->meaning == IS_FALSE)
+			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
 		return gen_and(b0, b1);
 
