@@ -19623,7 +19623,7 @@ my @reject_tests = (
 		errstr => errstr_rejects_all,
 	},
 	{
-		name => 'bool_reduction_returns_not true',
+		name => 'bool_reduction_returns_not_true',
 		DLT => 'IPV4',
 		# Idem.
 		expr => 'not ip and ip6',
