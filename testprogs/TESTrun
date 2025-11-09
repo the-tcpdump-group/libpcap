@@ -6070,6 +6070,45 @@ my @accept_blocks = (
 			',
 	}, # rarp_host_addr_ipoieee1394
 
+	# gen_host() -> case Q_ARP
+	{
+		name => 'arp_host_addr_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['arp host 1.2.3.4'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[0]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # arp_host_addr_PFLOG
+	# gen_host() -> case Q_RARP
+	{
+		name => 'rarp_host_addr_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['rarp host 1.2.3.4'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[0]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # rarp_host_addr_PFLOG
+
 	{
 		name => 'arp_net_addr',
 		DLT => 'EN10MB',
@@ -19627,6 +19666,19 @@ my @reject_tests = (
 		DLT => 'IPV4',
 		# Idem.
 		expr => 'not ip and ip6',
+		errstr => errstr_rejects_all,
+	},
+
+	{
+		name => 'arp_host_addr_PFLOG',
+		DLT => 'PFLOG',
+		expr => 'arp host 1.2.3.4',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'rarp_host_addr_PFLOG',
+		DLT => 'PFLOG',
+		expr => 'rarp host 1.2.3.4',
 		errstr => errstr_rejects_all,
 	},
 );
