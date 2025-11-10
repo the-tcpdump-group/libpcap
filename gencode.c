@@ -1485,7 +1485,7 @@ gen_not(struct block *b)
 	if (b->meaning == IS_TRUE)
 		b->meaning = IS_FALSE;
 	else if (b->meaning == IS_FALSE)
-		b-> meaning = IS_TRUE;
+		b->meaning = IS_TRUE;
 	return b;
 }
 
