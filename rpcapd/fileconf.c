@@ -339,7 +339,7 @@ void fileconf_read(void)
 				else
 					// A custom port.
 					result = pcapint_strlcpy(activelist[num_active_clients].port, port, sizeof(activelist[num_active_clients].port));
-				if (result >= sizeof(activelist[num_active_clients].address))
+				if (result >= sizeof(activelist[num_active_clients].port))
 				{
 					//
 					// It didn't fit.
