@@ -18570,7 +18570,7 @@ sub errstr_invhost_ipv4 {
 
 # scanner.l
 sub errstr_invhost_ipv6 {
-	return sprintf ('bogus IPv6 address %s', shift);
+	return sprintf ('invalid IPv6 address %s', shift);
 }
 
 # ERRSTR_UNKNOWN_MAC48HOST
@@ -18633,7 +18633,7 @@ my @reject_tests = (
 		name => 'ether_host',
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
-		errstr => 'bogus ethernet address',
+		errstr => 'invalid ethernet address',
 	},
 	{
 		name => 'pppoes_value',
