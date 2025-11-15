@@ -449,14 +449,15 @@ main(int argc, char **argv)
 		read_infile(infile);
 	else
 		read_stdin();
+	// cmdbuf may still be NULL.
 
-	if (! strcmp(BPF_IMAGE_ARGV, cmdbuf)) {
+	if (cmdbuf && ! strcmp(BPF_IMAGE_ARGV, cmdbuf)) {
 		enumerate_bpf_image();
 		cleanup();
 		exit(EX_OK);
 	}
 
-	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
+	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0) // cmdbuf == NULL is valid.
 		error(EX_DATAERR, "%s", pcap_geterr(pd));
 
 	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
@@ -464,14 +465,18 @@ main(int argc, char **argv)
 
 	if (! insavefile) {
 #ifdef BDEBUG
-		// replace line feed with space
-		for (cp = cmdbuf; *cp != '\0'; ++cp) {
-			if (*cp == '\r' || *cp == '\n') {
-				*cp = ' ';
-			}
-		}
 		// only show machine code if BDEBUG defined, since dflag > 3
-		printf("machine codes for filter: %s\n", cmdbuf);
+		printf("machine codes for filter: ");
+		if (! cmdbuf)
+			printf("NULL");
+		else {
+			// replace line feed with space
+			for (cp = cmdbuf; *cp != '\0'; ++cp)
+				if (*cp == '\r' || *cp == '\n')
+					*cp = ' ';
+			printf("'%s'", cmdbuf);
+		}
+		printf("\n");
 #endif
 		bpf_dump(&fcode, dflag);
 	} else {
