@@ -396,14 +396,14 @@ ${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
 {V6}			{
 			  struct in6_addr addr;
 			  if (1 != inet_pton(AF_INET6, yytext, &addr)) {
-				bpf_set_error(yyextra, "bogus IPv6 address %s", yytext);
+				bpf_set_error(yyextra, "invalid IPv6 address %s", yytext);
 				yylval->s = NULL;
 			  } else {
 				yylval->s = sdup(yyextra, (char *)yytext);
 			  }
 			  return HID6;
 			}
-{B}:+({B}:+)+		{ bpf_set_error(yyextra, "bogus ethernet address %s", yytext); yylval->s = NULL; return EID; }
+{B}:+({B}:+)+		{ bpf_set_error(yyextra, "invalid ethernet address %s", yytext); yylval->s = NULL; return EID; }
 icmptype		{ yylval->h = 0; return NUM; }
 icmpcode		{ yylval->h = 1; return NUM; }
 icmp-echoreply		{ yylval->h = 0; return NUM; }
