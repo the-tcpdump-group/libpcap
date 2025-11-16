@@ -5699,6 +5699,11 @@ static struct dsa_proto {
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_xrs700x.c
 	 */
 	{ "xrs700x", DLT_EN10MB },
+	/*
+	 * Type 2, with EtherType 0x88c3, unassigned.
+	 *
+	 */
+	{ "gsw1xx", DLT_DSA_TAG_GSW1XX },
 };
 
 static int
