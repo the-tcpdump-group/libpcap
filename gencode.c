@@ -2239,6 +2239,13 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
+	case DLT_DSA_TAG_BRCM:
+		cstate->off_linktype.constant_part = 6 + 6 + 4; // dst, src, DSA tag
+		cstate->off_linkpl.constant_part = cstate->off_linktype.constant_part + 2; // idem + EtherType
+		cstate->off_nl = 0; // Ethernet II
+		cstate->off_nl_nosnap = 3; // 802.3+802.2
+		break;
+
 	case DLT_EN3MB:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
@@ -3769,6 +3776,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
 		/* Geneve has an EtherType regardless of whether there is an
 		 * L2 header. VXLAN always has an EtherType. */
 		if (!cstate->is_encap)
@@ -4230,6 +4238,7 @@ gen_llc_internal(compiler_state_t *cstate)
 	switch (cstate->linktype) {
 
 	case DLT_EN10MB:
+	case DLT_DSA_TAG_BRCM:
 		/*
 		 * We check for an Ethernet type field less or equal than
 		 * 1500, which means it's an 802.3 length field.
@@ -5301,6 +5310,7 @@ is_mac48_linktype(const int linktype)
 	case DLT_IP_OVER_FC:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
 	case DLT_PPI:
 	case DLT_PRISM_HEADER:
 		return 1;
@@ -5320,6 +5330,7 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
 		b1 = gen_prevlinkhdr_check(cstate);
 		src_off = 6;
 		dst_off = 0;
@@ -7991,6 +8002,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_BRCM:
 			b1 = gen_prevlinkhdr_check(cstate);
 			/* ether[0] & 1 != 0 */
 			b0 = gen_mac_multicast(cstate, 0);
@@ -8719,6 +8731,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
@@ -8776,6 +8789,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_BRCM:
 			b0 = gen_linktype(cstate, ETHERTYPE_MPLS);
 			break;
 
