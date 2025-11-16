@@ -7200,7 +7200,7 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	const char *context = "link host XX:XX:XX:XX:XX:XX";
 
 	if (! ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK))
-		bpf_error(cstate, "ethernet address used in non-ether expression");
+		bpf_error(cstate, "Ethernet address used in non-ether expression");
 	if (! is_mac48_linktype(cstate->linktype))
 		fail_kw_on_dlt(cstate, context);
 

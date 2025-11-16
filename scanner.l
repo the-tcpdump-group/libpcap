@@ -403,7 +403,7 @@ ${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
 			  }
 			  return HID6;
 			}
-{B}:+({B}:+)+		{ bpf_set_error(yyextra, "invalid ethernet address %s", yytext); yylval->s = NULL; return EID; }
+{B}:+({B}:+)+		{ bpf_set_error(yyextra, "invalid Ethernet address %s", yytext); yylval->s = NULL; return EID; }
 icmptype		{ yylval->h = 0; return NUM; }
 icmpcode		{ yylval->h = 1; return NUM; }
 icmp-echoreply		{ yylval->h = 0; return NUM; }

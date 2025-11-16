@@ -18590,7 +18590,7 @@ sub errstr_invlinkaddr {
 
 # gen_ecode()
 sub errstr_mac48_noether {
-	return 'ethernet address used in non-ether expression';
+	return 'Ethernet address used in non-ether expression';
 }
 
 # gen_ncode() case Q_PORT, case Q_PORTRANGE
@@ -18633,7 +18633,7 @@ my @reject_tests = (
 		name => 'ether_host',
 		DLT => 'EN10MB',
 		expr => 'ether ab:cd:ef:0g:00:00',
-		errstr => 'invalid ethernet address',
+		errstr => 'invalid Ethernet address',
 	},
 	{
 		name => 'pppoes_value',
