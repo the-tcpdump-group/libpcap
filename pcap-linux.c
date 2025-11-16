@@ -5769,8 +5769,7 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 	buf[r] = '\0';
 
 	for (i = 0; i < sizeof(dsa_protos) / sizeof(dsa_protos[0]); i++) {
-		if (strlen(dsa_protos[i].name) == (size_t)r &&
-		    strcmp(buf, dsa_protos[i].name) == 0) {
+		if (strcmp(buf, dsa_protos[i].name) == 0) {
 			handle->linktype = dsa_protos[i].linktype;
 			switch (dsa_protos[i].linktype) {
 			case DLT_EN10MB:
