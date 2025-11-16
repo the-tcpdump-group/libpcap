@@ -711,7 +711,7 @@ Reverse ARP
 DEC System Communication Architecture (SCA)
 .TP
 .B slow
-IEEE Slow Protools
+IEEE Slow Protocols, such as LACP, OAM and OSSP
 .TP
 .B stp
 IEEE Spanning Tree Protocol
