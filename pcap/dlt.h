@@ -1662,6 +1662,21 @@
 #define DLT_EDK2_MM		302
 
 /*
+ * Unstructured data for manual debugging only.  In other words, this DLT is
+ * suitable for expert interpretation of hex dumps, and that's it.  Do not use
+ * this DLT for any other purpose.  For any automated (identification, saving,
+ * loading, filtering, decoding) processing please either use another existing
+ * DLT that fits the use case or document, assign and implement a new, properly
+ * structured DLT.
+ *
+ * In this DLT do not assume any specification, any structure, any format, any
+ * version, any header, any payload, any byte order, any implementation, any
+ * software/firmware/hardware particulars, any source, any destination, any
+ * direction, any protocol or any data integrity/consistency whatsoever.
+ */
+#define DLT_DEBUG_ONLY		303
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1671,6 +1686,6 @@
 #ifdef DLT_HIGH_MATCHING_MAX
 #undef DLT_HIGH_MATCHING_MAX
 #endif
-#define DLT_HIGH_MATCHING_MAX	302	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	303	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
