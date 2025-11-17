@@ -5432,24 +5432,40 @@ iface_get_offload(pcap_t *handle _U_)
  *    https://www.kernel.org/doc/html/latest/networking/dsa/dsa.html#switch-tagging-protocols
  *
  * Type 1 means that the tag is prepended to the Ethernet packet.
- * LINKTYPE_ETHERNET/DLT_EN10MB doesn't work, as it would try to
- * dissect the tag data as the Ethernet header.  These should get
- * their own LINKTYPE_DLT_ values.
  *
  * Type 2 means that the tag is inserted into the Ethernet header
  * after the source address and before the type/length field.
  *
- * Type 3 means that tag is a packet trailer.  LINKTYPE_ETHERNET/DLT_EN10MB
- * works,  unless the next-layer protocol has no length field of its own,
- * so that the tag might be treated as part of the payload. These should
- * get their own LINKTYPE_/DLT_ values.
+ * Type 3 means that tag is a packet trailer.
  *
- * If you get an "unsupported DSA tag" error, please add the tag to here,
- * complete with a full comment indicating whether it's type 1, 2, or 3,
- * and, for type 2, indicating whether it has an Ethertype and, if so
- * what that type is, and whether it's registered with the IEEE or is
- * self-assigned. Also, point to *something* that indicates the format
- * of the tag.
+ * Every element in the array below uses a DLT.  Because a DSA-tagged frame is
+ * not a standard IEEE 802.3 Ethernet frame, the array elements must not use
+ * DLT_EN10MB.  It is safe, albeit only barely useful, to use DLT_DEBUG_ONLY,
+ * which is also the implicit default for any DSA tag that is not present in
+ * the array.  To implement proper support for a particular DSA tag of
+ * interest, please do as much of the following as is reasonably practicable:
+ *
+ * 1. Using recent versions of tcpdump and libpcap on a Linux host with a
+ *    network interface that implements the required DSA tag, capture packets
+ *    on the interface and study the hex dumps.
+ * 2. Using the hex dumps and any other available supporting materials, produce
+ *    a sufficiently detailed description of the DSA tag structure, complete
+ *    with a full comment indicating whether it's type 1, 2, or 3, and, for
+ *    type 2, indicating whether it has an Ethertype and, if so, what that type
+ *    is, and whether it's registered with the IEEE or not.  Refer to the
+ *    specification(s), existing implementation(s), or any other relevant
+ *    resources.
+ * 3. Using the description, request and obtain a new DLT for the DSA tag.
+ * 4. Associate the new DLT with the DSA tag in the array below.
+ * 5. Using the updated libpcap, capture packets again, produce a .pcap file
+ *    and confirm it uses the new DLT.
+ * 6. Using the .pcap file as a test, prepare additional changes to tcpdump to
+ *    enable decoding of packets for the new DLT.
+ * 7. Using the .pcap file as a test, prepare additional changes to libpcap to
+ *    enable filtering of packets for the new DLT.
+ *
+ * For working examples of such support, see the existing DLTs other than
+ * DLT_DEBUG_ONLY in the array below.
  */
 static struct dsa_proto {
 	const char *name;
@@ -5460,22 +5476,17 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ar9331.c
 	 */
-	{ "ar9331", DLT_EN10MB },
+	{ "ar9331", DLT_DEBUG_ONLY },
 
 	/*
-	 * Type 2, without an EtherType at the beginning,
-	 * assigned a LINKTYPE_/DLT_ value.
+	 * Type 2, without an EtherType at the beginning.
 	 */
 	{ "brcm", DLT_DSA_TAG_BRCM },
 
 	/*
 	 * Type 2, with EtherType 0x8874, assigned to Broadcom.
-	 *
-	 * This does not require a LINKTYPE_/DLT_ value, it
-	 * just requires that Ethertype 0x8874 be dissected
-	 * properly.
 	 */
-	{ "brcm-legacy", DLT_EN10MB },
+	{ "brcm-legacy", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 1.
@@ -5483,112 +5494,95 @@ static struct dsa_proto {
 	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
 
 	/*
-	 * Type 2, without an EtherType at the beginning,
-	 * assigned a LINKTYPE_/DLT_ value.
+	 * Type 2, without an EtherType at the beginning.
 	 */
 	{ "dsa", DLT_DSA_TAG_DSA },
 
 	/*
 	 * Type 2, with an Ethertype field, but without
 	 * an assigned EtherType value that can be relied
-	 * on; assigned a LINKTYPE_/DLT_ value.
+	 * on.
 	 */
 	{ "edsa", DLT_DSA_TAG_EDSA },
 
 	/*
 	 * Type 1, with different transmit and receive headers,
 	 * so can't really be handled well with the current
-	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
-	 * to get the direction?
+	 * libpcap API and with pcap files.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_gswip.c
 	 */
-	{ "gswip", DLT_EN10MB },
+	{ "gswip", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3. See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_hellcreek.c
 	 */
-	{ "hellcreek", DLT_EN10MB },
+	{ "hellcreek", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, with different transmit and receive headers,
 	 * so can't really be handled well with the current
-	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
-	 * to get the direction?
+	 * libpcap API and with pcap files.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L102
 	 */
-	{ "ksz8795", DLT_EN10MB },
+	{ "ksz8795", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, with different transmit and receive headers,
 	 * so can't really be handled well with the current
-	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
-	 * to get the direction?
+	 * libpcap API and with pcap files.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L160
 	 */
-	{ "ksz9477", DLT_EN10MB },
+	{ "ksz9477", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, with different transmit and receive headers,
 	 * so can't really be handled well with the current
-	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
-	 * to get the direction?
+	 * libpcap API and with pcap files.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L341
 	 */
-	{ "ksz9893", DLT_EN10MB },
+	{ "ksz9893", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, with different transmit and receive headers,
 	 * so can't really be handled well with the current
-	 * libpcap API and with pcap files.  Use DLT_LINUX_SLL,
-	 * to get the direction?
+	 * libpcap API and with pcap files.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ksz.c#L386
 	 */
-	{ "lan937x", DLT_EN10MB },
+	{ "lan937x", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_lan9303.c#L24
-	 *
-	 * so giving its own LINKTYPE_/DLT_ value would allow a
-	 * dissector to do so.
 	 */
-	{ "lan9303", DLT_EN10MB },
+	{ "lan9303", DLT_DEBUG_ONLY },
 
 	/*
-	 * Type 2, without an EtherType at the beginning,
-	 * should be assigned a LINKTYPE_/DLT_ value.
+	 * Type 2, without an EtherType at the beginning.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_mtk.c#L15
 	 */
-	{ "mtk", DLT_EN10MB },
-
-	/*
-	 * The string "none" indicates that the interface does not have
-	 * any tagging protocol configured, and is therefore a standard
-	 * Ethernet interface.
-	 */
-	{ "none", DLT_EN10MB },
+	{ "mtk", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 1.
@@ -5597,7 +5591,7 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ocelot.c
 	 */
-	{ "ocelot", DLT_EN10MB },
+	{ "ocelot", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 1.
@@ -5606,28 +5600,24 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_ocelot.c
 	 */
-	{ "seville", DLT_EN10MB },
+	{ "seville", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
-	 *
-	 * so giving its own LINKTYPE_/DLT_ value would allow a
-	 * dissector to do so.
 	 */
-	{ "ocelot-8021q", DLT_EN10MB },
+	{ "ocelot-8021q", DLT_DEBUG_ONLY },
 
 	/*
-	 * Type 2, without an EtherType at the beginning,
-	 * should be assigned a LINKTYPE_/DLT_ value.
+	 * Type 2, without an EtherType at the beginning.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_qca.c
 	 */
-	{ "qca", DLT_EN10MB },
+	{ "qca", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8899, assigned to Realtek;
@@ -5635,10 +5625,6 @@ static struct dsa_proto {
 	 * as well, but there are fields that allow the two
 	 * tag formats, and all the protocols in question,
 	 * to be distinguiished from one another.
-	 *
-	 * This does not require a LINKTYPE_/DLT_ value, it
-	 * just requires that EtherType 0x8899 be dissected
-	 * properly.
 	 *
 	 * See
 	 *
@@ -5649,29 +5635,28 @@ static struct dsa_proto {
 	 * and various pages in tcpdump's print-realtek.c and Wireshark's
 	 * epan/dissectors/packet-realtek.c for the other protocols.
 	 */
-	{ "rtl4a", DLT_EN10MB },
+	{ "rtl4a", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8899, assigned to Realtek;
 	 * see above.
 	 */
-	{ "rtl8_4", DLT_EN10MB },
+	{ "rtl8_4", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, with the same tag format as rtl8_4.
 	 */
-	{ "rtl8_4t", DLT_EN10MB },
+	{ "rtl8_4t", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0xe001; that's probably
-	 * self-assigned, so this really should have its
-	 * own LINKTYPE_/DLT_ value.
+	 * self-assigned.
 	 *
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_rzn1_a5psw.c
 	 */
-	{ "a5psw", DLT_EN10MB },
+	{ "a5psw", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8100 or the self-assigned
@@ -5681,15 +5666,14 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
 	 */
-	{ "sja1105", DLT_EN10MB },
+	{ "sja1105", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type "none of the above", with both a header and trailer,
 	 * with different transmit and receive tags.  Has
 	 * EtherType 0xdadc, which is probably self-assigned.
-	 * This should really have its own LINKTYPE_/DLT_ value.
 	 */
-	{ "sja1110", DLT_EN10MB },
+	{ "sja1110", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3, as the name suggests.
@@ -5698,18 +5682,15 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_trailer.c
 	 */
-	{ "trailer", DLT_EN10MB },
+	{ "trailer", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 2, with EtherType 0x8100; the VID can be interpreted
 	 * as per
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_8021q.c#L15
-	 *
-	 * so giving its own LINKTYPE_/DLT_ value would allow a
-	 * dissector to do so.
 	 */
-	{ "vsc73xx-8021q", DLT_EN10MB },
+	{ "vsc73xx-8021q", DLT_DEBUG_ONLY },
 
 	/*
 	 * Type 3.
@@ -5718,9 +5699,13 @@ static struct dsa_proto {
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_xrs700x.c
 	 */
-	{ "xrs700x", DLT_EN10MB },
+	{ "xrs700x", DLT_DEBUG_ONLY },
 };
 
+/*
+ * Return 1 if the interface uses DSA tagging, 0 if the interface does not use
+ * DSA tagging, or PCAP_ERROR on error.
+ */
 static int
 iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 {
@@ -5776,22 +5761,41 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 		r--;
 	buf[r] = '\0';
 
+	/*
+	 * The string "none" indicates that the interface does not have
+	 * any tagging protocol configured, and is therefore a standard
+	 * Ethernet interface.
+	 */
+	if (strcmp(buf, "none") == 0)
+		return 0;
+
+	/*
+	 * Every element in the array stands for a DSA-tagged interface.  Using
+	 * DLT_EN10MB (the standard IEEE 802.3 Ethernet) for such an interface
+	 * may seem a good idea at first, but doing so would certainly cause
+	 * major problems in areas that are already complicated and depend on
+	 * DLT_EN10MB meaning the standard IEEE 802.3 Ethernet only, namely:
+	 *
+	 * - live capturing of packets on Linux, and
+	 * - live kernel filtering of packets on Linux, and
+	 * - live userspace filtering of packets on Linux, and
+	 * - offline filtering of packets on all supported OSes, and
+	 * - identification of savefiles on all OSes.
+	 *
+	 * Therefore use a default DLT value that does not block capturing and
+	 * hexdumping of unsupported DSA encodings (in case the tag is not in
+	 * the array) and enforce the non-use of DLT_EN10MB (in case the tag is
+	 * in the array, but is incorrectly declared).
+	 */
+	handle->linktype = DLT_DEBUG_ONLY;
 	for (i = 0; i < sizeof(dsa_protos) / sizeof(dsa_protos[0]); i++) {
 		if (strcmp(buf, dsa_protos[i].name) == 0) {
-			handle->linktype = dsa_protos[i].linktype;
-			switch (dsa_protos[i].linktype) {
-			case DLT_EN10MB:
-				return 0;
-			default:
-				return 1;
-			}
+			if (dsa_protos[i].linktype != DLT_EN10MB)
+				handle->linktype = dsa_protos[i].linktype;
+			break;
 		}
 	}
-
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		      "unsupported DSA tag: %s", buf);
-
-	return PCAP_ERROR;
+	return 1;
 }
 
 /*
