@@ -5747,10 +5747,18 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 	fd = open(pathstr, O_RDONLY);
 	free(pathstr);
 	/*
-	 * This is not fatal, kernel >= 4.20 *might* expose this attribute
+	 * This could be not fatal: kernel >= 4.20 *might* expose this
+	 * attribute.  However, if it exposes the attribute, but the read has
+	 * failed due to another reason (ENFILE, EMFILE, ENOMEM...), propagate
+	 * the failure.
 	 */
-	if (fd < 0)
-		return 0;
+	if (fd < 0) {
+		if (errno == ENOENT)
+			return 0;
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		                             errno, "open");
+		return PCAP_ERROR;
+	}
 
 	r = read(fd, buf, sizeof(buf) - 1);
 	if (r <= 0) {
