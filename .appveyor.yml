@@ -89,18 +89,6 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
-      # VS 2019, Npcap, 64-bit ARM, without remote
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      GENERATOR: "Visual Studio 16 2019"
-      PLATFORM: ARM64
-      SDK: npcap-sdk
-      REMOTE: -DENABLE_REMOTE=NO
-      # VS 2019, Npcap, 64-bit ARM, with remote
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      GENERATOR: "Visual Studio 16 2019"
-      PLATFORM: ARM64
-      SDK: npcap-sdk
-      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
       # VS 2022, WinPcap, 32-bit and 64-bit x86, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
@@ -167,5 +155,5 @@ build_script:
   - md build
   - cd build
   - cmake --version
-  - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
+  - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -A %PLATFORM% ..
   - msbuild /m /nologo /p:Configuration=Release pcap.sln
