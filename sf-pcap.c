@@ -415,7 +415,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 		 * we'd have to use some hacks^H^H^H^H^Hheuristics to
 		 * detect those variants.
 		 *
-		 * Ethereal does that, but it does so by trying to read
+		 * Wireshark does that, but it does so by trying to read
 		 * the first two packets of the file with each of the
 		 * record header formats.  That currently means it seeks
 		 * backwards and retries the reads, which doesn't work

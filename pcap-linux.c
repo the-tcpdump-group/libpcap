@@ -2211,9 +2211,9 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 * header whatsoever to PF_PACKET sockets; other PPP
 		 * code supplies PPP link-layer headers ("syncppp.c");
 		 * some PPP code might supply random link-layer
-		 * headers (PPP over ISDN - there's code in Ethereal,
+		 * headers (PPP over ISDN - there's code in Wireshark,
 		 * for example, to cope with PPP-over-ISDN captures
-		 * with which the Ethereal developers have had to cope,
+		 * with which the Wireshark developers have had to cope,
 		 * heuristically trying to determine which of the
 		 * oddball link-layer headers particular packets have).
 		 *

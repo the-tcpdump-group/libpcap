@@ -245,7 +245,7 @@ case $1 in
 # Syn-Flood-Protection an
 # ip_forwarding aus
 # Source-Routing aus
-# Ausgehende Packets an ethereal/tcpdump etc.
+# Ausgehende Packets an Wireshark/tcpdump etc.
 
 /usr/contrib/bin/nettune -s tcp_random_seq 2 || exit $ERROR
 /usr/contrib/bin/nettune -s hp_syn_protect 1 || exit $ERROR
