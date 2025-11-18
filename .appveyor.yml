@@ -26,6 +26,30 @@ environment:
   #
   # For now, we disable the remote capture build there.
   #
+  # To work around a rpoblem that has popped up in some places, wherein
+  # building for ARM64 gives a warning that _CountOneBits64 isn't
+  # defined, force the VS 2019 ARM64 builds to use the 10.0.22621.0
+  # SDK. This problem was happening to us, and some others online
+  # reported it, including
+  #
+  #    https://zhuanlan.zhihu.com/p/1935500669210572158
+  #
+  # which, after translation by Google Translate, indicates that the
+  # workaround is to use the older SDK.
+  #
+  # However, the fix given there causes the platform to be
+  # "ARM64,version=10.0.22621.0", which causes the Visual Studio
+  # project file to give that as the platform, which causes
+  # MSBuild to fail because it's expecting something such as just
+  # "AMD64", so we do it with "-DCMAKE_SYSTEM_VERSION=10.0.22621.0"
+  # instead.
+  #
+  # The problem showed up after an upgrade of the AppVeyor image.
+  # It may be that the VS 2019 VC headers and the Windows 11 SDK
+  # (10.0.26100.0) don't work together on ARM64, and that this is
+  # a consequence of having an image with both VS 2019 and VS 2022
+  # both installed.
+  #
   matrix:
       # VS 2017, WinPcap, 32-bit and 64-bit x86, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
@@ -93,12 +117,14 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: ARM64
+      CMAKE_SYSTEM_VERSION: "-DCMAKE_SYSTEM_VERSION=10.0.22621.0"
       SDK: npcap-sdk
       REMOTE: -DENABLE_REMOTE=NO
       # VS 2019, Npcap, 64-bit ARM, with remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       GENERATOR: "Visual Studio 16 2019"
       PLATFORM: ARM64
+      CMAKE_SYSTEM_VERSION: "-DCMAKE_SYSTEM_VERSION=10.0.22621.0"
       SDK: npcap-sdk
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
       # VS 2022, WinPcap, 32-bit and 64-bit x86, without remote
@@ -167,5 +193,5 @@ build_script:
   - md build
   - cd build
   - cmake --version
-  - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% ..
+  - cmake %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -G"%GENERATOR%" -A %PLATFORM% %CMAKE_SYSTEM_VERSION% ..
   - msbuild /m /nologo /p:Configuration=Release pcap.sln
