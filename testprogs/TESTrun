@@ -3844,6 +3844,92 @@ my @accept_blocks = (
 			',
 	}, # link_src_and_dst_host_mac48_DSA_TAG_BRCM
 
+	{
+		name => 'link_broadcast_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link broadcast'],
+		optunopt => '
+			(000) ld       [2]
+			(001) jeq      #0xffffffff      jt 2	jf 5
+			(002) ldh      [0]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_broadcast_DSA_TAG_DSA
+	{
+		name => 'link_multicast_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link multicast'],
+		optunopt => '
+			(000) ldb      [0]
+			(001) jset     #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_multicast_DSA_TAG_DSA
+	{
+		name => 'link_host_mac48_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link host a1:b2:c3:d4:e5:f6'],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0xc3d4e5f6      jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xa1b2          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0xc3d4e5f6      jt 6	jf 9
+			(006) ldh      [0]
+			(007) jeq      #0xa1b2          jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # link_host_addr_DSA_TAG_DSA
+	{
+		name => 'link_src_host_name_DSA_TAG_DSA',
+		skip => skip_no_ethers(),
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link src host eth-noipv4-noipv6.host123.libpcap.test'],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 5
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_src_host_addr_DSA_TAG_DSA
+	{
+		name => 'link_dst_host_mac48_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link dst host 01:80:c2:00:00:00'],
+		optunopt => '
+			(000) ld       [2]
+			(001) jeq      #0xc2000000      jt 2	jf 5
+			(002) ldh      [0]
+			(003) jeq      #0x180           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_dst_host_mac48_DSA_TAG_DSA
+	{
+		name => 'link_src_and_dst_host_mac48_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link src and dst host a1:b2:c3:d4:e5:f6'],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0xc3d4e5f6      jt 2	jf 9
+			(002) ldh      [6]
+			(003) jeq      #0xa1b2          jt 4	jf 9
+			(004) ld       [2]
+			(005) jeq      #0xc3d4e5f6      jt 6	jf 9
+			(006) ldh      [0]
+			(007) jeq      #0xa1b2          jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # link_src_and_dst_host_mac48_DSA_TAG_DSA
+
 	# The complete cartesian product of all DLTs and all link-layer protocol
 	# numbers in gen_linktype() is not a practicable test space.  Try testing
 	# all unique code paths and eliminate/coalesce code points as necessary.
@@ -4321,6 +4407,163 @@ my @accept_blocks = (
 			(005) ret      #0
 			',
 	}, # link_proto_stp_DSA_TAG_BRCM
+
+	# and another complete round for DLT_DSA_TAG_DSA
+	{
+		name => 'link_proto_ip_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \ip'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_DSA_TAG_DSA
+	{
+		name => 'link_proto_6_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto 6'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldh      [18]
+			(003) jeq      #0x606           jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_6_DSA_TAG_DSA
+	{
+		name => 'link_proto_iso_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\iso'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldh      [18]
+			(003) jeq      #0xfefe          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_iso_DSA_TAG_DSA
+	{
+		name => 'link_proto_netbeui_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\netbeui'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldh      [18]
+			(003) jeq      #0xf0f0          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_netbeui_DSA_TAG_DSA
+	{
+		name => 'link_proto_ipx_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\ipx'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8137          jt 11	jf 2
+			(002) jgt      #0x5dc           jt 12	jf 3
+			(003) ld       [22]
+			(004) jeq      #0x8137          jt 5	jf 7
+			(005) ld       [18]
+			(006) jeq      #0xaaaa0300      jt 11	jf 7
+			(007) ldb      [18]
+			(008) jeq      #0xe0            jt 11	jf 9
+			(009) ldh      [18]
+			(010) jeq      #0xffff          jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8137          jt 12	jf 2
+			(002) ldh      [16]
+			(003) jgt      #0x5dc           jt 13	jf 4
+			(004) ld       [22]
+			(005) jeq      #0x8137          jt 6	jf 8
+			(006) ld       [18]
+			(007) jeq      #0xaaaa0300      jt 12	jf 8
+			(008) ldb      [18]
+			(009) jeq      #0xe0            jt 12	jf 10
+			(010) ldh      [18]
+			(011) jeq      #0xffff          jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # link_proto_ipx_DSA_TAG_DSA
+	{
+		name => 'link_proto_atalk_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\atalk'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x809b          jt 7	jf 2
+			(002) jgt      #0x5dc           jt 8	jf 3
+			(003) ld       [22]
+			(004) jeq      #0x7809b         jt 5	jf 8
+			(005) ld       [18]
+			(006) jeq      #0xaaaa0308      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x809b          jt 8	jf 2
+			(002) ldh      [16]
+			(003) jgt      #0x5dc           jt 9	jf 4
+			(004) ld       [22]
+			(005) jeq      #0x7809b         jt 6	jf 9
+			(006) ld       [18]
+			(007) jeq      #0xaaaa0308      jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # link_proto_atalk_DSA_TAG_DSA
+	{
+		name => 'link_proto_aarp_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\aarp'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x80f3          jt 7	jf 2
+			(002) jgt      #0x5dc           jt 8	jf 3
+			(003) ld       [22]
+			(004) jeq      #0x80f3          jt 5	jf 8
+			(005) ld       [18]
+			(006) jeq      #0xaaaa0300      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x80f3          jt 8	jf 2
+			(002) ldh      [16]
+			(003) jgt      #0x5dc           jt 9	jf 4
+			(004) ld       [22]
+			(005) jeq      #0x80f3          jt 6	jf 9
+			(006) ld       [18]
+			(007) jeq      #0xaaaa0300      jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+	}, # link_proto_aarp_DSA_TAG_DSA
+	{
+		name => 'link_proto_stp_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['link proto \\stp'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jgt      #0x5dc           jt 5	jf 2
+			(002) ldb      [18]
+			(003) jeq      #0x42            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # link_proto_stp_DSA_TAG_DSA
 
 	{
 		name => 'link_proto_ip_ATM_RFC1483',
@@ -7816,6 +8059,380 @@ my @accept_blocks = (
 	}, # geneve_and_geneve
 
 	{
+		name => 'vlan_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['vlan'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # vlan_DSA_TAG_DSA
+	{
+		name => 'vlan_linuxext_DSA_TAG_DSA',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		DLT => 'DSA_TAG_DSA',
+		# Same as the above even with the extensions enabled.
+		linuxext => 1,
+		aliases => ['vlan'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # vlan_linuxext_DSA_TAG_DSA
+	{
+		name => 'vlan_num_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['vlan 500'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 8
+			(004) ldh      [18]
+			(005) and      #0xfff
+			(006) jeq      #0x1f4           jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 10
+			(006) ldh      [18]
+			(007) and      #0xfff
+			(008) jeq      #0x1f4           jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # vlan_num_DSA_TAG_DSA
+	{
+		name => 'vlan_num_linuxext_DSA_TAG_DSA',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		DLT => 'DSA_TAG_DSA',
+		# Same as the above even with the extensions enabled.
+		linuxext => 1,
+		aliases => ['vlan 500'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 8
+			(004) ldh      [18]
+			(005) and      #0xfff
+			(006) jeq      #0x1f4           jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 10
+			(006) ldh      [18]
+			(007) and      #0xfff
+			(008) jeq      #0x1f4           jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+	}, # vlan_num_linuxext_DSA_TAG_DSA
+	{
+		name => 'vlan_num_and_vlan_num_and_ip_multicast_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['vlan 2061 and vlan 2014 and ip multicast'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 20
+			(004) ldh      [18]
+			(005) and      #0xfff
+			(006) jeq      #0x80d           jt 7	jf 20
+			(007) ldh      [20]
+			(008) jeq      #0x8100          jt 11	jf 9
+			(009) jeq      #0x88a8          jt 11	jf 10
+			(010) jeq      #0x9100          jt 11	jf 20
+			(011) ldh      [22]
+			(012) and      #0xfff
+			(013) jeq      #0x7de           jt 14	jf 20
+			(014) ldh      [24]
+			(015) jeq      #0x800           jt 16	jf 20
+			(016) ldb      [42]
+			(017) and      #0xf0
+			(018) jeq      #0xe0            jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 24
+			(006) ldh      [18]
+			(007) and      #0xfff
+			(008) jeq      #0x80d           jt 9	jf 24
+			(009) ldh      [20]
+			(010) jeq      #0x8100          jt 15	jf 11
+			(011) ldh      [20]
+			(012) jeq      #0x88a8          jt 15	jf 13
+			(013) ldh      [20]
+			(014) jeq      #0x9100          jt 15	jf 24
+			(015) ldh      [22]
+			(016) and      #0xfff
+			(017) jeq      #0x7de           jt 18	jf 24
+			(018) ldh      [24]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ldb      [42]
+			(021) and      #0xf0
+			(022) jeq      #0xe0            jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # vlan_num_and_vlan_num_and_ip_multicast_DSA_TAG_DSA
+	{
+		name => 'vlan_num_and_vlan_num_and_ip_multicast_linuxext_DSA_TAG_DSA',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		DLT => 'DSA_TAG_DSA',
+		# Same as the above even with the extensions enabled.
+		linuxext => 1,
+		aliases => ['vlan 2061 and vlan 2014 and ip multicast'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 4	jf 2
+			(002) jeq      #0x88a8          jt 4	jf 3
+			(003) jeq      #0x9100          jt 4	jf 20
+			(004) ldh      [18]
+			(005) and      #0xfff
+			(006) jeq      #0x80d           jt 7	jf 20
+			(007) ldh      [20]
+			(008) jeq      #0x8100          jt 11	jf 9
+			(009) jeq      #0x88a8          jt 11	jf 10
+			(010) jeq      #0x9100          jt 11	jf 20
+			(011) ldh      [22]
+			(012) and      #0xfff
+			(013) jeq      #0x7de           jt 14	jf 20
+			(014) ldh      [24]
+			(015) jeq      #0x800           jt 16	jf 20
+			(016) ldb      [42]
+			(017) and      #0xf0
+			(018) jeq      #0xe0            jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8100          jt 6	jf 2
+			(002) ldh      [16]
+			(003) jeq      #0x88a8          jt 6	jf 4
+			(004) ldh      [16]
+			(005) jeq      #0x9100          jt 6	jf 24
+			(006) ldh      [18]
+			(007) and      #0xfff
+			(008) jeq      #0x80d           jt 9	jf 24
+			(009) ldh      [20]
+			(010) jeq      #0x8100          jt 15	jf 11
+			(011) ldh      [20]
+			(012) jeq      #0x88a8          jt 15	jf 13
+			(013) ldh      [20]
+			(014) jeq      #0x9100          jt 15	jf 24
+			(015) ldh      [22]
+			(016) and      #0xfff
+			(017) jeq      #0x7de           jt 18	jf 24
+			(018) ldh      [24]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ldb      [42]
+			(021) and      #0xf0
+			(022) jeq      #0xe0            jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # vlan_num_and_vlan_num_and_ip_multicast_linuxext_DSA_TAG_DSA
+
+	{
+		name => 'mpls_nullary_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mpls_nullary_DSA_TAG_DSA
+	{
+		name => 'mpls_unary_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 6
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+	}, # mpls_unary_DSA_TAG_DSA
+	{
+		name => 'mpls_and_mpls_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345 and mpls 6789'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 11
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 11
+			(005) ldb      [20]
+			(006) jset     #0x1             jt 11	jf 7
+			(007) ld       [22]
+			(008) and      #0xfffff000
+			(009) jeq      #0x1a85000       jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 12
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 12
+			(005) ldb      [20]
+			(006) and      #0x1
+			(007) jeq      #0x0             jt 8	jf 12
+			(008) ld       [22]
+			(009) and      #0xfffff000
+			(010) jeq      #0x1a85000       jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # mpls_and_mpls_DSA_TAG_DSA
+	{
+		name => 'mpls_unary_and_ip_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345 and ip'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 12
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 12
+			(005) ldb      [20]
+			(006) and      #0x1
+			(007) jeq      #0x1             jt 8	jf 12
+			(008) ldb      [22]
+			(009) and      #0xf0
+			(010) jeq      #0x40            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # mpls_unary_and_ip_DSA_TAG_DSA
+	{
+		name => 'mpls_unary_and_ip_src_host_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345 and ip src host 1.2.3.4'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 14
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 14
+			(005) ldb      [20]
+			(006) and      #0x1
+			(007) jeq      #0x1             jt 8	jf 14
+			(008) ldb      [22]
+			(009) and      #0xf0
+			(010) jeq      #0x40            jt 11	jf 14
+			(011) ld       [34]
+			(012) jeq      #0x1020304       jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	}, # mpls_unary_and_ip_src_host_DSA_TAG_DSA
+	{
+		name => 'mpls_unary_and_ip6_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345 and ip6'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 12
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 12
+			(005) ldb      [20]
+			(006) and      #0x1
+			(007) jeq      #0x1             jt 8	jf 12
+			(008) ldb      [22]
+			(009) and      #0xf0
+			(010) jeq      #0x60            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+	}, # mpls_unary_and_ip6_DSA_TAG_DSA
+	{
+		name => 'mpls_unary_and_ip6_src_host_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['mpls 12345 and ip6 src host 1234:5678:9abc::0123'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x8847          jt 2	jf 20
+			(002) ld       [18]
+			(003) and      #0xfffff000
+			(004) jeq      #0x3039000       jt 5	jf 20
+			(005) ldb      [20]
+			(006) and      #0x1
+			(007) jeq      #0x1             jt 8	jf 20
+			(008) ldb      [22]
+			(009) and      #0xf0
+			(010) jeq      #0x60            jt 11	jf 20
+			(011) ld       [30]
+			(012) jeq      #0x12345678      jt 13	jf 20
+			(013) ld       [34]
+			(014) jeq      #0x9abc0000      jt 15	jf 20
+			(015) ld       [38]
+			(016) jeq      #0x0             jt 17	jf 20
+			(017) ld       [42]
+			(018) jeq      #0x123           jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	}, # mpls_unary_and_ip6_src_host_DSA_TAG_DSA
+
+	{
 		name => 'wlan_host',
 		DLT => 'IEEE802_11',
 		aliases => [
@@ -9748,6 +10365,19 @@ my @accept_blocks = (
 			(005) ret      #262144
 			',
 	}, # llc_DSA_TAG_BRCM
+	{
+		name => 'llc_DSA_TAG_DSA',
+		DLT => 'DSA_TAG_DSA',
+		aliases => ['llc'],
+		optunopt => '
+			(000) ldh      [16]
+			(001) jgt      #0x5dc           jt 4	jf 2
+			(002) ldh      [18]
+			(003) jeq      #0xffff          jt 4	jf 5
+			(004) ret      #0
+			(005) ret      #262144
+			',
+	}, # llc_DSA_TAG_DSA
 	{
 		name => 'llc_IEEE802_11',
 		DLT => 'IEEE802_11',
@@ -15263,6 +15893,155 @@ my @accept_blocks = (
 	}, # rarp_gateway_name_DSA_TAG_BRCM
 
 	{
+		name => 'gateway_name_DSA_TAG_DSA',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'DSA_TAG_DSA',
+		aliases => [
+			'gateway eth-ipv4-noipv6.host123.libpcap.test',
+			'gateway eth-ipv4-ipv6.host123.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [16]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [30]
+			(011) jeq      #0xa141e28       jt 21	jf 12
+			(012) ld       [34]
+			(013) jeq      #0xa141e28       jt 21	jf 20
+			(014) jeq      #0x806           jt 16	jf 15
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [32]
+			(017) jeq      #0xa141e28       jt 21	jf 18
+			(018) ld       [42]
+			(019) jeq      #0xa141e28       jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+		unopt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 27
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 27
+			(008) ldh      [16]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [30]
+			(011) jeq      #0xa141e28       jt 27	jf 12
+			(012) ld       [34]
+			(013) jeq      #0xa141e28       jt 27	jf 14
+			(014) ldh      [16]
+			(015) jeq      #0x806           jt 16	jf 20
+			(016) ld       [32]
+			(017) jeq      #0xa141e28       jt 27	jf 18
+			(018) ld       [42]
+			(019) jeq      #0xa141e28       jt 27	jf 20
+			(020) ldh      [16]
+			(021) jeq      #0x8035          jt 22	jf 26
+			(022) ld       [32]
+			(023) jeq      #0xa141e28       jt 27	jf 24
+			(024) ld       [42]
+			(025) jeq      #0xa141e28       jt 27	jf 26
+			(026) ret      #262144
+			(027) ret      #0
+			',
+	}, # gateway_name_DSA_TAG_DSA
+	{
+		name => 'ip_gateway_name_DSA_TAG_DSA',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'DSA_TAG_DSA',
+		aliases => [
+			'ip gateway eth-ipv4-noipv6.host123.libpcap.test',
+			'ip gateway eth-ipv4-ipv6.host123.libpcap.test',
+		],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [16]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [30]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [34]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # ip_gateway_name_DSA_TAG_DSA
+	{
+		name => 'arp_gateway_name_DSA_TAG_DSA',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'DSA_TAG_DSA',
+		aliases => [
+			'arp gateway eth-ipv4-noipv6.host123.libpcap.test',
+			'arp gateway eth-ipv4-ipv6.host123.libpcap.test',
+		],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [16]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [32]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [42]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # arp_gateway_name_DSA_TAG_DSA
+	{
+		name => 'rarp_gateway_name_DSA_TAG_DSA',
+		skip => skip_no_ethers() ||
+			skip_no_hosts(),
+		DLT => 'DSA_TAG_DSA',
+		aliases => [
+			'rarp gateway eth-ipv4-noipv6.host123.libpcap.test',
+			'rarp gateway eth-ipv4-ipv6.host123.libpcap.test',
+		],
+		optunopt => '
+			(000) ld       [8]
+			(001) jeq      #0x400140e       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x400140e       jt 6	jf 15
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 15
+			(008) ldh      [16]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [32]
+			(011) jeq      #0xa141e28       jt 15	jf 12
+			(012) ld       [42]
+			(013) jeq      #0xa141e28       jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # rarp_gateway_name_DSA_TAG_DSA
+
+	{
 		name => 'carp',
 		DLT => 'EN10MB',
 		aliases => [
@@ -19395,6 +20174,52 @@ my @apply_blocks = (
 		expr => 'multicast',
 		results => [64, 64, 64, 64],
 	},
+
+	# Protocol exchange for the packets in dsa.pcap:
+	# 1. 00:50:b6:29:10:70 > d6:c5:28:21:3e:af, 192.168.30.1 > 192.168.30.2, ICMP echo request
+	# 2. d6:c5:28:21:3e:af > 00:50:b6:29:10:70, 192.168.30.2 > 192.168.30.1, ICMP echo reply
+	# 3. 00:50:b6:29:10:70 > d6:c5:28:21:3e:af, 192.168.30.1 > 192.168.30.2, ICMP echo request
+	# 4. d6:c5:28:21:3e:af > 00:50:b6:29:10:70, 192.168.30.2 > 192.168.30.1, ICMP echo reply
+	# 5. 00:50:b6:29:10:70 > d6:c5:28:21:3e:af, 192.168.30.1 > 192.168.30.2, ICMP echo request
+	# 6. d6:c5:28:21:3e:af > 00:50:b6:29:10:70, 192.168.30.2 > 192.168.30.1, ICMP echo reply
+	# 7. d6:c5:28:21:3e:af > 00:50:b6:29:10:70, ARP Request who-has 192.168.30.1 tell 192.168.30.2
+	# 8. 00:50:b6:29:10:70 > d6:c5:28:21:3e:af, ARP Reply 192.168.30.1 is-at 00:50:b6:29:10:70
+	{
+		name => 'link_dst_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'link dst d6:c5:28:21:3e:af',
+		results => [262144, 0, 262144, 0, 262144, 0, 0, 262144],
+	},
+	{
+		name => 'arp_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'arp',
+		results => [0, 0, 0, 0, 0, 0, 262144, 262144],
+	},
+	{
+		name => 'arp_src_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'arp src 192.168.30.1',
+		results => [0, 0, 0, 0, 0, 0, 0, 262144],
+	},
+	{
+		name => 'ip_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'ip',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 0, 0],
+	},
+	{
+		name => 'icmp_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'icmp',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 0, 0],
+	},
+	{
+		name => 'icmp_index_DSA_TAG_DSA',
+		savefile => 'dsa.pcap',
+		expr => 'icmp[icmptype] == icmp-echo',
+		results => [262144, 0, 262144, 0, 262144, 0, 0, 0],
+	},
 );
 
 # yyerror()
@@ -20869,6 +21694,13 @@ my %DLTfeatures = (
 	DSA_TAG_BRCM_PREPEND => {
 	},
 	DSA_TAG_DSA => {
+		link_proto => 1,
+		link_broadcast => 1,
+		link_multicast => 1,
+		link_host_mac48 => 1,
+		vlan => 1,
+		mpls => 1,
+		llc => 1,
 	},
 	DSA_TAG_EDSA => {
 	},
