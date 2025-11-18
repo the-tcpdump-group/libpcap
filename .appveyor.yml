@@ -88,13 +88,6 @@ environment:
       PLATFORM: x64
       SDK: npcap-sdk
       OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
-      # VS 2019, Npcap, 32-bit and 64-bit ARM, without AirPcap, with remote
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-      GENERATOR: "Visual Studio 16 2019"
-      PLATFORM: ARM64
-      SDK: npcap-sdk
-      AIRPCAP: -DDISABLE_AIRPCAP=YES
-      OPENSSL_ROOT_DIR: -DOPENSSL_ROOT_DIR=C:\OpenSSL-v33-Win64\bin
       # VS 2022, WinPcap, 32-bit and 64-bit x86, without AirPcap, without remote
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       GENERATOR: "Visual Studio 17 2022"
@@ -157,6 +150,6 @@ build_script:
   # configuration stage
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - cmake --version
-  - cmake %AIRPCAP% %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" -A %PLATFORM% ..
+  - cmake %AIRPCAP% %REMOTE% %OPENSSL_ROOT_DIR% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -A %PLATFORM% ..
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
