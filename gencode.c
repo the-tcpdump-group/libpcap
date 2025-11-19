@@ -2106,22 +2106,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
-	case DLT_BACNET_MS_TP:
-		/*
-		 * The third octet of an MS/TP frame is Frame Type, but it is
-		 * the MS/TP frame type [0..7] rather than a network protocol
-		 * type.  It can be tested using "link[2]".  If in future it
-		 * becomes necessary to have a solution that matches the
-		 * problem space better, it would need to be a new special
-		 * primitive that works on MS/TP DLT(s) only and takes names
-		 * for the types, for example, "ms-tp type token".
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
-		break;
-
 	case DLT_JUNIPER_SERVICES:
 		cstate->off_linktype.constant_part = 12;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
@@ -2206,16 +2190,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;
 		break;
 
-	case DLT_AX25_KISS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_IPNET:
 		cstate->off_linktype.constant_part = 1;
 		cstate->off_linkpl.constant_part = 24;	/* ipnet header length */
@@ -2254,81 +2228,52 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 
 	case DLT_EN3MB:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_AX25:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_PRONET:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_CHAOS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 #ifdef DLT_HIPPI
 	case DLT_HIPPI:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 #endif
-
 	case DLT_REDBACK_SMARTEDGE:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
-
 #ifdef DLT_HHDLC
 	case DLT_HHDLC:
+#endif
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
+	case DLT_AX25_KISS:
+		/*
+		 * Idem, plus the initial code for AX.25 KISS commented:
+		 *
+		 * - "variable, min 15, max 71 steps of 7" about off_linktype
+		 * - "variable, min 16, max 71 steps of 7" about off_nl
+		 *
+		 * It is not clear how that relates with the AX.25 and KISS
+		 * specifications, also there is a possibility of Linux kernel
+		 * modifying the packet type and/or structure.  So if anybody
+		 * would like to implement a better filtering support for this
+		 * DLT, it would be a good idea to verify and to document all
+		 * particulars of the encoding first.
+		 */
+	case DLT_BACNET_MS_TP:
+		/*
+		 * This DLT supports a few primitives besides "link[N:M]", but
+		 * "link proto", whether explicit or implicit, is not one of
+		 * these.
+		 *
+		 * The third octet of an MS/TP frame is Frame Type, but it is
+		 * the MS/TP frame type [0..7] rather than a network protocol
+		 * type.  It can be tested using "link[2]".  If in future it
+		 * becomes necessary to have a solution that matches the
+		 * problem space better, it would need to be a new special
+		 * primitive that works on MS/TP DLT(s) only and takes names
+		 * for the types, for example, "ms-tp type token".
+		 */
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
+		cstate->off_nl = OFFSET_NOT_SET;
 		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
-
-#endif
 
 	default:
 		/*
