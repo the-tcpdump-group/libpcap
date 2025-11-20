@@ -1665,6 +1665,24 @@
 #define DLT_DECT_NR		301
 
 /*
+ * Linux DSA unknown tag type, for manual debugging only.  In other words, this
+ * DLT is suitable for expert interpretation of hex dumps, and that's it.  For
+ * any automated (identification, saving, loading, filtering, decoding) purpose
+ * please document, assign and implement a different, proper DLT that is
+ * specific to the required DSA tag type.
+ *
+ * In this DLT packets supposedly are Linux DSA packets, which should not be
+ * confused with standard IEEE 802.3 Ethernet frames.  The DSA tag type is
+ * unknown and can be different from one packet to another or malformed or
+ * incorrect or invalid or nonexistent in the first place.  Hence in this DLT
+ * do not assume any version, any header, any payload, any specification, any
+ * byte order, any structure, any format, any software/firmware/hardware
+ * particulars, any implementation, any source, any destination, any direction,
+ * any protocol or any data integrity/consistency whatsoever.
+ */
+#define DLT_LINUX_DSA_UNKNOWN		302
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1675,6 +1693,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	301	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	302	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
