@@ -8232,6 +8232,33 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 		 * the byte after the 3-byte magic number */
 		return gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, outbound ? 0 : 1, 0x01);
 
+	case DLT_DSA_TAG_BRCM:
+		/*
+		 * This DSA tag encodes the frame direction in the three most
+		 * significant bits of its first octet: 0b000***** ("egress",
+		 * switch -> CPU) means "inbound" in libpcap terms and
+		 * 0b001***** ("ingress", CPU -> switch) means "outbound".
+		 */
+		return gen_mcmp(cstate, OR_LINKHDR, 6 + 6, BPF_B,
+		                outbound ? 0x20 : 0x00, 0xe0);
+
+	case DLT_DSA_TAG_DSA:
+		/*
+		 * This DSA tag does not encode the frame direction, but it
+		 * encodes the frame mode, and some modes imply exactly one
+		 * direction.  The mode is the two most significant bits of the
+		 * first octet.  0b00****** ("To_CPU ingress") and 0b10******
+		 * ("To_Sniffer ingress") mean "inbound" in libpcap terms and
+		 * 0b01****** ("From_CPU egress") means "outbound".  0x11******
+		 * ("Forward") can mean either direction, so cannot be used for
+		 * this purpose.
+		 *
+		 * So match 0b01****** for outbound and 0b*0****** otherwise.
+		 */
+		return gen_mcmp(cstate, OR_LINKHDR, 6 + 6, BPF_B,
+		                outbound ? 0x40 : 0x00,
+		                outbound ? 0xc0 : 0x40);
+
 	default:
 		/*
 		 * If we have packet meta-data indicating a direction,
