@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "2 November 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "22 November 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -870,15 +870,26 @@ Exchange Identification (XID) U PDUs
 Frame Reject (FRMR) U PDUs
 .RE
 .IP \fBinbound\fP
-Packet was received by the host performing the capture rather than being
-sent by that host.  This is only supported for certain link-layer types,
-such as SLIP and the ``cooked'' Linux capture mode
-used for the ``any'' device and for some other device types.
+True if the packet was received by the host performing the capture rather than
+sent by that host.  This primitive is supported for certain link-layer types
+only, namely,
+.BR DLT_SLIP ,
+.BR DLT_IPNET ,
+.BR DLT_LINUX_SLL ,
+.BR DLT_LINUX_SLL2 ,
+.BR DLT_PFLOG ,
+.BR DLT_PPP_PPPD ,
+a number of Juniper Networks private types and some types of Linux DSA tag.
+For reference, the ``any'' pseudo-interface uses
+.B DLT_LINUX_SLL
+or
+.B DLT_LINUX_SLL2
+on Linux, and
+.B DLT_IPNET
+on Solaris.
 .IP \fBoutbound\fP
-Packet was sent by the host performing the capture rather than being
-received by that host.  This is only supported for certain link-layer types,
-such as SLIP and the ``cooked'' Linux capture mode
-used for the ``any'' device and for some other device types.
+Same as the above, but for the opposite direction (from the capturing host
+to the network).
 .IP "\fBifindex \fIinterface_index\fR"
 True if the packet was logged via the specified interface (applies only to
 packets logged by the Linux "any" cooked v2 interface).
