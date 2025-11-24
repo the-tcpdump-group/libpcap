@@ -2433,7 +2433,6 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 */
 	if (!is_any_device) {
 		int fd;
-		int arptype;
 
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (fd < 0) {
