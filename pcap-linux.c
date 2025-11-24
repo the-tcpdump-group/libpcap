@@ -345,7 +345,6 @@ static const struct timeval netdown_timeout = {
 static int	iface_get_id(int fd, const char *device, char *ebuf);
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int	iface_get_arptype(int fd, const char *device, char *ebuf);
-static int	iface_exists(const char *device, char *ebuf);
 static int	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
@@ -2433,9 +2432,23 @@ setup_socket(pcap_t *handle, int is_any_device)
 	 * error for non-existent interfaces.
 	 */
 	if (!is_any_device) {
-		status = iface_exists(device, handle->errbuf);
-		if (status != 0)
-			return status;
+		int fd;
+		int arptype;
+
+		fd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (fd < 0) {
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "socket");
+			return PCAP_ERROR;
+		}
+		arptype = iface_get_arptype(fd, device, handle->errbuf);
+		close(fd);
+		if (arptype < 0) {
+			/*
+			 * Fatal error, including PCAP_ERROR_NO_SUCH_DEVICE.
+			 */
+			return arptype;
+		}
 	}
 
 	/*
@@ -4821,50 +4834,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 	handlep->blocks_to_filter_in_userland = handle->cc - n;
 	handlep->filter_in_userland = 1;
 
-	return 0;
-}
-
-/*
- * Check if the given interface exists. Return 0 on success,
- * PCAP_ERROR_NO_SUCH_DEVICE if the interface doesn't exist,
- * or PCAP_ERROR on other failures.
- */
-static int
-iface_exists(const char *device, char *ebuf)
-{
-	int fd;
-	struct ifreq ifr;
-
-	if (strlen(device) >= sizeof(ifr.ifr_name)) {
-		ebuf[0] = '\0';
-		return PCAP_ERROR_NO_SUCH_DEVICE;
-	}
-
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd < 0) {
-		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
-		return PCAP_ERROR;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	pcapint_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
-
-	if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
-		int save_errno = errno;
-		close(fd);
-
-		if (save_errno == ENODEV) {
-			ebuf[0] = '\0';
-			return PCAP_ERROR_NO_SUCH_DEVICE;
-		} else {
-			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    save_errno, "SIOCGIFINDEX on %s", device);
-			return PCAP_ERROR;
-		}
-	}
-
-	close(fd);
 	return 0;
 }
 
