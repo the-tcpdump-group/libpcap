@@ -5220,13 +5220,13 @@ iface_get_ts_types(const char *device, pcap_t *handle, char *ebuf)
 
 		case ENODEV:
 			/*
-			 * No such device.
-			 *
-			 * There's nothing more to say, so clear the
-			 * error message.
+			 * OK, no such device.
+			 * The user will find that out when they try to
+			 * activate the device; just return an empty
+			 * list of time stamp types.
 			 */
-			ebuf[0] = '\0';
-			return PCAP_ERROR_NO_SUCH_DEVICE;
+			handle->tstamp_type_list = NULL;
+			return 0;
 
 		default:
 			/*
