@@ -37,6 +37,7 @@
 #include <stddef.h>
 
 #include "pcap-int.h"
+#include "thread-local.h"
 
 #include "extract.h"
 
@@ -274,7 +275,17 @@ struct addrinfo {
 #include "os-proto.h"
 #endif
 
-#define JMP(c) ((c)|BPF_JMP|BPF_K)
+/*
+ * A valid jump instruction code is a bitwise OR of three values and one of the
+ * values is BPF_JMP.  To make sure both of the other two values are always
+ * present, define a macro of two arguments and use it instead of ORing the
+ * values in place.
+ *
+ * Note that "ja L" (documented as "jmp L" in the 1993 BPF paper) does not quite
+ * follow the pattern and there is no "ja x", but internally it works very much
+ * like "ja #k", so JMP(BPF_JA, BPF_K) is appropriate enough.
+ */
+#define JMP(jtype, src) (BPF_JMP | (jtype) | (src))
 
 /*
  * "Push" the current value of the link-layer header type and link-layer
@@ -611,6 +622,7 @@ static void *newchunk(compiler_state_t *cstate, size_t);
 static void freechunks(compiler_state_t *cstate);
 static inline struct block *new_block(compiler_state_t *cstate, int);
 static inline struct slist *new_stmt(compiler_state_t *cstate, int);
+static struct block *sprepend_to_block(struct slist *, struct block *);
 static struct block *gen_retblk(compiler_state_t *cstate, int);
 static inline void syntax(compiler_state_t *cstate);
 
@@ -634,8 +646,9 @@ static struct block *gen_mcmp_ne(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, bpf_u_int32);
 static struct block *gen_bcmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, const u_char *);
-static struct block *gen_jmp(compiler_state_t *, int, bpf_u_int32,
-    struct slist *);
+static struct block *gen_jmp_k(compiler_state_t *, const int,
+    const bpf_u_int32, struct slist *);
+static struct block *gen_jmp_x(compiler_state_t *, const int, struct slist *);
 static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
@@ -645,7 +658,7 @@ static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
 static struct slist *gen_load_a(compiler_state_t *, enum e_offrel, u_int,
     u_int);
 static struct slist *gen_loadx_iphdrlen(compiler_state_t *);
-static struct block *gen_uncond(compiler_state_t *, int);
+static struct block *gen_uncond(compiler_state_t *, const u_char);
 static inline struct block *gen_true(compiler_state_t *);
 static inline struct block *gen_false(compiler_state_t *);
 static struct block *gen_ether_linktype(compiler_state_t *, bpf_u_int32);
@@ -667,12 +680,13 @@ static struct block *gen_hostop(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, u_int, u_int);
 static struct block *gen_hostop6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, u_int, u_int);
-static struct block *gen_ahostop(compiler_state_t *, const uint8_t, int);
 static struct block *gen_wlanhostop(compiler_state_t *, const u_char *, int);
 static unsigned char is_mac48_linktype(const int);
 static struct block *gen_mac48host(compiler_state_t *, const u_char *,
     const u_char, const char *);
 static struct block *gen_mac48host_byname(compiler_state_t *, const char *,
+    const u_char, const char *);
+static struct block *gen_mac8host(compiler_state_t *, const uint8_t,
     const u_char, const char *);
 static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
@@ -680,8 +694,9 @@ static struct block *gen_host(compiler_state_t *, bpf_u_int32, bpf_u_int32,
     int, int, int);
 static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
     struct in6_addr *, int, int, int);
-static struct block *gen_gateway(compiler_state_t *, const char *,
-    struct addrinfo *, int);
+static struct block *gen_host46_byname(compiler_state_t *, const char *,
+    const u_char, const u_char, const u_char);
+static struct block *gen_gateway(compiler_state_t *, const char *, const u_char);
 static struct block *gen_ip_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ip6_proto(compiler_state_t *, const uint8_t);
 static struct block *gen_ipfrag(compiler_state_t *);
@@ -749,12 +764,11 @@ newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 			return (NULL);
 		}
 		size = CHUNK0SIZE << k;
-		cp->m = (void *)malloc(size);
+		cp->m = calloc(1, size);
 		if (cp->m == NULL) {
 			bpf_set_error(cstate, "out of memory");
 			return (NULL);
 		}
-		memset((char *)cp->m, 0, size);
 		cp->n_left = size;
 		if (n > size) {
 			bpf_set_error(cstate, "out of memory");
@@ -870,8 +884,8 @@ static const char *
 qual2kw(const char *kind, const unsigned id, const char *tokens[],
     const size_t size)
 {
-	static char buf[4][64];
-	static int idx = 0;
+	static thread_local char buf[4][64];
+	static thread_local int idx = 0;
 
 	if (id < size && tokens[id])
 		return tokens[id];
@@ -1011,11 +1025,39 @@ ss7kw(const unsigned id)
 	return qual2kw("MTP keyword", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
 
+// Produce as descriptive an identification string of the DLT as possible.
+static const char *
+pcapint_datalink_val_to_string(const int dlt)
+{
+	static thread_local char ret[1024];
+	const char *name = pcap_datalink_val_to_name(dlt);
+	const char *descr = pcap_datalink_val_to_description(dlt);
+	/*
+	 * Belt and braces: if dlt_choices[] continues to be defined the way it is
+	 * defined now and everything goes well, either both pointers are NULL or
+	 * both pointers are not NULL.  But let's not rely on that.
+	 */
+	if (name) {
+		if (descr)
+			snprintf(ret, sizeof(ret), "DLT_%s (%s)", name, descr);
+		else
+			snprintf(ret, sizeof(ret), "DLT_%s", name);
+		return ret;
+	}
+	// name == NULL
+	if (descr) {
+		snprintf(ret, sizeof(ret), "DLT %d (%s)", dlt, descr);
+		return ret;
+	}
+	// Both are NULL, use a function that always returns a non-NULL.
+	return pcap_datalink_val_to_description_or_dlt(dlt);
+}
+
 static PCAP_NORETURN_DEF void
 fail_kw_on_dlt(compiler_state_t *cstate, const char *keyword)
 {
 	bpf_error(cstate, "'%s' not supported on %s", keyword,
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
 static void
@@ -1070,6 +1112,8 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 #define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
+#define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
+#define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -1313,7 +1357,7 @@ backpatch(struct block *list, struct block *target)
 static void
 merge(struct block *b0, struct block *b1)
 {
-	register struct block **p = &b0;
+	struct block **p = &b0;
 
 	/* Find end of list. */
 	while (*p)
@@ -1324,7 +1368,7 @@ merge(struct block *b0, struct block *b1)
 }
 
 int
-finish_parse(compiler_state_t *cstate, struct block *p)
+finish_parse(compiler_state_t *cstate, struct block *p_arg)
 {
 	/*
 	 * Catch errors reported by us and routines below us, and return -1
@@ -1332,6 +1376,8 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	 */
 	if (setjmp(cstate->top_ctx))
 		return (-1);
+
+	struct block *p = p_arg; // "might be clobbered by longjmp()"
 
 	/*
 	 * Insert before the statements of the first (root) block any
@@ -1370,7 +1416,7 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	if (cstate->linktype == DLT_PPI) {
 		struct block *ppi_dlt_check = gen_cmp(cstate, OR_PACKET,
 			4, BPF_W, SWAPLONG(DLT_IEEE802_11));
-		gen_and(ppi_dlt_check, p);
+		p = gen_and(ppi_dlt_check, p);
 	}
 
 	backpatch(p, gen_retblk_internal(cstate, cstate->snaplen));
@@ -1380,31 +1426,67 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	return (0);
 }
 
-void
+struct block *
 gen_and(struct block *b0, struct block *b1)
 {
+	// False and X is false.
+	if (b0->meaning == IS_FALSE)
+		return b0;
+	// X and false is false.
+	if (b1->meaning == IS_FALSE)
+		return b1;
+	// True and X is X.
+	if (b0->meaning == IS_TRUE)
+		return b1;
+	// X and true is X.
+	if (b1->meaning == IS_TRUE)
+		return b0;
+
+	// b0->meaning == IS_UNCERTAIN && b1->meaning == IS_UNCERTAIN
 	backpatch(b0, b1->head);
 	b0->sense = !b0->sense;
 	b1->sense = !b1->sense;
 	merge(b1, b0);
 	b1->sense = !b1->sense;
 	b1->head = b0->head;
+	return b1;
 }
 
-void
+struct block *
 gen_or(struct block *b0, struct block *b1)
 {
+	// False or X is X.
+	if (b0->meaning == IS_FALSE)
+		return b1;
+	// X or false is X.
+	if (b1->meaning == IS_FALSE)
+		return b0;
+	// True or X is true.
+	if (b0->meaning == IS_TRUE)
+		return b0;
+	// X or true is true.
+	if (b1->meaning == IS_TRUE)
+		return b1;
+
+	// b0->meaning == IS_UNCERTAIN && b1->meaning == IS_UNCERTAIN
 	b0->sense = !b0->sense;
 	backpatch(b0, b1->head);
 	b0->sense = !b0->sense;
 	merge(b1, b0);
 	b1->head = b0->head;
+	return b1;
 }
 
-void
+struct block *
 gen_not(struct block *b)
 {
 	b->sense = !b->sense;
+	// A switch on an enum is a source of compiler warnings.
+	if (b->meaning == IS_TRUE)
+		b->meaning = IS_FALSE;
+	else if (b->meaning == IS_FALSE)
+		b->meaning = IS_TRUE;
+	return b;
 }
 
 static struct block *
@@ -1480,43 +1562,60 @@ static struct block *
 gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, const u_char *v)
 {
-	register struct block *b, *tmp;
+	struct block *b, *tmp;
 
 	b = NULL;
 	while (size >= 4) {
-		register const u_char *p = &v[size - 4];
+		const u_char *p = &v[size - 4];
 
 		tmp = gen_cmp(cstate, offrel, offset + size - 4, BPF_W,
 		    EXTRACT_BE_U_4(p));
 		if (b != NULL)
-			gen_and(b, tmp);
+			tmp = gen_and(b, tmp);
 		b = tmp;
 		size -= 4;
 	}
 	while (size >= 2) {
-		register const u_char *p = &v[size - 2];
+		const u_char *p = &v[size - 2];
 
 		tmp = gen_cmp(cstate, offrel, offset + size - 2, BPF_H,
 		    EXTRACT_BE_U_2(p));
 		if (b != NULL)
-			gen_and(b, tmp);
+			tmp = gen_and(b, tmp);
 		b = tmp;
 		size -= 2;
 	}
 	if (size > 0) {
 		tmp = gen_cmp(cstate, offrel, offset, BPF_B, v[0]);
 		if (b != NULL)
-			gen_and(b, tmp);
+			tmp = gen_and(b, tmp);
 		b = tmp;
 	}
 	return b;
 }
 
+/*
+ * Generate an instruction block for one of {"jeq #k", "jgt #k", "jge #k",
+ * "jset #k", "ja L"}.
+ */
 static struct block *
-gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
+gen_jmp_k(compiler_state_t *cstate, const int jtype, const bpf_u_int32 v,
+          struct slist *stmts)
 {
-	struct block *b = new_block(cstate, JMP(jtype));
+	struct block *b = new_block(cstate, JMP(jtype, BPF_K));
 	b->s.k = v;
+	b->stmts = stmts;
+	return b;
+}
+
+/*
+ * Generate an instruction block for one of {"jeq x", "jgt x", "jge x",
+ * "jset x"}.
+ */
+static struct block *
+gen_jmp_x(compiler_state_t *cstate, const int jtype, struct slist *stmts)
+{
+	struct block *b = new_block(cstate, JMP(jtype, BPF_X));
 	b->stmts = stmts;
 	return b;
 }
@@ -1524,15 +1623,13 @@ gen_jmp(compiler_state_t *cstate, int jtype, bpf_u_int32 v, struct slist *stmts)
 static struct block *
 gen_set(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
 {
-	return gen_jmp(cstate, BPF_JSET, v, stmts);
+	return gen_jmp_k(cstate, BPF_JSET, v, stmts);
 }
 
 static struct block *
 gen_unset(compiler_state_t *cstate, bpf_u_int32 v, struct slist *stmts)
 {
-	struct block *b = gen_set(cstate, v, stmts);
-	gen_not(b);
-	return b;
+	return gen_not(gen_set(cstate, v, stmts));
 }
 
 /*
@@ -1557,10 +1654,8 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		sappend(s, s2);
 	}
 
-	b = gen_jmp(cstate, jtype, v, s);
-	if (reverse)
-		gen_not(b);
-	return b;
+	b = gen_jmp_k(cstate, jtype, v, s);
+	return reverse ? gen_not(b) : b;
 }
 
 static int
@@ -2011,13 +2106,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
-	case DLT_BACNET_MS_TP:
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
-		break;
-
 	case DLT_JUNIPER_SERVICES:
 		cstate->off_linktype.constant_part = 12;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
@@ -2102,16 +2190,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;
 		break;
 
-	case DLT_AX25_KISS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_IPNET:
 		cstate->off_linktype.constant_part = 1;
 		cstate->off_linkpl.constant_part = 24;	/* ipnet header length */
@@ -2135,82 +2213,67 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
+	case DLT_DSA_TAG_BRCM:
+		cstate->off_linktype.constant_part = 6 + 6 + 4; // dst, src, DSA tag
+		cstate->off_linkpl.constant_part = cstate->off_linktype.constant_part + 2; // idem + EtherType
+		cstate->off_nl = 0; // Ethernet II
+		cstate->off_nl_nosnap = 3; // 802.3+802.2
+		break;
+
+	case DLT_DSA_TAG_DSA:
+		cstate->off_linktype.constant_part = 6 + 6 + 4; // dst, src, DSA tag
+		cstate->off_linkpl.constant_part = cstate->off_linktype.constant_part + 2; // idem + EtherType
+		cstate->off_nl = 0; // Ethernet II
+		cstate->off_nl_nosnap = 3; // 802.3+802.2
+		break;
+
 	case DLT_EN3MB:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_AX25:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_PRONET:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 	case DLT_CHAOS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 #ifdef DLT_HIPPI
 	case DLT_HIPPI:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
 #endif
-
 	case DLT_REDBACK_SMARTEDGE:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
-		break;
-
-
 #ifdef DLT_HHDLC
 	case DLT_HHDLC:
+#endif
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
+	case DLT_AX25_KISS:
+		/*
+		 * Idem, plus the initial code for AX.25 KISS commented:
+		 *
+		 * - "variable, min 15, max 71 steps of 7" about off_linktype
+		 * - "variable, min 16, max 71 steps of 7" about off_nl
+		 *
+		 * It is not clear how that relates with the AX.25 and KISS
+		 * specifications, also there is a possibility of Linux kernel
+		 * modifying the packet type and/or structure.  So if anybody
+		 * would like to implement a better filtering support for this
+		 * DLT, it would be a good idea to verify and to document all
+		 * particulars of the encoding first.
+		 */
+	case DLT_BACNET_MS_TP:
+		/*
+		 * This DLT supports a few primitives besides "link[N:M]", but
+		 * "link proto", whether explicit or implicit, is not one of
+		 * these.
+		 *
+		 * The third octet of an MS/TP frame is Frame Type, but it is
+		 * the MS/TP frame type [0..7] rather than a network protocol
+		 * type.  It can be tested using "link[2]".  If in future it
+		 * becomes necessary to have a solution that matches the
+		 * problem space better, it would need to be a new special
+		 * primitive that works on MS/TP DLT(s) only and takes names
+		 * for the types, for example, "ms-tp type token".
+		 */
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
+		cstate->off_nl = OFFSET_NOT_SET;
 		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
-
-#endif
 
 	default:
 		/*
@@ -2423,15 +2486,23 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 	return s;
 }
 
-
+/*
+ * Produce an instruction block with a final branch statement that takes the
+ * true branch iff rsense is not zero.  Since this function detects Boolean
+ * constants for potential later use, the resulting block must not be modified
+ * directly afterwards, instead it should be used as an argument to gen_and(),
+ * gen_or(), gen_not() and sprepend_to_block().
+ */
 static struct block *
-gen_uncond(compiler_state_t *cstate, int rsense)
+gen_uncond(compiler_state_t *cstate, const u_char rsense)
 {
 	struct slist *s;
 
 	s = new_stmt(cstate, BPF_LD|BPF_IMM);
 	s->s.k = !rsense;
-	return gen_jmp(cstate, BPF_JEQ, 0, s);
+	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0, s);
+	ret->meaning = rsense ? IS_TRUE : IS_FALSE;
+	return ret;
 }
 
 static inline struct block *
@@ -2479,8 +2550,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 		b1 = gen_cmp(cstate, OR_LLC, 0, BPF_H, (ll_proto << 8) | ll_proto);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case LLCSAP_IPX:
 		/*
@@ -2517,14 +2587,14 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp(cstate, OR_LLC, 0, BPF_B, LLCSAP_IPX);
 		b1 = gen_cmp(cstate, OR_LLC, 0, BPF_H, 0xFFFF);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 
 		/*
 		 * Now we add code to check for SNAP frames with
 		 * ETHERTYPE_IPX, i.e. Ethernet_SNAP.
 		 */
 		b0 = gen_snap(cstate, 0x000000, ETHERTYPE_IPX);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 
 		/*
 		 * Now we generate code to check for 802.3
@@ -2538,7 +2608,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * as those checks should only be done on 802.3
 		 * frames, not on Ethernet frames.
 		 */
-		gen_and(b0, b1);
+		b1 = gen_and(b0, b1);
 
 		/*
 		 * Now add the check for Ethernet_II frames, and
@@ -2546,8 +2616,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * types.
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ETHERTYPE_IPX);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case ETHERTYPE_ATALK:
 	case ETHERTYPE_AARP:
@@ -2578,7 +2647,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			b1 = gen_snap(cstate, 0x080007, ETHERTYPE_ATALK);
 		else	/* ll_proto == ETHERTYPE_AARP */
 			b1 = gen_snap(cstate, 0x000000, ETHERTYPE_AARP);
-		gen_and(b0, b1);
+		b1 = gen_and(b0, b1);
 
 		/*
 		 * Check for Ethernet encapsulation (Ethertalk
@@ -2587,8 +2656,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ll_proto);
 
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	default:
 		if (ll_proto <= ETHERMTU) {
@@ -2603,8 +2671,7 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 */
 			b0 = gen_cmp_le(cstate, OR_LINKTYPE, 0, BPF_H, ETHERMTU);
 			b1 = gen_cmp(cstate, OR_LINKTYPE, 2, BPF_B, ll_proto);
-			gen_and(b0, b1);
-			return b1;
+			return gen_and(b0, b1);
 		} else {
 			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			/*
@@ -2712,8 +2779,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, LINUX_SLL_P_802_2);
 		b1 = gen_cmp(cstate, OR_LLC, 0, BPF_H, (ll_proto << 8) | ll_proto);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case LLCSAP_IPX:
 		/*
@@ -2743,16 +2809,16 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp(cstate, OR_LLC, 0, BPF_B, LLCSAP_IPX);
 		b1 = gen_snap(cstate, 0x000000, ETHERTYPE_IPX);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, LINUX_SLL_P_802_2);
-		gen_and(b0, b1);
+		b1 = gen_and(b0, b1);
 
 		/*
 		 * Now check for 802.3 frames and OR that with
 		 * the previous test.
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, LINUX_SLL_P_802_3);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 
 		/*
 		 * Now add the check for Ethernet_II frames, and
@@ -2760,8 +2826,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * types.
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ETHERTYPE_IPX);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case ETHERTYPE_ATALK:
 	case ETHERTYPE_AARP:
@@ -2792,7 +2857,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			b1 = gen_snap(cstate, 0x080007, ETHERTYPE_ATALK);
 		else	/* ll_proto == ETHERTYPE_AARP */
 			b1 = gen_snap(cstate, 0x000000, ETHERTYPE_AARP);
-		gen_and(b0, b1);
+		b1 = gen_and(b0, b1);
 
 		/*
 		 * Check for Ethernet encapsulation (Ethertalk
@@ -2801,8 +2866,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, ll_proto);
 
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	default:
 		if (ll_proto <= ETHERMTU) {
@@ -2817,8 +2881,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(cstate, OR_LINKHDR, cstate->off_linkpl.constant_part, BPF_B,
 			     ll_proto);
-			gen_and(b0, b1);
-			return b1;
+			return gen_and(b0, b1);
 		} else {
 			assert_maxval(cstate, "EtherType", ll_proto, UINT16_MAX);
 			/*
@@ -2938,7 +3001,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Compare with 0x80211000.
 		 */
-		sjeq_avs_cookie = new_stmt(cstate, JMP(BPF_JEQ));
+		sjeq_avs_cookie = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		sjeq_avs_cookie->s.k = 0x80211000;
 		sappend(s1, sjeq_avs_cookie);
 
@@ -2962,7 +3025,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * it's added to the PC, so, as we're jumping
 		 * over a single instruction, it should be 1.)
 		 */
-		sjcommon = new_stmt(cstate, JMP(BPF_JA));
+		sjcommon = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 		sjcommon->s.k = 1;
 		sappend(s1, sjcommon);
 
@@ -3251,7 +3314,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * a data frame has the 0x08 bit (b3) in that field set and the
 	 * 0x04 bit (b2) clear.
 	 */
-	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_data_frame_1->s.k = IEEE80211_FC0_TYPE_DATA;
 	sappend(s, sjset_data_frame_1);
 
@@ -3259,7 +3322,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * If b3 is set, test b2, otherwise go to the first statement of
 	 * the rest of the program.
 	 */
-	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_data_frame_2->s.k = IEEE80211_FC0_TYPE_CTL;
 	sappend(s, sjset_data_frame_2);
 	sjset_data_frame_1->s.jf = snext;
@@ -3270,7 +3333,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * program.
 	 */
 	sjset_data_frame_2->s.jt = snext;
-	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET));
+	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 	sjset_qos->s.k = IEEE80211_FC0_SUBTYPE_QOS;
 	sappend(s, sjset_qos);
 
@@ -3318,7 +3381,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s2->s.k = 4;
 		sappend(s, s2);
 
-		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_flags_present->s.k = SWAPLONG(0x00000002);
 		sappend(s, sjset_radiotap_flags_present);
 
@@ -3330,7 +3393,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the "extension" bit set in that word?
 		 */
-		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_ext_present->s.k = SWAPLONG(0x80000000);
 		sappend(s, sjset_radiotap_ext_present);
 		sjset_radiotap_flags_present->s.jt = sjset_radiotap_ext_present;
@@ -3343,7 +3406,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
 		 */
-		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_radiotap_tsft_present->s.k = SWAPLONG(0x00000001);
 		sappend(s, sjset_radiotap_tsft_present);
 		sjset_radiotap_ext_present->s.jf = sjset_radiotap_tsft_present;
@@ -3362,7 +3425,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jt = s2;
 
-		sjset_tsft_datapad = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_tsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_tsft_datapad->s.k = 0x20;
 		sappend(s, sjset_tsft_datapad);
 
@@ -3379,7 +3442,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jf = s2;
 
-		sjset_notsft_datapad = new_stmt(cstate, JMP(BPF_JSET));
+		sjset_notsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
 		sjset_notsft_datapad->s.k = 0x20;
 		sappend(s, sjset_notsft_datapad);
 
@@ -3474,6 +3537,12 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	case DLT_IEEE802_11_RADIO:
 	case DLT_PPI:
 		s = gen_load_802_11_header_len(cstate, s, b->stmts);
+		/*
+		 * After this call s may have changed, b->stmts has not
+		 * changed, s and b->stmts have not merged into one linked
+		 * list, therefore the meaning of b, whether a Boolean constant
+		 * or not, has not changed.
+		 */
 		break;
 
 	case DLT_PFLOG:
@@ -3509,10 +3578,7 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * and make the resulting list the list of statements
 	 * for the block.
 	 */
-	if (s != NULL) {
-		sappend(s, b->stmts);
-		b->stmts = s;
-	}
+	sprepend_to_block(s, b);
 }
 
 /*
@@ -3662,6 +3728,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
+	case DLT_DSA_TAG_DSA:
 		/* Geneve has an EtherType regardless of whether there is an
 		 * L2 header. VXLAN always has an EtherType. */
 		if (!cstate->is_encap)
@@ -3670,9 +3738,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			b0 = NULL;
 
 		b1 = gen_ether_linktype(cstate, ll_proto);
-		if (b0 != NULL)
-			gen_and(b0, b1);
-		return b1;
+		return b0 ? gen_and(b0, b1) : b1;
 		/*NOTREACHED*/
 
 	case DLT_C_HDLC:
@@ -3705,8 +3771,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * Now check for the specified link-layer type.
 		 */
 		b1 = gen_llc_linktype(cstate, ll_proto);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 		/*NOTREACHED*/
 
 	case DLT_FDDI:
@@ -3739,8 +3804,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		b0 = gen_atm_prototype(cstate, PT_LLC);
 		b1 = gen_llc_linktype(cstate, ll_proto);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 		/*NOTREACHED*/
 
 	case DLT_LINUX_SLL:
@@ -3820,10 +3884,9 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 */
 			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_IP);
 			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_VJC);
-			gen_or(b0, b1);
+			b1 = gen_or(b0, b1);
 			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, PPP_VJNC);
-			gen_or(b1, b0);
-			return b0;
+			return gen_or(b1, b0);
 
 		default:
 			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H,
@@ -3869,10 +3932,9 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 				 */
 				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_BSD);
 				b1 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_FREEBSD);
-				gen_or(b0, b1);
+				b1 = gen_or(b0, b1);
 				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_DARWIN);
-				gen_or(b0, b1);
-				return (b1);
+				return gen_or(b0, b1);
 			} else {
 				/*
 				 * Live capture, so we only need to
@@ -3927,6 +3989,28 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
 		/*
+		 * In ARCnet header the 8-bit SC (System Code) field identifies
+		 * the higher-level protocol in the INFO (Information) part of
+		 * the packet, same as the 16-bit EtherType > 1500 in Ethernet.
+		 * RFC 1051 (March 1988) allocated ARCTYPE_IP_OLD to IPv4 and
+		 * ARCTYPE_ARP_OLD to ARP, RFC 1201 (February 1991) allocated
+		 * ARCTYPE_IP to IPv4 and ARCTYPE_ARP to ARP.  ARCnet header
+		 * encoding and length differ between the two specifications.
+		 *
+		 * This DLT case previously matched IPv4 and ARP by ORing, for
+		 * backward compatibility reasons, respective SCs from RFC 1051
+		 * and RFC 1201.  This worked as expected when a filter program
+		 * tested SC to tell whether a packet is an IPv4/ARP packet,
+		 * but did not access INFO (where the IPv4 or ARP header is).
+		 *
+		 * However, for filter expressions that need to access INFO the
+		 * C code that processes IPv4/ARP header fields generates
+		 * exactly one match and uses the DLT's off_linkpl, which
+		 * init_linktype() initializes to RFC 1201 encoding, so
+		 * combining that with an RFC 1051 SC match produced incorrect
+		 * filter programs.  This is why this DLT case in the current
+		 * implementation matches RFC 1201 SCs only.
+		 *
 		 * XXX should we check for first fragment if the protocol
 		 * uses PHDS?
 		 */
@@ -3940,20 +4024,12 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 				ARCTYPE_INET6));
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
+			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
 			    ARCTYPE_IP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_IP_OLD);
-			gen_or(b0, b1);
-			return (b1);
 
 		case ETHERTYPE_ARP:
-			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
+			return gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
 			    ARCTYPE_ARP);
-			b1 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
-			    ARCTYPE_ARP_OLD);
-			gen_or(b0, b1);
-			return (b1);
 
 		case ETHERTYPE_REVARP:
 			return (gen_cmp(cstate, OR_LINKTYPE, 0, BPF_B,
@@ -4008,9 +4084,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO8473_CLNP);
 			b1 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO9542_ESIS);
 			b2 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO10589_ISIS);
-			gen_or(b1, b2);
-			gen_or(b0, b2);
-			return b2;
+			b2 = gen_or(b1, b2);
+			return gen_or(b0, b2);
 
 		default:
 			return gen_false(cstate);
@@ -4052,44 +4127,8 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 */
 		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
 
-	case DLT_BACNET_MS_TP:
-		return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_W, 0x55FF0000, 0xffff0000);
-
 	case DLT_IPNET:
 		return gen_ipnet_linktype(cstate, ll_proto);
-
-	case DLT_LINUX_IRDA:
-	case DLT_DOCSIS:
-	case DLT_MTP2:
-	case DLT_MTP2_WITH_PHDR:
-	case DLT_ERF:
-	case DLT_PFSYNC:
-	case DLT_LINUX_LAPD:
-	case DLT_USB_FREEBSD:
-	case DLT_USB_LINUX:
-	case DLT_USB_LINUX_MMAPPED:
-	case DLT_USBPCAP:
-	case DLT_BLUETOOTH_HCI_H4:
-	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-	case DLT_CAN20B:
-	case DLT_CAN_SOCKETCAN:
-	case DLT_IEEE802_15_4:
-	case DLT_IEEE802_15_4_LINUX:
-	case DLT_IEEE802_15_4_NONASK_PHY:
-	case DLT_IEEE802_15_4_NOFCS:
-	case DLT_IEEE802_15_4_TAP:
-	case DLT_IEEE802_16_MAC_CPS_RADIO:
-	case DLT_SITA:
-	case DLT_RAIF1:
-	case DLT_IPMB_KONTRON:
-	case DLT_I2C_LINUX:
-	case DLT_AX25_KISS:
-	case DLT_NFLOG:
-		/* Using the fixed-size NFLOG header it is possible to tell only
-		 * the address family of the packet, other meaningful data is
-		 * either missing or behind TLVs.
-		 */
-		break; // not implemented
 
 	default:
 		/*
@@ -4109,8 +4148,13 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			/*NOTREACHED */
 		}
 	}
+	/*
+	 * For example, using the fixed-size NFLOG header it is possible
+	 * to tell only the address family of the packet, other meaningful
+	 * data is either missing or behind TLVs.
+	 */
 	bpf_error(cstate, "link-layer type filtering not implemented for %s",
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
 /*
@@ -4147,6 +4191,8 @@ gen_llc_internal(compiler_state_t *cstate)
 	switch (cstate->linktype) {
 
 	case DLT_EN10MB:
+	case DLT_DSA_TAG_BRCM:
+	case DLT_DSA_TAG_DSA:
 		/*
 		 * We check for an Ethernet type field less or equal than
 		 * 1500, which means it's an 802.3 length field.
@@ -4158,8 +4204,8 @@ gen_llc_internal(compiler_state_t *cstate)
 		 * 0xFF, to rule out NetWare-over-802.3.
 		 */
 		b1 = gen_cmp_ne(cstate, OR_LLC, 0, BPF_H, 0xFFFF);
-		gen_and(b0, b1);
-		return b1;
+
+		return gen_and(b0, b1);
 
 	case DLT_SUNATM:
 		/*
@@ -4246,8 +4292,7 @@ gen_llc_i(compiler_state_t *cstate)
 	s = gen_load_a(cstate, OR_LLC, 2, BPF_B);
 	b1 = gen_unset(cstate, 0x01, s);
 
-	gen_and(b0, b1);
-	return b1;
+	return gen_and(b0, b1);
 }
 
 struct block *
@@ -4272,8 +4317,8 @@ gen_llc_s(compiler_state_t *cstate)
 	 * the appropriate value for S frames.
 	 */
 	b1 = gen_mcmp(cstate, OR_LLC, 2, BPF_B, LLC_S_FMT, 0x03);
-	gen_and(b0, b1);
-	return b1;
+
+	return gen_and(b0, b1);
 }
 
 struct block *
@@ -4298,8 +4343,8 @@ gen_llc_u(compiler_state_t *cstate)
 	 * the appropriate value for U frames.
 	 */
 	b1 = gen_mcmp(cstate, OR_LLC, 2, BPF_B, LLC_U_FMT, 0x03);
-	gen_and(b0, b1);
-	return b1;
+
+	return gen_and(b0, b1);
 }
 
 struct block *
@@ -4323,8 +4368,8 @@ gen_llc_s_subtype(compiler_state_t *cstate, bpf_u_int32 subtype)
 	 * Now check for an S frame with the appropriate type.
 	 */
 	b1 = gen_mcmp(cstate, OR_LLC, 2, BPF_B, subtype, LLC_S_CMD_MASK);
-	gen_and(b0, b1);
-	return b1;
+
+	return gen_and(b0, b1);
 }
 
 struct block *
@@ -4348,8 +4393,8 @@ gen_llc_u_subtype(compiler_state_t *cstate, bpf_u_int32 subtype)
 	 * Now check for a U frame with the appropriate type.
 	 */
 	b1 = gen_mcmp(cstate, OR_LLC, 2, BPF_B, subtype, LLC_U_CMD_MASK);
-	gen_and(b0, b1);
-	return b1;
+
+	return gen_and(b0, b1);
 }
 
 /*
@@ -4460,27 +4505,16 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	case Q_AND:
 		b0 = gen_hostop(cstate, addr, mask, Q_SRC, src_off, dst_off);
 		b1 = gen_hostop(cstate, addr, mask, Q_DST, src_off, dst_off);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_DEFAULT:
 	case Q_OR:
 		b0 = gen_hostop(cstate, addr, mask, Q_SRC, src_off, dst_off);
 		b1 = gen_hostop(cstate, addr, mask, Q_DST, src_off, dst_off);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
+		return gen_or(b0, b1);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	return gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
@@ -4516,45 +4550,28 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 	case Q_AND:
 		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, src_off, dst_off);
 		b1 = gen_hostop6(cstate, addr, mask, Q_DST, src_off, dst_off);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_DEFAULT:
 	case Q_OR:
 		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, src_off, dst_off);
 		b1 = gen_hostop6(cstate, addr, mask, Q_DST, src_off, dst_off);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
+		return gen_or(b0, b1);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/* this order is important */
 	memcpy(a, addr, sizeof(a));
 	memcpy(m, mask, sizeof(m));
-	b1 = NULL;
+	b1 = gen_true(cstate);
 	for (int i = 3; i >= 0; i--) {
-		// Same as the Q_IP case in gen_host().
-		if (m[i] == 0 && a[i] == 0)
-			continue;
 		b0 = gen_mcmp(cstate, OR_LINKPL, offset + 4 * i, BPF_W,
 		    ntohl(a[i]), ntohl(m[i]));
-		if (b1)
-			gen_and(b0, b1);
-		else
-			b1 = b0;
+		b1 = gen_and(b0, b1);
 	}
-	return b1 ? b1 : gen_true(cstate);
+	return b1;
 }
 
 /*
@@ -4564,8 +4581,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 static struct block *
 gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 {
-	register struct block *b0, *b1, *b2;
-	register struct slist *s;
+	struct block *b0, *b1, *b2;
+	struct slist *s;
 
 #ifdef ENABLE_WLAN_FILTERING_PATCH
 	/*
@@ -4611,7 +4628,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * If To DS is set, the SA is at 24.
 		 */
 		b0 = gen_bcmp(cstate, OR_LINKHDR, 24, 6, eaddr);
-		gen_and(b1, b0);
+		b0 = gen_and(b1, b0);
 
 		/*
 		 * Now, check for To DS not set, i.e. check
@@ -4624,14 +4641,14 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * If To DS is not set, the SA is at 16.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 
 		/*
 		 * Now OR together the last two checks.  That gives
 		 * the complete set of checks for data frames with
 		 * From DS set.
 		 */
-		gen_or(b1, b0);
+		b0 = gen_or(b1, b0);
 
 		/*
 		 * Now check for From DS being set, and AND that with
@@ -4639,7 +4656,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 */
 		s = gen_load_a(cstate, OR_LINKHDR, 1, BPF_B);
 		b1 = gen_set(cstate, IEEE80211_FC1_DIR_FROMDS, s);
-		gen_and(b1, b0);
+		b0 = gen_and(b1, b0);
 
 		/*
 		 * Now check for data frames with From DS not set.
@@ -4651,14 +4668,14 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * If From DS isn't set, the SA is at 10.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 
 		/*
 		 * Now OR together the checks for data frames with
 		 * From DS not set and for data frames with From DS
 		 * set; that gives the checks done for data frames.
 		 */
-		gen_or(b1, b0);
+		b0 = gen_or(b1, b0);
 
 		/*
 		 * Now check for a data frame.
@@ -4670,7 +4687,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * AND that with the checks done for data frames.
 		 */
-		gen_and(b1, b0);
+		b0 = gen_and(b1, b0);
 
 		/*
 		 * If the high-order bit of the type value is 0, this
@@ -4684,14 +4701,14 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * For management frames, the SA is at 10.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 
 		/*
 		 * OR that with the checks done for data frames.
 		 * That gives the checks done for management and
 		 * data frames.
 		 */
-		gen_or(b1, b0);
+		b0 = gen_or(b1, b0);
 
 		/*
 		 * If the low-order bit of the type value is 1,
@@ -4708,8 +4725,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * AND that with the checks for data and management
 		 * frames.
 		 */
-		gen_and(b1, b0);
-		return b0;
+		return gen_and(b1, b0);
 
 	case Q_DST:
 		/*
@@ -4740,7 +4756,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * If To DS is set, the DA is at 16.
 		 */
 		b0 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
-		gen_and(b1, b0);
+		b0 = gen_and(b1, b0);
 
 		/*
 		 * Now, check for To DS not set, i.e. check
@@ -4753,13 +4769,13 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * If To DS is not set, the DA is at 4.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 4, 6, eaddr);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 
 		/*
 		 * Now OR together the last two checks.  That gives
 		 * the complete set of checks for data frames.
 		 */
-		gen_or(b1, b0);
+		b0 = gen_or(b1, b0);
 
 		/*
 		 * Now check for a data frame.
@@ -4771,7 +4787,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * AND that with the checks done for data frames.
 		 */
-		gen_and(b1, b0);
+		b0 = gen_and(b1, b0);
 
 		/*
 		 * If the high-order bit of the type value is 0, this
@@ -4785,14 +4801,14 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * For management frames, the DA is at 4.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 4, 6, eaddr);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 
 		/*
 		 * OR that with the checks done for data frames.
 		 * That gives the checks done for management and
 		 * data frames.
 		 */
-		gen_or(b1, b0);
+		b0 = gen_or(b1, b0);
 
 		/*
 		 * If the low-order bit of the type value is 1,
@@ -4809,21 +4825,18 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * AND that with the checks for data and management
 		 * frames.
 		 */
-		gen_and(b1, b0);
-		return b0;
+		return gen_and(b1, b0);
 
 	case Q_AND:
 		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
 		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_DEFAULT:
 	case Q_OR:
 		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
 		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	/*
 	 * XXX - add BSSID keyword?
@@ -4841,11 +4854,10 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 			IEEE80211_FC0_SUBTYPE_MASK);
 		b2 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_and(b1, b2);
-		gen_or(b0, b2);
+		b2 = gen_and(b1, b2);
+		b2 = gen_or(b0, b2);
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-		gen_and(b2, b1);
-		return b1;
+		return gen_and(b2, b1);
 
 	case Q_ADDR3:
 		/*
@@ -4854,8 +4866,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		b0 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
 			IEEE80211_FC0_TYPE_MASK);
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_ADDR4:
 		/*
@@ -4867,8 +4878,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		b0 = gen_mcmp(cstate, OR_LINKHDR, 1, BPF_B,
 			IEEE80211_FC1_DIR_DSTODS, IEEE80211_FC1_DIR_MASK);
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 24, 6, eaddr);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_RA:
 		/*
@@ -4892,8 +4902,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		/*
 		 * AND that with the check of addr1.
 		 */
-		gen_and(b1, b0);
-		return (b0);
+		return gen_and(b1, b0);
 
 	case Q_TA:
 		/*
@@ -4910,8 +4919,8 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 			IEEE80211_FC0_SUBTYPE_MASK);
 		b2 = gen_mcmp_ne(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
 			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_and(b1, b2);
-		gen_or(b0, b2);
+		b2 = gen_and(b1, b2);
+		b2 = gen_or(b0, b2);
 
 		/*
 		 * If the high-order bit of the type value is 0, this
@@ -4925,16 +4934,15 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 * AND that with the check for frames other than
 		 * CTS and ACK frames.
 		 */
-		gen_and(b1, b2);
+		b2 = gen_and(b1, b2);
 
 		/*
 		 * Check addr2.
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-		gen_and(b2, b1);
-		return b1;
+		return gen_and(b2, b1);
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "dir", dir);
 	/*NOTREACHED*/
 }
 
@@ -4979,28 +4987,17 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		/* Inefficient because we do our Calvinball dance twice */
 		b0 = gen_dnhostop(cstate, addr, Q_SRC);
 		b1 = gen_dnhostop(cstate, addr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_DEFAULT:
 	case Q_OR:
 		/* Inefficient because we do our Calvinball dance twice */
 		b0 = gen_dnhostop(cstate, addr, Q_SRC);
 		b1 = gen_dnhostop(cstate, addr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
+		return gen_or(b0, b1);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/*
@@ -5035,13 +5032,13 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
 	b1 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_lh,
 	    BPF_H, SWAPSHORT(addr));
-	gen_and(tmp, b1);
+	b1 = gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x06U, 0x07U);
 	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_lh, BPF_H,
 	    SWAPSHORT(addr));
-	gen_and(tmp, b2);
-	gen_or(b2, b1);
+	b2 = gen_and(tmp, b2);
+	b1 = gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
 	if (dir == Q_DST) {
 		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
@@ -5051,9 +5048,9 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
 		b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
 		    SWAPSHORT(addr));
-		gen_and(tmp, b2);
+		b2 = gen_and(tmp, b2);
 	}
-	gen_or(b2, b1);
+	b1 = gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
 	if (dir == Q_DST) {
 		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
@@ -5063,11 +5060,10 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
 		b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
 		    SWAPSHORT(addr));
-		gen_and(tmp, b2);
+		b2 = gen_and(tmp, b2);
 	}
-	gen_or(b2, b1);
 
-	return b1;
+	return gen_or(b2, b1);
 }
 
 /*
@@ -5087,16 +5083,14 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
 		/* match the IPv4 version number */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case ETHERTYPE_IPV6:
 		/* match the bottom-of-stack bit */
 		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
 		/* match the IPv6 version number */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	default:
 		/* FIXME add other L3 proto IDs */
@@ -5121,95 +5115,50 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		 */
 		if (cstate->label_stack_depth == 0) {
 			b1 = gen_host(cstate, addr, mask, Q_ARP, dir, type);
-			gen_or(b0, b1);
+			b1 = gen_or(b0, b1);
 			b0 = gen_host(cstate, addr, mask, Q_RARP, dir, type);
-			gen_or(b1, b0);
+			b0 = gen_or(b1, b0);
 		}
 		return b0;
 
-	case Q_LINK:
-		// "link net NETNAME" and variations thereof
-		break; // invalid qualifier
-
 	case Q_IP:
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-		/*
-		 * Belt and braces: if other code works correctly, any host
-		 * bits are clear and mask == 0 means addr == 0.  In this case
-		 * the call to gen_hostop() would produce an "always true"
-		 * instruction block and ANDing it with the link type check
-		 * would be a no-op.
-		 */
-		if (mask == 0 && addr == 0)
-			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 12, 16);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_RARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_REVARP);
-		// Same as for Q_IP above.
-		if (mask == 0 && addr == 0)
+		/*
+		 * If this DLT does not support RARP, the result of
+		 * gen_linktype() is a Boolean false, then the subsequent
+		 * gen_and() would discard the result of gen_hostop() and
+		 * return the Boolean false.
+		 *
+		 * However, if this DLT also uses a variable-length link-layer
+		 * header (which means DLT_PFLOG only at the time of this
+		 * writing), a side effect of the gen_hostop() invocation
+		 * would be registering a demand for a variable-length offset
+		 * preamble, which a Boolean constant never needs, so in this
+		 * case return early and have one fewer reasons to produce the
+		 * preamble in insert_compute_vloffsets().
+		 */
+		if (b0->meaning == IS_FALSE)
 			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_ARP:
 		b0 = gen_linktype(cstate, ETHERTYPE_ARP);
-		// Same as for Q_IP above.
-		if (mask == 0 && addr == 0)
+		// same as for Q_RARP
+		if (b0->meaning == IS_FALSE)
 			return b0;
 		b1 = gen_hostop(cstate, addr, mask, dir, 14, 24);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-		break; // invalid qualifier
+		return gen_and(b0, b1);
 
 	case Q_DECNET:
 		b0 = gen_linktype(cstate, ETHERTYPE_DN);
 		b1 = gen_dnhostop(cstate, addr, dir);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_IPV6:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
+		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip net" : "ip host");
@@ -5227,62 +5176,79 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 	case Q_DEFAULT:
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-		// Same as the Q_IP case in gen_host().
-		if (
-			! memcmp(mask, &in6addr_any, sizeof(struct in6_addr)) &&
-			! memcmp(addr, &in6addr_any, sizeof(struct in6_addr))
-		)
-			return b0;
 		b1 = gen_hostop6(cstate, addr, mask, dir, 8, 24);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_LINK:
-	case Q_IP:
-	case Q_RARP:
-	case Q_ARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-	case Q_ISO:
-	case Q_ESIS:
-	case Q_ISIS:
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
+		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto),
 	    type == Q_NET ? "ip6 net" : "ip6 host");
 	/*NOTREACHED*/
+}
+
+static struct block *
+gen_host46_byname(compiler_state_t *cstate, const char *name,
+    const u_char proto4, const u_char proto6, const u_char dir)
+{
+	if ((cstate->ai = pcap_nametoaddrinfo(name)) == NULL)
+		bpf_error(cstate, "unknown host '%s'", name);
+	struct block *ret = NULL;
+	struct in6_addr mask128;
+	memset(&mask128, 0xff, sizeof(mask128));
+
+	/*
+	 * For a hostname that resolves to both IPv4 and IPv6 addresses the
+	 * AF_INET addresses may come before or after the AF_INET6 addresses
+	 * depending on which getaddrinfo() implementation it is, what the
+	 * resolving host's network configuration is and (on Linux with glibc)
+	 * the contents of gai.conf(5).  This is because getaddrinfo() presumes
+	 * a subsequent bind(2) or connect(2) use of the addresses, which is
+	 * not the case here, so there is no sense in preserving the order of
+	 * the AFs in the resolved addresses.  However, there is sense in
+	 * hard-coding the order of AFs when generating a match block for more
+	 * than one AF because this way the result reflects fewer external
+	 * effects and is easier to test.
+	 */
+
+	/*
+	 * Ignore any IPv4 addresses when resolving "ip6 host NAME", validate
+	 * all other proto qualifiers in gen_host().
+	 */
+	if (proto4 != Q_IPV6) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET)
+				continue;
+			struct sockaddr_in *sin4 =
+			    (struct sockaddr_in *)ai->ai_addr;
+			struct block *host4 = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
+			    0xffffffff, proto4, dir, Q_HOST);
+			ret = ret ? gen_or(ret, host4) : host4;
+		}
+	}
+
+	/*
+	 * Ignore any IPv6 addresses when resolving "(arp|ip|rarp) host NAME",
+	 * validate all other proto qualifiers in gen_host6().
+	 */
+	if (proto6 != Q_ARP && proto6 != Q_IP && proto6 != Q_RARP) {
+		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
+			if (ai->ai_family != AF_INET6)
+				continue;
+			struct sockaddr_in6 *sin6 =
+			    (struct sockaddr_in6 *)ai->ai_addr;
+			struct block *host6 = gen_host6(cstate, &sin6->sin6_addr,
+			    &mask128, proto6, dir, Q_HOST);
+			ret = ret ? gen_or(ret, host6) : host6;
+		}
+	}
+
+	freeaddrinfo(cstate->ai);
+	cstate->ai = NULL;
+
+	if (! ret)
+		bpf_error(cstate, "unknown host '%s'%s", name,
+		    proto4 == Q_DEFAULT
+		    ? ""
+		    : " for specified address family");
+	return ret;
 }
 
 static unsigned char
@@ -5298,6 +5264,8 @@ is_mac48_linktype(const int linktype)
 	case DLT_IP_OVER_FC:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
+	case DLT_DSA_TAG_DSA:
 	case DLT_PPI:
 	case DLT_PRISM_HEADER:
 		return 1;
@@ -5317,6 +5285,8 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
+	case DLT_DSA_TAG_DSA:
 		b1 = gen_prevlinkhdr_check(cstate);
 		src_off = 6;
 		dst_off = 0;
@@ -5366,21 +5336,19 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	case Q_AND:
 		tmp = gen_bcmp(cstate, OR_LINKHDR, src_off, 6, eaddr);
 		b0 = gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, eaddr);
-		gen_and(tmp, b0);
+		b0 = gen_and(tmp, b0);
 		break;
 	case Q_DEFAULT:
 	case Q_OR:
 		tmp = gen_bcmp(cstate, OR_LINKHDR, src_off, 6, eaddr);
 		b0 = gen_bcmp(cstate, OR_LINKHDR, dst_off, 6, eaddr);
-		gen_or(tmp, b0);
+		b0 = gen_or(tmp, b0);
 		break;
 	default:
 		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
 	}
 
-	if (b1 != NULL)
-		gen_and(b1, b0);
-	return b0;
+	return b1 ? gen_and(b1, b0) : b0;
 }
 
 static struct block *
@@ -5400,73 +5368,85 @@ gen_mac48host_byname(compiler_state_t *cstate, const char *name,
 	return gen_mac48host(cstate, eaddr, dir, context);
 }
 
+static struct block *
+gen_mac8host(compiler_state_t *cstate, const uint8_t mac8, const u_char dir,
+    const char *context)
+{
+	u_int src_off, dst_off;
+
+	switch (cstate->linktype) {
+	case DLT_ARCNET:
+	case DLT_ARCNET_LINUX:
+		/*
+		 * ARCnet is different from Ethernet: the source address comes
+		 * before the destination address, each is one byte long.
+		 * This holds for all three "buffer formats" in RFC 1201
+		 * Section 2.1, see also page 4-10 in the 1983 edition of the
+		 * "ARCNET Designer's Handbook" published by Datapoint
+		 * (document number 61610-01).
+		 */
+		src_off = 0;
+		dst_off = 1;
+		break;
+	case DLT_BACNET_MS_TP:
+		/*
+		 * MS/TP resembles both Ethernet (in that the destination
+		 * station address precedes the source station address) and
+		 * ARCnet (in that a station address is one byte long).
+		 */
+		src_off = 4;
+		dst_off = 3;
+		break;
+	default:
+		fail_kw_on_dlt(cstate, context);
+	}
+
+	struct block *src, *dst;
+
+	switch (dir) {
+	case Q_SRC:
+		return gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+	case Q_DST:
+		return gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+	case Q_AND:
+		src = gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+		dst = gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+		return gen_and(src, dst);
+	case Q_DEFAULT:
+	case Q_OR:
+		src = gen_cmp(cstate, OR_LINKHDR, src_off, BPF_B, mac8);
+		dst = gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
+		return gen_or(src, dst);
+	default:
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), context);
+	}
+}
+
 /*
  * This primitive is non-directional by design, so the grammar does not allow
  * to qualify it with a direction.
  */
 static struct block *
-gen_gateway(compiler_state_t *cstate, const char *name,
-    struct addrinfo *alist, int proto)
+gen_gateway(compiler_state_t *cstate, const char *name, const u_char proto)
 {
-	struct block *b0, *b1, *tmp;
-	struct addrinfo *ai;
-	struct sockaddr_in *sin;
-
 	switch (proto) {
 	case Q_DEFAULT:
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
-		b1 = NULL;
-		for (ai = alist; ai != NULL; ai = ai->ai_next) {
-			/*
-			 * Does it have an address?
-			 */
-			if (ai->ai_addr != NULL) {
-				/*
-				 * Yes.  Is it an IPv4 address?
-				 */
-				if (ai->ai_addr->sa_family == AF_INET) {
-					/*
-					 * Generate an entry for it.
-					 */
-					sin = (struct sockaddr_in *)ai->ai_addr;
-					tmp = gen_host(cstate,
-					    ntohl(sin->sin_addr.s_addr),
-					    0xffffffff, proto, Q_OR, Q_HOST);
-					/*
-					 * Is it the *first* IPv4 address?
-					 */
-					if (b1 == NULL) {
-						/*
-						 * Yes, so start with it.
-						 */
-						b1 = tmp;
-					} else {
-						/*
-						 * No, so OR it into the
-						 * existing set of
-						 * addresses.
-						 */
-						gen_or(b1, tmp);
-						b1 = tmp;
-					}
-				}
-			}
-		}
-		if (b1 == NULL) {
-			/*
-			 * No IPv4 addresses found.
-			 */
-			return (NULL);
-		}
-		gen_not(b1);
-		gen_and(b0, b1);
-		return b1;
+		break;
+	default:
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
 	}
-	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
-	/*NOTREACHED*/
+
+	struct block *b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
+	/*
+	 * For "gateway NAME" not qualified with a protocol skip the IPv6 leg
+	 * of the name-to-address translation to match the documented
+	 * IPv4-only behaviour.
+	 */
+	struct block *b1 = gen_host46_byname(cstate, name, proto, Q_IP, Q_OR);
+	return gen_and(b0, gen_not(b1));
 }
 
 static struct block *
@@ -5532,9 +5512,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_RARP:
 		return gen_linktype(cstate, ETHERTYPE_REVARP);
 
-	case Q_LINK:
-		break; // invalid syntax
-
 	case Q_ATALK:
 		return gen_linktype(cstate, ETHERTYPE_ATALK);
 
@@ -5589,62 +5566,55 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_LSP:
 		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_SNP:
 		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_CSNP:
 		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_ISIS_PSNP:
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_CLNP:
 		return gen_proto(cstate, ISO8473_CLNP, Q_ISO);
@@ -5657,12 +5627,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 
 	case Q_NETBEUI:
 		return gen_linktype(cstate, LLCSAP_NETBEUI);
-
-	case Q_RADIO:
-		break; // invalid syntax
-
-	default:
-		abort();
 	}
 	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
@@ -5740,27 +5704,18 @@ gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 	case Q_AND:
 		tmp = gen_portatom(cstate, 0, port);
 		b1 = gen_portatom(cstate, 2, port);
-		gen_and(tmp, b1);
+		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
 		tmp = gen_portatom(cstate, 0, port);
 		b1 = gen_portatom(cstate, 2, port);
-		gen_or(tmp, b1);
+		b1 = gen_or(tmp, b1);
 		break;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
 		/*NOTREACHED*/
 	}
 
@@ -5808,21 +5763,20 @@ gen_port_common(compiler_state_t *cstate, int proto, struct block *b1)
 		break;
 
 	case PROTO_UNDEF:
-		tmp = gen_ip_proto(cstate, IPPROTO_UDP);
-		gen_or(gen_ip_proto(cstate, IPPROTO_TCP), tmp);
-		gen_or(gen_ip_proto(cstate, IPPROTO_SCTP), tmp);
+		tmp = gen_ip_proto(cstate, IPPROTO_SCTP);
+		tmp = gen_or(gen_ip_proto(cstate, IPPROTO_UDP), tmp);
+		tmp = gen_or(gen_ip_proto(cstate, IPPROTO_TCP), tmp);
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// Not a fragment other than the first fragment.
 	b0 = gen_ipfrag(cstate);
-	gen_and(tmp, b0);
-	gen_and(b0, b1);
+	b0 = gen_and(tmp, b0);
+	b1 = gen_and(b0, b1);
 	// "link proto \ip"
-	gen_and(gen_linktype(cstate, ETHERTYPE_IP), b1);
-	return b1;
+	return gen_and(gen_linktype(cstate, ETHERTYPE_IP), b1);
 }
 
 static struct block *
@@ -5842,18 +5796,19 @@ gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 	case Q_AND:
 		tmp = gen_portatom6(cstate, 0, port);
 		b1 = gen_portatom6(cstate, 2, port);
-		gen_and(tmp, b1);
+		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
 		tmp = gen_portatom6(cstate, 0, port);
 		b1 = gen_portatom6(cstate, 2, port);
-		gen_or(tmp, b1);
+		b1 = gen_or(tmp, b1);
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "port");
+		/*NOTREACHED*/
 	}
 
 	return gen_port6_common(cstate, proto, b1);
@@ -5874,19 +5829,18 @@ gen_port6_common(compiler_state_t *cstate, int proto, struct block *b1)
 
 	case PROTO_UNDEF:
 		// Same as in gen_port_common().
-		tmp = gen_ip6_proto(cstate, IPPROTO_UDP);
-		gen_or(gen_ip6_proto(cstate, IPPROTO_TCP), tmp);
-		gen_or(gen_ip6_proto(cstate, IPPROTO_SCTP), tmp);
+		tmp = gen_ip6_proto(cstate, IPPROTO_SCTP);
+		tmp = gen_or(gen_ip6_proto(cstate, IPPROTO_UDP), tmp);
+		tmp = gen_or(gen_ip6_proto(cstate, IPPROTO_TCP), tmp);
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "proto", proto);
 	}
 	// XXX - catch the first fragment of a fragmented packet?
-	gen_and(tmp, b1);
+	b1 = gen_and(tmp, b1);
 	// "link proto \ip6"
-	gen_and(gen_linktype(cstate, ETHERTYPE_IPV6), b1);
-	return b1;
+	return gen_and(gen_linktype(cstate, ETHERTYPE_IPV6), b1);
 }
 
 /* gen_portrange code */
@@ -5902,9 +5856,7 @@ gen_portrangeatom(compiler_state_t *cstate, u_int off, uint16_t v1,
 	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV4, off, BPF_H, min(v1, v2));
 	b2 = gen_cmp_le(cstate, OR_TRAN_IPV4, off, BPF_H, max(v1, v2));
 
-	gen_and(b1, b2);
-
-	return b2;
+	return gen_and(b1, b2);
 }
 
 static struct block *
@@ -5925,27 +5877,18 @@ gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 	case Q_AND:
 		tmp = gen_portrangeatom(cstate, 0, port1, port2);
 		b1 = gen_portrangeatom(cstate, 2, port1, port2);
-		gen_and(tmp, b1);
+		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
 		tmp = gen_portrangeatom(cstate, 0, port1, port2);
 		b1 = gen_portrangeatom(cstate, 2, port1, port2);
-		gen_or(tmp, b1);
+		b1 = gen_or(tmp, b1);
 		break;
 
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
-		/*NOTREACHED*/
-
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
 		/*NOTREACHED*/
 	}
 
@@ -5964,9 +5907,7 @@ gen_portrangeatom6(compiler_state_t *cstate, u_int off, uint16_t v1,
 	b1 = gen_cmp_ge(cstate, OR_TRAN_IPV6, off, BPF_H, min(v1, v2));
 	b2 = gen_cmp_le(cstate, OR_TRAN_IPV6, off, BPF_H, max(v1, v2));
 
-	gen_and(b1, b2);
-
-	return b2;
+	return gen_and(b1, b2);
 }
 
 static struct block *
@@ -5987,18 +5928,19 @@ gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 	case Q_AND:
 		tmp = gen_portrangeatom6(cstate, 0, port1, port2);
 		b1 = gen_portrangeatom6(cstate, 2, port1, port2);
-		gen_and(tmp, b1);
+		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
 		tmp = gen_portrangeatom6(cstate, 0, port1, port2);
 		b1 = gen_portrangeatom6(cstate, 2, port1, port2);
-		gen_or(tmp, b1);
+		b1 = gen_or(tmp, b1);
 		break;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), "portrange");
+		/*NOTREACHED*/
 	}
 
 	return gen_port6_common(cstate, proto, b1);
@@ -6086,8 +6028,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	case Q_DEFAULT:
 		b0 = gen_protochain(cstate, v, Q_IP);
 		b = gen_protochain(cstate, v, Q_IPV6);
-		gen_or(b0, b);
-		return b;
+		return gen_or(b0, b);
 	default:
 		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "protochain");
 		/*NOTREACHED*/
@@ -6103,6 +6044,10 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * engine to do the protochain stuff, to support backward
 	 * branches, and backward branch support is unlikely to appear
 	 * in kernel BPF engines.)
+	 *
+	 * Hence in the current implementation the gen_abs_offset_varpart()
+	 * invocations incurred from gen_load_a() and gen_loadx_iphdrlen()
+	 * below do not affect the offset because off_linkpl.is_variable == 0.
 	 */
 	if (cstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
@@ -6134,12 +6079,10 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 
 		/* A = ip->ip_p */
-		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 9;
+		s[i] = gen_load_a(cstate, OR_LINKPL, 9, BPF_B);
 		i++;
 		/* X = ip->ip_hl << 2 */
-		s[i] = new_stmt(cstate, BPF_LDX|BPF_MSH|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
 		break;
 
@@ -6147,8 +6090,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 
 		/* A = ip6->ip_nxt */
-		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 6;
+		s[i] = gen_load_a(cstate, OR_LINKPL, 6, BPF_B);
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
@@ -6163,7 +6105,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/* again: if (A == v) goto end; else fall through; */
 	again = i;
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.k = v;
 	s[i]->s.jt = NULL;		/*later*/
 	s[i]->s.jf = NULL;		/*update in next stmt*/
@@ -6174,7 +6116,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 #define IPPROTO_NONE	59
 #endif
 	/* if (A == IPPROTO_NONE) goto end */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*update in next stmt*/
 	s[i]->s.k = IPPROTO_NONE;
@@ -6187,26 +6129,26 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 		v6start = i;
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
-		s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_HOPOPTS;
 		s[fix2]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_DSTOPTS;
 		i++;
 		/* if (A == IPPROTO_ROUTING) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
 		s[i]->s.k = IPPROTO_ROUTING;
 		i++;
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*later*/
 		s[i]->s.k = IPPROTO_FRAGMENT;
@@ -6255,7 +6197,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 
 		/* goto again; (must use BPF_JA for backward jump) */
-		s[i] = new_stmt(cstate, BPF_JMP|BPF_JA);
+		s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 		s[i]->s.k = again - i - 1;
 		s[i - 1]->s.jf = s[i];
 		i++;
@@ -6274,7 +6216,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/* ahcheck: */
 	ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JEQ|BPF_K);
+	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*later*/
 	s[i]->s.k = IPPROTO_AH;
@@ -6328,7 +6270,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	i++;
 
 	/* goto again; (must use BPF_JA for backward jump) */
-	s[i] = new_stmt(cstate, BPF_JMP|BPF_JA);
+	s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 	s[i]->s.k = again - i - 1;
 	i++;
 
@@ -6353,12 +6295,11 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * emit final check
 	 * Remember, s[0] is dummy.
 	 */
-	b = gen_jmp(cstate, BPF_JEQ, v, s[1]);
+	b = gen_jmp_k(cstate, BPF_JEQ, v, s[1]);
 
 	free_reg(cstate, reg2);
 
-	gen_and(b0, b);
-	return b;
+	return gen_and(b0, b);
 }
 #endif /* !defined(NO_PROTOCHAIN) */
 
@@ -6384,8 +6325,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	case Q_DEFAULT:
 		b0 = gen_proto(cstate, v, Q_IP);
 		b1 = gen_proto(cstate, v, Q_IPV6);
-		gen_or(b0, b1);
-		return b1;
+		return gen_or(b0, b1);
 
 	case Q_LINK:
 		return gen_linktype(cstate, v);
@@ -6410,24 +6350,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 		// 0 <= v <= UINT8_MAX
 		b1 = gen_ip_proto(cstate, (uint8_t)v);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_ARP:
-	case Q_RARP:
-	case Q_SCTP:
-	case Q_TCP:
-	case Q_UDP:
-	case Q_ICMP:
-	case Q_IGMP:
-	case Q_IGRP:
-	case Q_ATALK:
-	case Q_DECNET:
-	case Q_LAT:
-	case Q_SCA:
-	case Q_MOPRC:
-	case Q_MOPDL:
-		break; // invalid qualifier
+		return gen_and(b0, b1);
 
 	case Q_IPV6:
 		assert_maxval(cstate, "protocol number", v, UINT8_MAX);
@@ -6438,20 +6361,11 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		 */
 		b2 = gen_ip6_proto(cstate, IPPROTO_FRAGMENT);
 		b1 = gen_cmp(cstate, OR_LINKPL, 40, BPF_B, v);
-		gen_and(b2, b1);
+		b1 = gen_and(b2, b1);
 		// 0 <= v <= UINT8_MAX
 		b2 = gen_ip6_proto(cstate, (uint8_t)v);
-		gen_or(b2, b1);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_ICMPV6:
-	case Q_AH:
-	case Q_ESP:
-	case Q_PIM:
-	case Q_VRRP:
-	case Q_AARP:
-		break; // invalid qualifier
+		b1 = gen_or(b2, b1);
+		return gen_and(b0, b1);
 
 	case Q_ISO:
 		assert_maxval(cstate, "ISO protocol", v, UINT8_MAX);
@@ -6488,18 +6402,13 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 			b0 = gen_linktype(cstate, LLCSAP_ISONS<<8 | LLCSAP_ISONS);
 			/* OSI in C-HDLC is stuffed with a fudge byte */
 			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 1, BPF_B, v);
-			gen_and(b0, b1);
-			return b1;
+			return gen_and(b0, b1);
 
 		default:
 			b0 = gen_linktype(cstate, LLCSAP_ISONS);
 			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 0, BPF_B, v);
-			gen_and(b0, b1);
-			return b1;
+			return gen_and(b0, b1);
 		}
-
-	case Q_ESIS:
-		break; // invalid qualifier
 
 	case Q_ISIS:
 		assert_maxval(cstate, "IS-IS PDU type", v, ISIS_PDU_TYPE_MAX);
@@ -6520,27 +6429,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		}
 		b1 = gen_mcmp(cstate, OR_LINKPL_NOSNAP, pdu_type_offset, BPF_B,
 		    v, ISIS_PDU_TYPE_MAX);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_CLNP:
-	case Q_STP:
-	case Q_IPX:
-	case Q_NETBEUI:
-	case Q_ISIS_L1:
-	case Q_ISIS_L2:
-	case Q_ISIS_IIH:
-	case Q_ISIS_SNP:
-	case Q_ISIS_CSNP:
-	case Q_ISIS_PSNP:
-	case Q_ISIS_LSP:
-	case Q_RADIO:
-	case Q_CARP:
-		break; // invalid qualifier
-
-	default:
-		abort();
-		/*NOTREACHED*/
+		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "proto");
 	/*NOTREACHED*/
@@ -6815,14 +6704,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 {
 	int proto = q.proto;
 	int dir = q.dir;
-	int tproto;
 	bpf_u_int32 mask, addr;
-	struct addrinfo *res, *res0;
-	struct sockaddr_in *sin4;
-	int tproto6;
-	struct sockaddr_in6 *sin6;
-	struct in6_addr mask128;
-	struct block *b, *tmp;
 	int port, real_proto;
 	bpf_u_int32 port1, port2;
 
@@ -6833,6 +6715,19 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	if (q.proto == Q_DECNET) {
+		/*
+		 * A long time ago on Ultrix libpcap supported translation of
+		 * DECnet host names into DECnet addresses, but this feature
+		 * is history now.  The current implementation does not define
+		 * any primitives that have "decnet" as the protocol qualifier
+		 * and a name as the ID.
+		 */
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+		          tqkw(q.addr == Q_DEFAULT ? Q_HOST : q.addr));
+	}
+
+	struct block *b, *b6;
 	switch (q.addr) {
 
 	case Q_NET:
@@ -6851,63 +6746,9 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_HOST:
 		if (proto == Q_LINK) {
 			return gen_mac48host_byname(cstate, name, q.dir, "link host NAME");
-		} else if (proto == Q_DECNET) {
-			/*
-			 * A long time ago on Ultrix libpcap supported
-			 * translation of DECnet host names into DECnet
-			 * addresses, but this feature is history now.
-			 */
-			bpf_error(cstate, "invalid DECnet address '%s'", name);
 		} else {
-			memset(&mask128, 0xff, sizeof(mask128));
-			res0 = res = pcap_nametoaddrinfo(name);
-			if (res == NULL)
-				bpf_error(cstate, "unknown host '%s'", name);
-			cstate->ai = res;
-			b = tmp = NULL;
-			tproto = proto;
-			tproto6 = proto;
-			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
-			    tproto == Q_DEFAULT) {
-				tproto = Q_IP;
-				tproto6 = Q_IPV6;
-			}
-			for (res = res0; res; res = res->ai_next) {
-				switch (res->ai_family) {
-				case AF_INET:
-					if (tproto == Q_IPV6)
-						continue;
-
-					sin4 = (struct sockaddr_in *)
-						res->ai_addr;
-					tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
-						0xffffffff, tproto, dir, q.addr);
-					break;
-				case AF_INET6:
-					if (tproto6 == Q_IP)
-						continue;
-
-					sin6 = (struct sockaddr_in6 *)
-						res->ai_addr;
-					tmp = gen_host6(cstate, &sin6->sin6_addr,
-						&mask128, tproto6, dir, q.addr);
-					break;
-				default:
-					continue;
-				}
-				if (b)
-					gen_or(b, tmp);
-				b = tmp;
-			}
-			cstate->ai = NULL;
-			freeaddrinfo(res0);
-			if (b == NULL) {
-				bpf_error(cstate, "unknown host '%s'%s", name,
-				    (proto == Q_DEFAULT)
-					? ""
-					: " for specified address family");
-			}
-			return b;
+			return gen_host46_byname(cstate, name, q.proto,
+			    q.proto, q.dir);
 		}
 
 	case Q_PORT:
@@ -6943,14 +6784,23 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+
+		/*
+		 * These two checks are redundant at this point: here name is
+		 * a string that the lexer does not recognize as a number
+		 * hence did not attempt stoulen(), pcap_nametoport() does not
+		 * use stoulen() and has successfully translated the string to
+		 * an uint16_t value using getaddrinfo().
+		 */
 		if (port < 0)
 			bpf_error(cstate, "illegal port number %d < 0", port);
 		if (port > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port);
+
 		// real_proto can be PROTO_UNDEF
 		b = gen_port(cstate, (uint16_t)port, real_proto, dir);
-		gen_or(gen_port6(cstate, (uint16_t)port, real_proto, dir), b);
-		return b;
+		b6 = gen_port6(cstate, (uint16_t)port, real_proto, dir);
+		return gen_or(b6, b);
 
 	case Q_PORTRANGE:
 		(void)port_pq_to_ipproto(cstate, proto, "portrange"); // validate only
@@ -6982,6 +6832,19 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+
+		/*
+		 * When name is a string of the form "str1-str2", these two
+		 * checks are redundant at this point: in both stringtoport()
+		 * invocations stoulen() has rejected the argument and
+		 * getaddrinfo() has successfully translated it to an uint16_t
+		 * value.
+		 *
+		 * When name is a string of the form "num1-num2", "num-str" or
+		 * "str-num", these two checks are necessary: in at least one
+		 * stringtoport() invocation stoulen() can return any uint32_t
+		 * value if it has accepted the argument.
+		 */
 		if (port1 > 65535)
 			bpf_error(cstate, "illegal port number %d > 65535", port1);
 		if (port2 > 65535)
@@ -6990,21 +6853,12 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		// real_proto can be PROTO_UNDEF
 		b = gen_portrange(cstate, (uint16_t)port1, (uint16_t)port2,
 		    real_proto, dir);
-		gen_or(gen_portrange6(cstate, (uint16_t)port1, (uint16_t)port2,
-		    real_proto, dir), b);
-		return b;
+		b6 = gen_portrange6(cstate, (uint16_t)port1, (uint16_t)port2,
+		    real_proto, dir);
+		return gen_or(b6, b);
 
 	case Q_GATEWAY:
-		res = pcap_nametoaddrinfo(name);
-		cstate->ai = res;
-		if (res == NULL)
-			bpf_error(cstate, "unknown host '%s'", name);
-		b = gen_gateway(cstate, name, res, proto);
-		cstate->ai = NULL;
-		freeaddrinfo(res);
-		if (b == NULL)
-			bpf_error(cstate, "unknown host '%s'", name);
-		return b;
+		return gen_gateway(cstate, name, q.proto);
 
 	case Q_PROTO:
 		return gen_proto(cstate, lookup_proto(cstate, name, q), proto);
@@ -7018,7 +6872,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		syntax(cstate);
 		/*NOTREACHED*/
 	}
-	abort();
+	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 	/*NOTREACHED*/
 }
 
@@ -7026,7 +6880,7 @@ struct block *
 gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
     bpf_u_int32 masklen, struct qual q)
 {
-	register int nlen, mlen;
+	int nlen, mlen;
 	bpf_u_int32 n, m;
 	uint64_t m64;
 
@@ -7037,16 +6891,26 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	if (q.proto == Q_DECNET) {
+		/*
+		 * libpcap has never defined any primitives that have "decnet"
+		 * as the protocol qualifier and an IPv4 network with a
+		 * netmask as the ID.
+		 */
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+		          tqkw(q.addr == Q_DEFAULT ? Q_HOST : q.addr));
+	}
+
 	nlen = pcapint_atoin(s1, &n);
 	if (nlen < 0)
-		bpf_error(cstate, "invalid IPv4 address '%s'", s1);
+		bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s1);
 	/* Promote short ipaddr */
 	n <<= 32 - nlen;
 
 	if (s2 != NULL) {
 		mlen = pcapint_atoin(s2, &m);
 		if (mlen < 0)
-			bpf_error(cstate, "invalid IPv4 address '%s'", s2);
+			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s2);
 		/* Promote short ipaddr */
 		m <<= 32 - mlen;
 		if ((n & ~m) != 0)
@@ -7082,7 +6946,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	bpf_u_int32 mask;
 	int proto;
 	int dir;
-	register int vlen;
+	int vlen;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -7091,23 +6955,30 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	proto = q.proto;
-	dir = q.dir;
-	if (s == NULL) {
+	if (q.proto == Q_DECNET) {
 		/*
-		 * v contains a 32-bit unsigned parsed from a string of the
-		 * form {N}, which could be decimal, hexadecimal or octal.
-		 * Although it would be possible to use the value as a raw
-		 * 16-bit DECnet address when the value fits into 16 bits, this
-		 * would be a questionable feature: DECnet address wire
-		 * encoding is little-endian, so this would not work as
-		 * intuitively as the same works for [big-endian] IPv4
-		 * addresses (0x01020304 means 1.2.3.4).
+		 * libpcap defines exactly one primitive that has "decnet" as
+		 * the protocol qualifier: "decnet host AREANUMBER.NODENUMBER".
 		 */
-		if (proto == Q_DECNET)
+		if (q.addr != Q_DEFAULT && q.addr != Q_HOST)
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, "decnet",
+			          tqkw(q.addr));
+
+		if (s == NULL) {
+			/*
+			 * v contains a 32-bit unsigned parsed from a string
+			 * of the form {N}, which could be decimal, hexadecimal
+			 * or octal.  Although it would be possible to use the
+			 * value as a raw 16-bit DECnet address when the value
+			 * fits into 16 bits, this would be a questionable
+			 * feature: DECnet address wire encoding is
+			 * little-endian, so this would not work as intuitively
+			 * as the same works for [big-endian] IPv4 addresses
+			 * (0x01020304 means 1.2.3.4).
+			 */
 			bpf_error(cstate, "invalid DECnet address '%u'", v);
-		vlen = 32;
-	} else if (proto == Q_DECNET) {
+		}
+
 		/*
 		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
 		 * {N}.{N}.{N}.{N}, of which only the first potentially stands
@@ -7116,27 +6987,43 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		vlen = pcapint_atodn(s, &v);
 		if (vlen == 0)
 			bpf_error(cstate, "invalid DECnet address '%s'", s);
+
+		return gen_host(cstate, v, 0, q.proto, q.dir, q.addr);
+	}
+
+	proto = q.proto;
+	dir = q.dir;
+	if (s == NULL) {
+		/*
+		 * v contains a 32-bit unsigned parsed from a string of the
+		 * form {N}, which could be decimal, hexadecimal or octal.
+		 * This is a valid IPv4 address, in the sense of inet_aton(3).
+		 */
+		vlen = 32;
 	} else {
 		/*
 		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
 		 * {N}.{N}.{N}.{N}, all of which potentially stand for a valid
-		 * IPv4 address.
+		 * IPv4 address, in the sense of inet_aton(3).
 		 */
 		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
-			bpf_error(cstate, "invalid IPv4 address '%s'", s);
+			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s);
 	}
 
+	struct block *b, *b6;
 	switch (q.addr) {
 
 	case Q_DEFAULT:
 	case Q_HOST:
 	case Q_NET:
-		if (proto == Q_DECNET)
-			return gen_host(cstate, v, 0, proto, dir, q.addr);
-		else if (proto == Q_LINK) {
-			// "link (host|net) IPV4ADDR" and variations thereof
-			bpf_error(cstate, "illegal link layer address");
+		if (proto == Q_LINK) {
+			if (s)
+				// "link (host|net) IPV4ADDR" and variations thereof
+				bpf_error(cstate, "illegal link-layer address '%s'", s);
+			else
+				// link host NUMBER
+				bpf_error(cstate, "illegal link-layer address '%u'", v);
 		} else {
 			mask = 0xffffffff;
 			if (s == NULL && q.addr == Q_NET) {
@@ -7156,32 +7043,28 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_PORT:
 		proto = port_pq_to_ipproto(cstate, proto, "port");
 
+		// This check is necessary: v can hold any uint32_t value.
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
 		// proto can be PROTO_UNDEF
-	    {
-		struct block *b;
 		b = gen_port(cstate, (uint16_t)v, proto, dir);
-		gen_or(gen_port6(cstate, (uint16_t)v, proto, dir), b);
-		return b;
-	    }
+		b6 = gen_port6(cstate, (uint16_t)v, proto, dir);
+		return gen_or(b6, b);
 
 	case Q_PORTRANGE:
 		proto = port_pq_to_ipproto(cstate, proto, "portrange");
 
+		// This check is necessary: v can hold any uint32_t value.
 		if (v > 65535)
 			bpf_error(cstate, "illegal port number %u > 65535", v);
 
 		// proto can be PROTO_UNDEF
-	    {
-		struct block *b;
 		b = gen_portrange(cstate, (uint16_t)v, (uint16_t)v,
 		    proto, dir);
-		gen_or(gen_portrange6(cstate, (uint16_t)v, (uint16_t)v,
-		    proto, dir), b);
-		return b;
-	    }
+		b6 = gen_portrange6(cstate, (uint16_t)v, (uint16_t)v,
+		    proto, dir);
+		return gen_or(b6, b);
 
 	case Q_GATEWAY:
 		bpf_error(cstate, "'gateway' requires a name");
@@ -7200,7 +7083,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
 		/*NOTREACHED*/
 	}
 	/*NOTREACHED*/
@@ -7223,7 +7106,8 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 
 	/*
 	 * If everything works correctly, this call never fails: a string that
-	 * is valid for HID6 in the lexer is valid for inet_pton().
+	 * is valid for HID6 and the associated validating inet_pton() in the
+	 * lexer is valid for inet_pton() here.
 	 */
 	if (1 != inet_pton(AF_INET6, s, &addr))
 		bpf_error(cstate, "'%s' is not a valid IPv6 address", s);
@@ -7244,12 +7128,15 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s, masklen);
 	}
 
+	char buf[INET6_ADDRSTRLEN + sizeof("/128")];
 	switch (q.addr) {
 
 	case Q_DEFAULT:
 	case Q_HOST:
-		if (masklen != 128)
-			bpf_error(cstate, "Mask syntax for networks only");
+		if (masklen != 128) {
+			snprintf(buf, sizeof(buf), "%s/%u", s, masklen);
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, "host", buf);
+		}
 		/* FALLTHROUGH */
 
 	case Q_NET:
@@ -7257,7 +7144,12 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 
 	default:
 		// Q_GATEWAY only (see the grammar)
-		bpf_error(cstate, "invalid qualifier against IPv6 address");
+		if (masklen == 128)
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), s);
+		else {
+			snprintf(buf, sizeof(buf), "%s/%u", s, masklen);
+			bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), buf);
+		}
 		/*NOTREACHED*/
 	}
 }
@@ -7275,7 +7167,7 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	const char *context = "link host XX:XX:XX:XX:XX:XX";
 
 	if (! ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK))
-		bpf_error(cstate, "ethernet address used in non-ether expression");
+		bpf_error(cstate, "Ethernet address used in non-ether expression");
 	if (! is_mac48_linktype(cstate->linktype))
 		fail_kw_on_dlt(cstate, context);
 
@@ -7289,6 +7181,34 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	return gen_mac48host(cstate, eaddr, q.dir, context);
 }
 
+// Process a regular primitive, the ID is a MAC-8 address string.
+struct block *
+gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
+{
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+	if (q.addr != Q_HOST && q.addr != Q_DEFAULT)
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), "$XX");
+	if (q.proto != Q_LINK)
+		bpf_error(cstate, "'link' is the only valid proto qualifier for 'host $XX'");
+
+	uint8_t addr;
+	/*
+	 * The lexer currently defines the address format in a way that makes
+	 * this error condition never true.  Let's check it anyway in case this
+	 * part of the lexer changes in future.
+	 */
+	if (! pcapint_atoan(s, &addr))
+	    bpf_error(cstate, "invalid MAC-8 address '%s'", s);
+
+	return gen_mac8host(cstate, addr, q.dir, "link host $XX");
+}
+
 void
 sappend(struct slist *s0, struct slist *s1)
 {
@@ -7299,6 +7219,27 @@ sappend(struct slist *s0, struct slist *s1)
 	while (s0->next)
 		s0 = s0->next;
 	s0->next = s1;
+}
+
+/*
+ * Prepend the given list of statements to the list of side effect statements
+ * of the block.  Either of the lists may be NULL to mean the valid edge case
+ * of an empty list.
+ */
+static struct block *
+sprepend_to_block(struct slist *s, struct block *b)
+{
+	if (s) {
+		if (b->stmts)
+			sappend(s, b->stmts);
+		b->stmts = s;
+		/*
+		 * The block has changed.  It could have been a Boolean
+		 * constant before.
+		 */
+		b->meaning = IS_UNCERTAIN;
+	}
+	return b;
 }
 
 static struct slist *
@@ -7480,7 +7421,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 */
 		b = gen_proto_abbrev_internal(cstate, proto);
 		if (inst->b)
-			gen_and(inst->b, b);
+			b = gen_and(inst->b, b);
 		inst->b = b;
 		break;
 
@@ -7536,10 +7477,10 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * if this is an IP datagram and is the first or
 		 * only fragment of that datagram.
 		 */
-		gen_and(gen_proto_abbrev_internal(cstate, proto), b = gen_ipfrag(cstate));
+		b = gen_and(gen_proto_abbrev_internal(cstate, proto), gen_ipfrag(cstate));
 		if (inst->b)
-			gen_and(inst->b, b);
-		gen_and(gen_proto_abbrev_internal(cstate, Q_IP), b);
+			b = gen_and(inst->b, b);
+		b = gen_and(gen_proto_abbrev_internal(cstate, Q_IP), b);
 		inst->b = b;
 		break;
 	case Q_ICMPV6:
@@ -7548,17 +7489,13 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * the protocol in question.
 		 */
 		b = gen_proto_abbrev_internal(cstate, Q_IPV6);
-		if (inst->b)
-			gen_and(inst->b, b);
-		inst->b = b;
+		inst->b = inst->b ? gen_and(inst->b, b) : b;
 
 		/*
 		 * Check if we have an icmp6 next header
 		 */
 		b = gen_ip6_proto(cstate, 58);
-		if (inst->b)
-			gen_and(inst->b, b);
-		inst->b = b;
+		inst->b = inst->b ? gen_and(inst->b, b) : b;
 
 		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 		/*
@@ -7618,44 +7555,29 @@ static struct block *
 gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
     struct arth *a1, int reversed)
 {
-	struct slist *s0, *s1, *s2;
+	struct slist *s0, *s1;
 	struct block *b, *tmp;
 
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
-	if (code == BPF_JEQ) {
-		s2 = new_stmt(cstate, BPF_ALU|BPF_SUB|BPF_X);
-		b = new_block(cstate, JMP(code));
-		sappend(s1, s2);
-	}
-	else
-		b = new_block(cstate, BPF_JMP|code|BPF_X);
-	if (reversed)
-		gen_not(b);
-
 	sappend(s0, s1);
 	sappend(a1->s, s0);
 	sappend(a0->s, a1->s);
 
-	b->stmts = a0->s;
+	b = gen_jmp_x(cstate, code, a0->s);
+	if (reversed)
+		gen_not(b);
 
 	free_reg(cstate, a0->regno);
 	free_reg(cstate, a1->regno);
 
 	/* 'and' together protocol checks */
 	if (a0->b) {
-		if (a1->b) {
-			gen_and(a0->b, tmp = a1->b);
-		}
-		else
-			tmp = a0->b;
+		tmp = a1->b ? gen_and(a0->b, a1->b) : a0->b;
 	} else
 		tmp = a1->b;
 
-	if (tmp)
-		gen_and(tmp, b);
-
-	return b;
+	return tmp ? gen_and(tmp, b) : b;
 }
 
 struct block *
@@ -7862,7 +7784,7 @@ gen_len(compiler_state_t *cstate, int jmp, int n)
 	struct slist *s;
 
 	s = new_stmt(cstate, BPF_LD|BPF_LEN);
-	return gen_jmp(cstate, jmp, n, s);
+	return gen_jmp_k(cstate, jmp, n, s);
 }
 
 struct block *
@@ -7884,8 +7806,6 @@ gen_greater(compiler_state_t *cstate, int n)
 struct block *
 gen_less(compiler_state_t *cstate, int n)
 {
-	struct block *b;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -7893,10 +7813,7 @@ gen_less(compiler_state_t *cstate, int n)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	b = gen_len(cstate, BPF_JGT, n);
-	gen_not(b);
-
-	return b;
+	return gen_not(gen_len(cstate, BPF_JGT, n));
 }
 
 /*
@@ -7926,7 +7843,7 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 
 	switch (op) {
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "op", op);
 
 	case '=':
 		return gen_cmp(cstate, OR_LINKHDR, (u_int)idx, BPF_B, val);
@@ -7949,10 +7866,9 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	// Load the required byte first.
 	struct slist *s0 = gen_load_a(cstate, OR_LINKHDR, idx, BPF_B);
 	sappend(s0, s);
-	b = gen_jmp(cstate, BPF_JEQ, 0, s0);
-	gen_not(b);
+	b = gen_jmp_k(cstate, BPF_JEQ, 0, s0);
 
-	return b;
+	return gen_not(b);
 }
 
 struct block *
@@ -7977,7 +7893,10 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			// ARCnet broadcast is [8-bit] destination address 0.
-			return gen_ahostop(cstate, 0, Q_DST);
+			return gen_mac8host(cstate, 0, Q_DST, "broadcast");
+		case DLT_BACNET_MS_TP:
+			// MS/TP broadcast is [8-bit] destination address 0xFF.
+			return gen_mac8host(cstate, 0xFF, Q_DST, "broadcast");
 		}
 		return gen_mac48host(cstate, ebroadcast, Q_DST, "broadcast");
 		/*NOTREACHED*/
@@ -7994,9 +7913,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		hostmask = ~cstate->netmask;
 		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, 0, hostmask);
 		b2 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, hostmask, hostmask);
-		gen_or(b1, b2);
-		gen_and(b0, b2);
-		return b2;
+		return gen_and(b0, gen_or(b1, b2));
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "broadcast");
 	/*NOTREACHED*/
@@ -8009,7 +7926,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 static struct block *
 gen_mac_multicast(compiler_state_t *cstate, int offset)
 {
-	register struct slist *s;
+	struct slist *s;
 
 	/* link[offset] & 1 != 0 */
 	s = gen_load_a(cstate, OR_LINKHDR, offset, BPF_B);
@@ -8019,8 +7936,8 @@ gen_mac_multicast(compiler_state_t *cstate, int offset)
 struct block *
 gen_multicast(compiler_state_t *cstate, int proto)
 {
-	register struct block *b0, *b1, *b2;
-	register struct slist *s;
+	struct block *b0, *b1, *b2;
+	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8037,16 +7954,16 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			// ARCnet multicast is the same as broadcast.
-			return gen_ahostop(cstate, 0, Q_DST);
+			return gen_mac8host(cstate, 0, Q_DST, "multicast");
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_BRCM:
+		case DLT_DSA_TAG_DSA:
 			b1 = gen_prevlinkhdr_check(cstate);
 			/* ether[0] & 1 != 0 */
 			b0 = gen_mac_multicast(cstate, 0);
-			if (b1 != NULL)
-				gen_and(b1, b0);
-			return b0;
+			return b1 ? gen_and(b1, b0) : b0;
 		case DLT_FDDI:
 			/*
 			 * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
@@ -8091,7 +8008,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * If To DS is set, the DA is at 16.
 			 */
 			b0 = gen_mac_multicast(cstate, 16);
-			gen_and(b1, b0);
+			b0 = gen_and(b1, b0);
 
 			/*
 			 * Now, check for To DS not set, i.e. check
@@ -8104,13 +8021,13 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * If To DS is not set, the DA is at 4.
 			 */
 			b1 = gen_mac_multicast(cstate, 4);
-			gen_and(b2, b1);
+			b1 = gen_and(b2, b1);
 
 			/*
 			 * Now OR together the last two checks.  That gives
 			 * the complete set of checks for data frames.
 			 */
-			gen_or(b1, b0);
+			b0 = gen_or(b1, b0);
 
 			/*
 			 * Now check for a data frame.
@@ -8122,7 +8039,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			/*
 			 * AND that with the checks done for data frames.
 			 */
-			gen_and(b1, b0);
+			b0 = gen_and(b1, b0);
 
 			/*
 			 * If the high-order bit of the type value is 0, this
@@ -8136,14 +8053,14 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * For management frames, the DA is at 4.
 			 */
 			b1 = gen_mac_multicast(cstate, 4);
-			gen_and(b2, b1);
+			b1 = gen_and(b2, b1);
 
 			/*
 			 * OR that with the checks done for data frames.
 			 * That gives the checks done for management and
 			 * data frames.
 			 */
-			gen_or(b1, b0);
+			b0 = gen_or(b1, b0);
 
 			/*
 			 * If the low-order bit of the type value is 1,
@@ -8160,8 +8077,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 			 * AND that with the checks for data and management
 			 * frames.
 			 */
-			gen_and(b1, b0);
-			return b0;
+			return gen_and(b1, b0);
 		case DLT_IP_OVER_FC:
 			return gen_mac_multicast(cstate, 2);
 		default:
@@ -8178,14 +8094,12 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		 */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_B, 0xe0, 0xf0);
 
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 		b1 = gen_cmp(cstate, OR_LINKPL, 24, BPF_B, 255);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "multicast");
 	/*NOTREACHED*/
@@ -8204,9 +8118,9 @@ require_basic_bpf_extensions(compiler_state_t *cstate, const char *keyword)
 {
 	if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_BASIC_HANDLING)
 		return;
-	bpf_error(cstate, "%s not supported on %s (not a live capture)",
+	bpf_error(cstate, "not a live capture, '%s' not supported on %s",
 	    keyword,
-	    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 #endif // __linux__
 
@@ -8252,7 +8166,7 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 struct block *
 gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 {
-	register struct block *b0;
+	struct block *b0;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8276,20 +8190,14 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 	case DLT_LINUX_SLL:
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_H, LINUX_SLL_OUTGOING);
-		if (! outbound) {
-			/* to filter on inbound traffic, invert the match */
-			gen_not(b0);
-		}
-		return b0;
+		// To filter on inbound traffic, invert the match.
+		return outbound ? b0 : gen_not(b0);
 
 	case DLT_LINUX_SLL2:
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 10, BPF_B, LINUX_SLL_OUTGOING);
-		if (! outbound) {
-			/* to filter on inbound traffic, invert the match */
-			gen_not(b0);
-		}
-		return b0;
+		// To filter on inbound traffic, invert the match.
+		return outbound ? b0 : gen_not(b0);
 
 	case DLT_PFLOG:
 		return gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, dir), BPF_B,
@@ -8324,6 +8232,33 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 		 * the byte after the 3-byte magic number */
 		return gen_mcmp(cstate, OR_LINKHDR, 3, BPF_B, outbound ? 0 : 1, 0x01);
 
+	case DLT_DSA_TAG_BRCM:
+		/*
+		 * This DSA tag encodes the frame direction in the three most
+		 * significant bits of its first octet: 0b000***** ("egress",
+		 * switch -> CPU) means "inbound" in libpcap terms and
+		 * 0b001***** ("ingress", CPU -> switch) means "outbound".
+		 */
+		return gen_mcmp(cstate, OR_LINKHDR, 6 + 6, BPF_B,
+		                outbound ? 0x20 : 0x00, 0xe0);
+
+	case DLT_DSA_TAG_DSA:
+		/*
+		 * This DSA tag does not encode the frame direction, but it
+		 * encodes the frame mode, and some modes imply exactly one
+		 * direction.  The mode is the two most significant bits of the
+		 * first octet.  0b00****** ("To_CPU ingress") and 0b10******
+		 * ("To_Sniffer ingress") mean "inbound" in libpcap terms and
+		 * 0b01****** ("From_CPU egress") means "outbound".  0x11******
+		 * ("Forward") can mean either direction, so cannot be used for
+		 * this purpose.
+		 *
+		 * So match 0b01****** for outbound and 0b*0****** otherwise.
+		 */
+		return gen_mcmp(cstate, OR_LINKHDR, 6 + 6, BPF_B,
+		                outbound ? 0x40 : 0x00,
+		                outbound ? 0xc0 : 0x40);
+
 	default:
 		/*
 		 * If we have packet meta-data indicating a direction,
@@ -8345,11 +8280,8 @@ gen_inbound_outbound(compiler_state_t *cstate, const int outbound)
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
 		             PACKET_OUTGOING);
-		if (! outbound) {
-			/* to filter on inbound traffic, invert the match */
-			gen_not(b0);
-		}
-		return b0;
+		// To filter on inbound traffic, invert the match.
+		return outbound ? b0 : gen_not(b0);
 #else /* defined(__linux__) */
 		fail_kw_on_dlt(cstate, outbound ? "outbound" : "inbound");
 		/*NOTREACHED*/
@@ -8526,89 +8458,6 @@ gen_p80211_fcdir(compiler_state_t *cstate, bpf_u_int32 fcdir)
 	}
 }
 
-// Process an ARCnet host address string.
-struct block *
-gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
-{
-	/*
-	 * Catch errors reported by us and routines below us, and return NULL
-	 * on an error.
-	 */
-	if (setjmp(cstate->top_ctx))
-		return (NULL);
-
-	switch (cstate->linktype) {
-
-	case DLT_ARCNET:
-	case DLT_ARCNET_LINUX:
-		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
-		    q.proto == Q_LINK) {
-			uint8_t addr;
-			/*
-			 * The lexer currently defines the address format in a
-			 * way that makes this error condition never true.
-			 * Let's check it anyway in case this part of the lexer
-			 * changes in future.
-			 */
-			if (! pcapint_atoan(s, &addr))
-			    bpf_error(cstate, "invalid ARCnet address '%s'", s);
-			return gen_ahostop(cstate, addr, (int)q.dir);
-		} else
-			bpf_error(cstate, "ARCnet address used in non-arc expression");
-		/*NOTREACHED*/
-
-	default:
-		bpf_error(cstate, "aid supported only on ARCnet");
-		/*NOTREACHED*/
-	}
-}
-
-// Compare an ARCnet host address with the given value.
-static struct block *
-gen_ahostop(compiler_state_t *cstate, const uint8_t eaddr, int dir)
-{
-	register struct block *b0, *b1;
-
-	switch (dir) {
-	/*
-	 * ARCnet is different from Ethernet: the source address comes before
-	 * the destination address, each is one byte long.  This holds for all
-	 * three "buffer formats" in RFC 1201 Section 2.1, see also page 4-10
-	 * in the 1983 edition of the "ARCNET Designer's Handbook" published
-	 * by Datapoint (document number 61610-01).
-	 */
-	case Q_SRC:
-		return gen_cmp(cstate, OR_LINKHDR, 0, BPF_B, eaddr);
-
-	case Q_DST:
-		return gen_cmp(cstate, OR_LINKHDR, 1, BPF_B, eaddr);
-
-	case Q_AND:
-		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ahostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_ahostop(cstate, eaddr, Q_SRC);
-		b1 = gen_ahostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
-		return b1;
-
-	case Q_ADDR1:
-	case Q_ADDR2:
-	case Q_ADDR3:
-	case Q_ADDR4:
-	case Q_RA:
-	case Q_TA:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
-		/*NOTREACHED*/
-	}
-	abort();
-	/*NOTREACHED*/
-}
-
 static struct block *
 gen_vlan_tpid_test(compiler_state_t *cstate)
 {
@@ -8617,12 +8466,10 @@ gen_vlan_tpid_test(compiler_state_t *cstate)
 	/* check for VLAN, including 802.1ad and QinQ */
 	b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
 	b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
-	gen_or(b0,b1);
-	b0 = b1;
+	b0 = gen_or(b0, b1);
 	b1 = gen_linktype(cstate, ETHERTYPE_8021QINQ);
-	gen_or(b0,b1);
 
-	return b1;
+	return gen_or(b0, b1);
 }
 
 static struct block *
@@ -8642,8 +8489,7 @@ gen_vlan_no_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 
 	if (has_vlan_tag) {
 		b1 = gen_vlan_vid_test(cstate, vlan_num);
-		gen_and(b0, b1);
-		b0 = b1;
+		b0 = gen_and(b0, b1);
 	}
 
 	/*
@@ -8696,8 +8542,7 @@ gen_vlan_patch_tpid_test(compiler_state_t *cstate, struct block *b_tpid)
 	gen_vlan_vloffset_add(cstate, &cstate->off_linktype, 4, &s);
 
 	/* we get a pointer to a chain of or-ed blocks, patch first of them */
-	sappend(s.next, b_tpid->head->stmts);
-	b_tpid->head->stmts = s.next;
+	sprepend_to_block(s.next, b_tpid->head);
 }
 
 /*
@@ -8714,7 +8559,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
 	/* true -> next instructions, false -> beginning of b_vid */
-	sjeq = new_stmt(cstate, JMP(BPF_JEQ));
+	sjeq = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	sjeq->s.k = 1;
 	sjeq->s.jf = b_vid->stmts;
 	sappend(s, sjeq);
@@ -8731,13 +8576,12 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)
 		cnt++;
-	s2 = new_stmt(cstate, JMP(BPF_JA));
+	s2 = new_stmt(cstate, JMP(BPF_JA, BPF_K));
 	s2->s.k = cnt - 1;
 	sappend(s, s2);
 
 	/* insert our statements at the beginning of b_vid */
-	sappend(s, b_vid->stmts);
-	b_vid->stmts = s;
+	sprepend_to_block(s, b_vid);
 }
 
 /*
@@ -8760,7 +8604,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
-	b0 = gen_jmp(cstate, BPF_JEQ, 1, s);
+	b0 = gen_jmp_k(cstate, BPF_JEQ, 1, s);
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
@@ -8777,13 +8621,11 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 		b_vid = gen_vlan_vid_test(cstate, vlan_num);
 
 	gen_vlan_patch_tpid_test(cstate, b_tpid);
-	gen_or(b0, b_tpid);
-	b0 = b_tpid;
+	b0 = gen_or(b0, b_tpid);
 
 	if (has_vlan_tag) {
 		gen_vlan_patch_vid_test(cstate, b_vid);
-		gen_and(b0, b_vid);
-		b0 = b_vid;
+		b0 = gen_and(b0, b_vid);
 	}
 
 	return b0;
@@ -8873,6 +8715,8 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
+	case DLT_DSA_TAG_BRCM:
+	case DLT_DSA_TAG_DSA:
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
@@ -8893,8 +8737,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		break;
 
 	default:
-		bpf_error(cstate, "no VLAN support for %s",
-		      pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+		fail_kw_on_dlt(cstate, "vlan");
 		/*NOTREACHED*/
 	}
 
@@ -8931,6 +8774,8 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+		case DLT_DSA_TAG_BRCM:
+		case DLT_DSA_TAG_DSA:
 			b0 = gen_linktype(cstate, ETHERTYPE_MPLS);
 			break;
 
@@ -8943,8 +8788,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 			 * leave it for now */
 
 		default:
-			bpf_error(cstate, "no MPLS support for %s",
-			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
+			fail_kw_on_dlt(cstate, "mpls");
 			/*NOTREACHED*/
 		}
 	}
@@ -8955,8 +8799,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, label_num,
 		    0xfffff000); /* only compare the first 20 bits */
-		gen_and(b0, b1);
-		b0 = b1;
+		b0 = gen_and(b0, b1);
 	}
 
 	/*
@@ -9043,8 +8886,7 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 	if (has_sess_num) {
 		assert_maxval(cstate, "PPPoE session number", sess_num, UINT16_MAX);
 		b1 = gen_cmp(cstate, OR_LINKPL, 2, BPF_H, sess_num);
-		gen_and(b0, b1);
-		b0 = b1;
+		b0 = gen_and(b0, b1);
 	}
 
 	/*
@@ -9093,15 +8935,13 @@ gen_geneve_check(compiler_state_t *cstate,
 	 * can't decode the rest of the fields. The version is 2 bits
 	 * in the first byte of the Geneve header. */
 	b1 = gen_mcmp(cstate, offrel, 8, BPF_B, 0, 0xc0);
-	gen_and(b0, b1);
-	b0 = b1;
+	b0 = gen_and(b0, b1);
 
 	if (has_vni) {
 		assert_maxval(cstate, "Geneve VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
-		gen_and(b0, b1);
-		b0 = b1;
+		b0 = gen_and(b0, b1);
 	}
 
 	return b0;
@@ -9129,11 +8969,9 @@ gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
-	gen_and(b0, b1);
-
-	return b1;
+	return gen_and(b0, b1);
 }
 
 static struct block *
@@ -9166,11 +9004,9 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
-	gen_and(b0, b1);
-
-	return b1;
+	return gen_and(b0, b1);
 }
 
 /* We need to store three values based on the Geneve header::
@@ -9268,7 +9104,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	/* Check if the EtherType is Transparent Ethernet Bridging. At the
 	 * end of this check, we should have the total length in X. In
 	 * the non-Ethernet case, it's already there. */
-	s_proto = new_stmt(cstate, JMP(BPF_JEQ));
+	s_proto = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s_proto->s.k = ETHERTYPE_TEB;
 	sappend(s, s_proto);
 
@@ -9316,7 +9152,6 @@ struct block *
 gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9328,23 +9163,15 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	b0 = gen_geneve4(cstate, vni, has_vni);
 	b1 = gen_geneve6(cstate, vni, has_vni);
 
-	gen_or(b0, b1);
-	b0 = b1;
-
 	/* Later filters should act on the payload of the Geneve frame,
 	 * update all of the header pointers. Attach this code so that
 	 * it gets executed in the event that the Geneve filter matches. */
-	s = gen_geneve_offsets(cstate);
-
-	b1 = gen_true(cstate);
-	sappend(s, b1->stmts);
-	b1->stmts = s;
-
-	gen_and(b0, b1);
+	struct block *offsets =
+		sprepend_to_block(gen_geneve_offsets(cstate),gen_true(cstate));
 
 	cstate->is_encap = 1;
 
-	return b1;
+	return gen_and(gen_or(b0, b1), offsets);
 }
 
 /* Check that this is VXLAN and the VNI is correct if
@@ -9361,15 +9188,13 @@ gen_vxlan_check(compiler_state_t *cstate,
 	/* Check that the VXLAN header has the flag bits set
 	 * correctly. */
 	b1 = gen_cmp(cstate, offrel, 8, BPF_B, 0x08);
-	gen_and(b0, b1);
-	b0 = b1;
+	b0 = gen_and(b0, b1);
 
 	if (has_vni) {
 		assert_maxval(cstate, "VXLAN VNI", vni, 0xffffff);
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, vni, 0xffffff00);
-		gen_and(b0, b1);
-		b0 = b1;
+		b0 = gen_and(b0, b1);
 	}
 
 	return b0;
@@ -9397,11 +9222,9 @@ gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
-	gen_and(b0, b1);
-
-	return b1;
+	return gen_and(b0, b1);
 }
 
 static struct block *
@@ -9434,11 +9257,9 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 
-	b1 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
+	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
-	gen_and(b0, b1);
-
-	return b1;
+	return gen_and(b0, b1);
 }
 
 /* We need to store three values based on the VXLAN header:
@@ -9513,7 +9334,6 @@ struct block *
 gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9525,23 +9345,15 @@ gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	b0 = gen_vxlan4(cstate, vni, has_vni);
 	b1 = gen_vxlan6(cstate, vni, has_vni);
 
-	gen_or(b0, b1);
-	b0 = b1;
-
 	/* Later filters should act on the payload of the VXLAN frame,
 	 * update all of the header pointers. Attach this code so that
 	 * it gets executed in the event that the VXLAN filter matches. */
-	s = gen_vxlan_offsets(cstate);
-
-	b1 = gen_true(cstate);
-	sappend(s, b1->stmts);
-	b1->stmts = s;
-
-	gen_and(b0, b1);
+	struct block *offsets =
+		sprepend_to_block(gen_vxlan_offsets(cstate), gen_true(cstate));
 
 	cstate->is_encap = 1;
 
-	return b1;
+	return gen_and(gen_or(b0, b1), offsets);
 }
 
 /* Check that the encapsulated frame has a link layer header
@@ -9565,10 +9377,9 @@ gen_encap_ll_check(compiler_state_t *cstate)
 	s1->s.k = cstate->off_linkpl.reg;
 	sappend(s, s1);
 
-	b0 = gen_jmp(cstate, BPF_JMP|BPF_JEQ|BPF_X, 0, s);
-	gen_not(b0);
+	b0 = gen_jmp_x(cstate, BPF_JEQ, s);
 
-	return b0;
+	return gen_not(b0);
 }
 
 static struct block *
@@ -9590,7 +9401,7 @@ gen_atmfield_code_internal(compiler_state_t *cstate, int atmfield,
 		    0xffffffffU, jtype, reverse, jvalue);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "atmfield", atmfield);
 	}
 }
 
@@ -9657,43 +9468,37 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		/* Get all packets in Meta signalling Circuit */
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 1);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 2);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 3);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 4);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 5);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
 		b0 = gen_atm_vpi(cstate, 0);
 		b1 = gen_atm_vci(cstate, 16);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_LANE:
 		/* Get all LANE packets */
@@ -9717,7 +9522,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		return b1;
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9753,8 +9558,7 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		    0x3fU, BPF_JGT, 1, 2U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
 		    0x3fU, BPF_JGT, 0, 0U);
-		gen_and(b1, b0);
-		return b0;
+		return gen_and(b1, b0);
 
 	case M_MSU:
 		return gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B,
@@ -9769,15 +9573,14 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 		    0xff80U, BPF_JGT, 1, 0x0100U);
 		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0U);
-		gen_and(b1, b0);
-		return b0;
+		return gen_and(b1, b0);
 
 	case MH_MSU:
 		return gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H,
 		    0xff80U, BPF_JGT, 0, 0x0100U);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }
 
@@ -9884,7 +9687,7 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 		    jvalue << 4);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "mtp3field", mtp3field);
 	}
 }
 
@@ -9934,19 +9737,17 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		/* OAM F4 type */
 		b0 = gen_atm_vci(cstate, 3);
 		b1 = gen_atm_vci(cstate, 4);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_atm_vpi(cstate, 0);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_OAMF4:
 		/* OAM F4 type */
 		b0 = gen_atm_vci(cstate, 3);
 		b1 = gen_atm_vci(cstate, 4);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_atm_vpi(cstate, 0);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_CONNECTMSG:
 		/*
@@ -9955,34 +9756,32 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 */
 		b0 = gen_msg_abbrev(cstate, SETUP);
 		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, CONNECT);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, CONNECT_ACK);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_atmtype_abbrev(cstate, A_SC);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	case A_METACONNECT:
 		b0 = gen_msg_abbrev(cstate, SETUP);
 		b1 = gen_msg_abbrev(cstate, CALL_PROCEED);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, CONNECT);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_msg_abbrev(cstate, RELEASE_DONE);
-		gen_or(b0, b1);
+		b1 = gen_or(b0, b1);
 		b0 = gen_atmtype_abbrev(cstate, A_METAC);
-		gen_and(b0, b1);
-		return b1;
+		return gen_and(b0, b1);
 
 	default:
-		abort();
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "type", type);
 	}
 }

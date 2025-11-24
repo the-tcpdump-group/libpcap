@@ -131,8 +131,8 @@ int
 pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
-	register int fd;
-	register struct ifreq *ifrp, *ifend, *ifnext;
+	int fd;
+	struct ifreq *ifrp, *ifend, *ifnext;
 	size_t n;
 	struct ifconf ifc;
 	char *buf = NULL;
@@ -174,17 +174,16 @@ pcapint_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 			(void)close(fd);
 			return (-1);
 		}
-		buf = malloc(buf_size);
+		buf = calloc(1, buf_size);
 		if (buf == NULL) {
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "malloc");
+			    errno, "calloc");
 			(void)close(fd);
 			return (-1);
 		}
 
 		ifc.ifc_len = buf_size;
 		ifc.ifc_buf = buf;
-		memset(buf, 0, buf_size);
 		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0
 		    && errno != EINVAL) {
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,

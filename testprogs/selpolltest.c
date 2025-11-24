@@ -62,9 +62,9 @@ static pcap_t *pd;
 int
 main(int argc, char **argv)
 {
-	register int op;
+	int op;
 	bpf_u_int32 localnet, netmask;
-	register char *cp, *cmdbuf, *device;
+	char *cp, *cmdbuf, *device;
 	int doselect, dopoll, dotimeout, dononblock, quiet;
 	const char *mechanism;
 	struct bpf_program fcode;
@@ -410,10 +410,10 @@ warning(const char *fmt, ...)
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
 static char *
-copy_argv(register char **argv)
+copy_argv(char **argv)
 {
-	register char **p;
-	register size_t len = 0;
+	char **p;
+	size_t len = 0;
 	char *buf;
 	char *src, *dst;
 

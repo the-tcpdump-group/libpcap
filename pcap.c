@@ -1547,8 +1547,8 @@ int
 pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
     char *errbuf)
 {
-	register int fd;
-	register struct sockaddr_in *sin4;
+	int fd;
+	struct sockaddr_in *sin4;
 	struct ifreq ifr;
 
 	/*
@@ -2898,7 +2898,7 @@ pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 int
 pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	register int n;
+	int n;
 
 	for (;;) {
 		if (p->rfile != NULL) {
@@ -3140,7 +3140,7 @@ static const u_char charmap[] = {
 int
 pcapint_strcasecmp(const char *s1, const char *s2)
 {
-	register const u_char	*cm = charmap,
+	const u_char	*cm = charmap,
 				*us1 = (const u_char *)s1,
 				*us2 = (const u_char *)s2;
 
@@ -3162,11 +3162,16 @@ struct dlt_choice {
 static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(NULL, "BSD loopback"),
 	DLT_CHOICE(EN10MB, "Ethernet"),
+	DLT_CHOICE(EN3MB, "experimental Ethernet (3Mb/s)"),
+	DLT_CHOICE(AX25, "AX.25 layer 2"),
+	DLT_CHOICE(PRONET, "Proteon ProNET Token Ring"),
+	DLT_CHOICE(CHAOS, "MIT Chaosnet"),
 	DLT_CHOICE(IEEE802, "Token ring"),
 	DLT_CHOICE(ARCNET, "BSD ARCNET"),
 	DLT_CHOICE(SLIP, "SLIP"),
 	DLT_CHOICE(PPP, "PPP"),
 	DLT_CHOICE(FDDI, "FDDI"),
+	DLT_CHOICE(REDBACK_SMARTEDGE, "Redback SmartEdge 400/800"),
 	DLT_CHOICE(ATM_RFC1483, "RFC 1483 LLC-encapsulated ATM"),
 	DLT_CHOICE(RAW, "Raw IP"),
 	DLT_CHOICE(SLIP_BSDOS, "BSD/OS SLIP"),

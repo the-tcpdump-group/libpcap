@@ -368,6 +368,7 @@ EXTRA_DIST = \
 	testprogs/threadsignaltest.c \
 	testprogs/unix.h \
 	testprogs/valgrindtest.c \
+	testprogs/versiontest.c \
 	testprogs/visopts.py \
 	testprogs/writecaptest.c
 

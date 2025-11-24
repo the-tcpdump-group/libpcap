@@ -467,7 +467,7 @@ pcap_t *
 pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
     char *errbuf)
 {
-	register pcap_t *p;
+	pcap_t *p;
 	uint8_t magic[4];
 	size_t amt_read;
 	u_int i;

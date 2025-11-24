@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "18 September 2025"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "22 November 2025"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -226,8 +226,39 @@ for Ethernet-like link-layer types is equivalent to
 .in -.5i
 .IP
 .I hostnameaddr
-may be either an address or a name.  If it is a name with multiple IPv4/IPv6 addresses,
-each address will be checked for a match.
+may be either an address or a name.  If it is an IPv6 address, it may use both
+the zero compression
+.RB ( :: )
+and the IPv4-mapped
+.RB ( x:x:x:x:x:x:d.d.d.d )
+notations as discussed in
+.BR inet_pton (3).
+If it is a name, the name must resolve to at least one IPv4 address for
+.BR "arp host" ,
+.B "ip host"
+and
+.BR "rarp host" ,
+at least one IPv6 address for
+.B "ip6 host"
+and at least one IPv4/IPv6 address for
+.BR "host" .
+.IP
+When not qualified with a protocol, this primitive matches all protocols that
+make sense for the address families of the specified/resolved addresses.  For
+example, for a name that resolves only to an IPv6 address
+.B "arp host"
+returns an error, but
+.B host
+is valid and means IPv6;
+likewise, for a name that resolves only to an IPv4 address
+.B "ip6 host"
+returns an error, but
+.B host
+is valid and means ARP/IPv4/RARP.
+.IP
+Whether qualified with a protocol or not, this primitive evaluates to true if
+the name resolves to more than one address and at least one of the addresses
+matches the packet.
 .IP "\fBether host \fIethernameaddr\fP"
 True if the source or the destination Ethernet/802.11/IPFC/ATM LANE/FDDI/Token Ring
 address of the packet is
@@ -301,7 +332,10 @@ dotted triple (e.g., 192.168.1), dotted pair (e.g, 172.16), or single
 number (e.g., 10); the netmask is 255.255.255.255 (/32) for a dotted quad
 (which means that it's really a host match), 255.255.255.0 (/24) for a dotted
 triple, 255.255.0.0 (/16) for a dotted pair, or 255.0.0.0 (/8) for a single number.
-An IPv6 network number must be written out fully; the netmask is
+.IP
+An IPv6 network number is an IPv6 address as discussed for the
+.B host
+primitive above; the implicit netmask is
 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff (/128), so in this primitive IPv6
 "network" matches are really always host matches.  For an actual IPv6 network
 match see the `\fBnet \fInetaddr\fR/\fIlen\fR' primitive below.
@@ -373,11 +407,9 @@ is the same as the above.  For IPv6,
 .I len
 is an integer between 0 and 128 (both inclusive) and
 .I netaddr
-is an IPv6 address.  For the latter zero compression notation
-.RB ( :: )
-is valid, but IPv4-mapped notation
-.RB ( x:x:x:x:x:x:d.d.d.d )
-is not.  For both IPv4 and IPv6 the maximum value of
+is an IPv6 address as discussed for the
+.B host
+primitive above.  For both IPv4 and IPv6 the maximum value of
 .I len
 is equivalent to a host match and the 0 value (which implies an all-zeroes
 value of
@@ -476,7 +508,7 @@ parses the
 .IR \%/etc/protocols
 file to translate protocol names to numbers, and the
 .B "getent protocols"
-command lists the protocols recognised by the function.  This is not entirely
+command lists the protocols recognized by the function.  This is not entirely
 so in AIX (which does not have the command), Haiku (which has the file at
 .IR \%/system/data/network/protocols
 and does not have the command), on Linux with musl libc (which hard-codes the
@@ -679,7 +711,7 @@ Reverse ARP
 DEC System Communication Architecture (SCA)
 .TP
 .B slow
-IEEE Slow Protools
+IEEE Slow Protocols, such as LACP, OAM and OSSP
 .TP
 .B stp
 IEEE Spanning Tree Protocol
@@ -712,10 +744,10 @@ the filter checks the DSAP of the LLC header;
 .TP
 \fBatalk\fP
 the filter checks for a SNAP-format packet with an OUI of 0x080007
-and the AppleTalk etype.
+and the AppleTalk EtherType.
 .RE
 .IP
-In the case of Ethernet, the filter checks the Ethernet type field
+In the case of Ethernet, the filter checks the EtherType field
 for most of those protocols.  The exceptions are:
 .RS
 .TP
@@ -724,17 +756,17 @@ the filter checks for an 802.3 frame and then checks the LLC header as
 it does for FDDI, Token Ring, and 802.11;
 .TP
 \fBatalk\fP
-the filter checks both for the AppleTalk etype in an Ethernet frame and
+the filter checks both for the AppleTalk EtherType in an Ethernet frame and
 for a SNAP-format packet as it does for FDDI, Token Ring, and 802.11;
 .TP
 \fBaarp\fP
-the filter checks for the AppleTalk ARP etype in either an Ethernet
+the filter checks for the AppleTalk ARP EtherType in either an Ethernet
 frame or an 802.2 SNAP frame with an OUI of 0x000000;
 .TP
 \fBipx\fP
-the filter checks for the IPX etype in an Ethernet frame, the IPX
+the filter checks for the IPX EtherType in an Ethernet frame, the IPX
 DSAP in the LLC header, the 802.3-with-no-LLC-header encapsulation of
-IPX, and the IPX etype in a SNAP frame.
+IPX, and the IPX EtherType in a SNAP frame.
 .RE
 .IP "\fBip\fR, \fBip6\fR, \fBarp\fR, \fBrarp\fR, \fBatalk\fR, \fBaarp\fR, \fBdecnet\fR, \fBiso\fR, \fBstp\fR, \fBipx\fR, \fBnetbeui\fP"
 Abbreviations for:
@@ -838,15 +870,26 @@ Exchange Identification (XID) U PDUs
 Frame Reject (FRMR) U PDUs
 .RE
 .IP \fBinbound\fP
-Packet was received by the host performing the capture rather than being
-sent by that host.  This is only supported for certain link-layer types,
-such as SLIP and the ``cooked'' Linux capture mode
-used for the ``any'' device and for some other device types.
+True if the packet was received by the host performing the capture rather than
+sent by that host.  This primitive is supported for certain link-layer types
+only, namely,
+.BR DLT_SLIP ,
+.BR DLT_IPNET ,
+.BR DLT_LINUX_SLL ,
+.BR DLT_LINUX_SLL2 ,
+.BR DLT_PFLOG ,
+.BR DLT_PPP_PPPD ,
+a number of Juniper Networks private types and some types of Linux DSA tag.
+For reference, the ``any'' pseudo-interface uses
+.B DLT_LINUX_SLL
+or
+.B DLT_LINUX_SLL2
+on Linux, and
+.B DLT_IPNET
+on Solaris.
 .IP \fBoutbound\fP
-Packet was sent by the host performing the capture rather than being
-received by that host.  This is only supported for certain link-layer types,
-such as SLIP and the ``cooked'' Linux capture mode
-used for the ``any'' device and for some other device types.
+Same as the above, but for the opposite direction (from the capturing host
+to the network).
 .IP "\fBifindex \fIinterface_index\fR"
 True if the packet was logged via the specified interface (applies only to
 packets logged by the Linux "any" cooked v2 interface).
@@ -1110,11 +1153,9 @@ filters packets with an outer label of 100000 and an inner label of
 filters packets to or from 192.9.200.1 with an inner label of 1024 and
 any outer label.
 .IP \fBpppoed\fP
-True if the packet is a PPP-over-Ethernet Discovery packet (Ethernet
-type 0x8863).
+True if the packet is a PPP-over-Ethernet Discovery packet (EtherType 0x8863).
 .IP "\fBpppoes \fI[session_id]\fR"
-True if the packet is a PPP-over-Ethernet Session packet (Ethernet
-type 0x8864).
+True if the packet is a PPP-over-Ethernet Session packet (EtherType 0x8864).
 If the optional \fIsession_id\fR is specified, only true if the packet has the specified
 \fIsession_id\fR.
 Note that the first \fBpppoes\fR keyword encountered in an expression
@@ -1341,13 +1382,15 @@ and
 respectively, but only if the MTP2 link uses the extended sequence numbers
 encoding specified for high speed signalling links (HSL) in ITU-T
 Recommendation Q.703 Annex A.
-.IP "\fBlink host \fIarcnetaddr\fR"
-True, only for
+.IP "\fBlink host \fImac8addr\fR"
+True if the source or the destination ARCnet node ID (for
 .B \%DLT_ARCNET
-or
-.BR \%DLT_ARCNET_LINUX ,
-if the source or the destination ARCnet address of the packet is
-.IR \%arcnetaddr .
+and
+.B \%DLT_ARCNET_LINUX
+only) or MS/TP station address (for
+.B \%DLT_BACNET_MS_TP
+only) is
+.IR \%mac8addr .
 May be qualified with a different direction
 .RB ( src ,
 .BR dst ,
@@ -1356,7 +1399,7 @@ in which case the
 .B host
 keyword is optional.
 .IP
-.I \%arcnetaddr
+.I \%mac8addr
 is a string of the form
 .B $xx
 or
@@ -1373,7 +1416,11 @@ Also in ARCnet context
 and
 .B \%multicast
 are equivalent to
-.BR "\%link dst $0" .
+.BR "\%link dst $0" ,
+and in MS/TP context
+.B \%broadcast
+is equivalent to
+.BR "\%link dst $ff" .
 .IP
 Note that this address syntax clashes with the parameter expansion syntax
 in POSIX-compatible shells and elsewhere, so depending on the use case the
@@ -1447,6 +1494,13 @@ a length operator, and packet data accessors.  All arithmetic expressions
 regardless of the complexity and composition resolve to an integer value.
 Note that all comparisons are unsigned, so that, for example, both 0x80000000
 and 0xffffffff are > 0.
+.LP
+Note that 32-bit octal integer constants in the [010000000000 .. 037777777777]
+interval, which includes 75% of all 32-bit integers, are interpreted as MAC-48
+addresses when prepended with a single zero (e.g., 012345670123 means
+01:23:45:67:01:23).  To disambiguate the expression, prepend such an octal
+number with more zeroes (0012345670123) or represent the same value using a
+decimal (1402433619) or hexadecimal (0x53977053) number.
 .LP
 The
 .B %
@@ -1642,27 +1696,28 @@ which should not be confused with
 .SH PROTOCOL NAMES IN VARIOUS CONTEXTS
 The table below shows which protocol names can be used in which contexts of
 the currently implemented syntax.  The "name" column contains a protocol name,
-which often can be used as an ID in primitives that take a protocol name
-argument; in all cases except
-.BR \%loopback
-the protocol name is also a keyword.  If the keyword is an alias, the "see"
-column refers to the main keyword.  The "abbr" column tells whether the
-keyword can be used as an abbreviation (that is, if the keyword is the only
-contents of a primitive, it means a more complex expression).  The "PDA"
-column tells whether the keyword can be used in a packet data accessor.  The
-"pqual" column tells whether the keyword can be used as a case of the
-.I proto
-qualifier kind.  If the name can be used as an ID for the
+which can be used as a keyword and/or as an ID for the
 .B proto
 case of the
 .I type
-qualifier kind, the "tqual ID" column shows the valid context(s).
+qualifier kind.
+.LP
+For keywords: if the keyword is an alias, the "K/see" column refers to the
+main keyword; the "K/abbr" column tells whether the keyword can be used as an
+abbreviation (that is, if the keyword is the only contents of a primitive, it
+means a more complex expression); the "K/PDA" column tells whether the keyword
+can be used in a packet data accessor; the "K/pqual" column tells whether the
+keyword can be used as a case of the
+.I proto
+qualifier kind.
+.LP
+For IDs: the "ID/tqual" column shows the valid context(s).
 
 .TS
 box;
 l	|l	|l	|l	|l	|l
 lB	|lB	|l	|l	|l	|lB.
-name	see	abbr	PDA	pqual	tqual ID
+name	K/see	K/abbr	K/PDA	K/pqual	ID/tqual
 _
 aarp		yes	no	no	link proto \\aarp
 ah		yes	no	no	[ip|ip6] proto \\ah
@@ -1692,6 +1747,7 @@ l1		yes	no	no
 l2		yes	no	no
 lat		yes	yes	no	link proto \\lat
 link		no	yes	yes
+lldp					link proto lldp
 loopback					link proto loopback
 lsp		yes	no	no
 mopdl		yes	yes	no	link proto \\mopdl
@@ -1705,6 +1761,7 @@ rarp		yes	yes	yes	link proto \\rarp
 sca		yes	yes	no	link proto \\sca
 sctp		yes	yes	yes	[ip|ip6] proto \\sctp
 slip	link
+slow					link proto slow
 snp		yes	no	no
 stp		yes	no	no	link proto \\stp
 tcp		yes	yes	yes	[ip|ip6] proto \\tcp

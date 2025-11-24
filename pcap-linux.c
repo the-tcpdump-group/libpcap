@@ -2212,9 +2212,9 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 * header whatsoever to PF_PACKET sockets; other PPP
 		 * code supplies PPP link-layer headers ("syncppp.c");
 		 * some PPP code might supply random link-layer
-		 * headers (PPP over ISDN - there's code in Ethereal,
+		 * headers (PPP over ISDN - there's code in Wireshark,
 		 * for example, to cope with PPP-over-ISDN captures
-		 * with which the Ethereal developers have had to cope,
+		 * with which the Wireshark developers have had to cope,
 		 * heuristically trying to determine which of the
 		 * oddball link-layer headers particular packets have).
 		 *
@@ -2333,7 +2333,7 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		 *
 		 *	https://github.com/mcr/libpcap/pull/29
 		 *
-		 * There doesn't seem to be any network drivers that uses
+		 * There don't seem to be any network drivers that use
 		 * any of the ARPHRD_FC* values for IP-over-FC, and
 		 * it's not exactly clear what the "Dummy types for non
 		 * ARP hardware" are supposed to mean (link-layer
@@ -2384,9 +2384,9 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype,
 		handle->linktype = DLT_RAW;
 		break;
 
-       case ARPHRD_IEEE802154:
-               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
-               break;
+	case ARPHRD_IEEE802154:
+		handle->linktype = DLT_IEEE802_15_4_NOFCS;
+		break;
 
 	case ARPHRD_NETLINK:
 		handle->linktype = DLT_NETLINK;
@@ -5783,10 +5783,18 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 	fd = open(pathstr, O_RDONLY);
 	free(pathstr);
 	/*
-	 * This is not fatal, kernel >= 4.20 *might* expose this attribute
+	 * This could be not fatal: kernel >= 4.20 *might* expose this
+	 * attribute.  However, if it exposes the attribute, but the read has
+	 * failed due to another reason (ENFILE, EMFILE, ENOMEM...), propagate
+	 * the failure.
 	 */
-	if (fd < 0)
-		return 0;
+	if (fd < 0) {
+		if (errno == ENOENT)
+			return 0;
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		                             errno, "open");
+		return PCAP_ERROR;
+	}
 
 	r = read(fd, buf, sizeof(buf) - 1);
 	if (r <= 0) {
@@ -5805,8 +5813,7 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 	buf[r] = '\0';
 
 	for (i = 0; i < sizeof(dsa_protos) / sizeof(dsa_protos[0]); i++) {
-		if (strlen(dsa_protos[i].name) == (size_t)r &&
-		    strcmp(buf, dsa_protos[i].name) == 0) {
+		if (strcmp(buf, dsa_protos[i].name) == 0) {
 			handle->linktype = dsa_protos[i].linktype;
 			switch (dsa_protos[i].linktype) {
 			case DLT_EN10MB:
@@ -5940,8 +5947,8 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
 	struct pcap_linux *handlep = handle->priv;
 	size_t prog_size;
-	register int i;
-	register struct bpf_insn *p;
+	int i;
+	struct bpf_insn *p;
 	struct bpf_insn *f;
 	int len;
 
@@ -6265,18 +6272,18 @@ pcap_set_protocol_linux(pcap_t *p, int protocol)
 /*
  * Libpcap version string.
  */
+#if defined(HAVE_TPACKET3) && defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V3 and netmap"
+#elif defined(HAVE_TPACKET3)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V3"
+#elif defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V2 and netmap"
+#else
+  #define ADDITIONAL_INFO_STRING	"with TPACKET_V2"
+#endif
+
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING
-#if defined(HAVE_TPACKET3) && defined(PCAP_SUPPORT_NETMAP)
-		" (with TPACKET_V3 and netmap)"
-#elif defined(HAVE_TPACKET3)
-		" (with TPACKET_V3)"
-#elif defined(PCAP_SUPPORT_NETMAP)
-		" (with TPACKET_V2 and netmap)"
-#else
-		" (with TPACKET_V2)"
-#endif
-	);
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO(ADDITIONAL_INFO_STRING));
 }

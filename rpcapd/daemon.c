@@ -2411,7 +2411,7 @@ daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *ctrl_ssl, struct session *se
 	//
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains invalid instructions");
 		return -2;
 	}
 

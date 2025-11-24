@@ -1180,10 +1180,10 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	struct pcap_bpf *pb = p->priv;
 	u_int cc;
 	int n = 0;
-	register u_char *bp, *ep;
+	u_char *bp, *ep;
 	u_char *datap;
 #ifdef PCAP_FDDIPAD
-	register u_int pad;
+	u_int pad;
 #endif
 
  again:
@@ -1332,7 +1332,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	pad = p->fddipad;
 #endif
 	while (bp < ep) {
-		register u_int caplen, hdrlen;
+		u_int caplen, hdrlen;
 		size_t packet_bytes;
 
 		/*
@@ -2186,7 +2186,7 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		memset(&bz, 0, sizeof(bz)); /* bzero() deprecated, replaced with memset() */
+		memset(&bz, 0, sizeof(bz));
 		bz.bz_bufa = pb->zbuf1;
 		bz.bz_bufb = pb->zbuf2;
 		bz.bz_buflen = pb->zbufsize;
@@ -3676,18 +3676,20 @@ pcap_set_datalink_bpf(pcap_t *p _U_, int dlt _U_)
 /*
  * Platform-specific information.
  */
+#if defined(HAVE_ZEROCOPY_BPF) && defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with zerocopy and netmap support"
+#elif defined(HAVE_ZEROCOPY_BPF)
+  #define ADDITIONAL_INFO_STRING	"with zerocopy support"
+#elif defined(PCAP_SUPPORT_NETMAP)
+  #define ADDITIONAL_INFO_STRING	"with netmap support"
+#endif
+
 const char *
 pcap_lib_version(void)
 {
-	return (PCAP_VERSION_STRING
-#if defined(HAVE_ZEROCOPY_BPF) && defined(PCAP_SUPPORT_NETMAP)
-		" (with zerocopy and netmap support)"
-#elif defined(HAVE_ZEROCOPY_BPF)
-		" (with zerocopy support)"
-#elif defined(PCAP_SUPPORT_NETMAP)
-		" (with netmap support)"
+#ifdef ADDITIONAL_INFO_STRING
+	return (PCAP_VERSION_STRING_WITH_ADDITIONAL_INFO(ADDITIONAL_INFO_STRING));
 #else
-		""
+	return (PCAP_VERSION_STRING);
 #endif
-	);
 }

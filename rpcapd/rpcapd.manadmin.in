@@ -30,7 +30,7 @@
 .\"  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\"  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH RPCAPD @MAN_ADMIN_COMMANDS@ "21 August 2024"
+.TH RPCAPD @MAN_ADMIN_COMMANDS@ "18 October 2025"
 .SH NAME
 rpcapd \- capture daemon to be controlled by a remote libpcap application
 .SH SYNOPSIS
@@ -260,14 +260,20 @@ Permit NULL authentication (usually used with the
 .B \-l
 flag).
 .TP
-.BI \-a " host" , "port"
-Run in active mode, connecting to host
+.BI \-a " host1" , "port1" , "host2" , "port2" , ... , "hostN" , "portN"
+Run in active mode, connecting to each host
 .I host
-on port
-.IR port .
-In case
+(which may be a hostname or an address) on TCP port
 .I port
-is omitted, the default port (2003) is used.
+(which may be either a number or a service name recognized by
+.BR getaddrinfo (3)
+or the word
+.B \%DEFAULT
+to mean port number 2003).  Only the very last value of the port may be
+omitted (for example,
+.BI \-a " host"
+is a valid syntax), which means the same as
+.BR \%DEFAULT .
 .TP
 .B -v
 Run in active mode only; by default, if

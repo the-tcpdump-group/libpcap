@@ -277,7 +277,7 @@
  * Do *NOT* use these in capture files that you expect anybody not using
  * your private versions of capture-file-reading tools to read; in
  * particular, do *NOT* use them in products, otherwise you may find that
- * people won't be able to use tcpdump, or snort, or Ethereal, or... to
+ * people won't be able to use tcpdump, or snort, or Wireshark, or... to
  * read capture files from your firewall/intrusion detection/traffic
  * monitoring/etc. appliance, or whatever product uses that LINKTYPE_ value,
  * and you may also find that the developers of those applications will

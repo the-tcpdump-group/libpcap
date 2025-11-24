@@ -32,6 +32,12 @@
 For reference, the tests were done using a system installed from
 `OI-hipster-minimal-20240426.iso` plus the `build-essential` package.
 
+## Solaris CBE 11.4.81.193.1/AMD64
+
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake 3.24.0 works.
+* Clang 19.1.7 and GCC 14.2.0 work.
+
 ## Solaris 11.4.72.176.1/SPARC
 * flex 2.6.4 and GNU Bison 3.8.2 work.
 * CMake 3.24.0 works.
@@ -45,7 +51,7 @@ For reference, the tests were done using a system installed from
 * CMake does not work.
 * GCC 12.2.0 and Clang 13.0.1 work.
 
-## Solaris 11.4.42.111.0/AMD64
+## Solaris CBE 11.4.42.111.0/AMD64
 
 * flex 2.6.4 and GNU Bison 3.7.3 work.
 * CMake 3.21.0 works.

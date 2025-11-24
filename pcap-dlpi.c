@@ -635,7 +635,7 @@ pcap_activate_dlpi(pcap_t *p)
 #ifdef HAVE_SOLARIS
 	int isatm = 0;
 #endif
-	register dl_info_ack_t *infop;
+	dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
 	bpf_u_int32 ss;
 #endif
@@ -1641,14 +1641,14 @@ echo 'lanc_outbound_promisc_flag/W1' | /usr/bin/adb -w /stand/vmunix /dev/kmem
  * Setting the variable is not necessary on HP-UX 11.x.
  */
 static int
-get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
-    u_int *ppa, register char *ebuf)
+get_dlpi_ppa(int fd, const char *device, u_int unit,
+    u_int *ppa, char *ebuf)
 {
-	register dl_hp_ppa_ack_t *ap;
-	register dl_hp_ppa_info_t *ipstart, *ip;
-	register u_int i;
+	dl_hp_ppa_ack_t *ap;
+	dl_hp_ppa_info_t *ipstart, *ip;
+	u_int i;
 	char dname[100];
-	register u_long majdev;
+	u_long majdev;
 	struct stat statbuf;
 	dl_hp_ppa_req_t	req;
 	char buf[MAXDLBUF];

@@ -2273,14 +2273,14 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			if (*ptr == '%')
 			{
 				/* the pedantic thing to do here would be throwing an error on
-				 * a sequence like `%hi', however a lot of common tools just accept
+				 * a sequence like '%hi', however a lot of common tools just accept
 				 * such malarkey, so... probably it will be fine? */
 				if (sscanf(ptr, "%%%02hhx", (unsigned char *)(buf+pos)) == 1)
 					ptr += 2;
 				/* other implementations aside, rejecting null bytes seems prudent */
 				if (buf[pos] == '\0')
 				{
-					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape `%%00` in userinfo");
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid escape '%%00' in userinfo");
 					return -1;
 				}
 			}
@@ -2300,12 +2300,12 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 				continue;
 			else if (*ptr < ' ' || *ptr > '~')
 			{
-				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `\\%o` in userinfo", *ptr);
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character '\\%o' in userinfo", *ptr);
 				return -1;
 			}
 			else if (strchr(userinfo_allowed_symbols, *ptr) == NULL)
 			{
-				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character `%c` in userinfo", *ptr);
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character '%c' in userinfo", *ptr);
 				return -1;
 			}
 		}

@@ -92,8 +92,8 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct pcap_bpf_aux_data *aux_data _U_)
 #endif
 {
-	register uint32_t A, X;
-	register bpf_u_int32 k;
+	uint32_t A, X;
+	bpf_u_int32 k;
 
 	if (pc == 0)
 		/*

@@ -434,10 +434,10 @@ prog:	  null expr
 null:	  /* null */		{ $$.q = qerr; }
 	;
 expr:	  term
-	| expr and term		{ gen_and($1.b, $3.b); $$ = $3; }
-	| expr and id		{ gen_and($1.b, $3.b); $$ = $3; }
-	| expr or term		{ gen_or($1.b, $3.b); $$ = $3; }
-	| expr or id		{ gen_or($1.b, $3.b); $$ = $3; }
+	| expr and term		{ $3.b = gen_and($1.b, $3.b); $$ = $3; }
+	| expr and id		{ $3.b = gen_and($1.b, $3.b); $$ = $3; }
+	| expr or term		{ $3.b = gen_or($1.b, $3.b); $$ = $3; }
+	| expr or id		{ $3.b = gen_or($1.b, $3.b); $$ = $3; }
 	;
 and:	  AND			{ $$ = $<blk>0; }
 	;
@@ -557,8 +557,8 @@ not:	  '!'			{ $$ = $<blk>0; }
 paren:	  '('			{ $$ = $<blk>0; }
 	;
 pid:	  nid
-	| qid and id		{ gen_and($1.b, $3.b); $$ = $3; }
-	| qid or id		{ gen_or($1.b, $3.b); $$ = $3; }
+	| qid and id		{ $3.b = gen_and($1.b, $3.b); $$ = $3; }
+	| qid or id		{ $3.b = gen_or($1.b, $3.b); $$ = $3; }
 	;
 qid:	  pnum			{ CHECK_PTR_VAL(($$.b = gen_ncode(cstate, NULL, $1,
 						   $$.q = $<blk>0.q))); }
@@ -893,7 +893,7 @@ atmfieldvalue: NUM {
 	}
 	;
 atmlistvalue: atmfieldvalue
-	| atmlistvalue or atmfieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	| atmlistvalue or atmfieldvalue { $3.b = gen_or($1.b, $3.b); $$ = $3; }
 	;
 	/* MTP2 types quantifier */
 mtp2type: FISU			{ $$ = M_FISU; }
@@ -932,6 +932,6 @@ mtp3fieldvalue: NUM {
 	}
 	;
 mtp3listvalue: mtp3fieldvalue
-	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	| mtp3listvalue or mtp3fieldvalue { $3.b = gen_or($1.b, $3.b); $$ = $3; }
 	;
 %%

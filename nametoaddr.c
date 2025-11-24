@@ -819,8 +819,8 @@ invalid:
 u_char *
 pcap_ether_aton(const char *s)
 {
-	register u_char *ep, *e;
-	register u_char d;
+	u_char *ep, *e;
+	u_char d;
 
 	e = ep = (u_char *)malloc(6);
 	if (e == NULL)
@@ -851,8 +851,8 @@ pcap_ether_aton(const char *s)
 u_char *
 pcap_ether_hostton(const char *name)
 {
-	register struct pcap_etherent *ep;
-	register u_char *ap;
+	struct pcap_etherent *ep;
+	u_char *ap;
 	static thread_local FILE *fp = NULL;
 	static thread_local int init = 0;
 
@@ -886,7 +886,7 @@ pcap_ether_hostton(const char *name)
 u_char *
 pcap_ether_hostton(const char *name)
 {
-	register u_char *ap;
+	u_char *ap;
 	u_char a[6];
 	char namebuf[1024];
 

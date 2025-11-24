@@ -150,9 +150,6 @@
 /* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_SA_LEN 1
 
-/* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
-#cmakedefine HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI 1
-
 /* Define to 1 if you have the declaration of `SKF_AD_VLAN_TAG_PRESENT', and
    to 0 if you don't. */
 #cmakedefine01 HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT

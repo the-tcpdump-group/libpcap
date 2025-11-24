@@ -180,8 +180,8 @@ capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 int
 main(int argc, char **argv)
 {
-	register int op;
-	register char *cp, *cmdbuf, *device;
+	int op;
+	char *cp, *cmdbuf, *device;
 	int do_wakeup = 1;
 	pcap_if_t *devlist;
 	bpf_u_int32 localnet, netmask;
@@ -378,10 +378,10 @@ warning(const char *fmt, ...)
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
 static char *
-copy_argv(register char **argv)
+copy_argv(char **argv)
 {
-	register char **p;
-	register size_t len = 0;
+	char **p;
+	size_t len = 0;
 	char *buf;
 	char *src, *dst;
 

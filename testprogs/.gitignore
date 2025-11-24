@@ -13,5 +13,6 @@ opentest
 reactivatetest
 selpolltest
 threadsignaltest
+versiontest
 writecaptest
 nonblocktest

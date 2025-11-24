@@ -17,7 +17,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove outdated code related to AirPcap HW.
         The Riverbed AirPcap Product has reached End of Availability
         (EOA) as of December 31, 2017
-      Mind netmap support in pcap_lib_version().
       Make pcap_compile() error messages more uniform and consistent.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
@@ -44,6 +43,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         request #1273).
       Eliminate trailing space in bpf_image() result.
       Fix DECnet packet filtering on big-endian hosts.
+      Fix various failures to reject invalid DECnet primitives.
       Require "vpi" and "vci" values to be within valid ranges.
       Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.
@@ -62,13 +62,17 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require "(ip|ip6) proto" value to be within range.
       Require "protochain" value to be within range.
       Always enable the "gateway" primitive.
-      Fix IPv4 multicast filtering to only include 224.0.0.0/4.
+      Properly reject "link proto" for DLT_BACNET_MS_TP.
+      Extend "link (host|broadcast)" support onto DLT_BACNET_MS_TP.
+      Do not try matching RFC 1051 system codes for ARCnet.
+      Enable various primitives for DLT_DSA_TAG_BRCM and DLT_DSA_TAG_DSA.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
         another incorporate-remote-capture project. (issue #1120)
       rpcapd: Refine SSL options in printusage().
       Fix a possible buffer overflow (Coverity CID 1619148).
+      Fix parameter name validation in the configuration file.
     Documentation:
       Document a standard format for writing out BPF filter programs.
       Add a README.hurd.md file.
@@ -152,15 +156,19 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       gencode: Fix an undefined behavior in gen_mcode().
       gencode: Add a missing free() in gen_scode().
       Remove "DLT_" from the descriptions of two dlt_choices[] entries.
+      Report the size of time_t in the version string.
     Source code:
       Remove some unneeded includes.
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
       Clean up code that computes the length of a netmask.
+      Mind netmap support in pcap_lib_version().
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
       IEEE 802.11: Fix three undefined behaviors in grammar.y.
+      Fix IPv4 multicast filtering to only include 224.0.0.0/4.
+      Fix "(arp|rarp) host NAME" to ignore IPv6 quietly.
     Linux:
       Fix check for mac80211 phydev.
       Don't create monitor-mode interface if we're capturing on one.
@@ -216,6 +224,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Autoconf: Use AC_SYS_YEAR2038_RECOMMENDED when possible if the
         environment variable BUILD_YEAR2038 = yes (via autogen.sh)
       DPDK: don't enable it by default.
+      Update Npcap SDK to 1.15.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
