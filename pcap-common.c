@@ -1309,7 +1309,10 @@
  */
 #define LINKTYPE_EDK2_MM	302
 
-#define LINKTYPE_HIGH_MATCHING_MAX	302		/* highest value in the "matching" range */
+// See DLT_DEBUG_ONLY
+#define LINKTYPE_DEBUG_ONLY	303
+
+#define LINKTYPE_HIGH_MATCHING_MAX	303		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
