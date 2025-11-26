@@ -5581,6 +5581,14 @@ static struct dsa_proto {
 	 * See
 	 *
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_mtk.c#L15
+	 *
+	 * Linux kernel implements this tag so that it does not indicate the frame
+	 * encoding reliably.  The matter is, some drivers use METADATA_HW_PORT_MUX,
+	 * which (for the switch->CPU direction only, at the time of this writing)
+	 * means that the frame does not have a DSA tag, the frame metadata is stored
+	 * elsewhere and libpcap receives the frame only.  Specifically, this is the
+	 * case for drivers/net/ethernet/mediatek/mtk_eth_soc.c, but the tag visible
+	 * in sysfs is still "mtk" even though the wire encoding is different.
 	 */
 	{ "mtk", DLT_DEBUG_ONLY },
 
