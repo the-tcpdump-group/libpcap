@@ -5688,6 +5688,11 @@ static struct dsa_proto {
 	 *    https://elixir.bootlin.com/linux/v6.13.2/source/net/dsa/tag_xrs700x.c
 	 */
 	{ "xrs700x", DLT_DEBUG_ONLY },
+	/*
+	 * Type 2, with EtherType 0x88C3 Infineon/Lantiq/Intel/Maxlinear.
+	 *
+	 */
+	{ "gsw1xx", DLT_DSA_TAG_GSW1XX },
 };
 
 /*
