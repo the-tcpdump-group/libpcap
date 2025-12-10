@@ -12,6 +12,27 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         warnings.
       Clean up code that computes the length of a netmask.
       Mind netmap support in pcap_lib_version().
+    Link-layer types:
+      Add LINKTYPE_ETW/DLT_ETW.
+      Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
+        #1008).
+      Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP.
+      Add LINKTYPE_USB_2_0_LOW_SPEED/DLT_USB_2_0_LOW_SPEED,
+        LINKTYPE_USB_2_0_FULL_SPEED/DLT_USB_2_0_FULL_SPEED,
+        LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
+      Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
+      Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
+      Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
+      Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
+      Rename LINKTYPE_IPMB_LINUX/DLT_IPMB_LINUX to
+        LINKTYPE_I2C_LINUX/DLT_I2C_LINUX, as it's really just an
+        encapsulation of I2C, and is also being used for HDMI DDC.
+        Keep DLT_IPMB_LINUX around as a #define for backwards
+        compatibility.
+      Add LINKTYPE_MDB/DLT_MDB.
+      Add LINKTYPE_DECT_NR/DLT_DECT_NR.
+      Add LINKTYPE_EDK2_MM/DLT_EDK2_MM.
+      Add LINKTYPE_DEBUG_ONLY/DLT_DEBUG_ONLY.
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
