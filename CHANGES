@@ -18,23 +18,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         The Riverbed AirPcap Product has reached End of Availability
         (EOA) as of December 31, 2017
       Make pcap_compile() error messages more uniform and consistent.
-    Link-layer types:
-      Add LINKTYPE_ETW/DLT_ETW.
-      Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
-        #1008).
-      Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP.
-      Add LINKTYPE_USB_2_0_LOW_SPEED/DLT_USB_2_0_LOW_SPEED,
-        LINKTYPE_USB_2_0_FULL_SPEED/DLT_USB_2_0_FULL_SPEED,
-        LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
-      Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
-      Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
-      Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
-      Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
-      Rename LINKTYPE_IPMB_LINUX/DLT_IPMB_LINUX to
-        LINKTYPE_I2C_LINUX/DLT_I2C_LINUX, as it's really just an
-        encapsulation of I2C, and is also being used for HDMI DDC.
-        Keep DLT_IPMB_LINUX around as a #define for backwards
-        compatibility.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
@@ -104,7 +87,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: Skip snprintf(3) tests when cross-compiling; test whether
         check_c_source_runs() with a trivial program and, if it doesn't
         work, don't run tests that use it.
-      autogen.sh: Allow to configure Autoconf warnings.
       autogen.sh: Delete all trailing blank lines at end of configure.
       Autoconf: Add support for libnl-tiny with pkg-config.
       Autoconf: Fix building of something-only libpcap.
@@ -163,6 +145,27 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         warnings.
       Clean up code that computes the length of a netmask.
       Mind netmap support in pcap_lib_version().
+    Link-layer types:
+      Add LINKTYPE_ETW/DLT_ETW.
+      Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
+        #1008).
+      Add LINKTYPE_ZBOSS_NCP/DLT_ZBOSS_NCP.
+      Add LINKTYPE_USB_2_0_LOW_SPEED/DLT_USB_2_0_LOW_SPEED,
+        LINKTYPE_USB_2_0_FULL_SPEED/DLT_USB_2_0_FULL_SPEED,
+        LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
+      Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
+      Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
+      Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
+      Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
+      Rename LINKTYPE_IPMB_LINUX/DLT_IPMB_LINUX to
+        LINKTYPE_I2C_LINUX/DLT_I2C_LINUX, as it's really just an
+        encapsulation of I2C, and is also being used for HDMI DDC.
+        Keep DLT_IPMB_LINUX around as a #define for backwards
+        compatibility.
+      Add LINKTYPE_MDB/DLT_MDB.
+      Add LINKTYPE_DECT_NR/DLT_DECT_NR.
+      Add LINKTYPE_EDK2_MM/DLT_EDK2_MM.
+      Add LINKTYPE_DEBUG_ONLY/DLT_DEBUG_ONLY.
     Packet filtering:
       Make the chunk allocator's alignment more general and
         platform-independent.
@@ -178,6 +181,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix the error message when capure permission is denied.
       Fix the error message if PF_PACKET sockets aren't supported.
       Fix a file descriptor leak in an error case (pull request #1537).
+      Handle errors better when checking for a DSA-tagged interface.
+      Use DLT_DEBUG_ONLY for DSA tags that do not [yet] have a better support.
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
@@ -225,6 +230,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         environment variable BUILD_YEAR2038 = yes (via autogen.sh)
       DPDK: don't enable it by default.
       Update Npcap SDK to 1.15.
+      autogen.sh: Allow to configure Autoconf warnings.
 
 Friday, August 30, 2024 / The Tcpdump Group
   Summary for 1.10.5 libpcap release
