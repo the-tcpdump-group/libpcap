@@ -48,6 +48,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix the error message when capure permission is denied.
       Fix the error message if PF_PACKET sockets aren't supported.
       Fix a file descriptor leak in an error case (pull request #1537).
+      Handle errors better when checking for a DSA-tagged interface.
+      Use DLT_DEBUG_ONLY for DSA tags that do not [yet] have a better support.
     FreeBSD:
       Fix detection and enablng of zero-copy supporrt.
       Fix errors in the zero-copy code.
