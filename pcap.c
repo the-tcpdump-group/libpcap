@@ -248,7 +248,7 @@ pcap_init(unsigned int opts, char *errbuf)
 		if (initialized) {
 			if (!pcapint_utf_8_mode) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "Multiple pcap_init calls with different character encodings");
+				    "Multiple pcap_pinit calls with different character encodings");
 				return (PCAP_ERROR);
 			}
 		}
