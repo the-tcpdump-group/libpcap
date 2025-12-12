@@ -122,12 +122,12 @@ else
 fi
 run_after_echo "$MAKE_BIN" -s clean
 if [ "$CMAKE" = no ]; then
-    run_after_echo "$MAKE_BIN" ${CFLAGS:+CFLAGS="$CFLAGS"}
-    run_after_echo "$MAKE_BIN" testprogs ${CFLAGS:+CFLAGS="$CFLAGS"}
+    run_after_echo "$MAKE_BIN" -s ${CFLAGS:+CFLAGS="$CFLAGS"}
+    run_after_echo "$MAKE_BIN" -s testprogs ${CFLAGS:+CFLAGS="$CFLAGS"}
 else
     # The "-s" flag is a no-op and CFLAGS is set using -DEXTRA_CFLAGS above.
-    run_after_echo "$MAKE_BIN" VERBOSE=1
-    run_after_echo "$MAKE_BIN" VERBOSE=1 testprogs
+    run_after_echo "$MAKE_BIN"
+    run_after_echo "$MAKE_BIN" testprogs
 fi
 run_after_echo "$MAKE_BIN" install
 
