@@ -1884,6 +1884,7 @@ set(PROJECT_SOURCE_LIST_C
     pcap-common.c
     pcap-util.c
     pcap.c
+    pcap-new.c
     savefile.c
     sf-pcapng.c
     sf-pcap.c
