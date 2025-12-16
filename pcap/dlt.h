@@ -1559,7 +1559,7 @@
 #define DLT_IEEE802_15_4_TAP    283
 
 /*
- * Marvell (Ethertype) Distributed Switch Architecture proprietary tagging format.
+ * Marvell (EtherType) Distributed Switch Architecture proprietary tagging format.
  */
 #define DLT_DSA_TAG_DSA		284
 #define DLT_DSA_TAG_EDSA	285

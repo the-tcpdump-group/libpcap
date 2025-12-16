@@ -4458,7 +4458,7 @@ gen_llc_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	default:
 		/*
 		 * XXX - we don't have to check for IPX 802.3
-		 * here, but should we check for the IPX Ethertype?
+		 * here, but should we check for the IPX EtherType?
 		 */
 		if (ll_proto <= ETHERMTU) {
 			assert_maxval(cstate, "LLC DSAP", ll_proto, UINT8_MAX);
@@ -6404,7 +6404,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		case DLT_C_HDLC:
 		case DLT_HDLC:
 			/*
-			 * Cisco uses an Ethertype lookalike - for OSI,
+			 * Cisco uses an EtherType lookalike - for OSI,
 			 * it's 0xfefe.
 			 */
 			b0 = gen_linktype(cstate, LLCSAP_ISONS<<8 | LLCSAP_ISONS);

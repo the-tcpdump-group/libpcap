@@ -5431,7 +5431,7 @@ iface_get_offload(pcap_t *handle _U_)
  * 2. Using the hex dumps and any other available supporting materials, produce
  *    a sufficiently detailed description of the DSA tag structure, complete
  *    with a full comment indicating whether it's type 1, 2, or 3, and, for
- *    type 2, indicating whether it has an Ethertype and, if so, what that type
+ *    type 2, indicating whether it has an EtherType and, if so, what that type
  *    is, and whether it's registered with the IEEE or not.  Refer to the
  *    specification(s), existing implementation(s), or any other relevant
  *    resources.
@@ -5479,7 +5479,7 @@ static struct dsa_proto {
 	{ "dsa", DLT_DSA_TAG_DSA },
 
 	/*
-	 * Type 2, with an Ethertype field, but without
+	 * Type 2, with an EtherType field, but without
 	 * an assigned EtherType value that can be relied
 	 * on.
 	 */
