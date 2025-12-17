@@ -194,6 +194,12 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 		/* Check that the filename is correct */
 		stringlen = strlen(name);
 
+		if (! stringlen) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "To list local files, the source string must include a directory.");
+			return -1;
+		}
+
 		/* The directory must end with '\' in Win32 and '/' in UNIX */
 #ifdef _WIN32
 #define ENDING_CHAR '\\'
