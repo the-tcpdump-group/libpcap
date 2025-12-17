@@ -1781,6 +1781,17 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	char *parsep, *atsignp, *bracketp;
 	char *userinfo, *host, *port, *path;
 
+	if (source == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "The source string must not be NULL.");
+		return (-1);
+	}
+	if (! strcmp(source, "")) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "The source string must not be empty.");
+		return (-1);
+	}
+
 	/*
 	 * Start out returning nothing.
 	 */
@@ -2271,19 +2282,16 @@ pcapint_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
 	}
 
 	/*
-	 * Neither rpcap: nor file:; just treat the entire string
-	 * as a local device.
+	 * The code above has already completely handled the case of no scheme,
+	 * as well as each case of a valid scheme.
 	 */
-	if (name)
-		pcapint_strlcpy(name, source, PCAP_BUF_SIZE);
-	if (type)
-		*type = PCAP_SRC_IFLOCAL;
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "The source string URL scheme is not supported.");
 	free(tmppath);
 	free(tmpport);
 	free(tmphost);
 	free(tmpuserinfo);
 	free(scheme);
-	return (0);
+	return (-1);
 }
 
 int
