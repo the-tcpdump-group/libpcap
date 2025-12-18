@@ -939,7 +939,7 @@ PCAP_API const char *pcap_lib_version(void);
  *   - username and password, if present, will be used to authenticate to the remote host
  *   - port, if present, will specify a port for RPCAP rather than using the default
  * - adaptername [to open a local adapter; kept for compatibility, but it is strongly discouraged]
- * - (NULL) [to open the first local adapter; kept for compatibility, but it is strongly discouraged]
+ * - (NULL) [equivalent to "any"; kept for compatibility, but it is strongly discouraged]
  *
  * The formats allowed by the pcap_findalldevs_ex() are the following (optional parts in []):
  * - file://folder/ [lists all the files in the given folder]
