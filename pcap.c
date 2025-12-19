@@ -1826,6 +1826,18 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	/*
 	 * Treat file: specially - take everything after file:// as
 	 * the pathname.
+	 *
+	 * That doesn't conform to RFC 8089 "The "file" URI Scheme",
+	 * but it does conform to the way WinPcap's pcap_open() handles
+	 * the file scheme.
+	 *
+	 * XXX - however, it *also* means that
+	 *
+	 *    file://localhost/this/is/a/capture.pcap
+	 *
+	 * will be interpreted as a path, relative to the current
+	 * directory, of "localhost/this/is/a/capture.pcap", not
+	 * as an absolute path of "/this/is/a/capture.pcap".
 	 */
 	if (pcapint_strcasecmp(scheme, "file") == 0) {
 		*pathp = strdup(colonp + 3);
