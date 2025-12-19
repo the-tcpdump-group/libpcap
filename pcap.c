@@ -3192,14 +3192,13 @@ static const u_char charmap[] = {
 int
 pcapint_strcasecmp(const char *s1, const char *s2)
 {
-	const u_char	*cm = charmap,
-				*us1 = (const u_char *)s1,
-				*us2 = (const u_char *)s2;
+	const u_char	*us1 = (const u_char *)s1,
+			*us2 = (const u_char *)s2;
 
-	while (cm[*us1] == cm[*us2++])
+	while (charmap[*us1] == charmap[*us2++])
 		if (*us1++ == '\0')
 			return(0);
-	return (cm[*us1] - cm[*--us2]);
+	return (charmap[*us1] - charmap[*--us2]);
 }
 
 struct dlt_choice {
