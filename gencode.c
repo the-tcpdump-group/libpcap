@@ -7620,6 +7620,11 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 		return (NULL);
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
+		/*
+		 * Because the lexer guards the input string format, in this
+		 * context the function returns NULL iff the implicit malloc()
+		 * has failed.
+		 */
 		cstate->e = pcap_ether_aton(s);
 		if (cstate->e == NULL)
 			bpf_error(cstate, "malloc");
