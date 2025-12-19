@@ -23281,6 +23281,40 @@ my @translate_accept_blocks = (
 		expect => '$cd',
 	},
 
+	##### pcap_ether_aton()
+	{
+		name => 'ether_aton_x',
+		cfunc => 'pcap_ether_aton',
+		aliases => [
+			'010203040506',
+			'0102.0304.0506',
+			'01:02:03:04:05:06',
+			'1:2:3:4:5:6',
+			'01-02-03-04-05-06',
+			'1-2-3-4-5-6',
+			'01.02.03.04.05.06',
+			'1.2.3.4.5.6',
+		],
+		expect => '01:02:03:04:05:06',
+	},
+	{
+		name => 'ether_aton_xx',
+		cfunc => 'pcap_ether_aton',
+		aliases => [
+			'a1b2c3d4e5f6',
+			'A1B2C3D4E5F6',
+			'a1b2.c3d4.e5f6',
+			'A1B2.C3D4.E5F6',
+			'a1:b2:c3:d4:e5:f6',
+			'A1:B2:C3:D4:E5:F6',
+			'a1-b2-c3-d4-e5-f6',
+			'A1-B2-C3-D4-E5-F6',
+			'a1.b2.c3.d4.e5.f6',
+			'A1.B2.C3.D4.E5.F6',
+		],
+		expect => 'a1:b2:c3:d4:e5:f6',
+	},
+
 	##### pcapint_parsesrcstr_ex()
 	{
 		name => 'srcstr_file_relfile',
@@ -23433,6 +23467,152 @@ my @translate_reject_tests = (
 		cfunc => 'pcapint_atoan',
 		arg => '123',
 		errstr => '0',
+	},
+
+	##### pcap_ether_aton()
+	{
+		name => 'ether_aton_1',
+		cfunc => 'pcap_ether_aton',
+		arg => 'ad.ad.cc-aC.Dd.',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_2',
+		cfunc => 'pcap_ether_aton',
+		arg => '11:22:33:44:55:66:77:88',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_3',
+		cfunc => 'pcap_ether_aton',
+		arg => '11:22:33:44:55:66:77:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_4',
+		cfunc => 'pcap_ether_aton',
+		arg => '1:2:3:4:5:6:7:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_5',
+		cfunc => 'pcap_ether_aton',
+		arg => '1:2:3:4:5:6:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_6',
+		cfunc => 'pcap_ether_aton',
+		arg => '1:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_7',
+		cfunc => 'pcap_ether_aton',
+		arg => ':1:2:3:4:5:6',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_8',
+		cfunc => 'pcap_ether_aton',
+		arg => ':1:2:3:4:5:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_9',
+		cfunc => 'pcap_ether_aton',
+		arg => 'aa.bb:cc:dd:ee:ff',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_10',
+		cfunc => 'pcap_ether_aton',
+		arg => 'aabb.ccddeeff',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_11',
+		cfunc => 'pcap_ether_aton',
+		arg => 'aabb-ccdd-eeff',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_12',
+		cfunc => 'pcap_ether_aton',
+		arg => 'aabb:ccdd:eeff',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_13',
+		cfunc => 'pcap_ether_aton',
+		arg => 'aabb:ccdd:',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_14',
+		cfunc => 'pcap_ether_aton',
+		arg => '1-',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_15',
+		cfunc => 'pcap_ether_aton',
+		arg => '123-45-67-89-ab-cd',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_16',
+		cfunc => 'pcap_ether_aton',
+		arg => '12-45-67-89-ab-cde',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_17',
+		cfunc => 'pcap_ether_aton',
+		arg => '0123456abcdef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_18',
+		cfunc => 'pcap_ether_aton',
+		arg => '123456gbcdef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_19',
+		cfunc => 'pcap_ether_aton',
+		arg => '12-34-56-bg-cd-ef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_20',
+		cfunc => 'pcap_ether_aton',
+		arg => '12:34:56:gb:cd:ef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_21',
+		cfunc => 'pcap_ether_aton',
+		arg => 'x2.34.56.ab.cd.ef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_22',
+		cfunc => 'pcap_ether_aton',
+		arg => '1x.34.56.ab.cd.ef',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_23',
+		cfunc => 'pcap_ether_aton',
+		arg => '12.34.56.ab.cd.xf',
+		errstr => 'NULL',
+	},
+	{
+		name => 'ether_aton_24',
+		cfunc => 'pcap_ether_aton',
+		arg => '12.34.56.ab.cd.ex',
+		errstr => 'NULL',
 	},
 
 	##### pcapint_parsesrcstr_ex()

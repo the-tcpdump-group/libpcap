@@ -7171,12 +7171,13 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	if (! is_mac48_linktype(cstate->linktype))
 		fail_kw_on_dlt(cstate, context);
 
-	u_char *eaddrp = pcap_ether_aton(s);
-	if (eaddrp == NULL)
-		bpf_error(cstate, "malloc");
 	u_char eaddr[6];
-	memcpy(eaddr, eaddrp, sizeof(eaddr));
-	free(eaddrp);
+	/*
+	 * Belt and braces: so long as the lexer regexp guards MAC-48 syntax,
+	 * here the attempt to parse it will always succeed.
+	 */
+	if (! pcapint_atomac48(s, eaddr))
+		bpf_error(cstate, "invalid MAC-48 address '%s'", s);
 
 	return gen_mac48host(cstate, eaddr, q.dir, context);
 }

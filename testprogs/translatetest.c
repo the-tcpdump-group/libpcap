@@ -114,6 +114,20 @@ test_pcapint_atoan(const char *arg)
 	return EX_OK;
 }
 
+static int
+test_pcap_ether_aton(const char *arg)
+{
+	u_char *result = pcap_ether_aton(arg);
+	if (! result) {
+		fprintf(stderr, "ERROR: NULL\n");
+		return EX_DATAERR;
+	}
+	printf("OK: %02x:%02x:%02x:%02x:%02x:%02x\n", result[0], result[1],
+	       result[2], result[3], result[4], result[5]);
+	free(result);
+	return EX_OK;
+}
+
 /*
  * pcapint_parsesrcstr_ex() is always available, the implementation is stub
  * when ENABLE_REMOTE is not defined.  0: accepted, PCAP_ERROR: rejected.
@@ -151,6 +165,7 @@ static const struct {
 	{"pcapint_xdtoi", 0, test_pcapint_xdtoi, "0..255"},
 	{"pcapint_atodn", 0, test_pcapint_atodn, "DECnet address"},
 	{"pcapint_atoan", 0, test_pcapint_atoan, "ARCnet address"},
+	{"pcap_ether_aton", 0, test_pcap_ether_aton, "MAC-48 address"},
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))

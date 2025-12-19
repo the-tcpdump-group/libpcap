@@ -144,6 +144,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Remove "DLT_" from the descriptions of two dlt_choices[] entries.
       Report the size of time_t in the version string.
       Validate remote capture source strings better.
+      CVE-2025-11961: Fix OOBR and OOBW in pcap_ether_aton().
     Source code:
       Remove some unneeded includes.
       pcapint_find_function() changed to return "void *" to avoid
