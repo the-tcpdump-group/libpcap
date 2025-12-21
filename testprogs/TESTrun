@@ -107,7 +107,7 @@ Options:
 ";
 	return $ret unless $detailed;
 	$ret .= "
-Set FILTERTEST_TIMEOUT to 0 to disable the timeout completely or to any other
+Set TEST_TIMEOUT to 0 to disable the timeout completely or to any other
 value to override the default timeout.  The timeout applies to every test.
 If TIMEOUT_BIN is not set, the timeout applies iff the default \"timeout\"
 binary works.  If it is set (on macOS there is no default \"timeout\" and the
@@ -23429,11 +23429,11 @@ if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
 # well under one second to process, so if a filtertest invocation is taking
 # longer, it is likely a regression.  Or an invocation via Valgrind, which
 # demands a sensible host-specific override of the timeout value.
-$test_timeout = defined $ENV{FILTERTEST_TIMEOUT} ?
-	$ENV{FILTERTEST_TIMEOUT} : 1;
+$test_timeout = defined $ENV{TEST_TIMEOUT} ?
+	$ENV{TEST_TIMEOUT} : 1;
 
 if ($test_timeout eq '0') {
-	print "INFO: Not using a test timeout (FILTERTEST_TIMEOUT=0).\n";
+	print "INFO: Not using a test timeout (TEST_TIMEOUT=0).\n";
 } elsif (defined $ENV{TIMEOUT_BIN}) {
 	$timeout_bin = $ENV{TIMEOUT_BIN};
 	if (system ($timeout_bin, '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {

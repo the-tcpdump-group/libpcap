@@ -42,8 +42,8 @@ if "$VALGRIND_BIN" --version >/dev/null 2>&1; then
     VALGRIND_CMD="$VALGRIND_BIN --leak-check=full --error-exitcode=1 --quiet"
     export VALGRIND_CMD
     # With Valgrind filtertest takes significantly longer to complete.
-    : "${FILTERTEST_TIMEOUT:=5}"
-    export FILTERTEST_TIMEOUT
+    : "${TEST_TIMEOUT:=5}"
+    export TEST_TIMEOUT
 fi
 
 run_after_echo git show --oneline -s | cat
