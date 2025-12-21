@@ -23156,6 +23156,10 @@ sub time_test_command {
 }
 
 sub run_generic_accept_test {
+	push @_, (
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1",
+	);
 	my ($r, $T) = time_test_command @_;
 
 	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
@@ -23163,7 +23167,7 @@ sub run_generic_accept_test {
 	return result_failed (
 		'test program error',
 		file_get_contents mytmpfile $filename_stdout
-	) if $r;
+	) if $r != EX_OK;
 
 	return result_failed (
 		'diff error',
@@ -23231,8 +23235,6 @@ sub run_filter_accept_test {
 		'-F',
 		mytmpfile ($filename_filter),
 		$test->{DLT},
-		'>' . mytmpfile ($filename_stdout),
-		"2>&1"
 	);
 	return run_generic_accept_test @args;
 }
@@ -23247,8 +23249,6 @@ sub run_filter_apply_test {
 		mytmpfile ($filename_filter),
 		'-r',
 		SAVEFILE_DIR . $test->{savefile},
-		'>' . mytmpfile ($filename_stdout),
-		"2>&1"
 	);
 	return run_generic_accept_test @args;
 }
