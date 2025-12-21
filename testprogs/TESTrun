@@ -23142,6 +23142,8 @@ sub validate_generic_reject_test {
 }
 
 sub time_test_command {
+	# BSD timeout(1) does not implement --verbose.
+	unshift @_, ($timeout_bin, $test_timeout) if defined $timeout_bin;
 	my $cmdline = join ' ', @_;
 	my $r;
 	my $T;
@@ -23211,9 +23213,7 @@ sub run_generic_reject_test {
 
 sub common_filtertest_args {
 	my $test = shift;
-	# BSD timeout(1) does not implement --verbose.
-	my @args = defined $timeout_bin ? ($timeout_bin, $test_timeout) : ();
-	push @args, $filtertest;
+	my @args = ($filtertest);
 	push @args, ('-s', $test->{snaplen}) if defined $test->{snaplen};
 	push @args, ('-m', $test->{netmask}) if defined $test->{netmask};
 	push @args, '-O' unless $test->{optimize};
