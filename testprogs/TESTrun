@@ -23086,6 +23086,61 @@ sub reject_test_label {
 	return join '_', ('reject', @_);
 }
 
+sub assert_named {
+	my $descr = shift;
+	my $hash = shift;
+	return if defined $hash->{name} && $hash->{name} ne '';
+	die "Internal error: $descr <UNKNOWN> does not define a name";
+}
+
+sub assert_exists {
+	my $descr = shift;
+	my $hash = shift;
+	my @keys = @_;
+	foreach (@keys) {
+		next if exists $hash->{$_};
+		die "Internal error: key '$_' is not defined in $descr '$hash->{name}'";
+	}
+}
+
+sub assert_nonempty_strings {
+	my $descr = shift;
+	my $hash = shift;
+	my @keys = @_;
+	assert_exists $descr, $hash, @keys;
+	foreach (@keys) {
+		next if $hash->{$_} ne '';
+		die "Internal error: key '$_' is an empty string in $descr '$hash->{name}'";
+	}
+}
+
+sub assert_nonempty_array {
+	my $descr = shift;
+	my $hash = shift;
+	my $key = shift;
+	assert_exists $descr, $hash, $key;
+	return if scalar @{$hash->{$key}};
+	die "Internal error: $descr '$hash->{name}' defines '$key' as an empty array";
+}
+
+sub validate_generic_accept_block {
+	my $descr = shift;
+	my $test = shift;
+	assert_named $descr, $test;
+	assert_nonempty_array $descr, $test, 'aliases';
+	my %unique = map {$_ => 1} @{$test->{aliases}};
+	if (scalar (keys %unique) != scalar @{$test->{aliases}}) {
+		die "Internal error: $descr '$test->{name}' defines duplicate aliases";
+	}
+}
+
+sub validate_generic_reject_test {
+	my $descr = shift;
+	my $test = shift;
+	assert_named $descr, $test;
+	assert_nonempty_strings $descr, $test, 'errstr';
+}
+
 sub time_test_command {
 	my $cmdline = join ' ', @_;
 	my $r;
@@ -23222,27 +23277,12 @@ sub run_filter_reject_test {
 # collect the results preserving the ordering.
 my @ready_to_run;
 foreach my $test (@filter_accept_blocks) {
-	if (! defined $test->{name} || $test->{name} eq '') {
-		die "Internal error: accept test block <UNKNOWN> does not define key 'name'";
-	}
-	foreach ('DLT', 'aliases') {
-		next if defined $test->{$_};
-		die "Internal error: accept test block '$test->{name}' does not define key '$_'";
-	}
-	if ($test->{DLT} eq '') {
-		die "Internal error: key 'DLT' is an empty string in apply test block '$test->{name}'";
-	}
-	if (! scalar @{$test->{aliases}}) {
-		die "Internal error: accept test block '$test->{name}' defines zero aliases";
-	} else {
-		my %unique = map {$_ => 1} @{$test->{aliases}};
-		if (scalar (keys %unique) != scalar @{$test->{aliases}}) {
-			die "Internal error: accept test block '$test->{name}' defines duplicate aliases";
-		}
-	}
+	my $descr = 'filter accept block';
+	validate_generic_accept_block $descr, $test;
+	assert_nonempty_strings $descr, $test, 'DLT';
 	if (exists $test->{optunopt}) {
 		if (exists $test->{opt} || exists $test->{unopt}) {
-			die "Internal error: accept test block '$test->{name}' defines 'optunopt', thus must define neither 'opt' nor 'unopt'";
+			die "Internal error: $descr '$test->{name}' defines 'optunopt', thus must define neither 'opt' nor 'unopt'";
 		}
 		# Expand the abbreviation early to avoid complicating the loops below.
 		# In this branch "opt" and "unopt" are obviously identical, which is the
@@ -23251,13 +23291,13 @@ foreach my $test (@filter_accept_blocks) {
 		delete $test->{optunopt};
 	} else {
 		if (! exists $test->{unopt} || ! exists $test->{opt}) {
-			die "Internal error: accept test block '$test->{name}' defines only one of 'opt' and 'unopt'";
+			die "Internal error: $descr '$test->{name}' defines only one of 'opt' and 'unopt'";
 		}
 		delete $test->{opt} if ! defined $test->{opt}; # Optimization would return an error.
 		# In this branch "opt" and "unopt" could potentially be identical, which
 		# would be not the intended meaning, so reject this.
 		if (exists $test->{opt} && $test->{opt} eq $test->{unopt}) {
-			die "Internal error: accept test block '$test->{name}' defines 'opt' and 'unopt' identically";
+			die "Internal error: $descr '$test->{name}' defines 'opt' and 'unopt' identically";
 		}
 	}
 	# Make the number of skip requests equal to the number of tests, but
@@ -23309,20 +23349,10 @@ foreach my $test (@filter_accept_blocks) {
 	}
 }
 foreach my $block (@filter_apply_blocks) {
-	if (! defined $block->{name} || $block->{name} eq '') {
-		die "Internal error: apply test block <UNKNOWN> does not define key 'name'";
-	}
-	foreach ('savefile', 'expr', 'results') {
-		next if defined $block->{$_};
-		die "Internal error: apply test block '$block->{name}' does not define key '$_'";
-	}
-	foreach ('savefile', 'expr') {
-		next if $block->{$_} ne '';
-		die "Internal error: key '$_' is an empty string in apply test block '$block->{name}'";
-	}
-	if (! scalar @{$block->{results}}) {
-		die "Internal error: apply test block '$block->{name}' defines zero results";
-	}
+	my $descr = 'filter apply block';
+	assert_named $descr, $block;
+	assert_nonempty_strings $descr, $block, 'savefile', 'expr';
+	assert_nonempty_array $descr, $block, 'results';
 	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
 		$block->{skip} : undef;
 	# Convert the array to filtertest output format.
@@ -23353,21 +23383,17 @@ foreach my $block (@filter_apply_blocks) {
 	}
 }
 foreach my $test (@filter_reject_tests) {
-	if (! defined $test->{name} || $test->{name} eq '') {
-		die "Internal error: reject test <UNKNOWN> does not define key 'name'";
-	}
-	if (! defined $test->{errstr} || $test->{errstr} eq '') {
-		die "Internal error: reject test '$test->{name}' does not define key 'errstr'";
-	}
+	my $descr = 'filter reject test';
+	validate_generic_reject_test $descr, $test;
 	if (defined $test->{savefile}) {
 		foreach ('DLT', 'expr', 'netmask') {
 			next unless exists $test->{$_};
-			die "Internal error: reject test '$test->{name}' specifies both 'savefile' and '$_'";
+			die "Internal error: $descr '$test->{name}' specifies both 'savefile' and '$_'";
 		}
 	} else {
 		foreach ('DLT', 'expr') {
 			next if defined $test->{$_} && $test->{$_} ne '';
-			die "Internal error: reject test '$test->{name}' defines neither 'savefile' nor '$_'";
+			die "Internal error: $descr '$test->{name}' defines neither 'savefile' nor '$_'";
 		}
 	}
 	my $label = reject_test_label $test->{name};
