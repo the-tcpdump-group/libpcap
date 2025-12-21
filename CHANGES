@@ -102,6 +102,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a few device activation bugs.
       Count and timestamp packets better.
       Add kernel filtering, fix userland filtering.
+    FreeBSD:
+      Handle USB devices correctly on FreeBSD-CURRENT as of 2025-12.
     OpenBSD:
       Use getprotobyname_r() correctly on OpenBSD.
     Linux:
