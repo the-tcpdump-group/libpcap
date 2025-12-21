@@ -23121,6 +23121,35 @@ sub run_generic_accept_test {
 	return result_passed $T;
 }
 
+sub run_generic_reject_test {
+	my $expected_status = shift;
+	my $expected_errstr = shift;
+	push @_, (
+		'>' . mytmpfile ($filename_stdout),
+		"2>&1",
+	);
+	my ($r, $T) = time_test_command @_;
+
+	return result_failed (
+		'no test program error',
+		file_get_contents mytmpfile $filename_stdout
+	) if $r == EX_OK;
+
+	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
+
+	return result_failed (
+		"test program status $r",
+		file_get_contents mytmpfile $filename_stdout
+	) if $r != $expected_status;
+
+	return result_failed (
+		'error string mismatch',
+		file_get_contents mytmpfile $filename_stdout
+	) if ! string_in_file ($expected_errstr, mytmpfile $filename_stdout);
+
+	return result_passed $T;
+}
+
 sub common_filtertest_args {
 	my $test = shift;
 	# BSD timeout(1) does not implement --verbose.
@@ -23178,30 +23207,7 @@ sub run_filter_reject_test {
 		push @args, ('-F', mytmpfile ($filename_filter));
 	}
 	push @args, $test->{DLT} if defined $test->{DLT};
-	push @args, (
-		'>' . mytmpfile ($filename_stdout),
-		"2>&1",
-	);
-	my ($r, $T) = time_test_command @args;
-
-	return result_failed (
-		'no test program error',
-		file_get_contents mytmpfile $filename_stdout
-	) if $r == 0;
-
-	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
-
-	return result_failed (
-		"test program status $r",
-		file_get_contents mytmpfile $filename_stdout
-	) if $r != $test->{exitstatus};
-
-	return result_failed (
-		'error string mismatch',
-		file_get_contents mytmpfile $filename_stdout
-	) if ! string_in_file ($test->{expected}, mytmpfile $filename_stdout);
-
-	return result_passed $T;
+	return run_generic_reject_test $test->{exitstatus}, $test->{expected}, @args;
 }
 
 # Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
