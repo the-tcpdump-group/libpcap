@@ -23100,13 +23100,13 @@ sub time_test_command {
 	return ($r >>= 8, $T);
 }
 
-sub validate_stdout_test {
+sub run_generic_accept_test {
 	my ($r, $T) = time_test_command @_;
 
-	return result_timed_out 'filtertest timeout' if $r == TIMED_OUT;
+	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
 
 	return result_failed (
-		'filtertest error',
+		'test program error',
 		file_get_contents mytmpfile $filename_stdout
 	) if $r;
 
@@ -23133,7 +23133,7 @@ sub common_filtertest_args {
 	return @args;
 }
 
-sub run_accept_test {
+sub run_filter_accept_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	# Write the filter expression to a file because the version of
@@ -23150,10 +23150,10 @@ sub run_accept_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1"
 	);
-	return validate_stdout_test @args;
+	return run_generic_accept_test @args;
 }
 
-sub run_apply_test {
+sub run_filter_apply_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	file_put_contents mytmpfile ($filename_filter), $test->{expr};
@@ -23166,10 +23166,10 @@ sub run_apply_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1"
 	);
-	return validate_stdout_test @args;
+	return run_generic_accept_test @args;
 }
 
-sub run_reject_test {
+sub run_filter_reject_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	push @args, ('-r', SAVEFILE_DIR . $test->{savefile}) if defined $test->{savefile};
@@ -23185,14 +23185,14 @@ sub run_reject_test {
 	my ($r, $T) = time_test_command @args;
 
 	return result_failed (
-		'no filtertest error',
+		'no test program error',
 		file_get_contents mytmpfile $filename_stdout
 	) if $r == 0;
 
-	return result_timed_out 'filtertest timeout' if $r == TIMED_OUT;
+	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
 
 	return result_failed (
-		"filtertest status $r",
+		"test program status $r",
 		file_get_contents mytmpfile $filename_stdout
 	) if $r != $test->{exitstatus};
 
@@ -23289,7 +23289,7 @@ foreach my $test (@filter_accept_blocks) {
 				next if defined $only_one && $only_one ne $label;
 				push @ready_to_run, {
 					label => $label,
-					func => \&run_accept_test,
+					func => \&run_filter_accept_test,
 					DLT => $test->{DLT},
 					expr => $_,
 					snaplen => defined $test->{snaplen} ? $test->{snaplen} : undef,
@@ -23337,7 +23337,7 @@ foreach my $block (@filter_apply_blocks) {
 
 		push @ready_to_run, {
 			label => $label,
-			func => \&run_apply_test,
+			func => \&run_filter_apply_test,
 			netmask => defined $block->{netmask} ? $block->{netmask} : undef,
 			optimize => int ($optunopt eq 'opt'),
 			expr => $block->{expr},
@@ -23377,7 +23377,7 @@ foreach my $test (@filter_reject_tests) {
 		# The test requires a savefile only.
 		push @ready_to_run, {
 			label => $label,
-			func => \&run_reject_test,
+			func => \&run_filter_reject_test,
 			savefile => $test->{savefile},
 			expected => $test->{errstr},
 			exitstatus => EX_NOINPUT,
@@ -23392,7 +23392,7 @@ foreach my $test (@filter_reject_tests) {
 		# enabled.  So enable optimization for all expression-based reject tests.
 		push @ready_to_run, {
 			label => $label,
-			func => \&run_reject_test,
+			func => \&run_filter_reject_test,
 			DLT => $test->{DLT},
 			netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 			optimize => 1,
