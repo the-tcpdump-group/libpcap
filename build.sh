@@ -150,6 +150,8 @@ if [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/versiontest
     FILTERTEST_BIN="$VALGRIND_CMD testprogs/filtertest"
     export FILTERTEST_BIN
+    TRANSLATETEST_BIN="$VALGRIND_CMD testprogs/translatetest"
+    export TRANSLATETEST_BIN
     run_after_echo "$MAKE_BIN" -s check
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
@@ -157,6 +159,8 @@ else
     run_after_echo $VALGRIND_CMD run/versiontest
     FILTERTEST_BIN="$VALGRIND_CMD run/filtertest"
     export FILTERTEST_BIN
+    TRANSLATETEST_BIN="$VALGRIND_CMD run/translatetest"
+    export TRANSLATETEST_BIN
     run_after_echo "$MAKE_BIN" -s check
     run_after_echo $VALGRIND_CMD run/findalldevstest
 fi
