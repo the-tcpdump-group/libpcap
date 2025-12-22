@@ -1903,6 +1903,26 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 			}
 		}
 		p->tstamp_type_count = num_ts_types;
+
+#ifdef PACKET_MODE_NANO
+		/*
+		 * Check if we support nanosecond time stamps.
+		 */
+		if (p->tstamp_precision_list == NULL
+				&& PacketSetMode(adapter, PACKET_MODE_NANO)) {
+			p->tstamp_precision_list = malloc(2 * sizeof(u_int));
+			if (p->tstamp_precision_list == NULL) {
+				pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+						errno, "malloc");
+				pcap_close(p);
+				return (NULL);
+			}
+			p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+			p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+			p->tstamp_precision_count = 2;
+		}
+#endif /* PACKET_MODE_NANO */
+
 	} while (0);
 
 	/* Clean up temporary allocations */
@@ -1945,23 +1965,6 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 		pcap_close(p);
 		return (NULL);
 	}
-
-#ifdef PACKET_MODE_NANO
-	/*
-	 * We claim that we support microsecond and nanosecond time
-	 * stamps.
-	 */
-	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
-	if (p->tstamp_precision_list == NULL) {
-		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "malloc");
-		pcap_close(p);
-		return (NULL);
-	}
-	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
-	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
-	p->tstamp_precision_count = 2;
-#endif /* PACKET_MODE_NANO */
 
 	return (p);
 }
