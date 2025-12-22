@@ -39,6 +39,18 @@ add_test_executable(writecaptest)
 
 if(NOT WIN32)
   add_test_executable(selpolltest)
+  # Fails to link on Windows:
+  # translatetest.obj : error LNK2019: unresolved external symbol
+  #   _pcapint_atodn referenced in function _test_pcapint_atodn
+  # translatetest.obj : error LNK2019: unresolved external symbol
+  #   _pcapint_atoan referenced in function _test_pcapint_atoan
+  # translatetest.obj : error LNK2019: unresolved external symbol
+  #   _pcapint_xdtoi referenced in function _test_pcapint_xdtoi
+  # translatetest.obj : error LNK2019: unresolved external symbol
+  #   _pcapint_createsrcstr_ex referenced in function _test_pcapint_parsesrcstr_ex
+  # translatetest.obj : error LNK2019: unresolved external symbol
+  #   _pcapint_parsesrcstr_ex referenced in function _test_pcapint_parsesrcstr_ex
+  add_test_executable(translatetest)
 endif()
 
 add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
