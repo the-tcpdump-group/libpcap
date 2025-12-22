@@ -74,7 +74,7 @@ use constant {
 	EX_USAGE => 64,
 	# In this libpcap version filtertest exits with EX_DATAERR if the user input
 	# is invalid and with other status codes for other (memory/file/etc) error
-	# conditions.
+	# conditions.  translatetest implements the same convention.
 	EX_DATAERR => 65,
 	# Likewise, EX_NOINPUT if pcap_open_offline() has failed.
 	EX_NOINPUT => 66,
@@ -85,6 +85,7 @@ my $diff_flags;
 my $timeout_bin;
 my $test_timeout;
 my $filtertest;
+my $translatetest;
 
 sub usage_text {
 	my $detailed = shift;
@@ -114,10 +115,10 @@ binary works.  If it is set (on macOS there is no default \"timeout\" and the
 binary from GNU coreutils package may be available as \"gtimeout\" only), the
 custom binary must work.
 
-FILTERTEST_BIN and CONFIG_H allow to specify custom paths to respective files
-if the current working directory is not the directory where the build output
-files go to.  Otherwise by default this script finds the files for both
-Autoconf and CMake, both in-tree and out-of-tree builds.
+FILTERTEST_BIN, TRANSLATETEST_BIN and CONFIG_H allow to specify custom paths to
+respective files if the current working directory is not the directory where
+the build output files go to.  Otherwise by default this script finds the
+files for both Autoconf and CMake, both in-tree and out-of-tree builds.
 
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
@@ -321,6 +322,10 @@ sub skip_no_networks {
 sub skip_no_networks_casecmp {
 	return skip_no_networks ||
 		skip_os ('solaris');
+}
+
+sub skip_no_translatetest {
+	return skip_os ('msys');
 }
 
 sub skip_big_endian {
@@ -23074,6 +23079,483 @@ foreach (DLTs_with 'var_off_linkpl') {
 	};
 }
 
+# This works similar to @filter_accept_blocks.  In each array element the hash
+# keys have the following meaning:
+#
+# * name (mandatory, string): the test name (must be unique).
+# * cfunc (mandatory, string): the C function name (this is the first argument
+#   to translatetest).
+# * aliases (mandatory, array of values): must contain at least one value, each
+#   value is either a string (empty or not) or undef.  A string means the
+#   corresponding C string and is the second argument to translatetest.  Undef
+#   means C NULL and no second argument to translatetest.  All values are
+#   tested, one at a time.
+# * expect (mandatory, string): a string, implicitly prefixed with "OK: ",
+#   which is expected to be included in the standard output stream of
+#   translatetest, which is expected to exit normally.
+
+my @translate_accept_blocks = (
+	##### pcap_nametoeproto()
+	{
+		name => 'nametoeproto_aarp',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['aarp'],
+		expect => '0x80f3',
+	},
+	{
+		name => 'nametoeproto_arp',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['arp'],
+		expect => '0x0806',
+	},
+	{
+		name => 'nametoeproto_atalk',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['atalk'],
+		expect => '0x809b',
+	},
+	{
+		name => 'nametoeproto_decnet',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['decnet'],
+		expect => '0x6003',
+	},
+	{
+		name => 'nametoeproto_ip',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['ip'],
+		expect => '0x0800',
+	},
+	{
+		name => 'nametoeproto_ip6',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['ip6'],
+		expect => '0x86dd',
+	},
+	{
+		name => 'nametoeproto_lat',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['lat'],
+		expect => '0x6004',
+	},
+	{
+		name => 'nametoeproto_lldp',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['lldp'],
+		expect => '0x88cc',
+	},
+	{
+		name => 'nametoeproto_loopback',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['loopback'],
+		expect => '0x9000',
+	},
+	{
+		name => 'nametoeproto_mopdl',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['mopdl'],
+		expect => '0x6001',
+	},
+	{
+		name => 'nametoeproto_moprc',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['moprc'],
+		expect => '0x6002',
+	},
+	{
+		name => 'nametoeproto_rarp',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['rarp'],
+		expect => '0x8035',
+	},
+	{
+		name => 'nametoeproto_sca',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['sca'],
+		expect => '0x6007',
+	},
+	{
+		name => 'nametoeproto_slow',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['slow'],
+		expect => '0x8809',
+	},
+	# pcap_nametoeproto() does not implement any error reporting, it just
+	# returns PROTO_UNDEF for any input that it does not recognize.
+	{
+		name => 'nametoeproto_other',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametoeproto',
+		aliases => ['unknown', ''],
+		expect => 'PROTO_UNDEF',
+	},
+
+	##### pcap_nametollc()
+	{
+		name => 'nametollc_iso',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametollc',
+		aliases => ['iso'],
+		expect => '0xfe',
+	},
+	{
+		name => 'nametollc_stp',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametollc',
+		aliases => ['stp'],
+		expect => '0x42',
+	},
+	{
+		name => 'nametollc_ipx',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametollc',
+		aliases => ['ipx'],
+		expect => '0xe0',
+	},
+	{
+		name => 'nametollc_netbeui',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametollc',
+		aliases => ['netbeui'],
+		expect => '0xf0',
+	},
+	# Same as for pcap_nametoeproto() above.
+	{
+		name => 'nametollc_other',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcap_nametollc',
+		aliases => ['unknown', ''],
+		expect => 'PROTO_UNDEF',
+	},
+
+	##### pcapint_atodn()
+	{
+		name => 'atodn_0_0',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		aliases => ['0.0', '0.00000', '000.0', '000.00000'],
+		expect => '0.0',
+	},
+	{
+		name => 'atodn_31_511',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		aliases => ['31.511'],
+		expect => '31.511',
+	},
+	{
+		name => 'atodn_63_1023',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		aliases => ['63.1023', '63.01023', '063.1023', '063.01023'],
+		expect => '63.1023',
+	},
+
+	##### pcapint_atoan()
+	{
+		name => 'atoan_4bit',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		aliases => ['$0d', '$d', '$0D', '$D'],
+		expect => '$0d',
+	},
+	{
+		name => 'atoan_8bit',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		aliases => ['$cd', '$cD', '$Cd', '$CD'],
+		expect => '$cd',
+	},
+
+	##### pcapint_parsesrcstr_ex()
+	{
+		name => 'srcstr_file_relfile',
+		skip => skip_no_translatetest(),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file://file.pcap'],
+		expect => 'file://file.pcap',
+	},
+	{
+		name => 'srcstr_file_reldir',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file://dir/'],
+		expect => 'file://dir/',
+	},
+	{
+		name => 'srcstr_file_reldirfile',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file://dir/file.pcap'],
+		expect => 'file://dir/file.pcap',
+	},
+	{
+		name => 'srcstr_file_absfile',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file:///file.pcap'],
+		expect => 'file:///file.pcap',
+	},
+	{
+		name => 'srcstr_file_absdir',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file:///dir/'],
+		expect => 'file:///dir/',
+	},
+	{
+		name => 'srcstr_file_absdirfile',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['file:///dir/file.pcap'],
+		expect => 'file:///dir/file.pcap',
+	},
+	# Although "file://" is valid for pcapint_parsesrcstr_ex(),
+	# pcapint_createsrcstr_ex() would reject the parsed data with an error.
+	{
+		name => 'srcstr_rpcap_local',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['rpcap://'],
+		expect => 'rpcap://',
+	},
+	{
+		name => 'srcstr_local_device',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		aliases => ['rpcap://eth0', 'eth0'],
+		expect => 'rpcap://eth0',
+	},
+);
+
+# This works similar to @filter_reject_tests.  In each array element the hash
+# keys have the following meaning:
+#
+# * name, cfunc: the same as in @translate_accept_blocks above.
+# * arg (mandatory, a value): the same as a single element in "aliases" in
+#   @translate_accept_blocks above.
+# * errstr (mandatory, string): a string, implicitly prefixed with "ERROR: ",
+#   which is expected to be included in the standard error stream of
+#   translatetest, which is expected to exit with EX_DATAERR.
+
+my @translate_reject_tests = (
+	##### pcapint_atodn()
+	{
+		name => 'atodn_64_0',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		arg => '64.0',
+		errstr => '0',
+	},
+	{
+		name => 'atodn_0_1024',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		arg => '0.1024',
+		errstr => '0',
+	},
+	{
+		name => 'atodn_64_1024',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		arg => '64.1024',
+		errstr => '0',
+	},
+	{
+		name => 'atodn_10_a',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		arg => '10.a',
+		errstr => '0',
+	},
+	{
+		name => 'atodn_a_10',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atodn',
+		arg => 'a.10',
+		errstr => '0',
+	},
+
+	##### pcapint_atoan()
+	{
+		name => 'atoan_1',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '$g',
+		errstr => '0',
+	},
+	{
+		name => 'atoan_2',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '$0g',
+		errstr => '0',
+	},
+	{
+		name => 'atoan_3',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '$g0',
+		errstr => '0',
+	},
+	{
+		name => 'atoan_4',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '0',
+		errstr => '0',
+	},
+	{
+		name => 'atoan_5',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '12',
+		errstr => '0',
+	},
+	{
+		name => 'atoan_6',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_atoan',
+		arg => '123',
+		errstr => '0',
+	},
+
+	##### pcapint_parsesrcstr_ex()
+	{
+		name => 'srcstr_null',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => undef,
+		errstr => 'The source string must not be NULL.',
+	},
+	{
+		name => 'srcstr_empty',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => '',
+		errstr => 'The source string must not be empty.',
+	},
+	{
+		name => 'srcstr_ftp',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => 'ftp://',
+		errstr => 'The source string URL scheme is not supported.',
+	},
+	{
+		name => 'srcstr_http_host_dev',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => 'http://host/device',
+		errstr => 'The source string URL scheme is not supported.',
+	},
+	{
+		name => 'noremote_srcstr_null',
+		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => undef,
+		errstr => 'pcapint_parsesrcstr_ex() is not supported',
+	},
+	{
+		name => 'noremote_srcstr_empty',
+		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => '',
+		errstr => 'pcapint_parsesrcstr_ex() is not supported',
+	},
+	{
+		name => 'noremote_srcstr_localdev',
+		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		cfunc => 'pcapint_parsesrcstr_ex',
+		arg => 'rpcap://eth0',
+		errstr => 'pcapint_parsesrcstr_ex() is not supported',
+	},
+);
+
+##### more pcapint_parsesrcstr_ex() accept blocks
+my %src_scheme = (
+	rpcap => 'rpcap://',
+	rpcaps => 'rpcaps://',
+);
+my %src_auth = (
+	noauth => '',
+	auth1 => 'user@',
+	auth2 => 'user:password@',
+);
+my %src_host = (
+	ipv4 => '192.0.2.100',
+	ipv6 => '[2001:db8:a:b:c:d:e:f]',
+	name => 'somehost',
+);
+my %src_port = (
+	noport => '',
+	portnum => ':4000',
+	portname => ':smtp',
+);
+my %src_dev = (
+	nodev => '/',
+	dev => '/device',
+);
+foreach my $scheme (sort keys %src_scheme) {
+	foreach my $auth (sort keys %src_auth) {
+		foreach my $host (sort keys %src_host) {
+			foreach my $port (sort keys %src_port) {
+				foreach my $dev (sort keys %src_dev) {
+					my $srcstr = $src_scheme{$scheme} .
+						$src_auth{$auth} .
+						$src_host{$host} .
+						$src_port{$port} .
+						$src_dev{$dev};
+					my $srcstr2 = $src_scheme{$scheme} .
+						$src_auth{$auth} .
+						"[$src_host{$host}]" .
+						$src_port{$port} .
+						$src_dev{$dev};
+					push @translate_accept_blocks, {
+						name => "srcstr_${scheme}_${auth}_${host}_${port}_${dev}",
+						skip => skip_no_translatetest() ||
+							skip_config_not_def1 ('ENABLE_REMOTE'),
+						cfunc => 'pcapint_parsesrcstr_ex',
+						aliases => $host ne 'ipv6' ? [$srcstr, $srcstr2] : [$srcstr],
+						expect => $srcstr,
+					};
+				}
+			}
+		}
+	}
+}
+
+##### pcapint_xdtoi()
+push @translate_accept_blocks, {
+	name => "xdtoi_${_}",
+	skip => skip_no_translatetest(),
+	cfunc => 'pcapint_xdtoi',
+	aliases => [ord],
+	expect => "0x0${_}",
+} foreach qw(0 1 2 3 4 5 6 7 8 9);
+push @translate_accept_blocks, {
+	name => "xdtoi_${_}",
+	skip => skip_no_translatetest(),
+	cfunc => 'pcapint_xdtoi',
+	aliases => [ord, ord uc],
+	expect => "0x0${_}",
+} foreach qw(a b c d e f);
+
 sub accept_test_label {
 	return join '_', ('accept', @_);
 }
@@ -23144,6 +23626,9 @@ sub validate_generic_reject_test {
 sub time_test_command {
 	# BSD timeout(1) does not implement --verbose.
 	unshift @_, ($timeout_bin, $test_timeout) if defined $timeout_bin;
+	# It would be much better to pass the arguments as a Perl list, but
+	# that is not possible so long as the command line uses shell
+	# redirection.
 	my $cmdline = join ' ', @_;
 	my $r;
 	my $T;
@@ -23221,6 +23706,22 @@ sub common_filtertest_args {
 	return @args;
 }
 
+sub common_translatetest_args {
+	my $test = shift;
+	my @args = ($translatetest, $test->{cfuncname});
+	# The hash key exists.  For the value Perl undef means C NULL and no
+	# command-line argument in the shell command, an empty Perl string
+	# means an empty C string and a quoted empty string argument in the
+	# shell command, and a non-empty Perl string means a non-empty C string
+	# and a quoted non-empty string in the shell command.  Obviously, this
+	# simple solution does not support arbitrary strings or binary data,
+	# but the existing tests do not require that yet.
+	if (defined $test->{cfuncarg}) {
+		push @args, ($test->{cfuncarg} eq '' ? '\'\'' : "'$test->{cfuncarg}'");
+	}
+	return @args;
+}
+
 sub run_filter_accept_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
@@ -23253,6 +23754,12 @@ sub run_filter_apply_test {
 	return run_generic_accept_test @args;
 }
 
+sub run_translate_accept_test {
+	my $test = shift;
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
+	return run_generic_accept_test common_translatetest_args $test;
+}
+
 sub run_filter_reject_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
@@ -23263,6 +23770,12 @@ sub run_filter_reject_test {
 	}
 	push @args, $test->{DLT} if defined $test->{DLT};
 	return run_generic_reject_test $test->{exitstatus}, $test->{expected}, @args;
+}
+
+sub run_translate_reject_test {
+	my $test = shift;
+	return run_generic_reject_test $test->{exitstatus}, $test->{expected},
+		common_translatetest_args $test;
 }
 
 # Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
@@ -23435,6 +23948,60 @@ foreach my $test (@filter_reject_tests) {
 	}
 }
 
+foreach my $block (@translate_accept_blocks) {
+	my $descr = 'parse accept block';
+	validate_generic_accept_block $descr, $block;
+	assert_nonempty_strings $descr, $block, 'cfunc', 'expect';
+	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
+		$block->{skip} : undef;
+	my $i = 0;
+	foreach (@{$block->{aliases}}) {
+		my $label = accept_test_label 'parse', $block->{name}, $i++;
+		next if defined $only_one && $only_one ne $label;
+		if (defined $skip_reason) {
+			push @ready_to_run, {
+				label => $label,
+				func => \&run_skip_test,
+				skip => $print_skipped ? $skip_reason : '',
+			};
+			$skip_reason = '';
+		} else {
+			push @ready_to_run, {
+				label => $label,
+				func => \&run_translate_accept_test,
+				cfuncname => $block->{cfunc},
+				cfuncarg => $_,
+				expected => "OK: $block->{expect}\n",
+			};
+		}
+	}
+}
+foreach my $test (@translate_reject_tests) {
+	my $descr = 'parse reject test';
+	validate_generic_reject_test $descr, $test;
+	assert_exists $descr, $test, 'arg';
+	# "arg" can be empty in some tests, this is normal.
+	my $label = reject_test_label 'parse', $test->{name};
+	next if defined $only_one && $only_one ne $label;
+
+	if (defined $test->{skip} && $test->{skip} ne '') {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_skip_test,
+			skip => $print_skipped ? $test->{skip} : '',
+		};
+	} else {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_translate_reject_test,
+			cfuncname => $test->{cfunc},
+			cfuncarg => $test->{arg},
+			expected => "ERROR: $test->{errstr}",
+			exitstatus => EX_DATAERR,
+		};
+	}
+}
+
 if (! scalar @ready_to_run) {
 	die "ERROR: Unknown test label '${only_one}'" if defined $only_one;
 	die 'Internal error: no tests defined to run!'
@@ -23455,6 +24022,18 @@ if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
 	# Make it easier to see what the problem is.
 	system $filtertest;
 	print STDERR "ERROR: $filtertest is not usable\n";
+	exit 2;
+}
+
+$translatetest = defined $ENV{TRANSLATETEST_BIN} ? $ENV{TRANSLATETEST_BIN} :
+	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? './run/translatetest' :
+	'./testprogs/translatetest';
+
+# translatetest implements the same convention.
+if (system ("$translatetest -h >/dev/null 2>&1") >> 8) {
+	# Make it easier to see what the problem is.
+	system $translatetest;
+	print STDERR "ERROR: $translatetest is not usable\n";
 	exit 2;
 }
 
