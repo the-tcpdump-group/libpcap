@@ -97,6 +97,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       filtertest: Add support for stdin as "-" to the -F option.
       Rename CMake option to ENABLE_PROTOCHAIN to match Autoconf.
       Remove the "disable IPv6" build option.
+      translatetest: Add a test program for various translation functions.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.

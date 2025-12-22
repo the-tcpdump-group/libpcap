@@ -173,6 +173,7 @@ You can get around this by installing GCC.
 	testprogs/TESTst.pm - TESTrun helper file
 	testprogs/filtertest.c      - test program for BPF compiler
 	testprogs/findalldevstest.c - test program for pcap_findalldevs()
+	testprogs/translatetest.c   - test program for various translation functions
 	gencode.c	    - BPF code generation routines
 	gencode.h	    - BPF code generation definitions
 	grammar.y	    - filter string grammar
