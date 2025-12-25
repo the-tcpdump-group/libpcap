@@ -1670,6 +1670,12 @@ get_ts_support(const char *device, pcap_t *p, char *ebuf)
 	ULONG *modes = NULL;
 	int status = 0;
 
+	/*
+	 * This is called in pcapint_create_interface(), after the
+	 * pcap_t is allocated and initialized, so the time stamp
+	 * type list and the time stamp precision lists are both
+	 * empty.
+	 */
 	do {
 		/*
 		 * First, find out how many time stamp modes we have.
@@ -1721,8 +1727,6 @@ get_ts_support(const char *device, pcap_t *p, char *ebuf)
 			 */
 			if (error == ERROR_BAD_UNIT ||
 			    error == ERROR_ACCESS_DENIED) {
-				p->tstamp_type_count = 0;
-				p->tstamp_type_list = NULL;
 				status = 0;
 			} else {
 				pcapint_fmt_errmsg_for_win32_err(ebuf,
@@ -1730,6 +1734,10 @@ get_ts_support(const char *device, pcap_t *p, char *ebuf)
 				    "Error opening adapter");
 				status = -1;
 			}
+
+			/*
+			 * We're done; clean up and return the status.
+			 */
 			break;
 		}
 
@@ -1908,8 +1916,7 @@ get_ts_support(const char *device, pcap_t *p, char *ebuf)
 		/*
 		 * Check if we support nanosecond time stamps.
 		 */
-		if (p->tstamp_precision_list == NULL
-				&& PacketSetMode(adapter, PACKET_MODE_NANO)) {
+		if (PacketSetMode(adapter, PACKET_MODE_NANO)) {
 			p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 			if (p->tstamp_precision_list == NULL) {
 				pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
