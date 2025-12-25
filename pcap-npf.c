@@ -1651,11 +1651,11 @@ pcap_can_set_rfmon_npf(pcap_t *p)
 }
 
 /*
- * Get a list of time stamp types.
+ * Get lists of time stamp types and precisions.
  */
 #ifdef HAVE_PACKET_GET_TIMESTAMP_MODES
 static int
-get_ts_types(const char *device, pcap_t *p, char *ebuf)
+get_ts_support(const char *device, pcap_t *p, char *ebuf)
 {
 	char *device_copy = NULL;
 	ADAPTER *adapter = NULL;
@@ -1940,7 +1940,7 @@ get_ts_types(const char *device, pcap_t *p, char *ebuf)
 }
 #else /* HAVE_PACKET_GET_TIMESTAMP_MODES */
 static int
-get_ts_types(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
+get_ts_support(const char *device _U_, pcap_t *p _U_, char *ebuf _U_)
 {
 	/*
 	 * Nothing to fetch, so it always "succeeds".
@@ -1961,7 +1961,7 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 	p->activate_op = pcap_activate_npf;
 	p->can_set_rfmon_op = pcap_can_set_rfmon_npf;
 
-	if (get_ts_types(device, p, ebuf) == -1) {
+	if (get_ts_support(device, p, ebuf) == -1) {
 		pcap_close(p);
 		return (NULL);
 	}
