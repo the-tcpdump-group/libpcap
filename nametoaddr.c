@@ -614,7 +614,7 @@ pcap_nametollc(const char *s)
 
 /* Hex digit to 8-bit unsigned integer. */
 static inline u_char
-xdtoi(u_char c)
+pcapint_xdtoi(u_char c)
 {
 	if (c >= '0' && c <= '9')
 		return (u_char)(c - '0');
@@ -696,10 +696,10 @@ pcap_ether_aton(const char *s)
 	while (*s) {
 		if (*s == ':' || *s == '.' || *s == '-')
 			s += 1;
-		d = xdtoi(*s++);
+		d = pcapint_xdtoi(*s++);
 		if (PCAP_ISXDIGIT(*s)) {
 			d <<= 4;
-			d |= xdtoi(*s++);
+			d |= pcapint_xdtoi(*s++);
 		}
 		*ep++ = d;
 	}
