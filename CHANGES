@@ -141,13 +141,13 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       gencode: Add a missing free() in gen_scode().
       Remove "DLT_" from the descriptions of two dlt_choices[] entries.
       Report the size of time_t in the version string.
+      Validate remote capture source strings better.
     Source code:
       Remove some unneeded includes.
       pcapint_find_function() changed to return "void *" to avoid
         warnings.
       Clean up code that computes the length of a netmask.
       Mind netmap support in pcap_lib_version().
-      Validate remote capture source strings better.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
