@@ -75,8 +75,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix filtering for VLAN-tagged frames.
       Add support for Npcap's nanosecond-resolution time stamps in
         captures.
-      Fix a bug in error message character encoding mapping from UTF-16
-        to UTF-8.
+      CVE-2025-11964: Fix a bug in error message character encoding mapping
+        from UTF-16 to UTF-8.
       Check at create time whether the NPF driver supports nanosecond
         precision.
     D-Bus:
