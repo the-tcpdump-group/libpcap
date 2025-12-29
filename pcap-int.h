@@ -617,6 +617,22 @@ int	pcapint_createsrcstr_ex(char *, int, const char *, const char *,
 int	pcapint_parsesrcstr_ex(const char *, int *, char *, char *,
     char *, char *, unsigned char *, char *);
 
+/*
+ * Routine to parse a string containing an unsigned decimal integer,
+ * which catches some errors that strtoul() doesn't (strtoul() appears
+ * to parse numbers according to the way a C compiler does, so it skips
+ * leading white space and will happily allow an unsigned number with
+ * a negative sign), and also can treat the string not being completely
+ * numeric as an error and will treat values that don't fit into
+ * an unsigned int as an error.
+ *
+ * On success, returns 0 and sets the value pointed to by the last
+ * argument to the integer value; on error, returns EINVAL for an
+ * invalid number or ERANGE for a value that's too large to fit in
+ * an unsigned int.
+ */
+int	pcapint_get_decuint(const char *, char **, unsigned *);
+
 #ifdef YYDEBUG
 extern int pcap_debug;
 #endif
