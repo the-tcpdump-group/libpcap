@@ -3868,6 +3868,69 @@ pcap_strerror(int errnum)
 #endif /* _WIN32 */
 }
 
+/*
+ * Wrapper around strtoul() that catches some errors that strtoul()
+ * doesn't (it appears to parse numbers according to the way a C
+ * compiler does, so it will happily allow an unsigned number with
+ * a negative sign), and also can treat the string not being completely
+ * numeric as an error and will treat values that don't fit into
+ * an unsigned int as an error.
+ */
+int
+pcapint_strtou(const char *cp, char **endptr, int base, unsigned *nump)
+{
+	unsigned long val;
+	char *end;
+
+	if (cp[0] == '-' || cp[0] == '+') {
+		/*
+		 * Unsigned numbers don't have a sign.
+		 */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = (char *)cp;
+		errno = EINVAL;
+		return (0);
+	}
+
+	/*
+	 * Clear errno, so we can check whether it was set by strtoul().
+	 */
+	errno = 0;
+	val = strtoul(cp, &end, base);
+	if ((val == 0 && end == cp) || (endptr == NULL && *end != '\0')) {
+		/*
+		 * Parsing error, including, if endptr is NULL, the
+		 * string ending with a non-digit character.
+		 */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		errno = EINVAL;
+		return (0);
+	}
+	if (val == ULONG_MAX && errno == ERANGE) {
+		/* Number is bigger than ULONG_MAX */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		/* errno is already set */
+		return (0);
+	}
+	if (val > UINT_MAX) {
+		/* Number won't fit in an unsigned int */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		errno = ERANGE;
+		return (0);
+	}
+	if (endptr != NULL)
+		*endptr = end;
+	*nump = (unsigned) val;
+	return (1);
+}
+
 int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
