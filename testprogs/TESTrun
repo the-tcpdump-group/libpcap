@@ -24813,6 +24813,32 @@ my @translate_accept_blocks = (
 		aliases => ['rpcap://eth0', 'eth0'],
 		expect => 'rpcap://eth0',
 	},
+
+	# pcapint_get_decuint()
+	{
+		name => 'decuint_noendp_1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		aliases => ['1', '01'],
+		expect => '1',
+	},
+	{
+		name => 'decuint_noendp_4294967295',
+		cfunc => 'pcapint_get_decuint/noendp',
+		aliases => ['4294967295', '04294967295'],
+		expect => '4294967295',
+	},
+	{
+		name => 'decuint_endp_4294967295',
+		cfunc => 'pcapint_get_decuint/endp',
+		aliases => ['4294967295!', '04294967295!'],
+		expect => '4294967295 "!"',
+	},
+	{
+		name => 'decuint_endp_1',
+		cfunc => 'pcapint_get_decuint/endp',
+		aliases => ['1a', '01a'],
+		expect => '1 "a"',
+	},
 );
 
 # This works similar to @filter_reject_tests.  In each array element the hash
@@ -25103,6 +25129,62 @@ my @translate_reject_tests = (
 		arg => 'rpcap://eth0',
 		errstr => 'pcapint_parsesrcstr_ex() is not supported',
 	},
+
+	# pcapint_get_decuint()
+	{
+		name => 'decuint_noendp_nullargument',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => undef,
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_emptystring',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_negative1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '-1',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_positive1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '+1',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_space1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => ' 1',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_tab1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '\t1',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_nonascii1',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '\xEF1',
+		errstr => 'EINVAL',
+	},
+	{
+		name => 'decuint_noendp_4294967296',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '4294967296',
+		errstr => 'ERANGE',
+	},
+	{
+		name => 'decuint_noendp_1111111111111111111',
+		cfunc => 'pcapint_get_decuint/noendp',
+		arg => '1111111111111111111',
+		errstr => 'ERANGE',
+	},
 );
 
 ##### more pcapint_parsesrcstr_ex() accept blocks
@@ -25326,7 +25408,43 @@ sub common_filtertest_args {
 
 sub common_translatetest_args {
 	my $test = shift;
-	my @args = ($translatetest, $test->{cfuncname});
+	#
+	# The GNU libc getopt() doesn't behave as one might expect,
+	# and, at least as I read the POSIX/SUS page on getopt(),
+	# it doesn't behave as it says it should.
+	#
+	# The POSIX/SUS page says that
+	#
+	#   If, when getopt() is called:
+	#
+	#   argv[optind]  is a null pointer
+	#  *argv[optind]  is not the character -
+	#   argv[optind]  points to the string "-"
+	#
+	#   getopt() shall return -1 without changing optind.
+	#
+	# which *I* read as indicating that an argument that
+	# doesn't begin with '-' stops option argument processing.
+	#
+	# That is *not* what GNU getopt() does by default.
+	#
+	# To get what I read as the POSIX/SUS behavior, either:
+	#
+	#   the environment variable POSIXLY_CORRECT must be set;
+	#   the option string argument must begin with '+'.
+	#
+	# Otherwise, a "--" argument must be placed before any
+	# of the non-option arguments.
+	#
+	# We choose the latter option - the POSIX/SUS getopt()
+	# page doesn't obviously seem to require that a "+" not
+	# have other undesired effects.
+	#
+	# Had the GNU folks made the standard behavior the default,
+	# and required a "+" to get the behavior they wanted, That
+	# Would Have Been Wonderful. But they didn't, so here we are.
+	#
+	my @args = ($translatetest, "--", $test->{cfuncname});
 	# The hash key exists.  For the value Perl undef means C NULL and no
 	# command-line argument in the shell command, an empty Perl string
 	# means an empty C string and a quoted empty string argument in the

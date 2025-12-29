@@ -158,6 +158,42 @@ test_pcapint_parsesrcstr_ex(const char *arg)
 	return EX_OK;
 }
 
+static const char *
+errcode(const int e)
+{
+	return e == EINVAL ? "EINVAL" :
+		e == ERANGE ? "ERANGE" :
+		"unknown";
+}
+
+static int
+test_pcapint_get_decint_endp(const char *arg)
+{
+	char *endp;
+	unsigned output;
+	int res = pcapint_get_decuint(arg, &endp, &output);
+	if (res != 0) {
+		fprintf(stderr, "ERROR: %s (%d)\n", errcode(res), res);
+		return EX_DATAERR;
+	}
+	printf("OK: %u \"%s\"\n", output, endp);
+	return EX_OK;
+
+}
+
+static int
+test_pcapint_get_decint_noendp(const char *arg)
+{
+	unsigned output;
+	int res = pcapint_get_decuint(arg, NULL, &output);
+	if (res != 0) {
+		fprintf(stderr, "ERROR: %s (%d)\n", errcode(res), res);
+		return EX_DATAERR;
+	}
+	printf("OK: %u\n", output);
+	return EX_OK;
+
+}
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -171,6 +207,8 @@ static const struct {
 	{"pcapint_atoan", 0, test_pcapint_atoan, "ARCnet address"},
 	{"pcap_ether_aton", 0, test_pcap_ether_aton, "MAC-48 address"},
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
+	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decint_endp, "unsigned integer"},
+	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decint_noendp, "unsigned integer"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 
@@ -202,7 +240,7 @@ usage_long(FILE *f)
 }
 
 int
-main(const int argc, char **argv)
+main(int argc, char **argv)
 {
 	{
 		const char *cp = strrchr(argv[0], '/');
@@ -229,13 +267,15 @@ main(const int argc, char **argv)
 		}
 	}
 
-	char *funcname = argv[1];
+	argc -= optind;
+	argv += optind;
+	char *funcname = argv[0];
 	for (unsigned i = 0; i < NUM_FUNCS; i++) {
 		if (strcmp(testfunc[i].name, funcname))
 			continue;
 		const char *arg;
 		switch (argc) {
-		case 2:
+		case 1:
 			// The argument is absent.
 			if (! testfunc[i].null_ok) {
 				fprintf(stderr, "Function %s requires a non-NULL argument.\n", funcname);
@@ -244,9 +284,9 @@ main(const int argc, char **argv)
 			}
 			arg = NULL;
 			break;
-		case 3:
+		case 2:
 			// The argument is present (can be an empty string).
-			arg = argv[2];
+			arg = argv[1];
 			break;
 		default:
 			usage_short(stderr);

@@ -150,7 +150,8 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 {
 	const char *cp;
 	char *cpend;
-	long devnum;
+	int ret;
+	unsigned devnum;
 	pcap_t *p;
 
 	/* Does this look like a Bluetooth device? */
@@ -163,14 +164,9 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 	}
 	/* Yes - is BT_IFACE followed by a number? */
 	cp += sizeof BT_IFACE - 1;
-	devnum = strtol(cp, &cpend, 10);
-	if (cpend == cp || *cpend != '\0') {
-		/* Not followed by a number. */
-		*is_ours = 0;
-		return NULL;
-	}
-	if (devnum < 0) {
-		/* Followed by a non-valid number. */
+	ret = pcapint_get_decuint(cp, &cpend, &devnum);
+	if (ret != 0) {
+		/* Not followed by a valid number */
 		*is_ours = 0;
 		return NULL;
 	}

@@ -64,6 +64,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__MINGW32__)
 #include <unistd.h>
 #endif
@@ -3866,6 +3867,78 @@ pcap_strerror(int errnum)
 	 */
 	return (strerror(errnum));
 #endif /* _WIN32 */
+}
+
+/*
+ * Routine to parse a string containing an unsigned decimal integer,
+ * which catches some errors that strtoul() doesn't (strtoul() appears
+ * to parse numbers according to the way a C compiler does, so it skips
+ * leading white space and will happily allow an unsigned number with
+ * a negative sign), and also can treat the string not being completely
+ * numeric as an error and will treat values that don't fit into
+ * an unsigned int as an error.
+ *
+ * On success, returns 0 and sets the value pointed to by the last
+ * argument to the integer value; on error, returns EINVAL for an
+ * invalid number or ERANGE for a value that's too large to fit in
+ * an unsigned int.
+ */
+int
+pcapint_get_decuint(const char *cp, char **endptr, unsigned *nump)
+{
+	unsigned long val;
+	char *end;
+
+	if (cp == NULL) {
+		/* Don't do this. */
+		return (EINVAL);
+	}
+
+	if ((cp[0] & 0x80) != 0 || isspace((unsigned char)cp[0]) ||
+	    cp[0] == '-' || cp[0] == '+') {
+		/*
+		 * Numbers don't begin with non-ASCII characters or white
+		 * space and unsigned numbers don't have a sign.
+		 */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = (char *)cp;
+		return (EINVAL);
+	}
+
+	/*
+	 * Clear errno, so we can check whether it was set by strtoul().
+	 */
+	errno = 0;
+	val = strtoul(cp, &end, 10);
+	if ((val == 0 && end == cp) || (endptr == NULL && *end != '\0')) {
+		/*
+		 * Parsing error, including, if endptr is NULL, the
+		 * string ending with a non-digit character.
+		 */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		return (EINVAL);
+	}
+	if (val == ULONG_MAX && errno == ERANGE) {
+		/* Number is bigger than ULONG_MAX */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		return (ERANGE);
+	}
+	if (val > UINT_MAX) {
+		/* Number won't fit in an unsigned int */
+		*nump = 0;
+		if (endptr != NULL)
+			*endptr = end;
+		return (ERANGE);
+	}
+	if (endptr != NULL)
+		*endptr = end;
+	*nump = (unsigned) val;
+	return (0);
 }
 
 int
