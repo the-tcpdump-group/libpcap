@@ -53,7 +53,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Handle errors better when checking for a DSA-tagged interface.
       Use DLT_DEBUG_ONLY for DSA tags that do not [yet] have a better support.
     FreeBSD:
-      Fix detection and enablng of zero-copy supporrt.
+      Fix detection and enabling of zero-copy support.
       Fix errors in the zero-copy code.
     Solaris:
       Fix not to ignore logical interfaces in fad-gifc.c and
