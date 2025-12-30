@@ -1,5 +1,5 @@
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.6 libpcap release (so far!)
+Tuesday, December 30, 2025 / The Tcpdump Group
+  Summary for 1.10.6 libpcap release
     General:
       Fix "tcpdump -i <n>" for something-only libpcap builds.
       gencode: Fix an undefined behavior in gen_mcode().
