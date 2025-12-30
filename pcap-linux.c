@@ -1908,6 +1908,19 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			close(sock);
 			return 0;
 
+		case EPERM:
+			/*
+			 * OK, this version of the kernel requires
+			 * CAP_NET_ADMIN privileges for this, and
+			 * we don't have those privileges.
+			 *
+			 * Just leave it as PCAP_IF_CONNECTION_STATUS_UNKNOWN,
+			 * as we can't determine the status; just say "OK" and
+			 * don't set anything.
+			 */
+			close(sock);
+			return 0;
+
 		default:
 			/*
 			 * Other error.
