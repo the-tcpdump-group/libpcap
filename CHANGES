@@ -135,8 +135,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Improve device descriptions and flags.
       Fill pcap_if_t in more consistently.
 
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.6 libpcap release (so far!)
+Tuesday, December 30, 2025 / The Tcpdump Group
+  Summary for 1.10.6 libpcap release
     General:
       Fix "tcpdump -i <n>" for something-only libpcap builds.
       gencode: Fix an undefined behavior in gen_mcode().
@@ -191,7 +191,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Handle errors better when checking for a DSA-tagged interface.
       Use DLT_DEBUG_ONLY for DSA tags that do not [yet] have a better support.
     FreeBSD:
-      Fix detection and enablng of zero-copy supporrt.
+      Fix detection and enabling of zero-copy support.
       Fix errors in the zero-copy code.
     Solaris:
       Fix not to ignore logical interfaces in fad-gifc.c and
