@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_INIT 3PCAP "18 September 2024"
+.TH PCAP_INIT 3PCAP "30 December 2025"
 .SH NAME
 pcap_init \- initialize the library
 .SH SYNOPSIS
@@ -90,7 +90,7 @@ is returned,
 .I errbuf
 is filled in with an appropriate error message.
 .SH BACKWARD COMPATIBILITY
-This function became available in libpcap release 1.9.0.  In previous
+This function became available in libpcap release 1.10.0.  In previous
 releases, on Windows, all strings supplied as arguments, and all strings
 returned to the caller, are in the local character encoding.
 .SH SEE ALSO
