@@ -609,6 +609,18 @@ int	pcapint_createsrcstr_ex(char *, int, const char *, const char *,
 int	pcapint_parsesrcstr_ex(const char *, int *, char *, char *,
     char *, char *, unsigned char *, char *);
 
+/*
+ * Internal interface for parsing strings as unsigned integers; it
+ * wraps strtol() to catch a bunch of errors that strtol() doesn't
+ * consider errors.
+ *
+ * On success, returns 1 and sets the value pointed to by the last
+ * argument to the integer value; on error, returns 0 and sets errno
+ * to EINVAL for an invalid nuber or ERANGE for a value that's too
+ * large to fit in an unsigned int.
+ */
+int	pcapint_strtou(const char *, char **, int, unsigned *);
+
 #ifdef YYDEBUG
 extern int pcap_debug;
 #endif
