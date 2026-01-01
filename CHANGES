@@ -134,6 +134,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require SNF_VERSION_API >= 0x0003.
       Improve device descriptions and flags.
       Fill pcap_if_t in more consistently.
+    Netmap:
+      Set packet captured length based on the snapshot length and return
+        value of the capture filter.
 
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
