@@ -97,10 +97,9 @@ pcap_netmap_dispatch(pcap_t *p, int cnt, pcap_handler cb, u_char *user)
 	pn->cb_arg = user;
 
 	for (;;) {
-		if (p->break_loop) {
-			p->break_loop = 0;
+		if (p->break_loop)
 			return PCAP_ERROR_BREAK;
-		}
+
 		/* nm_dispatch won't run forever */
 
 		ret = nm_dispatch((void *)d, cnt, (void *)pcap_netmap_filter, (void *)p);
