@@ -201,6 +201,13 @@ sub skip_musl_libc {
 # * noeth-ipv4-noipv6.host123.libpcap.test
 # * noeth-noipv4-ipv6.host123.libpcap.test
 #
+# Each of the three hostnames under host357.libpcap.test has {3, 5, 7}
+# addresses (Ethernet+IPv6, Ethernet+IPv4, Ethernet+IPv4+IPv6):
+#
+# * eth-noipv4-ipv6x2.host357.libpcap.test
+# * eth-ipv4x4-noipv6.host357.libpcap.test
+# * eth-ipv4x4-ipv6x2.host357.libpcap.test
+#
 # To add tests that require hostnames with a different arrangement of
 # addresses, consider adding similar mnemonic domains.
 
@@ -211,10 +218,21 @@ aa:00:04:00:14:0e eth-noipv4-noipv6.host123.libpcap.test
 aa:00:04:00:14:0e eth-noipv4-ipv6.host123.libpcap.test
 aa:00:04:00:14:0e eth-ipv4-noipv6.host123.libpcap.test
 aa:00:04:00:14:0e eth-ipv4-ipv6.host123.libpcap.test
+aa:00:04:00:01:08 eth-ipv4x4-noipv6.host357.libpcap.test
+aa:00:04:00:01:08 eth-noipv4-ipv6x2.host357.libpcap.test
+aa:00:04:00:01:08 eth-ipv4x4-ipv6x2.host357.libpcap.test
 EOF
 
 # The IPv6 address is subject to RFC4193.
-# These 8 lines can be copied into hosts(5) directly:
+#
+# Note that all host357 addresses differ in two octets, and the sign of the
+# difference is always opposite between the octets.  This allows to test that
+# an address comparison function does not obviously fail to tell a more
+# significant octet from a less significant octet.  Also the same set of
+# addresses appears in a different order depending on which hostname is being
+# resolved.
+#
+# These lines can be copied into hosts(5) directly:
 my @hosts_lines = split /\n/, <<EOF;
 10.20.30.40 noeth-ipv4-noipv6.host123.libpcap.test
 10.20.30.40 noeth-ipv4-ipv6.host123.libpcap.test
@@ -224,6 +242,18 @@ fd00:a1b2:c3d4::1020:3040:5060:7080 noeth-noipv4-ipv6.host123.libpcap.test
 fd00:a1b2:c3d4::1020:3040:5060:7080 noeth-ipv4-ipv6.host123.libpcap.test
 fd00:a1b2:c3d4::1020:3040:5060:7080 eth-noipv4-ipv6.host123.libpcap.test
 fd00:a1b2:c3d4::1020:3040:5060:7080 eth-ipv4-ipv6.host123.libpcap.test
+192.168.243.1 eth-ipv4x4-noipv6.host357.libpcap.test
+192.168.242.4 eth-ipv4x4-noipv6.host357.libpcap.test
+192.168.244.2 eth-ipv4x4-noipv6.host357.libpcap.test
+192.168.241.3 eth-ipv4x4-noipv6.host357.libpcap.test
+192.168.241.3 eth-ipv4x4-ipv6x2.host357.libpcap.test
+192.168.244.2 eth-ipv4x4-ipv6x2.host357.libpcap.test
+192.168.242.4 eth-ipv4x4-ipv6x2.host357.libpcap.test
+192.168.243.1 eth-ipv4x4-ipv6x2.host357.libpcap.test
+fd00:a1b2:c3d4::a0b0:c0d0:e0f0:1278 eth-noipv4-ipv6x2.host357.libpcap.test
+fd00:a1b2:c3d4::a0b0:c0d0:e0f0:3456 eth-noipv4-ipv6x2.host357.libpcap.test
+fd00:a1b2:c3d4::a0b0:c0d0:e0f0:3456 eth-ipv4x4-ipv6x2.host357.libpcap.test
+fd00:a1b2:c3d4::a0b0:c0d0:e0f0:1278 eth-ipv4x4-ipv6x2.host357.libpcap.test
 EOF
 
 # Dotted-quad is the only portable syntax common to all implementations of
@@ -14157,6 +14187,340 @@ my @filter_accept_blocks = (
 			(015) ret      #0
 			',
 	}, # rarp_gateway_NAME_en10mb
+
+	# The following four test blocks do not include an alias for
+	# eth-ipv4x4-ipv6x2.host357.libpcap.test, which resolves to the
+	# same set of IPv4 addresses, but the order is different.
+	{
+		name => 'gateway_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_ethers() || skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'gateway eth-ipv4x4-noipv6.host357.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 30
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 30
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 17
+			(010) ld       [26]
+			(011) jeq      #0xc0a8f301      jt 30	jf 12
+			(012) jeq      #0xc0a8f204      jt 30	jf 13
+			(013) jeq      #0xc0a8f402      jt 30	jf 14
+			(014) jeq      #0xc0a8f103      jt 30	jf 15
+			(015) ld       [30]
+			(016) jeq      #0xc0a8f301      jt 30	jf 26
+			(017) jeq      #0x806           jt 19	jf 18
+			(018) jeq      #0x8035          jt 19	jf 29
+			(019) ld       [28]
+			(020) jeq      #0xc0a8f301      jt 30	jf 21
+			(021) jeq      #0xc0a8f204      jt 30	jf 22
+			(022) jeq      #0xc0a8f402      jt 30	jf 23
+			(023) jeq      #0xc0a8f103      jt 30	jf 24
+			(024) ld       [38]
+			(025) jeq      #0xc0a8f301      jt 30	jf 26
+			(026) jeq      #0xc0a8f204      jt 30	jf 27
+			(027) jeq      #0xc0a8f402      jt 30	jf 28
+			(028) jeq      #0xc0a8f103      jt 30	jf 29
+			(029) ret      #262144
+			(030) ret      #0
+			',
+		unopt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 81
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 81
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xc0a8f301      jt 81	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xc0a8f301      jt 81	jf 14
+			(014) ldh      [12]
+			(015) jeq      #0x806           jt 16	jf 20
+			(016) ld       [28]
+			(017) jeq      #0xc0a8f301      jt 81	jf 18
+			(018) ld       [38]
+			(019) jeq      #0xc0a8f301      jt 81	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 26
+			(022) ld       [28]
+			(023) jeq      #0xc0a8f301      jt 81	jf 24
+			(024) ld       [38]
+			(025) jeq      #0xc0a8f301      jt 81	jf 26
+			(026) ldh      [12]
+			(027) jeq      #0x800           jt 28	jf 32
+			(028) ld       [26]
+			(029) jeq      #0xc0a8f204      jt 81	jf 30
+			(030) ld       [30]
+			(031) jeq      #0xc0a8f204      jt 81	jf 32
+			(032) ldh      [12]
+			(033) jeq      #0x806           jt 34	jf 38
+			(034) ld       [28]
+			(035) jeq      #0xc0a8f204      jt 81	jf 36
+			(036) ld       [38]
+			(037) jeq      #0xc0a8f204      jt 81	jf 38
+			(038) ldh      [12]
+			(039) jeq      #0x8035          jt 40	jf 44
+			(040) ld       [28]
+			(041) jeq      #0xc0a8f204      jt 81	jf 42
+			(042) ld       [38]
+			(043) jeq      #0xc0a8f204      jt 81	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x800           jt 46	jf 50
+			(046) ld       [26]
+			(047) jeq      #0xc0a8f402      jt 81	jf 48
+			(048) ld       [30]
+			(049) jeq      #0xc0a8f402      jt 81	jf 50
+			(050) ldh      [12]
+			(051) jeq      #0x806           jt 52	jf 56
+			(052) ld       [28]
+			(053) jeq      #0xc0a8f402      jt 81	jf 54
+			(054) ld       [38]
+			(055) jeq      #0xc0a8f402      jt 81	jf 56
+			(056) ldh      [12]
+			(057) jeq      #0x8035          jt 58	jf 62
+			(058) ld       [28]
+			(059) jeq      #0xc0a8f402      jt 81	jf 60
+			(060) ld       [38]
+			(061) jeq      #0xc0a8f402      jt 81	jf 62
+			(062) ldh      [12]
+			(063) jeq      #0x800           jt 64	jf 68
+			(064) ld       [26]
+			(065) jeq      #0xc0a8f103      jt 81	jf 66
+			(066) ld       [30]
+			(067) jeq      #0xc0a8f103      jt 81	jf 68
+			(068) ldh      [12]
+			(069) jeq      #0x806           jt 70	jf 74
+			(070) ld       [28]
+			(071) jeq      #0xc0a8f103      jt 81	jf 72
+			(072) ld       [38]
+			(073) jeq      #0xc0a8f103      jt 81	jf 74
+			(074) ldh      [12]
+			(075) jeq      #0x8035          jt 76	jf 80
+			(076) ld       [28]
+			(077) jeq      #0xc0a8f103      jt 81	jf 78
+			(078) ld       [38]
+			(079) jeq      #0xc0a8f103      jt 81	jf 80
+			(080) ret      #262144
+			(081) ret      #0
+			',
+	}, # gateway_ipv4x4_noipv6_EN10MB
+	{
+		name => 'ip_gateway_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_ethers() || skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'ip gateway eth-ipv4x4-noipv6.host357.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 20
+			(010) ld       [26]
+			(011) jeq      #0xc0a8f301      jt 21	jf 12
+			(012) jeq      #0xc0a8f204      jt 21	jf 13
+			(013) jeq      #0xc0a8f402      jt 21	jf 14
+			(014) jeq      #0xc0a8f103      jt 21	jf 15
+			(015) ld       [30]
+			(016) jeq      #0xc0a8f301      jt 21	jf 17
+			(017) jeq      #0xc0a8f204      jt 21	jf 18
+			(018) jeq      #0xc0a8f402      jt 21	jf 19
+			(019) jeq      #0xc0a8f103      jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+		unopt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 33
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 33
+			(008) ldh      [12]
+			(009) jeq      #0x800           jt 10	jf 14
+			(010) ld       [26]
+			(011) jeq      #0xc0a8f301      jt 33	jf 12
+			(012) ld       [30]
+			(013) jeq      #0xc0a8f301      jt 33	jf 14
+			(014) ldh      [12]
+			(015) jeq      #0x800           jt 16	jf 20
+			(016) ld       [26]
+			(017) jeq      #0xc0a8f204      jt 33	jf 18
+			(018) ld       [30]
+			(019) jeq      #0xc0a8f204      jt 33	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x800           jt 22	jf 26
+			(022) ld       [26]
+			(023) jeq      #0xc0a8f402      jt 33	jf 24
+			(024) ld       [30]
+			(025) jeq      #0xc0a8f402      jt 33	jf 26
+			(026) ldh      [12]
+			(027) jeq      #0x800           jt 28	jf 32
+			(028) ld       [26]
+			(029) jeq      #0xc0a8f103      jt 33	jf 30
+			(030) ld       [30]
+			(031) jeq      #0xc0a8f103      jt 33	jf 32
+			(032) ret      #262144
+			(033) ret      #0
+			',
+	}, # ip_gateway_ipv4x4_noipv6_EN10MB
+	{
+		name => 'arp_gateway_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_ethers() || skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'arp gateway eth-ipv4x4-noipv6.host357.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 10	jf 20
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f301      jt 21	jf 12
+			(012) jeq      #0xc0a8f204      jt 21	jf 13
+			(013) jeq      #0xc0a8f402      jt 21	jf 14
+			(014) jeq      #0xc0a8f103      jt 21	jf 15
+			(015) ld       [38]
+			(016) jeq      #0xc0a8f301      jt 21	jf 17
+			(017) jeq      #0xc0a8f204      jt 21	jf 18
+			(018) jeq      #0xc0a8f402      jt 21	jf 19
+			(019) jeq      #0xc0a8f103      jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+		unopt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 33
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 33
+			(008) ldh      [12]
+			(009) jeq      #0x806           jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f301      jt 33	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xc0a8f301      jt 33	jf 14
+			(014) ldh      [12]
+			(015) jeq      #0x806           jt 16	jf 20
+			(016) ld       [28]
+			(017) jeq      #0xc0a8f204      jt 33	jf 18
+			(018) ld       [38]
+			(019) jeq      #0xc0a8f204      jt 33	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x806           jt 22	jf 26
+			(022) ld       [28]
+			(023) jeq      #0xc0a8f402      jt 33	jf 24
+			(024) ld       [38]
+			(025) jeq      #0xc0a8f402      jt 33	jf 26
+			(026) ldh      [12]
+			(027) jeq      #0x806           jt 28	jf 32
+			(028) ld       [28]
+			(029) jeq      #0xc0a8f103      jt 33	jf 30
+			(030) ld       [38]
+			(031) jeq      #0xc0a8f103      jt 33	jf 32
+			(032) ret      #262144
+			(033) ret      #0
+			',
+	}, # arp_gateway_ipv4x4_noipv6_EN10MB
+	{
+		name => 'rarp_gateway_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_ethers() || skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => [
+			'rarp gateway eth-ipv4x4-noipv6.host357.libpcap.test',
+		],
+		opt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 21
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 21
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 20
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f301      jt 21	jf 12
+			(012) jeq      #0xc0a8f204      jt 21	jf 13
+			(013) jeq      #0xc0a8f402      jt 21	jf 14
+			(014) jeq      #0xc0a8f103      jt 21	jf 15
+			(015) ld       [38]
+			(016) jeq      #0xc0a8f301      jt 21	jf 17
+			(017) jeq      #0xc0a8f204      jt 21	jf 18
+			(018) jeq      #0xc0a8f402      jt 21	jf 19
+			(019) jeq      #0xc0a8f103      jt 21	jf 20
+			(020) ret      #262144
+			(021) ret      #0
+			',
+		unopt => '
+			(000) ld       [8]
+			(001) jeq      #0x4000108       jt 2	jf 4
+			(002) ldh      [6]
+			(003) jeq      #0xaa00          jt 8	jf 4
+			(004) ld       [2]
+			(005) jeq      #0x4000108       jt 6	jf 33
+			(006) ldh      [0]
+			(007) jeq      #0xaa00          jt 8	jf 33
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 14
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f301      jt 33	jf 12
+			(012) ld       [38]
+			(013) jeq      #0xc0a8f301      jt 33	jf 14
+			(014) ldh      [12]
+			(015) jeq      #0x8035          jt 16	jf 20
+			(016) ld       [28]
+			(017) jeq      #0xc0a8f204      jt 33	jf 18
+			(018) ld       [38]
+			(019) jeq      #0xc0a8f204      jt 33	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 26
+			(022) ld       [28]
+			(023) jeq      #0xc0a8f402      jt 33	jf 24
+			(024) ld       [38]
+			(025) jeq      #0xc0a8f402      jt 33	jf 26
+			(026) ldh      [12]
+			(027) jeq      #0x8035          jt 28	jf 32
+			(028) ld       [28]
+			(029) jeq      #0xc0a8f103      jt 33	jf 30
+			(030) ld       [38]
+			(031) jeq      #0xc0a8f103      jt 33	jf 32
+			(032) ret      #262144
+			(033) ret      #0
+			',
+	}, # rarp_gateway_ipv4x4_noipv6_EN10MB
+
 	{
 		name => 'gateway_name_fddi',
 		skip => skip_no_ethers() ||
@@ -16923,6 +17287,1206 @@ my @filter_accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ip6_multicast
+
+	{
+		name => 'host_eth_noipv4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['host eth-noipv4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer fails to coalesce any duplicate checks for the
+		# fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 35
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 10
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 10
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 10
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 34	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 18
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 18
+			(014) ld       [46]
+			(015) jeq      #0xa0b0c0d0      jt 16	jf 18
+			(016) ld       [50]
+			(017) jeq      #0xe0f01278      jt 34	jf 18
+			(018) ld       [22]
+			(019) jeq      #0xfd00a1b2      jt 20	jf 26
+			(020) ld       [26]
+			(021) jeq      #0xc3d40000      jt 22	jf 26
+			(022) ld       [30]
+			(023) jeq      #0xa0b0c0d0      jt 24	jf 26
+			(024) ld       [34]
+			(025) jeq      #0xe0f03456      jt 34	jf 26
+			(026) ld       [38]
+			(027) jeq      #0xfd00a1b2      jt 28	jf 35
+			(028) ld       [42]
+			(029) jeq      #0xc3d40000      jt 30	jf 35
+			(030) ld       [46]
+			(031) jeq      #0xa0b0c0d0      jt 32	jf 35
+			(032) ld       [50]
+			(033) jeq      #0xe0f03456      jt 34	jf 35
+			(034) ret      #262144
+			(035) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 18
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 10
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 10
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 10
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 36	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 18
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 18
+			(014) ld       [46]
+			(015) jeq      #0xa0b0c0d0      jt 16	jf 18
+			(016) ld       [50]
+			(017) jeq      #0xe0f01278      jt 36	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x86dd          jt 20	jf 37
+			(020) ld       [22]
+			(021) jeq      #0xfd00a1b2      jt 22	jf 28
+			(022) ld       [26]
+			(023) jeq      #0xc3d40000      jt 24	jf 28
+			(024) ld       [30]
+			(025) jeq      #0xa0b0c0d0      jt 26	jf 28
+			(026) ld       [34]
+			(027) jeq      #0xe0f03456      jt 36	jf 28
+			(028) ld       [38]
+			(029) jeq      #0xfd00a1b2      jt 30	jf 37
+			(030) ld       [42]
+			(031) jeq      #0xc3d40000      jt 32	jf 37
+			(032) ld       [46]
+			(033) jeq      #0xa0b0c0d0      jt 34	jf 37
+			(034) ld       [50]
+			(035) jeq      #0xe0f03456      jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # host_eth_noipv4_ipv6x2_EN10MB
+	{
+		name => 'host_eth_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['host eth-ipv4x4-noipv6.host357.libpcap.test'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 21	jf 4
+			(004) jeq      #0xc0a8f204      jt 21	jf 5
+			(005) jeq      #0xc0a8f402      jt 21	jf 6
+			(006) jeq      #0xc0a8f103      jt 21	jf 7
+			(007) ld       [30]
+			(008) jeq      #0xc0a8f301      jt 21	jf 18
+			(009) jeq      #0x806           jt 11	jf 10
+			(010) jeq      #0x8035          jt 11	jf 22
+			(011) ld       [28]
+			(012) jeq      #0xc0a8f301      jt 21	jf 13
+			(013) jeq      #0xc0a8f204      jt 21	jf 14
+			(014) jeq      #0xc0a8f402      jt 21	jf 15
+			(015) jeq      #0xc0a8f103      jt 21	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f301      jt 21	jf 18
+			(018) jeq      #0xc0a8f204      jt 21	jf 19
+			(019) jeq      #0xc0a8f402      jt 21	jf 20
+			(020) jeq      #0xc0a8f103      jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 72	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f301      jt 72	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xc0a8f301      jt 72	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f301      jt 72	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xc0a8f301      jt 72	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f301      jt 72	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ld       [26]
+			(021) jeq      #0xc0a8f204      jt 72	jf 22
+			(022) ld       [30]
+			(023) jeq      #0xc0a8f204      jt 72	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x806           jt 26	jf 30
+			(026) ld       [28]
+			(027) jeq      #0xc0a8f204      jt 72	jf 28
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f204      jt 72	jf 30
+			(030) ldh      [12]
+			(031) jeq      #0x8035          jt 32	jf 36
+			(032) ld       [28]
+			(033) jeq      #0xc0a8f204      jt 72	jf 34
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f204      jt 72	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 42
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f402      jt 72	jf 40
+			(040) ld       [30]
+			(041) jeq      #0xc0a8f402      jt 72	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x806           jt 44	jf 48
+			(044) ld       [28]
+			(045) jeq      #0xc0a8f402      jt 72	jf 46
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f402      jt 72	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x8035          jt 50	jf 54
+			(050) ld       [28]
+			(051) jeq      #0xc0a8f402      jt 72	jf 52
+			(052) ld       [38]
+			(053) jeq      #0xc0a8f402      jt 72	jf 54
+			(054) ldh      [12]
+			(055) jeq      #0x800           jt 56	jf 60
+			(056) ld       [26]
+			(057) jeq      #0xc0a8f103      jt 72	jf 58
+			(058) ld       [30]
+			(059) jeq      #0xc0a8f103      jt 72	jf 60
+			(060) ldh      [12]
+			(061) jeq      #0x806           jt 62	jf 66
+			(062) ld       [28]
+			(063) jeq      #0xc0a8f103      jt 72	jf 64
+			(064) ld       [38]
+			(065) jeq      #0xc0a8f103      jt 72	jf 66
+			(066) ldh      [12]
+			(067) jeq      #0x8035          jt 68	jf 73
+			(068) ld       [28]
+			(069) jeq      #0xc0a8f103      jt 72	jf 70
+			(070) ld       [38]
+			(071) jeq      #0xc0a8f103      jt 72	jf 73
+			(072) ret      #262144
+			(073) ret      #0
+			',
+	}, # host_eth_ipv4x4_noipv6_EN10MB
+	{
+		name => 'host_eth_ipv4x4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['host eth-ipv4x4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer fails to coalesce any duplicate checks for the
+		# fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 54	jf 4
+			(004) jeq      #0xc0a8f402      jt 54	jf 5
+			(005) jeq      #0xc0a8f204      jt 54	jf 6
+			(006) jeq      #0xc0a8f301      jt 54	jf 7
+			(007) ld       [30]
+			(008) jeq      #0xc0a8f103      jt 54	jf 18
+			(009) jeq      #0x806           jt 11	jf 10
+			(010) jeq      #0x8035          jt 11	jf 21
+			(011) ld       [28]
+			(012) jeq      #0xc0a8f103      jt 54	jf 13
+			(013) jeq      #0xc0a8f402      jt 54	jf 14
+			(014) jeq      #0xc0a8f204      jt 54	jf 15
+			(015) jeq      #0xc0a8f301      jt 54	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f103      jt 54	jf 18
+			(018) jeq      #0xc0a8f402      jt 54	jf 19
+			(019) jeq      #0xc0a8f204      jt 54	jf 20
+			(020) jeq      #0xc0a8f301      jt 54	jf 55
+			(021) jeq      #0x86dd          jt 22	jf 55
+			(022) ld       [22]
+			(023) jeq      #0xfd00a1b2      jt 24	jf 30
+			(024) ld       [26]
+			(025) jeq      #0xc3d40000      jt 26	jf 30
+			(026) ld       [30]
+			(027) jeq      #0xa0b0c0d0      jt 28	jf 30
+			(028) ld       [34]
+			(029) jeq      #0xe0f03456      jt 54	jf 30
+			(030) ld       [38]
+			(031) jeq      #0xfd00a1b2      jt 32	jf 38
+			(032) ld       [42]
+			(033) jeq      #0xc3d40000      jt 34	jf 38
+			(034) ld       [46]
+			(035) jeq      #0xa0b0c0d0      jt 36	jf 38
+			(036) ld       [50]
+			(037) jeq      #0xe0f03456      jt 54	jf 38
+			(038) ld       [22]
+			(039) jeq      #0xfd00a1b2      jt 40	jf 46
+			(040) ld       [26]
+			(041) jeq      #0xc3d40000      jt 42	jf 46
+			(042) ld       [30]
+			(043) jeq      #0xa0b0c0d0      jt 44	jf 46
+			(044) ld       [34]
+			(045) jeq      #0xe0f01278      jt 54	jf 46
+			(046) ld       [38]
+			(047) jeq      #0xfd00a1b2      jt 48	jf 55
+			(048) ld       [42]
+			(049) jeq      #0xc3d40000      jt 50	jf 55
+			(050) ld       [46]
+			(051) jeq      #0xa0b0c0d0      jt 52	jf 55
+			(052) ld       [50]
+			(053) jeq      #0xe0f01278      jt 54	jf 55
+			(054) ret      #262144
+			(055) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 108	jf 4
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f103      jt 108	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xc0a8f103      jt 108	jf 10
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f103      jt 108	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xc0a8f103      jt 108	jf 16
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f103      jt 108	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ld       [26]
+			(021) jeq      #0xc0a8f402      jt 108	jf 22
+			(022) ld       [30]
+			(023) jeq      #0xc0a8f402      jt 108	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x806           jt 26	jf 30
+			(026) ld       [28]
+			(027) jeq      #0xc0a8f402      jt 108	jf 28
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f402      jt 108	jf 30
+			(030) ldh      [12]
+			(031) jeq      #0x8035          jt 32	jf 36
+			(032) ld       [28]
+			(033) jeq      #0xc0a8f402      jt 108	jf 34
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f402      jt 108	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 42
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f204      jt 108	jf 40
+			(040) ld       [30]
+			(041) jeq      #0xc0a8f204      jt 108	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x806           jt 44	jf 48
+			(044) ld       [28]
+			(045) jeq      #0xc0a8f204      jt 108	jf 46
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f204      jt 108	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x8035          jt 50	jf 54
+			(050) ld       [28]
+			(051) jeq      #0xc0a8f204      jt 108	jf 52
+			(052) ld       [38]
+			(053) jeq      #0xc0a8f204      jt 108	jf 54
+			(054) ldh      [12]
+			(055) jeq      #0x800           jt 56	jf 60
+			(056) ld       [26]
+			(057) jeq      #0xc0a8f301      jt 108	jf 58
+			(058) ld       [30]
+			(059) jeq      #0xc0a8f301      jt 108	jf 60
+			(060) ldh      [12]
+			(061) jeq      #0x806           jt 62	jf 66
+			(062) ld       [28]
+			(063) jeq      #0xc0a8f301      jt 108	jf 64
+			(064) ld       [38]
+			(065) jeq      #0xc0a8f301      jt 108	jf 66
+			(066) ldh      [12]
+			(067) jeq      #0x8035          jt 68	jf 72
+			(068) ld       [28]
+			(069) jeq      #0xc0a8f301      jt 108	jf 70
+			(070) ld       [38]
+			(071) jeq      #0xc0a8f301      jt 108	jf 72
+			(072) ldh      [12]
+			(073) jeq      #0x86dd          jt 74	jf 90
+			(074) ld       [22]
+			(075) jeq      #0xfd00a1b2      jt 76	jf 82
+			(076) ld       [26]
+			(077) jeq      #0xc3d40000      jt 78	jf 82
+			(078) ld       [30]
+			(079) jeq      #0xa0b0c0d0      jt 80	jf 82
+			(080) ld       [34]
+			(081) jeq      #0xe0f03456      jt 108	jf 82
+			(082) ld       [38]
+			(083) jeq      #0xfd00a1b2      jt 84	jf 90
+			(084) ld       [42]
+			(085) jeq      #0xc3d40000      jt 86	jf 90
+			(086) ld       [46]
+			(087) jeq      #0xa0b0c0d0      jt 88	jf 90
+			(088) ld       [50]
+			(089) jeq      #0xe0f03456      jt 108	jf 90
+			(090) ldh      [12]
+			(091) jeq      #0x86dd          jt 92	jf 109
+			(092) ld       [22]
+			(093) jeq      #0xfd00a1b2      jt 94	jf 100
+			(094) ld       [26]
+			(095) jeq      #0xc3d40000      jt 96	jf 100
+			(096) ld       [30]
+			(097) jeq      #0xa0b0c0d0      jt 98	jf 100
+			(098) ld       [34]
+			(099) jeq      #0xe0f01278      jt 108	jf 100
+			(100) ld       [38]
+			(101) jeq      #0xfd00a1b2      jt 102	jf 109
+			(102) ld       [42]
+			(103) jeq      #0xc3d40000      jt 104	jf 109
+			(104) ld       [46]
+			(105) jeq      #0xa0b0c0d0      jt 106	jf 109
+			(106) ld       [50]
+			(107) jeq      #0xe0f01278      jt 108	jf 109
+			(108) ret      #262144
+			(109) ret      #0
+			',
+	}, # host_eth_ipv4x4_ipv6x2_EN10MB
+
+	{
+		name => 'src_host_eth_noipv4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src host eth-noipv4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer completely coalesces the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 12
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 12
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 12
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 11	jf 10
+			(010) jeq      #0xe0f03456      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 10
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 10
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 10
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 10
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 20	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x86dd          jt 12	jf 21
+			(012) ld       [22]
+			(013) jeq      #0xfd00a1b2      jt 14	jf 21
+			(014) ld       [26]
+			(015) jeq      #0xc3d40000      jt 16	jf 21
+			(016) ld       [30]
+			(017) jeq      #0xa0b0c0d0      jt 18	jf 21
+			(018) ld       [34]
+			(019) jeq      #0xe0f03456      jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # src_host_eth_noipv4_ipv6x2_EN10MB
+	{
+		name => 'src_host_eth_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src host eth-ipv4x4-noipv6.host357.libpcap.test'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 11	jf 8
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 12
+			(006) ld       [28]
+			(007) jeq      #0xc0a8f301      jt 11	jf 8
+			(008) jeq      #0xc0a8f204      jt 11	jf 9
+			(009) jeq      #0xc0a8f402      jt 11	jf 10
+			(010) jeq      #0xc0a8f103      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 48	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xc0a8f301      jt 48	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f301      jt 48	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 16
+			(014) ld       [26]
+			(015) jeq      #0xc0a8f204      jt 48	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x806           jt 18	jf 20
+			(018) ld       [28]
+			(019) jeq      #0xc0a8f204      jt 48	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 24
+			(022) ld       [28]
+			(023) jeq      #0xc0a8f204      jt 48	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x800           jt 26	jf 28
+			(026) ld       [26]
+			(027) jeq      #0xc0a8f402      jt 48	jf 28
+			(028) ldh      [12]
+			(029) jeq      #0x806           jt 30	jf 32
+			(030) ld       [28]
+			(031) jeq      #0xc0a8f402      jt 48	jf 32
+			(032) ldh      [12]
+			(033) jeq      #0x8035          jt 34	jf 36
+			(034) ld       [28]
+			(035) jeq      #0xc0a8f402      jt 48	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 40
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f103      jt 48	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x806           jt 42	jf 44
+			(042) ld       [28]
+			(043) jeq      #0xc0a8f103      jt 48	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x8035          jt 46	jf 49
+			(046) ld       [28]
+			(047) jeq      #0xc0a8f103      jt 48	jf 49
+			(048) ret      #262144
+			(049) ret      #0
+			',
+	}, # src_host_eth_ipv4x4_noipv6_EN10MB
+	{
+		name => 'src_host_eth_ipv4x4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src host eth-ipv4x4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer completely coalesces the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 21	jf 8
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 11
+			(006) ld       [28]
+			(007) jeq      #0xc0a8f103      jt 21	jf 8
+			(008) jeq      #0xc0a8f402      jt 21	jf 9
+			(009) jeq      #0xc0a8f204      jt 21	jf 10
+			(010) jeq      #0xc0a8f301      jt 21	jf 22
+			(011) jeq      #0x86dd          jt 12	jf 22
+			(012) ld       [22]
+			(013) jeq      #0xfd00a1b2      jt 14	jf 22
+			(014) ld       [26]
+			(015) jeq      #0xc3d40000      jt 16	jf 22
+			(016) ld       [30]
+			(017) jeq      #0xa0b0c0d0      jt 18	jf 22
+			(018) ld       [34]
+			(019) jeq      #0xe0f03456      jt 21	jf 20
+			(020) jeq      #0xe0f01278      jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 68	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [28]
+			(007) jeq      #0xc0a8f103      jt 68	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [28]
+			(011) jeq      #0xc0a8f103      jt 68	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 16
+			(014) ld       [26]
+			(015) jeq      #0xc0a8f402      jt 68	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x806           jt 18	jf 20
+			(018) ld       [28]
+			(019) jeq      #0xc0a8f402      jt 68	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 24
+			(022) ld       [28]
+			(023) jeq      #0xc0a8f402      jt 68	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x800           jt 26	jf 28
+			(026) ld       [26]
+			(027) jeq      #0xc0a8f204      jt 68	jf 28
+			(028) ldh      [12]
+			(029) jeq      #0x806           jt 30	jf 32
+			(030) ld       [28]
+			(031) jeq      #0xc0a8f204      jt 68	jf 32
+			(032) ldh      [12]
+			(033) jeq      #0x8035          jt 34	jf 36
+			(034) ld       [28]
+			(035) jeq      #0xc0a8f204      jt 68	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 40
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f301      jt 68	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x806           jt 42	jf 44
+			(042) ld       [28]
+			(043) jeq      #0xc0a8f301      jt 68	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x8035          jt 46	jf 48
+			(046) ld       [28]
+			(047) jeq      #0xc0a8f301      jt 68	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x86dd          jt 50	jf 58
+			(050) ld       [22]
+			(051) jeq      #0xfd00a1b2      jt 52	jf 58
+			(052) ld       [26]
+			(053) jeq      #0xc3d40000      jt 54	jf 58
+			(054) ld       [30]
+			(055) jeq      #0xa0b0c0d0      jt 56	jf 58
+			(056) ld       [34]
+			(057) jeq      #0xe0f03456      jt 68	jf 58
+			(058) ldh      [12]
+			(059) jeq      #0x86dd          jt 60	jf 69
+			(060) ld       [22]
+			(061) jeq      #0xfd00a1b2      jt 62	jf 69
+			(062) ld       [26]
+			(063) jeq      #0xc3d40000      jt 64	jf 69
+			(064) ld       [30]
+			(065) jeq      #0xa0b0c0d0      jt 66	jf 69
+			(066) ld       [34]
+			(067) jeq      #0xe0f01278      jt 68	jf 69
+			(068) ret      #262144
+			(069) ret      #0
+			',
+	}, # src_host_eth_ipv4x4_ipv6x2_EN10MB
+
+	{
+		name => 'dst_host_eth_noipv4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['dst host eth-noipv4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer completely coalesces the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 12
+			(002) ld       [38]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 12
+			(004) ld       [42]
+			(005) jeq      #0xc3d40000      jt 6	jf 12
+			(006) ld       [46]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 12
+			(008) ld       [50]
+			(009) jeq      #0xe0f01278      jt 11	jf 10
+			(010) jeq      #0xe0f03456      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 10
+			(002) ld       [38]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 10
+			(004) ld       [42]
+			(005) jeq      #0xc3d40000      jt 6	jf 10
+			(006) ld       [46]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 10
+			(008) ld       [50]
+			(009) jeq      #0xe0f01278      jt 20	jf 10
+			(010) ldh      [12]
+			(011) jeq      #0x86dd          jt 12	jf 21
+			(012) ld       [38]
+			(013) jeq      #0xfd00a1b2      jt 14	jf 21
+			(014) ld       [42]
+			(015) jeq      #0xc3d40000      jt 16	jf 21
+			(016) ld       [46]
+			(017) jeq      #0xa0b0c0d0      jt 18	jf 21
+			(018) ld       [50]
+			(019) jeq      #0xe0f03456      jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # dst_host_eth_noipv4_ipv6x2_EN10MB
+	{
+		name => 'dst_host_eth_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['dst host eth-ipv4x4-noipv6.host357.libpcap.test'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xc0a8f301      jt 11	jf 8
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 12
+			(006) ld       [38]
+			(007) jeq      #0xc0a8f301      jt 11	jf 8
+			(008) jeq      #0xc0a8f204      jt 11	jf 9
+			(009) jeq      #0xc0a8f402      jt 11	jf 10
+			(010) jeq      #0xc0a8f103      jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xc0a8f301      jt 48	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xc0a8f301      jt 48	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f301      jt 48	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 16
+			(014) ld       [30]
+			(015) jeq      #0xc0a8f204      jt 48	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x806           jt 18	jf 20
+			(018) ld       [38]
+			(019) jeq      #0xc0a8f204      jt 48	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 24
+			(022) ld       [38]
+			(023) jeq      #0xc0a8f204      jt 48	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x800           jt 26	jf 28
+			(026) ld       [30]
+			(027) jeq      #0xc0a8f402      jt 48	jf 28
+			(028) ldh      [12]
+			(029) jeq      #0x806           jt 30	jf 32
+			(030) ld       [38]
+			(031) jeq      #0xc0a8f402      jt 48	jf 32
+			(032) ldh      [12]
+			(033) jeq      #0x8035          jt 34	jf 36
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f402      jt 48	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 40
+			(038) ld       [30]
+			(039) jeq      #0xc0a8f103      jt 48	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x806           jt 42	jf 44
+			(042) ld       [38]
+			(043) jeq      #0xc0a8f103      jt 48	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x8035          jt 46	jf 49
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f103      jt 48	jf 49
+			(048) ret      #262144
+			(049) ret      #0
+			',
+	}, # dst_host_eth_ipv4x4_noipv6_EN10MB
+	{
+		name => 'dst_host_eth_ipv4x4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['dst host eth-ipv4x4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer completely coalesces the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xc0a8f103      jt 21	jf 8
+			(004) jeq      #0x806           jt 6	jf 5
+			(005) jeq      #0x8035          jt 6	jf 11
+			(006) ld       [38]
+			(007) jeq      #0xc0a8f103      jt 21	jf 8
+			(008) jeq      #0xc0a8f402      jt 21	jf 9
+			(009) jeq      #0xc0a8f204      jt 21	jf 10
+			(010) jeq      #0xc0a8f301      jt 21	jf 22
+			(011) jeq      #0x86dd          jt 12	jf 22
+			(012) ld       [38]
+			(013) jeq      #0xfd00a1b2      jt 14	jf 22
+			(014) ld       [42]
+			(015) jeq      #0xc3d40000      jt 16	jf 22
+			(016) ld       [46]
+			(017) jeq      #0xa0b0c0d0      jt 18	jf 22
+			(018) ld       [50]
+			(019) jeq      #0xe0f03456      jt 21	jf 20
+			(020) jeq      #0xe0f01278      jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 4
+			(002) ld       [30]
+			(003) jeq      #0xc0a8f103      jt 68	jf 4
+			(004) ldh      [12]
+			(005) jeq      #0x806           jt 6	jf 8
+			(006) ld       [38]
+			(007) jeq      #0xc0a8f103      jt 68	jf 8
+			(008) ldh      [12]
+			(009) jeq      #0x8035          jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f103      jt 68	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x800           jt 14	jf 16
+			(014) ld       [30]
+			(015) jeq      #0xc0a8f402      jt 68	jf 16
+			(016) ldh      [12]
+			(017) jeq      #0x806           jt 18	jf 20
+			(018) ld       [38]
+			(019) jeq      #0xc0a8f402      jt 68	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x8035          jt 22	jf 24
+			(022) ld       [38]
+			(023) jeq      #0xc0a8f402      jt 68	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x800           jt 26	jf 28
+			(026) ld       [30]
+			(027) jeq      #0xc0a8f204      jt 68	jf 28
+			(028) ldh      [12]
+			(029) jeq      #0x806           jt 30	jf 32
+			(030) ld       [38]
+			(031) jeq      #0xc0a8f204      jt 68	jf 32
+			(032) ldh      [12]
+			(033) jeq      #0x8035          jt 34	jf 36
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f204      jt 68	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 40
+			(038) ld       [30]
+			(039) jeq      #0xc0a8f301      jt 68	jf 40
+			(040) ldh      [12]
+			(041) jeq      #0x806           jt 42	jf 44
+			(042) ld       [38]
+			(043) jeq      #0xc0a8f301      jt 68	jf 44
+			(044) ldh      [12]
+			(045) jeq      #0x8035          jt 46	jf 48
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f301      jt 68	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x86dd          jt 50	jf 58
+			(050) ld       [38]
+			(051) jeq      #0xfd00a1b2      jt 52	jf 58
+			(052) ld       [42]
+			(053) jeq      #0xc3d40000      jt 54	jf 58
+			(054) ld       [46]
+			(055) jeq      #0xa0b0c0d0      jt 56	jf 58
+			(056) ld       [50]
+			(057) jeq      #0xe0f03456      jt 68	jf 58
+			(058) ldh      [12]
+			(059) jeq      #0x86dd          jt 60	jf 69
+			(060) ld       [38]
+			(061) jeq      #0xfd00a1b2      jt 62	jf 69
+			(062) ld       [42]
+			(063) jeq      #0xc3d40000      jt 64	jf 69
+			(064) ld       [46]
+			(065) jeq      #0xa0b0c0d0      jt 66	jf 69
+			(066) ld       [50]
+			(067) jeq      #0xe0f01278      jt 68	jf 69
+			(068) ret      #262144
+			(069) ret      #0
+			',
+	}, # dst_host_eth_ipv4x4_ipv6x2_EN10MB
+
+	{
+		name => 'src_and_dst_host_eth_noipv4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src and dst host eth-noipv4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer coalesces some of the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 28
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 28
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 28
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 28
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 10	jf 18
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 28
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 28
+			(014) ld       [46]
+			(015) jeq      #0xa0b0c0d0      jt 16	jf 28
+			(016) ld       [50]
+			(017) jeq      #0xe0f01278      jt 27	jf 28
+			(018) jeq      #0xe0f03456      jt 19	jf 28
+			(019) ld       [38]
+			(020) jeq      #0xfd00a1b2      jt 21	jf 28
+			(021) ld       [42]
+			(022) jeq      #0xc3d40000      jt 23	jf 28
+			(023) ld       [46]
+			(024) jeq      #0xa0b0c0d0      jt 25	jf 28
+			(025) ld       [50]
+			(026) jeq      #0xe0f03456      jt 27	jf 28
+			(027) ret      #262144
+			(028) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 18
+			(002) ld       [22]
+			(003) jeq      #0xfd00a1b2      jt 4	jf 18
+			(004) ld       [26]
+			(005) jeq      #0xc3d40000      jt 6	jf 18
+			(006) ld       [30]
+			(007) jeq      #0xa0b0c0d0      jt 8	jf 18
+			(008) ld       [34]
+			(009) jeq      #0xe0f01278      jt 10	jf 18
+			(010) ld       [38]
+			(011) jeq      #0xfd00a1b2      jt 12	jf 18
+			(012) ld       [42]
+			(013) jeq      #0xc3d40000      jt 14	jf 18
+			(014) ld       [46]
+			(015) jeq      #0xa0b0c0d0      jt 16	jf 18
+			(016) ld       [50]
+			(017) jeq      #0xe0f01278      jt 36	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x86dd          jt 20	jf 37
+			(020) ld       [22]
+			(021) jeq      #0xfd00a1b2      jt 22	jf 37
+			(022) ld       [26]
+			(023) jeq      #0xc3d40000      jt 24	jf 37
+			(024) ld       [30]
+			(025) jeq      #0xa0b0c0d0      jt 26	jf 37
+			(026) ld       [34]
+			(027) jeq      #0xe0f03456      jt 28	jf 37
+			(028) ld       [38]
+			(029) jeq      #0xfd00a1b2      jt 30	jf 37
+			(030) ld       [42]
+			(031) jeq      #0xc3d40000      jt 32	jf 37
+			(032) ld       [46]
+			(033) jeq      #0xa0b0c0d0      jt 34	jf 37
+			(034) ld       [50]
+			(035) jeq      #0xe0f03456      jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # src_and_dst_host_eth_noipv4_ipv6x2_EN10MB
+	{
+		name => 'src_and_dst_host_eth_ipv4x4_noipv6_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src and dst host eth-ipv4x4-noipv6.host357.libpcap.test'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f301      jt 30	jf 31
+			(006) jeq      #0xc0a8f204      jt 7	jf 9
+			(007) ld       [30]
+			(008) jeq      #0xc0a8f204      jt 30	jf 31
+			(009) jeq      #0xc0a8f402      jt 10	jf 12
+			(010) ld       [30]
+			(011) jeq      #0xc0a8f402      jt 30	jf 31
+			(012) jeq      #0xc0a8f103      jt 13	jf 31
+			(013) ld       [30]
+			(014) jeq      #0xc0a8f103      jt 30	jf 31
+			(015) jeq      #0x806           jt 17	jf 16
+			(016) jeq      #0x8035          jt 17	jf 31
+			(017) ld       [28]
+			(018) jeq      #0xc0a8f301      jt 19	jf 21
+			(019) ld       [38]
+			(020) jeq      #0xc0a8f301      jt 30	jf 31
+			(021) jeq      #0xc0a8f204      jt 22	jf 24
+			(022) ld       [38]
+			(023) jeq      #0xc0a8f204      jt 30	jf 31
+			(024) jeq      #0xc0a8f402      jt 25	jf 27
+			(025) ld       [38]
+			(026) jeq      #0xc0a8f402      jt 30	jf 31
+			(027) jeq      #0xc0a8f103      jt 28	jf 31
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f103      jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f301      jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f301      jt 72	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xc0a8f301      jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f301      jt 72	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xc0a8f301      jt 16	jf 18
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f301      jt 72	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ld       [26]
+			(021) jeq      #0xc0a8f204      jt 22	jf 24
+			(022) ld       [30]
+			(023) jeq      #0xc0a8f204      jt 72	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x806           jt 26	jf 30
+			(026) ld       [28]
+			(027) jeq      #0xc0a8f204      jt 28	jf 30
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f204      jt 72	jf 30
+			(030) ldh      [12]
+			(031) jeq      #0x8035          jt 32	jf 36
+			(032) ld       [28]
+			(033) jeq      #0xc0a8f204      jt 34	jf 36
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f204      jt 72	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 42
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f402      jt 40	jf 42
+			(040) ld       [30]
+			(041) jeq      #0xc0a8f402      jt 72	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x806           jt 44	jf 48
+			(044) ld       [28]
+			(045) jeq      #0xc0a8f402      jt 46	jf 48
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f402      jt 72	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x8035          jt 50	jf 54
+			(050) ld       [28]
+			(051) jeq      #0xc0a8f402      jt 52	jf 54
+			(052) ld       [38]
+			(053) jeq      #0xc0a8f402      jt 72	jf 54
+			(054) ldh      [12]
+			(055) jeq      #0x800           jt 56	jf 60
+			(056) ld       [26]
+			(057) jeq      #0xc0a8f103      jt 58	jf 60
+			(058) ld       [30]
+			(059) jeq      #0xc0a8f103      jt 72	jf 60
+			(060) ldh      [12]
+			(061) jeq      #0x806           jt 62	jf 66
+			(062) ld       [28]
+			(063) jeq      #0xc0a8f103      jt 64	jf 66
+			(064) ld       [38]
+			(065) jeq      #0xc0a8f103      jt 72	jf 66
+			(066) ldh      [12]
+			(067) jeq      #0x8035          jt 68	jf 73
+			(068) ld       [28]
+			(069) jeq      #0xc0a8f103      jt 70	jf 73
+			(070) ld       [38]
+			(071) jeq      #0xc0a8f103      jt 72	jf 73
+			(072) ret      #262144
+			(073) ret      #0
+			',
+	}, # src_and_dst_host_eth_ipv4x4_noipv6_EN10MB
+	{
+		name => 'src_and_dst_host_eth_ipv4x4_ipv6x2_EN10MB',
+		skip => skip_no_hosts(),
+		DLT => 'EN10MB',
+		aliases => ['src and dst host eth-ipv4x4-ipv6x2.host357.libpcap.test'],
+		# Note that the optimizer coalesces some of the duplicate checks
+		# for the fd00:a1b2:c3d4::a0b0:c0d0/96 part of the IPv6 addresses.
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f103      jt 56	jf 57
+			(006) jeq      #0xc0a8f402      jt 7	jf 9
+			(007) ld       [30]
+			(008) jeq      #0xc0a8f402      jt 56	jf 57
+			(009) jeq      #0xc0a8f204      jt 10	jf 12
+			(010) ld       [30]
+			(011) jeq      #0xc0a8f204      jt 56	jf 57
+			(012) jeq      #0xc0a8f301      jt 13	jf 57
+			(013) ld       [30]
+			(014) jeq      #0xc0a8f301      jt 56	jf 57
+			(015) jeq      #0x806           jt 17	jf 16
+			(016) jeq      #0x8035          jt 17	jf 30
+			(017) ld       [28]
+			(018) jeq      #0xc0a8f103      jt 19	jf 21
+			(019) ld       [38]
+			(020) jeq      #0xc0a8f103      jt 56	jf 57
+			(021) jeq      #0xc0a8f402      jt 22	jf 24
+			(022) ld       [38]
+			(023) jeq      #0xc0a8f402      jt 56	jf 57
+			(024) jeq      #0xc0a8f204      jt 25	jf 27
+			(025) ld       [38]
+			(026) jeq      #0xc0a8f204      jt 56	jf 57
+			(027) jeq      #0xc0a8f301      jt 28	jf 57
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f301      jt 56	jf 57
+			(030) jeq      #0x86dd          jt 31	jf 57
+			(031) ld       [22]
+			(032) jeq      #0xfd00a1b2      jt 33	jf 57
+			(033) ld       [26]
+			(034) jeq      #0xc3d40000      jt 35	jf 57
+			(035) ld       [30]
+			(036) jeq      #0xa0b0c0d0      jt 37	jf 57
+			(037) ld       [34]
+			(038) jeq      #0xe0f03456      jt 39	jf 47
+			(039) ld       [38]
+			(040) jeq      #0xfd00a1b2      jt 41	jf 57
+			(041) ld       [42]
+			(042) jeq      #0xc3d40000      jt 43	jf 57
+			(043) ld       [46]
+			(044) jeq      #0xa0b0c0d0      jt 45	jf 57
+			(045) ld       [50]
+			(046) jeq      #0xe0f03456      jt 56	jf 57
+			(047) jeq      #0xe0f01278      jt 48	jf 57
+			(048) ld       [38]
+			(049) jeq      #0xfd00a1b2      jt 50	jf 57
+			(050) ld       [42]
+			(051) jeq      #0xc3d40000      jt 52	jf 57
+			(052) ld       [46]
+			(053) jeq      #0xa0b0c0d0      jt 54	jf 57
+			(054) ld       [50]
+			(055) jeq      #0xe0f01278      jt 56	jf 57
+			(056) ret      #262144
+			(057) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 6
+			(002) ld       [26]
+			(003) jeq      #0xc0a8f103      jt 4	jf 6
+			(004) ld       [30]
+			(005) jeq      #0xc0a8f103      jt 108	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x806           jt 8	jf 12
+			(008) ld       [28]
+			(009) jeq      #0xc0a8f103      jt 10	jf 12
+			(010) ld       [38]
+			(011) jeq      #0xc0a8f103      jt 108	jf 12
+			(012) ldh      [12]
+			(013) jeq      #0x8035          jt 14	jf 18
+			(014) ld       [28]
+			(015) jeq      #0xc0a8f103      jt 16	jf 18
+			(016) ld       [38]
+			(017) jeq      #0xc0a8f103      jt 108	jf 18
+			(018) ldh      [12]
+			(019) jeq      #0x800           jt 20	jf 24
+			(020) ld       [26]
+			(021) jeq      #0xc0a8f402      jt 22	jf 24
+			(022) ld       [30]
+			(023) jeq      #0xc0a8f402      jt 108	jf 24
+			(024) ldh      [12]
+			(025) jeq      #0x806           jt 26	jf 30
+			(026) ld       [28]
+			(027) jeq      #0xc0a8f402      jt 28	jf 30
+			(028) ld       [38]
+			(029) jeq      #0xc0a8f402      jt 108	jf 30
+			(030) ldh      [12]
+			(031) jeq      #0x8035          jt 32	jf 36
+			(032) ld       [28]
+			(033) jeq      #0xc0a8f402      jt 34	jf 36
+			(034) ld       [38]
+			(035) jeq      #0xc0a8f402      jt 108	jf 36
+			(036) ldh      [12]
+			(037) jeq      #0x800           jt 38	jf 42
+			(038) ld       [26]
+			(039) jeq      #0xc0a8f204      jt 40	jf 42
+			(040) ld       [30]
+			(041) jeq      #0xc0a8f204      jt 108	jf 42
+			(042) ldh      [12]
+			(043) jeq      #0x806           jt 44	jf 48
+			(044) ld       [28]
+			(045) jeq      #0xc0a8f204      jt 46	jf 48
+			(046) ld       [38]
+			(047) jeq      #0xc0a8f204      jt 108	jf 48
+			(048) ldh      [12]
+			(049) jeq      #0x8035          jt 50	jf 54
+			(050) ld       [28]
+			(051) jeq      #0xc0a8f204      jt 52	jf 54
+			(052) ld       [38]
+			(053) jeq      #0xc0a8f204      jt 108	jf 54
+			(054) ldh      [12]
+			(055) jeq      #0x800           jt 56	jf 60
+			(056) ld       [26]
+			(057) jeq      #0xc0a8f301      jt 58	jf 60
+			(058) ld       [30]
+			(059) jeq      #0xc0a8f301      jt 108	jf 60
+			(060) ldh      [12]
+			(061) jeq      #0x806           jt 62	jf 66
+			(062) ld       [28]
+			(063) jeq      #0xc0a8f301      jt 64	jf 66
+			(064) ld       [38]
+			(065) jeq      #0xc0a8f301      jt 108	jf 66
+			(066) ldh      [12]
+			(067) jeq      #0x8035          jt 68	jf 72
+			(068) ld       [28]
+			(069) jeq      #0xc0a8f301      jt 70	jf 72
+			(070) ld       [38]
+			(071) jeq      #0xc0a8f301      jt 108	jf 72
+			(072) ldh      [12]
+			(073) jeq      #0x86dd          jt 74	jf 90
+			(074) ld       [22]
+			(075) jeq      #0xfd00a1b2      jt 76	jf 90
+			(076) ld       [26]
+			(077) jeq      #0xc3d40000      jt 78	jf 90
+			(078) ld       [30]
+			(079) jeq      #0xa0b0c0d0      jt 80	jf 90
+			(080) ld       [34]
+			(081) jeq      #0xe0f03456      jt 82	jf 90
+			(082) ld       [38]
+			(083) jeq      #0xfd00a1b2      jt 84	jf 90
+			(084) ld       [42]
+			(085) jeq      #0xc3d40000      jt 86	jf 90
+			(086) ld       [46]
+			(087) jeq      #0xa0b0c0d0      jt 88	jf 90
+			(088) ld       [50]
+			(089) jeq      #0xe0f03456      jt 108	jf 90
+			(090) ldh      [12]
+			(091) jeq      #0x86dd          jt 92	jf 109
+			(092) ld       [22]
+			(093) jeq      #0xfd00a1b2      jt 94	jf 109
+			(094) ld       [26]
+			(095) jeq      #0xc3d40000      jt 96	jf 109
+			(096) ld       [30]
+			(097) jeq      #0xa0b0c0d0      jt 98	jf 109
+			(098) ld       [34]
+			(099) jeq      #0xe0f01278      jt 100	jf 109
+			(100) ld       [38]
+			(101) jeq      #0xfd00a1b2      jt 102	jf 109
+			(102) ld       [42]
+			(103) jeq      #0xc3d40000      jt 104	jf 109
+			(104) ld       [46]
+			(105) jeq      #0xa0b0c0d0      jt 106	jf 109
+			(106) ld       [50]
+			(107) jeq      #0xe0f01278      jt 108	jf 109
+			(108) ret      #262144
+			(109) ret      #0
+			',
+	}, # src_and_dst_host_eth_ipv4x4_ipv6x2_EN10MB
 
 	{
 		name => 'icmp_types',
