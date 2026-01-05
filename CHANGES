@@ -50,6 +50,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Do not try matching RFC 1051 system codes for ARCnet.
       Enable various primitives for DLT_DSA_TAG_BRCM and DLT_DSA_TAG_DSA.
       Test link protocol once per AF, not per address.
+      Sort resolved IPv4 and IPv6 addresses.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from

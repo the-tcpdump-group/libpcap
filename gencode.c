@@ -5231,6 +5231,30 @@ gen_host6(compiler_state_t *cstate, const size_t n,
 	return gen_and(linkproto, host);
 }
 
+static int
+uint32_t_cmp(const void *a, const void *b)
+{
+	/*
+	 * Host byte order.  One potential way to do the comparison would be
+	 * to return "a32 - b32", but that would require to prove -- to both
+	 * humans and C compilers -- that for all possible [uint32_t] values
+	 * of a32 and b32 the difference would always map to a correct sign of
+	 * the [int] return value on all architectures, so let's instead do it
+	 * in a way that is obviously correct.
+	 */
+	const uint32_t *a32 = (uint32_t *)a, *b32 = (uint32_t *)b;
+	return *a32 < *b32 ? -1 :
+	    *a32 > *b32 ? 1 :
+	    0;
+}
+
+static int
+in6_addr_cmp(const void *a, const void *b)
+{
+	// Network byte order is straightforward.
+	return memcmp(a, b, sizeof(struct in6_addr));
+}
+
 /*
  * The maximum supported number of resolved addresses per family (IPv4/IPv6)
  * for a given Internet hostname.
@@ -5289,6 +5313,8 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 			masks[count] = 0xffffffff;
 			count++;
 		}
+		if (count > 1)
+			qsort(addrs, count, sizeof(*addrs), uint32_t_cmp);
 		if (count)
 			ret = gen_host(cstate, count, addrs, masks, proto4,
 			               dir, context);
@@ -5318,6 +5344,8 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 			masks[count] = mask128;
 			count++;
 		}
+		if (count > 1)
+			qsort(addrs, count, sizeof(*addrs), in6_addr_cmp);
 		if (count) {
 			struct block *hosts6 =
 			    gen_host6(cstate, count, addrs, masks, proto6, dir,
