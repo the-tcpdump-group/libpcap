@@ -703,10 +703,12 @@ static struct block *gen_mac8host(compiler_state_t *, const uint8_t,
     const u_char, const char *);
 static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
-static struct block *gen_host(compiler_state_t *, const bpf_u_int32,
-    const bpf_u_int32, const u_char, const u_char, const char *);
-static struct block *gen_host6(compiler_state_t *, const struct in6_addr *,
-    const struct in6_addr *, const u_char, const u_char, const char *);
+static struct block *gen_host(compiler_state_t *, const size_t,
+    const bpf_u_int32 *, const bpf_u_int32 *, const u_char, const u_char,
+    const char *);
+static struct block *gen_host6(compiler_state_t *, const size_t,
+    const struct in6_addr *, const struct in6_addr *, const u_char,
+    const u_char, const char *);
 static struct block *gen_host46_byname(compiler_state_t *, const char *,
     const u_char, const u_char, const u_char);
 static struct block *gen_dnhost(compiler_state_t *, const char *, bpf_u_int32,
@@ -5133,8 +5135,8 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 }
 
 static struct block *
-gen_host(compiler_state_t *cstate, const bpf_u_int32 addr,
-    const bpf_u_int32 mask, const u_char proto, const u_char dir,
+gen_host(compiler_state_t *cstate, const size_t n, const bpf_u_int32 *a,
+    const bpf_u_int32 *m, const u_char proto, const u_char dir,
     const char *context)
 {
 	/*
@@ -5152,15 +5154,15 @@ gen_host(compiler_state_t *cstate, const bpf_u_int32 addr,
 	switch (proto) {
 
 	case Q_DEFAULT:
-		b0 = gen_host(cstate, addr, mask, Q_IP, dir, context);
+		b0 = gen_host(cstate, n, a, m, Q_IP, dir, context);
 		/*
 		 * Only check for non-IPv4 addresses if we're not
 		 * checking MPLS-encapsulated packets.
 		 */
 		if (cstate->label_stack_depth == 0) {
-			b1 = gen_host(cstate, addr, mask, Q_ARP, dir, context);
+			b1 = gen_host(cstate, n, a, m, Q_ARP, dir, context);
 			b1 = gen_or(b0, b1);
-			b0 = gen_host(cstate, addr, mask, Q_RARP, dir, context);
+			b0 = gen_host(cstate, n, a, m, Q_RARP, dir, context);
 			b0 = gen_or(b1, b0);
 		}
 		return b0;
@@ -5204,14 +5206,17 @@ gen_host(compiler_state_t *cstate, const bpf_u_int32 addr,
 		 */
 		return b0;
 	}
-	b1 = gen_hostop(cstate, addr, mask, dir, src_off, dst_off);
+	b1 = gen_false(cstate);
+	for (size_t i = 0; i < n; i++)
+		b1 = gen_or(b1,
+		    gen_hostop(cstate, a[i], m[i], dir, src_off, dst_off));
 	return gen_and(b0, b1);
 }
 
 static struct block *
-gen_host6(compiler_state_t *cstate, const struct in6_addr *addr,
-    const struct in6_addr *mask, const u_char proto, const u_char dir,
-    const char *context)
+gen_host6(compiler_state_t *cstate, const size_t n,
+    const struct in6_addr *a, const struct in6_addr *m,
+    const u_char proto, const u_char dir, const char *context)
 {
 	// WLAN direction qualifiers are never valid for IPv6 addresses.
 	assert_nonwlan_dqual(cstate, dir);
@@ -5220,9 +5225,17 @@ gen_host6(compiler_state_t *cstate, const struct in6_addr *addr,
 		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), context);
 
 	struct block *linkproto = gen_linktype(cstate, ETHERTYPE_IPV6);
-	struct block *host = gen_hostop6(cstate, addr, mask, dir);
+	struct block *host = gen_false(cstate);
+	for (size_t i = 0; i < n; i++)
+		host = gen_or(host, gen_hostop6(cstate, a + i, m + i, dir));
 	return gen_and(linkproto, host);
 }
+
+/*
+ * The maximum supported number of resolved addresses per family (IPv4/IPv6)
+ * for a given Internet hostname.
+ */
+#define MAX_PER_AF 100
 
 static struct block *
 gen_host46_byname(compiler_state_t *cstate, const char *name,
@@ -5261,15 +5274,24 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 	 * all other proto qualifiers in gen_host().
 	 */
 	if (proto4 != Q_IPV6) {
+		uint32_t addrs[MAX_PER_AF], masks[MAX_PER_AF];
+		size_t count = 0;
 		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
 			if (ai->ai_family != AF_INET)
 				continue;
+			if (count == MAX_PER_AF)
+				bpf_error(cstate,
+				          "More than %u IPv4 addresses per name",
+				          MAX_PER_AF);
 			struct sockaddr_in *sin4 =
 			    (struct sockaddr_in *)ai->ai_addr;
-			struct block *host4 = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
-			    0xffffffff, proto4, dir, context);
-			ret = ret ? gen_or(ret, host4) : host4;
+			addrs[count] = ntohl(sin4->sin_addr.s_addr);
+			masks[count] = 0xffffffff;
+			count++;
 		}
+		if (count)
+			ret = gen_host(cstate, count, addrs, masks, proto4,
+			               dir, context);
 	}
 
 	/*
@@ -5281,14 +5303,26 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 	}};
 	if (proto6 != Q_ARP && proto6 != Q_IP && proto6 != Q_RARP) {
+		struct in6_addr addrs[MAX_PER_AF], masks[MAX_PER_AF];
+		size_t count = 0;
 		for (struct addrinfo *ai = cstate->ai; ai; ai = ai->ai_next) {
 			if (ai->ai_family != AF_INET6)
 				continue;
+			if (count == MAX_PER_AF)
+				bpf_error(cstate,
+				          "More than %u IPv6 addresses per name",
+				          MAX_PER_AF);
 			struct sockaddr_in6 *sin6 =
 			    (struct sockaddr_in6 *)ai->ai_addr;
-			struct block *host6 = gen_host6(cstate, &sin6->sin6_addr,
-			    &mask128, proto6, dir, context);
-			ret = ret ? gen_or(ret, host6) : host6;
+			addrs[count] = sin6->sin6_addr;
+			masks[count] = mask128;
+			count++;
+		}
+		if (count) {
+			struct block *hosts6 =
+			    gen_host6(cstate, count, addrs, masks, proto6, dir,
+			              context);
+			ret = ret ? gen_or(ret, hosts6) : hosts6;
 		}
 	}
 
@@ -5302,6 +5336,8 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 		    : " for specified address family");
 	return ret;
 }
+
+#undef MAX_PER_AF
 
 static struct block *
 gen_dnhost(compiler_state_t *cstate, const char *s, bpf_u_int32 v,
@@ -6842,7 +6878,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			addr <<= 8;
 			mask <<= 8;
 		}
-		return gen_host(cstate, addr, mask, q.proto, q.dir,
+		return gen_host(cstate, 1, &addr, &mask, q.proto, q.dir,
 		                "net <IPv4 network name>");
 
 	case Q_DEFAULT:
@@ -7033,7 +7069,8 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	switch (q.addr) {
 
 	case Q_NET:
-		return gen_host(cstate, n, m, q.proto, q.dir, "net <IPv4 prefix>");
+		return gen_host(cstate, 1, &n, &m, q.proto, q.dir,
+		                "net <IPv4 prefix>");
 
 	default:
 		// Q_HOST and Q_GATEWAY only (see the grammar)
@@ -7107,7 +7144,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 				v <<= 32 - vlen;
 				mask <<= 32 - vlen ;
 			}
-			return gen_host(cstate, v, mask, q.proto, q.dir,
+			return gen_host(cstate, 1, &v, &mask, q.proto, q.dir,
 			                q.addr == Q_NET ? "net <IPv4 address>" :
 			                "host <IPv4 address>");
 		}
@@ -7212,7 +7249,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		/* FALLTHROUGH */
 
 	case Q_NET:
-		return gen_host6(cstate, &addr, &mask, q.proto, q.dir,
+		return gen_host6(cstate, 1, &addr, &mask, q.proto, q.dir,
 		                 q.addr == Q_HOST ? "host <IPv6 address>" :
 		                 "net <IPv6 prefix>");
 

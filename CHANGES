@@ -49,6 +49,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Extend "link (host|broadcast)" support onto DLT_BACNET_MS_TP.
       Do not try matching RFC 1051 system codes for ARCnet.
       Enable various primitives for DLT_DSA_TAG_BRCM and DLT_DSA_TAG_DSA.
+      Test link protocol once per AF, not per address.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
