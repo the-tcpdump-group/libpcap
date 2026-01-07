@@ -51,6 +51,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Enable various primitives for DLT_DSA_TAG_BRCM and DLT_DSA_TAG_DSA.
       Test link protocol once per AF, not per address.
       Sort resolved IPv4 and IPv6 addresses.
+      In "gateway" negate the host(s), but not the protocol.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from

@@ -13916,7 +13916,7 @@ my @filter_accept_blocks = (
 			(012) ld       [30]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [28]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [38]
@@ -13936,17 +13936,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [12]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [26]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [30]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [12]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [28]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [38]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [12]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [28]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [38]
@@ -13980,7 +13980,7 @@ my @filter_accept_blocks = (
 			(012) ld       [30]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [28]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [38]
@@ -14000,17 +14000,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [12]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [26]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [30]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [12]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [28]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [38]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [12]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [28]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [38]
@@ -14038,7 +14038,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [26]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [30]
@@ -14066,7 +14066,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [26]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [30]
@@ -14094,7 +14094,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [28]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14122,7 +14122,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [28]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14150,7 +14150,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [28]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14178,7 +14178,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [12]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [28]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14215,7 +14215,7 @@ my @filter_accept_blocks = (
 			(015) ld       [30]
 			(016) jeq      #0xc0a8f103      jt 30	jf 26
 			(017) jeq      #0x806           jt 19	jf 18
-			(018) jeq      #0x8035          jt 19	jf 29
+			(018) jeq      #0x8035          jt 19	jf 30
 			(019) ld       [28]
 			(020) jeq      #0xc0a8f103      jt 30	jf 21
 			(021) jeq      #0xc0a8f204      jt 30	jf 22
@@ -14241,41 +14241,41 @@ my @filter_accept_blocks = (
 			(008) ldh      [12]
 			(009) jeq      #0x800           jt 10	jf 26
 			(010) ld       [26]
-			(011) jeq      #0xc0a8f103      jt 63	jf 12
+			(011) jeq      #0xc0a8f103      jt 26	jf 12
 			(012) ld       [30]
-			(013) jeq      #0xc0a8f103      jt 63	jf 14
+			(013) jeq      #0xc0a8f103      jt 26	jf 14
 			(014) ld       [26]
-			(015) jeq      #0xc0a8f204      jt 63	jf 16
+			(015) jeq      #0xc0a8f204      jt 26	jf 16
 			(016) ld       [30]
-			(017) jeq      #0xc0a8f204      jt 63	jf 18
+			(017) jeq      #0xc0a8f204      jt 26	jf 18
 			(018) ld       [26]
-			(019) jeq      #0xc0a8f301      jt 63	jf 20
+			(019) jeq      #0xc0a8f301      jt 26	jf 20
 			(020) ld       [30]
-			(021) jeq      #0xc0a8f301      jt 63	jf 22
+			(021) jeq      #0xc0a8f301      jt 26	jf 22
 			(022) ld       [26]
-			(023) jeq      #0xc0a8f402      jt 63	jf 24
+			(023) jeq      #0xc0a8f402      jt 26	jf 24
 			(024) ld       [30]
-			(025) jeq      #0xc0a8f402      jt 63	jf 26
+			(025) jeq      #0xc0a8f402      jt 26	jf 62
 			(026) ldh      [12]
 			(027) jeq      #0x806           jt 28	jf 44
 			(028) ld       [28]
-			(029) jeq      #0xc0a8f103      jt 63	jf 30
+			(029) jeq      #0xc0a8f103      jt 44	jf 30
 			(030) ld       [38]
-			(031) jeq      #0xc0a8f103      jt 63	jf 32
+			(031) jeq      #0xc0a8f103      jt 44	jf 32
 			(032) ld       [28]
-			(033) jeq      #0xc0a8f204      jt 63	jf 34
+			(033) jeq      #0xc0a8f204      jt 44	jf 34
 			(034) ld       [38]
-			(035) jeq      #0xc0a8f204      jt 63	jf 36
+			(035) jeq      #0xc0a8f204      jt 44	jf 36
 			(036) ld       [28]
-			(037) jeq      #0xc0a8f301      jt 63	jf 38
+			(037) jeq      #0xc0a8f301      jt 44	jf 38
 			(038) ld       [38]
-			(039) jeq      #0xc0a8f301      jt 63	jf 40
+			(039) jeq      #0xc0a8f301      jt 44	jf 40
 			(040) ld       [28]
-			(041) jeq      #0xc0a8f402      jt 63	jf 42
+			(041) jeq      #0xc0a8f402      jt 44	jf 42
 			(042) ld       [38]
-			(043) jeq      #0xc0a8f402      jt 63	jf 44
+			(043) jeq      #0xc0a8f402      jt 44	jf 62
 			(044) ldh      [12]
-			(045) jeq      #0x8035          jt 46	jf 62
+			(045) jeq      #0x8035          jt 46	jf 63
 			(046) ld       [28]
 			(047) jeq      #0xc0a8f103      jt 63	jf 48
 			(048) ld       [38]
@@ -14314,7 +14314,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 21
 			(008) ldh      [12]
-			(009) jeq      #0x800           jt 10	jf 20
+			(009) jeq      #0x800           jt 10	jf 21
 			(010) ld       [26]
 			(011) jeq      #0xc0a8f103      jt 21	jf 12
 			(012) jeq      #0xc0a8f204      jt 21	jf 13
@@ -14338,7 +14338,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 27
 			(008) ldh      [12]
-			(009) jeq      #0x800           jt 10	jf 26
+			(009) jeq      #0x800           jt 10	jf 27
 			(010) ld       [26]
 			(011) jeq      #0xc0a8f103      jt 27	jf 12
 			(012) ld       [30]
@@ -14377,7 +14377,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 21
 			(008) ldh      [12]
-			(009) jeq      #0x806           jt 10	jf 20
+			(009) jeq      #0x806           jt 10	jf 21
 			(010) ld       [28]
 			(011) jeq      #0xc0a8f103      jt 21	jf 12
 			(012) jeq      #0xc0a8f204      jt 21	jf 13
@@ -14401,7 +14401,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 27
 			(008) ldh      [12]
-			(009) jeq      #0x806           jt 10	jf 26
+			(009) jeq      #0x806           jt 10	jf 27
 			(010) ld       [28]
 			(011) jeq      #0xc0a8f103      jt 27	jf 12
 			(012) ld       [38]
@@ -14440,7 +14440,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 21
 			(008) ldh      [12]
-			(009) jeq      #0x8035          jt 10	jf 20
+			(009) jeq      #0x8035          jt 10	jf 21
 			(010) ld       [28]
 			(011) jeq      #0xc0a8f103      jt 21	jf 12
 			(012) jeq      #0xc0a8f204      jt 21	jf 13
@@ -14464,7 +14464,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 27
 			(008) ldh      [12]
-			(009) jeq      #0x8035          jt 10	jf 26
+			(009) jeq      #0x8035          jt 10	jf 27
 			(010) ld       [28]
 			(011) jeq      #0xc0a8f103      jt 27	jf 12
 			(012) ld       [38]
@@ -14511,7 +14511,7 @@ my @filter_accept_blocks = (
 			(012) ld       [37]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [35]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [45]
@@ -14531,17 +14531,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [19]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [33]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [37]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [19]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [35]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [45]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [19]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [35]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [45]
@@ -14575,7 +14575,7 @@ my @filter_accept_blocks = (
 			(012) ld       [37]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [35]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [45]
@@ -14595,17 +14595,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [19]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [33]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [37]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [19]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [35]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [45]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [19]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [35]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [45]
@@ -14633,7 +14633,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [33]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [37]
@@ -14661,7 +14661,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [33]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [37]
@@ -14689,7 +14689,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [35]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [45]
@@ -14717,7 +14717,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [35]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [45]
@@ -14745,7 +14745,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [35]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [45]
@@ -14773,7 +14773,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [1]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [19]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [35]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [45]
@@ -14807,7 +14807,7 @@ my @filter_accept_blocks = (
 			(012) ld       [38]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [36]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [46]
@@ -14827,17 +14827,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [20]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [34]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [38]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [20]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [36]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [46]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [20]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [36]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [46]
@@ -14871,7 +14871,7 @@ my @filter_accept_blocks = (
 			(012) ld       [38]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [36]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [46]
@@ -14891,17 +14891,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [20]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [34]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [38]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [20]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [36]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [46]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [20]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [36]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [46]
@@ -14929,7 +14929,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [34]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14957,7 +14957,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [34]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [38]
@@ -14985,7 +14985,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [46]
@@ -15013,7 +15013,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [46]
@@ -15041,7 +15041,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [46]
@@ -15069,7 +15069,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [20]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [46]
@@ -15161,10 +15161,10 @@ my @filter_accept_blocks = (
 			(068) jeq      #0x800           jt 69	jf 75
 			(069) ldx      M[0]
 			(070) ld       [x + 20]
-			(071) jeq      #0xa141e28       jt 100	jf 72
+			(071) jeq      #0xa141e28       jt 75	jf 72
 			(072) ldx      M[0]
 			(073) ld       [x + 24]
-			(074) jeq      #0xa141e28       jt 100	jf 75
+			(074) jeq      #0xa141e28       jt 75	jf 99
 			(075) ldb      [0]
 			(076) and      #0xc
 			(077) jeq      #0x8             jt 78	jf 87
@@ -15173,16 +15173,16 @@ my @filter_accept_blocks = (
 			(080) jeq      #0x806           jt 81	jf 87
 			(081) ldx      M[0]
 			(082) ld       [x + 22]
-			(083) jeq      #0xa141e28       jt 100	jf 84
+			(083) jeq      #0xa141e28       jt 87	jf 84
 			(084) ldx      M[0]
 			(085) ld       [x + 32]
-			(086) jeq      #0xa141e28       jt 100	jf 87
+			(086) jeq      #0xa141e28       jt 87	jf 99
 			(087) ldb      [0]
 			(088) and      #0xc
-			(089) jeq      #0x8             jt 90	jf 99
+			(089) jeq      #0x8             jt 90	jf 100
 			(090) ldx      M[0]
 			(091) ldh      [x + 6]
-			(092) jeq      #0x8035          jt 93	jf 99
+			(092) jeq      #0x8035          jt 93	jf 100
 			(093) ldx      M[0]
 			(094) ld       [x + 22]
 			(095) jeq      #0xa141e28       jt 100	jf 96
@@ -15274,10 +15274,10 @@ my @filter_accept_blocks = (
 			(068) jeq      #0x800           jt 69	jf 75
 			(069) ldx      M[0]
 			(070) ld       [x + 20]
-			(071) jeq      #0xa141e28       jt 100	jf 72
+			(071) jeq      #0xa141e28       jt 75	jf 72
 			(072) ldx      M[0]
 			(073) ld       [x + 24]
-			(074) jeq      #0xa141e28       jt 100	jf 75
+			(074) jeq      #0xa141e28       jt 75	jf 99
 			(075) ldb      [0]
 			(076) and      #0xc
 			(077) jeq      #0x8             jt 78	jf 87
@@ -15286,16 +15286,16 @@ my @filter_accept_blocks = (
 			(080) jeq      #0x806           jt 81	jf 87
 			(081) ldx      M[0]
 			(082) ld       [x + 22]
-			(083) jeq      #0xa141e28       jt 100	jf 84
+			(083) jeq      #0xa141e28       jt 87	jf 84
 			(084) ldx      M[0]
 			(085) ld       [x + 32]
-			(086) jeq      #0xa141e28       jt 100	jf 87
+			(086) jeq      #0xa141e28       jt 87	jf 99
 			(087) ldb      [0]
 			(088) and      #0xc
-			(089) jeq      #0x8             jt 90	jf 99
+			(089) jeq      #0x8             jt 90	jf 100
 			(090) ldx      M[0]
 			(091) ldh      [x + 6]
-			(092) jeq      #0x8035          jt 93	jf 99
+			(092) jeq      #0x8035          jt 93	jf 100
 			(093) ldx      M[0]
 			(094) ld       [x + 22]
 			(095) jeq      #0xa141e28       jt 100	jf 96
@@ -15381,10 +15381,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x800           jt 69	jf 75
+			(068) jeq      #0x800           jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 20]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15470,10 +15470,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x800           jt 69	jf 75
+			(068) jeq      #0x800           jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 20]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15559,10 +15559,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x806           jt 69	jf 75
+			(068) jeq      #0x806           jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 22]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15648,10 +15648,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x806           jt 69	jf 75
+			(068) jeq      #0x806           jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 22]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15737,10 +15737,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x8035          jt 69	jf 75
+			(068) jeq      #0x8035          jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 22]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15826,10 +15826,10 @@ my @filter_accept_blocks = (
 			(062) jeq      #0xaa00          jt 63	jf 76
 			(063) ldb      [0]
 			(064) and      #0xc
-			(065) jeq      #0x8             jt 66	jf 75
+			(065) jeq      #0x8             jt 66	jf 76
 			(066) ldx      M[0]
 			(067) ldh      [x + 6]
-			(068) jeq      #0x8035          jt 69	jf 75
+			(068) jeq      #0x8035          jt 69	jf 76
 			(069) ldx      M[0]
 			(070) ld       [x + 22]
 			(071) jeq      #0xa141e28       jt 76	jf 72
@@ -15865,7 +15865,7 @@ my @filter_accept_blocks = (
 			(012) ld       [40]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [38]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [48]
@@ -15885,17 +15885,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [22]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [36]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [40]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [22]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [38]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [48]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [22]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [38]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [48]
@@ -15929,7 +15929,7 @@ my @filter_accept_blocks = (
 			(012) ld       [40]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [38]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [48]
@@ -15949,17 +15949,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [22]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [36]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [40]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [22]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [38]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [48]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [22]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [38]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [48]
@@ -15987,7 +15987,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [40]
@@ -16015,7 +16015,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [36]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [40]
@@ -16043,7 +16043,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [38]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [48]
@@ -16071,7 +16071,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [38]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [48]
@@ -16099,7 +16099,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [38]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [48]
@@ -16127,7 +16127,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [2]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [22]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [38]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [48]
@@ -16162,7 +16162,7 @@ my @filter_accept_blocks = (
 			(012) ld       [34]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [32]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [42]
@@ -16182,17 +16182,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [16]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [30]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [34]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [16]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [32]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [42]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [16]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [32]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [42]
@@ -16220,7 +16220,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [30]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [34]
@@ -16248,7 +16248,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [32]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [42]
@@ -16276,7 +16276,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [32]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [42]
@@ -16311,7 +16311,7 @@ my @filter_accept_blocks = (
 			(012) ld       [34]
 			(013) jeq      #0xa141e28       jt 21	jf 20
 			(014) jeq      #0x806           jt 16	jf 15
-			(015) jeq      #0x8035          jt 16	jf 20
+			(015) jeq      #0x8035          jt 16	jf 21
 			(016) ld       [32]
 			(017) jeq      #0xa141e28       jt 21	jf 18
 			(018) ld       [42]
@@ -16331,17 +16331,17 @@ my @filter_accept_blocks = (
 			(008) ldh      [16]
 			(009) jeq      #0x800           jt 10	jf 14
 			(010) ld       [30]
-			(011) jeq      #0xa141e28       jt 27	jf 12
+			(011) jeq      #0xa141e28       jt 14	jf 12
 			(012) ld       [34]
-			(013) jeq      #0xa141e28       jt 27	jf 14
+			(013) jeq      #0xa141e28       jt 14	jf 26
 			(014) ldh      [16]
 			(015) jeq      #0x806           jt 16	jf 20
 			(016) ld       [32]
-			(017) jeq      #0xa141e28       jt 27	jf 18
+			(017) jeq      #0xa141e28       jt 20	jf 18
 			(018) ld       [42]
-			(019) jeq      #0xa141e28       jt 27	jf 20
+			(019) jeq      #0xa141e28       jt 20	jf 26
 			(020) ldh      [16]
-			(021) jeq      #0x8035          jt 22	jf 26
+			(021) jeq      #0x8035          jt 22	jf 27
 			(022) ld       [32]
 			(023) jeq      #0xa141e28       jt 27	jf 24
 			(024) ld       [42]
@@ -16369,7 +16369,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x800           jt 10	jf 14
+			(009) jeq      #0x800           jt 10	jf 15
 			(010) ld       [30]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [34]
@@ -16397,7 +16397,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x806           jt 10	jf 14
+			(009) jeq      #0x806           jt 10	jf 15
 			(010) ld       [32]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [42]
@@ -16425,7 +16425,7 @@ my @filter_accept_blocks = (
 			(006) ldh      [0]
 			(007) jeq      #0xaa00          jt 8	jf 15
 			(008) ldh      [16]
-			(009) jeq      #0x8035          jt 10	jf 14
+			(009) jeq      #0x8035          jt 10	jf 15
 			(010) ld       [32]
 			(011) jeq      #0xa141e28       jt 15	jf 12
 			(012) ld       [42]
@@ -21382,16 +21382,16 @@ my @filter_apply_blocks = (
 			0,
 			0,
 			0,
-			262144, # BUG: not ARP/IPv4/RARP
 			0,
 			0,
-			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			0,
+			0,
+			262144,
 			0,
 			262144,
 			0,
-			262144,
-			262144, # BUG: not ARP/IPv4/RARP
-			262144, # BUG: not ARP/IPv4/RARP
+			0,
 		],
 	},
 	{
@@ -21405,16 +21405,16 @@ my @filter_apply_blocks = (
 			0,
 			0,
 			0,
-			262144, # BUG: not ARP/IPv4/RARP
 			0,
 			0,
-			262144, # BUG: not ARP/IPv4/RARP
+			0,
+			0,
+			0,
+			262144,
 			0,
 			262144,
 			0,
-			262144,
-			262144, # BUG: not ARP/IPv4/RARP
-			262144, # BUG: not ARP/IPv4/RARP
+			0,
 		],
 	},
 	{
@@ -21428,16 +21428,16 @@ my @filter_apply_blocks = (
 			0,
 			0,
 			0,
-			262144, # BUG: not IPv4
 			0,
 			0,
-			262144, # BUG: not IPv4
-			262144, # BUG: not IPv4
+			0,
+			0,
+			0,
 			262144,
-			262144, # BUG: not IPv4
+			0,
 			262144,
-			262144, # BUG: not IPv4
-			262144, # BUG: not IPv4
+			0,
+			0,
 		],
 	},
 	{
@@ -21447,20 +21447,20 @@ my @filter_apply_blocks = (
 		savefile => 'gateway_or_not.pcap',
 		expr => 'arp gateway eth-ipv4-ipv6.host123.libpcap.test',
 		results => [
-			262144, # BUG: not ARP
-			262144, # BUG: not ARP
 			0,
 			0,
-			262144, # BUG: not ARP
 			0,
 			0,
-			262144, # BUG: not ARP
 			0,
-			262144, # BUG: not ARP
 			0,
-			262144, # BUG: not ARP
-			262144, # BUG: not ARP
-			262144, # BUG: not ARP
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
 		],
 	},
 	{
@@ -21470,20 +21470,20 @@ my @filter_apply_blocks = (
 		savefile => 'gateway_or_not.pcap',
 		expr => 'rarp gateway eth-ipv4-ipv6.host123.libpcap.test',
 		results => [
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
 			0,
 			0,
-			262144, # BUG: not RARP
 			0,
 			0,
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
-			262144, # BUG: not RARP
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
+			0,
 		],
 	},
 

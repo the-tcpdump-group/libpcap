@@ -705,12 +705,12 @@ static struct block *gen_dnhostop(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_mpls_linktype(compiler_state_t *, bpf_u_int32);
 static struct block *gen_host(compiler_state_t *, const size_t,
     const bpf_u_int32 *, const bpf_u_int32 *, const u_char, const u_char,
-    const char *);
+    const u_char, const char *);
 static struct block *gen_host6(compiler_state_t *, const size_t,
     const struct in6_addr *, const struct in6_addr *, const u_char,
-    const u_char, const char *);
+    const u_char, const u_char, const char *);
 static struct block *gen_host46_byname(compiler_state_t *, const char *,
-    const u_char, const u_char, const u_char);
+    const u_char, const u_char, const u_char, const u_char);
 static struct block *gen_dnhost(compiler_state_t *, const char *, bpf_u_int32,
     const struct qual);
 static struct block *gen_gateway(compiler_state_t *, const char *, const u_char);
@@ -5137,7 +5137,7 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 static struct block *
 gen_host(compiler_state_t *cstate, const size_t n, const bpf_u_int32 *a,
     const bpf_u_int32 *m, const u_char proto, const u_char dir,
-    const char *context)
+    const u_char not, const char *context)
 {
 	/*
 	 * WLAN direction qualifiers are never valid for IPv4 addresses.
@@ -5154,15 +5154,15 @@ gen_host(compiler_state_t *cstate, const size_t n, const bpf_u_int32 *a,
 	switch (proto) {
 
 	case Q_DEFAULT:
-		b0 = gen_host(cstate, n, a, m, Q_IP, dir, context);
+		b0 = gen_host(cstate, n, a, m, Q_IP, dir, not, context);
 		/*
 		 * Only check for non-IPv4 addresses if we're not
 		 * checking MPLS-encapsulated packets.
 		 */
 		if (cstate->label_stack_depth == 0) {
-			b1 = gen_host(cstate, n, a, m, Q_ARP, dir, context);
+			b1 = gen_host(cstate, n, a, m, Q_ARP, dir, not, context);
 			b1 = gen_or(b0, b1);
-			b0 = gen_host(cstate, n, a, m, Q_RARP, dir, context);
+			b0 = gen_host(cstate, n, a, m, Q_RARP, dir, not, context);
 			b0 = gen_or(b1, b0);
 		}
 		return b0;
@@ -5210,13 +5210,14 @@ gen_host(compiler_state_t *cstate, const size_t n, const bpf_u_int32 *a,
 	for (size_t i = 0; i < n; i++)
 		b1 = gen_or(b1,
 		    gen_hostop(cstate, a[i], m[i], dir, src_off, dst_off));
-	return gen_and(b0, b1);
+	return gen_and(b0, not ? gen_not(b1) : b1);
 }
 
 static struct block *
 gen_host6(compiler_state_t *cstate, const size_t n,
     const struct in6_addr *a, const struct in6_addr *m,
-    const u_char proto, const u_char dir, const char *context)
+    const u_char proto, const u_char dir, const u_char not,
+    const char *context)
 {
 	// WLAN direction qualifiers are never valid for IPv6 addresses.
 	assert_nonwlan_dqual(cstate, dir);
@@ -5228,7 +5229,7 @@ gen_host6(compiler_state_t *cstate, const size_t n,
 	struct block *host = gen_false(cstate);
 	for (size_t i = 0; i < n; i++)
 		host = gen_or(host, gen_hostop6(cstate, a + i, m + i, dir));
-	return gen_and(linkproto, host);
+	return gen_and(linkproto, not ? gen_not(host) : host);
 }
 
 static int
@@ -5263,7 +5264,8 @@ in6_addr_cmp(const void *a, const void *b)
 
 static struct block *
 gen_host46_byname(compiler_state_t *cstate, const char *name,
-    const u_char proto4, const u_char proto6, const u_char dir)
+    const u_char proto4, const u_char proto6, const u_char dir,
+    const u_char not)
 {
 	/*
 	 * Both gen_host() and gen_host6() require a context argument to
@@ -5317,7 +5319,7 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 			qsort(addrs, count, sizeof(*addrs), uint32_t_cmp);
 		if (count)
 			ret = gen_host(cstate, count, addrs, masks, proto4,
-			               dir, context);
+			               dir, not, context);
 	}
 
 	/*
@@ -5349,7 +5351,7 @@ gen_host46_byname(compiler_state_t *cstate, const char *name,
 		if (count) {
 			struct block *hosts6 =
 			    gen_host6(cstate, count, addrs, masks, proto6, dir,
-			              context);
+			              not, context);
 			ret = ret ? gen_or(ret, hosts6) : hosts6;
 		}
 	}
@@ -5611,8 +5613,8 @@ gen_gateway(compiler_state_t *cstate, const char *name, const u_char proto)
 	 * of the name-to-address translation to match the documented
 	 * IPv4-only behaviour.
 	 */
-	struct block *b1 = gen_host46_byname(cstate, name, proto, Q_IP, Q_OR);
-	return gen_and(b0, gen_not(b1));
+	struct block *b1 = gen_host46_byname(cstate, name, proto, Q_IP, Q_OR, 1);
+	return gen_and(b0, b1);
 }
 
 static struct block *
@@ -6906,7 +6908,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			addr <<= 8;
 			mask <<= 8;
 		}
-		return gen_host(cstate, 1, &addr, &mask, q.proto, q.dir,
+		return gen_host(cstate, 1, &addr, &mask, q.proto, q.dir, 0,
 		                "net <IPv4 network name>");
 
 	case Q_DEFAULT:
@@ -6915,7 +6917,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			return gen_mac48host_byname(cstate, name, q.dir, "link host NAME");
 		} else {
 			return gen_host46_byname(cstate, name, q.proto,
-			    q.proto, q.dir);
+			    q.proto, q.dir, 0);
 		}
 
 	case Q_PORT:
@@ -7097,7 +7099,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	switch (q.addr) {
 
 	case Q_NET:
-		return gen_host(cstate, 1, &n, &m, q.proto, q.dir,
+		return gen_host(cstate, 1, &n, &m, q.proto, q.dir, 0,
 		                "net <IPv4 prefix>");
 
 	default:
@@ -7172,7 +7174,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 				v <<= 32 - vlen;
 				mask <<= 32 - vlen ;
 			}
-			return gen_host(cstate, 1, &v, &mask, q.proto, q.dir,
+			return gen_host(cstate, 1, &v, &mask, q.proto, q.dir, 0,
 			                q.addr == Q_NET ? "net <IPv4 address>" :
 			                "host <IPv4 address>");
 		}
@@ -7277,7 +7279,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		/* FALLTHROUGH */
 
 	case Q_NET:
-		return gen_host6(cstate, 1, &addr, &mask, q.proto, q.dir,
+		return gen_host6(cstate, 1, &addr, &mask, q.proto, q.dir, 0,
 		                 q.addr == Q_HOST ? "host <IPv6 address>" :
 		                 "net <IPv6 prefix>");
 
