@@ -93,7 +93,7 @@ A 2-byte file format minor version number; the current version number is
 .IP
 A 4-byte not used - SHOULD be filled with 0 by pcap file writers, and MUST
 be ignored by pcap file readers.  This value was documented by some older
-implementations as "gmt to local correction" or "time zone offset".
+implementations as "GMT to local correction" or "time zone offset".
 Some older pcap file writers stored non-zero values in this field.
 .IP
 A 4-byte not used - SHOULD be filled with 0 by pcap file writers, and MUST
