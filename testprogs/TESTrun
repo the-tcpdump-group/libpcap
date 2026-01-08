@@ -23831,7 +23831,7 @@ foreach (pquals_without '') {
 		expr => "${_} host 1.2.3.4",
 		errstr => $_ eq 'decnet' ? errstr_invhost_dn ('1.2.3.4') :
 			$_ eq 'link' ? errstr_invlinkaddr ('1.2.3.4') :
-			errstr_invqual ($_, 'ip host'),
+			errstr_invqual ($_, 'host <IPv4 address>'),
 	} unless pqual_has ($_, 'host_ipv4');
 
 	# HID -> gen_ncode() -> gen_dnhost() -> q.addr != Q_DEFAULT && q.addr != Q_HOST
@@ -23843,7 +23843,7 @@ foreach (pquals_without '') {
 		expr => "${_} net 1.2.3.4",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
 			$_ eq 'link' ? errstr_invlinkaddr ('1.2.3.4') :
-			errstr_invqual ($_, 'ip net'),
+			errstr_invqual ($_, 'net <IPv4 address>'),
 	} unless pqual_has ($_, 'net_ipv4');
 
 	# HID6 -> gen_mcode6() -> gen_host6() -> default
@@ -23851,13 +23851,13 @@ foreach (pquals_without '') {
 		name => "inv_qual_${_}_host_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::",
-		errstr => errstr_invqual ($_, 'ip6 host'),
+		errstr => errstr_invqual ($_, 'host <IPv6 address>'),
 	} unless pqual_has ($_, 'host_ipv6');
 	push @filter_reject_tests, {
 		name => "inv_qual_${_}_net_ipv6addr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::",
-		errstr => errstr_invqual ($_, 'ip6 net'),
+		errstr => errstr_invqual ($_, 'net <IPv6 prefix>'),
 	} unless pqual_has ($_, 'net_ipv6');
 
 	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
@@ -23877,7 +23877,7 @@ foreach (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0 mask 255.255.255.0",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
-			errstr_invqual ($_, 'ip net'),
+			errstr_invqual ($_, 'net <IPv4 prefix>'),
 	} unless pqual_has ($_, 'net_ipv4');
 	# ("mask" is IPv4-only)
 
@@ -23898,7 +23898,7 @@ foreach (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "${_} net 1.2.3.0/24",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
-			errstr_invqual ($_, 'ip net'),
+			errstr_invqual ($_, 'net <IPv4 prefix>'),
 	} unless pqual_has ($_, 'net_ipv4');
 
 	# HID6 '/' NUM -> gen_mcode6() -> case Q_HOST -> masklen != 128
@@ -23914,13 +23914,13 @@ foreach (pquals_without '') {
 		name => "inv_qual_${_}_net_ipv6cidr",
 		DLT => 'EN10MB',
 		expr => "${_} net fe80::/16",
-		errstr => errstr_invqual ($_, 'ip6 net'),
+		errstr => errstr_invqual ($_, 'net <IPv6 prefix>'),
 	} unless pqual_has ($_, 'net_ipv6');
 	push @filter_reject_tests, {
 		name => "inv_qual_${_}_host_ipv6addr128",
 		DLT => 'EN10MB',
 		expr => "${_} host fe80::/128",
-		errstr => errstr_invqual ($_, 'ip6 host'),
+		errstr => errstr_invqual ($_, 'host <IPv6 address>'),
 	} unless pqual_has ($_, 'host_ipv6');
 
 	# gen_scode() -> q.proto == Q_DECNET
@@ -23935,7 +23935,7 @@ foreach (pquals_without '') {
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
 			$_ eq 'link' ? errstr_nomac48host ('noeth-ipv4-noipv6.host123.libpcap.test') :
 			pqual_has ($_, 'host_ipv6') ? errstr_nohost_af ('noeth-ipv4-noipv6.host123.libpcap.test') :
-			errstr_invqual ($_, 'ip host'),
+			errstr_invqual ($_, 'host <Internet hostname>'),
 	} unless pqual_has ($_, 'host_ipv4');
 
 	# gen_scode() -> q.proto == Q_DECNET
@@ -23946,7 +23946,7 @@ foreach (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "${_} net net-10-20-30-0.libpcap.test",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'net') :
-			errstr_invqual ($_, 'ip net'),
+			errstr_invqual ($_, 'net <IPv4 network name>'),
 	} unless pqual_has ($_, 'net_ipv4');
 
 	# gen_scode() -> q.proto == Q_DECNET
@@ -23961,7 +23961,7 @@ foreach (pquals_without '') {
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
 			$_ eq 'link' ? errstr_nomac48host ('noeth-noipv4-ipv6.host123.libpcap.test') :
 			pqual_has ($_, 'host_ipv4') ? errstr_nohost_af ('noeth-noipv4-ipv6.host123.libpcap.test') :
-			errstr_invqual ($_, 'ip6 host'),
+			errstr_invqual ($_, 'host <Internet hostname>'),
 	} unless pqual_has ($_, 'host_ipv6');
 	# (IPv6 networks cannot have names)
 
