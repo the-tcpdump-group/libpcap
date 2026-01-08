@@ -1111,11 +1111,26 @@ assert_maxval(compiler_state_t *cstate, const char *name,
 		    name, val, maxval);
 }
 
-#define ERRSTR_802_11_ONLY_KW "'%s' is valid for 802.11 syntax only"
+static void
+assert_nonwlan_dqual(compiler_state_t *cstate, const u_char dir)
+{
+	switch (dir) {
+	case Q_SRC:
+	case Q_DST:
+	case Q_AND:
+	case Q_DEFAULT:
+	case Q_OR:
+		break;
+	default:
+		bpf_error(cstate, "'%s' is valid for 802.11 syntax only", dqkw(dir));
+	}
+}
+
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
 #define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
 #define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
+#define ERRSTR_FUNC_VAR_STR "internal error in %s(): %s == '%s'"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
 static int
@@ -4516,7 +4531,8 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		return gen_or(b0, b1);
 
 	default:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
+		// Bug: a WLAN dqual should have been rejected earlier.
+		bpf_error(cstate, ERRSTR_FUNC_VAR_STR, __func__, "dir", dqkw(dir));
 		/*NOTREACHED*/
 	}
 	return gen_mcmp(cstate, OR_LINKPL, offset, BPF_W, addr, mask);
@@ -4561,7 +4577,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		return gen_or(b0, b1);
 
 	default:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
+		// Bug: a WLAN dqual should have been rejected earlier.
+		bpf_error(cstate, ERRSTR_FUNC_VAR_STR, __func__, "dir", dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/* this order is important */
@@ -4999,7 +5016,8 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		return gen_or(b0, b1);
 
 	default:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
+		// Bug: a WLAN dqual should have been rejected earlier.
+		bpf_error(cstate, ERRSTR_FUNC_VAR_STR, __func__, "dir", dqkw(dir));
 		/*NOTREACHED*/
 	}
 	/*
@@ -5105,6 +5123,14 @@ static struct block *
 gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
     int proto, int dir, int type)
 {
+	/*
+	 * WLAN direction qualifiers are never valid for IPv4 addresses.
+	 *
+	 * It is important to validate this now because the call to
+	 * gen_hostop() may be optimized out below.
+	 */
+	assert_nonwlan_dqual(cstate, dir);
+
 	struct block *b0, *b1;
 
 	switch (proto) {
@@ -5166,6 +5192,9 @@ static struct block *
 gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
     struct in6_addr *mask, int proto, int dir, int type)
 {
+	// WLAN direction qualifiers are never valid for IPv6 addresses.
+	assert_nonwlan_dqual(cstate, dir);
+
 	struct block *b0, *b1;
 
 	switch (proto) {
@@ -5252,6 +5281,9 @@ static struct block *
 gen_dnhost(compiler_state_t *cstate, const char *s, bpf_u_int32 v,
     const struct qual q)
 {
+	// WLAN direction qualifiers are never valid for DECnet addresses.
+	assert_nonwlan_dqual(cstate, q.dir);
+
 	/*
 	 * libpcap defines exactly one primitive that has "decnet" as
 	 * the protocol qualifier: "decnet host AREANUMBER.NODENUMBER".
@@ -5317,6 +5349,10 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	struct block *b1 = NULL;
 	u_int src_off, dst_off;
 
+	/*
+	 * Do not validate dir yet and let gen_wlanhostop() handle the DLTs
+	 * that support WLAN direction qualifiers.
+	 */
 	switch (cstate->linktype) {
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
@@ -5359,6 +5395,8 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 	default:
 		fail_kw_on_dlt(cstate, keyword);
 	}
+	// Now validate.
+	assert_nonwlan_dqual(cstate, dir);
 
 	struct block *b0, *tmp;
 
@@ -5381,7 +5419,8 @@ gen_mac48host(compiler_state_t *cstate, const u_char *eaddr, const u_char dir,
 		b0 = gen_or(tmp, b0);
 		break;
 	default:
-		bpf_error(cstate, ERRSTR_802_11_ONLY_KW, dqkw(dir));
+		// Bug: a WLAN dqual should have been rejected earlier.
+		bpf_error(cstate, ERRSTR_FUNC_VAR_STR, __func__, "dir", dqkw(dir));
 	}
 
 	return b1 ? gen_and(b1, b0) : b0;
@@ -5454,7 +5493,8 @@ gen_mac8host(compiler_state_t *cstate, const uint8_t mac8, const u_char dir,
 		dst = gen_cmp(cstate, OR_LINKHDR, dst_off, BPF_B, mac8);
 		return gen_or(src, dst);
 	default:
-		bpf_error(cstate, ERRSTR_INVALID_QUAL, dqkw(dir), context);
+		// Bug: a WLAN dqual should have been rejected earlier.
+		bpf_error(cstate, ERRSTR_FUNC_VAR_STR, __func__, "dir", dqkw(dir));
 	}
 }
 
@@ -7195,6 +7235,9 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 	 */
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
+
+	// WLAN direction qualifiers are never valid for MAC-8 addresses.
+	assert_nonwlan_dqual(cstate, q.dir);
 
 	if (q.addr != Q_HOST && q.addr != Q_DEFAULT)
 		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), "$XX");

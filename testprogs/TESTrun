@@ -20358,7 +20358,7 @@ sub errstr_nomac48host {
 	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
 }
 
-# ERRSTR_802_11_ONLY_KW
+# assert_nonwlan_dqual()
 sub errstr_invkw_notwlan {
 	return sprintf ('\'%s\' is valid for 802.11 syntax only', shift);
 }
@@ -22694,17 +22694,35 @@ foreach (DLTs_without 'wlan') {
 	};
 }
 
-foreach my $DLT (DLTs_without 'wlan') {
-	next if ! DLT_feature $DLT, 'link_proto';
+foreach my $DLT (DLTs_with 'link_proto') {
 	foreach my $dqual (dquals_with 'wlan') {
-		# HID -> gen_ncode() -> gen_host() -> gen_hostop() -> default case
+		# HID -> gen_ncode() -> gen_host() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "${dqual}_ipv4addr_${DLT}",
 			DLT => $DLT,
 			expr => "$dqual 1.2.3.4",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
-		# gen_scode() -> case Q_NET -> gen_host() -> gen_hostop() -> default case
+		push @filter_reject_tests, {
+			name => "${_}_${dqual}_ipv4addr_${DLT}",
+			DLT => $DLT,
+			expr => "$_ $dqual 1.2.3.4",
+			errstr => errstr_invkw_notwlan ($dqual),
+		} foreach qw(ip arp rarp);
+		# HID / NUM -> gen_mcode() -> gen_host() -> assert_nonwlan_dqual()
+		push @filter_reject_tests, {
+			name => "${dqual}_net_ipv4cidr_${DLT}",
+			DLT => $DLT,
+			expr => "$dqual net 10.20.30.240/28",
+			errstr => errstr_invkw_notwlan ($dqual),
+		};
+		push @filter_reject_tests, {
+			name => "${_}_${dqual}_net_ipv4cidr_${DLT}",
+			DLT => $DLT,
+			expr => "$_ $dqual net 10.20.30.240/28",
+			errstr => errstr_invkw_notwlan ($dqual),
+		} foreach qw(ip arp rarp);
+		# gen_scode() -> case Q_NET -> gen_host() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "${dqual}_net_name_${DLT}",
 			skip => skip_no_networks(),
@@ -22712,7 +22730,14 @@ foreach my $DLT (DLTs_without 'wlan') {
 			expr => "$dqual net net-10-20-30-0.libpcap.test",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
-		# gen_scode() -> case Q_HOST -> q.proto != Q_LINK -> gen_host46_byname() -> gen_host() -> gen_hostop() -> default case
+		push @filter_reject_tests, {
+			name => "${_}_${dqual}_net_name_${DLT}",
+			skip => skip_no_networks(),
+			DLT => $DLT,
+			expr => "$_ $dqual net net-10-20-30-0.libpcap.test",
+			errstr => errstr_invkw_notwlan ($dqual),
+		} foreach qw(ip arp rarp);
+		# gen_scode() -> gen_host46_byname() -> gen_host() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "${dqual}_noeth_ipv4_noipv6_${DLT}",
 			skip => skip_no_hosts(),
@@ -22720,15 +22745,28 @@ foreach my $DLT (DLTs_without 'wlan') {
 			expr => "$dqual noeth-ipv4-noipv6.host123.libpcap.test",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
+		push @filter_reject_tests, {
+			name => "${_}_${dqual}_noeth_ipv4_noipv6_${DLT}",
+			skip => skip_no_hosts(),
+			DLT => $DLT,
+			expr => "$_ $dqual noeth-ipv4-noipv6.host123.libpcap.test",
+			errstr => errstr_invkw_notwlan ($dqual),
+		} foreach qw(ip arp rarp);
 
-		# HID6 -> gen_mcode6() -> gen_host6() -> gen_hostop6() -> default case
+		# HID6 -> gen_mcode6() -> gen_host6() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "${dqual}_host_ipv6addr_${DLT}",
 			DLT => $DLT,
 			expr => "$dqual host 1234::",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
-		# gen_scode() -> case Q_HOST -> q.proto != Q_LINK -> gen_host46_byname() -> gen_host6() -> gen_hostop6() -> default case
+		push @filter_reject_tests, {
+			name => "ip6_${dqual}_host_ipv6addr_${DLT}",
+			DLT => $DLT,
+			expr => "ip6 $dqual host 1234::",
+			errstr => errstr_invkw_notwlan ($dqual),
+		};
+		# gen_scode() -> gen_host46_byname() -> gen_host6() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "${dqual}_noeth_noipv4_ipv6_${DLT}",
 			skip => skip_no_hosts(),
@@ -22736,8 +22774,15 @@ foreach my $DLT (DLTs_without 'wlan') {
 			expr => "$dqual noeth-noipv4-ipv6.host123.libpcap.test",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
+		push @filter_reject_tests, {
+			name => "ip6_${dqual}_noeth_noipv4_ipv6_${DLT}",
+			skip => skip_no_hosts(),
+			DLT => $DLT,
+			expr => "ip6 $dqual noeth-noipv4-ipv6.host123.libpcap.test",
+			errstr => errstr_invkw_notwlan ($dqual),
+		};
 
-		# HID -> gen_ncode() -> gen_dnhost() -> gen_dnhostop() -> default case
+		# HID -> gen_ncode() -> gen_dnhost() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "decnet_${dqual}_dnaddr_${DLT}",
 			DLT => $DLT,
@@ -22785,14 +22830,14 @@ foreach my $DLT (DLTs_without 'wlan') {
 foreach my $DLT (DLTs_without 'wlan') {
 	next if ! DLT_feature $DLT, 'link_host_mac48';
 	foreach my $dqual (dquals_with 'wlan') {
-		# EID -> gen_ecode() -> gen_mac48host() -> second default case
+		# EID -> gen_ecode() -> gen_mac48host() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "link_${dqual}_mac48_${DLT}",
 			DLT => $DLT,
 			expr => "link $dqual a:b:c:d:e:f",
 			errstr => errstr_invkw_notwlan ($dqual),
 		};
-		# gen_scode() -> case Q_HOST -> q.proto == Q_LINK -> gen_mac48host_byname() -> gen_mac48host() -> second default case
+		# gen_scode() -> gen_mac48host_byname() -> gen_mac48host() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "link_${dqual}_eth_noipv4_noipv6_${DLT}",
 			skip => skip_no_ethers(),
@@ -22827,12 +22872,12 @@ foreach my $DLT (DLTs_with 'link_host_mac8') {
 
 foreach my $DLT (DLTs_with 'link_host_mac8') {
 	foreach my $dqual (dquals_with 'wlan') {
-		# gen_acode() -> gen_mac8host() -> second default case
+		# gen_acode() -> assert_nonwlan_dqual()
 		push @filter_reject_tests, {
 			name => "link_${dqual}_mac8_${DLT}",
 			DLT => $DLT,
 			expr => "link $dqual \$25",
-			errstr => errstr_invqual ($dqual, 'link host $XX'),
+			errstr => errstr_invkw_notwlan ($dqual),
 		};
 	}
 }
