@@ -104,8 +104,9 @@ pcap_set_print_dot_graph(int value)
  * If handed a non-zero value, returns the index of the lowest set bit,
  * counting upwards from zero.
  *
- * If handed zero, it returns 0 (historically this was unspecified/UB on
- * some compilers; callers must not rely on any particular result for 0).
+ * If handed zero, the results are platform- and compiler-dependent.
+ * Keep it out of the light, don't give it any water, don't feed it
+ * after midnight, and don't pass zero to it.
  *
  * This is the same as the count of trailing zeroes in the word.
  */
@@ -136,10 +137,10 @@ static __forceinline u_int
 lowest_set_bit(int mask)
 {
 	unsigned long index;
-
-	if (mask == 0)
-		return 0;
-
+	/*
+	 * Don't sign-extend mask if long is longer than int.
+	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
+	 */
 	(void)_BitScanForward(&index, (unsigned long)mask);
 	return (u_int)index;
 }
@@ -2120,7 +2121,7 @@ find_inedges(opt_state_t *opt_state, struct block *root)
 	int level;
 	struct block *b;
 
-	for ( i = 0; i < opt_state->n_blocks; ++i)
+	for (i = 0; i < opt_state->n_blocks; ++i)
 		opt_state->blocks[i]->in_edges = 0;
 
 	/*
