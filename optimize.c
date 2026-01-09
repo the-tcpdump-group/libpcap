@@ -120,7 +120,7 @@ pcap_set_print_dot_graph(int value)
   {
   	if (mask == 0)
   		return 0;
-  	return (u_int)__builtin_ctz((unsigned int)mask);
+  	return (u_int)__builtin_ctz(mask);
   }
 #elif defined(_MSC_VER)
   /*
