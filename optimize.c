@@ -104,17 +104,23 @@ pcap_set_print_dot_graph(int value)
  * If handed a non-zero value, returns the index of the lowest set bit,
  * counting upwards from zero.
  *
- * If handed zero, the results are platform- and compiler-dependent.
- * Keep it out of the light, don't give it any water, don't feed it
- * after midnight, and don't pass zero to it.
+ * If handed zero, it returns 0 (historically this was unspecified/UB on
+ * some compilers; callers must not rely on any particular result for 0).
  *
  * This is the same as the count of trailing zeroes in the word.
  */
 #if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4)
   /*
    * GCC 3.4 and later; we have __builtin_ctz().
+   * Note: __builtin_ctz(0) is undefined behavior, so guard it.
    */
-  #define lowest_set_bit(mask) ((u_int)__builtin_ctz(mask))
+  static inline u_int
+  lowest_set_bit(u_int mask)
+  {
+  	if (mask == 0)
+  		return 0;
+  	return (u_int)__builtin_ctz((unsigned int)mask);
+  }
 #elif defined(_MSC_VER)
   /*
    * Visual Studio; we support only 2015 and later, so use
@@ -129,15 +135,13 @@ pcap_set_print_dot_graph(int value)
 static __forceinline u_int
 lowest_set_bit(int mask)
 {
-	unsigned long bit;
+	unsigned long index;
 
-	/*
-	 * Don't sign-extend mask if long is longer than int.
-	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
-	 */
-	if (_BitScanForward(&bit, (unsigned int)mask) == 0)
-		abort();	/* mask is zero */
-	return (u_int)bit;
+	if (mask == 0)
+		return 0;
+
+	(void)_BitScanForward(&index, (unsigned long)mask);
+	return (u_int)index;
 }
 #else
   /*
@@ -2116,7 +2120,7 @@ find_inedges(opt_state_t *opt_state, struct block *root)
 	int level;
 	struct block *b;
 
-	for (i = 0; i < opt_state->n_blocks; ++i)
+	for ( i = 0; i < opt_state->n_blocks; ++i)
 		opt_state->blocks[i]->in_edges = 0;
 
 	/*
