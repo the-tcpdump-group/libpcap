@@ -134,7 +134,7 @@ pcap_set_print_dot_graph(int value)
 #endif
 
 static __forceinline u_int
-lowest_set_bit(int mask)
+lowest_set_bit(u_int mask)
 {
 	unsigned long index;
 	/*
