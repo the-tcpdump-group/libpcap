@@ -5606,6 +5606,10 @@ gen_gateway(compiler_state_t *cstate, const char *name, const u_char proto)
 	default:
 		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "gateway");
 	}
+	if (cstate->label_stack_depth)
+		bpf_error(cstate, "'gateway' cannot be used within MPLS");
+	if (cstate->is_encap)
+		bpf_error(cstate, "'gateway' cannot be used within VXLAN or Geneve");
 
 	struct block *b0 = gen_mac48host_byname(cstate, name, Q_OR, "gateway");
 	/*

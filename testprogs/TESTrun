@@ -22276,6 +22276,24 @@ my @filter_reject_tests = (
 		errstr => errstr_syntax,
 	},
 	{
+		name => 'mpls_and_gateway',
+		DLT => 'EN10MB',
+		expr => "mpls and gateway $nonexistent",
+		errstr => '\'gateway\' cannot be used within MPLS',
+	},
+	{
+		name => 'vxlan_and_gateway',
+		DLT => 'EN10MB',
+		expr => "vxlan and gateway $nonexistent",
+		errstr => '\'gateway\' cannot be used within VXLAN or Geneve',
+	},
+	{
+		name => 'geneve_and_gateway',
+		DLT => 'EN10MB',
+		expr => "geneve and gateway $nonexistent",
+		errstr => '\'gateway\' cannot be used within VXLAN or Geneve',
+	},
+	{
 		name => 'src_proto_NUM',
 		DLT => 'EN10MB',
 		expr => 'src proto 1',

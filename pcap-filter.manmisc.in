@@ -284,7 +284,8 @@ but neither the source nor the destination ARP/IPv4/RARP address is
 .IR host .
 This primitive is valid only for the same link-layer types as the
 .B "ether host"
-primitive above.  May be qualified with a specific protocol
+primitive above, also it cannot be applied to packets encapsulated in MPLS,
+VXLAN or Geneve.  May be qualified with a specific protocol
 .RB ( arp ,
 .BR ip ,
 .BR rarp ).

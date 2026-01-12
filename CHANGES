@@ -52,6 +52,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Test link protocol once per AF, not per address.
       Sort resolved IPv4 and IPv6 addresses.
       In "gateway" negate the host(s), but not the protocol.
+      Reject "gateway" within MPLS, VXLAN or Geneve.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
