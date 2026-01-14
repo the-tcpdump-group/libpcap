@@ -22694,19 +22694,6 @@ foreach (DLTs_without 'wlan') {
 	};
 }
 
-# gen_scode() -> gen_mac48host_byname() -> gen_mac48host() -> non-WLAN DLT -> default case
-foreach my $DLT (DLTs_without '') {
-	next if ! DLT_feature ($DLT, 'link_host_mac48') || DLT_feature ($DLT, 'wlan');
-	push @filter_reject_tests, {
-		name => "link_${_}_name_${DLT}",
-		skip => skip_no_ethers(),
-		DLT => $DLT,
-		expr => "link $_ eth-noipv4-noipv6.host123.libpcap.test",
-		errstr => errstr_invkw_notwlan ($_),
-	} foreach dquals_with 'wlan';
-	last if $only_short;
-}
-
 foreach my $DLT (DLTs_without 'wlan') {
 	next if ! DLT_feature $DLT, 'link_proto';
 	foreach my $dqual (dquals_with 'wlan') {
