@@ -119,8 +119,14 @@ static int bpf_load(char *errbuf);
 /*
  * If both BIOCROTZBUF and BPF_BUFMODE_ZBUF are defined, we have
  * zero-copy BPF.
+ *
+ * However, the current implementation of pcap_next_zbuf_shm() and
+ * pcap_ack_zbuf() is not compatible with QNX.  Both FreeBSD and QNX implement
+ * atomic operations as C11 generic functions in <stdatomic.h>, FreeBSD
+ * implements additional FreeBSDisms in <machine/atomic.h> and QNX implements
+ * additional QNXisms in <atomic.h>.  These two functions use FreeBSDisms.
  */
-#if defined(BIOCROTZBUF) && defined(BPF_BUFMODE_ZBUF)
+#if !defined(__QNX__) && defined(BIOCROTZBUF) && defined(BPF_BUFMODE_ZBUF)
   #define HAVE_ZEROCOPY_BPF
   #include <sys/mman.h>
   #include <machine/atomic.h>
