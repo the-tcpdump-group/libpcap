@@ -74,6 +74,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       man: Document devices, interfaces and "any" better.
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
+      Add a README.qnx.md file.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.

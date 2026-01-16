@@ -7,6 +7,7 @@ Platform-specific notes:
 * [GNU/Hurd](doc/README.hurd.md)
 * [GNU/Linux](doc/README.linux)
 * [macOS](doc/README.macos)
+* [QNX](doc/README.qnx.md)
 * [Solaris and related OSes](doc/README.solaris.md)
 * [Windows](doc/README.windows.md)
 
@@ -141,6 +142,7 @@ You can get around this by installing GCC.
 	doc/README.hurd.md  - notes on using libpcap on GNU/Hurd
 	doc/README.linux    - notes on using libpcap on Linux
 	doc/README.macos    - notes on using libpcap on macOS
+	doc/README.qnx.md   - notes on using libpcap on QNX
 	doc/README.snf.md   - notes on using libpcap to capture on Myricom SNF devices
 	doc/README.solaris.md - notes on using libpcap on Solaris
 	doc/README.windows.md - notes on using libpcap on Windows systems (with Npcap)
