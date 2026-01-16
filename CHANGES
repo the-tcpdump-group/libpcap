@@ -16,6 +16,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CMake: Disable remote capture support on Windows by default.
       RDMA: Avoid valgrind errors when calling rdmasniff_findalldevs().
       Autoconf: Add QNX support to AC_LBL_LIBRARY_NET().
+      capturetest: Treat SA_RESTART as optional.
     QNX:
       Disable zero-copy BPF to work around portability issues.
 

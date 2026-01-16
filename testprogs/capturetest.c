@@ -86,7 +86,14 @@ sigint_handler(int signum _U_)
  * We do have UN*X-style signals (we assume that "not Windows" means "UN*X").
  */
 #define B_OPTION	"b"
+
+#ifdef SA_RESTART
 #define R_OPTION	"r"
+#else
+// QNX 8.0 neither defines not supports SA_RESTART.
+#define R_OPTION	""
+#endif // SA_RESTART
+
 #define S_OPTION	"s"
 #endif
 
@@ -104,7 +111,9 @@ main(int argc, char **argv)
 	int immediate = 0;
 	int nonblock = 0;
 #ifndef _WIN32
+#ifdef SA_RESTART
 	int sigrestart = 0;
+#endif // SA_RESTART
 	int catchsigint = 0;
 #endif
 	pcap_if_t *devlist;
@@ -143,9 +152,11 @@ main(int argc, char **argv)
 			break;
 
 #ifndef _WIN32
+#ifdef SA_RESTART
 		case 'r':
 			sigrestart = 1;
 			break;
+#endif // SA_RESTART
 
 		case 's':
 			catchsigint = 1;
@@ -200,7 +211,11 @@ main(int argc, char **argv)
 		/*
 		 * Should SIGINT interrupt, or restart, system calls?
 		 */
+#ifdef SA_RESTART
 		action.sa_flags = sigrestart ? SA_RESTART : 0;
+#else
+		action.sa_flags = 0;
+#endif // SA_RESTART
 
 		if (sigaction(SIGINT, &action, NULL) == -1)
 			error("Can't catch SIGINT: %s\n",
