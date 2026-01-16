@@ -35,13 +35,19 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+
 #ifdef _WIN32
   #include "getopt.h"
-  #include "unix.h"
 #else
   #include <unistd.h>
+#endif
+
+#if defined(_WIN32) || defined(__QNX__)
+  #include "unix.h"
+#else
   #include <sysexits.h>
 #endif
+
 #include <fcntl.h>
 #include <errno.h>
 #ifdef _WIN32

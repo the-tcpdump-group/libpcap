@@ -55,7 +55,7 @@
   #define close		_close
 #endif
 
-// No <sysexits.h> on Windows.
+// No <sysexits.h> on Windows and QNX.
 #define EX_OK		0
 #define EX_USAGE	64
 #define EX_DATAERR	65

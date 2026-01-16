@@ -8,9 +8,13 @@
 
 #ifdef _WIN32
   #include "getopt.h"
-  #include "unix.h"
 #else
   #include <unistd.h>
+#endif
+
+#if defined(_WIN32) || defined(__QNX__)
+  #include "unix.h"
+#else
   #include <sysexits.h>
 #endif
 

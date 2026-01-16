@@ -146,6 +146,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         value of the capture filter.
     QNX:
       Disable zero-copy BPF to work around portability issues.
+      Use "unix.h" instead of the missing <sysexits.h>.
 
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
