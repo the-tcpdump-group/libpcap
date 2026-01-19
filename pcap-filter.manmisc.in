@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "11 January 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "19 January 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -325,8 +325,8 @@ in the latter case the
 .B net
 keyword remains mandatory.
 .I netnameaddr
-may be either a name from the networks database
-(/etc/networks, etc.) or a network number.
+may be either an IPv4 network number or an IPv6 network number or an IPv4
+network name.
 .IP
 An IPv4 network number can be written as a dotted quad (e.g., 192.168.1.0),
 dotted triple (e.g., 192.168.1), dotted pair (e.g, 172.16), or single
@@ -340,6 +340,23 @@ primitive above; the implicit netmask is
 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff (/128), so in this primitive IPv6
 "network" matches are really always host matches.  For an actual IPv6 network
 match see the `\fBnet \fInetaddr\fR/\fIlen\fR' primitive below.
+.IP
+An IPv4 network name is a name from the networks database (traditionally
+.BR networks (5),
+in OpenBSD
+.BR hosts (5),
+also possibly NIS, LDAP, etc.).  Some operating systems do not implement a
+networks database, in those that do the implemented behaviour varies.  For
+example, POSIX does not specify a format of
+.BR networks (5),
+so the line
+.B \%somenet 192.168
+therein can translate to either 192.168.0.0/32 or 192.168.0.0/16 depending on
+the implementation.  In this sense, the only reliable address notation to be
+used with an IPv4 network name would be a dotted quad (/32), in which case it
+would be simpler just to use a host match with a hostname, as well as DNS.
+For these reasons IPv4 network names should not be used in portable
+applications and this form of ID may be removed from this primitive in future.
 .IP "\fBnet \fInetaddr\fR \fBmask \fInetmask\fR"
 True if the source or the destination ARP/IPv4/RARP address of the packet
 belongs to \fInetaddr\fR with the specified \fInetmask\fR.  May be qualified
