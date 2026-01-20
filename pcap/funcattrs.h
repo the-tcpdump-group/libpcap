@@ -202,7 +202,7 @@
  * However, macOS Sonoma provides stub versions of those routine,
  * which return an error.  This means that we need a separate
  * availability indicator macro for those routines, so that
- * progras built on macOS Sonoma that attempt to use weak
+ * programs built on macOS Sonoma that attempt to use weak
  * importing and availability tests to use those routines
  * if they're available will get those routines weakly imported,
  * so that if they're run on releases prior to Sonoma, they
