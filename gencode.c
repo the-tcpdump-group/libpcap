@@ -284,6 +284,13 @@ struct addrinfo {
 #define RARP_SRCADDR_OFFSET 14
 #define RARP_DSTADDR_OFFSET 24
 
+/*
+ * Offsets of supported (TCP, UDP and SCTP) ports from the beginning of their
+ * header, which is the network-layer payload (OR_TRAN_IPV4 and OR_TRAN_IPV6).
+ */
+#define TRAN_SRCPORT_OFFSET 0
+#define TRAN_DSTPORT_OFFSET 2
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -5866,23 +5873,23 @@ gen_port(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 
 	switch (dir) {
 	case Q_SRC:
-		b1 = gen_portatom(cstate, 0, port);
+		b1 = gen_portatom(cstate, TRAN_SRCPORT_OFFSET, port);
 		break;
 
 	case Q_DST:
-		b1 = gen_portatom(cstate, 2, port);
+		b1 = gen_portatom(cstate, TRAN_DSTPORT_OFFSET, port);
 		break;
 
 	case Q_AND:
-		tmp = gen_portatom(cstate, 0, port);
-		b1 = gen_portatom(cstate, 2, port);
+		tmp = gen_portatom(cstate, TRAN_SRCPORT_OFFSET, port);
+		b1 = gen_portatom(cstate, TRAN_DSTPORT_OFFSET, port);
 		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		tmp = gen_portatom(cstate, 0, port);
-		b1 = gen_portatom(cstate, 2, port);
+		tmp = gen_portatom(cstate, TRAN_SRCPORT_OFFSET, port);
+		b1 = gen_portatom(cstate, TRAN_DSTPORT_OFFSET, port);
 		b1 = gen_or(tmp, b1);
 		break;
 
@@ -5958,23 +5965,23 @@ gen_port6(compiler_state_t *cstate, uint16_t port, int proto, int dir)
 
 	switch (dir) {
 	case Q_SRC:
-		b1 = gen_portatom6(cstate, 0, port);
+		b1 = gen_portatom6(cstate, TRAN_SRCPORT_OFFSET, port);
 		break;
 
 	case Q_DST:
-		b1 = gen_portatom6(cstate, 2, port);
+		b1 = gen_portatom6(cstate, TRAN_DSTPORT_OFFSET, port);
 		break;
 
 	case Q_AND:
-		tmp = gen_portatom6(cstate, 0, port);
-		b1 = gen_portatom6(cstate, 2, port);
+		tmp = gen_portatom6(cstate, TRAN_SRCPORT_OFFSET, port);
+		b1 = gen_portatom6(cstate, TRAN_DSTPORT_OFFSET, port);
 		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		tmp = gen_portatom6(cstate, 0, port);
-		b1 = gen_portatom6(cstate, 2, port);
+		tmp = gen_portatom6(cstate, TRAN_SRCPORT_OFFSET, port);
+		b1 = gen_portatom6(cstate, TRAN_DSTPORT_OFFSET, port);
 		b1 = gen_or(tmp, b1);
 		break;
 
