@@ -7650,7 +7650,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		/*
 		 * Check if we have an icmp6 next header
 		 */
-		b = gen_ip6_proto(cstate, 58);
+		b = gen_ip6_proto(cstate, IPPROTO_ICMPV6);
 		inst->b = inst->b ? gen_and(inst->b, b) : b;
 
 		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
