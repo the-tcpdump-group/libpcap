@@ -291,6 +291,9 @@ struct addrinfo {
 #define TRAN_SRCPORT_OFFSET 0
 #define TRAN_DSTPORT_OFFSET 2
 
+// IPv6 mandatory outer header (Version, ..., Destination Address) length.
+#define IP6_HDRLEN 40
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -2460,7 +2463,8 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		break;
 
 	case OR_TRAN_IPV6:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl + 40 + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
+		    cstate->off_nl + IP6_HDRLEN + offset, size);
 		break;
 	}
 	return s;
@@ -6273,7 +6277,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
-		s[i]->s.k = 40;
+		s[i]->s.k = IP6_HDRLEN;
 		i++;
 		break;
 
@@ -6539,7 +6543,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		 * header.
 		 */
 		b2 = gen_ip6_proto(cstate, IPPROTO_FRAGMENT);
-		b1 = gen_cmp(cstate, OR_LINKPL, 40, BPF_B, v);
+		b1 = gen_cmp(cstate, OR_LINKPL, IP6_HDRLEN, BPF_B, v);
 		b1 = gen_and(b2, b1);
 		// 0 <= v <= UINT8_MAX
 		b2 = gen_ip6_proto(cstate, (uint8_t)v);
@@ -7678,7 +7682,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * start of the link-layer payload.
 		 */
 		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 40;
+		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl +
+		    IP6_HDRLEN;
 
 		sappend(s, tmp);
 		sappend(inst->s, s);
@@ -9143,7 +9148,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
 		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
-		s1->s.k = 40;
+		s1->s.k = IP6_HDRLEN;
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
@@ -9151,7 +9156,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 		sappend(s, s1);
 	} else {
 		s = new_stmt(cstate, BPF_LD|BPF_IMM);
-		s->s.k = 40;
+		s->s.k = IP6_HDRLEN;
 	}
 
 	/* Forcibly append these statements to the true condition
@@ -9396,7 +9401,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
 		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
-		s1->s.k = 40;
+		s1->s.k = IP6_HDRLEN;
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
@@ -9404,7 +9409,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 		sappend(s, s1);
 	} else {
 		s = new_stmt(cstate, BPF_LD|BPF_IMM);
-		s->s.k = 40;
+		s->s.k = IP6_HDRLEN;
 	}
 
 	/* Forcibly append these statements to the true condition
