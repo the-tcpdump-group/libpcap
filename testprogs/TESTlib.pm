@@ -299,18 +299,19 @@ sub test_and_report {
 	my $skippedcount = scalar keys %skipped;
 	my $failedcount = scalar keys %failed;
 	print "------------------------------------------------\n";
-	printf "%4u tests skipped\n", $skippedcount;
-	printf "%4u tests failed\n", $failedcount;
+	printf "%*u tests skipped\n", $max_result_digits, $skippedcount;
+	printf "%*u tests failed\n", $max_result_digits, $failedcount;
 	if (! scalar keys %passed) {
 		# There isn't any test duration statistics.
-		printf "%4u tests passed\n", $passedcount;
+		printf "%*u tests passed\n", $max_result_digits, $passedcount;
 	} elsif ($passedcount != scalar keys %passed) {
 		die sprintf ("Internal error: statistics bug (%u != %u)",
 			$passedcount,
 			scalar (keys %passed)
 		);
 	} else {
-		printf "%4u tests passed: T min/avg/max = %.06f/%.06f/%.06fs\n",
+		printf "%*u tests passed: T min/avg/max = %.06f/%.06f/%.06fs\n",
+			$max_result_digits,
 			scalar (keys %passed),
 			min (values %passed),
 			sum (values %passed) / scalar (keys %passed),
