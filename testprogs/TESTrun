@@ -64,7 +64,22 @@ my $filename_filter = 'filter.txt';
 my $filename_diags = 'diags.txt';
 
 # See RFC 6761 Section 6.4.
-my $nonexistent = 'host.invalid';
+#
+# When a test tries to resolve "host.invalid" without the root dot and the
+# host's resolver library suffixes that with a domain from "domain" or "search"
+# in resolv.conf(5), things sometimes go wrong.
+#
+# One known scenario is that none of the resulting FQDNs indeed exist, but due
+# to network delays it takes too long to resolve that, especially if the
+# negative result is not in the cache -- in this case the test times out.
+# Another known scenario is that the resulting FQDN "exists", or rather resolves
+# because a domain has a wildcard A/AAAA record -- in this case the test either
+# fails differently or fails to fail.
+#
+# Although the tests have no control over the host's network configuration, the
+# root dot makes it clear this is the FQDN already and should eliminate as many
+# unwanted external effects as is practicable.
+my $nonexistent = 'host.invalid.';
 
 use constant {
 	EX_OK => 0,
