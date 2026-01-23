@@ -578,20 +578,24 @@ PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "rarp", ETHERTYPE_REVARP },
 	{ "sca", ETHERTYPE_SCA },
 	{ "slow", ETHERTYPE_SLOW },
-	{ (char *)0, 0 }
+	{ NULL, 0 }
 };
 
-int
-pcap_nametoeproto(const char *s)
+static int
+proto_or_undef(const struct eproto *p, const char *s)
 {
-	struct eproto *p = eproto_db;
-
-	while (p->s != 0) {
+	while (p->s) {
 		if (strcmp(p->s, s) == 0)
 			return p->p;
 		p += 1;
 	}
 	return PROTO_UNDEF;
+}
+
+int
+pcap_nametoeproto(const char *s)
+{
+	return proto_or_undef(eproto_db, s);
 }
 
 #include "llc.h"
@@ -602,20 +606,13 @@ static struct eproto llc_db[] = {
 	{ "stp", LLCSAP_8021D },
 	{ "ipx", LLCSAP_IPX },
 	{ "netbeui", LLCSAP_NETBEUI },
-	{ (char *)0, 0 }
+	{ NULL, 0 }
 };
 
 int
 pcap_nametollc(const char *s)
 {
-	struct eproto *p = llc_db;
-
-	while (p->s != 0) {
-		if (strcmp(p->s, s) == 0)
-			return p->p;
-		p += 1;
-	}
-	return PROTO_UNDEF;
+	return proto_or_undef(llc_db, s);
 }
 
 /* Hex digit to 8-bit unsigned integer. */
