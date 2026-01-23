@@ -23721,7 +23721,6 @@ foreach (pquals_without '') {
 
 	# gen_scode() -> q.proto == Q_DECNET
 	# gen_scode() -> gen_mac48host_byname -> pcap_ether_hostton() == NULL
-	# gen_scode() -> gen_host46_byname() -> case AF_INET -> continue -> ret == NULL
 	# gen_scode() -> gen_host46_byname() -> gen_host() -> default
 	push @filter_reject_tests, {
 		skip => skip_no_hosts(),
@@ -23747,7 +23746,6 @@ foreach (pquals_without '') {
 
 	# gen_scode() -> q.proto == Q_DECNET
 	# gen_scode() -> gen_mac48host_byname() -> pcap_ether_hostton() == NULL
-	# gen_scode() -> gen_host46_byname() -> case AF_INET6 -> continue -> ret == NULL
 	# gen_scode() -> gen_host46_byname() -> gen_host6() -> default
 	push @filter_reject_tests, {
 		skip => skip_no_hosts(),
