@@ -5254,9 +5254,9 @@ uint32_t_cmp(const void *a, const void *b)
 	 * the [int] return value on all architectures, so let's instead do it
 	 * in a way that is obviously correct.
 	 */
-	const uint32_t *a32 = (uint32_t *)a, *b32 = (uint32_t *)b;
-	return *a32 < *b32 ? -1 :
-	    *a32 > *b32 ? 1 :
+	const uint32_t a32 = *((uint32_t *)a), b32 = *((uint32_t *)b);
+	return a32 < b32 ? -1 :
+	    a32 > b32 ? 1 :
 	    0;
 }
 
