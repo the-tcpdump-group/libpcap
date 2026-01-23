@@ -22276,18 +22276,14 @@ my @filter_reject_tests = (
 	},
 	{
 		name => 'src_gateway',
-		skip => skip_no_ethers() ||
-			skip_no_hosts(),
 		DLT => 'EN10MB',
-		expr => 'src gateway eth-ipv4-noipv6.host123.libpcap.test',
+		expr => "src gateway $nonexistent",
 		errstr => errstr_syntax,
 	},
 	{
 		name => 'dst_gateway',
-		skip => skip_no_ethers() ||
-			skip_no_hosts(),
 		DLT => 'EN10MB',
-		expr => 'dst gateway eth-ipv4-noipv6.host123.libpcap.test',
+		expr => "dst gateway $nonexistent",
 		errstr => errstr_syntax,
 	},
 	{
