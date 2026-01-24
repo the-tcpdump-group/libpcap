@@ -3860,9 +3860,6 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*
 		 * These types don't provide any type field; packets
 		 * are always IPv4 or IPv6.
-		 *
-		 * XXX - for IPv4, check for a version number of 4, and,
-		 * for IPv6, check for a version number of 6?
 		 */
 		switch (ll_proto) {
 
@@ -8750,8 +8747,8 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
  * extensions.  Even if kernel supports VLAN BPF extensions, (outermost) VLAN
  * tag can be either in metadata or in packet data; therefore if the
  * SKF_AD_VLAN_TAG_PRESENT test is negative, we need to check link
- * header for VLAN tag. As the decision is done at run time, we need
- * update variable part of the offsets
+ * header for VLAN tag.  As the decision is done at run time, we need to
+ * update variable part of the offsets.
  */
 static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,

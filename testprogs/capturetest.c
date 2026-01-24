@@ -90,7 +90,7 @@ sigint_handler(int signum _U_)
 #ifdef SA_RESTART
 #define R_OPTION	"r"
 #else
-// QNX 8.0 neither defines not supports SA_RESTART.
+// QNX 8.0 neither defines nor supports SA_RESTART.
 #define R_OPTION	""
 #endif // SA_RESTART
 
