@@ -126,7 +126,7 @@ static int bpf_load(char *errbuf);
  * implements additional FreeBSDisms in <machine/atomic.h> and QNX implements
  * additional QNXisms in <atomic.h>.  These two functions use FreeBSDisms.
  */
-#if !defined(__QNX__) && defined(BIOCROTZBUF) && defined(BPF_BUFMODE_ZBUF)
+#if defined(HAVE_MACHINE_ATOMIC_H) && defined(BIOCROTZBUF) && defined(BPF_BUFMODE_ZBUF)
   #define HAVE_ZEROCOPY_BPF
   #include <sys/mman.h>
   #include <machine/atomic.h>

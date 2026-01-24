@@ -75,6 +75,9 @@
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
 
+/* Define to 1 if you have the <machine/atomic.h> header file. */
+#cmakedefine HAVE_MACHINE_ATOMIC_H 1
+
 /* Define to 1 if you have the <net/bpf.h> header file. */
 #cmakedefine HAVE_NET_BPF_H 1
 

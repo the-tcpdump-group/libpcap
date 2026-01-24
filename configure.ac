@@ -864,6 +864,8 @@ if test -z "$V_PCAP"; then
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		V_PCAP=bpf
+		# pcap-bpf.c needs this header for zero-copy BPF support.
+		AC_CHECK_HEADERS([machine/atomic.h])
 	fi
 fi
 
