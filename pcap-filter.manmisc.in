@@ -653,7 +653,7 @@ This will match the expected two addresses in the first prefix (10.1.2.96 and
 10.1.2.103), as well as 64 addresses in the second prefix (192.168.202.0,
 192.168.202.7, 192.168.202.8, 192.168.202.15, 192.168.202.16 and so on), as
 well as any other IPv4 address with the lowest 3 bits being all-ones or
-all-zeroes (for example: 10.73.74.151, 192.168.50.63, 172.19.0.128) -- in
+all-zeroes (for example: 10.73.74.151, 192.168.50.63, 172.19.0.128) \(em in
 other words, 25% of the complete IPv4 address space.  This is why in use
 cases that require more precision it would be better to match the required
 address(es) explicitly, for example:

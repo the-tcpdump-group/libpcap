@@ -75,7 +75,7 @@ conditions, so
 .BR \%pcap_findalldevs ()
 may list devices that a subsequent call to
 .BR pcap_activate ()
-would reject -- then, for example, the error code
+would reject \(em then, for example, the error code
 .B \%PCAP_ERROR_PERM_DENIED
 would make the same sense as not being able to read from a particular file in
 a directory that allows to list the files.  This is the intended design.
