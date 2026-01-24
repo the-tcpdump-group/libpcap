@@ -18,10 +18,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         The Riverbed AirPcap Product has reached End of Availability
         (EOA) as of December 31, 2017
       Make pcap_compile() error messages more uniform and consistent.
+      Deprecate pcap_compile_nopcap().
+      Deprecate bpf_filter().
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
-      Deprecate pcap_compile_nopcap().
       Add support for filtering packets encapsulated with VXLAN (pull
         request #1273).
       Eliminate trailing space in bpf_image() result.
@@ -31,7 +32,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.
       Fix the != comparison for ATM and MTP field values.
-      Deprecate bpf_filter().
       Require a live capture for all Linux BPF extensions.
       Have "outbound" mean Tx only for DLT_SLIP.
       Filter Linux SocketCAN frames in userland if necessary.
@@ -61,9 +61,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a possible buffer overflow (Coverity CID 1619148).
       Fix parameter name validation in the configuration file.
     Documentation:
-      Document a standard format for writing out BPF filter programs.
+      Document a draft format for writing out BPF filter programs.
       Add a README.hurd.md file.
-      Explain "any" device better in pcap_create(3PCAP).
       Cross-reference some man pages better.
       Actualize README.dag and make it Markdown.
       Add a README.snf.md file.
