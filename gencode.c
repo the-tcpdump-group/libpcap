@@ -3742,6 +3742,20 @@ gen_prevlinkhdr_check(compiler_state_t *cstate)
 	/*NOTREACHED*/
 }
 
+// Match the specified version number in the Internet Protocol header.
+static struct block *
+gen_ip_version(compiler_state_t *cstate, const enum e_offrel offrel,
+    const uint8_t ver)
+{
+	switch (ver) {
+	case 4:
+	case 6:
+		return gen_mcmp(cstate, offrel, 0, BPF_B, ver << 4, 0xf0);
+	default:
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "ver", ver);
+	}
+}
+
 /*
  * The three different values we should check for when checking for an
  * IPv6 packet with DLT_NULL.
@@ -3859,17 +3873,17 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_RAW:
 		/*
 		 * These types don't provide any type field; packets
-		 * are always IPv4 or IPv6.
+		 * are always IPv4 or IPv6.  Hence in this context the
+		 * to-be-confirmed IPv4/IPv6 header begins at the link-layer
+		 * header.
 		 */
 		switch (ll_proto) {
 
 		case ETHERTYPE_IP:
-			/* Check for a version number of 4. */
-			return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, 0x40, 0xF0);
+			return gen_ip_version(cstate, OR_LINKHDR, 4);
 
 		case ETHERTYPE_IPV6:
-			/* Check for a version number of 6. */
-			return gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, 0x60, 0xF0);
+			return gen_ip_version(cstate, OR_LINKHDR, 6);
 
 		default:
 			return gen_false(cstate);	/* always false */
@@ -5119,20 +5133,22 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
 	struct block *b0, *b1;
 
+	/*
+	 * In this context the to-be-confirmed IPv4/IPv6 header begins at the
+	 * link-layer payload.
+	 */
 	switch (ll_proto) {
 
 	case ETHERTYPE_IP:
 		/* match the bottom-of-stack bit */
 		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-		/* match the IPv4 version number */
-		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
+		b1 = gen_ip_version(cstate, OR_LINKPL, 4);
 		return gen_and(b0, b1);
 
 	case ETHERTYPE_IPV6:
 		/* match the bottom-of-stack bit */
 		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
-		/* match the IPv6 version number */
-		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
+		b1 = gen_ip_version(cstate, OR_LINKPL, 6);
 		return gen_and(b0, b1);
 
 	default:
