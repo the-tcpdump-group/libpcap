@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "19 January 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "24 January 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -272,10 +272,24 @@ in which case the
 keyword is optional.
 .IP
 \fIethernameaddr\fP
-may be either a name from /etc/ethers or a numerical MAC address of the
-form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
-"xxxx.xxxx.xxxx" or "xxxxxxxxxxxx",
-where each "x" is a hex digit (0-9, a-f, or A-F).
+may be either a name from
+.BR ethers (5)
+or a numerical MAC-48 address.  In the latter case a valid format is one of
+\%"xx:xx:xx:xx:xx:xx",
+\%"xx.xx.xx.xx.xx.xx"
+or
+\%"xx-xx-xx-xx-xx-xx",
+where every "xx" is a hexadecimal digit (0-9, a-f, or A-F) or a two-digit
+hexadecimal number \(em for example,
+\%"aa:00:04:00:1d:04"
+means the same as
+\%"AA-0-4-0-1D-4".
+Another valid format is one of
+\%"xxxx.xxxx.xxxx"
+or
+\%"xxxxxxxxxxxx",
+where each "x" is a hexadecimal digit \(em for example,
+\%"aa0004001d04".
 .IP "\fBgateway\fP \fIhost\fP"
 True if the packet used \fIhost\fP as a gateway.
 I.e., the source or the destination Ethernet-like address is
