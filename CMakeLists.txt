@@ -2034,8 +2034,6 @@ else()
 
         if(BPF_H_DEFINES_BIOCSETIF)
             set(PCAP_TYPE bpf)
-            # pcap-bpf.c needs this header for zero-copy BPF support.
-            check_include_file(machine/atomic.h HAVE_MACHINE_ATOMIC_H)
         endif()
     endif()
 
@@ -2236,6 +2234,11 @@ else(WIN32)
                 message(STATUS "Checking whether the Solaris \"any\" device is supported - not supported")
             endif()
         endif()
+
+        #
+        # For the conditional zero-copy BPF support in pcap-bpf.c only.
+        #
+        check_include_file(machine/atomic.h HAVE_MACHINE_ATOMIC_H)
     elseif(PCAP_TYPE STREQUAL "haiku")
         set(PCAP_SRC pcap-${PCAP_TYPE}.c)
     elseif(PCAP_TYPE STREQUAL "hurd")
