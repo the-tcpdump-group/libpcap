@@ -113,8 +113,15 @@ pcap_set_print_dot_graph(int value)
 #if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4)
   /*
    * GCC 3.4 and later; we have __builtin_ctz().
+   * Note: __builtin_ctz(0) is undefined behavior, so guard it.
    */
-  #define lowest_set_bit(mask) ((u_int)__builtin_ctz(mask))
+  static inline u_int
+  lowest_set_bit(u_int mask)
+  {
+  	if (mask == 0)
+  		return 0;
+  	return (u_int)__builtin_ctz(mask);
+  }
 #elif defined(_MSC_VER)
   /*
    * Visual Studio; we support only 2015 and later, so use
@@ -127,17 +134,15 @@ pcap_set_print_dot_graph(int value)
 #endif
 
 static __forceinline u_int
-lowest_set_bit(int mask)
+lowest_set_bit(u_int mask)
 {
-	unsigned long bit;
-
+	unsigned long index;
 	/*
 	 * Don't sign-extend mask if long is longer than int.
 	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
 	 */
-	if (_BitScanForward(&bit, (unsigned int)mask) == 0)
-		abort();	/* mask is zero */
-	return (u_int)bit;
+	(void)_BitScanForward(&index, (unsigned long)mask);
+	return (u_int)index;
 }
 #else
   /*
