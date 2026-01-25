@@ -5131,6 +5131,16 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 }
 
 /*
+ * Assume the link-layer payload data just before off_nl (L3) is an MPLS label
+ * (L2.5) and test whether the label has Bottom of Stack bit set.
+ */
+static struct block *
+gen_just_after_mpls_stack(compiler_state_t *cstate)
+{
+	return gen_set(cstate, 0x01, gen_load_a(cstate, OR_PREVMPLSHDR, 2, BPF_B));
+}
+
+/*
  * Generate a check for IPv4 or IPv6 for MPLS-encapsulated packets;
  * test the bottom-of-stack bit, and then check the version number
  * field in the IP header.
@@ -5147,14 +5157,12 @@ gen_mpls_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	switch (ll_proto) {
 
 	case ETHERTYPE_IP:
-		/* match the bottom-of-stack bit */
-		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		b0 = gen_just_after_mpls_stack(cstate);
 		b1 = gen_ip_version(cstate, OR_LINKPL, 4);
 		return gen_and(b0, b1);
 
 	case ETHERTYPE_IPV6:
-		/* match the bottom-of-stack bit */
-		b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
+		b0 = gen_just_after_mpls_stack(cstate);
 		b1 = gen_ip_version(cstate, OR_LINKPL, 6);
 		return gen_and(b0, b1);
 
@@ -8941,8 +8949,7 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 	struct	block	*b0, *b1;
 
 	if (cstate->label_stack_depth > 0) {
-		/* just match the bottom-of-stack bit clear */
-		b0 = gen_mcmp(cstate, OR_PREVMPLSHDR, 2, BPF_B, 0, 0x01);
+		b0 = gen_not(gen_just_after_mpls_stack(cstate));
 	} else {
 		/*
 		 * We're not in an MPLS stack yet, so check the link-layer

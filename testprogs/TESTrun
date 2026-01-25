@@ -7380,22 +7380,13 @@ my @filter_accept_blocks = (
 		name => 'mpls_and_mpls_eth',
 		DLT => 'EN10MB',
 		aliases => ['mpls and mpls'],
-		opt => '
+		optunopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x8847          jt 2	jf 5
 			(002) ldb      [16]
 			(003) jset     #0x1             jt 5	jf 4
 			(004) ret      #262144
 			(005) ret      #0
-			',
-		unopt => '
-			(000) ldh      [12]
-			(001) jeq      #0x8847          jt 2	jf 6
-			(002) ldb      [16]
-			(003) and      #0x1
-			(004) jeq      #0x0             jt 5	jf 6
-			(005) ret      #262144
-			(006) ret      #0
 			',
 	}, # mpls_and_mpls_eth
 	{
@@ -7458,7 +7449,7 @@ my @filter_accept_blocks = (
 		name => 'mpls_and_mpls_DSA_TAG_BRCM',
 		DLT => 'DSA_TAG_BRCM',
 		aliases => ['mpls 12345 and mpls 6789'],
-		opt => '
+		optunopt => '
 			(000) ldh      [16]
 			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
@@ -7472,21 +7463,6 @@ my @filter_accept_blocks = (
 			(010) ret      #262144
 			(011) ret      #0
 			',
-		unopt => '
-			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
-			(002) ld       [18]
-			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
-			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x0             jt 8	jf 12
-			(008) ld       [22]
-			(009) and      #0xfffff000
-			(010) jeq      #0x1a85000       jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
-			',
 	}, # mpls_and_mpls_DSA_TAG_BRCM
 	{
 		name => 'mpls_unary_and_ip_DSA_TAG_BRCM',
@@ -7494,18 +7470,17 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
+			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
+			(004) jeq      #0x3039000       jt 5	jf 11
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 12
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x40            jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(006) jset     #0x1             jt 7	jf 11
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x40            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # mpls_unary_and_ip_DSA_TAG_BRCM
 	{
@@ -7514,20 +7489,19 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip src host 1.2.3.4'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 14
+			(001) jeq      #0x8847          jt 2	jf 13
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 14
+			(004) jeq      #0x3039000       jt 5	jf 13
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 14
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x40            jt 11	jf 14
-			(011) ld       [34]
-			(012) jeq      #0x1020304       jt 13	jf 14
-			(013) ret      #262144
-			(014) ret      #0
+			(006) jset     #0x1             jt 7	jf 13
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x40            jt 10	jf 13
+			(010) ld       [34]
+			(011) jeq      #0x1020304       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # mpls_unary_and_ip_src_host_DSA_TAG_BRCM
 	{
@@ -7536,18 +7510,17 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip6'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
+			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
+			(004) jeq      #0x3039000       jt 5	jf 11
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 12
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(006) jset     #0x1             jt 7	jf 11
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # mpls_unary_and_ip6_DSA_TAG_BRCM
 	{
@@ -7556,26 +7529,25 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip6 src host 1234:5678:9abc::0123'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 20
+			(001) jeq      #0x8847          jt 2	jf 19
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 20
+			(004) jeq      #0x3039000       jt 5	jf 19
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 20
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 20
-			(011) ld       [30]
-			(012) jeq      #0x12345678      jt 13	jf 20
-			(013) ld       [34]
-			(014) jeq      #0x9abc0000      jt 15	jf 20
-			(015) ld       [38]
-			(016) jeq      #0x0             jt 17	jf 20
-			(017) ld       [42]
-			(018) jeq      #0x123           jt 19	jf 20
-			(019) ret      #262144
-			(020) ret      #0
+			(006) jset     #0x1             jt 7	jf 19
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 19
+			(010) ld       [30]
+			(011) jeq      #0x12345678      jt 12	jf 19
+			(012) ld       [34]
+			(013) jeq      #0x9abc0000      jt 14	jf 19
+			(014) ld       [38]
+			(015) jeq      #0x0             jt 16	jf 19
+			(016) ld       [42]
+			(017) jeq      #0x123           jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
 			',
 	}, # mpls_unary_and_ip6_src_host_DSA_TAG_BRCM
 
@@ -8421,7 +8393,7 @@ my @filter_accept_blocks = (
 		name => 'mpls_and_mpls_DSA_TAG_DSA',
 		DLT => 'DSA_TAG_DSA',
 		aliases => ['mpls 12345 and mpls 6789'],
-		opt => '
+		optunopt => '
 			(000) ldh      [16]
 			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
@@ -8435,21 +8407,6 @@ my @filter_accept_blocks = (
 			(010) ret      #262144
 			(011) ret      #0
 			',
-		unopt => '
-			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
-			(002) ld       [18]
-			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
-			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x0             jt 8	jf 12
-			(008) ld       [22]
-			(009) and      #0xfffff000
-			(010) jeq      #0x1a85000       jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
-			',
 	}, # mpls_and_mpls_DSA_TAG_DSA
 	{
 		name => 'mpls_unary_and_ip_DSA_TAG_DSA',
@@ -8457,18 +8414,17 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
+			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
+			(004) jeq      #0x3039000       jt 5	jf 11
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 12
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x40            jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(006) jset     #0x1             jt 7	jf 11
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x40            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # mpls_unary_and_ip_DSA_TAG_DSA
 	{
@@ -8477,20 +8433,19 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip src host 1.2.3.4'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 14
+			(001) jeq      #0x8847          jt 2	jf 13
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 14
+			(004) jeq      #0x3039000       jt 5	jf 13
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 14
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x40            jt 11	jf 14
-			(011) ld       [34]
-			(012) jeq      #0x1020304       jt 13	jf 14
-			(013) ret      #262144
-			(014) ret      #0
+			(006) jset     #0x1             jt 7	jf 13
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x40            jt 10	jf 13
+			(010) ld       [34]
+			(011) jeq      #0x1020304       jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # mpls_unary_and_ip_src_host_DSA_TAG_DSA
 	{
@@ -8499,18 +8454,17 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip6'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 12
+			(001) jeq      #0x8847          jt 2	jf 11
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 12
+			(004) jeq      #0x3039000       jt 5	jf 11
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 12
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 12
-			(011) ret      #262144
-			(012) ret      #0
+			(006) jset     #0x1             jt 7	jf 11
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
 			',
 	}, # mpls_unary_and_ip6_DSA_TAG_DSA
 	{
@@ -8519,26 +8473,25 @@ my @filter_accept_blocks = (
 		aliases => ['mpls 12345 and ip6 src host 1234:5678:9abc::0123'],
 		optunopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x8847          jt 2	jf 20
+			(001) jeq      #0x8847          jt 2	jf 19
 			(002) ld       [18]
 			(003) and      #0xfffff000
-			(004) jeq      #0x3039000       jt 5	jf 20
+			(004) jeq      #0x3039000       jt 5	jf 19
 			(005) ldb      [20]
-			(006) and      #0x1
-			(007) jeq      #0x1             jt 8	jf 20
-			(008) ldb      [22]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 20
-			(011) ld       [30]
-			(012) jeq      #0x12345678      jt 13	jf 20
-			(013) ld       [34]
-			(014) jeq      #0x9abc0000      jt 15	jf 20
-			(015) ld       [38]
-			(016) jeq      #0x0             jt 17	jf 20
-			(017) ld       [42]
-			(018) jeq      #0x123           jt 19	jf 20
-			(019) ret      #262144
-			(020) ret      #0
+			(006) jset     #0x1             jt 7	jf 19
+			(007) ldb      [22]
+			(008) and      #0xf0
+			(009) jeq      #0x60            jt 10	jf 19
+			(010) ld       [30]
+			(011) jeq      #0x12345678      jt 12	jf 19
+			(012) ld       [34]
+			(013) jeq      #0x9abc0000      jt 14	jf 19
+			(014) ld       [38]
+			(015) jeq      #0x0             jt 16	jf 19
+			(016) ld       [42]
+			(017) jeq      #0x123           jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
 			',
 	}, # mpls_unary_and_ip6_src_host_DSA_TAG_DSA
 
