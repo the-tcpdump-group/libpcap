@@ -294,6 +294,12 @@ struct addrinfo {
 // IPv6 mandatory outer header (Version, ..., Destination Address) length.
 #define IP6_HDRLEN 40
 
+// RFC 3032 Section 2.1, the "Label Stack Entry" 32-bit structure.
+#define MPLS_STACKENTRY_LEN 4
+// Ibid., the "Label" 20-bit field.
+#define MPLS_LABEL_MAX 0xfffffU
+#define MPLS_LABEL_SHIFT 12
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -2422,7 +2428,8 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		break;
 
 	case OR_PREVMPLSHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl - 4 + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
+		    cstate->off_nl - MPLS_STACKENTRY_LEN + offset, size);
 		break;
 
 	case OR_LINKPL:
@@ -8969,10 +8976,10 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 
 	/* If a specific MPLS label is requested, check it */
 	if (has_label_num) {
-		assert_maxval(cstate, "MPLS label", label_num, 0xFFFFF);
-		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, label_num,
-		    0xfffff000); /* only compare the first 20 bits */
+		assert_maxval(cstate, "MPLS label", label_num, MPLS_LABEL_MAX);
+		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W,
+		    label_num << MPLS_LABEL_SHIFT,
+		    MPLS_LABEL_MAX << MPLS_LABEL_SHIFT);
 		b0 = gen_and(b0, b1);
 	}
 
@@ -8990,8 +8997,8 @@ gen_mpls_internal(compiler_state_t *cstate, bpf_u_int32 label_num,
 	 *
 	 * XXX - this is a bit of a kludge.  See comments in gen_vlan().
 	 */
-	cstate->off_nl_nosnap += 4;
-	cstate->off_nl += 4;
+	cstate->off_nl_nosnap += MPLS_STACKENTRY_LEN;
+	cstate->off_nl += MPLS_STACKENTRY_LEN;
 	cstate->label_stack_depth++;
 	return (b0);
 }
