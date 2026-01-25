@@ -136,7 +136,6 @@ AC_CHECK_SIZEOF([time_t],,[#include <time.h>])
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
-AC_PCAP_C___ATOMICS
 
 #
 # Check whether the platform for which we're compiling requires extra
@@ -1161,6 +1160,11 @@ linux)
 
 	# This check is for TESTrun purposes, not for the C code.
 	AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], [], [], [[#include <linux/filter.h>]])
+
+	#
+	# For the memory-mapped capture code in pcap-linux.c only.
+	#
+	AC_PCAP_C___ATOMICS
 	;;
 
 bpf)

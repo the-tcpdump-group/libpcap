@@ -727,43 +727,8 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 #
-# Functions.
-#
-# First, check for the __atomic_load_n() and __atomic_store_n()
-# builtins.
-#
-# We can't use check_function_exists(), as it tries to declare
-# the function, and attempting to declare a compiler builtin
-# can produce an error.
-#
-# We don't use check_symbol_exists(), as it expects a header
-# file to be specified to declare the function, but there isn't
-# such a header file.
-#
-# So we use check_c_source_compiles().
-#
-check_c_source_compiles(
-"int
-main(void)
-{
-	int i = 17;
-	return __atomic_load_n(&i, __ATOMIC_RELAXED);
-}
-"
-            HAVE___ATOMIC_LOAD_N)
-check_c_source_compiles(
-"int
-main(void)
-{
-	int i;
-	__atomic_store_n(&i, 17, __ATOMIC_RELAXED);
-	return 0;
-}
-"
-            HAVE___ATOMIC_STORE_N)
-
-#
-# Now check for various system functions.
+# Check for various system functions.  These are not compiler builtins, so it
+# is fine to use check_function_exists() or check_symbol_exists().
 #
 check_function_exists(strerror_r HAVE_STRERROR_R)
 if(HAVE_STRERROR_R)
@@ -2187,6 +2152,41 @@ else(WIN32)
         # This and the #cmakedefine01 in cmakeconfig.h.in reproduce exactly the
         # behaviour of "AC_CHECK_DECLS([SKF_AD_VLAN_TAG_PRESENT], ...".
         check_symbol_exists(SKF_AD_VLAN_TAG_PRESENT linux/filter.h HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT)
+
+        #
+        # Check for the __atomic_load_n() and __atomic_store_n() builtins,
+        # which are required for the memory-mapped capture code in
+        # pcap-linux.c only.
+        #
+        # We can't use check_function_exists(), as it tries to declare
+        # the function, and attempting to declare a compiler builtin
+        # can produce an error.
+        #
+        # We don't use check_symbol_exists(), as it expects a header
+        # file to be specified to declare the function, but there isn't
+        # such a header file.
+        #
+        # So we use check_c_source_compiles().
+        #
+        check_c_source_compiles(
+"int
+main(void)
+{
+	int i = 17;
+	return __atomic_load_n(&i, __ATOMIC_RELAXED);
+}
+"
+            HAVE___ATOMIC_LOAD_N)
+        check_c_source_compiles(
+"int
+main(void)
+{
+	int i;
+	__atomic_store_n(&i, 17, __ATOMIC_RELAXED);
+	return 0;
+}
+"
+            HAVE___ATOMIC_STORE_N)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.
