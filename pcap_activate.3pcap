@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_ACTIVATE 3PCAP "3 June 2024"
+.TH PCAP_ACTIVATE 3PCAP "28 January 2026"
 .SH NAME
 pcap_activate \- activate a capture handle
 .SH SYNOPSIS
@@ -90,7 +90,10 @@ monitor mode.
 The capture source device is not up.
 .TP
 .B PCAP_ERROR_CAPTURE_NOTSUP
-Packet capture is not supported on the capture source.
+Packet capture is not supported on the capture source.  See also the
+.B \%PCAP_IF_NO_CAPTURE
+device flag in
+.BR \%pcap_findalldevs (3PCAP).
 .TP
 .B PCAP_ERROR
 Another error occurred.

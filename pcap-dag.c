@@ -1400,6 +1400,22 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
 	return buf;
 }
 
+static bpf_u_int32
+dag_flags(const int stream)
+{
+	/*
+	 * A DAG card associates a link status with each physical port, but not
+	 * with the data streams.  The number of ports is a matter of hardware,
+	 * the number of streams and how each stream associates with zero or
+	 * more ports is a matter of how the user configures the card.  In this
+	 * context libpcap uses the streams only (i.e. "dag0" is a shorthand
+	 * for "dag0:0"), thus the notion of link status does not apply to the
+	 * resulting libpcap DAG capture devices.
+	 */
+	return PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE |
+	    (RX_ONLY(stream) ? PCAP_IF_NO_INJECT : PCAP_IF_NO_CAPTURE);
+}
+
 /*
  * Add all DAG devices.
  */
@@ -1410,14 +1426,6 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	int dagfd;
 	const char * description;
 	int stream, rxstreams;
-	// A DAG card associates a link status with each physical port, but not
-	// with the data streams.  The number of ports is a matter of hardware,
-	// the number of streams and how each stream associates with zero or
-	// more ports is a matter of how the user configures the card.  In this
-	// context libpcap uses the streams only (i.e. "dag0" is a shorthand
-	// for "dag0:0"), thus the notion of link status does not apply to the
-	// resulting libpcap DAG capture devices.
-	const bpf_u_int32 flags = PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 	FILE * sysfsinfo = NULL;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
@@ -1473,13 +1481,15 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					description = dag_device_description (c);
 					// a conditional shorthand device
 					if (stream == 0 &&
-					    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
+					    pcapint_add_dev(devlistp, name, dag_flags(stream),
+					    description, errbuf) == NULL)
 						goto failclose;
 					// and the stream device
 					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
 					description = dag_stream_long_description(stream,
 					    dag_get_stream_buffer_size64(dagfd, stream), inf);
-					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
+					if (pcapint_add_dev(devlistp, name, dag_flags(stream),
+					    description, errbuf) == NULL) {
 						goto failclose;
 					}
 				}
@@ -1510,13 +1520,15 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 						// a conditional shorthand device
 						description = dag_device_description(c);
 						if (stream == 0 &&
-						    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
+						    pcapint_add_dev(devlistp, name, dag_flags(stream),
+						    description, errbuf) == NULL)
 							goto failclose;
 						// and the stream device
 						snprintf(name,  sizeof(name), "dag%u:%u", c, stream);
 						// TODO: Parse and describe the buffer size too.
 						description = dag_stream_short_description(stream);
-						if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
+						if (pcapint_add_dev(devlistp, name, dag_flags(stream),
+						    description, errbuf) == NULL)
 							goto failclose;
 					}
 				fclose(sysfsinfo);

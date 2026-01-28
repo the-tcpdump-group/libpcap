@@ -1403,7 +1403,10 @@ pcapint_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
 	 * doesn't apply to the "any" device.
 	 */
 	return pcapint_add_dev(devlistp, "any",
-	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
+	    PCAP_IF_UP |
+	    PCAP_IF_RUNNING |
+	    PCAP_IF_NO_INJECT |
+	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf);
 }
 

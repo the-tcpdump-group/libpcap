@@ -336,6 +336,8 @@ struct pcap_if {
 #define PCAP_IF_CONNECTION_STATUS_CONNECTED		0x00000010	/* connected */
 #define PCAP_IF_CONNECTION_STATUS_DISCONNECTED		0x00000020	/* disconnected */
 #define PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE	0x00000030	/* not applicable */
+#define PCAP_IF_NO_CAPTURE				0x00000040	/* a no-capture device */
+#define PCAP_IF_NO_INJECT				0x00000080	/* a no-inject device */
 
 /*
  * Representation of an interface address.
