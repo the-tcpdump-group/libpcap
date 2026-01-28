@@ -6078,23 +6078,23 @@ gen_portrange(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 
 	switch (dir) {
 	case Q_SRC:
-		b1 = gen_portrangeatom(cstate, 0, port1, port2);
+		b1 = gen_portrangeatom(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
 		break;
 
 	case Q_DST:
-		b1 = gen_portrangeatom(cstate, 2, port1, port2);
+		b1 = gen_portrangeatom(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		break;
 
 	case Q_AND:
-		tmp = gen_portrangeatom(cstate, 0, port1, port2);
-		b1 = gen_portrangeatom(cstate, 2, port1, port2);
+		tmp = gen_portrangeatom(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
+		b1 = gen_portrangeatom(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		tmp = gen_portrangeatom(cstate, 0, port1, port2);
-		b1 = gen_portrangeatom(cstate, 2, port1, port2);
+		tmp = gen_portrangeatom(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
+		b1 = gen_portrangeatom(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		b1 = gen_or(tmp, b1);
 		break;
 
@@ -6129,23 +6129,23 @@ gen_portrange6(compiler_state_t *cstate, uint16_t port1, uint16_t port2,
 
 	switch (dir) {
 	case Q_SRC:
-		b1 = gen_portrangeatom6(cstate, 0, port1, port2);
+		b1 = gen_portrangeatom6(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
 		break;
 
 	case Q_DST:
-		b1 = gen_portrangeatom6(cstate, 2, port1, port2);
+		b1 = gen_portrangeatom6(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		break;
 
 	case Q_AND:
-		tmp = gen_portrangeatom6(cstate, 0, port1, port2);
-		b1 = gen_portrangeatom6(cstate, 2, port1, port2);
+		tmp = gen_portrangeatom6(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
+		b1 = gen_portrangeatom6(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		b1 = gen_and(tmp, b1);
 		break;
 
 	case Q_DEFAULT:
 	case Q_OR:
-		tmp = gen_portrangeatom6(cstate, 0, port1, port2);
-		b1 = gen_portrangeatom6(cstate, 2, port1, port2);
+		tmp = gen_portrangeatom6(cstate, TRAN_SRCPORT_OFFSET, port1, port2);
+		b1 = gen_portrangeatom6(cstate, TRAN_DSTPORT_OFFSET, port1, port2);
 		b1 = gen_or(tmp, b1);
 		break;
 
