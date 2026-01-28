@@ -1,6 +1,6 @@
 # LIBPCAP 1.x.y by [The Tcpdump Group](https://www.tcpdump.org)
 
-**To report a security issue please send an e-mail to security@tcpdump.org.**
+**To report a security issue please see [Security Reporting](SECURITY.md)**
 
 To report bugs and other problems, contribute patches, request a
 feature, provide generic feedback etc please see the
