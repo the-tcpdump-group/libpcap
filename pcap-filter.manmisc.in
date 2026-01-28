@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "24 January 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "28 January 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -226,39 +226,58 @@ for Ethernet-like link-layer types is equivalent to
 .in -.5i
 .IP
 .I hostnameaddr
-may be either an address or a name.  If it is an IPv6 address, it may use both
-the zero compression
-.RB ( :: )
-and the IPv4-mapped
+may be either an IPv4 host number or an IPv6 host number or a name.
+.IP
+An IPv4 host number can be written as a dotted quad (e.g., 192.168.10.20),
+dotted triple (e.g., 192.168.10 means the same as 192.168.10.0/24, so it is
+really a network match), dotted pair (e.g., 192.168 means 192.168.0.0/16, so
+it is really a network match as well), or single number (e.g., [decimal]
+168496141, [octal] 01202606015 and [hexadecimal] 0x0a0b0c0d all mean
+10.11.12.13).
+.IP
+An IPv6 host number can be written as a complete 128-bit address
+.RB ( x:x:x:x:x:x:x:x )
+or using the zero compression
+.RB ( x::x )
+or the IPv4-mapped
 .RB ( x:x:x:x:x:x:d.d.d.d )
 notations as discussed in
 .BR inet_pton (3).
-If it is a name, the name must resolve to at least one IPv4 address for
-.BR "arp host" ,
-.B "ip host"
+.IP
+A host name must resolve using
+.BR getaddrinfo (3),
+which typically means DNS or
+.BR hosts (5),
+to at least one IPv4 address for
+.RB ` "arp host" ',
+.RB ` "ip host" '
 and
-.BR "rarp host" ,
+.RB ` "rarp host" ',
 at least one IPv6 address for
-.B "ip6 host"
+.RB ` "ip6 host" ',
 and at least one IPv4/IPv6 address for
-.BR "host" .
+.RB ` host '.
+If the name resolves to more than one address, this primitive evaluates to
+true as soon as one of the addresses matches the packet.
 .IP
-When not qualified with a protocol, this primitive matches all protocols that
-make sense for the address families of the specified/resolved addresses.  For
-example, for a name that resolves only to an IPv6 address
-.B "arp host"
+When not qualified with a protocol, this primitive implies all protocols that
+make sense for the address families of the specified/resolved addresses.  When
+qualified with a protocol, this primitive ignores the address family that does
+not make sense for the protocol.
+For example, for a name that resolves only to an IPv6 address
+.RB ` "arp host" '
 returns an error, but
-.B host
-is valid and means IPv6;
-likewise, for a name that resolves only to an IPv4 address
-.B "ip6 host"
+.RB ` host '
+is valid and means IPv6, for a name that resolves only to an IPv4 address
+.RB ` "ip6 host" '
 returns an error, but
-.B host
-is valid and means ARP/IPv4/RARP.
-.IP
-Whether qualified with a protocol or not, this primitive evaluates to true if
-the name resolves to more than one address and at least one of the addresses
-matches the packet.
+.RB ` host '
+is valid and means ARP/IPv4/RARP, for a name that resolves to both IPv4 and
+IPv6 addresses
+.RB ` "ip host" '
+ignores the IPv6 addresses and
+.RB ` "ip6 host" '
+ignores the IPv4 addresses, and so on.
 .IP "\fBether host \fIethernameaddr\fP"
 True if the source or the destination Ethernet/802.11/IPFC/ATM LANE/FDDI/Token Ring
 address of the packet is
