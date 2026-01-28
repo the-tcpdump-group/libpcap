@@ -24123,7 +24123,7 @@ foreach my $DLT (DLTs_with 'link_proto') {
 			expr => "$dqual portrange smtp-smtp",
 			errstr => errstr_invqual ($dqual, 'portrange'),
 		};
-		# pnum -> gen_ncode() -> gen_portrange() -> default case
+		# pnum -> gen_ncode() -> gen_port() -> default case
 		push @filter_reject_tests, {
 			name => "${dqual}_portrange_25_${DLT}",
 			DLT => $DLT,
