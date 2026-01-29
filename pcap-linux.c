@@ -2440,6 +2440,30 @@ setup_socket(pcap_t *handle, int is_any_device)
 	struct packet_mreq	mr;
 
 	/*
+	 * Check if the interface exists before attempting to open
+	 * the privileged packet socket, so we can return the correct
+	 * error for non-existent interfaces.
+	 */
+	if (!is_any_device) {
+		int fd;
+
+		fd = socket(AF_INET, SOCK_DGRAM, 0);
+		if (fd < 0) {
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "socket");
+			return PCAP_ERROR;
+		}
+		arptype = iface_get_arptype(fd, device, handle->errbuf);
+		close(fd);
+		if (arptype < 0) {
+			/*
+			 * Fatal error, including PCAP_ERROR_NO_SUCH_DEVICE.
+			 */
+			return arptype;
+		}
+	}
+
+	/*
 	 * Open a socket with protocol family packet. If cooked is true,
 	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
 	 * we open a SOCK_RAW socket for the raw interface.
