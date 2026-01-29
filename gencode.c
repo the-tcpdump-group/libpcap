@@ -7086,7 +7086,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		syntax(cstate);
 		/*NOTREACHED*/
 	}
-	bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
+	bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), name);
 	/*NOTREACHED*/
 }
 
@@ -7121,24 +7121,23 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	/* Promote short ipaddr */
 	n <<= 32 - nlen;
 
+	char idstr[PCAP_BUF_SIZE];
 	if (s2 != NULL) {
 		mlen = pcapint_atoin(s2, &m);
 		if (mlen < 0)
 			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s2);
 		/* Promote short ipaddr */
 		m <<= 32 - mlen;
-		if ((n & ~m) != 0)
-			bpf_error(cstate, "non-network bits set in \"%s mask %s\"",
-			    s1, s2);
+		snprintf(idstr, sizeof(idstr), "%s mask %s", s1, s2);
 	} else {
 		/* Convert mask len to mask */
 		assert_maxval(cstate, "netmask length", masklen, 32);
 		m64 = UINT64_C(0xffffffff) << (32 - masklen);
 		m = (bpf_u_int32)m64;
-		if ((n & ~m) != 0)
-			bpf_error(cstate, "non-network bits set in \"%s/%d\"",
-			    s1, masklen);
+		snprintf(idstr, sizeof(idstr), "%s/%u", s1, masklen);
 	}
+	if ((n & ~m) != 0)
+		bpf_error(cstate, "non-network bits set in \"%s\"", idstr);
 
 	switch (q.addr) {
 
@@ -7148,7 +7147,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 
 	default:
 		// Q_HOST and Q_GATEWAY only (see the grammar)
-		bpf_error(cstate, "Mask syntax for networks only");
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), idstr);
 		/*NOTREACHED*/
 	}
 	/*NOTREACHED*/
@@ -7172,6 +7171,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		return gen_dnhost(cstate, s, v, q);
 
 	proto = q.proto;
+	char idstr[PCAP_BUF_SIZE];
 	if (s == NULL) {
 		/*
 		 * v contains a 32-bit unsigned parsed from a string of the
@@ -7179,6 +7179,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		 * This is a valid IPv4 address, in the sense of inet_aton(3).
 		 */
 		vlen = 32;
+		snprintf(idstr, sizeof(idstr), "%u", v);
 	} else {
 		/*
 		 * s points to a string of the form {N}.{N}, {N}.{N}.{N} or
@@ -7188,6 +7189,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		vlen = pcapint_atoin(s, &v);
 		if (vlen < 0)
 			bpf_error(cstate, ERRSTR_INVALID_IPV4_ADDR, s);
+		snprintf(idstr, sizeof(idstr), "%s", s);
 	}
 
 	struct block *b, *b6;
@@ -7197,12 +7199,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	case Q_HOST:
 	case Q_NET:
 		if (proto == Q_LINK) {
-			if (s)
-				// "link (host|net) IPV4ADDR" and variations thereof
-				bpf_error(cstate, "illegal link-layer address '%s'", s);
-			else
-				// link host NUMBER
-				bpf_error(cstate, "illegal link-layer address '%u'", v);
+			bpf_error(cstate, "illegal link-layer address '%s'", idstr);
 		} else {
 			mask = 0xffffffff;
 			if (s == NULL && q.addr == Q_NET) {
@@ -7233,10 +7230,6 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		b6 = gen_port6(cstate, (uint16_t)v, proto, q.dir, q.addr);
 		return gen_or(b6, b);
 
-	case Q_GATEWAY:
-		bpf_error(cstate, "'gateway' requires a name");
-		/*NOTREACHED*/
-
 	case Q_PROTO:
 		return gen_proto(cstate, v, proto);
 
@@ -7250,7 +7243,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	default:
-		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "q.addr", q.addr);
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), idstr);
 		/*NOTREACHED*/
 	}
 	/*NOTREACHED*/

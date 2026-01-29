@@ -22315,25 +22315,25 @@ my @filter_reject_tests = (
 		name => 'gateway_1',
 		DLT => 'EN10MB',
 		expr => 'gateway 1',
-		errstr => '\'gateway\' requires a name',
+		errstr => errstr_invqual ('gateway', '1'),
 	},
 	{
 		name => 'gateway_1_2',
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2',
-		errstr => '\'gateway\' requires a name',
+		errstr => errstr_invqual ('gateway', '1.2'),
 	},
 	{
 		name => 'gateway_1_2_3',
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2.3',
-		errstr => '\'gateway\' requires a name',
+		errstr => errstr_invqual ('gateway', '1.2.3'),
 	},
 	{
 		name => 'gateway_1_2_3_4',
 		DLT => 'EN10MB',
 		expr => 'gateway 1.2.3.4',
-		errstr => '\'gateway\' requires a name',
+		errstr => errstr_invqual ('gateway', '1.2.3.4'),
 	},
 	{
 		name => 'gateway_mac48',
@@ -23622,7 +23622,7 @@ foreach (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0 mask 255.255.255.0",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
-			'Mask syntax for networks only',
+			errstr_invqual ('host', '1.2.3.0 mask 255.255.255.0'),
 	} unless pqual_has ($_, 'host_ipv4');
 
 	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
@@ -23643,7 +23643,7 @@ foreach (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "${_} host 1.2.3.0/24",
 		errstr => $_ eq 'decnet' ? errstr_invqual ($_, 'host') :
-			'Mask syntax for networks only',
+			errstr_invqual ('host', '1.2.3.0/24'),
 	} unless pqual_has ($_, 'host_ipv4');
 
 	# HID '/' NUM -> gen_mcode() -> q.proto == Q_DECNET
@@ -23750,13 +23750,13 @@ foreach (pquals_without 'gateway') {
 
 foreach my $pq (pquals_without '') {
 	# HID -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
-	# HID -> gen_ncode() -> case Q_GATEWAY
+	# HID -> gen_ncode() -> default
 	push @filter_reject_tests, {
 		name => "${pq}_gateway_HID",
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.13.14",
 		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			'\'gateway\' requires a name',
+			errstr_invqual ('gateway', '11.12.13.14'),
 	};
 	# HID
 	push @filter_reject_tests, {
@@ -23773,7 +23773,7 @@ foreach my $pq (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.0.0/16",
 		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			'Mask syntax for networks only',
+			errstr_invqual ('gateway', '11.12.0.0/16'),
 	};
 	# HID '/' NUM
 	push @filter_reject_tests, {
@@ -23790,7 +23790,7 @@ foreach my $pq (pquals_without '') {
 		DLT => 'EN10MB',
 		expr => "$pq gateway 11.12.0.0 mask 255.255.0.0",
 		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			'Mask syntax for networks only',
+			errstr_invqual ('gateway', '11.12.0.0 mask 255.255.0.0'),
 	};
 	# HID NETMASK HID
 	push @filter_reject_tests, {
