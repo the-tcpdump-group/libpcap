@@ -7061,10 +7061,8 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		 * stringtoport() invocation stoulen() can return any uint32_t
 		 * value if it has accepted the argument.
 		 */
-		if (port1 > 65535)
-			bpf_error(cstate, "illegal port number %d > 65535", port1);
-		if (port2 > 65535)
-			bpf_error(cstate, "illegal port number %d > 65535", port2);
+		assert_maxval(cstate, "port number", port1, UINT16_MAX);
+		assert_maxval(cstate, "port number", port2, UINT16_MAX);
 
 		// real_proto can be PROTO_UNDEF
 		b = gen_portrange(cstate, (uint16_t)port1, (uint16_t)port2,
@@ -7134,8 +7132,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 			    s1, s2);
 	} else {
 		/* Convert mask len to mask */
-		if (masklen > 32)
-			bpf_error(cstate, "mask length must be <= 32");
+		assert_maxval(cstate, "netmask length", masklen, 32);
 		m64 = UINT64_C(0xffffffff) << (32 - masklen);
 		m = (bpf_u_int32)m64;
 		if ((n & ~m) != 0)
@@ -7229,8 +7226,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		proto = port_pq_to_ipproto(cstate, proto, tqkw(q.addr));
 
 		// This check is necessary: v can hold any uint32_t value.
-		if (v > 65535)
-			bpf_error(cstate, "illegal port number %u > 65535", v);
+		assert_maxval(cstate, "port number", v, UINT16_MAX);
 
 		// proto can be PROTO_UNDEF
 		b = gen_port(cstate, (uint16_t)v, proto, q.dir, q.addr);

@@ -21672,15 +21672,15 @@ sub errstr_mac48_noether {
 	return 'Ethernet address used in non-ether expression';
 }
 
-# gen_ncode() case Q_PORT, case Q_PORTRANGE
-# gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
-sub errstr_invport {
-	return sprintf ('illegal port number %u > 65535', shift);
-}
-
 # assert_maxval()
 sub errstr_val_too_high {
 	return sprintf ('%s greater than maximum %u', shift, shift);
+}
+
+# gen_ncode() case Q_PORT, case Q_PORTRANGE
+# gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
+sub errstr_invport {
+	return errstr_val_too_high ('port number ' . shift, 65535),
 }
 
 # fail_kw_on_dlt()
@@ -21901,6 +21901,12 @@ my @filter_reject_tests = (
 		DLT => 'RAW',
 		expr => 'net 192.168 mask 255.0.0.0',
 		errstr => 'non-network bits set in',
+	},
+	{
+		name => 'ip_net_masklen',
+		DLT => 'RAW',
+		expr => 'ip net 10.0.0.0/33',
+		errstr => errstr_val_too_high ('netmask length 33', 32),
 	},
 	{
 		name => 'ip_net_nonhid1',
