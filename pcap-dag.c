@@ -1392,7 +1392,7 @@ dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
 	    stream,
 	    bufsize / 1024 / 1024,
 	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
-	if (inf->device_code != PCI_DEVICE_ID_VDAG)
+	if (inf && inf->device_code != PCI_DEVICE_ID_VDAG)
 		snprintf(buf + done, sizeof(buf) - done,
 		    " rev %c at %s",
 		    (inf && inf->brd_rev < 26) ? ('A' + inf->brd_rev) : '?',
