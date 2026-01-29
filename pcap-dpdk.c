@@ -280,17 +280,6 @@ static inline void calculate_timestamp(struct dpdk_ts_helper *helper,struct time
 	timeradd(&(helper->start_time), &cur_time, ts);
 }
 
-static void dpdk_gather_data(unsigned char *data, uint32_t len, struct rte_mbuf *mbuf)
-{
-	uint32_t total_len = 0;
-	while (mbuf && (total_len+mbuf->data_len) < len ){
-		rte_memcpy(data+total_len, rte_pktmbuf_mtod(mbuf,void *),mbuf->data_len);
-		total_len+=mbuf->data_len;
-		mbuf=mbuf->next;
-	}
-}
-
-
 static int dpdk_read_with_timeout(pcap_t *p, struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int nb_rx = 0;
@@ -331,10 +320,9 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
 	uint32_t pkt_len = 0;
 	uint32_t caplen = 0;
-	u_char *bp = NULL;
+	const u_char *bp = NULL;
 	int i=0;
 	int pkt_cnt = 0;
-	u_char *large_buffer=NULL;
 	int timeout_ms = p->opt.timeout;
 
 	/*
@@ -394,22 +382,8 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			// volatile prefetch
 			rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 			bp = NULL;
-			if (m->nb_segs == 1)
-			{
-				bp = rte_pktmbuf_mtod(m, u_char *);
-			}else{
-				// use fast buffer pcap_tmp_buf if pkt_len is small, no need to call malloc and free
-				if ( pkt_len <= RTE_ETH_PCAP_SNAPLEN)
-				{
-					dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
-					bp = pd->pcap_tmp_buf;
-				}else{
-					// need call free later
-					large_buffer = (u_char *)malloc(caplen*sizeof(u_char));
-					dpdk_gather_data(large_buffer, caplen, m);
-					bp = large_buffer;
-				}
-
+			if (caplen < sizeof(pd->pcap_tmp_buf)) {
+				bp = rte_pktmbuf_read(m, 0, caplen, pd->pcap_tmp_buf);
 			}
 			if (bp){
 				if (p->fcode.bf_insns==NULL || pcapint_filter(p->fcode.bf_insns, bp, pcap_header.len, pcap_header.caplen)){
@@ -420,10 +394,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			}
 			//free all pktmbuf
 			rte_pktmbuf_free(m);
-			if (large_buffer){
-				free(large_buffer);
-				large_buffer=NULL;
-			}
 		}
 	}
 	return pkt_cnt;
