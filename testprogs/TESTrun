@@ -23031,6 +23031,7 @@ sub dquals_without {
 my %tqual_features = (
 	host => {
 		mac8 => 1,
+		mac48 => 1,
 	},
 	net => {
 	},
@@ -23745,14 +23746,6 @@ foreach (pquals_without '') {
 	} unless pqual_has ($_, 'host_ipv6');
 	# (IPv6 networks cannot have names)
 
-	# gen_ecode() -> q.proto != Q_LINK
-	push @filter_reject_tests, {
-		name => "inv_qual_${_}_host_mac48",
-		DLT => 'EN10MB',
-		expr => "${_} host aa:bb:cc:dd:ee:ff",
-		errstr => errstr_mac48_noether,
-	} unless pqual_has ($_, 'host_mac48');
-
 	# HID -> gen_ncode() -> q.proto != Q_DECNET -> pcapint_atoin() < 0
 	push @filter_reject_tests, {
 		name => "inv_qual_${_}_host_decnet",
@@ -23760,6 +23753,31 @@ foreach (pquals_without '') {
 		expr => "${_} host 12.500",
 		errstr => errstr_invhost_ipv4 ('12.500'),
 	} unless pqual_has ($_, 'host_decnet');
+}
+
+# gen_ecode() -> q.proto != Q_LINK
+foreach my $pqual (pquals_without 'host_mac48') {
+	foreach my $tqual (tquals_with 'mac48') {
+		push @filter_reject_tests, {
+			name => "${pqual}_${tqual}_mac48",
+			DLT => 'EN10MB',
+			expr => "$pqual $tqual aa:bb:cc:dd:ee:ff",
+			errstr => errstr_mac48_noether,
+		};
+	}
+}
+
+# gen_ecode() -> q.addr != Q_HOST && q.addr != Q_DEFAULT
+foreach my $pqual (pquals_with 'host_mac48') {
+	foreach my $tqual (tquals_without 'mac48') {
+		push @filter_reject_tests, {
+			name => "${pqual}_${tqual}_mac48",
+			skip => $tqual eq 'protochain' ? skip_config_def1 ('NO_PROTOCHAIN') : '',
+			DLT => 'EN10MB',
+			expr => "$pqual $tqual a:b:c:d:e:f",
+			errstr => errstr_mac48_noether,
+		};
+	}
 }
 
 # gen_scode() -> q.proto == Q_DECNET
