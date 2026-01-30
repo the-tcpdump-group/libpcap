@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FINDALLDEVS 3PCAP "11 March 2025"
+.TH PCAP_FINDALLDEVS 3PCAP "28 January 2026"
 .SH NAME
 pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
 free that list
@@ -134,6 +134,16 @@ set if the device is running
 set if the device is a wireless interface; this includes IrDA as well as
 radio-based networks such as IEEE 802.15.4 and IEEE 802.11, so it
 doesn't just mean Wi-Fi
+.TP
+.B PCAP_IF_NO_CAPTURE
+set if the device does not support packet capture in principle, thus any
+attempt to capture on the device will fail with an error; note that this flag
+.B not
+being set does not mean all attempts to capture will succeed: some may fail
+as usual because of the capture parameters, device status, permissions etc.
+.TP
+.B PCAP_IF_NO_INJECT
+same as the above, but with regard to packet injection
 .TP
 .B PCAP_IF_CONNECTION_STATUS
 a bitmask for an indication of whether the adapter is connected or not;
@@ -285,5 +295,11 @@ The
 and
 .B PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE
 constants became available in libpcap release 1.9.0.
+.PP
+The
+.B PCAP_IF_NO_CAPTURE
+and
+.B PCAP_IF_NO_INJECT
+constants became available in libpcap release 1.11.0.
 .SH SEE ALSO
 .BR pcap (3PCAP)
