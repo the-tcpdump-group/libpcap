@@ -23027,6 +23027,33 @@ sub dquals_without {
 	return list_with_without \%dqual_features, shift, 0;
 }
 
+# "type" qualifiers
+my %tqual_features = (
+	host => {
+		mac8 => 1,
+	},
+	net => {
+	},
+	port => {
+	},
+	gateway => {
+	},
+	proto => {
+	},
+	protochain => {
+	},
+	portrange => {
+	},
+);
+
+sub tquals_with {
+	return list_with_without \%tqual_features, shift, 1;
+}
+
+sub tquals_without {
+	return list_with_without \%tqual_features, shift, 0;
+}
+
 # All DLTs pcap_datalink_name_to_val() recognizes, ordered by name.
 my %DLTfeatures = (
 	A429 => {
@@ -24174,7 +24201,7 @@ foreach my $DLT (DLTs_with 'link_host_mac8') {
 		DLT => $DLT,
 		expr => "link $_ \$fe",
 		errstr => errstr_invqual ($_, '$XX'),
-	} foreach qw(net port gateway proto protochain portrange);
+	} foreach tquals_without 'mac8';
 	# gen_acode() -> q.proto != Q_LINK
 	foreach my $pqual (pquals_without 'host_mac8') {
 		push @filter_reject_tests, {
