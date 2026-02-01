@@ -3441,8 +3441,8 @@ set(MAN3PCAP_NOEXPAND
     pcap_tstamp_type_name_to_val.3pcap
     pcap_tstamp_type_val_to_name.3pcap
 )
+# cbpf-savefile.manfile.in is not ready for a release yet.
 set(MANFILE_EXPAND
-    cbpf-savefile.manfile.in
     pcap-savefile.manfile.in
 )
 set(MANMISC_EXPAND

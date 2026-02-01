@@ -221,8 +221,8 @@ MAN3PCAP_NOEXPAND = \
 
 MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
 
+# cbpf-savefile.manfile.in is not ready for a release yet.
 MANFILE = \
-	cbpf-savefile.manfile.in \
 	pcap-savefile.manfile.in
 
 MANMISC = \

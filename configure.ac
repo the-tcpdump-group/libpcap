@@ -3088,8 +3088,9 @@ AC_CONFIG_COMMANDS([.devel],[[if test -f .devel; then
 	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend || exit 1
 fi]])
+# cbpf-savefile.manfile is not ready for a release yet.
 AC_CONFIG_FILES([Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
-	pcap-tstamp.manmisc cbpf-savefile.manfile pcap-savefile.manfile pcap.3pcap
+	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
 	pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap

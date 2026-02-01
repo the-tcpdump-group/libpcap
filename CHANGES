@@ -61,7 +61,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix a possible buffer overflow (Coverity CID 1619148).
       Fix parameter name validation in the configuration file.
     Documentation:
-      Document a draft format for writing out BPF filter programs.
       Add a README.hurd.md file.
       Cross-reference some man pages better.
       Actualize README.dag and make it Markdown.
