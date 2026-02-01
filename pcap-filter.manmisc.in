@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "28 January 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "1 February 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -243,6 +243,9 @@ or the IPv4-mapped
 .RB ( x:x:x:x:x:x:d.d.d.d )
 notations as discussed in
 .BR inet_pton (3).
+In this primitive this version of libpcap tolerates an optional "/128" after
+an IPv6 host number, this behaviour is an implementation quirk and it may be
+removed in future.
 .IP
 A host name must resolve using
 .BR getaddrinfo (3),
