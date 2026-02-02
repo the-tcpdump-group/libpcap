@@ -44,6 +44,13 @@ int main(void)
 		        "FAIL: Unexpected error %d from pcap_activate().\n",
 		        err);
 	}
+
+	/*
+	 * And attempts to determine whether attributes can be set
+	 * on the pcap_t shouldn't crash after a failed activate.
+	 * See GitHub issue #1615.
+	 */
+	(void) pcap_can_set_rfmon(p);
 	pcap_close(p);
 	return ret;
 }
