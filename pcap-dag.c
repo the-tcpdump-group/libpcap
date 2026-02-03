@@ -1365,39 +1365,36 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	return 0;
 }
 
-static const char *
-dag_device_description(const unsigned dagid)
+static void
+dag_device_description(char *strbuf, const size_t strbufsize,
+    const unsigned dagid)
 {
-	static char buf[128];
-	snprintf(buf, sizeof(buf), "alias for dag%u:0", dagid);
-	return buf;
+	snprintf(strbuf, strbufsize, "alias for dag%u:0", dagid);
 }
 
-static const char *
-dag_stream_short_description(const unsigned stream)
+static void
+dag_stream_short_description(char *strbuf, const size_t strbufsize,
+    const unsigned stream)
 {
-	static char buf[128];
-	snprintf(buf, sizeof(buf), "%s stream %u", RXTX_STR(stream), stream);
-	return buf;
+	snprintf(strbuf, strbufsize, "%s stream %u", RXTX_STR(stream), stream);
 }
 
-static const char *
-dag_stream_long_description(const unsigned stream, const dag_size_t bufsize,
-    const dag_card_inf_t * inf)
+static void
+dag_stream_long_description(char *strbuf, const size_t strbufsize,
+    const unsigned stream, const dag_size_t dagbufsize,
+    const dag_card_inf_t *inf)
 {
-	static char buf[256];
-	int done = snprintf(buf, sizeof(buf),
+	int done = snprintf(strbuf, strbufsize,
 	    "%s stream %u, %" PRIu64 " MiB, %s",
 	    RXTX_STR(stream),
 	    stream,
-	    bufsize / 1024 / 1024,
+	    dagbufsize / 1024 / 1024,
 	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
 	if (inf->device_code != PCI_DEVICE_ID_VDAG)
-		snprintf(buf + done, sizeof(buf) - done,
+		snprintf(strbuf + done, strbufsize - done,
 		    " rev %c at %s",
 		    (inf && inf->brd_rev < 26) ? ('A' + inf->brd_rev) : '?',
 		    inf ? inf->bus_id : "N/A");
-	return buf;
 }
 
 /*
@@ -1408,7 +1405,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int c;
 	int dagfd;
-	const char * description;
+	char description[256];
 	int stream, rxstreams;
 	// A DAG card associates a link status with each physical port, but not
 	// with the data streams.  The number of ports is a matter of hardware,
@@ -1470,15 +1467,15 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				// Only streams with buffer memory are usable.
 				if (bufsize > 0 &&
 				    (RX_ONLY(stream) || inf->device_code != PCI_DEVICE_ID_VDAG)) {
-					description = dag_device_description (c);
+					dag_device_description(description, sizeof(description), c);
 					// a conditional shorthand device
 					if (stream == 0 &&
 					    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
 						goto failclose;
 					// and the stream device
 					snprintf(name,  sizeof(name), "dag%d:%d", c, stream);
-					description = dag_stream_long_description(stream,
-					    dag_get_stream_buffer_size64(dagfd, stream), inf);
+					dag_stream_long_description(description, sizeof(description),
+					    stream, dag_get_stream_buffer_size64(dagfd, stream), inf);
 					if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL) {
 						goto failclose;
 					}
@@ -1508,14 +1505,14 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 							continue;
 #endif // ENABLE_DAG_TX
 						// a conditional shorthand device
-						description = dag_device_description(c);
+						dag_device_description(description, sizeof(description), c);
 						if (stream == 0 &&
 						    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
 							goto failclose;
 						// and the stream device
 						snprintf(name,  sizeof(name), "dag%u:%u", c, stream);
 						// TODO: Parse and describe the buffer size too.
-						description = dag_stream_short_description(stream);
+						dag_stream_short_description(description, sizeof(description), stream);
 						if (pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
 							goto failclose;
 					}
