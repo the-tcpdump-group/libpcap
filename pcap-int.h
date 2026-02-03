@@ -163,9 +163,17 @@ extern int pcapint_mmap_32bit;
 #define PCAP_ISDIGIT(c) \
 	((c) >= '0' && (c) <= '9')
 #define PCAP_ISXDIGIT(c) \
-	(((c) >= '0' && (c) <= '9') || \
+	(PCAP_ISDIGIT(c) || \
 	 ((c) >= 'A' && (c) <= 'F') || \
 	 ((c) >= 'a' && (c) <= 'f'))
+#define PCAP_ISUPPER(c) \
+	((c) >= 'A' && (c) <= 'Z')
+#define PCAP_ISLOWER(c) \
+	((c) >= 'a' && (c) <= 'z')
+#define PCAP_ISALPHA(c) \
+	(PCAP_ISUPPER(c) || PCAP_ISLOWER(c))
+#define PCAP_ISALNUM(c) \
+	(PCAP_ISALPHA(c) || PCAP_ISDIGIT(c))
 
 struct pcap_opt {
 	char	*device;

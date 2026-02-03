@@ -41,6 +41,7 @@
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
 #include "portability.h"
+#include "pcap-int.h"
 #include "rpcapd.h"
 #include "config_params.h"	// configuration file parameters
 #include "fileconf.h"
@@ -55,16 +56,6 @@
 #define PARAM_NULLAUTHPERMIT	"NullAuthPermit"
 
 static char *skipws(char *ptr);
-
-/*
- * Locale-independent version checks for alphabetical and alphanumerical
- * characters that also can handle being handed a char value that might
- * be negative.
- */
-#define FILECONF_ISALPHA(c) \
-	(((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
-#define FILECONF_ISALNUM(c) \
-	(FILECONF_ISALPHA(c) || ((c) >= '0' && (c) <= '9'))
 
 void fileconf_read(void)
 {
@@ -142,7 +133,7 @@ void fileconf_read(void)
 			// Is the next character alphabetic?  If not,
 			// this isn't a valid parameter name.
 			//
-			if (! FILECONF_ISALPHA(*ptr))
+			if (! PCAP_ISALPHA(*ptr))
 			{
 				rpcapd_log(LOGPRIO_ERROR,
 				    "%s, line %u doesn't have a valid parameter name",
@@ -156,7 +147,7 @@ void fileconf_read(void)
 			// That's the name of the parameter being set.
 			//
 			param = ptr;
-			while (FILECONF_ISALNUM(*ptr) || *ptr == '-' || *ptr == '_')
+			while (PCAP_ISALNUM(*ptr) || *ptr == '-' || *ptr == '_')
 				ptr++;
 
 			//
