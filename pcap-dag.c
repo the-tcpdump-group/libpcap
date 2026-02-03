@@ -1389,12 +1389,12 @@ dag_stream_long_description(char *strbuf, const size_t strbufsize,
 	    RXTX_STR(stream),
 	    stream,
 	    dagbufsize / 1024 / 1024,
-	    inf ? dag_device_name(inf->device_code, 1) : "N/A");
+	    dag_device_name(inf->device_code, 1));
 	if (inf->device_code != PCI_DEVICE_ID_VDAG)
 		snprintf(strbuf + done, strbufsize - done,
 		    " rev %c at %s",
-		    (inf && inf->brd_rev < 26) ? ('A' + inf->brd_rev) : '?',
-		    inf ? inf->bus_id : "N/A");
+		    PCAP_ISUPPER('A' + inf->brd_rev) ? ('A' + inf->brd_rev) : '?',
+		    inf->bus_id);
 }
 
 /*
@@ -1426,7 +1426,12 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
 			// Do not add a shorthand device for stream 0 (dagN) yet -- the
 			// user can disable any stream in the card configuration.
-			const dag_card_inf_t * inf = dag_pciinfo(dagfd); // NULL is fine
+			const dag_card_inf_t *inf = dag_pciinfo(dagfd);
+			if (! inf) {
+				pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+				    errno, "dag_pciinfo");
+				goto failclose;
+			}
 			// The count includes existing streams that have no buffer memory.
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			if (rxstreams < 0) {
