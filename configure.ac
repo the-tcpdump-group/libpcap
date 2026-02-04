@@ -1680,7 +1680,19 @@ yes)	AC_MSG_RESULT(yes)
 			RPCAPD_LIBS="$RPCAPD_LIBS -lcrypt"
 		    ],
 		    [
-			AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it])
+			#
+			# No; try liblogin (that's where it is in QNX 8.0).
+			#
+			AC_CHECK_LIB(login, crypt,
+			[
+			    #
+			    # Yes; add -llogin to the libraries for rpcapd.
+			    #
+			    RPCAPD_LIBS="$RPCAPD_LIBS -llogin"
+			],
+			[
+			    AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it])
+			])
 		    ])
 	    ])
 

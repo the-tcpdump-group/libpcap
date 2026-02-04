@@ -105,6 +105,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       translatetest: Add a test program for various translation functions.
       Autoconf: Add QNX support to AC_LBL_LIBRARY_NET().
       capturetest: Treat SA_RESTART as optional.
+      Autoconf: Fix detection of crypt() in QNX.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
