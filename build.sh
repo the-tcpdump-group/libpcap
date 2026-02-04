@@ -1,5 +1,19 @@
 #!/bin/sh -e
 
+# To cross-compile using Autoconf, it is necessary to run ./configure with the
+# "--host=<cpu>-<vendor>-<os>" option.  In this case, if the CC variable is not
+# set, Autoconf will try using "<cpu>-<vendor>-<os>-gcc" (which may not exist
+# because the executable is called "<cpu>-<vendor>-<os>-gcc-<version>"), then
+# "gcc" and "cc" (which typically will be native compilers).  Whether this
+# works out for Autoconf or not, this will not work for this script, which
+# needs to run the same executable as Autoconf to identify the compiler and to
+# take any conditional steps that depend on it.  Thus make CC a mandatory
+# variable when cross-compiling.
+if [ -n "$TARGET" ] && [ -z "$CC" ]; then
+    echo "Error: CC must be set if TARGET is set." >&2
+    exit 1
+fi
+
 # This script runs one build with the setup environment variables below.
 : "${CC:=gcc}"
 : "${CMAKE:=no}"
@@ -11,6 +25,11 @@
 # At least one OS (AIX 7) where this software can build does not have at least
 # one command (mktemp) required for a successful run of "make releasetar".
 : "${TEST_RELEASETAR:=yes}"
+
+if [ -n "$TARGET" ] && [ "$CMAKE" != no ]; then
+    echo "Error: this script does not implement cross-compiling with CMake." >&2
+    exit 1
+fi
 
 . ./build_common.sh
 # Install directory prefix
@@ -104,7 +123,8 @@ esac
 
 if [ "$CMAKE" = no ]; then
     run_after_echo ./autogen.sh
-    run_after_echo ./configure --prefix="$PREFIX" --enable-protochain="$PROTOCHAIN" --enable-remote="$REMOTE"
+    run_after_echo ./configure --prefix="$PREFIX" ${TARGET:+--host=$TARGET} \
+        --enable-protochain="$PROTOCHAIN" --enable-remote="$REMOTE"
 else
     # Remove the leftovers from any earlier in-source builds, so this
     # out-of-source build does not break because of that.
@@ -142,11 +162,13 @@ run_after_echo "$PREFIX/bin/pcap-config" --libs --static-pcap-only
 run_after_echo "$PREFIX/bin/pcap-config" --additional-libs --static-pcap-only
 
 [ "$REMOTE" = yes ] && print_so_deps "$PREFIX/sbin/rpcapd"
-[ "$REMOTE" = yes ] && run_after_echo "$PREFIX/sbin/rpcapd" -h
+[ "$REMOTE" = yes ] && [ -z "$TARGET" ] && run_after_echo "$PREFIX/sbin/rpcapd" -h
 
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
-if [ "$CMAKE" = no ]; then
+if [ -n "$TARGET" ]; then
+    echo '### Not running any tests for a cross-compile build. ###'
+elif [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/versiontest
     FILTERTEST_BIN="$VALGRIND_CMD testprogs/filtertest"
     export FILTERTEST_BIN

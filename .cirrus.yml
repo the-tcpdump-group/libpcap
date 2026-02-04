@@ -39,6 +39,25 @@ linux_task:
     - make whitespacecheck
     - make shellcheck
 
+linux_cross_task:
+  name: linux-cross-compile
+  only_if: $CIRRUS_BRANCH != 'coverity_scan'
+  container:
+    image: ubuntu:24.04
+    cpu: 1
+    memory: 1G
+  env:
+    DEBIAN_FRONTEND: noninteractive
+    LANG: C
+    TARGET: aarch64-linux-gnu
+    MATRIX_CC: $TARGET-gcc-14
+    MATRIX_CMAKE: no # not supported
+    MATRIX_REMOTE: no # rpcapd requires crypt(), which is not available in this toolchain.
+  script:
+    - apt-get -qy update >/dev/null
+    - apt-get -qy install flex bison autoconf make git gcc-14-$TARGET >/dev/null
+    - ./build_matrix.sh
+
 macos_task:
   name: macos-aarch64
   only_if: $CIRRUS_BRANCH != 'coverity_scan'
