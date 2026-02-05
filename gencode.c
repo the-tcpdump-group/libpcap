@@ -7146,7 +7146,6 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 		                "net <IPv4 prefix>");
 
 	default:
-		// Q_HOST and Q_GATEWAY only (see the grammar)
 		bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), idstr);
 		/*NOTREACHED*/
 	}
@@ -7305,7 +7304,6 @@ gen_mcode6(compiler_state_t *cstate, const char *s, bpf_u_int32 masklen,
 		                 "net <IPv6 prefix>");
 
 	default:
-		// Q_GATEWAY only (see the grammar)
 		if (masklen == 128)
 			bpf_error(cstate, ERRSTR_INVALID_QUAL, tqkw(q.addr), s);
 		else {
