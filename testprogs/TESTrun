@@ -18734,6 +18734,816 @@ my @filter_accept_blocks = (
 			',
 	}, # offsets
 
+	{
+		name => 'ip_flag_mf_set',
+		DLT => 'EN10MB',
+		aliases => ['ip flag mf-set'],
+		optunopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [20]
+			(003) jset     #0x20            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ip_flag_mf_set
+	{
+		name => 'ip_flag_mf_cleared',
+		DLT => 'EN10MB',
+		aliases => ['ip flag mf-cleared'],
+		optunopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [20]
+			(003) jset     #0x20            jt 5	jf 4
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ip_flag_mf_cleared
+	{
+		name => 'ip_flag_df_set',
+		DLT => 'EN10MB',
+		aliases => ['ip flag df-set'],
+		optunopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [20]
+			(003) jset     #0x40            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ip_flag_df_set
+	{
+		name => 'ip_flag_df_cleared',
+		DLT => 'EN10MB',
+		aliases => ['ip flag df-cleared'],
+		optunopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [20]
+			(003) jset     #0x40            jt 5	jf 4
+			(004) ret      #262144
+			(005) ret      #0
+			',
+	}, # ip_flag_df_cleared
+
+	{
+		name => 'tcp_flag_fin_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag fin-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x1             jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x1             jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x1             jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x1             jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_fin_set
+	{
+		name => 'tcp_flag_fin_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag fin-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x1             jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x1             jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x1             jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x1             jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_fin_cleared
+	{
+		name => 'tcp_flag_syn_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag syn-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x2             jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x2             jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x2             jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x2             jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_syn_set
+	{
+		name => 'tcp_flag_syn_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag syn-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x2             jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x2             jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x2             jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x2             jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_syn_cleared
+	{
+		name => 'tcp_flag_rst_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag rst-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x4             jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x4             jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x4             jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x4             jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_rst_set
+	{
+		name => 'tcp_flag_rst_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag rst-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x4             jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x4             jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x4             jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x4             jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_rst_cleared
+	{
+		name => 'tcp_flag_psh_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag psh-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x8             jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x8             jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x8             jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x8             jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_psh_set
+	{
+		name => 'tcp_flag_psh_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag psh-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x8             jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x8             jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x8             jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x8             jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_psh_cleared
+	{
+		name => 'tcp_flag_ack_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ack-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x10            jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x10            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x10            jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x10            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ack_set
+	{
+		name => 'tcp_flag_ack_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ack-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x10            jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x10            jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x10            jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x10            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ack_cleared
+	{
+		name => 'tcp_flag_urg_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag urg-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x20            jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x20            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x20            jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x20            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_urg_set
+	{
+		name => 'tcp_flag_urg_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag urg-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x20            jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x20            jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x20            jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x20            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_urg_cleared
+	{
+		name => 'tcp_flag_ece_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ece-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x40            jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x40            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x40            jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x40            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ece_set
+	{
+		name => 'tcp_flag_ece_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ece-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x40            jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x40            jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x40            jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x40            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ece_cleared
+	{
+		name => 'tcp_flag_cwr_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag cwr-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x80            jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x80            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x80            jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x80            jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_cwr_set
+	{
+		name => 'tcp_flag_cwr_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag cwr-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x80            jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x80            jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x80            jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x80            jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_cwr_cleared
+	{
+		name => 'tcp_flag_ae_set',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ae-set'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x100           jt 14	jf 15
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x100           jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x100           jt 15	jf 9
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x100           jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ae_set
+	{
+		name => 'tcp_flag_ae_cleared',
+		DLT => 'EN10MB',
+		aliases => ['tcp flag ae-cleared'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x100           jt 15	jf 14
+			(009) jeq      #0x86dd          jt 10	jf 15
+			(010) ldb      [20]
+			(011) jeq      #0x6             jt 12	jf 15
+			(012) ldh      [66]
+			(013) jset     #0x100           jt 15	jf 14
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 9
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 9
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 9	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 26]
+			(008) jset     #0x100           jt 9	jf 15
+			(009) ldh      [12]
+			(010) jeq      #0x86dd          jt 11	jf 16
+			(011) ldb      [20]
+			(012) jeq      #0x6             jt 13	jf 16
+			(013) ldh      [66]
+			(014) jset     #0x100           jt 16	jf 15
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # tcp_flag_ae_cleared
+
 	# In the tests below "smtp" depends on getaddrinfo().
 	{
 		name => 'tcp_port',
@@ -20684,6 +21494,24 @@ my @filter_apply_blocks = (
 		expr => 'link host not $c0',
 		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 65535],
 	},
+
+	# Protocol exchange for the packets in "arcnet-rfc1201-arp-icmp-http.pcap":
+	#  1. $be > $00, ARP Request who-has 10.80.131.254 tell 10.80.131.1
+	#  2. $50 > $be, ARP Reply 10.80.131.254 is-at 50
+	#  3. $be > $50, IPv4 flags [DF], 10.80.131.1 > 10.80.131.254: ICMP echo request
+	#  4. $50 > $be, IPv4 flags [none], 10.80.131.254 > 10.80.131.1: ICMP echo reply
+	#  5. $be > $50, IPv4 flags [DF], 10.80.131.1 > 10.80.131.254: ICMP echo request
+	#  6. $50 > $be, IPv4 flags [none], 10.80.131.254 > 10.80.131.1: ICMP echo reply
+	#  7. $50 > $be, ARP Request who-has 10.80.131.1 tell 10.80.131.254
+	#  8. $be > $50, ARP Reply 10.80.131.1 is-at be
+	#  9. $be > $50, IPv4 flags [DF], UDP 10.80.131.1.1024 > 10.80.3.254.53
+	# 10. $50 > $be, IPv4 flags [DF], UDP 10.80.3.254.53 > 10.80.131.1.1024
+	# 11. $be > $50, IPv4 flags [DF], UDP 10.80.131.1.1024 > 10.80.3.254.53
+	# 12. $50 > $be, IPv4 flags [DF], UDP 10.80.3.254.53 > 10.80.131.1.1024
+	# 13. $be > $50, IPv4 flags [DF], TCP [S] 10.80.131.1.1027 > 146.190.240.163.80
+	# 14. $50 > $be, IPv4 flags [DF], TCP [S.] 146.190.240.163.80 > 10.80.131.1.1027
+	# 15. $be > $50, IPv4 flags [DF], TCP [.] 10.80.131.1.1027 > 146.190.240.163.80
+
 	# This primitive is not specific to ARCnet protocol ID, so the
 	# difference between RFC 1051 and RFC 1201 is irrelevant.
 	{
@@ -20733,6 +21561,48 @@ my @filter_apply_blocks = (
 		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
 		expr => 'tcp dst port 80',
 		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 65535],
+	},
+	{
+		name => 'rfc1201_ip_flag_df_set',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'ip flag df-set',
+		results => [0, 0, 65535, 0, 65535, 0, 0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'rfc1201_ip_flag_mf_cleared',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'ip flag mf-cleared',
+		results => [0, 0, 65535, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
+	},
+	{
+		name => 'rfc1201_tcp_flag_syn_set',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp flag syn-set',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535, 0],
+	},
+	{
+		name => 'rfc1201_tcp_flag_ack_set',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp flag ack-set',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535],
+	},
+	{
+		name => 'rfc1201_tcp_flag_ack_cleared',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp flag ack-cleared',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 0],
+	},
+	{
+		name => 'rfc1201_tcp_flag_urg_set',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp flag urg-set',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1201_tcp_flag_psh_cleared',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp flag psh-cleared',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535, 65535],
 	},
 	{
 		name => 'mstp_link_host',
@@ -20885,6 +21755,43 @@ my @filter_apply_blocks = (
 		expr => 'ip dst 192.168.1.4',
 		results => [0, 262144, 0, 262144],
 	},
+
+	# Protocol exchange for the packets in "afs.pcap":
+	#  1. 00:60:08:9f:b1:f3 > 00:e0:f9:cc:18:00, IPv4 flags [none], UDP, 131.151.32.21.7001 > 131.151.1.146.7000
+	#  2. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146.7000 > 131.151.32.21.7001
+	#  3. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146 > 131.151.32.21
+	#  4. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146 > 131.151.32.21
+	#  5. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [DF], UDP, 131.151.1.146 > 131.151.32.21
+	#  6. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146.7000 > 131.151.32.21.7001
+	#  7. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146 > 131.151.32.21
+	#  8. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [+, DF], UDP, 131.151.1.146 > 131.151.32.21
+	#  9. 00:e0:f9:cc:18:00 > 00:60:08:9f:b1:f3, IPv4 flags [DF], UDP, 131.151.1.146 > 131.151.32.21
+	# 10. 00:60:08:9f:b1:f3 > 00:e0:f9:cc:18:00, IPv4 flags [none], UDP, 131.151.32.21.7001 > 131.151.1.146.7000
+	{
+		name => 'afs_ip_flag_df_set',
+		savefile => 'afs.pcap',
+		expr => 'ip flag df-set',
+		results => [0, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535, 0],
+	},
+	{
+		name => 'afs_ip_flag_mf_set',
+		savefile => 'afs.pcap',
+		expr => 'ip flag mf-set',
+		results => [0, 65535, 65535, 65535, 0, 65535, 65535, 65535, 0, 0],
+	},
+	{
+		name => 'afs_ip_flag_mf_cleared',
+		savefile => 'afs.pcap',
+		expr => 'ip flag mf-cleared',
+		results => [65535, 0, 0, 0, 65535, 0, 0, 0, 65535, 65535],
+	},
+	{
+		name => 'afs_ip_flag_df_set_and_mf_cleared',
+		savefile => 'afs.pcap',
+		expr => 'ip flag df-set and mf-cleared',
+		results => [0, 0, 0, 0, 65535, 0, 0, 0, 65535, 0],
+	},
+
 	{
 		name => 'ip6',
 		savefile => 'vrrp.pcap',
@@ -21327,17 +22234,17 @@ my @filter_apply_blocks = (
 	# The captured packets are as follows:
 	#  1. host1 -> host0 ICMP echo-request
 	#  2. host0 -> host1 ICMP echo-reply
-	#  3. host1 -> host2 ICMP echo-request
+	#  3. host1 -> host2 ICMP echo-request [DF]
 	#  4. host2 -> host1 ICMP echo-reply
 	#  5. host1 -> host0 (host3) ICMPv6 echo-request
-	#  6. host1 -> host2 ICMPv6 echo-request
-	#  7. host2 -> host1 ICMPv6 echo-reply
-	#  8. (host3) host0 -> host1 ICMPv6 echo-reply
+	#  6. host1 -> host2 ICMPv6 echo-request [DF]
+	#  7. host2 -> host1 ICMPv6 echo-reply [DF]
+	#  8. (host3) host0 -> host1 ICMPv6 echo-reply [DF]
 	#  9. host1 -> host0 ARP who-has
-	# 10. host1 -> host0 (host3) ICMP echo-request
-	# 11. host0 -> host1 ARP is-at
-	# 12. (host3) host0 -> host1 ICMP echo-reply
-	# 13. host1 -> host0 ICMPv6 echo-request
+	# 10. host1 -> host0 (host3) ICMP echo-request [DF]
+	# 11. host0 -> host1 ARP is-at [DF]
+	# 12. (host3) host0 -> host1 ICMP echo-reply [DF]
+	# 13. host1 -> host0 ICMPv6 echo-request [DF]
 	# 14. host0 -> host1 ICMPv6 echo-reply
 	{
 		name => 'gateway_eth_ipv4_ipv6',
@@ -21455,6 +22362,22 @@ my @filter_apply_blocks = (
 		],
 	},
 
+	# Protocol exchange for the packets in "brcm-tag.pcap":
+	#  1. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  2. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  3. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  4. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  5. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  6. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  7. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  8. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, IPv4 flags [DF], 192.168.1.1 > 192.168.1.115: ICMP echo request
+	#  9. 00:10:18:de:38:1e > 68:05:ca:18:47:70, IPv4 flags [none], 192.168.1.115 > 192.168.1.1: ICMP echo reply
+	# 10. 00:10:18:de:38:1e > 68:05:ca:18:47:70, IPv4 flags [DF], UDP, 192.168.1.115.68 > 192.168.1.1.67
+	# 11. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, IPv4 flags [DF], UDP, 192.168.1.1.67 > 192.168.1.115.68
+	# 12. 00:10:18:de:38:1e > 68:05:ca:18:47:74, IPv4 flags [DF], UDP, 192.168.3.23.68 > 192.168.3.1.67
+	# 13. 68:05:ca:18:47:74 > 00:10:18:de:38:1e, IPv4 flags [DF], UDP, 192.168.3.1.67 > 192.168.3.23.68
+	# 14. 00:10:18:de:38:1e > 68:05:ca:18:47:70, ARP Request who-has 192.168.1.1 tell 192.168.1.115
+	# 15. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, ARP Reply 192.168.1.1 is-at 68:05:ca:18:47:70
 	{
 		name => 'broadcast_DSA_TAG_BRCM',
 		savefile => 'brcm-tag.pcap',
@@ -21478,6 +22401,30 @@ my @filter_apply_blocks = (
 		savefile => 'brcm-tag.pcap',
 		expr => 'ip src host 192.168.1.1',
 		results => [0, 0, 262144, 0, 0, 262144, 262144, 262144, 0, 0, 262144, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip_flag_df_set_DSA_TAG_BRCM',
+		savefile => 'brcm-tag.pcap',
+		expr => 'ip flag df-set',
+		results => [0, 0, 262144, 0, 0, 262144, 262144, 262144, 0, 262144, 262144, 262144, 262144, 0, 0],
+	},
+	{
+		name => 'ip_flag_df_cleared_DSA_TAG_BRCM',
+		savefile => 'brcm-tag.pcap',
+		expr => 'ip flag df-cleared',
+		results => [262144, 262144, 0, 262144, 262144, 0, 0, 0, 262144, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip_flag_mf_set_DSA_TAG_BRCM',
+		savefile => 'brcm-tag.pcap',
+		expr => 'ip flag mf-set',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip_flag_mf_cleared_DSA_TAG_BRCM',
+		savefile => 'brcm-tag.pcap',
+		expr => 'ip flag mf-cleared',
+		results => [262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 262144, 0, 0],
 	},
 	# Protocol stack for the packets in brcm-tag-stp.pcap:
 	# 1. EG, 802.1Q VLAN ID 8, LLC, STP
@@ -21618,6 +22565,11 @@ sub errstr_syntax {
 # ERRSTR_INVALID_QUAL
 sub errstr_invqual {
 	return sprintf ('\'%s\' is not a valid qualifier for \'%s\'', shift, shift);
+}
+
+# gen_flag()
+sub errstr_invvalue {
+	return sprintf 'invalid \'%s\' ID \'%s\'', shift, shift;
 }
 
 # gen_scode() case Q_NET
@@ -22045,6 +22997,78 @@ my @filter_reject_tests = (
 		DLT => 'IPV4',
 		expr => 'sctp portrange 70000-80000',
 		errstr => errstr_invport (70000),
+	},
+	{
+		name => 'flag_1',
+		DLT => 'EN10MB',
+		expr => 'flag 1',
+		errstr => errstr_invqual('flag', '1'),
+	},
+	{
+		name => 'flag_1_2',
+		DLT => 'EN10MB',
+		expr => 'flag 1.2',
+		errstr => errstr_invqual('flag', '1.2'),
+	},
+	{
+		name => 'flag_1_2_3',
+		DLT => 'EN10MB',
+		expr => 'flag 1.2.3',
+		errstr => errstr_invqual('flag', '1.2.3'),
+	},
+	{
+		name => 'flag_1_2_3_4',
+		DLT => 'EN10MB',
+		expr => 'flag 1.2.3.4',
+		errstr => errstr_invqual('flag', '1.2.3.4'),
+	},
+	{
+		name => 'flag_ipv4cidr',
+		DLT => 'EN10MB',
+		expr => 'flag 1.2.3.0/24',
+		errstr => errstr_invqual('flag', '1.2.3.0/24'),
+	},
+	{
+		name => 'flag_ipv6addr',
+		DLT => 'EN10MB',
+		expr => 'flag fe80::',
+		errstr => errstr_invqual('flag', 'fe80::'),
+	},
+	{
+		name => 'flag_ipv6cidr',
+		DLT => 'EN10MB',
+		expr => 'flag fe80::/16',
+		errstr => errstr_invqual('flag', 'fe80::/16'),
+	},
+	{
+		name => 'flag_mac48',
+		DLT => 'EN10MB',
+		expr => 'flag a:b:c:d:e:f',
+		errstr => errstr_mac48_noether,
+	},
+	{
+		name => 'flag_mac8',
+		DLT => 'ARCNET',
+		expr => 'flag $ab',
+		errstr => errstr_invqual('flag', '$XX'),
+	},
+	{
+		name => 'flag_nosuchflag',
+		DLT => 'EN10MB',
+		expr => 'flag nosuchflag',
+		errstr => '\'flag\' must be proto-qualified',
+	},
+	{
+		name => 'ip_flag_syn',
+		DLT => 'EN10MB',
+		expr => 'ip flag syn-set',
+		errstr => errstr_invvalue('ip flag', 'syn-set'),
+	},
+	{
+		name => 'tcp_flag_df',
+		DLT => 'EN10MB',
+		expr => 'tcp flag df-set',
+		errstr => errstr_invvalue('tcp flag', 'df-set'),
 	},
 	{
 		name => 'pppoes_and_vlan',
@@ -22853,6 +23877,7 @@ my %pqual_features = (
 		gateway => 1,
 		protochain => 1,
 		proto => 1,
+		flag => 1,
 	},
 	ip6 => {
 		abbrev => 1,
@@ -22941,6 +23966,7 @@ my %pqual_features = (
 		index => 1,
 		port => 1,
 		portrange => 1,
+		flag => 1,
 	},
 	udp => {
 		abbrev => 1,
@@ -23044,6 +24070,8 @@ my %tqual_features = (
 	protochain => {
 	},
 	portrange => {
+	},
+	flag => {
 	},
 );
 
@@ -23594,6 +24622,13 @@ sub DLT_feature {
 	return item_with_without $DLTfeatures{$name}, $feature, 1;
 }
 
+sub to_ {
+	# In Perl 5.8.4 "tr///" does not have the "r" option.
+	my $ret = shift;
+	$ret =~ tr[ .:/][_];
+	return $ret;
+}
+
 # gen_load_internal() -> default
 foreach (pquals_without 'index') {
 	push @filter_reject_tests, {
@@ -23797,12 +24832,12 @@ foreach my $pq (pquals_without '') {
 	# HID -> gen_ncode() -> q.proto == Q_DECNET -> q.addr != Q_DEFAULT && q.addr != Q_HOST
 	# HID -> gen_ncode() -> default
 	push @filter_reject_tests, {
-		name => "${pq}_gateway_HID",
+		name => "${pq}_${_}_HID",
 		DLT => 'EN10MB',
-		expr => "$pq gateway 11.12.13.14",
-		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			errstr_invqual ('gateway', '11.12.13.14'),
-	};
+		expr => "$pq $_ 11.12.13.14",
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, $_) :
+			errstr_invqual ($_, '11.12.13.14'),
+	} foreach qw(gateway flag);
 	# HID
 	push @filter_reject_tests, {
 		name => "${pq}_${_}_HID",
@@ -23814,12 +24849,12 @@ foreach my $pq (pquals_without '') {
 	# HID '/' NUM -> gen_mcode() -> q.proto == Q_DECNET
 	# HID '/' NUM -> gen_mcode() -> default
 	push @filter_reject_tests, {
-		name => "${pq}_gateway_HID_NUM",
+		name => "${pq}_${_}_HID_NUM",
 		DLT => 'EN10MB',
-		expr => "$pq gateway 11.12.0.0/16",
-		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			errstr_invqual ('gateway', '11.12.0.0/16'),
-	};
+		expr => "$pq $_ 11.12.0.0/16",
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, $_) :
+			errstr_invqual ($_, '11.12.0.0/16'),
+	} foreach qw(gateway flag);
 	# HID '/' NUM
 	push @filter_reject_tests, {
 		name => "${pq}_${_}_HID_NUM",
@@ -23831,12 +24866,12 @@ foreach my $pq (pquals_without '') {
 	# HID NETMASK HID -> gen_mcode() -> q.proto == Q_DECNET
 	# HID NETMASK HID -> gen_mcode() -> default
 	push @filter_reject_tests, {
-		name => "${pq}_gateway_HID_mask_HID",
+		name => "${pq}_${_}_HID_mask_HID",
 		DLT => 'EN10MB',
-		expr => "$pq gateway 11.12.0.0 mask 255.255.0.0",
-		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, 'gateway') :
-			errstr_invqual ('gateway', '11.12.0.0 mask 255.255.0.0'),
-	};
+		expr => "$pq $_ 11.12.0.0 mask 255.255.0.0",
+		errstr => $pq eq 'decnet' ? errstr_invqual ($pq, $_) :
+			errstr_invqual ($_, '11.12.0.0 mask 255.255.0.0'),
+	} foreach qw(gateway flag);
 	# HID NETMASK HID
 	push @filter_reject_tests, {
 		name => "${pq}_${_}_HID_mask_HID",
@@ -23847,11 +24882,11 @@ foreach my $pq (pquals_without '') {
 	} foreach qw(port portrange proto protochain);
 	# HID6 -> gen_mcode6() -> default
 	push @filter_reject_tests, {
-		name => "${pq}_gateway_HID6",
+		name => "${pq}_${_}_HID6",
 		DLT => 'EN10MB',
-		expr => "$pq gateway fe80::0",
-		errstr => errstr_invqual ('gateway', 'fe80::0'),
-	};
+		expr => "$pq $_ fe80::0",
+		errstr => errstr_invqual ($_, 'fe80::0'),
+	} foreach qw(gateway flag);
 	# HID6
 	push @filter_reject_tests, {
 		name => "${pq}_${_}_HID6",
@@ -23862,11 +24897,11 @@ foreach my $pq (pquals_without '') {
 	} foreach qw(port portrange proto protochain);
 	# HID6 '/' NUM -> gen_mcode6() -> default
 	push @filter_reject_tests, {
-		name => "${pq}_gateway_HID6_NUM",
+		name => "${pq}_${_}_HID6_NUM",
 		DLT => 'EN10MB',
-		expr => "$pq gateway fe80::0/64",
-		errstr => errstr_invqual ('gateway', 'fe80::0/64'),
-	};
+		expr => "$pq $_ fe80::0/64",
+		errstr => errstr_invqual ($_, 'fe80::0/64'),
+	} foreach qw(gateway flag);
 	# HID6 '/' NUM
 	push @filter_reject_tests, {
 		name => "${pq}_${_}_HID6_NUM",
@@ -23973,6 +25008,46 @@ foreach (pquals_without 'abbrev') {
 		DLT => 'IEEE802_11_RADIO',
 		expr => $_,
 		errstr => "'${_}' cannot be used as an abbreviation",
+	};
+}
+
+# ndaqual
+foreach my $dqual (dquals_without 'flag') {
+	my $dqual_ = to_ ($dqual);
+	push @filter_reject_tests, {
+		name => "${dqual_}_flag_nosuchflag",
+		DLT => 'RAW',
+		expr => "$dqual flag nosuchflag",
+		errstr => errstr_syntax(),
+	};
+	foreach my $pqual (pquals_without '') {
+		push @filter_reject_tests, {
+			name => "${pqual}_${dqual_}_flag_nosuchflag",
+			DLT => 'EN10MB',
+			expr => "$pqual $dqual flag nosuchflag",
+			errstr => errstr_syntax(),
+		};
+	}
+}
+
+# gen_scode() -> gen_flag() -> default case
+foreach my $pqual (pquals_without 'flag') {
+	push @filter_reject_tests, {
+		name => "${pqual}_flag_nosuchflag",
+		DLT => 'RAW',
+		expr => "$pqual flag nosuchflag",
+		errstr => errstr_invqual ($pqual, 'flag'),
+	};
+}
+
+# gen_scode() -> gen_flag() -> Q_IP -> bpf_error()
+# gen_scode() -> gen_flag() -> Q_TCP -> bpf_error()
+foreach my $pqual (pquals_with 'flag') {
+	push @filter_reject_tests, {
+		name => "${pqual}_flag_nosuchflag",
+		DLT => 'EN10MB',
+		expr => "$pqual flag nosuchflag",
+		errstr => errstr_invvalue("$pqual flag", 'nosuchflag'),
 	};
 }
 
