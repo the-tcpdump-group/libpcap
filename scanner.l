@@ -306,6 +306,7 @@ port		return PORT;
 portrange	return PORTRANGE;
 proto		return PROTO;
 protochain	return PROTOCHAIN;
+flag		return FLAG;
 
 gateway		return GATEWAY;
 
