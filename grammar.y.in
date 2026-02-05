@@ -375,6 +375,7 @@ DIAG_OFF_BISON_BYACC
 
 
 %token  DST SRC HOST GATEWAY
+%token  FLAG
 %token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
 %token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP CARP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
@@ -617,6 +618,7 @@ aqual:	  HOST			{ $$ = Q_HOST; }
 	;
 /* non-directional address type qualifiers */
 ndaqual:  GATEWAY		{ $$ = Q_GATEWAY; }
+	| FLAG			{ $$ = Q_FLAG; }
 	;
 pname:	  LINK			{ $$ = Q_LINK; }
 	| IP			{ $$ = Q_IP; }

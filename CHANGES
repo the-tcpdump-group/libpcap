@@ -53,6 +53,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Sort resolved IPv4 and IPv6 addresses.
       In "gateway" negate the host(s), but not the protocol.
       Reject "gateway" within MPLS, VXLAN or Geneve.
+      Implement new "ip flag" and "tcp flag" primitives.
     rpcap:
       Support user names and passwords in rpcap:// and rpcaps:// URLs.
       Add a -t flag to rpcapd to specify the data channel port; from
