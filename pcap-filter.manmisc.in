@@ -1634,7 +1634,7 @@ The expression `\fBip[\fP0\fB] &\fP 0xf \fB!=\fP 5'
 catches all IPv4 packets with options.
 The expression
 `\fBip[\fP6:2\fB] &\fP 0x1fff \fB=\fP 0'
-catches only unfragmented IPv4 datagrams and frag zero of fragmented
+catches only unfragmented IPv4 datagrams and the first fragment of fragmented
 IPv4 datagrams.
 This check is implicitly applied to the
 .BR tcp ,
