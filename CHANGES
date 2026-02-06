@@ -1,7 +1,8 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.7 libpcap release (so far!)
     General:
-      Free p->opt.device on close, not on cleanup (issue #1615).
+      Free p->opt.device on close, not on cleanup (issue #1615). Issue
+        reported by Harrison Green.
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
