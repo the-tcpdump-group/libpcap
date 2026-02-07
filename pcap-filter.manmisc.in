@@ -1542,7 +1542,7 @@ bitwise binary operations
 .BR ^ ,
 .BR << ,
 .BR >> },
-a length operator, and packet data accessors.  All arithmetic expressions
+a length accessor, and packet data accessors.  All arithmetic expressions
 regardless of the complexity and composition resolve to an integer value.
 Note that all comparisons are unsigned, so that, for example, both 0x80000000
 and 0xffffffff are > 0.
@@ -1566,7 +1566,7 @@ those operators are used, filtering will be done in user mode, which
 will increase the overhead of capturing packets and may cause more
 packets to be dropped.
 .LP
-The length operator, indicated by the keyword \fBlen\fP, gives the
+The length accessor, indicated by the keywords \fBlen\fP or \fBlength\fP, gives the
 length of the packet.
 .SH PACKET DATA ACCESSORS
 To use the packet data in an arithmetic expression, use the following syntax:
