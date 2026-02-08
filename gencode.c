@@ -118,19 +118,46 @@ struct addrinfo {
 #define ETHERMTU	1500
 
 #ifndef IPPROTO_HOPOPTS
-#define IPPROTO_HOPOPTS 0
+#define IPPROTO_HOPOPTS    0
+#endif
+#ifndef IPPROTO_IGMP
+#define IPPROTO_IGMP       2
+#endif
+#ifndef IPPROTO_IGRP
+#define IPPROTO_IGRP       9
 #endif
 #ifndef IPPROTO_ROUTING
-#define IPPROTO_ROUTING 43
+#define IPPROTO_ROUTING   43
 #endif
 #ifndef IPPROTO_FRAGMENT
-#define IPPROTO_FRAGMENT 44
+#define IPPROTO_FRAGMENT  44
+#endif
+#ifndef IPPROTO_ESP
+#define IPPROTO_ESP       50
+#endif
+#ifndef IPPROTO_AH
+#define IPPROTO_AH        51
+#endif
+#ifndef IPPROTO_ICMPV6
+#define IPPROTO_ICMPV6    58
+#endif
+#ifndef IPPROTO_NONE
+#define IPPROTO_NONE      59
 #endif
 #ifndef IPPROTO_DSTOPTS
-#define IPPROTO_DSTOPTS 60
+#define IPPROTO_DSTOPTS   60
+#endif
+#ifndef IPPROTO_PIM
+#define IPPROTO_PIM      103
+#endif
+#ifndef IPPROTO_CARP
+#define IPPROTO_CARP     112
+#endif
+#ifndef IPPROTO_VRRP
+#define IPPROTO_VRRP     112
 #endif
 #ifndef IPPROTO_SCTP
-#define IPPROTO_SCTP 132
+#define IPPROTO_SCTP     132
 #endif
 
 #define GENEVE_PORT 6081
@@ -5682,36 +5709,17 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_ICMP:
 		return gen_proto(cstate, IPPROTO_ICMP, Q_IP);
 
-#ifndef	IPPROTO_IGMP
-#define	IPPROTO_IGMP	2
-#endif
-
 	case Q_IGMP:
 		return gen_proto(cstate, IPPROTO_IGMP, Q_IP);
 
-#ifndef	IPPROTO_IGRP
-#define	IPPROTO_IGRP	9
-#endif
 	case Q_IGRP:
 		return gen_proto(cstate, IPPROTO_IGRP, Q_IP);
-
-#ifndef IPPROTO_PIM
-#define IPPROTO_PIM	103
-#endif
 
 	case Q_PIM:
 		return gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
 
-#ifndef IPPROTO_VRRP
-#define IPPROTO_VRRP	112
-#endif
-
 	case Q_VRRP:
 		return gen_proto(cstate, IPPROTO_VRRP, Q_IP);
-
-#ifndef IPPROTO_CARP
-#define IPPROTO_CARP	112
-#endif
 
 	case Q_CARP:
 		return gen_proto(cstate, IPPROTO_CARP, Q_IP);
@@ -5749,21 +5757,12 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_IPV6:
 		return gen_linktype(cstate, ETHERTYPE_IPV6);
 
-#ifndef IPPROTO_ICMPV6
-#define IPPROTO_ICMPV6	58
-#endif
 	case Q_ICMPV6:
 		return gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
 
-#ifndef IPPROTO_AH
-#define IPPROTO_AH	51
-#endif
 	case Q_AH:
 		return gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
 
-#ifndef IPPROTO_ESP
-#define IPPROTO_ESP	50
-#endif
 	case Q_ESP:
 		return gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
 
@@ -6327,9 +6326,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	fix5 = i;
 	i++;
 
-#ifndef IPPROTO_NONE
-#define IPPROTO_NONE	59
-#endif
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
