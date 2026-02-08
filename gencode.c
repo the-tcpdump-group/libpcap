@@ -6861,7 +6861,7 @@ static void
 stringtoportrange(compiler_state_t *cstate, const char *string,
     bpf_u_int32 *port1, bpf_u_int32 *port2, int *proto)
 {
-	char *hyphen_off;
+	const char *hyphen_off;
 	const char *first, *second;
 	size_t first_size, second_size;
 	int save_proto;
