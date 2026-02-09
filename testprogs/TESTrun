@@ -562,8 +562,294 @@ my @filter_accept_blocks = (
 			',
 	}, # len_le_200
 
+	#---------- gen_load_internal(), the OR_PACKET-like code path
 	{
-		name => 'link_index_byte',
+		name => 'radio_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		snaplen => 200,
+		aliases => ['radio[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #200
+			(011) ret      #0
+			',
+	}, # radio_index_PRISM_HEADER
+	{
+		name => 'radio_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		snaplen => 200,
+		aliases => ['radio[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #200
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #200
+			(011) ret      #0
+			',
+	}, # radio_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'radio_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		snaplen => 200,
+		aliases => ['radio[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #200
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #200
+			(011) ret      #0
+			',
+	}, # radio_index_IEEE802_11_RADIO
+
+	#---------- gen_load_internal(), the OR_LINKHDR-like code path
+	{
+		name => 'link_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['link[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[2]
+			(007) tax
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 0]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # link_index_PRISM_HEADER
+	{
+		name => 'link_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ld       [4]
+			(001) st       M[2]
+			(002) ld       #0xab
+			(003) ldx      M[2]
+			(004) add      x
+			(005) tax
+			(006) ldb      [x + 0]
+			(007) jeq      #0xcd            jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ld       [4]
+			(001) st       M[2]
+			(002) tax
+			(003) ld       #0xab
+			(004) st       M[0]
+			(005) ldx      M[2]
+			(006) ld       M[0]
+			(007) add      x
+			(008) tax
+			(009) ldb      [x + 0]
+			(010) st       M[1]
+			(011) ld       #0xcd
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	}, # link_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'link_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[2]
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[2]
+			(006) tax
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # link_index_IEEE802_11_RADIO
+	{
+		name => 'link_index_PPI',
+		DLT => 'PPI',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 15
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[2]
+			(008) ld       #0xab
+			(009) ldx      M[2]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 0]
+			(013) jeq      #0xcd            jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+		unopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 23
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[2]
+			(008) tax
+			(009) ld       #0xab
+			(010) st       M[0]
+			(011) ldx      M[2]
+			(012) ld       M[0]
+			(013) add      x
+			(014) tax
+			(015) ldb      [x + 0]
+			(016) st       M[1]
+			(017) ld       #0xcd
+			(018) st       M[3]
+			(019) ldx      M[3]
+			(020) ld       M[1]
+			(021) jeq      x                jt 22	jf 23
+			(022) ret      #262144
+			(023) ret      #0
+			',
+	}, # link_index_PPI
+	{
+		name => 'link_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_IEEE802_11
+	{
+		name => 'link_index_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_PFLOG
+	{
+		name => 'link_index_byte_EN10MB',
 		DLT => 'EN10MB',
 		aliases => [
 			'link[5] == 0x12',
@@ -600,9 +886,9 @@ my @filter_accept_blocks = (
 			(010) ret      #262144
 			(011) ret      #0
 			',
-	}, # link_index_byte
+	}, # link_index_byte_EN10MB
 	{
-		name => 'link_index_halfword',
+		name => 'link_index_halfword_EN10MB',
 		DLT => 'EN10MB',
 		aliases => [
 			'link[7:2] == 0x1234',
@@ -633,9 +919,9 @@ my @filter_accept_blocks = (
 			(010) ret      #262144
 			(011) ret      #0
 			',
-	}, # link_index_halfword
+	}, # link_index_halfword_EN10MB
 	{
-		name => 'link_index_word',
+		name => 'link_index_word_EN10MB',
 		DLT => 'EN10MB',
 		aliases => [
 			'link[10:4] == 0x12345678',
@@ -666,240 +952,1950 @@ my @filter_accept_blocks = (
 			(010) ret      #262144
 			(011) ret      #0
 			',
-	}, # link_index_word
-
+	}, # link_index_word_EN10MB
 	{
-		name => 'icmp_index_icmptype',
-		DLT => 'EN10MB',
-		snaplen => 16000,
-		# Verify that the named offset resolves to the same constant and that the
-		# protocol supports index operation.
-		aliases => [
-			'icmp[icmptype] != 0xff',
-			'icmp[0] != 0xff',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 10
-			(002) ldb      [23]
-			(003) jeq      #0x1             jt 4	jf 10
-			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 10	jf 6
-			(006) ldxb     4*([14]&0xf)
-			(007) ldb      [x + 14]
-			(008) jeq      #0xff            jt 10	jf 9
-			(009) ret      #16000
-			(010) ret      #0
-			',
-		unopt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [23]
-			(005) jeq      #0x1             jt 6	jf 22
-			(006) ldh      [20]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0x0
-			(009) st       M[0]
-			(010) ldxb     4*([14]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 14]
-			(015) st       M[1]
-			(016) ld       #0xff
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 22	jf 21
-			(021) ret      #16000
-			(022) ret      #0
-			',
-	}, # icmp_index_icmptype
-	{
-		name => 'icmp_index_icmpcode',
-		DLT => 'EN10MB',
-		snaplen => 16000,
-		# Same as for icmp[icmptype] above.
-		aliases => [
-			'icmp[icmpcode] != 0xff',
-			'icmp[1] != 0xff',
-		],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 10
-			(002) ldb      [23]
-			(003) jeq      #0x1             jt 4	jf 10
-			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 10	jf 6
-			(006) ldxb     4*([14]&0xf)
-			(007) ldb      [x + 15]
-			(008) jeq      #0xff            jt 10	jf 9
-			(009) ret      #16000
-			(010) ret      #0
-			',
-		unopt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [23]
-			(005) jeq      #0x1             jt 6	jf 22
-			(006) ldh      [20]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0x1
-			(009) st       M[0]
-			(010) ldxb     4*([14]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 14]
-			(015) st       M[1]
-			(016) ld       #0xff
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 22	jf 21
-			(021) ret      #16000
-			(022) ret      #0
-			',
-	}, # icmp_index_icmpcode
-	{
-		name => 'icmp6_index_icmp6type',
-		DLT => 'IPV6',
-		snaplen => 10000,
-		# Same as for icmp[icmptype] above.
-		aliases => [
-			'icmp6[icmp6type] != 0xff',
-			'icmp6[0] != 0xff',
-		],
-		opt => '
-			(000) ldb      [6]
-			(001) jeq      #0x3a            jt 2	jf 5
-			(002) ldb      [40]
-			(003) jeq      #0xff            jt 5	jf 4
-			(004) ret      #10000
-			(005) ret      #0
-			',
-		unopt => '
-			(000) ldb      [6]
-			(001) jeq      #0x3a            jt 2	jf 13
-			(002) ld       #0x0
-			(003) st       M[0]
-			(004) ldx      M[0]
-			(005) ldb      [x + 40]
-			(006) st       M[1]
-			(007) ld       #0xff
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
-			(011) jeq      x                jt 13	jf 12
-			(012) ret      #10000
-			(013) ret      #0
-			',
-	}, # icmp6_index_icmp6type
-	{
-		name => 'icmp6_index_icmp6code',
-		DLT => 'IPV6',
-		snaplen => 10000,
-		# Same as for icmp[icmptype] above.
-		aliases => [
-			'icmp6[icmp6code] != 0xff',
-			'icmp6[1] != 0xff',
-		],
-		opt => '
-			(000) ldb      [6]
-			(001) jeq      #0x3a            jt 2	jf 5
-			(002) ldb      [41]
-			(003) jeq      #0xff            jt 5	jf 4
-			(004) ret      #10000
-			(005) ret      #0
-			',
-		unopt => '
-			(000) ldb      [6]
-			(001) jeq      #0x3a            jt 2	jf 13
-			(002) ld       #0x1
-			(003) st       M[0]
-			(004) ldx      M[0]
-			(005) ldb      [x + 40]
-			(006) st       M[1]
-			(007) ld       #0xff
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
-			(011) jeq      x                jt 13	jf 12
-			(012) ret      #10000
-			(013) ret      #0
-			',
-	}, # icmp6_index_icmp6code
-	{
-		name => 'udp_index_halfword',
+		name => 'link_index_RAW',
 		DLT => 'RAW',
-		snaplen => 65535,
-		# The implementation is IPv4-only.
-		aliases => ['udp[8:2] == 0xabcd'],
+		aliases => ['link[0xab] == 0xcd'],
 		opt => '
-			(000) ldb      [0]
-			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 11
-			(003) ldb      [9]
-			(004) jeq      #0x11            jt 5	jf 11
-			(005) ldh      [6]
-			(006) jset     #0x1fff          jt 11	jf 7
-			(007) ldxb     4*([0]&0xf)
-			(008) ldh      [x + 8]
-			(009) jeq      #0xabcd          jt 10	jf 11
-			(010) ret      #65535
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
 			(011) ret      #0
 			',
+	}, # link_index_RAW
+	{
+		name => 'link_index_PPP',
+		DLT => 'PPP',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_PPP
+	{
+		name => 'link_index_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_LINUX_SLL
+	{
+		name => 'link_index_LINUX_SLL2',
+		DLT => 'LINUX_SLL2',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_LINUX_SLL2
+	{
+		name => 'link_index_DSA_TAG_BRCM',
+		DLT => 'DSA_TAG_BRCM',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_DSA_TAG_BRCM
+	{
+		name => 'link_index_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['link[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [171]
+			(001) jeq      #0xcd            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+		unopt => '
+			(000) ld       #0xab
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xcd
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	}, # link_index_ARCNET_LINUX
+
+	#---------- gen_load_internal(), the OR_LINKPL-like code path
+	{
+		name => 'ip_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['ip[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[3]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[2]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[2]
+			(016) add      #2
+			(017) st       M[2]
+			(018) ldx      M[3]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 39
+			(022) ldx      M[2]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x800           jt 25	jf 39
+			(025) ld       #0xab
+			(026) st       M[0]
+			(027) ldx      M[2]
+			(028) ld       M[0]
+			(029) add      x
+			(030) tax
+			(031) ldb      [x + 8]
+			(032) st       M[1]
+			(033) ld       #0xcd
+			(034) st       M[4]
+			(035) ldx      M[4]
+			(036) ld       M[1]
+			(037) jeq      x                jt 38	jf 39
+			(038) ret      #262144
+			(039) ret      #0
+			',
+	}, # ip_index_PRISM_HEADER
+	{
+		name => 'ip_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['ip[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 31
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 31
+			(017) ld       #0xab
+			(018) st       M[0]
+			(019) ldx      M[2]
+			(020) ld       M[0]
+			(021) add      x
+			(022) tax
+			(023) ldb      [x + 8]
+			(024) st       M[1]
+			(025) ld       #0xcd
+			(026) st       M[3]
+			(027) ldx      M[3]
+			(028) ld       M[1]
+			(029) jeq      x                jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+	}, # ip_index_IEEE802_11
+	{
+		name => 'ip_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['ip[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 5
+			(002) ldb      [185]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 14]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # ip_index_EN10MB
+	{
+		name => 'ip_index_RAW',
+		DLT => 'RAW',
+		aliases => ['ip[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x40            jt 3	jf 6
+			(003) ldb      [171]
+			(004) jeq      #0xcd            jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 33
-			(003) ldb      [0]
-			(004) and      #0xf0
-			(005) jeq      #0x40            jt 6	jf 8
-			(006) ldb      [9]
-			(007) jeq      #0x11            jt 17	jf 8
-			(008) ldb      [0]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 33
-			(011) ldb      [6]
-			(012) jeq      #0x11            jt 17	jf 13
-			(013) ldb      [6]
-			(014) jeq      #0x2c            jt 15	jf 33
-			(015) ldb      [40]
-			(016) jeq      #0x11            jt 17	jf 33
-			(017) ldh      [6]
-			(018) jset     #0x1fff          jt 33	jf 19
-			(019) ld       #0x8
-			(020) st       M[0]
-			(021) ldxb     4*([0]&0xf)
-			(022) ld       M[0]
-			(023) add      x
-			(024) tax
-			(025) ldh      [x + 0]
-			(026) st       M[1]
-			(027) ld       #0xabcd
-			(028) st       M[2]
-			(029) ldx      M[2]
-			(030) ld       M[1]
-			(031) jeq      x                jt 32	jf 33
-			(032) ret      #65535
-			(033) ret      #0
+			(002) jeq      #0x40            jt 3	jf 14
+			(003) ld       #0xab
+			(004) st       M[0]
+			(005) ldx      M[0]
+			(006) ldb      [x + 0]
+			(007) st       M[1]
+			(008) ld       #0xcd
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[1]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
 			',
-	}, # udp_index_halfword
+	}, # ip_index_RAW
 	{
-		name => 'tcp_index_byte',
+		name => 'arp_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['arp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 34
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x806           jt 20	jf 34
+			(020) ld       #0xab
+			(021) st       M[0]
+			(022) ldx      M[2]
+			(023) ld       M[0]
+			(024) add      x
+			(025) tax
+			(026) ldb      [x + 8]
+			(027) st       M[1]
+			(028) ld       #0xcd
+			(029) st       M[4]
+			(030) ldx      M[4]
+			(031) ld       M[1]
+			(032) jeq      x                jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			',
+	}, # arp_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'arp_index_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['arp[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # arp_index_PFLOG
+	{
+		name => 'arp_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['arp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 5
+			(002) ldb      [185]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x806           jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 14]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # arp_index_EN10MB
+	{
+		name => 'arp_index_RAW',
 		DLT => 'RAW',
-		snaplen => 262144,
-		# Same as for icmp[icmptype] above.
-		# The implementation is IPv4-only.
-		aliases => [
-			'tcp[tcpflags] == 0xFF',
-			'tcp[13] == 0xFF',
-		],
+		aliases => ['arp[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # arp_index_RAW
+	{
+		name => 'rarp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['rarp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[2]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[2]
+			(015) add      #2
+			(016) st       M[2]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[2]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[2]
+			(029) ldx      M[3]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 50
+			(033) ldx      M[2]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x8035          jt 36	jf 50
+			(036) ld       #0xab
+			(037) st       M[0]
+			(038) ldx      M[2]
+			(039) ld       M[0]
+			(040) add      x
+			(041) tax
+			(042) ldb      [x + 8]
+			(043) st       M[1]
+			(044) ld       #0xcd
+			(045) st       M[4]
+			(046) ldx      M[4]
+			(047) ld       M[1]
+			(048) jeq      x                jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
+			',
+	}, # rarp_index_IEEE802_11_RADIO
+	{
+		name => 'rarp_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['rarp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 31
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x8035          jt 17	jf 31
+			(017) ld       #0xab
+			(018) st       M[0]
+			(019) ldx      M[2]
+			(020) ld       M[0]
+			(021) add      x
+			(022) tax
+			(023) ldb      [x + 8]
+			(024) st       M[1]
+			(025) ld       #0xcd
+			(026) st       M[3]
+			(027) ldx      M[3]
+			(028) ld       M[1]
+			(029) jeq      x                jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+	}, # rarp_index_IEEE802_11
+	{
+		name => 'rarp_index_PPP',
+		DLT => 'PPP',
+		aliases => ['rarp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x8035          jt 2	jf 5
+			(002) ldb      [175]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x8035          jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 4]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # rarp_index_PPP
+	{
+		name => 'atalk_index_PPI',
+		DLT => 'PPI',
+		aliases => ['atalk[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 43
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[3]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[2]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[2]
+			(017) add      #2
+			(018) st       M[2]
+			(019) ldx      M[3]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 43
+			(023) ldx      M[2]
+			(024) ld       [x + 4]
+			(025) jeq      #0x7809b         jt 26	jf 43
+			(026) ldx      M[2]
+			(027) ld       [x + 0]
+			(028) jeq      #0xaaaa0308      jt 29	jf 43
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[2]
+			(032) ld       M[0]
+			(033) add      x
+			(034) tax
+			(035) ldb      [x + 8]
+			(036) st       M[1]
+			(037) ld       #0xcd
+			(038) st       M[4]
+			(039) ldx      M[4]
+			(040) ld       M[1]
+			(041) jeq      x                jt 42	jf 43
+			(042) ret      #262144
+			(043) ret      #0
+			',
+	}, # atalk_index_PPI
+	{
+		name => 'atalk_index_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['atalk[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # atalk_index_PFLOG
+	{
+		name => 'atalk_index_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['atalk[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [4]
+			(001) jeq      #0xdd            jt 2	jf 5
+			(002) ldb      [179]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xdd            jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 8]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # atalk_index_ARCNET_LINUX
+	{
+		name => 'decnet_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['decnet[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[3]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[2]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[2]
+			(016) add      #2
+			(017) st       M[2]
+			(018) ldx      M[3]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 39
+			(022) ldx      M[2]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x6003          jt 25	jf 39
+			(025) ld       #0xab
+			(026) st       M[0]
+			(027) ldx      M[2]
+			(028) ld       M[0]
+			(029) add      x
+			(030) tax
+			(031) ldb      [x + 8]
+			(032) st       M[1]
+			(033) ld       #0xcd
+			(034) st       M[4]
+			(035) ldx      M[4]
+			(036) ld       M[1]
+			(037) jeq      x                jt 38	jf 39
+			(038) ret      #262144
+			(039) ret      #0
+			',
+	}, # decnet_index_PRISM_HEADER
+	{
+		name => 'decnet_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['decnet[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 31
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x6003          jt 17	jf 31
+			(017) ld       #0xab
+			(018) st       M[0]
+			(019) ldx      M[2]
+			(020) ld       M[0]
+			(021) add      x
+			(022) tax
+			(023) ldb      [x + 8]
+			(024) st       M[1]
+			(025) ld       #0xcd
+			(026) st       M[3]
+			(027) ldx      M[3]
+			(028) ld       M[1]
+			(029) jeq      x                jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+	}, # decnet_index_IEEE802_11
+	{
+		name => 'decnet_index_PPP',
+		DLT => 'PPP',
+		aliases => ['decnet[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x27            jt 2	jf 5
+			(002) ldb      [175]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x27            jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 4]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # decnet_index_PPP
+	{
+		name => 'sca_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['sca[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 34
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x6007          jt 20	jf 34
+			(020) ld       #0xab
+			(021) st       M[0]
+			(022) ldx      M[2]
+			(023) ld       M[0]
+			(024) add      x
+			(025) tax
+			(026) ldb      [x + 8]
+			(027) st       M[1]
+			(028) ld       #0xcd
+			(029) st       M[4]
+			(030) ldx      M[4]
+			(031) ld       M[1]
+			(032) jeq      x                jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			',
+	}, # sca_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'sca_index_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['sca[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # sca_index_PFLOG
+	{
+		name => 'sca_index_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['sca[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x6007          jt 2	jf 5
+			(002) ldb      [187]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x6007          jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 16]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # sca_index_LINUX_SLL
+	{
+		name => 'lat_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['lat[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[2]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[2]
+			(015) add      #2
+			(016) st       M[2]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[2]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[2]
+			(029) ldx      M[3]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 50
+			(033) ldx      M[2]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x6004          jt 36	jf 50
+			(036) ld       #0xab
+			(037) st       M[0]
+			(038) ldx      M[2]
+			(039) ld       M[0]
+			(040) add      x
+			(041) tax
+			(042) ldb      [x + 8]
+			(043) st       M[1]
+			(044) ld       #0xcd
+			(045) st       M[4]
+			(046) ldx      M[4]
+			(047) ld       M[1]
+			(048) jeq      x                jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
+			',
+	}, # lat_index_IEEE802_11_RADIO
+	{
+		name => 'lat_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['lat[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 31
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x6004          jt 17	jf 31
+			(017) ld       #0xab
+			(018) st       M[0]
+			(019) ldx      M[2]
+			(020) ld       M[0]
+			(021) add      x
+			(022) tax
+			(023) ldb      [x + 8]
+			(024) st       M[1]
+			(025) ld       #0xcd
+			(026) st       M[3]
+			(027) ldx      M[3]
+			(028) ld       M[1]
+			(029) jeq      x                jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+	}, # lat_index_IEEE802_11
+	{
+		name => 'lat_index_LINUX_SLL2',
+		DLT => 'LINUX_SLL2',
+		aliases => ['lat[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x6004          jt 2	jf 5
+			(002) ldb      [191]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [0]
+			(001) jeq      #0x6004          jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 20]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # lat_index_LINUX_SLL2
+	{
+		name => 'moprc_index_PPI',
+		DLT => 'PPI',
+		aliases => ['moprc[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 40
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[3]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[2]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[2]
+			(017) add      #2
+			(018) st       M[2]
+			(019) ldx      M[3]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 40
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jeq      #0x6002          jt 26	jf 40
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ld       M[0]
+			(030) add      x
+			(031) tax
+			(032) ldb      [x + 8]
+			(033) st       M[1]
+			(034) ld       #0xcd
+			(035) st       M[4]
+			(036) ldx      M[4]
+			(037) ld       M[1]
+			(038) jeq      x                jt 39	jf 40
+			(039) ret      #262144
+			(040) ret      #0
+			',
+	}, # moprc_index_PPI
+	{
+		name => 'moprc_index_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['moprc[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ld       #0x1
+			(006) jeq      #0x0             jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	}, # moprc_index_PFLOG
+	{
+		name => 'moprc_index_DSA_TAG_BRCM',
+		DLT => 'DSA_TAG_BRCM',
+		aliases => ['moprc[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x6002          jt 2	jf 5
+			(002) ldb      [189]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x6002          jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 18]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # moprc_index_DSA_TAG_BRCM
+	{
+		name => 'mopdl_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['mopdl[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[3]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[2]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[2]
+			(016) add      #2
+			(017) st       M[2]
+			(018) ldx      M[3]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 39
+			(022) ldx      M[2]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x6001          jt 25	jf 39
+			(025) ld       #0xab
+			(026) st       M[0]
+			(027) ldx      M[2]
+			(028) ld       M[0]
+			(029) add      x
+			(030) tax
+			(031) ldb      [x + 8]
+			(032) st       M[1]
+			(033) ld       #0xcd
+			(034) st       M[4]
+			(035) ldx      M[4]
+			(036) ld       M[1]
+			(037) jeq      x                jt 38	jf 39
+			(038) ret      #262144
+			(039) ret      #0
+			',
+	}, # mopdl_index_PRISM_HEADER
+	{
+		name => 'mopdl_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['mopdl[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 31
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x6001          jt 17	jf 31
+			(017) ld       #0xab
+			(018) st       M[0]
+			(019) ldx      M[2]
+			(020) ld       M[0]
+			(021) add      x
+			(022) tax
+			(023) ldb      [x + 8]
+			(024) st       M[1]
+			(025) ld       #0xcd
+			(026) st       M[3]
+			(027) ldx      M[3]
+			(028) ld       M[1]
+			(029) jeq      x                jt 30	jf 31
+			(030) ret      #262144
+			(031) ret      #0
+			',
+	}, # mopdl_index_IEEE802_11
+	{
+		name => 'mopdl_index_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['mopdl[0xab] == 0xcd'],
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mopdl_index_ARCNET_LINUX
+	{
+		name => 'ip6_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['ip6[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 34
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x86dd          jt 20	jf 34
+			(020) ld       #0xab
+			(021) st       M[0]
+			(022) ldx      M[2]
+			(023) ld       M[0]
+			(024) add      x
+			(025) tax
+			(026) ldb      [x + 8]
+			(027) st       M[1]
+			(028) ld       #0xcd
+			(029) st       M[4]
+			(030) ldx      M[4]
+			(031) ld       M[1]
+			(032) jeq      x                jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			',
+	}, # ip6_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'ip6_5_index_PFLOG',
+		skip => skip_os_not ('haiku'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x5             jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x5             jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_5_index_PFLOG
+	{
+		name => 'ip6_10_index_PFLOG',
+		skip => skip_os_not ('linux'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0xa             jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0xa             jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_10_index_PFLOG
+	{
+		name => 'ip6_22_index_PFLOG',
+		skip => skip_os_not ('hpux'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x16            jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x16            jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_22_index_PFLOG
+	{
+		name => 'ip6_24_index_PFLOG',
+		skip => skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x18            jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x18            jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_24_index_PFLOG
+	{
+		name => 'ip6_26_index_PFLOG',
+		skip => skip_os_not ('solaris'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1a            jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1a            jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_26_index_PFLOG
+	{
+		name => 'ip6_28_index_PFLOG',
+		skip => skip_os_not ('dragonfly') && skip_os_not ('freebsd'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1c            jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1c            jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_28_index_PFLOG
+	{
+		name => 'ip6_30_index_PFLOG',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1e            jt 6	jf 13
+			(006) ld       #0xab
+			(007) ldx      M[2]
+			(008) add      x
+			(009) tax
+			(010) ldb      [x + 0]
+			(011) jeq      #0xcd            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1e            jt 7	jf 21
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldx      M[2]
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
+			',
+	}, # ip6_30_index_PFLOG
+	{
+		name => 'ip6_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['ip6[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 5
+			(002) ldb      [185]
+			(003) jeq      #0xcd            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 13
+			(002) ld       #0xab
+			(003) st       M[0]
+			(004) ldx      M[0]
+			(005) ldb      [x + 14]
+			(006) st       M[1]
+			(007) ld       #0xcd
+			(008) st       M[2]
+			(009) ldx      M[2]
+			(010) ld       M[1]
+			(011) jeq      x                jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
+			',
+	}, # ip6_index_EN10MB
+
+
+	#---------- gen_load_internal(), the OR_TRAN_IPV4-like code path
+	{
+		name => 'sctp_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['sctp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[3]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[2]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[2]
+			(016) add      #2
+			(017) st       M[2]
+			(018) ldx      M[3]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 73
+			(022) ldx      M[2]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x800           jt 25	jf 73
+			(025) ldx      M[3]
+			(026) ldb      [x + 0]
+			(027) and      #0xc
+			(028) jeq      #0x8             jt 29	jf 35
+			(029) ldx      M[2]
+			(030) ldh      [x + 6]
+			(031) jeq      #0x800           jt 32	jf 35
+			(032) ldx      M[2]
+			(033) ldb      [x + 17]
+			(034) jeq      #0x84            jt 51	jf 35
+			(035) ldx      M[3]
+			(036) ldb      [x + 0]
+			(037) and      #0xc
+			(038) jeq      #0x8             jt 39	jf 73
+			(039) ldx      M[2]
+			(040) ldh      [x + 6]
+			(041) jeq      #0x86dd          jt 42	jf 73
+			(042) ldx      M[2]
+			(043) ldb      [x + 14]
+			(044) jeq      #0x84            jt 51	jf 45
+			(045) ldx      M[2]
+			(046) ldb      [x + 14]
+			(047) jeq      #0x2c            jt 48	jf 73
+			(048) ldx      M[2]
+			(049) ldb      [x + 48]
+			(050) jeq      #0x84            jt 51	jf 73
+			(051) ldx      M[2]
+			(052) ldh      [x + 14]
+			(053) jset     #0x1fff          jt 73	jf 54
+			(054) ld       #0xab
+			(055) st       M[0]
+			(056) ldx      M[2]
+			(057) ldb      [x + 8]
+			(058) and      #0xf
+			(059) lsh      #2
+			(060) add      x
+			(061) tax
+			(062) ld       M[0]
+			(063) add      x
+			(064) tax
+			(065) ldb      [x + 8]
+			(066) st       M[1]
+			(067) ld       #0xcd
+			(068) st       M[4]
+			(069) ldx      M[4]
+			(070) ld       M[1]
+			(071) jeq      x                jt 72	jf 73
+			(072) ret      #262144
+			(073) ret      #0
+			',
+	}, # sctp_index_PRISM_HEADER
+	{
+		name => 'sctp_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['sctp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 63
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 63
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 26
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 26
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x84            jt 41	jf 26
+			(026) ldb      [0]
+			(027) and      #0xc
+			(028) jeq      #0x8             jt 29	jf 63
+			(029) ldx      M[2]
+			(030) ldh      [x + 6]
+			(031) jeq      #0x86dd          jt 32	jf 63
+			(032) ldx      M[2]
+			(033) ldb      [x + 14]
+			(034) jeq      #0x84            jt 41	jf 35
+			(035) ldx      M[2]
+			(036) ldb      [x + 14]
+			(037) jeq      #0x2c            jt 38	jf 63
+			(038) ldx      M[2]
+			(039) ldb      [x + 48]
+			(040) jeq      #0x84            jt 41	jf 63
+			(041) ldx      M[2]
+			(042) ldh      [x + 14]
+			(043) jset     #0x1fff          jt 63	jf 44
+			(044) ld       #0xab
+			(045) st       M[0]
+			(046) ldx      M[2]
+			(047) ldb      [x + 8]
+			(048) and      #0xf
+			(049) lsh      #2
+			(050) add      x
+			(051) tax
+			(052) ld       M[0]
+			(053) add      x
+			(054) tax
+			(055) ldb      [x + 8]
+			(056) st       M[1]
+			(057) ld       #0xcd
+			(058) st       M[3]
+			(059) ldx      M[3]
+			(060) ld       M[1]
+			(061) jeq      x                jt 62	jf 63
+			(062) ret      #262144
+			(063) ret      #0
+			',
+	}, # sctp_index_IEEE802_11
+	{
+		name => 'sctp_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['sctp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [23]
+			(003) jeq      #0x84            jt 4	jf 10
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldb      [x + 185]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 30
+			(002) ldh      [12]
+			(003) jeq      #0x800           jt 4	jf 6
+			(004) ldb      [23]
+			(005) jeq      #0x84            jt 14	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x86dd          jt 8	jf 30
+			(008) ldb      [20]
+			(009) jeq      #0x84            jt 14	jf 10
+			(010) ldb      [20]
+			(011) jeq      #0x2c            jt 12	jf 30
+			(012) ldb      [54]
+			(013) jeq      #0x84            jt 14	jf 30
+			(014) ldh      [20]
+			(015) jset     #0x1fff          jt 30	jf 16
+			(016) ld       #0xab
+			(017) st       M[0]
+			(018) ldxb     4*([14]&0xf)
+			(019) ld       M[0]
+			(020) add      x
+			(021) tax
+			(022) ldb      [x + 14]
+			(023) st       M[1]
+			(024) ld       #0xcd
+			(025) st       M[2]
+			(026) ldx      M[2]
+			(027) ld       M[1]
+			(028) jeq      x                jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # sctp_index_EN10MB
+	{
+		name => 'tcp_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['tcp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 68
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x800           jt 20	jf 68
+			(020) ldx      M[3]
+			(021) ldb      [x + 0]
+			(022) and      #0xc
+			(023) jeq      #0x8             jt 24	jf 30
+			(024) ldx      M[2]
+			(025) ldh      [x + 6]
+			(026) jeq      #0x800           jt 27	jf 30
+			(027) ldx      M[2]
+			(028) ldb      [x + 17]
+			(029) jeq      #0x6             jt 46	jf 30
+			(030) ldx      M[3]
+			(031) ldb      [x + 0]
+			(032) and      #0xc
+			(033) jeq      #0x8             jt 34	jf 68
+			(034) ldx      M[2]
+			(035) ldh      [x + 6]
+			(036) jeq      #0x86dd          jt 37	jf 68
+			(037) ldx      M[2]
+			(038) ldb      [x + 14]
+			(039) jeq      #0x6             jt 46	jf 40
+			(040) ldx      M[2]
+			(041) ldb      [x + 14]
+			(042) jeq      #0x2c            jt 43	jf 68
+			(043) ldx      M[2]
+			(044) ldb      [x + 48]
+			(045) jeq      #0x6             jt 46	jf 68
+			(046) ldx      M[2]
+			(047) ldh      [x + 14]
+			(048) jset     #0x1fff          jt 68	jf 49
+			(049) ld       #0xab
+			(050) st       M[0]
+			(051) ldx      M[2]
+			(052) ldb      [x + 8]
+			(053) and      #0xf
+			(054) lsh      #2
+			(055) add      x
+			(056) tax
+			(057) ld       M[0]
+			(058) add      x
+			(059) tax
+			(060) ldb      [x + 8]
+			(061) st       M[1]
+			(062) ld       #0xcd
+			(063) st       M[4]
+			(064) ldx      M[4]
+			(065) ld       M[1]
+			(066) jeq      x                jt 67	jf 68
+			(067) ret      #262144
+			(068) ret      #0
+			',
+	}, # tcp_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'tcp_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['tcp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 63
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 63
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 26
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 26
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x6             jt 41	jf 26
+			(026) ldb      [0]
+			(027) and      #0xc
+			(028) jeq      #0x8             jt 29	jf 63
+			(029) ldx      M[2]
+			(030) ldh      [x + 6]
+			(031) jeq      #0x86dd          jt 32	jf 63
+			(032) ldx      M[2]
+			(033) ldb      [x + 14]
+			(034) jeq      #0x6             jt 41	jf 35
+			(035) ldx      M[2]
+			(036) ldb      [x + 14]
+			(037) jeq      #0x2c            jt 38	jf 63
+			(038) ldx      M[2]
+			(039) ldb      [x + 48]
+			(040) jeq      #0x6             jt 41	jf 63
+			(041) ldx      M[2]
+			(042) ldh      [x + 14]
+			(043) jset     #0x1fff          jt 63	jf 44
+			(044) ld       #0xab
+			(045) st       M[0]
+			(046) ldx      M[2]
+			(047) ldb      [x + 8]
+			(048) and      #0xf
+			(049) lsh      #2
+			(050) add      x
+			(051) tax
+			(052) ld       M[0]
+			(053) add      x
+			(054) tax
+			(055) ldb      [x + 8]
+			(056) st       M[1]
+			(057) ld       #0xcd
+			(058) st       M[3]
+			(059) ldx      M[3]
+			(060) ld       M[1]
+			(061) jeq      x                jt 62	jf 63
+			(062) ret      #262144
+			(063) ret      #0
+			',
+	}, # tcp_index_IEEE802_11
+	{
+		name => 'tcp_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['tcp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 10
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldb      [x + 185]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 30
+			(002) ldh      [12]
+			(003) jeq      #0x800           jt 4	jf 6
+			(004) ldb      [23]
+			(005) jeq      #0x6             jt 14	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x86dd          jt 8	jf 30
+			(008) ldb      [20]
+			(009) jeq      #0x6             jt 14	jf 10
+			(010) ldb      [20]
+			(011) jeq      #0x2c            jt 12	jf 30
+			(012) ldb      [54]
+			(013) jeq      #0x6             jt 14	jf 30
+			(014) ldh      [20]
+			(015) jset     #0x1fff          jt 30	jf 16
+			(016) ld       #0xab
+			(017) st       M[0]
+			(018) ldxb     4*([14]&0xf)
+			(019) ld       M[0]
+			(020) add      x
+			(021) tax
+			(022) ldb      [x + 14]
+			(023) st       M[1]
+			(024) ld       #0xcd
+			(025) st       M[2]
+			(026) ldx      M[2]
+			(027) ld       M[1]
+			(028) jeq      x                jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # tcp_index_EN10MB
+	{
+		name => 'tcp_index_RAW',
+		DLT => 'RAW',
+		aliases => ['tcp[0xab] == 0xcd'],
 		opt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
@@ -909,8 +2905,8 @@ my @filter_accept_blocks = (
 			(005) ldh      [6]
 			(006) jset     #0x1fff          jt 11	jf 7
 			(007) ldxb     4*([0]&0xf)
-			(008) ldb      [x + 13]
-			(009) jeq      #0xff            jt 10	jf 11
+			(008) ldb      [x + 171]
+			(009) jeq      #0xcd            jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
 			',
@@ -934,7 +2930,7 @@ my @filter_accept_blocks = (
 			(016) jeq      #0x6             jt 17	jf 33
 			(017) ldh      [6]
 			(018) jset     #0x1fff          jt 33	jf 19
-			(019) ld       #0xd
+			(019) ld       #0xab
 			(020) st       M[0]
 			(021) ldxb     4*([0]&0xf)
 			(022) ld       M[0]
@@ -942,7 +2938,7 @@ my @filter_accept_blocks = (
 			(024) tax
 			(025) ldb      [x + 0]
 			(026) st       M[1]
-			(027) ld       #0xff
+			(027) ld       #0xcd
 			(028) st       M[2]
 			(029) ldx      M[2]
 			(030) ld       M[1]
@@ -950,7 +2946,3015 @@ my @filter_accept_blocks = (
 			(032) ret      #262144
 			(033) ret      #0
 			',
-	}, # tcp_index_byte
+	}, # tcp_index_RAW
+	{
+		name => 'udp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['udp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[2]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[2]
+			(015) add      #2
+			(016) st       M[2]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[2]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[2]
+			(029) ldx      M[3]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 84
+			(033) ldx      M[2]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x800           jt 36	jf 84
+			(036) ldx      M[3]
+			(037) ldb      [x + 0]
+			(038) and      #0xc
+			(039) jeq      #0x8             jt 40	jf 46
+			(040) ldx      M[2]
+			(041) ldh      [x + 6]
+			(042) jeq      #0x800           jt 43	jf 46
+			(043) ldx      M[2]
+			(044) ldb      [x + 17]
+			(045) jeq      #0x11            jt 62	jf 46
+			(046) ldx      M[3]
+			(047) ldb      [x + 0]
+			(048) and      #0xc
+			(049) jeq      #0x8             jt 50	jf 84
+			(050) ldx      M[2]
+			(051) ldh      [x + 6]
+			(052) jeq      #0x86dd          jt 53	jf 84
+			(053) ldx      M[2]
+			(054) ldb      [x + 14]
+			(055) jeq      #0x11            jt 62	jf 56
+			(056) ldx      M[2]
+			(057) ldb      [x + 14]
+			(058) jeq      #0x2c            jt 59	jf 84
+			(059) ldx      M[2]
+			(060) ldb      [x + 48]
+			(061) jeq      #0x11            jt 62	jf 84
+			(062) ldx      M[2]
+			(063) ldh      [x + 14]
+			(064) jset     #0x1fff          jt 84	jf 65
+			(065) ld       #0xab
+			(066) st       M[0]
+			(067) ldx      M[2]
+			(068) ldb      [x + 8]
+			(069) and      #0xf
+			(070) lsh      #2
+			(071) add      x
+			(072) tax
+			(073) ld       M[0]
+			(074) add      x
+			(075) tax
+			(076) ldb      [x + 8]
+			(077) st       M[1]
+			(078) ld       #0xcd
+			(079) st       M[4]
+			(080) ldx      M[4]
+			(081) ld       M[1]
+			(082) jeq      x                jt 83	jf 84
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # udp_index_IEEE802_11_RADIO
+	{
+		name => 'udp_1_5_index_PFLOG',
+		skip => skip_os_not ('haiku'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x1             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x5             jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_1_5_index_PFLOG
+	{
+		name => 'udp_2_10_index_PFLOG',
+		skip => skip_os_not ('linux'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0xa             jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_10_index_PFLOG
+	{
+		name => 'udp_2_22_index_PFLOG',
+		skip => skip_os_not ('hpux'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x16            jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_22_index_PFLOG
+	{
+		name => 'udp_2_24_index_PFLOG',
+		skip => skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x18            jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_24_index_PFLOG
+	{
+		name => 'udp_2_26_index_PFLOG',
+		skip => skip_os_not ('solaris'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x1a            jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_26_index_PFLOG
+	{
+		name => 'udp_2_28_index_PFLOG',
+		skip => skip_os_not ('dragonfly') && skip_os_not ('freebsd'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x1c            jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_28_index_PFLOG
+	{
+		name => 'udp_2_30_index_PFLOG',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x2             jt 6	jf 19
+			(006) ldx      M[2]
+			(007) ldb      [x + 9]
+			(008) jeq      #0x11            jt 9	jf 19
+			(009) ldh      [x + 6]
+			(010) jset     #0x1fff          jt 19	jf 11
+			(011) ldb      [x + 0]
+			(012) and      #0xf
+			(013) lsh      #2
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 171]
+			(017) jeq      #0xcd            jt 18	jf 19
+			(018) ret      #262144
+			(019) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x2             jt 7	jf 45
+			(007) ldb      [1]
+			(008) jeq      #0x2             jt 9	jf 12
+			(009) ldx      M[2]
+			(010) ldb      [x + 9]
+			(011) jeq      #0x11            jt 23	jf 12
+			(012) ldb      [1]
+			(013) jeq      #0x1e            jt 14	jf 45
+			(014) ldx      M[2]
+			(015) ldb      [x + 6]
+			(016) jeq      #0x11            jt 23	jf 17
+			(017) ldx      M[2]
+			(018) ldb      [x + 6]
+			(019) jeq      #0x2c            jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 40]
+			(022) jeq      #0x11            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 0]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 0]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[3]
+			(041) ldx      M[3]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+	}, # udp_2_30_index_PFLOG
+	{
+		name => 'udp_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 10
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldb      [x + 185]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 30
+			(002) ldh      [12]
+			(003) jeq      #0x800           jt 4	jf 6
+			(004) ldb      [23]
+			(005) jeq      #0x11            jt 14	jf 6
+			(006) ldh      [12]
+			(007) jeq      #0x86dd          jt 8	jf 30
+			(008) ldb      [20]
+			(009) jeq      #0x11            jt 14	jf 10
+			(010) ldb      [20]
+			(011) jeq      #0x2c            jt 12	jf 30
+			(012) ldb      [54]
+			(013) jeq      #0x11            jt 14	jf 30
+			(014) ldh      [20]
+			(015) jset     #0x1fff          jt 30	jf 16
+			(016) ld       #0xab
+			(017) st       M[0]
+			(018) ldxb     4*([14]&0xf)
+			(019) ld       M[0]
+			(020) add      x
+			(021) tax
+			(022) ldb      [x + 14]
+			(023) st       M[1]
+			(024) ld       #0xcd
+			(025) st       M[2]
+			(026) ldx      M[2]
+			(027) ld       M[1]
+			(028) jeq      x                jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # udp_index_EN10MB
+	{
+		name => 'udp_index_PPP',
+		DLT => 'PPP',
+		aliases => ['udp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x21            jt 2	jf 10
+			(002) ldb      [13]
+			(003) jeq      #0x11            jt 4	jf 10
+			(004) ldh      [10]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([4]&0xf)
+			(007) ldb      [x + 175]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x21            jt 2	jf 30
+			(002) ldh      [2]
+			(003) jeq      #0x21            jt 4	jf 6
+			(004) ldb      [13]
+			(005) jeq      #0x11            jt 14	jf 6
+			(006) ldh      [2]
+			(007) jeq      #0x57            jt 8	jf 30
+			(008) ldb      [10]
+			(009) jeq      #0x11            jt 14	jf 10
+			(010) ldb      [10]
+			(011) jeq      #0x2c            jt 12	jf 30
+			(012) ldb      [44]
+			(013) jeq      #0x11            jt 14	jf 30
+			(014) ldh      [10]
+			(015) jset     #0x1fff          jt 30	jf 16
+			(016) ld       #0xab
+			(017) st       M[0]
+			(018) ldxb     4*([4]&0xf)
+			(019) ld       M[0]
+			(020) add      x
+			(021) tax
+			(022) ldb      [x + 4]
+			(023) st       M[1]
+			(024) ld       #0xcd
+			(025) st       M[2]
+			(026) ldx      M[2]
+			(027) ld       M[1]
+			(028) jeq      x                jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # udp_index_PPP
+	{
+		name => 'icmp_index_PPI',
+		DLT => 'PPI',
+		aliases => ['icmp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 58
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[3]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[2]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[2]
+			(017) add      #2
+			(018) st       M[2]
+			(019) ldx      M[3]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 58
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jeq      #0x800           jt 26	jf 58
+			(026) ldx      M[3]
+			(027) ldb      [x + 0]
+			(028) and      #0xc
+			(029) jeq      #0x8             jt 30	jf 58
+			(030) ldx      M[2]
+			(031) ldh      [x + 6]
+			(032) jeq      #0x800           jt 33	jf 58
+			(033) ldx      M[2]
+			(034) ldb      [x + 17]
+			(035) jeq      #0x1             jt 36	jf 58
+			(036) ldx      M[2]
+			(037) ldh      [x + 14]
+			(038) jset     #0x1fff          jt 58	jf 39
+			(039) ld       #0xab
+			(040) st       M[0]
+			(041) ldx      M[2]
+			(042) ldb      [x + 8]
+			(043) and      #0xf
+			(044) lsh      #2
+			(045) add      x
+			(046) tax
+			(047) ld       M[0]
+			(048) add      x
+			(049) tax
+			(050) ldb      [x + 8]
+			(051) st       M[1]
+			(052) ld       #0xcd
+			(053) st       M[4]
+			(054) ldx      M[4]
+			(055) ld       M[1]
+			(056) jeq      x                jt 57	jf 58
+			(057) ret      #262144
+			(058) ret      #0
+			',
+	}, # icmp_index_PPI
+	{
+		name => 'icmp_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['icmp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 48
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 48
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 48
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 48
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x1             jt 26	jf 48
+			(026) ldx      M[2]
+			(027) ldh      [x + 14]
+			(028) jset     #0x1fff          jt 48	jf 29
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[2]
+			(032) ldb      [x + 8]
+			(033) and      #0xf
+			(034) lsh      #2
+			(035) add      x
+			(036) tax
+			(037) ld       M[0]
+			(038) add      x
+			(039) tax
+			(040) ldb      [x + 8]
+			(041) st       M[1]
+			(042) ld       #0xcd
+			(043) st       M[3]
+			(044) ldx      M[3]
+			(045) ld       M[1]
+			(046) jeq      x                jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+	}, # icmp_index_IEEE802_11
+	{
+		name => 'icmp_index_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['icmp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [25]
+			(003) jeq      #0x1             jt 4	jf 10
+			(004) ldh      [22]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([16]&0xf)
+			(007) ldb      [x + 187]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [14]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [25]
+			(005) jeq      #0x1             jt 6	jf 22
+			(006) ldh      [22]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldxb     4*([16]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 16]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # icmp_index_LINUX_SLL
+	{
+		name => 'igmp_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['igmp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[3]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[2]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[2]
+			(016) add      #2
+			(017) st       M[2]
+			(018) ldx      M[3]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 57
+			(022) ldx      M[2]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x800           jt 25	jf 57
+			(025) ldx      M[3]
+			(026) ldb      [x + 0]
+			(027) and      #0xc
+			(028) jeq      #0x8             jt 29	jf 57
+			(029) ldx      M[2]
+			(030) ldh      [x + 6]
+			(031) jeq      #0x800           jt 32	jf 57
+			(032) ldx      M[2]
+			(033) ldb      [x + 17]
+			(034) jeq      #0x2             jt 35	jf 57
+			(035) ldx      M[2]
+			(036) ldh      [x + 14]
+			(037) jset     #0x1fff          jt 57	jf 38
+			(038) ld       #0xab
+			(039) st       M[0]
+			(040) ldx      M[2]
+			(041) ldb      [x + 8]
+			(042) and      #0xf
+			(043) lsh      #2
+			(044) add      x
+			(045) tax
+			(046) ld       M[0]
+			(047) add      x
+			(048) tax
+			(049) ldb      [x + 8]
+			(050) st       M[1]
+			(051) ld       #0xcd
+			(052) st       M[4]
+			(053) ldx      M[4]
+			(054) ld       M[1]
+			(055) jeq      x                jt 56	jf 57
+			(056) ret      #262144
+			(057) ret      #0
+			',
+	}, # igmp_index_PRISM_HEADER
+	{
+		name => 'igmp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['igmp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[2]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[2]
+			(015) add      #2
+			(016) st       M[2]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[2]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[2]
+			(029) ldx      M[3]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 68
+			(033) ldx      M[2]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x800           jt 36	jf 68
+			(036) ldx      M[3]
+			(037) ldb      [x + 0]
+			(038) and      #0xc
+			(039) jeq      #0x8             jt 40	jf 68
+			(040) ldx      M[2]
+			(041) ldh      [x + 6]
+			(042) jeq      #0x800           jt 43	jf 68
+			(043) ldx      M[2]
+			(044) ldb      [x + 17]
+			(045) jeq      #0x2             jt 46	jf 68
+			(046) ldx      M[2]
+			(047) ldh      [x + 14]
+			(048) jset     #0x1fff          jt 68	jf 49
+			(049) ld       #0xab
+			(050) st       M[0]
+			(051) ldx      M[2]
+			(052) ldb      [x + 8]
+			(053) and      #0xf
+			(054) lsh      #2
+			(055) add      x
+			(056) tax
+			(057) ld       M[0]
+			(058) add      x
+			(059) tax
+			(060) ldb      [x + 8]
+			(061) st       M[1]
+			(062) ld       #0xcd
+			(063) st       M[4]
+			(064) ldx      M[4]
+			(065) ld       M[1]
+			(066) jeq      x                jt 67	jf 68
+			(067) ret      #262144
+			(068) ret      #0
+			',
+	}, # igmp_index_IEEE802_11_RADIO
+	{
+		name => 'igmp_index_LINUX_SLL2',
+		DLT => 'LINUX_SLL2',
+		aliases => ['igmp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [29]
+			(003) jeq      #0x2             jt 4	jf 10
+			(004) ldh      [26]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([20]&0xf)
+			(007) ldb      [x + 191]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [0]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [0]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [29]
+			(005) jeq      #0x2             jt 6	jf 22
+			(006) ldh      [26]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldxb     4*([20]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 20]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # igmp_index_LINUX_SLL2
+	{
+		name => 'igrp_9_index_IEEE802_11_RADIO_AVS',
+		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['igrp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 52
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x800           jt 20	jf 52
+			(020) ldx      M[3]
+			(021) ldb      [x + 0]
+			(022) and      #0xc
+			(023) jeq      #0x8             jt 24	jf 52
+			(024) ldx      M[2]
+			(025) ldh      [x + 6]
+			(026) jeq      #0x800           jt 27	jf 52
+			(027) ldx      M[2]
+			(028) ldb      [x + 17]
+			(029) jeq      #0x9             jt 30	jf 52
+			(030) ldx      M[2]
+			(031) ldh      [x + 14]
+			(032) jset     #0x1fff          jt 52	jf 33
+			(033) ld       #0xab
+			(034) st       M[0]
+			(035) ldx      M[2]
+			(036) ldb      [x + 8]
+			(037) and      #0xf
+			(038) lsh      #2
+			(039) add      x
+			(040) tax
+			(041) ld       M[0]
+			(042) add      x
+			(043) tax
+			(044) ldb      [x + 8]
+			(045) st       M[1]
+			(046) ld       #0xcd
+			(047) st       M[4]
+			(048) ldx      M[4]
+			(049) ld       M[1]
+			(050) jeq      x                jt 51	jf 52
+			(051) ret      #262144
+			(052) ret      #0
+			',
+	}, # igrp_9_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'igrp_9_index_IEEE802_11',
+		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		DLT => 'IEEE802_11',
+		aliases => ['igrp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 48
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 48
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 48
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 48
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x9             jt 26	jf 48
+			(026) ldx      M[2]
+			(027) ldh      [x + 14]
+			(028) jset     #0x1fff          jt 48	jf 29
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[2]
+			(032) ldb      [x + 8]
+			(033) and      #0xf
+			(034) lsh      #2
+			(035) add      x
+			(036) tax
+			(037) ld       M[0]
+			(038) add      x
+			(039) tax
+			(040) ldb      [x + 8]
+			(041) st       M[1]
+			(042) ld       #0xcd
+			(043) st       M[3]
+			(044) ldx      M[3]
+			(045) ld       M[1]
+			(046) jeq      x                jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+	}, # igrp_9_index_IEEE802_11
+	{
+		name => 'igrp_9_index_DSA_TAG_BRCM',
+		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		DLT => 'DSA_TAG_BRCM',
+		aliases => ['igrp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [27]
+			(003) jeq      #0x9             jt 4	jf 10
+			(004) ldh      [24]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([18]&0xf)
+			(007) ldb      [x + 189]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [16]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [27]
+			(005) jeq      #0x9             jt 6	jf 22
+			(006) ldh      [24]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldxb     4*([18]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 18]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # igrp_9_index_DSA_TAG_BRCM
+	{
+		name => 'igrp_88_index_IEEE802_11_RADIO_AVS',
+		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['igrp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[3]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[2]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[2]
+			(011) add      #2
+			(012) st       M[2]
+			(013) ldx      M[3]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 52
+			(017) ldx      M[2]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x800           jt 20	jf 52
+			(020) ldx      M[3]
+			(021) ldb      [x + 0]
+			(022) and      #0xc
+			(023) jeq      #0x8             jt 24	jf 52
+			(024) ldx      M[2]
+			(025) ldh      [x + 6]
+			(026) jeq      #0x800           jt 27	jf 52
+			(027) ldx      M[2]
+			(028) ldb      [x + 17]
+			(029) jeq      #0x58            jt 30	jf 52
+			(030) ldx      M[2]
+			(031) ldh      [x + 14]
+			(032) jset     #0x1fff          jt 52	jf 33
+			(033) ld       #0xab
+			(034) st       M[0]
+			(035) ldx      M[2]
+			(036) ldb      [x + 8]
+			(037) and      #0xf
+			(038) lsh      #2
+			(039) add      x
+			(040) tax
+			(041) ld       M[0]
+			(042) add      x
+			(043) tax
+			(044) ldb      [x + 8]
+			(045) st       M[1]
+			(046) ld       #0xcd
+			(047) st       M[4]
+			(048) ldx      M[4]
+			(049) ld       M[1]
+			(050) jeq      x                jt 51	jf 52
+			(051) ret      #262144
+			(052) ret      #0
+			',
+	}, # igrp_88_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'igrp_88_index_IEEE802_11',
+		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		DLT => 'IEEE802_11',
+		aliases => ['igrp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 48
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 48
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 48
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 48
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x58            jt 26	jf 48
+			(026) ldx      M[2]
+			(027) ldh      [x + 14]
+			(028) jset     #0x1fff          jt 48	jf 29
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[2]
+			(032) ldb      [x + 8]
+			(033) and      #0xf
+			(034) lsh      #2
+			(035) add      x
+			(036) tax
+			(037) ld       M[0]
+			(038) add      x
+			(039) tax
+			(040) ldb      [x + 8]
+			(041) st       M[1]
+			(042) ld       #0xcd
+			(043) st       M[3]
+			(044) ldx      M[3]
+			(045) ld       M[1]
+			(046) jeq      x                jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+	}, # igrp_88_index_IEEE802_11
+	{
+		name => 'igrp_88_index_DSA_TAG_BRCM',
+		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		DLT => 'DSA_TAG_BRCM',
+		aliases => ['igrp[0xab] == 0xcd'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [27]
+			(003) jeq      #0x58            jt 4	jf 10
+			(004) ldh      [24]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([18]&0xf)
+			(007) ldb      [x + 189]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [16]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [27]
+			(005) jeq      #0x58            jt 6	jf 22
+			(006) ldh      [24]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldxb     4*([18]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 18]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # igrp_88_index_DSA_TAG_BRCM
+	{
+		name => 'pim_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['pim[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[2]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[2]
+			(015) add      #2
+			(016) st       M[2]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[2]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[2]
+			(029) ldx      M[3]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 84
+			(033) ldx      M[2]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x800           jt 36	jf 84
+			(036) ldx      M[3]
+			(037) ldb      [x + 0]
+			(038) and      #0xc
+			(039) jeq      #0x8             jt 40	jf 46
+			(040) ldx      M[2]
+			(041) ldh      [x + 6]
+			(042) jeq      #0x800           jt 43	jf 46
+			(043) ldx      M[2]
+			(044) ldb      [x + 17]
+			(045) jeq      #0x67            jt 62	jf 46
+			(046) ldx      M[3]
+			(047) ldb      [x + 0]
+			(048) and      #0xc
+			(049) jeq      #0x8             jt 50	jf 84
+			(050) ldx      M[2]
+			(051) ldh      [x + 6]
+			(052) jeq      #0x86dd          jt 53	jf 84
+			(053) ldx      M[2]
+			(054) ldb      [x + 14]
+			(055) jeq      #0x67            jt 62	jf 56
+			(056) ldx      M[2]
+			(057) ldb      [x + 14]
+			(058) jeq      #0x2c            jt 59	jf 84
+			(059) ldx      M[2]
+			(060) ldb      [x + 48]
+			(061) jeq      #0x67            jt 62	jf 84
+			(062) ldx      M[2]
+			(063) ldh      [x + 14]
+			(064) jset     #0x1fff          jt 84	jf 65
+			(065) ld       #0xab
+			(066) st       M[0]
+			(067) ldx      M[2]
+			(068) ldb      [x + 8]
+			(069) and      #0xf
+			(070) lsh      #2
+			(071) add      x
+			(072) tax
+			(073) ld       M[0]
+			(074) add      x
+			(075) tax
+			(076) ldb      [x + 8]
+			(077) st       M[1]
+			(078) ld       #0xcd
+			(079) st       M[4]
+			(080) ldx      M[4]
+			(081) ld       M[1]
+			(082) jeq      x                jt 83	jf 84
+			(083) ret      #262144
+			(084) ret      #0
+			',
+	}, # pim_index_IEEE802_11_RADIO
+	{
+		name => 'pim_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['pim[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 63
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 63
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 26
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 26
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x67            jt 41	jf 26
+			(026) ldb      [0]
+			(027) and      #0xc
+			(028) jeq      #0x8             jt 29	jf 63
+			(029) ldx      M[2]
+			(030) ldh      [x + 6]
+			(031) jeq      #0x86dd          jt 32	jf 63
+			(032) ldx      M[2]
+			(033) ldb      [x + 14]
+			(034) jeq      #0x67            jt 41	jf 35
+			(035) ldx      M[2]
+			(036) ldb      [x + 14]
+			(037) jeq      #0x2c            jt 38	jf 63
+			(038) ldx      M[2]
+			(039) ldb      [x + 48]
+			(040) jeq      #0x67            jt 41	jf 63
+			(041) ldx      M[2]
+			(042) ldh      [x + 14]
+			(043) jset     #0x1fff          jt 63	jf 44
+			(044) ld       #0xab
+			(045) st       M[0]
+			(046) ldx      M[2]
+			(047) ldb      [x + 8]
+			(048) and      #0xf
+			(049) lsh      #2
+			(050) add      x
+			(051) tax
+			(052) ld       M[0]
+			(053) add      x
+			(054) tax
+			(055) ldb      [x + 8]
+			(056) st       M[1]
+			(057) ld       #0xcd
+			(058) st       M[3]
+			(059) ldx      M[3]
+			(060) ld       M[1]
+			(061) jeq      x                jt 62	jf 63
+			(062) ret      #262144
+			(063) ret      #0
+			',
+	}, # pim_index_IEEE802_11
+	{
+		name => 'pim_index_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['pim[0xab] == 0xcd'],
+		opt => '
+			(000) ldb      [4]
+			(001) jeq      #0xd4            jt 2	jf 10
+			(002) ldb      [17]
+			(003) jeq      #0x67            jt 4	jf 10
+			(004) ldh      [14]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([8]&0xf)
+			(007) ldb      [x + 179]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xd4            jt 2	jf 30
+			(002) ldb      [4]
+			(003) jeq      #0xd4            jt 4	jf 6
+			(004) ldb      [17]
+			(005) jeq      #0x67            jt 14	jf 6
+			(006) ldb      [4]
+			(007) jeq      #0xc4            jt 8	jf 30
+			(008) ldb      [14]
+			(009) jeq      #0x67            jt 14	jf 10
+			(010) ldb      [14]
+			(011) jeq      #0x2c            jt 12	jf 30
+			(012) ldb      [48]
+			(013) jeq      #0x67            jt 14	jf 30
+			(014) ldh      [14]
+			(015) jset     #0x1fff          jt 30	jf 16
+			(016) ld       #0xab
+			(017) st       M[0]
+			(018) ldxb     4*([8]&0xf)
+			(019) ld       M[0]
+			(020) add      x
+			(021) tax
+			(022) ldb      [x + 8]
+			(023) st       M[1]
+			(024) ld       #0xcd
+			(025) st       M[2]
+			(026) ldx      M[2]
+			(027) ld       M[1]
+			(028) jeq      x                jt 29	jf 30
+			(029) ret      #262144
+			(030) ret      #0
+			',
+	}, # pim_index_ARCNET_LINUX
+	{
+		name => 'vrrp_carp_index_PPI',
+		DLT => 'PPI',
+		aliases => [
+			'vrrp[0xab] == 0xcd',
+			'carp[0xab] == 0xcd',
+		],
+		optunopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 58
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[3]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[2]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[2]
+			(017) add      #2
+			(018) st       M[2]
+			(019) ldx      M[3]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 58
+			(023) ldx      M[2]
+			(024) ldh      [x + 6]
+			(025) jeq      #0x800           jt 26	jf 58
+			(026) ldx      M[3]
+			(027) ldb      [x + 0]
+			(028) and      #0xc
+			(029) jeq      #0x8             jt 30	jf 58
+			(030) ldx      M[2]
+			(031) ldh      [x + 6]
+			(032) jeq      #0x800           jt 33	jf 58
+			(033) ldx      M[2]
+			(034) ldb      [x + 17]
+			(035) jeq      #0x70            jt 36	jf 58
+			(036) ldx      M[2]
+			(037) ldh      [x + 14]
+			(038) jset     #0x1fff          jt 58	jf 39
+			(039) ld       #0xab
+			(040) st       M[0]
+			(041) ldx      M[2]
+			(042) ldb      [x + 8]
+			(043) and      #0xf
+			(044) lsh      #2
+			(045) add      x
+			(046) tax
+			(047) ld       M[0]
+			(048) add      x
+			(049) tax
+			(050) ldb      [x + 8]
+			(051) st       M[1]
+			(052) ld       #0xcd
+			(053) st       M[4]
+			(054) ldx      M[4]
+			(055) ld       M[1]
+			(056) jeq      x                jt 57	jf 58
+			(057) ret      #262144
+			(058) ret      #0
+			',
+	}, # vrrp_carp_index_PPI
+	{
+		name => 'vrrp_carp_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => [
+			'vrrp[0xab] == 0xcd',
+			'carp[0xab] == 0xcd',
+		],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 48
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x800           jt 17	jf 48
+			(017) ldb      [0]
+			(018) and      #0xc
+			(019) jeq      #0x8             jt 20	jf 48
+			(020) ldx      M[2]
+			(021) ldh      [x + 6]
+			(022) jeq      #0x800           jt 23	jf 48
+			(023) ldx      M[2]
+			(024) ldb      [x + 17]
+			(025) jeq      #0x70            jt 26	jf 48
+			(026) ldx      M[2]
+			(027) ldh      [x + 14]
+			(028) jset     #0x1fff          jt 48	jf 29
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[2]
+			(032) ldb      [x + 8]
+			(033) and      #0xf
+			(034) lsh      #2
+			(035) add      x
+			(036) tax
+			(037) ld       M[0]
+			(038) add      x
+			(039) tax
+			(040) ldb      [x + 8]
+			(041) st       M[1]
+			(042) ld       #0xcd
+			(043) st       M[3]
+			(044) ldx      M[3]
+			(045) ld       M[1]
+			(046) jeq      x                jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+	}, # vrrp_carp_index_PFLOG
+	{
+		name => 'vrrp_carp_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => [
+			'vrrp[0xab] == 0xcd',
+			'carp[0xab] == 0xcd',
+		],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 10
+			(002) ldb      [23]
+			(003) jeq      #0x70            jt 4	jf 10
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 10	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldb      [x + 185]
+			(008) jeq      #0xcd            jt 9	jf 10
+			(009) ret      #262144
+			(010) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 22
+			(002) ldh      [12]
+			(003) jeq      #0x800           jt 4	jf 22
+			(004) ldb      [23]
+			(005) jeq      #0x70            jt 6	jf 22
+			(006) ldh      [20]
+			(007) jset     #0x1fff          jt 22	jf 8
+			(008) ld       #0xab
+			(009) st       M[0]
+			(010) ldxb     4*([14]&0xf)
+			(011) ld       M[0]
+			(012) add      x
+			(013) tax
+			(014) ldb      [x + 14]
+			(015) st       M[1]
+			(016) ld       #0xcd
+			(017) st       M[2]
+			(018) ldx      M[2]
+			(019) ld       M[1]
+			(020) jeq      x                jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
+			',
+	}, # vrrp_carp_index_EN10MB
+
+	#---------- gen_load_internal(), the OR_TRAN_IPV6-like code path
+	{
+		name => 'icmp6_index_PRISM_HEADER',
+		DLT => 'PRISM_HEADER',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		optunopt => '
+			(000) ld       [0]
+			(001) and      #0xfffff000
+			(002) jeq      #0x80211000      jt 3	jf 5
+			(003) ld       [4]
+			(004) ja       6
+			(005) ld       #0x90
+			(006) st       M[2]
+			(007) tax
+			(008) txa
+			(009) add      #24
+			(010) st       M[3]
+			(011) ldb      [x + 0]
+			(012) jset     #0x8             jt 13	jf 18
+			(013) jset     #0x4             jt 18	jf 14
+			(014) jset     #0x80            jt 15	jf 18
+			(015) ld       M[3]
+			(016) add      #2
+			(017) st       M[3]
+			(018) ldx      M[2]
+			(019) ldb      [x + 0]
+			(020) and      #0xc
+			(021) jeq      #0x8             jt 22	jf 42
+			(022) ldx      M[3]
+			(023) ldh      [x + 6]
+			(024) jeq      #0x86dd          jt 25	jf 42
+			(025) ldx      M[3]
+			(026) ldb      [x + 14]
+			(027) jeq      #0x3a            jt 28	jf 42
+			(028) ld       #0xab
+			(029) st       M[0]
+			(030) ldx      M[3]
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 48]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[4]
+			(038) ldx      M[4]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
+			',
+	}, # icmp6_index_PRISM_HEADER
+	{
+		name => 'icmp6_index_IEEE802_11_RADIO_AVS',
+		DLT => 'IEEE802_11_RADIO_AVS',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) st       M[2]
+			(002) tax
+			(003) txa
+			(004) add      #24
+			(005) st       M[3]
+			(006) ldb      [x + 0]
+			(007) jset     #0x8             jt 8	jf 13
+			(008) jset     #0x4             jt 13	jf 9
+			(009) jset     #0x80            jt 10	jf 13
+			(010) ld       M[3]
+			(011) add      #2
+			(012) st       M[3]
+			(013) ldx      M[2]
+			(014) ldb      [x + 0]
+			(015) and      #0xc
+			(016) jeq      #0x8             jt 17	jf 37
+			(017) ldx      M[3]
+			(018) ldh      [x + 6]
+			(019) jeq      #0x86dd          jt 20	jf 37
+			(020) ldx      M[3]
+			(021) ldb      [x + 14]
+			(022) jeq      #0x3a            jt 23	jf 37
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[3]
+			(026) ld       M[0]
+			(027) add      x
+			(028) tax
+			(029) ldb      [x + 48]
+			(030) st       M[1]
+			(031) ld       #0xcd
+			(032) st       M[4]
+			(033) ldx      M[4]
+			(034) ld       M[1]
+			(035) jeq      x                jt 36	jf 37
+			(036) ret      #262144
+			(037) ret      #0
+			',
+	}, # icmp6_index_IEEE802_11_RADIO_AVS
+	{
+		name => 'icmp6_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[2]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[3]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[3]
+			(015) add      #2
+			(016) st       M[3]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[3]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[3]
+			(029) ldx      M[2]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 53
+			(033) ldx      M[3]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x86dd          jt 36	jf 53
+			(036) ldx      M[3]
+			(037) ldb      [x + 14]
+			(038) jeq      #0x3a            jt 39	jf 53
+			(039) ld       #0xab
+			(040) st       M[0]
+			(041) ldx      M[3]
+			(042) ld       M[0]
+			(043) add      x
+			(044) tax
+			(045) ldb      [x + 48]
+			(046) st       M[1]
+			(047) ld       #0xcd
+			(048) st       M[4]
+			(049) ldx      M[4]
+			(050) ld       M[1]
+			(051) jeq      x                jt 52	jf 53
+			(052) ret      #262144
+			(053) ret      #0
+			',
+	}, # icmp6_index_IEEE802_11_RADIO
+	{
+		name => 'icmp6_index_PPI',
+		DLT => 'PPI',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		optunopt => '
+			(000) ld       [4]
+			(001) jeq      #0x69000000      jt 2	jf 43
+			(002) ldb      [3]
+			(003) lsh      #8
+			(004) tax
+			(005) ldb      [2]
+			(006) or       x
+			(007) st       M[2]
+			(008) tax
+			(009) txa
+			(010) add      #24
+			(011) st       M[3]
+			(012) ldb      [x + 0]
+			(013) jset     #0x8             jt 14	jf 19
+			(014) jset     #0x4             jt 19	jf 15
+			(015) jset     #0x80            jt 16	jf 19
+			(016) ld       M[3]
+			(017) add      #2
+			(018) st       M[3]
+			(019) ldx      M[2]
+			(020) ldb      [x + 0]
+			(021) and      #0xc
+			(022) jeq      #0x8             jt 23	jf 43
+			(023) ldx      M[3]
+			(024) ldh      [x + 6]
+			(025) jeq      #0x86dd          jt 26	jf 43
+			(026) ldx      M[3]
+			(027) ldb      [x + 14]
+			(028) jeq      #0x3a            jt 29	jf 43
+			(029) ld       #0xab
+			(030) st       M[0]
+			(031) ldx      M[3]
+			(032) ld       M[0]
+			(033) add      x
+			(034) tax
+			(035) ldb      [x + 48]
+			(036) st       M[1]
+			(037) ld       #0xcd
+			(038) st       M[4]
+			(039) ldx      M[4]
+			(040) ld       M[1]
+			(041) jeq      x                jt 42	jf 43
+			(042) ret      #262144
+			(043) ret      #0
+			',
+	}, # icmp6_index_PPI
+	{
+		name => 'icmp6_index_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[2]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[2]
+			(009) add      #2
+			(010) st       M[2]
+			(011) ldb      [0]
+			(012) and      #0xc
+			(013) jeq      #0x8             jt 14	jf 34
+			(014) ldx      M[2]
+			(015) ldh      [x + 6]
+			(016) jeq      #0x86dd          jt 17	jf 34
+			(017) ldx      M[2]
+			(018) ldb      [x + 14]
+			(019) jeq      #0x3a            jt 20	jf 34
+			(020) ld       #0xab
+			(021) st       M[0]
+			(022) ldx      M[2]
+			(023) ld       M[0]
+			(024) add      x
+			(025) tax
+			(026) ldb      [x + 48]
+			(027) st       M[1]
+			(028) ld       #0xcd
+			(029) st       M[3]
+			(030) ldx      M[3]
+			(031) ld       M[1]
+			(032) jeq      x                jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			',
+	}, # icmp6_index_IEEE802_11
+	{
+		name => 'icmp6_5_index_PFLOG',
+		skip => skip_os_not ('haiku'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x5             jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x5             jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_5_index_PFLOG
+	{
+		name => 'icmp6_10_index_PFLOG',
+		skip => skip_os_not ('linux'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0xa             jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0xa             jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_10_index_PFLOG
+	{
+		name => 'icmp6_22_index_PFLOG',
+		skip => skip_os_not ('hpux'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x16            jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x16            jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_22_index_PFLOG
+	{
+		name => 'icmp6_24_index_PFLOG',
+		skip => skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x18            jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x18            jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_24_index_PFLOG
+	{
+		name => 'icmp6_26_index_PFLOG',
+		skip => skip_os_not ('solaris'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1a            jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1a            jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_26_index_PFLOG
+	{
+		name => 'icmp6_28_index_PFLOG',
+		skip => skip_os_not ('dragonfly') && skip_os_not ('freebsd'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1c            jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1c            jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_28_index_PFLOG
+	{
+		name => 'icmp6_30_index_PFLOG',
+		skip => skip_os_not ('darwin'),
+		DLT => 'PFLOG',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) ldb      [1]
+			(005) jeq      #0x1e            jt 6	jf 12
+			(006) ldx      M[2]
+			(007) ldb      [x + 6]
+			(008) jeq      #0x3a            jt 9	jf 12
+			(009) ldb      [x + 211]
+			(010) jeq      #0xcd            jt 11	jf 12
+			(011) ret      #262144
+			(012) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) add      #3
+			(002) and      #0xfffffffc
+			(003) st       M[2]
+			(004) tax
+			(005) ldb      [1]
+			(006) jeq      #0x1e            jt 7	jf 24
+			(007) ldx      M[2]
+			(008) ldb      [x + 6]
+			(009) jeq      #0x3a            jt 10	jf 24
+			(010) ld       #0xab
+			(011) st       M[0]
+			(012) ldx      M[2]
+			(013) ld       M[0]
+			(014) add      x
+			(015) tax
+			(016) ldb      [x + 40]
+			(017) st       M[1]
+			(018) ld       #0xcd
+			(019) st       M[3]
+			(020) ldx      M[3]
+			(021) ld       M[1]
+			(022) jeq      x                jt 23	jf 24
+			(023) ret      #262144
+			(024) ret      #0
+			',
+	}, # icmp6_30_index_PFLOG
+	{
+		name => 'icmp6_index_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 7
+			(002) ldb      [20]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [225]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x86dd          jt 2	jf 15
+			(002) ldb      [20]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 54]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_EN10MB
+	{
+		name => 'icmp6_index_RAW',
+		DLT => 'RAW',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 8
+			(003) ldb      [6]
+			(004) jeq      #0x3a            jt 5	jf 8
+			(005) ldb      [211]
+			(006) jeq      #0xcd            jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+		unopt => '
+			(000) ldb      [0]
+			(001) and      #0xf0
+			(002) jeq      #0x60            jt 3	jf 16
+			(003) ldb      [6]
+			(004) jeq      #0x3a            jt 5	jf 16
+			(005) ld       #0xab
+			(006) st       M[0]
+			(007) ldx      M[0]
+			(008) ldb      [x + 40]
+			(009) st       M[1]
+			(010) ld       #0xcd
+			(011) st       M[2]
+			(012) ldx      M[2]
+			(013) ld       M[1]
+			(014) jeq      x                jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+	}, # icmp6_index_RAW
+	{
+		name => 'icmp6_index_PPP',
+		DLT => 'PPP',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldh      [2]
+			(001) jeq      #0x57            jt 2	jf 7
+			(002) ldb      [10]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [215]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldh      [2]
+			(001) jeq      #0x57            jt 2	jf 15
+			(002) ldb      [10]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 44]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_PPP
+	{
+		name => 'icmp6_index_LINUX_SLL',
+		DLT => 'LINUX_SLL',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldh      [14]
+			(001) jeq      #0x86dd          jt 2	jf 7
+			(002) ldb      [22]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [227]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldh      [14]
+			(001) jeq      #0x86dd          jt 2	jf 15
+			(002) ldb      [22]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 56]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_LINUX_SLL
+	{
+		name => 'icmp6_index_LINUX_SLL2',
+		DLT => 'LINUX_SLL2',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x86dd          jt 2	jf 7
+			(002) ldb      [26]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [231]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldh      [0]
+			(001) jeq      #0x86dd          jt 2	jf 15
+			(002) ldb      [26]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 60]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_LINUX_SLL2
+	{
+		name => 'icmp6_index_DSA_TAG_BRCM',
+		DLT => 'DSA_TAG_BRCM',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldh      [16]
+			(001) jeq      #0x86dd          jt 2	jf 7
+			(002) ldb      [24]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [229]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldh      [16]
+			(001) jeq      #0x86dd          jt 2	jf 15
+			(002) ldb      [24]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 58]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_DSA_TAG_BRCM
+	{
+		name => 'icmp6_index_ARCNET_LINUX',
+		DLT => 'ARCNET_LINUX',
+		aliases => ['icmp6[0xab] = 0xcd'],
+		opt => '
+			(000) ldb      [4]
+			(001) jeq      #0xc4            jt 2	jf 7
+			(002) ldb      [14]
+			(003) jeq      #0x3a            jt 4	jf 7
+			(004) ldb      [219]
+			(005) jeq      #0xcd            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ldb      [4]
+			(001) jeq      #0xc4            jt 2	jf 15
+			(002) ldb      [14]
+			(003) jeq      #0x3a            jt 4	jf 15
+			(004) ld       #0xab
+			(005) st       M[0]
+			(006) ldx      M[0]
+			(007) ldb      [x + 48]
+			(008) st       M[1]
+			(009) ld       #0xcd
+			(010) st       M[2]
+			(011) ldx      M[2]
+			(012) ld       M[1]
+			(013) jeq      x                jt 14	jf 15
+			(014) ret      #262144
+			(015) ret      #0
+			',
+	}, # icmp6_index_ARCNET_LINUX
+
+	#---------- gen_load_internal(), a few more non-trivial offset calculations
+	{
+		name => 'vlan_and_tcp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['vlan and tcp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[0]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[1]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 29
+			(012) jset     #0x4             jt 29	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[1]
+			(015) add      #2
+			(016) st       M[1]
+			(017) ld       [4]
+			(018) jset     #0x2000000       jt 19	jf 29
+			(019) jset     #0x80            jt 29	jf 20
+			(020) jset     #0x1000000       jt 21	jf 23
+			(021) ldb      [16]
+			(022) jset     #0x20            jt 25	jf 29
+			(023) ldb      [8]
+			(024) jset     #0x20            jt 25	jf 29
+			(025) ld       M[1]
+			(026) add      #3
+			(027) and      #0xfffffffc
+			(028) st       M[1]
+			(029) ldx      M[0]
+			(030) ldb      [x + 0]
+			(031) and      #0xc
+			(032) jeq      #0x8             jt 33	jf 36
+			(033) ldx      M[1]
+			(034) ldh      [x + 6]
+			(035) jeq      #0x8100          jt 50	jf 36
+			(036) ldx      M[0]
+			(037) ldb      [x + 0]
+			(038) and      #0xc
+			(039) jeq      #0x8             jt 40	jf 43
+			(040) ldx      M[1]
+			(041) ldh      [x + 6]
+			(042) jeq      #0x88a8          jt 50	jf 43
+			(043) ldx      M[0]
+			(044) ldb      [x + 0]
+			(045) and      #0xc
+			(046) jeq      #0x8             jt 47	jf 105
+			(047) ldx      M[1]
+			(048) ldh      [x + 6]
+			(049) jeq      #0x9100          jt 50	jf 105
+			(050) ldx      M[0]
+			(051) ldb      [x + 0]
+			(052) and      #0xc
+			(053) jeq      #0x8             jt 54	jf 105
+			(054) ldx      M[1]
+			(055) ldh      [x + 10]
+			(056) jeq      #0x800           jt 57	jf 105
+			(057) ldx      M[0]
+			(058) ldb      [x + 0]
+			(059) and      #0xc
+			(060) jeq      #0x8             jt 61	jf 67
+			(061) ldx      M[1]
+			(062) ldh      [x + 10]
+			(063) jeq      #0x800           jt 64	jf 67
+			(064) ldx      M[1]
+			(065) ldb      [x + 21]
+			(066) jeq      #0x6             jt 83	jf 67
+			(067) ldx      M[0]
+			(068) ldb      [x + 0]
+			(069) and      #0xc
+			(070) jeq      #0x8             jt 71	jf 105
+			(071) ldx      M[1]
+			(072) ldh      [x + 10]
+			(073) jeq      #0x86dd          jt 74	jf 105
+			(074) ldx      M[1]
+			(075) ldb      [x + 18]
+			(076) jeq      #0x6             jt 83	jf 77
+			(077) ldx      M[1]
+			(078) ldb      [x + 18]
+			(079) jeq      #0x2c            jt 80	jf 105
+			(080) ldx      M[1]
+			(081) ldb      [x + 52]
+			(082) jeq      #0x6             jt 83	jf 105
+			(083) ldx      M[1]
+			(084) ldh      [x + 18]
+			(085) jset     #0x1fff          jt 105	jf 86
+			(086) ld       #0xab
+			(087) st       M[2]
+			(088) ldx      M[1]
+			(089) ldb      [x + 12]
+			(090) and      #0xf
+			(091) lsh      #2
+			(092) add      x
+			(093) tax
+			(094) ld       M[2]
+			(095) add      x
+			(096) tax
+			(097) ldb      [x + 12]
+			(098) st       M[3]
+			(099) ld       #0xcd
+			(100) st       M[4]
+			(101) ldx      M[4]
+			(102) ld       M[3]
+			(103) jeq      x                jt 104	jf 105
+			(104) ret      #262144
+			(105) ret      #0
+			',
+	}, # vlan_and_tcp_index_IEEE802_11_RADIO
+	{
+		name => 'geneve_and_tcp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['geneve and tcp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[3]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[4]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 17
+			(012) jset     #0x4             jt 17	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[4]
+			(015) add      #2
+			(016) st       M[4]
+			(017) ldx      M[1]
+			(018) ldb      [x + 0]
+			(019) and      #0xc
+			(020) jeq      #0x8             jt 21	jf 55
+			(021) ldx      M[0]
+			(022) ldh      [x + 6]
+			(023) jeq      #0x800           jt 24	jf 55
+			(024) ldx      M[0]
+			(025) ldb      [x + 17]
+			(026) jeq      #0x11            jt 27	jf 55
+			(027) ldx      M[0]
+			(028) ldh      [x + 14]
+			(029) jset     #0x1fff          jt 55	jf 30
+			(030) ldx      M[0]
+			(031) ldb      [x + 8]
+			(032) and      #0xf
+			(033) lsh      #2
+			(034) add      x
+			(035) tax
+			(036) ldh      [x + 10]
+			(037) jeq      #0x17c1          jt 38	jf 55
+			(038) ldx      M[0]
+			(039) ldb      [x + 8]
+			(040) and      #0xf
+			(041) lsh      #2
+			(042) add      x
+			(043) tax
+			(044) ldb      [x + 16]
+			(045) and      #0xc0
+			(046) jeq      #0x0             jt 47	jf 55
+			(047) ldx      M[0]
+			(048) ldb      [x + 8]
+			(049) and      #0xf
+			(050) lsh      #2
+			(051) add      x
+			(052) tax
+			(053) txa
+			(054) jeq      x                jt 77	jf 55
+			(055) ldx      M[1]
+			(056) ldb      [x + 0]
+			(057) and      #0xc
+			(058) jeq      #0x8             jt 59	jf 141
+			(059) ldx      M[0]
+			(060) ldh      [x + 6]
+			(061) jeq      #0x86dd          jt 62	jf 141
+			(062) ldx      M[0]
+			(063) ldb      [x + 14]
+			(064) jeq      #0x11            jt 65	jf 141
+			(065) ldx      M[0]
+			(066) ldh      [x + 50]
+			(067) jeq      #0x17c1          jt 68	jf 141
+			(068) ldx      M[0]
+			(069) ldb      [x + 56]
+			(070) and      #0xc0
+			(071) jeq      #0x0             jt 72	jf 141
+			(072) ldx      M[0]
+			(073) ld       #0x28
+			(074) add      x
+			(075) tax
+			(076) jeq      x                jt 77	jf 141
+			(077) add      #16
+			(078) tax
+			(079) add      #2
+			(080) st       M[2]
+			(081) ldb      [x + 0]
+			(082) and      #0x3f
+			(083) mul      #4
+			(084) add      #8
+			(085) add      x
+			(086) st       M[3]
+			(087) ldh      [x + 2]
+			(088) ldx      M[3]
+			(089) jeq      #0x6558          jt 90	jf 95
+			(090) txa
+			(091) add      #12
+			(092) st       M[2]
+			(093) add      #2
+			(094) tax
+			(095) stx      M[4]
+			(096) ld       #0x0
+			(097) jeq      #0x0             jt 98	jf 141
+			(098) ldx      M[2]
+			(099) ldh      [x + 0]
+			(100) jeq      #0x800           jt 101	jf 141
+			(101) ldx      M[2]
+			(102) ldh      [x + 0]
+			(103) jeq      #0x800           jt 104	jf 107
+			(104) ldx      M[4]
+			(105) ldb      [x + 9]
+			(106) jeq      #0x6             jt 119	jf 107
+			(107) ldx      M[2]
+			(108) ldh      [x + 0]
+			(109) jeq      #0x86dd          jt 110	jf 141
+			(110) ldx      M[4]
+			(111) ldb      [x + 6]
+			(112) jeq      #0x6             jt 119	jf 113
+			(113) ldx      M[4]
+			(114) ldb      [x + 6]
+			(115) jeq      #0x2c            jt 116	jf 141
+			(116) ldx      M[4]
+			(117) ldb      [x + 40]
+			(118) jeq      #0x6             jt 119	jf 141
+			(119) ldx      M[4]
+			(120) ldh      [x + 6]
+			(121) jset     #0x1fff          jt 141	jf 122
+			(122) ld       #0xab
+			(123) st       M[5]
+			(124) ldx      M[4]
+			(125) ldb      [x + 0]
+			(126) and      #0xf
+			(127) lsh      #2
+			(128) add      x
+			(129) tax
+			(130) ld       M[5]
+			(131) add      x
+			(132) tax
+			(133) ldb      [x + 0]
+			(134) st       M[6]
+			(135) ld       #0xcd
+			(136) st       M[7]
+			(137) ldx      M[7]
+			(138) ld       M[6]
+			(139) jeq      x                jt 140	jf 141
+			(140) ret      #262144
+			(141) ret      #0
+			',
+	}, # geneve_and_tcp_index_IEEE802_11_RADIO
+	{
+		name => 'vxlan_and_tcp_index_IEEE802_11_RADIO',
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['vxlan and tcp[0xab] == 0xcd'],
+		optunopt => '
+			(000) ldb      [3]
+			(001) lsh      #8
+			(002) tax
+			(003) ldb      [2]
+			(004) or       x
+			(005) st       M[2]
+			(006) tax
+			(007) txa
+			(008) add      #24
+			(009) st       M[4]
+			(010) ldb      [x + 0]
+			(011) jset     #0x8             jt 12	jf 17
+			(012) jset     #0x4             jt 17	jf 13
+			(013) jset     #0x80            jt 14	jf 17
+			(014) ld       M[4]
+			(015) add      #2
+			(016) st       M[4]
+			(017) ldx      M[1]
+			(018) ldb      [x + 0]
+			(019) and      #0xc
+			(020) jeq      #0x8             jt 21	jf 54
+			(021) ldx      M[0]
+			(022) ldh      [x + 6]
+			(023) jeq      #0x800           jt 24	jf 54
+			(024) ldx      M[0]
+			(025) ldb      [x + 17]
+			(026) jeq      #0x11            jt 27	jf 54
+			(027) ldx      M[0]
+			(028) ldh      [x + 14]
+			(029) jset     #0x1fff          jt 54	jf 30
+			(030) ldx      M[0]
+			(031) ldb      [x + 8]
+			(032) and      #0xf
+			(033) lsh      #2
+			(034) add      x
+			(035) tax
+			(036) ldh      [x + 10]
+			(037) jeq      #0x12b5          jt 38	jf 54
+			(038) ldx      M[0]
+			(039) ldb      [x + 8]
+			(040) and      #0xf
+			(041) lsh      #2
+			(042) add      x
+			(043) tax
+			(044) ldb      [x + 16]
+			(045) jeq      #0x8             jt 46	jf 54
+			(046) ldx      M[0]
+			(047) ldb      [x + 8]
+			(048) and      #0xf
+			(049) lsh      #2
+			(050) add      x
+			(051) tax
+			(052) txa
+			(053) jeq      x                jt 75	jf 54
+			(054) ldx      M[1]
+			(055) ldb      [x + 0]
+			(056) and      #0xc
+			(057) jeq      #0x8             jt 58	jf 128
+			(058) ldx      M[0]
+			(059) ldh      [x + 6]
+			(060) jeq      #0x86dd          jt 61	jf 128
+			(061) ldx      M[0]
+			(062) ldb      [x + 14]
+			(063) jeq      #0x11            jt 64	jf 128
+			(064) ldx      M[0]
+			(065) ldh      [x + 50]
+			(066) jeq      #0x12b5          jt 67	jf 128
+			(067) ldx      M[0]
+			(068) ldb      [x + 56]
+			(069) jeq      #0x8             jt 70	jf 128
+			(070) ldx      M[0]
+			(071) ld       #0x28
+			(072) add      x
+			(073) tax
+			(074) jeq      x                jt 75	jf 128
+			(075) add      #16
+			(076) add      #8
+			(077) st       M[2]
+			(078) add      #12
+			(079) st       M[3]
+			(080) add      #2
+			(081) tax
+			(082) stx      M[4]
+			(083) ld       #0x0
+			(084) jeq      #0x0             jt 85	jf 128
+			(085) ldx      M[3]
+			(086) ldh      [x + 0]
+			(087) jeq      #0x800           jt 88	jf 128
+			(088) ldx      M[3]
+			(089) ldh      [x + 0]
+			(090) jeq      #0x800           jt 91	jf 94
+			(091) ldx      M[4]
+			(092) ldb      [x + 9]
+			(093) jeq      #0x6             jt 106	jf 94
+			(094) ldx      M[3]
+			(095) ldh      [x + 0]
+			(096) jeq      #0x86dd          jt 97	jf 128
+			(097) ldx      M[4]
+			(098) ldb      [x + 6]
+			(099) jeq      #0x6             jt 106	jf 100
+			(100) ldx      M[4]
+			(101) ldb      [x + 6]
+			(102) jeq      #0x2c            jt 103	jf 128
+			(103) ldx      M[4]
+			(104) ldb      [x + 40]
+			(105) jeq      #0x6             jt 106	jf 128
+			(106) ldx      M[4]
+			(107) ldh      [x + 6]
+			(108) jset     #0x1fff          jt 128	jf 109
+			(109) ld       #0xab
+			(110) st       M[5]
+			(111) ldx      M[4]
+			(112) ldb      [x + 0]
+			(113) and      #0xf
+			(114) lsh      #2
+			(115) add      x
+			(116) tax
+			(117) ld       M[5]
+			(118) add      x
+			(119) tax
+			(120) ldb      [x + 0]
+			(121) st       M[6]
+			(122) ld       #0xcd
+			(123) st       M[7]
+			(124) ldx      M[7]
+			(125) ld       M[6]
+			(126) jeq      x                jt 127	jf 128
+			(127) ret      #262144
+			(128) ret      #0
+			',
+	}, # vxlan_and_tcp_index_IEEE802_11_RADIO
+
 	{
 		name => 'linux_sll_inbound',
 		DLT => 'LINUX_SLL',
@@ -20734,6 +25738,18 @@ my @filter_apply_blocks = (
 		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 0, 0, 0, 0],
 	},
 	{
+		name => 'rfc1201_arp_via_index',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'link[4] == 213',
+		results => [65535, 65535, 0, 0, 0, 0, 65535, 65535, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1201_arp_request_via_index',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'arp[6:2] == 0x0001',
+		results => [65535, 0, 0, 0, 0, 0, 65535, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
 		name => 'rfc1201_arp_src_host',
 		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
 		expr => 'arp src host 10.80.131.1',
@@ -20746,10 +25762,34 @@ my @filter_apply_blocks = (
 		results => [0, 0, 65535, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 65535, 65535, 65535, 65535],
 	},
 	{
+		name => 'rfc1201_tcp_via_index',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'ip[9] == 6',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535, 65535],
+	},
+	{
 		name => 'rfc1201_tcp_dst_port',
 		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
 		expr => 'tcp dst port 80',
 		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 65535],
+	},
+	{
+		name => 'rfc1201_tcp_syn',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'tcp[tcpflags] & tcp-syn == tcp-syn',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535, 0],
+	},
+	{
+		name => 'rfc1201_icmp_echo',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'icmp[icmptype] == icmp-echo',
+		results => [0, 0, 65535, 0, 65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+	{
+		name => 'rfc1201_udp_dst_port_via_ifindex',
+		savefile => 'arcnet-rfc1201-arp-icmp-http.pcap',
+		expr => 'udp[2:2] == 53',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 65535, 0, 65535, 0, 0, 0, 0],
 	},
 	{
 		name => 'mstp_link_host',
@@ -20781,6 +25821,66 @@ my @filter_apply_blocks = (
 		expr => 'link broadcast',
 		results => [0, 0, 0, 0, 0, 65535, 65535, 0, 0, 0],
 	},
+
+	# The packets in "vrrp.pcap" are as follows:
+	#  1. IPv6, VRRP version 3, VRID 46, priority 191
+	#  2. IPv6, VRRP version 3, VRID 45, priority 191
+	#  3. IPv4 flags [none], VRRP version 3, VRID 44, priority 191
+	#  4. IPv4 flags [none], VRRP version 2, VRID 42, priority 192
+	#  5. IPv4 flags [none], VRRP version 2, VRID 43, priority 192
+	#  6. IPv4 flags [none], VRRP version 3, VRID 44, priority 192
+	#  7. IPv6, VRRP version 3, VRID 45, priority 191
+	#  8. IPv6, VRRP version 3, VRID 46, priority 191
+	#  9. IPv4 flags [none], VRRP version 2, VRID 42, priority 192
+	# 10. IPv4 flags [none], VRRP version 2, VRID 43, priority 192
+	# 11. IPv4 flags [none], VRRP version 3, VRID 44, priority 192
+	# 12. IPv6, VRRP version 3, VRID 46, priority 192
+	# 13. IPv6, VRRP version 3, VRID 45, priority 192
+	# 14. IPv4 flags [none], VRRP version 2, VRID 42, priority 192
+	# 15. IPv4 flags [none], VRRP version 2, VRID 43, priority 192
+	{
+		name => 'vrrp_type_via_index',
+		savefile => 'vrrp.pcap',
+		expr => 'vrrp[0] & 0x0f == 0x01',
+		# All packets have the Type field set to Advertisement, but this packet data
+		# accessor is IPv4-only.
+		results => [0, 0, 65535, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 0, 0, 65535, 65535],
+	},
+	{
+		name => 'vrrp_version_via_index',
+		savefile => 'vrrp.pcap',
+		expr => '(vrrp[0] & 0xf0) >> 4 == 3',
+		# Likewise, this does not match IPv6 VRRP version 3.
+		results => [0, 0, 65535, 0, 0, 65535, 0, 0, 0, 0, 65535, 0, 0, 0, 0],
+	},
+	{
+		name => 'vrrp_priority_via_index',
+		savefile => 'vrrp.pcap',
+		expr => 'vrrp[2] == 191',
+		# Likewise, this does not match IPv6 VRRP version priority 191.
+		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	},
+
+	{
+		name => 'radio_index_byte',
+		savefile => 'ieee802.11_exthdr.pcap',
+		expr => 'radio[2] == 0x5d',
+		results => [0, 0, 0, 0, 0, 0, 0, 0, 65535, 65535],
+	},
+
+	# The packets in "carp.pcap" are as follows:
+	# 1. IPv4, CARP, checksum 0x5303
+	# 2. IPv4, CARP, checksum 0xba5e
+	# 3. IPv4, CARP, checksum 0xc7da
+	# 4. IPv4, CARP, checksum 0xa345
+	# 5. IPv4, CARP, checksum 0xad35
+	{
+		name => 'carp_checksum_via_index',
+		savefile => 'carp.pcap',
+		expr => 'carp[6:2] > 0xb000',
+		results => [0, 65535, 65535, 0, 0],
+	},
+
 	{
 		name => 'ip_broadcast',
 		savefile => 'dhcp-rfc3004.pcap',
@@ -21471,6 +26571,18 @@ my @filter_apply_blocks = (
 			0,
 		],
 	},
+	{
+		name => 'icmp6_via_index',
+		savefile => 'gateway_or_not.pcap',
+		expr => 'ip6[6] == 58',
+		results => [0, 0, 0, 0, 262144, 262144, 262144, 262144, 0, 0, 0, 0, 262144, 262144],
+	},
+	{
+		name => 'icmp6_echo_reply',
+		savefile => 'gateway_or_not.pcap',
+		expr => 'icmp6[icmp6type] == icmp6-echoreply',
+		results => [0, 0, 0, 0, 0, 0, 262144, 262144, 0, 0, 0, 0, 0, 262144],
+	},
 	# Protocol exchange for the packets in "brcm-tag.pcap":
 	#  1. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
 	#  2. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
@@ -21510,6 +26622,12 @@ my @filter_apply_blocks = (
 		savefile => 'brcm-tag.pcap',
 		expr => 'ip src host 192.168.1.1',
 		results => [0, 0, 262144, 0, 0, 262144, 262144, 262144, 0, 0, 262144, 0, 0, 0, 0],
+	},
+	{
+		name => 'ip_flag_df_via_index_DSA_TAG_BRCM',
+		savefile => 'brcm-tag.pcap',
+		expr => 'ip[6] & 0x40 == 0x40',
+		results => [0, 0, 262144, 0, 0, 262144, 262144, 262144, 0, 262144, 262144, 262144, 262144, 0, 0],
 	},
 	# Protocol stack for the packets in brcm-tag-stp.pcap:
 	# 1. EG, 802.1Q VLAN ID 8, LLC, STP
