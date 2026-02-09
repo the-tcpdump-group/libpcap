@@ -1211,6 +1211,77 @@ port_pq_to_ipproto(compiler_state_t *cstate, const int proto, const char *kw)
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), kw);
 }
 
+static uint8_t
+pq_to_ipproto(compiler_state_t *cstate, const uint8_t pqual)
+{
+	static const uint8_t map[UINT8_MAX + 1] = {
+		[Q_AH]     = IPPROTO_AH,
+		[Q_CARP]   = IPPROTO_CARP,
+		[Q_ESP]    = IPPROTO_ESP,
+		[Q_ICMP]   = IPPROTO_ICMP,
+		[Q_ICMPV6] = IPPROTO_ICMPV6,
+		[Q_IGMP]   = IPPROTO_IGMP,
+		[Q_IGRP]   = IPPROTO_IGRP,
+		[Q_PIM]    = IPPROTO_PIM,
+		[Q_SCTP]   = IPPROTO_SCTP,
+		[Q_TCP]    = IPPROTO_TCP,
+		[Q_UDP]    = IPPROTO_UDP,
+		[Q_VRRP]   = IPPROTO_VRRP,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no IP protocol",
+	    pqkw(pqual));
+}
+
+static uint8_t
+pq_to_llcsap(compiler_state_t *cstate, const uint8_t pqual)
+{
+	static const uint8_t map[UINT8_MAX + 1] = {
+		[Q_IPX]     = LLCSAP_IPX,
+		[Q_ISO]     = LLCSAP_ISONS,
+		[Q_NETBEUI] = LLCSAP_NETBEUI,
+		[Q_STP]     = LLCSAP_8021D,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no LLC SAP", pqkw(pqual));
+}
+
+static uint16_t
+pq_to_ethertype(compiler_state_t *cstate, const uint8_t pqual)
+{
+	static const uint16_t map[UINT8_MAX + 1] = {
+		[Q_AARP]   = ETHERTYPE_AARP,
+		[Q_ARP]    = ETHERTYPE_ARP,
+		[Q_ATALK]  = ETHERTYPE_ATALK,
+		[Q_DECNET] = ETHERTYPE_DN,
+		[Q_IP]     = ETHERTYPE_IP,
+		[Q_IPV6]   = ETHERTYPE_IPV6,
+		[Q_LAT]    = ETHERTYPE_LAT,
+		[Q_MOPDL]  = ETHERTYPE_MOPDL,
+		[Q_MOPRC]  = ETHERTYPE_MOPRC,
+		[Q_RARP]   = ETHERTYPE_REVARP,
+		[Q_SCA]    = ETHERTYPE_SCA,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no EtherType", pqkw(pqual));
+}
+
+static uint8_t
+pq_to_nlpid(compiler_state_t *cstate, const uint8_t pqual)
+{
+	static const uint8_t map[UINT8_MAX + 1] = {
+		[Q_ESIS] = ISO9542_ESIS,
+		[Q_ISIS] = ISO10589_ISIS,
+		[Q_CLNP] = ISO8473_CLNP,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no NLPID", pqkw(pqual));
+}
+
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
@@ -5696,82 +5767,58 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	switch (proto) {
 
 	case Q_SCTP:
-		return gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT);
-
 	case Q_TCP:
-		return gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT);
-
 	case Q_UDP:
-		return gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT);
+	case Q_AH:
+	case Q_ESP:
+	case Q_PIM:
+		// protocols based on IPv4/IPv6
+		return gen_proto(cstate,
+		    pq_to_ipproto(cstate, (uint8_t)proto), Q_DEFAULT);
 
 	case Q_ICMP:
-		return gen_proto(cstate, IPPROTO_ICMP, Q_IP);
-
 	case Q_IGMP:
-		return gen_proto(cstate, IPPROTO_IGMP, Q_IP);
-
 	case Q_IGRP:
-		return gen_proto(cstate, IPPROTO_IGRP, Q_IP);
-
-	case Q_PIM:
-		return gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
-
 	case Q_VRRP:
-		return gen_proto(cstate, IPPROTO_VRRP, Q_IP);
-
 	case Q_CARP:
-		return gen_proto(cstate, IPPROTO_CARP, Q_IP);
-
-	case Q_IP:
-		return gen_linktype(cstate, ETHERTYPE_IP);
-
-	case Q_ARP:
-		return gen_linktype(cstate, ETHERTYPE_ARP);
-
-	case Q_RARP:
-		return gen_linktype(cstate, ETHERTYPE_REVARP);
-
-	case Q_ATALK:
-		return gen_linktype(cstate, ETHERTYPE_ATALK);
-
-	case Q_AARP:
-		return gen_linktype(cstate, ETHERTYPE_AARP);
-
-	case Q_DECNET:
-		return gen_linktype(cstate, ETHERTYPE_DN);
-
-	case Q_SCA:
-		return gen_linktype(cstate, ETHERTYPE_SCA);
-
-	case Q_LAT:
-		return gen_linktype(cstate, ETHERTYPE_LAT);
-
-	case Q_MOPDL:
-		return gen_linktype(cstate, ETHERTYPE_MOPDL);
-
-	case Q_MOPRC:
-		return gen_linktype(cstate, ETHERTYPE_MOPRC);
-
-	case Q_IPV6:
-		return gen_linktype(cstate, ETHERTYPE_IPV6);
+		// protocols based on IPv4 only
+		return gen_proto(cstate,
+		    pq_to_ipproto(cstate, (uint8_t)proto), Q_IP);
 
 	case Q_ICMPV6:
-		return gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
+		// protocols based on IPv6 only
+		return gen_proto(cstate,
+		    pq_to_ipproto(cstate, (uint8_t)proto), Q_IPV6);
 
-	case Q_AH:
-		return gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
-
-	case Q_ESP:
-		return gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
+	case Q_IP:
+	case Q_ARP:
+	case Q_RARP:
+	case Q_ATALK:
+	case Q_AARP:
+	case Q_DECNET:
+	case Q_SCA:
+	case Q_LAT:
+	case Q_MOPDL:
+	case Q_MOPRC:
+	case Q_IPV6:
+		// link-layer protocols not based on LLC
+		return gen_linktype(cstate,
+		    pq_to_ethertype(cstate, (uint8_t)proto));
 
 	case Q_ISO:
-		return gen_linktype(cstate, LLCSAP_ISONS);
+	case Q_STP:
+	case Q_IPX:
+	case Q_NETBEUI:
+		// link-layer protocols based on LLC
+		return gen_linktype(cstate,
+		    pq_to_llcsap(cstate, (uint8_t)proto));
 
 	case Q_ESIS:
-		return gen_proto(cstate, ISO9542_ESIS, Q_ISO);
-
 	case Q_ISIS:
-		return gen_proto(cstate, ISO10589_ISIS, Q_ISO);
+	case Q_CLNP:
+		// ISO protocols
+		return gen_proto(cstate,
+		    pq_to_nlpid(cstate, (uint8_t)proto), Q_ISO);
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
 		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
@@ -5825,18 +5872,6 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		return gen_or(b0, b1);
-
-	case Q_CLNP:
-		return gen_proto(cstate, ISO8473_CLNP, Q_ISO);
-
-	case Q_STP:
-		return gen_linktype(cstate, LLCSAP_8021D);
-
-	case Q_IPX:
-		return gen_linktype(cstate, LLCSAP_IPX);
-
-	case Q_NETBEUI:
-		return gen_linktype(cstate, LLCSAP_NETBEUI);
 	}
 	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
 }
