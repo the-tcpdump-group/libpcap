@@ -7677,11 +7677,17 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * the protocol in question - which is true only
 		 * if this is an IP datagram and is the first or
 		 * only fragment of that datagram.
+		 *
+		 * Do not use gen_proto_abbrev_internal(cstate, proto): if it
+		 * matches the given proto qualifier using Q_DEFAULT, this
+		 * would produce an unreachable IPv6 branch.
 		 */
-		b = gen_and(gen_proto_abbrev_internal(cstate, proto), gen_ipfrag(cstate));
+		b = gen_proto_abbrev_internal(cstate, Q_IP);
+		b = gen_and(b, gen_ip_proto(cstate, pq_to_ipproto(cstate,
+		    (u_char)proto)));
+		b = gen_and(b, gen_ipfrag(cstate));
 		if (inst->b)
 			b = gen_and(inst->b, b);
-		b = gen_and(gen_proto_abbrev_internal(cstate, Q_IP), b);
 		inst->b = b;
 		break;
 	case Q_ICMPV6:
@@ -7690,6 +7696,10 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 *
 		 * Do the computation only if the packet contains
 		 * the protocol in question.
+		 *
+		 * Do not use gen_proto(..., Q_IPV6): this would also match
+		 * IPPROTO_FRAGMENT and the side effect statements would
+		 * quietly load incorrect data.
 		 */
 		b = gen_proto_abbrev_internal(cstate, Q_IPV6);
 		inst->b = inst->b ? gen_and(inst->b, b) : b;

@@ -2517,59 +2517,36 @@ my @filter_accept_blocks = (
 			(018) ldx      M[3]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
-			(021) jeq      #0x8             jt 22	jf 73
+			(021) jeq      #0x8             jt 22	jf 50
 			(022) ldx      M[2]
 			(023) ldh      [x + 6]
-			(024) jeq      #0x800           jt 25	jf 73
-			(025) ldx      M[3]
-			(026) ldb      [x + 0]
-			(027) and      #0xc
-			(028) jeq      #0x8             jt 29	jf 35
-			(029) ldx      M[2]
-			(030) ldh      [x + 6]
-			(031) jeq      #0x800           jt 32	jf 35
-			(032) ldx      M[2]
-			(033) ldb      [x + 17]
-			(034) jeq      #0x84            jt 51	jf 35
-			(035) ldx      M[3]
-			(036) ldb      [x + 0]
-			(037) and      #0xc
-			(038) jeq      #0x8             jt 39	jf 73
-			(039) ldx      M[2]
-			(040) ldh      [x + 6]
-			(041) jeq      #0x86dd          jt 42	jf 73
-			(042) ldx      M[2]
-			(043) ldb      [x + 14]
-			(044) jeq      #0x84            jt 51	jf 45
-			(045) ldx      M[2]
-			(046) ldb      [x + 14]
-			(047) jeq      #0x2c            jt 48	jf 73
-			(048) ldx      M[2]
-			(049) ldb      [x + 48]
-			(050) jeq      #0x84            jt 51	jf 73
-			(051) ldx      M[2]
-			(052) ldh      [x + 14]
-			(053) jset     #0x1fff          jt 73	jf 54
-			(054) ld       #0xab
-			(055) st       M[0]
-			(056) ldx      M[2]
-			(057) ldb      [x + 8]
-			(058) and      #0xf
-			(059) lsh      #2
-			(060) add      x
-			(061) tax
-			(062) ld       M[0]
-			(063) add      x
-			(064) tax
-			(065) ldb      [x + 8]
-			(066) st       M[1]
-			(067) ld       #0xcd
-			(068) st       M[4]
-			(069) ldx      M[4]
-			(070) ld       M[1]
-			(071) jeq      x                jt 72	jf 73
-			(072) ret      #262144
-			(073) ret      #0
+			(024) jeq      #0x800           jt 25	jf 50
+			(025) ldx      M[2]
+			(026) ldb      [x + 17]
+			(027) jeq      #0x84            jt 28	jf 50
+			(028) ldx      M[2]
+			(029) ldh      [x + 14]
+			(030) jset     #0x1fff          jt 50	jf 31
+			(031) ld       #0xab
+			(032) st       M[0]
+			(033) ldx      M[2]
+			(034) ldb      [x + 8]
+			(035) and      #0xf
+			(036) lsh      #2
+			(037) add      x
+			(038) tax
+			(039) ld       M[0]
+			(040) add      x
+			(041) tax
+			(042) ldb      [x + 8]
+			(043) st       M[1]
+			(044) ld       #0xcd
+			(045) st       M[4]
+			(046) ldx      M[4]
+			(047) ld       M[1]
+			(048) jeq      x                jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
 			',
 	}, # sctp_index_PRISM_HEADER
 	{
@@ -2590,57 +2567,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 63
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 63
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 26
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x84            jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 26
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x84            jt 41	jf 26
-			(026) ldb      [0]
-			(027) and      #0xc
-			(028) jeq      #0x8             jt 29	jf 63
-			(029) ldx      M[2]
-			(030) ldh      [x + 6]
-			(031) jeq      #0x86dd          jt 32	jf 63
-			(032) ldx      M[2]
-			(033) ldb      [x + 14]
-			(034) jeq      #0x84            jt 41	jf 35
-			(035) ldx      M[2]
-			(036) ldb      [x + 14]
-			(037) jeq      #0x2c            jt 38	jf 63
-			(038) ldx      M[2]
-			(039) ldb      [x + 48]
-			(040) jeq      #0x84            jt 41	jf 63
-			(041) ldx      M[2]
-			(042) ldh      [x + 14]
-			(043) jset     #0x1fff          jt 63	jf 44
-			(044) ld       #0xab
-			(045) st       M[0]
-			(046) ldx      M[2]
-			(047) ldb      [x + 8]
-			(048) and      #0xf
-			(049) lsh      #2
-			(050) add      x
-			(051) tax
-			(052) ld       M[0]
-			(053) add      x
-			(054) tax
-			(055) ldb      [x + 8]
-			(056) st       M[1]
-			(057) ld       #0xcd
-			(058) st       M[3]
-			(059) ldx      M[3]
-			(060) ld       M[1]
-			(061) jeq      x                jt 62	jf 63
-			(062) ret      #262144
-			(063) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # sctp_index_IEEE802_11
 	{
@@ -2662,36 +2618,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 30
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 6
-			(004) ldb      [23]
-			(005) jeq      #0x84            jt 14	jf 6
-			(006) ldh      [12]
-			(007) jeq      #0x86dd          jt 8	jf 30
-			(008) ldb      [20]
-			(009) jeq      #0x84            jt 14	jf 10
-			(010) ldb      [20]
-			(011) jeq      #0x2c            jt 12	jf 30
-			(012) ldb      [54]
-			(013) jeq      #0x84            jt 14	jf 30
-			(014) ldh      [20]
-			(015) jset     #0x1fff          jt 30	jf 16
-			(016) ld       #0xab
-			(017) st       M[0]
-			(018) ldxb     4*([14]&0xf)
-			(019) ld       M[0]
-			(020) add      x
-			(021) tax
-			(022) ldb      [x + 14]
-			(023) st       M[1]
-			(024) ld       #0xcd
-			(025) st       M[2]
-			(026) ldx      M[2]
-			(027) ld       M[1]
-			(028) jeq      x                jt 29	jf 30
-			(029) ret      #262144
-			(030) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [23]
+			(003) jeq      #0x84            jt 4	jf 20
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([14]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 14]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # sctp_index_EN10MB
 	{
@@ -2715,59 +2661,36 @@ my @filter_accept_blocks = (
 			(013) ldx      M[3]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
-			(016) jeq      #0x8             jt 17	jf 68
+			(016) jeq      #0x8             jt 17	jf 45
 			(017) ldx      M[2]
 			(018) ldh      [x + 6]
-			(019) jeq      #0x800           jt 20	jf 68
-			(020) ldx      M[3]
-			(021) ldb      [x + 0]
-			(022) and      #0xc
-			(023) jeq      #0x8             jt 24	jf 30
-			(024) ldx      M[2]
-			(025) ldh      [x + 6]
-			(026) jeq      #0x800           jt 27	jf 30
-			(027) ldx      M[2]
-			(028) ldb      [x + 17]
-			(029) jeq      #0x6             jt 46	jf 30
-			(030) ldx      M[3]
-			(031) ldb      [x + 0]
-			(032) and      #0xc
-			(033) jeq      #0x8             jt 34	jf 68
-			(034) ldx      M[2]
-			(035) ldh      [x + 6]
-			(036) jeq      #0x86dd          jt 37	jf 68
-			(037) ldx      M[2]
-			(038) ldb      [x + 14]
-			(039) jeq      #0x6             jt 46	jf 40
-			(040) ldx      M[2]
-			(041) ldb      [x + 14]
-			(042) jeq      #0x2c            jt 43	jf 68
-			(043) ldx      M[2]
-			(044) ldb      [x + 48]
-			(045) jeq      #0x6             jt 46	jf 68
-			(046) ldx      M[2]
-			(047) ldh      [x + 14]
-			(048) jset     #0x1fff          jt 68	jf 49
-			(049) ld       #0xab
-			(050) st       M[0]
-			(051) ldx      M[2]
-			(052) ldb      [x + 8]
-			(053) and      #0xf
-			(054) lsh      #2
-			(055) add      x
-			(056) tax
-			(057) ld       M[0]
-			(058) add      x
-			(059) tax
-			(060) ldb      [x + 8]
-			(061) st       M[1]
-			(062) ld       #0xcd
-			(063) st       M[4]
-			(064) ldx      M[4]
-			(065) ld       M[1]
-			(066) jeq      x                jt 67	jf 68
-			(067) ret      #262144
-			(068) ret      #0
+			(019) jeq      #0x800           jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 17]
+			(022) jeq      #0x6             jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 14]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 8]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 8]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[4]
+			(041) ldx      M[4]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
 			',
 	}, # tcp_index_IEEE802_11_RADIO_AVS
 	{
@@ -2788,57 +2711,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 63
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 63
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 26
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x6             jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 26
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x6             jt 41	jf 26
-			(026) ldb      [0]
-			(027) and      #0xc
-			(028) jeq      #0x8             jt 29	jf 63
-			(029) ldx      M[2]
-			(030) ldh      [x + 6]
-			(031) jeq      #0x86dd          jt 32	jf 63
-			(032) ldx      M[2]
-			(033) ldb      [x + 14]
-			(034) jeq      #0x6             jt 41	jf 35
-			(035) ldx      M[2]
-			(036) ldb      [x + 14]
-			(037) jeq      #0x2c            jt 38	jf 63
-			(038) ldx      M[2]
-			(039) ldb      [x + 48]
-			(040) jeq      #0x6             jt 41	jf 63
-			(041) ldx      M[2]
-			(042) ldh      [x + 14]
-			(043) jset     #0x1fff          jt 63	jf 44
-			(044) ld       #0xab
-			(045) st       M[0]
-			(046) ldx      M[2]
-			(047) ldb      [x + 8]
-			(048) and      #0xf
-			(049) lsh      #2
-			(050) add      x
-			(051) tax
-			(052) ld       M[0]
-			(053) add      x
-			(054) tax
-			(055) ldb      [x + 8]
-			(056) st       M[1]
-			(057) ld       #0xcd
-			(058) st       M[3]
-			(059) ldx      M[3]
-			(060) ld       M[1]
-			(061) jeq      x                jt 62	jf 63
-			(062) ret      #262144
-			(063) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # tcp_index_IEEE802_11
 	{
@@ -2860,36 +2762,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 30
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 6
-			(004) ldb      [23]
-			(005) jeq      #0x6             jt 14	jf 6
-			(006) ldh      [12]
-			(007) jeq      #0x86dd          jt 8	jf 30
-			(008) ldb      [20]
-			(009) jeq      #0x6             jt 14	jf 10
-			(010) ldb      [20]
-			(011) jeq      #0x2c            jt 12	jf 30
-			(012) ldb      [54]
-			(013) jeq      #0x6             jt 14	jf 30
-			(014) ldh      [20]
-			(015) jset     #0x1fff          jt 30	jf 16
-			(016) ld       #0xab
-			(017) st       M[0]
-			(018) ldxb     4*([14]&0xf)
-			(019) ld       M[0]
-			(020) add      x
-			(021) tax
-			(022) ldb      [x + 14]
-			(023) st       M[1]
-			(024) ld       #0xcd
-			(025) st       M[2]
-			(026) ldx      M[2]
-			(027) ld       M[1]
-			(028) jeq      x                jt 29	jf 30
-			(029) ret      #262144
-			(030) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [23]
+			(003) jeq      #0x6             jt 4	jf 20
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([14]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 14]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # tcp_index_EN10MB
 	{
@@ -2913,38 +2805,26 @@ my @filter_accept_blocks = (
 		unopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 33
-			(003) ldb      [0]
-			(004) and      #0xf0
-			(005) jeq      #0x40            jt 6	jf 8
-			(006) ldb      [9]
-			(007) jeq      #0x6             jt 17	jf 8
-			(008) ldb      [0]
-			(009) and      #0xf0
-			(010) jeq      #0x60            jt 11	jf 33
-			(011) ldb      [6]
-			(012) jeq      #0x6             jt 17	jf 13
-			(013) ldb      [6]
-			(014) jeq      #0x2c            jt 15	jf 33
-			(015) ldb      [40]
-			(016) jeq      #0x6             jt 17	jf 33
-			(017) ldh      [6]
-			(018) jset     #0x1fff          jt 33	jf 19
-			(019) ld       #0xab
-			(020) st       M[0]
-			(021) ldxb     4*([0]&0xf)
-			(022) ld       M[0]
-			(023) add      x
-			(024) tax
-			(025) ldb      [x + 0]
-			(026) st       M[1]
-			(027) ld       #0xcd
-			(028) st       M[2]
-			(029) ldx      M[2]
-			(030) ld       M[1]
-			(031) jeq      x                jt 32	jf 33
-			(032) ret      #262144
-			(033) ret      #0
+			(002) jeq      #0x40            jt 3	jf 21
+			(003) ldb      [9]
+			(004) jeq      #0x6             jt 5	jf 21
+			(005) ldh      [6]
+			(006) jset     #0x1fff          jt 21	jf 7
+			(007) ld       #0xab
+			(008) st       M[0]
+			(009) ldxb     4*([0]&0xf)
+			(010) ld       M[0]
+			(011) add      x
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) st       M[1]
+			(015) ld       #0xcd
+			(016) st       M[2]
+			(017) ldx      M[2]
+			(018) ld       M[1]
+			(019) jeq      x                jt 20	jf 21
+			(020) ret      #262144
+			(021) ret      #0
 			',
 	}, # tcp_index_RAW
 	{
@@ -2984,63 +2864,40 @@ my @filter_accept_blocks = (
 			(029) ldx      M[3]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
-			(032) jeq      #0x8             jt 33	jf 84
+			(032) jeq      #0x8             jt 33	jf 61
 			(033) ldx      M[2]
 			(034) ldh      [x + 6]
-			(035) jeq      #0x800           jt 36	jf 84
-			(036) ldx      M[3]
-			(037) ldb      [x + 0]
-			(038) and      #0xc
-			(039) jeq      #0x8             jt 40	jf 46
-			(040) ldx      M[2]
-			(041) ldh      [x + 6]
-			(042) jeq      #0x800           jt 43	jf 46
-			(043) ldx      M[2]
-			(044) ldb      [x + 17]
-			(045) jeq      #0x11            jt 62	jf 46
-			(046) ldx      M[3]
-			(047) ldb      [x + 0]
-			(048) and      #0xc
-			(049) jeq      #0x8             jt 50	jf 84
-			(050) ldx      M[2]
-			(051) ldh      [x + 6]
-			(052) jeq      #0x86dd          jt 53	jf 84
-			(053) ldx      M[2]
-			(054) ldb      [x + 14]
-			(055) jeq      #0x11            jt 62	jf 56
-			(056) ldx      M[2]
-			(057) ldb      [x + 14]
-			(058) jeq      #0x2c            jt 59	jf 84
-			(059) ldx      M[2]
-			(060) ldb      [x + 48]
-			(061) jeq      #0x11            jt 62	jf 84
-			(062) ldx      M[2]
-			(063) ldh      [x + 14]
-			(064) jset     #0x1fff          jt 84	jf 65
-			(065) ld       #0xab
-			(066) st       M[0]
-			(067) ldx      M[2]
-			(068) ldb      [x + 8]
-			(069) and      #0xf
-			(070) lsh      #2
-			(071) add      x
-			(072) tax
-			(073) ld       M[0]
-			(074) add      x
-			(075) tax
-			(076) ldb      [x + 8]
-			(077) st       M[1]
-			(078) ld       #0xcd
-			(079) st       M[4]
-			(080) ldx      M[4]
-			(081) ld       M[1]
-			(082) jeq      x                jt 83	jf 84
-			(083) ret      #262144
-			(084) ret      #0
+			(035) jeq      #0x800           jt 36	jf 61
+			(036) ldx      M[2]
+			(037) ldb      [x + 17]
+			(038) jeq      #0x11            jt 39	jf 61
+			(039) ldx      M[2]
+			(040) ldh      [x + 14]
+			(041) jset     #0x1fff          jt 61	jf 42
+			(042) ld       #0xab
+			(043) st       M[0]
+			(044) ldx      M[2]
+			(045) ldb      [x + 8]
+			(046) and      #0xf
+			(047) lsh      #2
+			(048) add      x
+			(049) tax
+			(050) ld       M[0]
+			(051) add      x
+			(052) tax
+			(053) ldb      [x + 8]
+			(054) st       M[1]
+			(055) ld       #0xcd
+			(056) st       M[4]
+			(057) ldx      M[4]
+			(058) ld       M[1]
+			(059) jeq      x                jt 60	jf 61
+			(060) ret      #262144
+			(061) ret      #0
 			',
 	}, # udp_index_IEEE802_11_RADIO
 	{
-		name => 'udp_1_5_index_PFLOG',
+		name => 'udp_1_index_PFLOG',
 		skip => skip_os_not ('haiku'),
 		DLT => 'PFLOG',
 		aliases => ['udp[0xab] == 0xcd'],
@@ -3073,51 +2930,38 @@ my @filter_accept_blocks = (
 			(003) st       M[2]
 			(004) tax
 			(005) ldb      [1]
-			(006) jeq      #0x1             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x1             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x5             jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
+			(006) jeq      #0x1             jt 7	jf 32
+			(007) ldx      M[2]
+			(008) ldb      [x + 9]
+			(009) jeq      #0x11            jt 10	jf 32
+			(010) ldx      M[2]
+			(011) ldh      [x + 6]
+			(012) jset     #0x1fff          jt 32	jf 13
+			(013) ld       #0xab
+			(014) st       M[0]
+			(015) ldx      M[2]
+			(016) ldb      [x + 0]
+			(017) and      #0xf
+			(018) lsh      #2
+			(019) add      x
+			(020) tax
+			(021) ld       M[0]
+			(022) add      x
+			(023) tax
+			(024) ldb      [x + 0]
+			(025) st       M[1]
+			(026) ld       #0xcd
+			(027) st       M[3]
+			(028) ldx      M[3]
+			(029) ld       M[1]
+			(030) jeq      x                jt 31	jf 32
+			(031) ret      #262144
+			(032) ret      #0
 			',
-	}, # udp_1_5_index_PFLOG
+	}, # udp_1_index_PFLOG
 	{
-		name => 'udp_2_10_index_PFLOG',
-		skip => skip_os_not ('linux'),
+		name => 'udp_2_index_PFLOG',
+		skip => skip_os ('haiku'),
 		DLT => 'PFLOG',
 		aliases => ['udp[0xab] == 0xcd'],
 		opt => '
@@ -3149,428 +2993,35 @@ my @filter_accept_blocks = (
 			(003) st       M[2]
 			(004) tax
 			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0xa             jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
+			(006) jeq      #0x2             jt 7	jf 32
+			(007) ldx      M[2]
+			(008) ldb      [x + 9]
+			(009) jeq      #0x11            jt 10	jf 32
+			(010) ldx      M[2]
+			(011) ldh      [x + 6]
+			(012) jset     #0x1fff          jt 32	jf 13
+			(013) ld       #0xab
+			(014) st       M[0]
+			(015) ldx      M[2]
+			(016) ldb      [x + 0]
+			(017) and      #0xf
+			(018) lsh      #2
+			(019) add      x
+			(020) tax
+			(021) ld       M[0]
+			(022) add      x
+			(023) tax
+			(024) ldb      [x + 0]
+			(025) st       M[1]
+			(026) ld       #0xcd
+			(027) st       M[3]
+			(028) ldx      M[3]
+			(029) ld       M[1]
+			(030) jeq      x                jt 31	jf 32
+			(031) ret      #262144
+			(032) ret      #0
 			',
-	}, # udp_2_10_index_PFLOG
-	{
-		name => 'udp_2_22_index_PFLOG',
-		skip => skip_os_not ('hpux'),
-		DLT => 'PFLOG',
-		aliases => ['udp[0xab] == 0xcd'],
-		opt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) ldb      [1]
-			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
-			(007) ldb      [x + 9]
-			(008) jeq      #0x11            jt 9	jf 19
-			(009) ldh      [x + 6]
-			(010) jset     #0x1fff          jt 19	jf 11
-			(011) ldb      [x + 0]
-			(012) and      #0xf
-			(013) lsh      #2
-			(014) add      x
-			(015) tax
-			(016) ldb      [x + 171]
-			(017) jeq      #0xcd            jt 18	jf 19
-			(018) ret      #262144
-			(019) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) tax
-			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x16            jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
-			',
-	}, # udp_2_22_index_PFLOG
-	{
-		name => 'udp_2_24_index_PFLOG',
-		skip => skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd'),
-		DLT => 'PFLOG',
-		aliases => ['udp[0xab] == 0xcd'],
-		opt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) ldb      [1]
-			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
-			(007) ldb      [x + 9]
-			(008) jeq      #0x11            jt 9	jf 19
-			(009) ldh      [x + 6]
-			(010) jset     #0x1fff          jt 19	jf 11
-			(011) ldb      [x + 0]
-			(012) and      #0xf
-			(013) lsh      #2
-			(014) add      x
-			(015) tax
-			(016) ldb      [x + 171]
-			(017) jeq      #0xcd            jt 18	jf 19
-			(018) ret      #262144
-			(019) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) tax
-			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x18            jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
-			',
-	}, # udp_2_24_index_PFLOG
-	{
-		name => 'udp_2_26_index_PFLOG',
-		skip => skip_os_not ('solaris'),
-		DLT => 'PFLOG',
-		aliases => ['udp[0xab] == 0xcd'],
-		opt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) ldb      [1]
-			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
-			(007) ldb      [x + 9]
-			(008) jeq      #0x11            jt 9	jf 19
-			(009) ldh      [x + 6]
-			(010) jset     #0x1fff          jt 19	jf 11
-			(011) ldb      [x + 0]
-			(012) and      #0xf
-			(013) lsh      #2
-			(014) add      x
-			(015) tax
-			(016) ldb      [x + 171]
-			(017) jeq      #0xcd            jt 18	jf 19
-			(018) ret      #262144
-			(019) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) tax
-			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x1a            jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
-			',
-	}, # udp_2_26_index_PFLOG
-	{
-		name => 'udp_2_28_index_PFLOG',
-		skip => skip_os_not ('dragonfly') && skip_os_not ('freebsd'),
-		DLT => 'PFLOG',
-		aliases => ['udp[0xab] == 0xcd'],
-		opt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) ldb      [1]
-			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
-			(007) ldb      [x + 9]
-			(008) jeq      #0x11            jt 9	jf 19
-			(009) ldh      [x + 6]
-			(010) jset     #0x1fff          jt 19	jf 11
-			(011) ldb      [x + 0]
-			(012) and      #0xf
-			(013) lsh      #2
-			(014) add      x
-			(015) tax
-			(016) ldb      [x + 171]
-			(017) jeq      #0xcd            jt 18	jf 19
-			(018) ret      #262144
-			(019) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) tax
-			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x1c            jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
-			',
-	}, # udp_2_28_index_PFLOG
-	{
-		name => 'udp_2_30_index_PFLOG',
-		skip => skip_os_not ('darwin'),
-		DLT => 'PFLOG',
-		aliases => ['udp[0xab] == 0xcd'],
-		opt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) ldb      [1]
-			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
-			(007) ldb      [x + 9]
-			(008) jeq      #0x11            jt 9	jf 19
-			(009) ldh      [x + 6]
-			(010) jset     #0x1fff          jt 19	jf 11
-			(011) ldb      [x + 0]
-			(012) and      #0xf
-			(013) lsh      #2
-			(014) add      x
-			(015) tax
-			(016) ldb      [x + 171]
-			(017) jeq      #0xcd            jt 18	jf 19
-			(018) ret      #262144
-			(019) ret      #0
-			',
-		unopt => '
-			(000) ldb      [0]
-			(001) add      #3
-			(002) and      #0xfffffffc
-			(003) st       M[2]
-			(004) tax
-			(005) ldb      [1]
-			(006) jeq      #0x2             jt 7	jf 45
-			(007) ldb      [1]
-			(008) jeq      #0x2             jt 9	jf 12
-			(009) ldx      M[2]
-			(010) ldb      [x + 9]
-			(011) jeq      #0x11            jt 23	jf 12
-			(012) ldb      [1]
-			(013) jeq      #0x1e            jt 14	jf 45
-			(014) ldx      M[2]
-			(015) ldb      [x + 6]
-			(016) jeq      #0x11            jt 23	jf 17
-			(017) ldx      M[2]
-			(018) ldb      [x + 6]
-			(019) jeq      #0x2c            jt 20	jf 45
-			(020) ldx      M[2]
-			(021) ldb      [x + 40]
-			(022) jeq      #0x11            jt 23	jf 45
-			(023) ldx      M[2]
-			(024) ldh      [x + 6]
-			(025) jset     #0x1fff          jt 45	jf 26
-			(026) ld       #0xab
-			(027) st       M[0]
-			(028) ldx      M[2]
-			(029) ldb      [x + 0]
-			(030) and      #0xf
-			(031) lsh      #2
-			(032) add      x
-			(033) tax
-			(034) ld       M[0]
-			(035) add      x
-			(036) tax
-			(037) ldb      [x + 0]
-			(038) st       M[1]
-			(039) ld       #0xcd
-			(040) st       M[3]
-			(041) ldx      M[3]
-			(042) ld       M[1]
-			(043) jeq      x                jt 44	jf 45
-			(044) ret      #262144
-			(045) ret      #0
-			',
-	}, # udp_2_30_index_PFLOG
+	}, # udp_2_index_PFLOG
 	{
 		name => 'udp_index_EN10MB',
 		DLT => 'EN10MB',
@@ -3590,36 +3041,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 30
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 6
-			(004) ldb      [23]
-			(005) jeq      #0x11            jt 14	jf 6
-			(006) ldh      [12]
-			(007) jeq      #0x86dd          jt 8	jf 30
-			(008) ldb      [20]
-			(009) jeq      #0x11            jt 14	jf 10
-			(010) ldb      [20]
-			(011) jeq      #0x2c            jt 12	jf 30
-			(012) ldb      [54]
-			(013) jeq      #0x11            jt 14	jf 30
-			(014) ldh      [20]
-			(015) jset     #0x1fff          jt 30	jf 16
-			(016) ld       #0xab
-			(017) st       M[0]
-			(018) ldxb     4*([14]&0xf)
-			(019) ld       M[0]
-			(020) add      x
-			(021) tax
-			(022) ldb      [x + 14]
-			(023) st       M[1]
-			(024) ld       #0xcd
-			(025) st       M[2]
-			(026) ldx      M[2]
-			(027) ld       M[1]
-			(028) jeq      x                jt 29	jf 30
-			(029) ret      #262144
-			(030) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 20
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([14]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 14]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # udp_index_EN10MB
 	{
@@ -3641,36 +3082,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [2]
-			(001) jeq      #0x21            jt 2	jf 30
-			(002) ldh      [2]
-			(003) jeq      #0x21            jt 4	jf 6
-			(004) ldb      [13]
-			(005) jeq      #0x11            jt 14	jf 6
-			(006) ldh      [2]
-			(007) jeq      #0x57            jt 8	jf 30
-			(008) ldb      [10]
-			(009) jeq      #0x11            jt 14	jf 10
-			(010) ldb      [10]
-			(011) jeq      #0x2c            jt 12	jf 30
-			(012) ldb      [44]
-			(013) jeq      #0x11            jt 14	jf 30
-			(014) ldh      [10]
-			(015) jset     #0x1fff          jt 30	jf 16
-			(016) ld       #0xab
-			(017) st       M[0]
-			(018) ldxb     4*([4]&0xf)
-			(019) ld       M[0]
-			(020) add      x
-			(021) tax
-			(022) ldb      [x + 4]
-			(023) st       M[1]
-			(024) ld       #0xcd
-			(025) st       M[2]
-			(026) ldx      M[2]
-			(027) ld       M[1]
-			(028) jeq      x                jt 29	jf 30
-			(029) ret      #262144
-			(030) ret      #0
+			(001) jeq      #0x21            jt 2	jf 20
+			(002) ldb      [13]
+			(003) jeq      #0x11            jt 4	jf 20
+			(004) ldh      [10]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([4]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 4]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # udp_index_PPP
 	{
@@ -3679,7 +3110,7 @@ my @filter_accept_blocks = (
 		aliases => ['icmp[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) jeq      #0x69000000      jt 2	jf 58
+			(001) jeq      #0x69000000      jt 2	jf 51
 			(002) ldb      [3]
 			(003) lsh      #8
 			(004) tax
@@ -3700,43 +3131,36 @@ my @filter_accept_blocks = (
 			(019) ldx      M[3]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
-			(022) jeq      #0x8             jt 23	jf 58
+			(022) jeq      #0x8             jt 23	jf 51
 			(023) ldx      M[2]
 			(024) ldh      [x + 6]
-			(025) jeq      #0x800           jt 26	jf 58
-			(026) ldx      M[3]
-			(027) ldb      [x + 0]
-			(028) and      #0xc
-			(029) jeq      #0x8             jt 30	jf 58
-			(030) ldx      M[2]
-			(031) ldh      [x + 6]
-			(032) jeq      #0x800           jt 33	jf 58
-			(033) ldx      M[2]
-			(034) ldb      [x + 17]
-			(035) jeq      #0x1             jt 36	jf 58
-			(036) ldx      M[2]
-			(037) ldh      [x + 14]
-			(038) jset     #0x1fff          jt 58	jf 39
-			(039) ld       #0xab
-			(040) st       M[0]
-			(041) ldx      M[2]
-			(042) ldb      [x + 8]
-			(043) and      #0xf
-			(044) lsh      #2
-			(045) add      x
-			(046) tax
-			(047) ld       M[0]
-			(048) add      x
-			(049) tax
-			(050) ldb      [x + 8]
-			(051) st       M[1]
-			(052) ld       #0xcd
-			(053) st       M[4]
-			(054) ldx      M[4]
-			(055) ld       M[1]
-			(056) jeq      x                jt 57	jf 58
-			(057) ret      #262144
-			(058) ret      #0
+			(025) jeq      #0x800           jt 26	jf 51
+			(026) ldx      M[2]
+			(027) ldb      [x + 17]
+			(028) jeq      #0x1             jt 29	jf 51
+			(029) ldx      M[2]
+			(030) ldh      [x + 14]
+			(031) jset     #0x1fff          jt 51	jf 32
+			(032) ld       #0xab
+			(033) st       M[0]
+			(034) ldx      M[2]
+			(035) ldb      [x + 8]
+			(036) and      #0xf
+			(037) lsh      #2
+			(038) add      x
+			(039) tax
+			(040) ld       M[0]
+			(041) add      x
+			(042) tax
+			(043) ldb      [x + 8]
+			(044) st       M[1]
+			(045) ld       #0xcd
+			(046) st       M[4]
+			(047) ldx      M[4]
+			(048) ld       M[1]
+			(049) jeq      x                jt 50	jf 51
+			(050) ret      #262144
+			(051) ret      #0
 			',
 	}, # icmp_index_PPI
 	{
@@ -3757,42 +3181,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 48
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 48
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 48
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x1             jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 48
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x1             jt 26	jf 48
-			(026) ldx      M[2]
-			(027) ldh      [x + 14]
-			(028) jset     #0x1fff          jt 48	jf 29
-			(029) ld       #0xab
-			(030) st       M[0]
-			(031) ldx      M[2]
-			(032) ldb      [x + 8]
-			(033) and      #0xf
-			(034) lsh      #2
-			(035) add      x
-			(036) tax
-			(037) ld       M[0]
-			(038) add      x
-			(039) tax
-			(040) ldb      [x + 8]
-			(041) st       M[1]
-			(042) ld       #0xcd
-			(043) st       M[3]
-			(044) ldx      M[3]
-			(045) ld       M[1]
-			(046) jeq      x                jt 47	jf 48
-			(047) ret      #262144
-			(048) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # icmp_index_IEEE802_11
 	{
@@ -3814,28 +3232,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [14]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [14]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [25]
-			(005) jeq      #0x1             jt 6	jf 22
-			(006) ldh      [22]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0xab
-			(009) st       M[0]
-			(010) ldxb     4*([16]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 16]
-			(015) st       M[1]
-			(016) ld       #0xcd
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 21	jf 22
-			(021) ret      #262144
-			(022) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [25]
+			(003) jeq      #0x1             jt 4	jf 20
+			(004) ldh      [22]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([16]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 16]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # icmp_index_LINUX_SLL
 	{
@@ -3864,43 +3280,36 @@ my @filter_accept_blocks = (
 			(018) ldx      M[3]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
-			(021) jeq      #0x8             jt 22	jf 57
+			(021) jeq      #0x8             jt 22	jf 50
 			(022) ldx      M[2]
 			(023) ldh      [x + 6]
-			(024) jeq      #0x800           jt 25	jf 57
-			(025) ldx      M[3]
-			(026) ldb      [x + 0]
-			(027) and      #0xc
-			(028) jeq      #0x8             jt 29	jf 57
-			(029) ldx      M[2]
-			(030) ldh      [x + 6]
-			(031) jeq      #0x800           jt 32	jf 57
-			(032) ldx      M[2]
-			(033) ldb      [x + 17]
-			(034) jeq      #0x2             jt 35	jf 57
-			(035) ldx      M[2]
-			(036) ldh      [x + 14]
-			(037) jset     #0x1fff          jt 57	jf 38
-			(038) ld       #0xab
-			(039) st       M[0]
-			(040) ldx      M[2]
-			(041) ldb      [x + 8]
-			(042) and      #0xf
-			(043) lsh      #2
-			(044) add      x
-			(045) tax
-			(046) ld       M[0]
-			(047) add      x
-			(048) tax
-			(049) ldb      [x + 8]
-			(050) st       M[1]
-			(051) ld       #0xcd
-			(052) st       M[4]
-			(053) ldx      M[4]
-			(054) ld       M[1]
-			(055) jeq      x                jt 56	jf 57
-			(056) ret      #262144
-			(057) ret      #0
+			(024) jeq      #0x800           jt 25	jf 50
+			(025) ldx      M[2]
+			(026) ldb      [x + 17]
+			(027) jeq      #0x2             jt 28	jf 50
+			(028) ldx      M[2]
+			(029) ldh      [x + 14]
+			(030) jset     #0x1fff          jt 50	jf 31
+			(031) ld       #0xab
+			(032) st       M[0]
+			(033) ldx      M[2]
+			(034) ldb      [x + 8]
+			(035) and      #0xf
+			(036) lsh      #2
+			(037) add      x
+			(038) tax
+			(039) ld       M[0]
+			(040) add      x
+			(041) tax
+			(042) ldb      [x + 8]
+			(043) st       M[1]
+			(044) ld       #0xcd
+			(045) st       M[4]
+			(046) ldx      M[4]
+			(047) ld       M[1]
+			(048) jeq      x                jt 49	jf 50
+			(049) ret      #262144
+			(050) ret      #0
 			',
 	}, # igmp_index_PRISM_HEADER
 	{
@@ -3940,43 +3349,36 @@ my @filter_accept_blocks = (
 			(029) ldx      M[3]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
-			(032) jeq      #0x8             jt 33	jf 68
+			(032) jeq      #0x8             jt 33	jf 61
 			(033) ldx      M[2]
 			(034) ldh      [x + 6]
-			(035) jeq      #0x800           jt 36	jf 68
-			(036) ldx      M[3]
-			(037) ldb      [x + 0]
-			(038) and      #0xc
-			(039) jeq      #0x8             jt 40	jf 68
-			(040) ldx      M[2]
-			(041) ldh      [x + 6]
-			(042) jeq      #0x800           jt 43	jf 68
-			(043) ldx      M[2]
-			(044) ldb      [x + 17]
-			(045) jeq      #0x2             jt 46	jf 68
-			(046) ldx      M[2]
-			(047) ldh      [x + 14]
-			(048) jset     #0x1fff          jt 68	jf 49
-			(049) ld       #0xab
-			(050) st       M[0]
-			(051) ldx      M[2]
-			(052) ldb      [x + 8]
-			(053) and      #0xf
-			(054) lsh      #2
-			(055) add      x
-			(056) tax
-			(057) ld       M[0]
-			(058) add      x
-			(059) tax
-			(060) ldb      [x + 8]
-			(061) st       M[1]
-			(062) ld       #0xcd
-			(063) st       M[4]
-			(064) ldx      M[4]
-			(065) ld       M[1]
-			(066) jeq      x                jt 67	jf 68
-			(067) ret      #262144
-			(068) ret      #0
+			(035) jeq      #0x800           jt 36	jf 61
+			(036) ldx      M[2]
+			(037) ldb      [x + 17]
+			(038) jeq      #0x2             jt 39	jf 61
+			(039) ldx      M[2]
+			(040) ldh      [x + 14]
+			(041) jset     #0x1fff          jt 61	jf 42
+			(042) ld       #0xab
+			(043) st       M[0]
+			(044) ldx      M[2]
+			(045) ldb      [x + 8]
+			(046) and      #0xf
+			(047) lsh      #2
+			(048) add      x
+			(049) tax
+			(050) ld       M[0]
+			(051) add      x
+			(052) tax
+			(053) ldb      [x + 8]
+			(054) st       M[1]
+			(055) ld       #0xcd
+			(056) st       M[4]
+			(057) ldx      M[4]
+			(058) ld       M[1]
+			(059) jeq      x                jt 60	jf 61
+			(060) ret      #262144
+			(061) ret      #0
 			',
 	}, # igmp_index_IEEE802_11_RADIO
 	{
@@ -3998,28 +3400,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [0]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [0]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [29]
-			(005) jeq      #0x2             jt 6	jf 22
-			(006) ldh      [26]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0xab
-			(009) st       M[0]
-			(010) ldxb     4*([20]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 20]
-			(015) st       M[1]
-			(016) ld       #0xcd
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 21	jf 22
-			(021) ret      #262144
-			(022) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [29]
+			(003) jeq      #0x2             jt 4	jf 20
+			(004) ldh      [26]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([20]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 20]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # igmp_index_LINUX_SLL2
 	{
@@ -4044,43 +3444,36 @@ my @filter_accept_blocks = (
 			(013) ldx      M[3]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
-			(016) jeq      #0x8             jt 17	jf 52
+			(016) jeq      #0x8             jt 17	jf 45
 			(017) ldx      M[2]
 			(018) ldh      [x + 6]
-			(019) jeq      #0x800           jt 20	jf 52
-			(020) ldx      M[3]
-			(021) ldb      [x + 0]
-			(022) and      #0xc
-			(023) jeq      #0x8             jt 24	jf 52
-			(024) ldx      M[2]
-			(025) ldh      [x + 6]
-			(026) jeq      #0x800           jt 27	jf 52
-			(027) ldx      M[2]
-			(028) ldb      [x + 17]
-			(029) jeq      #0x9             jt 30	jf 52
-			(030) ldx      M[2]
-			(031) ldh      [x + 14]
-			(032) jset     #0x1fff          jt 52	jf 33
-			(033) ld       #0xab
-			(034) st       M[0]
-			(035) ldx      M[2]
-			(036) ldb      [x + 8]
-			(037) and      #0xf
-			(038) lsh      #2
-			(039) add      x
-			(040) tax
-			(041) ld       M[0]
-			(042) add      x
-			(043) tax
-			(044) ldb      [x + 8]
-			(045) st       M[1]
-			(046) ld       #0xcd
-			(047) st       M[4]
-			(048) ldx      M[4]
-			(049) ld       M[1]
-			(050) jeq      x                jt 51	jf 52
-			(051) ret      #262144
-			(052) ret      #0
+			(019) jeq      #0x800           jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 17]
+			(022) jeq      #0x9             jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 14]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 8]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 8]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[4]
+			(041) ldx      M[4]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
 			',
 	}, # igrp_9_index_IEEE802_11_RADIO_AVS
 	{
@@ -4102,42 +3495,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 48
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 48
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 48
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x9             jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 48
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x9             jt 26	jf 48
-			(026) ldx      M[2]
-			(027) ldh      [x + 14]
-			(028) jset     #0x1fff          jt 48	jf 29
-			(029) ld       #0xab
-			(030) st       M[0]
-			(031) ldx      M[2]
-			(032) ldb      [x + 8]
-			(033) and      #0xf
-			(034) lsh      #2
-			(035) add      x
-			(036) tax
-			(037) ld       M[0]
-			(038) add      x
-			(039) tax
-			(040) ldb      [x + 8]
-			(041) st       M[1]
-			(042) ld       #0xcd
-			(043) st       M[3]
-			(044) ldx      M[3]
-			(045) ld       M[1]
-			(046) jeq      x                jt 47	jf 48
-			(047) ret      #262144
-			(048) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # igrp_9_index_IEEE802_11
 	{
@@ -4160,28 +3547,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [16]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [27]
-			(005) jeq      #0x9             jt 6	jf 22
-			(006) ldh      [24]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0xab
-			(009) st       M[0]
-			(010) ldxb     4*([18]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 18]
-			(015) st       M[1]
-			(016) ld       #0xcd
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 21	jf 22
-			(021) ret      #262144
-			(022) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [27]
+			(003) jeq      #0x9             jt 4	jf 20
+			(004) ldh      [24]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([18]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 18]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # igrp_9_index_DSA_TAG_BRCM
 	{
@@ -4206,43 +3591,36 @@ my @filter_accept_blocks = (
 			(013) ldx      M[3]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
-			(016) jeq      #0x8             jt 17	jf 52
+			(016) jeq      #0x8             jt 17	jf 45
 			(017) ldx      M[2]
 			(018) ldh      [x + 6]
-			(019) jeq      #0x800           jt 20	jf 52
-			(020) ldx      M[3]
-			(021) ldb      [x + 0]
-			(022) and      #0xc
-			(023) jeq      #0x8             jt 24	jf 52
-			(024) ldx      M[2]
-			(025) ldh      [x + 6]
-			(026) jeq      #0x800           jt 27	jf 52
-			(027) ldx      M[2]
-			(028) ldb      [x + 17]
-			(029) jeq      #0x58            jt 30	jf 52
-			(030) ldx      M[2]
-			(031) ldh      [x + 14]
-			(032) jset     #0x1fff          jt 52	jf 33
-			(033) ld       #0xab
-			(034) st       M[0]
-			(035) ldx      M[2]
-			(036) ldb      [x + 8]
-			(037) and      #0xf
-			(038) lsh      #2
-			(039) add      x
-			(040) tax
-			(041) ld       M[0]
-			(042) add      x
-			(043) tax
-			(044) ldb      [x + 8]
-			(045) st       M[1]
-			(046) ld       #0xcd
-			(047) st       M[4]
-			(048) ldx      M[4]
-			(049) ld       M[1]
-			(050) jeq      x                jt 51	jf 52
-			(051) ret      #262144
-			(052) ret      #0
+			(019) jeq      #0x800           jt 20	jf 45
+			(020) ldx      M[2]
+			(021) ldb      [x + 17]
+			(022) jeq      #0x58            jt 23	jf 45
+			(023) ldx      M[2]
+			(024) ldh      [x + 14]
+			(025) jset     #0x1fff          jt 45	jf 26
+			(026) ld       #0xab
+			(027) st       M[0]
+			(028) ldx      M[2]
+			(029) ldb      [x + 8]
+			(030) and      #0xf
+			(031) lsh      #2
+			(032) add      x
+			(033) tax
+			(034) ld       M[0]
+			(035) add      x
+			(036) tax
+			(037) ldb      [x + 8]
+			(038) st       M[1]
+			(039) ld       #0xcd
+			(040) st       M[4]
+			(041) ldx      M[4]
+			(042) ld       M[1]
+			(043) jeq      x                jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
 			',
 	}, # igrp_88_index_IEEE802_11_RADIO_AVS
 	{
@@ -4264,42 +3642,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 48
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 48
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 48
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x58            jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 48
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x58            jt 26	jf 48
-			(026) ldx      M[2]
-			(027) ldh      [x + 14]
-			(028) jset     #0x1fff          jt 48	jf 29
-			(029) ld       #0xab
-			(030) st       M[0]
-			(031) ldx      M[2]
-			(032) ldb      [x + 8]
-			(033) and      #0xf
-			(034) lsh      #2
-			(035) add      x
-			(036) tax
-			(037) ld       M[0]
-			(038) add      x
-			(039) tax
-			(040) ldb      [x + 8]
-			(041) st       M[1]
-			(042) ld       #0xcd
-			(043) st       M[3]
-			(044) ldx      M[3]
-			(045) ld       M[1]
-			(046) jeq      x                jt 47	jf 48
-			(047) ret      #262144
-			(048) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # igrp_88_index_IEEE802_11
 	{
@@ -4322,28 +3694,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [16]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [16]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [27]
-			(005) jeq      #0x58            jt 6	jf 22
-			(006) ldh      [24]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0xab
-			(009) st       M[0]
-			(010) ldxb     4*([18]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 18]
-			(015) st       M[1]
-			(016) ld       #0xcd
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 21	jf 22
-			(021) ret      #262144
-			(022) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [27]
+			(003) jeq      #0x58            jt 4	jf 20
+			(004) ldh      [24]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([18]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 18]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # igrp_88_index_DSA_TAG_BRCM
 	{
@@ -4383,59 +3753,36 @@ my @filter_accept_blocks = (
 			(029) ldx      M[3]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
-			(032) jeq      #0x8             jt 33	jf 84
+			(032) jeq      #0x8             jt 33	jf 61
 			(033) ldx      M[2]
 			(034) ldh      [x + 6]
-			(035) jeq      #0x800           jt 36	jf 84
-			(036) ldx      M[3]
-			(037) ldb      [x + 0]
-			(038) and      #0xc
-			(039) jeq      #0x8             jt 40	jf 46
-			(040) ldx      M[2]
-			(041) ldh      [x + 6]
-			(042) jeq      #0x800           jt 43	jf 46
-			(043) ldx      M[2]
-			(044) ldb      [x + 17]
-			(045) jeq      #0x67            jt 62	jf 46
-			(046) ldx      M[3]
-			(047) ldb      [x + 0]
-			(048) and      #0xc
-			(049) jeq      #0x8             jt 50	jf 84
-			(050) ldx      M[2]
-			(051) ldh      [x + 6]
-			(052) jeq      #0x86dd          jt 53	jf 84
-			(053) ldx      M[2]
-			(054) ldb      [x + 14]
-			(055) jeq      #0x67            jt 62	jf 56
-			(056) ldx      M[2]
-			(057) ldb      [x + 14]
-			(058) jeq      #0x2c            jt 59	jf 84
-			(059) ldx      M[2]
-			(060) ldb      [x + 48]
-			(061) jeq      #0x67            jt 62	jf 84
-			(062) ldx      M[2]
-			(063) ldh      [x + 14]
-			(064) jset     #0x1fff          jt 84	jf 65
-			(065) ld       #0xab
-			(066) st       M[0]
-			(067) ldx      M[2]
-			(068) ldb      [x + 8]
-			(069) and      #0xf
-			(070) lsh      #2
-			(071) add      x
-			(072) tax
-			(073) ld       M[0]
-			(074) add      x
-			(075) tax
-			(076) ldb      [x + 8]
-			(077) st       M[1]
-			(078) ld       #0xcd
-			(079) st       M[4]
-			(080) ldx      M[4]
-			(081) ld       M[1]
-			(082) jeq      x                jt 83	jf 84
-			(083) ret      #262144
-			(084) ret      #0
+			(035) jeq      #0x800           jt 36	jf 61
+			(036) ldx      M[2]
+			(037) ldb      [x + 17]
+			(038) jeq      #0x67            jt 39	jf 61
+			(039) ldx      M[2]
+			(040) ldh      [x + 14]
+			(041) jset     #0x1fff          jt 61	jf 42
+			(042) ld       #0xab
+			(043) st       M[0]
+			(044) ldx      M[2]
+			(045) ldb      [x + 8]
+			(046) and      #0xf
+			(047) lsh      #2
+			(048) add      x
+			(049) tax
+			(050) ld       M[0]
+			(051) add      x
+			(052) tax
+			(053) ldb      [x + 8]
+			(054) st       M[1]
+			(055) ld       #0xcd
+			(056) st       M[4]
+			(057) ldx      M[4]
+			(058) ld       M[1]
+			(059) jeq      x                jt 60	jf 61
+			(060) ret      #262144
+			(061) ret      #0
 			',
 	}, # pim_index_IEEE802_11_RADIO
 	{
@@ -4456,57 +3803,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 63
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 63
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 26
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x67            jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 26
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x67            jt 41	jf 26
-			(026) ldb      [0]
-			(027) and      #0xc
-			(028) jeq      #0x8             jt 29	jf 63
-			(029) ldx      M[2]
-			(030) ldh      [x + 6]
-			(031) jeq      #0x86dd          jt 32	jf 63
-			(032) ldx      M[2]
-			(033) ldb      [x + 14]
-			(034) jeq      #0x67            jt 41	jf 35
-			(035) ldx      M[2]
-			(036) ldb      [x + 14]
-			(037) jeq      #0x2c            jt 38	jf 63
-			(038) ldx      M[2]
-			(039) ldb      [x + 48]
-			(040) jeq      #0x67            jt 41	jf 63
-			(041) ldx      M[2]
-			(042) ldh      [x + 14]
-			(043) jset     #0x1fff          jt 63	jf 44
-			(044) ld       #0xab
-			(045) st       M[0]
-			(046) ldx      M[2]
-			(047) ldb      [x + 8]
-			(048) and      #0xf
-			(049) lsh      #2
-			(050) add      x
-			(051) tax
-			(052) ld       M[0]
-			(053) add      x
-			(054) tax
-			(055) ldb      [x + 8]
-			(056) st       M[1]
-			(057) ld       #0xcd
-			(058) st       M[3]
-			(059) ldx      M[3]
-			(060) ld       M[1]
-			(061) jeq      x                jt 62	jf 63
-			(062) ret      #262144
-			(063) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # pim_index_IEEE802_11
 	{
@@ -4528,36 +3854,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldb      [4]
-			(001) jeq      #0xd4            jt 2	jf 30
-			(002) ldb      [4]
-			(003) jeq      #0xd4            jt 4	jf 6
-			(004) ldb      [17]
-			(005) jeq      #0x67            jt 14	jf 6
-			(006) ldb      [4]
-			(007) jeq      #0xc4            jt 8	jf 30
-			(008) ldb      [14]
-			(009) jeq      #0x67            jt 14	jf 10
-			(010) ldb      [14]
-			(011) jeq      #0x2c            jt 12	jf 30
-			(012) ldb      [48]
-			(013) jeq      #0x67            jt 14	jf 30
-			(014) ldh      [14]
-			(015) jset     #0x1fff          jt 30	jf 16
-			(016) ld       #0xab
-			(017) st       M[0]
-			(018) ldxb     4*([8]&0xf)
-			(019) ld       M[0]
-			(020) add      x
-			(021) tax
-			(022) ldb      [x + 8]
-			(023) st       M[1]
-			(024) ld       #0xcd
-			(025) st       M[2]
-			(026) ldx      M[2]
-			(027) ld       M[1]
-			(028) jeq      x                jt 29	jf 30
-			(029) ret      #262144
-			(030) ret      #0
+			(001) jeq      #0xd4            jt 2	jf 20
+			(002) ldb      [17]
+			(003) jeq      #0x67            jt 4	jf 20
+			(004) ldh      [14]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([8]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 8]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # pim_index_ARCNET_LINUX
 	{
@@ -4569,7 +3885,7 @@ my @filter_accept_blocks = (
 		],
 		optunopt => '
 			(000) ld       [4]
-			(001) jeq      #0x69000000      jt 2	jf 58
+			(001) jeq      #0x69000000      jt 2	jf 51
 			(002) ldb      [3]
 			(003) lsh      #8
 			(004) tax
@@ -4590,43 +3906,36 @@ my @filter_accept_blocks = (
 			(019) ldx      M[3]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
-			(022) jeq      #0x8             jt 23	jf 58
+			(022) jeq      #0x8             jt 23	jf 51
 			(023) ldx      M[2]
 			(024) ldh      [x + 6]
-			(025) jeq      #0x800           jt 26	jf 58
-			(026) ldx      M[3]
-			(027) ldb      [x + 0]
-			(028) and      #0xc
-			(029) jeq      #0x8             jt 30	jf 58
-			(030) ldx      M[2]
-			(031) ldh      [x + 6]
-			(032) jeq      #0x800           jt 33	jf 58
-			(033) ldx      M[2]
-			(034) ldb      [x + 17]
-			(035) jeq      #0x70            jt 36	jf 58
-			(036) ldx      M[2]
-			(037) ldh      [x + 14]
-			(038) jset     #0x1fff          jt 58	jf 39
-			(039) ld       #0xab
-			(040) st       M[0]
-			(041) ldx      M[2]
-			(042) ldb      [x + 8]
-			(043) and      #0xf
-			(044) lsh      #2
-			(045) add      x
-			(046) tax
-			(047) ld       M[0]
-			(048) add      x
-			(049) tax
-			(050) ldb      [x + 8]
-			(051) st       M[1]
-			(052) ld       #0xcd
-			(053) st       M[4]
-			(054) ldx      M[4]
-			(055) ld       M[1]
-			(056) jeq      x                jt 57	jf 58
-			(057) ret      #262144
-			(058) ret      #0
+			(025) jeq      #0x800           jt 26	jf 51
+			(026) ldx      M[2]
+			(027) ldb      [x + 17]
+			(028) jeq      #0x70            jt 29	jf 51
+			(029) ldx      M[2]
+			(030) ldh      [x + 14]
+			(031) jset     #0x1fff          jt 51	jf 32
+			(032) ld       #0xab
+			(033) st       M[0]
+			(034) ldx      M[2]
+			(035) ldb      [x + 8]
+			(036) and      #0xf
+			(037) lsh      #2
+			(038) add      x
+			(039) tax
+			(040) ld       M[0]
+			(041) add      x
+			(042) tax
+			(043) ldb      [x + 8]
+			(044) st       M[1]
+			(045) ld       #0xcd
+			(046) st       M[4]
+			(047) ldx      M[4]
+			(048) ld       M[1]
+			(049) jeq      x                jt 50	jf 51
+			(050) ret      #262144
+			(051) ret      #0
 			',
 	}, # vrrp_carp_index_PPI
 	{
@@ -4650,42 +3959,36 @@ my @filter_accept_blocks = (
 			(010) st       M[2]
 			(011) ldb      [0]
 			(012) and      #0xc
-			(013) jeq      #0x8             jt 14	jf 48
+			(013) jeq      #0x8             jt 14	jf 42
 			(014) ldx      M[2]
 			(015) ldh      [x + 6]
-			(016) jeq      #0x800           jt 17	jf 48
-			(017) ldb      [0]
-			(018) and      #0xc
-			(019) jeq      #0x8             jt 20	jf 48
+			(016) jeq      #0x800           jt 17	jf 42
+			(017) ldx      M[2]
+			(018) ldb      [x + 17]
+			(019) jeq      #0x70            jt 20	jf 42
 			(020) ldx      M[2]
-			(021) ldh      [x + 6]
-			(022) jeq      #0x800           jt 23	jf 48
-			(023) ldx      M[2]
-			(024) ldb      [x + 17]
-			(025) jeq      #0x70            jt 26	jf 48
-			(026) ldx      M[2]
-			(027) ldh      [x + 14]
-			(028) jset     #0x1fff          jt 48	jf 29
-			(029) ld       #0xab
-			(030) st       M[0]
-			(031) ldx      M[2]
-			(032) ldb      [x + 8]
-			(033) and      #0xf
-			(034) lsh      #2
-			(035) add      x
-			(036) tax
-			(037) ld       M[0]
-			(038) add      x
-			(039) tax
-			(040) ldb      [x + 8]
-			(041) st       M[1]
-			(042) ld       #0xcd
-			(043) st       M[3]
-			(044) ldx      M[3]
-			(045) ld       M[1]
-			(046) jeq      x                jt 47	jf 48
-			(047) ret      #262144
-			(048) ret      #0
+			(021) ldh      [x + 14]
+			(022) jset     #0x1fff          jt 42	jf 23
+			(023) ld       #0xab
+			(024) st       M[0]
+			(025) ldx      M[2]
+			(026) ldb      [x + 8]
+			(027) and      #0xf
+			(028) lsh      #2
+			(029) add      x
+			(030) tax
+			(031) ld       M[0]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 8]
+			(035) st       M[1]
+			(036) ld       #0xcd
+			(037) st       M[3]
+			(038) ldx      M[3]
+			(039) ld       M[1]
+			(040) jeq      x                jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
 			',
 	}, # vrrp_carp_index_PFLOG
 	{
@@ -4710,28 +4013,26 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 22
-			(002) ldh      [12]
-			(003) jeq      #0x800           jt 4	jf 22
-			(004) ldb      [23]
-			(005) jeq      #0x70            jt 6	jf 22
-			(006) ldh      [20]
-			(007) jset     #0x1fff          jt 22	jf 8
-			(008) ld       #0xab
-			(009) st       M[0]
-			(010) ldxb     4*([14]&0xf)
-			(011) ld       M[0]
-			(012) add      x
-			(013) tax
-			(014) ldb      [x + 14]
-			(015) st       M[1]
-			(016) ld       #0xcd
-			(017) st       M[2]
-			(018) ldx      M[2]
-			(019) ld       M[1]
-			(020) jeq      x                jt 21	jf 22
-			(021) ret      #262144
-			(022) ret      #0
+			(001) jeq      #0x800           jt 2	jf 20
+			(002) ldb      [23]
+			(003) jeq      #0x70            jt 4	jf 20
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 20	jf 6
+			(006) ld       #0xab
+			(007) st       M[0]
+			(008) ldxb     4*([14]&0xf)
+			(009) ld       M[0]
+			(010) add      x
+			(011) tax
+			(012) ldb      [x + 14]
+			(013) st       M[1]
+			(014) ld       #0xcd
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
 			',
 	}, # vrrp_carp_index_EN10MB
 
@@ -5607,66 +4908,43 @@ my @filter_accept_blocks = (
 			(043) ldx      M[0]
 			(044) ldb      [x + 0]
 			(045) and      #0xc
-			(046) jeq      #0x8             jt 47	jf 105
+			(046) jeq      #0x8             jt 47	jf 82
 			(047) ldx      M[1]
 			(048) ldh      [x + 6]
-			(049) jeq      #0x9100          jt 50	jf 105
+			(049) jeq      #0x9100          jt 50	jf 82
 			(050) ldx      M[0]
 			(051) ldb      [x + 0]
 			(052) and      #0xc
-			(053) jeq      #0x8             jt 54	jf 105
+			(053) jeq      #0x8             jt 54	jf 82
 			(054) ldx      M[1]
 			(055) ldh      [x + 10]
-			(056) jeq      #0x800           jt 57	jf 105
-			(057) ldx      M[0]
-			(058) ldb      [x + 0]
-			(059) and      #0xc
-			(060) jeq      #0x8             jt 61	jf 67
-			(061) ldx      M[1]
-			(062) ldh      [x + 10]
-			(063) jeq      #0x800           jt 64	jf 67
-			(064) ldx      M[1]
-			(065) ldb      [x + 21]
-			(066) jeq      #0x6             jt 83	jf 67
-			(067) ldx      M[0]
-			(068) ldb      [x + 0]
-			(069) and      #0xc
-			(070) jeq      #0x8             jt 71	jf 105
-			(071) ldx      M[1]
-			(072) ldh      [x + 10]
-			(073) jeq      #0x86dd          jt 74	jf 105
-			(074) ldx      M[1]
-			(075) ldb      [x + 18]
-			(076) jeq      #0x6             jt 83	jf 77
-			(077) ldx      M[1]
-			(078) ldb      [x + 18]
-			(079) jeq      #0x2c            jt 80	jf 105
-			(080) ldx      M[1]
-			(081) ldb      [x + 52]
-			(082) jeq      #0x6             jt 83	jf 105
-			(083) ldx      M[1]
-			(084) ldh      [x + 18]
-			(085) jset     #0x1fff          jt 105	jf 86
-			(086) ld       #0xab
-			(087) st       M[2]
-			(088) ldx      M[1]
-			(089) ldb      [x + 12]
-			(090) and      #0xf
-			(091) lsh      #2
-			(092) add      x
-			(093) tax
-			(094) ld       M[2]
-			(095) add      x
-			(096) tax
-			(097) ldb      [x + 12]
-			(098) st       M[3]
-			(099) ld       #0xcd
-			(100) st       M[4]
-			(101) ldx      M[4]
-			(102) ld       M[3]
-			(103) jeq      x                jt 104	jf 105
-			(104) ret      #262144
-			(105) ret      #0
+			(056) jeq      #0x800           jt 57	jf 82
+			(057) ldx      M[1]
+			(058) ldb      [x + 21]
+			(059) jeq      #0x6             jt 60	jf 82
+			(060) ldx      M[1]
+			(061) ldh      [x + 18]
+			(062) jset     #0x1fff          jt 82	jf 63
+			(063) ld       #0xab
+			(064) st       M[2]
+			(065) ldx      M[1]
+			(066) ldb      [x + 12]
+			(067) and      #0xf
+			(068) lsh      #2
+			(069) add      x
+			(070) tax
+			(071) ld       M[2]
+			(072) add      x
+			(073) tax
+			(074) ldb      [x + 12]
+			(075) st       M[3]
+			(076) ld       #0xcd
+			(077) st       M[4]
+			(078) ldx      M[4]
+			(079) ld       M[3]
+			(080) jeq      x                jt 81	jf 82
+			(081) ret      #262144
+			(082) ret      #0
 			',
 	}, # vlan_and_tcp_index_IEEE802_11_RADIO
 	{
@@ -5732,25 +5010,25 @@ my @filter_accept_blocks = (
 			(055) ldx      M[1]
 			(056) ldb      [x + 0]
 			(057) and      #0xc
-			(058) jeq      #0x8             jt 59	jf 141
+			(058) jeq      #0x8             jt 59	jf 126
 			(059) ldx      M[0]
 			(060) ldh      [x + 6]
-			(061) jeq      #0x86dd          jt 62	jf 141
+			(061) jeq      #0x86dd          jt 62	jf 126
 			(062) ldx      M[0]
 			(063) ldb      [x + 14]
-			(064) jeq      #0x11            jt 65	jf 141
+			(064) jeq      #0x11            jt 65	jf 126
 			(065) ldx      M[0]
 			(066) ldh      [x + 50]
-			(067) jeq      #0x17c1          jt 68	jf 141
+			(067) jeq      #0x17c1          jt 68	jf 126
 			(068) ldx      M[0]
 			(069) ldb      [x + 56]
 			(070) and      #0xc0
-			(071) jeq      #0x0             jt 72	jf 141
+			(071) jeq      #0x0             jt 72	jf 126
 			(072) ldx      M[0]
 			(073) ld       #0x28
 			(074) add      x
 			(075) tax
-			(076) jeq      x                jt 77	jf 141
+			(076) jeq      x                jt 77	jf 126
 			(077) add      #16
 			(078) tax
 			(079) add      #2
@@ -5771,51 +5049,36 @@ my @filter_accept_blocks = (
 			(094) tax
 			(095) stx      M[4]
 			(096) ld       #0x0
-			(097) jeq      #0x0             jt 98	jf 141
+			(097) jeq      #0x0             jt 98	jf 126
 			(098) ldx      M[2]
 			(099) ldh      [x + 0]
-			(100) jeq      #0x800           jt 101	jf 141
-			(101) ldx      M[2]
-			(102) ldh      [x + 0]
-			(103) jeq      #0x800           jt 104	jf 107
+			(100) jeq      #0x800           jt 101	jf 126
+			(101) ldx      M[4]
+			(102) ldb      [x + 9]
+			(103) jeq      #0x6             jt 104	jf 126
 			(104) ldx      M[4]
-			(105) ldb      [x + 9]
-			(106) jeq      #0x6             jt 119	jf 107
-			(107) ldx      M[2]
-			(108) ldh      [x + 0]
-			(109) jeq      #0x86dd          jt 110	jf 141
-			(110) ldx      M[4]
-			(111) ldb      [x + 6]
-			(112) jeq      #0x6             jt 119	jf 113
-			(113) ldx      M[4]
-			(114) ldb      [x + 6]
-			(115) jeq      #0x2c            jt 116	jf 141
-			(116) ldx      M[4]
-			(117) ldb      [x + 40]
-			(118) jeq      #0x6             jt 119	jf 141
-			(119) ldx      M[4]
-			(120) ldh      [x + 6]
-			(121) jset     #0x1fff          jt 141	jf 122
-			(122) ld       #0xab
-			(123) st       M[5]
-			(124) ldx      M[4]
-			(125) ldb      [x + 0]
-			(126) and      #0xf
-			(127) lsh      #2
-			(128) add      x
-			(129) tax
-			(130) ld       M[5]
-			(131) add      x
-			(132) tax
-			(133) ldb      [x + 0]
-			(134) st       M[6]
-			(135) ld       #0xcd
-			(136) st       M[7]
-			(137) ldx      M[7]
-			(138) ld       M[6]
-			(139) jeq      x                jt 140	jf 141
-			(140) ret      #262144
-			(141) ret      #0
+			(105) ldh      [x + 6]
+			(106) jset     #0x1fff          jt 126	jf 107
+			(107) ld       #0xab
+			(108) st       M[5]
+			(109) ldx      M[4]
+			(110) ldb      [x + 0]
+			(111) and      #0xf
+			(112) lsh      #2
+			(113) add      x
+			(114) tax
+			(115) ld       M[5]
+			(116) add      x
+			(117) tax
+			(118) ldb      [x + 0]
+			(119) st       M[6]
+			(120) ld       #0xcd
+			(121) st       M[7]
+			(122) ldx      M[7]
+			(123) ld       M[6]
+			(124) jeq      x                jt 125	jf 126
+			(125) ret      #262144
+			(126) ret      #0
 			',
 	}, # geneve_and_tcp_index_IEEE802_11_RADIO
 	{
@@ -5880,24 +5143,24 @@ my @filter_accept_blocks = (
 			(054) ldx      M[1]
 			(055) ldb      [x + 0]
 			(056) and      #0xc
-			(057) jeq      #0x8             jt 58	jf 128
+			(057) jeq      #0x8             jt 58	jf 113
 			(058) ldx      M[0]
 			(059) ldh      [x + 6]
-			(060) jeq      #0x86dd          jt 61	jf 128
+			(060) jeq      #0x86dd          jt 61	jf 113
 			(061) ldx      M[0]
 			(062) ldb      [x + 14]
-			(063) jeq      #0x11            jt 64	jf 128
+			(063) jeq      #0x11            jt 64	jf 113
 			(064) ldx      M[0]
 			(065) ldh      [x + 50]
-			(066) jeq      #0x12b5          jt 67	jf 128
+			(066) jeq      #0x12b5          jt 67	jf 113
 			(067) ldx      M[0]
 			(068) ldb      [x + 56]
-			(069) jeq      #0x8             jt 70	jf 128
+			(069) jeq      #0x8             jt 70	jf 113
 			(070) ldx      M[0]
 			(071) ld       #0x28
 			(072) add      x
 			(073) tax
-			(074) jeq      x                jt 75	jf 128
+			(074) jeq      x                jt 75	jf 113
 			(075) add      #16
 			(076) add      #8
 			(077) st       M[2]
@@ -5907,51 +5170,36 @@ my @filter_accept_blocks = (
 			(081) tax
 			(082) stx      M[4]
 			(083) ld       #0x0
-			(084) jeq      #0x0             jt 85	jf 128
+			(084) jeq      #0x0             jt 85	jf 113
 			(085) ldx      M[3]
 			(086) ldh      [x + 0]
-			(087) jeq      #0x800           jt 88	jf 128
-			(088) ldx      M[3]
-			(089) ldh      [x + 0]
-			(090) jeq      #0x800           jt 91	jf 94
+			(087) jeq      #0x800           jt 88	jf 113
+			(088) ldx      M[4]
+			(089) ldb      [x + 9]
+			(090) jeq      #0x6             jt 91	jf 113
 			(091) ldx      M[4]
-			(092) ldb      [x + 9]
-			(093) jeq      #0x6             jt 106	jf 94
-			(094) ldx      M[3]
-			(095) ldh      [x + 0]
-			(096) jeq      #0x86dd          jt 97	jf 128
-			(097) ldx      M[4]
-			(098) ldb      [x + 6]
-			(099) jeq      #0x6             jt 106	jf 100
-			(100) ldx      M[4]
-			(101) ldb      [x + 6]
-			(102) jeq      #0x2c            jt 103	jf 128
-			(103) ldx      M[4]
-			(104) ldb      [x + 40]
-			(105) jeq      #0x6             jt 106	jf 128
-			(106) ldx      M[4]
-			(107) ldh      [x + 6]
-			(108) jset     #0x1fff          jt 128	jf 109
-			(109) ld       #0xab
-			(110) st       M[5]
-			(111) ldx      M[4]
-			(112) ldb      [x + 0]
-			(113) and      #0xf
-			(114) lsh      #2
-			(115) add      x
-			(116) tax
-			(117) ld       M[5]
-			(118) add      x
-			(119) tax
-			(120) ldb      [x + 0]
-			(121) st       M[6]
-			(122) ld       #0xcd
-			(123) st       M[7]
-			(124) ldx      M[7]
-			(125) ld       M[6]
-			(126) jeq      x                jt 127	jf 128
-			(127) ret      #262144
-			(128) ret      #0
+			(092) ldh      [x + 6]
+			(093) jset     #0x1fff          jt 113	jf 94
+			(094) ld       #0xab
+			(095) st       M[5]
+			(096) ldx      M[4]
+			(097) ldb      [x + 0]
+			(098) and      #0xf
+			(099) lsh      #2
+			(100) add      x
+			(101) tax
+			(102) ld       M[5]
+			(103) add      x
+			(104) tax
+			(105) ldb      [x + 0]
+			(106) st       M[6]
+			(107) ld       #0xcd
+			(108) st       M[7]
+			(109) ldx      M[7]
+			(110) ld       M[6]
+			(111) jeq      x                jt 112	jf 113
+			(112) ret      #262144
+			(113) ret      #0
 			',
 	}, # vxlan_and_tcp_index_IEEE802_11_RADIO
 
