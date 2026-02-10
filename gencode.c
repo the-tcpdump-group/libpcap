@@ -711,10 +711,10 @@ static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
-static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
-    u_int, u_int);
-static struct slist *gen_load_a(compiler_state_t *, enum e_offrel, u_int,
-    u_int);
+static struct slist *gen_load_absoffsetrel(compiler_state_t *, struct slist *,
+    const u_int, const u_int);
+static struct slist *gen_load_a(compiler_state_t *, const enum e_offrel, u_int,
+    const u_int);
 static struct slist *gen_loadx_iphdrlen(compiler_state_t *);
 static struct block *gen_uncond(compiler_state_t *, const u_char);
 static inline struct block *gen_true(compiler_state_t *);
@@ -2456,21 +2456,28 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
  * Load a value relative to the specified absolute offset.
  */
 static struct slist *
-gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
-    u_int offset, u_int size)
+gen_load_absoffsetrel(compiler_state_t *cstate, struct slist *s,
+    const u_int offset, const u_int size)
 {
-	struct slist *s, *s2;
-
-	s = gen_abs_offset_varpart(cstate, abs_offset);
+	switch (size) {
+	case BPF_B:
+	case BPF_H:
+	case BPF_W:
+		break;
+	default:
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "size", size);
+	}
 
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
 	 * contains the variable part of the absolute offset, so we
-	 * generate a load relative to that, with an offset of
-	 * abs_offset->constant_part + offset.
+	 * generate a load relative to that, with an offset of the constant
+	 * part of the absolute offset:
+	 *   (ldb|ldh|ld) [x + k]
 	 *
-	 * Otherwise, we can do an absolute load with an offset of
-	 * abs_offset->constant_part + offset.
+	 * Otherwise, we can do an absolute load with an offset of the
+	 * constant part of the absolute offset:
+	 *   (ldb|ldh|ld) [k]
 	 */
 	if (s != NULL) {
 		/*
@@ -2478,8 +2485,8 @@ gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
 		 * variable part of the absolute offset into the X register.
 		 * Do an indirect load, to use the X register as an offset.
 		 */
-		s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		s2->s.k = abs_offset->constant_part + offset;
+		struct slist *s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
+		s2->s.k = offset;
 		sappend(s, s2);
 	} else {
 		/*
@@ -2487,7 +2494,7 @@ gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
 		 * just do an absolute load.
 		 */
 		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-		s->s.k = abs_offset->constant_part + offset;
+		s->s.k = offset;
 	}
 	return s;
 }
@@ -2496,10 +2503,10 @@ gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
  * Load a value relative to the beginning of the specified header.
  */
 static struct slist *
-gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
-    u_int size)
+gen_load_a(compiler_state_t *cstate, const enum e_offrel offrel, u_int offset,
+    const u_int size)
 {
-	struct slist *s, *s2;
+	struct slist *s;
 
 	/*
 	 * Squelch warnings from compilers that *don't* assume that
@@ -2517,37 +2524,43 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	switch (offrel) {
 
 	case OR_PACKET:
-		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-		s->s.k = offset;
 		break;
 
 	case OR_LINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkhdr, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkhdr);
+		offset += cstate->off_linkhdr.constant_part;
 		break;
 
 	case OR_PREVLINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_prevlinkhdr, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_prevlinkhdr);
+		offset += cstate->off_prevlinkhdr.constant_part;
 		break;
 
 	case OR_LLC:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part;
 		break;
 
 	case OR_PREVMPLSHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
-		    cstate->off_nl - MPLS_STACKENTRY_LEN + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl -
+		    MPLS_STACKENTRY_LEN;
 		break;
 
 	case OR_LINKPL:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl;
 		break;
 
 	case OR_LINKPL_NOSNAP:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl_nosnap + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part +
+		    cstate->off_nl_nosnap;
 		break;
 
 	case OR_LINKTYPE:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linktype, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linktype);
+		offset += cstate->off_linktype.constant_part;
 		break;
 
 	case OR_TRAN_IPV4:
@@ -2570,17 +2583,16 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		 * value in the X register, and we include the constant
 		 * part in the offset of the load.
 		 */
-		s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		s2->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + offset;
-		sappend(s, s2);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl;
 		break;
 
 	case OR_TRAN_IPV6:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
-		    cstate->off_nl + IP6_HDRLEN + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl +
+		    IP6_HDRLEN;
 		break;
 	}
-	return s;
+	return gen_load_absoffsetrel(cstate, s, offset, size);
 }
 
 /*
