@@ -7423,11 +7423,11 @@ xfer_to_a(compiler_state_t *cstate, struct arth *a)
 }
 
 /*
- * Modify "index" to use the value stored into its register as an
+ * Modify "inst" to use the value stored into its register as an
  * offset relative to the beginning of the header for the protocol
  * "proto", and allocate a register and put an item "size" bytes long
  * (1, 2, or 4) at that offset into that register, making it the register
- * for "index".
+ * for "inst".
  */
 static struct arth *
 gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
@@ -7463,6 +7463,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 
 	case Q_RADIO:
 		/*
+		 * This corresponds to OR_PACKET in gen_load_a().
+		 *
 		 * The offset is relative to the beginning of the packet
 		 * data, if we have a radio header.  (If we don't, this
 		 * is an error.)
@@ -7474,7 +7476,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 
 		/*
 		 * Load into the X register the offset computed into the
-		 * register specified by "index".
+		 * register specified by "inst".
 		 */
 		s = xfer_to_x(cstate, inst);
 
@@ -7488,10 +7490,12 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 
 	case Q_LINK:
 		/*
+		 * This corresponds to OR_LINKHDR in gen_load_a().
+		 *
 		 * The offset is relative to the beginning of
 		 * the link-layer header.
 		 *
-		 * XXX - what about ATM LANE?  Should the index be
+		 * XXX - what about ATM LANE?  Should "inst" be
 		 * relative to the beginning of the AAL5 frame, so
 		 * that 0 refers to the beginning of the LE Control
 		 * field, or relative to the beginning of the LAN
@@ -7504,10 +7508,10 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * If "s" is non-null, it has code to arrange that the
 		 * X register contains the length of the prefix preceding
 		 * the link-layer header.  Add to it the offset computed
-		 * into the register specified by "index", and move that
+		 * into the register specified by "inst", and move that
 		 * into the X register.  Otherwise, just load into the X
 		 * register the offset computed into the register specified
-		 * by "index".
+		 * by "inst".
 		 */
 		if (s != NULL) {
 			sappend(s, xfer_to_a(cstate, inst));
@@ -7521,7 +7525,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * X register and the offset of the start of the link
 		 * layer header (which is 0 if the radio header is
 		 * variable-length; that header length is what we put
-		 * into the X register and then added to the index).
+		 * into the X register and then added to "inst").
 		 */
 		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
 		tmp->s.k = cstate->off_linkhdr.constant_part;
@@ -7540,6 +7544,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	case Q_MOPDL:
 	case Q_IPV6:
 		/*
+		 * This corresponds to OR_LINKPL in gen_load_a().
+		 *
 		 * The offset is relative to the beginning of
 		 * the network-layer header.
 		 * XXX - are there any cases where we want
@@ -7551,10 +7557,10 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * If "s" is non-null, it has code to arrange that the
 		 * X register contains the variable part of the offset
 		 * of the link-layer payload.  Add to it the offset
-		 * computed into the register specified by "index",
+		 * computed into the register specified by "inst",
 		 * and move that into the X register.  Otherwise, just
 		 * load into the X register the offset computed into
-		 * the register specified by "index".
+		 * the register specified by "inst".
 		 */
 		if (s != NULL) {
 			sappend(s, xfer_to_a(cstate, inst));
@@ -7595,6 +7601,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	case Q_VRRP:
 	case Q_CARP:
 		/*
+		 * This corresponds to OR_TRAN_IPV4 in gen_load_a().
+		 *
 		 * The offset is relative to the beginning of
 		 * the transport-layer header.
 		 *
@@ -7645,6 +7653,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		break;
 	case Q_ICMPV6:
 		/*
+		 * This corresponds to OR_TRAN_IPV6 in gen_load_a().
+		 *
 		 * Do the computation only if the packet contains
 		 * the protocol in question.
 		 */
@@ -7662,10 +7672,10 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * If "s" is non-null, it has code to arrange that the
 		 * X register contains the variable part of the offset
 		 * of the link-layer payload.  Add to it the offset
-		 * computed into the register specified by "index",
+		 * computed into the register specified by "inst",
 		 * and move that into the X register.  Otherwise, just
 		 * load into the X register the offset computed into
-		 * the register specified by "index".
+		 * the register specified by "inst".
 		 */
 		if (s != NULL) {
 			sappend(s, xfer_to_a(cstate, inst));
