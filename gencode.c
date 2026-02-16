@@ -7729,7 +7729,7 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
     struct arth *a1, int reversed)
 {
 	struct slist *s0, *s1;
-	struct block *b, *tmp;
+	struct block *b;
 
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
@@ -7745,12 +7745,11 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
 	free_reg(cstate, a1->regno);
 
 	/* 'and' together protocol checks */
-	if (a0->b) {
-		tmp = a1->b ? gen_and(a0->b, a1->b) : a0->b;
-	} else
-		tmp = a1->b;
-
-	return tmp ? gen_and(tmp, b) : b;
+	if (a0->b)
+		b = gen_and(a0->b, b);
+	if (a1->b)
+		b = gen_and(a1->b, b);
+	return b;
 }
 
 struct block *
