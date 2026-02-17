@@ -299,11 +299,13 @@ struct addrinfo {
 #define SLIPDIR_OUT 1
 
 /*
- * Offsets of various L3 addresses from the beginning of their network-layer
+ * Offsets of various fields from the beginning of their network-layer
  * header, which is the link-layer payload (OR_LINKPL).
  */
+#define IPV6_PROTO_OFFSET    6
 #define IPV6_SRCADDR_OFFSET  8
 #define IPV6_DSTADDR_OFFSET 24
+#define IPV4_PROTO_OFFSET    9
 #define IPV4_SRCADDR_OFFSET 12
 #define IPV4_DSTADDR_OFFSET 16
 #define ARP_SRCADDR_OFFSET  14
@@ -5859,13 +5861,13 @@ gen_proto_abbrev(compiler_state_t *cstate, int proto)
 static struct block *
 gen_ip_proto(compiler_state_t *cstate, const uint8_t proto)
 {
-	return gen_cmp(cstate, OR_LINKPL, 9, BPF_B, proto);
+	return gen_cmp(cstate, OR_LINKPL, IPV4_PROTO_OFFSET, BPF_B, proto);
 }
 
 static struct block *
 gen_ip6_proto(compiler_state_t *cstate, const uint8_t proto)
 {
-	return gen_cmp(cstate, OR_LINKPL, 6, BPF_B, proto);
+	return gen_cmp(cstate, OR_LINKPL, IPV6_PROTO_OFFSET, BPF_B, proto);
 }
 
 static struct block *
@@ -6293,7 +6295,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 
 		/* A = ip->ip_p */
-		s[i] = gen_load_a(cstate, OR_LINKPL, 9, BPF_B);
+		s[i] = gen_load_a(cstate, OR_LINKPL, IPV4_PROTO_OFFSET, BPF_B);
 		i++;
 		/* X = ip->ip_hl << 2 */
 		s[i] = gen_loadx_iphdrlen(cstate);
@@ -6304,7 +6306,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 
 		/* A = ip6->ip_nxt */
-		s[i] = gen_load_a(cstate, OR_LINKPL, 6, BPF_B);
+		s[i] = gen_load_a(cstate, OR_LINKPL, IPV6_PROTO_OFFSET, BPF_B);
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
