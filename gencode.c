@@ -8084,8 +8084,10 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 			bpf_error(cstate, "netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 		hostmask = ~cstate->netmask;
-		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, 0, hostmask);
-		b2 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, hostmask, hostmask);
+		b1 = gen_mcmp(cstate, OR_LINKPL, IPV4_DSTADDR_OFFSET, BPF_W,
+		    0, hostmask);
+		b2 = gen_mcmp(cstate, OR_LINKPL, IPV4_DSTADDR_OFFSET, BPF_W,
+		    hostmask, hostmask);
 		return gen_and(b0, gen_or(b1, b2));
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "broadcast");
@@ -8265,13 +8267,14 @@ gen_multicast(compiler_state_t *cstate, int proto)
 		/*
 		 * Compare address with 224.0.0.0/4
 		 */
-		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_B, 0xe0, 0xf0);
+		b1 = gen_mcmp(cstate, OR_LINKPL, IPV4_DSTADDR_OFFSET, BPF_B,
+		    0xe0, 0xf0);
 
 		return gen_and(b0, b1);
 
 	case Q_IPV6:
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-		b1 = gen_cmp(cstate, OR_LINKPL, 24, BPF_B, 255);
+		b1 = gen_cmp(cstate, OR_LINKPL, IPV6_DSTADDR_OFFSET, BPF_B, 255);
 		return gen_and(b0, b1);
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), "multicast");
