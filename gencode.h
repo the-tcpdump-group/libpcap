@@ -76,6 +76,7 @@
 #define Q_PROTO		5
 #define Q_PROTOCHAIN	6
 #define Q_PORTRANGE	7
+#define Q_FLAG		8
 
 /* Protocol qualifiers. */
 

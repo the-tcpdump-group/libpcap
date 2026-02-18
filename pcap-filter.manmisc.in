@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "7 February 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "14 February 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -517,6 +517,75 @@ can be specified in either order.  If the two values are equal, this primitive
 has the same effect as the
 .B port
 primitive above.
+.IP "\fBip flag \fIflagstate\fR"
+True if the packet is an IPv4 packet and the IPv4 header flag (MF or DF) is
+set (if
+.I flagstate
+is one of
+.RB { mf\-set ,
+.BR df\-set })
+or cleared (if
+.I flagstate
+is one of
+.RB { mf\-cleared ,
+.BR df\-cleared }).
+The correct way to test for a cleared flag is by using the
+.B -cleared
+suffix; for example,
+.in +.5i
+.nf
+.B ip flag df-cleared
+.fi
+.in -.5i
+correctly does not match packets that are not IPv4 packets, but
+.in +.5i
+.nf
+.B ip flag not df-set
+.fi
+.in -.5i
+does (correctly from the grammar perspective, but usually incorrectly from the
+use case perspective) match non-IPv4 packets because it means the same as
+.in +.5i
+.nf
+.B not (ip and ip flag df-set)
+.fi
+.in -.5i
+.IP "\fBtcp flag \fIflagstate\fR"
+True if the packet is an IPv4/IPv6 TCP packet and the TCP header flag (FIN,
+SYN, RST, PSH, ACK, URG, ECE, CWR or AE) is set (if
+.I flagstate
+is one of
+.RB { fin\-set ,
+.BR syn\-set ,
+.BR rst\-set ,
+.BR psh\-set ,
+.BR ack\-set ,
+.BR urg\-set ,
+.BR ece\-set ,
+.BR cwr\-set ,
+.BR ae\-set })
+or cleared (if
+.I flagstate
+is one of
+.RB { fin\-cleared ,
+.BR syn\-cleared ,
+.BR rst\-cleared ,
+.BR psh\-cleared ,
+.BR ack\-cleared ,
+.BR urg\-cleared ,
+.BR ece\-cleared ,
+.BR cwr\-cleared ,
+.BR ae\-cleared }).
+For IPv4 this also verifies that the datagram is the first fragment or is not
+fragmented.  For the same reasons as the above, the correct way to test for a
+cleared flag is by using the
+.B -cleared
+suffix, for example:
+.in +.5i
+.nf
+.B tcp flag syn-cleared and ack-cleared
+.fi
+.in -.5i
 .IP "\fBless \fIlength\fR"
 True if the packet has a length less than or equal to \fIlength\fP.
 This is equivalent to:
@@ -1657,7 +1726,11 @@ as numeric values.
 The following protocol header field offsets are
 available: \fBicmptype\fP (ICMP type field), \fBicmp6type\fP (ICMPv6 type field),
 \fBicmpcode\fP (ICMP code field), \fBicmp6code\fP (ICMPv6 code field) and
-\fBtcpflags\fP (TCP flags field).
+\fBtcpflags\fP (TCP flags field).  For historic reasons the latter silently
+ignores TCP flags that are allocated beyond the traditional 14th byte of the
+TCP header, hence the
+.B tcp flag
+primitive would be a more reliable means to match TCP flags.
 .LP
 The following ICMP type field values are available:
 .BR \%icmp-echoreply ,
@@ -1711,6 +1784,10 @@ The following TCP flags field values are available: \fBtcp-fin\fP,
 \fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
 \fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
 \fBtcp-cwr\fP.
+Note that these values typically require a correct application of bitwise
+arithmetic expressions to the packet data, unlike the
+.B tcp flag
+primitive; the latter also supports the AE flag.
 .SH COMPOUND EXPRESSIONS
 Primitives and relations may be combined using:
 .LP
@@ -1873,6 +1950,14 @@ To select the start and end packets (the SYN and FIN packets) of each
 TCP conversation that involves a non-local host.
 .RS
 .nf
+\fBtcp flag syn-set or fin-set and not src and dst net\fP localnet
+.fi
+.RE
+.LP
+The same, using arithmetic expressions:
+.RS
+.nf
+.B
 \fBtcp[tcpflags] & (tcp-syn|tcp-fin) !=\fP 0 \fBand not src and dst net\fP localnet
 .fi
 .RE
@@ -1880,6 +1965,14 @@ TCP conversation that involves a non-local host.
 To select the TCP packets with flags RST and ACK both set.
 (i.e. select only the RST and ACK flags in the flags field, and if the result
 is "RST and ACK both set", match)
+.RS
+.nf
+.B
+tcp flag rst-set and ack-set
+.fi
+.RE
+.LP
+The same, using arithmetic expressions:
 .RS
 .nf
 .B
@@ -1967,6 +2060,12 @@ The
 and
 .B slow
 protocols became available for "ether proto" in libpcap 1.11.0.
+.PP
+The
+.B ip flag
+and
+.B tcp flag
+primitives became available in libpcap 1.11.0.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS
