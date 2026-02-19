@@ -16455,7 +16455,6 @@ my @filter_accept_blocks = (
 	# "igrp" uses IPPROTO_IGRP, which FreeBSD and its derivatives define, but
 	# other supported OSes don't (thus libpcap uses its own value, which is
 	# different from FreeBSD).  Test each case separately.
-	# this discrepancy.
 	{
 		name => 'igrp_9',
 		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
@@ -20684,6 +20683,24 @@ my @filter_apply_blocks = (
 		expr => 'link host not $c0',
 		results => [0, 0, 65535, 0, 0, 0, 0, 0, 0, 65535],
 	},
+
+	# Protocol exchange for the packets in "arcnet-rfc1201-arp-icmp-http.pcap":
+	#  1. $be > $00, ARP Request who-has 10.80.131.254 tell 10.80.131.1
+	#  2. $50 > $be, ARP Reply 10.80.131.254 is-at 50
+	#  3. $be > $50, IPv4 flags [DF], 10.80.131.1 > 10.80.131.254: ICMP echo request
+	#  4. $50 > $be, IPv4 flags [none], 10.80.131.254 > 10.80.131.1: ICMP echo reply
+	#  5. $be > $50, IPv4 flags [DF], 10.80.131.1 > 10.80.131.254: ICMP echo request
+	#  6. $50 > $be, IPv4 flags [none], 10.80.131.254 > 10.80.131.1: ICMP echo reply
+	#  7. $50 > $be, ARP Request who-has 10.80.131.1 tell 10.80.131.254
+	#  8. $be > $50, ARP Reply 10.80.131.1 is-at be
+	#  9. $be > $50, IPv4 flags [DF], UDP 10.80.131.1.1024 > 10.80.3.254.53
+	# 10. $50 > $be, IPv4 flags [DF], UDP 10.80.3.254.53 > 10.80.131.1.1024
+	# 11. $be > $50, IPv4 flags [DF], UDP 10.80.131.1.1024 > 10.80.3.254.53
+	# 12. $50 > $be, IPv4 flags [DF], UDP 10.80.3.254.53 > 10.80.131.1.1024
+	# 13. $be > $50, IPv4 flags [DF], TCP [S] 10.80.131.1.1027 > 146.190.240.163.80
+	# 14. $50 > $be, IPv4 flags [DF], TCP [S.] 146.190.240.163.80 > 10.80.131.1.1027
+	# 15. $be > $50, IPv4 flags [DF], TCP [.] 10.80.131.1.1027 > 146.190.240.163.80
+
 	# This primitive is not specific to ARCnet protocol ID, so the
 	# difference between RFC 1051 and RFC 1201 is irrelevant.
 	{
@@ -21327,17 +21344,17 @@ my @filter_apply_blocks = (
 	# The captured packets are as follows:
 	#  1. host1 -> host0 ICMP echo-request
 	#  2. host0 -> host1 ICMP echo-reply
-	#  3. host1 -> host2 ICMP echo-request
+	#  3. host1 -> host2 ICMP echo-request [DF]
 	#  4. host2 -> host1 ICMP echo-reply
 	#  5. host1 -> host0 (host3) ICMPv6 echo-request
-	#  6. host1 -> host2 ICMPv6 echo-request
-	#  7. host2 -> host1 ICMPv6 echo-reply
-	#  8. (host3) host0 -> host1 ICMPv6 echo-reply
+	#  6. host1 -> host2 ICMPv6 echo-request [DF]
+	#  7. host2 -> host1 ICMPv6 echo-reply [DF]
+	#  8. (host3) host0 -> host1 ICMPv6 echo-reply [DF]
 	#  9. host1 -> host0 ARP who-has
-	# 10. host1 -> host0 (host3) ICMP echo-request
-	# 11. host0 -> host1 ARP is-at
-	# 12. (host3) host0 -> host1 ICMP echo-reply
-	# 13. host1 -> host0 ICMPv6 echo-request
+	# 10. host1 -> host0 (host3) ICMP echo-request [DF]
+	# 11. host0 -> host1 ARP is-at [DF]
+	# 12. (host3) host0 -> host1 ICMP echo-reply [DF]
+	# 13. host1 -> host0 ICMPv6 echo-request [DF]
 	# 14. host0 -> host1 ICMPv6 echo-reply
 	{
 		name => 'gateway_eth_ipv4_ipv6',
@@ -21454,7 +21471,22 @@ my @filter_apply_blocks = (
 			0,
 		],
 	},
-
+	# Protocol exchange for the packets in "brcm-tag.pcap":
+	#  1. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  2. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  3. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  4. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  5. 00:10:18:de:38:1e > ff:ff:ff:ff:ff:ff, IPv4 flags [none], UDP, 0.0.0.0.68 > 255.255.255.255.67
+	#  6. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  7. 68:05:ca:18:47:70 > ff:ff:ff:ff:ff:ff, IPv4 flags [DF], 192.168.1.1 > 192.168.1.255: ICMP echo request
+	#  8. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, IPv4 flags [DF], 192.168.1.1 > 192.168.1.115: ICMP echo request
+	#  9. 00:10:18:de:38:1e > 68:05:ca:18:47:70, IPv4 flags [none], 192.168.1.115 > 192.168.1.1: ICMP echo reply
+	# 10. 00:10:18:de:38:1e > 68:05:ca:18:47:70, IPv4 flags [DF], UDP, 192.168.1.115.68 > 192.168.1.1.67
+	# 11. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, IPv4 flags [DF], UDP, 192.168.1.1.67 > 192.168.1.115.68
+	# 12. 00:10:18:de:38:1e > 68:05:ca:18:47:74, IPv4 flags [DF], UDP, 192.168.3.23.68 > 192.168.3.1.67
+	# 13. 68:05:ca:18:47:74 > 00:10:18:de:38:1e, IPv4 flags [DF], UDP, 192.168.3.1.67 > 192.168.3.23.68
+	# 14. 00:10:18:de:38:1e > 68:05:ca:18:47:70, ARP Request who-has 192.168.1.1 tell 192.168.1.115
+	# 15. 68:05:ca:18:47:70 > 00:10:18:de:38:1e, ARP Reply 192.168.1.1 is-at 68:05:ca:18:47:70
 	{
 		name => 'broadcast_DSA_TAG_BRCM',
 		savefile => 'brcm-tag.pcap',
