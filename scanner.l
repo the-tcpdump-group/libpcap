@@ -464,6 +464,8 @@ tcp-ack			{ yylval->h = 0x10; return NUM; }
 tcp-urg			{ yylval->h = 0x20; return NUM; }
 tcp-ece			{ yylval->h = 0x40; return NUM; }
 tcp-cwr			{ yylval->h = 0x80; return NUM; }
+
+offset			return OFFSET;
 [A-Za-z0-9]([-_.A-Za-z0-9]*[.A-Za-z0-9])? {
 			 yylval->s = sdup(yyextra, (char *)yytext); return ID; }
 "\\"[^ !()\n\t]+	{ yylval->s = sdup(yyextra, (char *)yytext + 1); return ID; }
