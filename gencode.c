@@ -354,6 +354,7 @@ struct addrinfo {
 { \
 	(cs)->prevlinktype = (cs)->linktype; \
 	(cs)->off_prevlinkhdr = (cs)->off_linkhdr; \
+	(cs)->off_outermostlinkhdr = &((cs)->off_prevlinkhdr); \
 	(cs)->linktype = (new_linktype); \
 	(cs)->off_linkhdr.is_variable = (new_is_variable); \
 	(cs)->off_linkhdr.constant_part = (new_constant_part); \
@@ -497,10 +498,9 @@ struct _compiler_state {
 	bpf_abs_offset off_prevlinkhdr;
 
 	/*
-	 * This is the equivalent information for the outermost layers'
-	 * link-layer header.
+	 * This is a pointer to either off_linkhdr of off_prevlinkhdr.
 	 */
-	bpf_abs_offset off_outermostlinkhdr;
+	bpf_abs_offset *off_outermostlinkhdr;
 
 	/*
 	 * Absolute offset of the beginning of the link-layer payload.
@@ -1746,14 +1746,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	 * We start out with only one link-layer header.
 	 */
 	cstate->outermostlinktype = pcap_datalink(p);
-	cstate->off_outermostlinkhdr.constant_part = 0;
-	cstate->off_outermostlinkhdr.is_variable = 0;
-	cstate->off_outermostlinkhdr.reg = -1;
-
-	cstate->prevlinktype = cstate->outermostlinktype;
-	cstate->off_prevlinkhdr.constant_part = 0;
-	cstate->off_prevlinkhdr.is_variable = 0;
-	cstate->off_prevlinkhdr.reg = -1;
+	cstate->off_outermostlinkhdr = &(cstate->off_linkhdr);
 
 	cstate->linktype = cstate->outermostlinktype;
 	cstate->off_linkhdr.constant_part = 0;
@@ -2373,7 +2366,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 	}
 
-	cstate->off_outermostlinkhdr = cstate->off_prevlinkhdr = cstate->off_linkhdr;
 	return (0);
 }
 
@@ -3065,7 +3057,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 	 * but no known software generates headers that aren't 144
 	 * bytes long.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * Load the cookie.
 		 */
@@ -3127,7 +3119,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * loading the length of the AVS header.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 		sjcommon->s.jf = s2;
 
@@ -3154,7 +3146,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 4 bytes at an offset of 4 from the beginning of
 		 * the AVS header are the length of the AVS header.
@@ -3168,7 +3160,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -3194,7 +3186,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -3229,7 +3221,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -3262,7 +3254,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 	 * into the register assigned to hold that length, if one has
 	 * been assigned.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -3297,7 +3289,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -3354,7 +3346,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_outermostlinkhdr.constant_part".
+	 * header is "off_outermostlinkhdr->constant_part".
 	 */
 	if (s == NULL) {
 		/*
@@ -3364,10 +3356,10 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * Load the length of the fixed-length prefix preceding
 		 * the link-layer header (if any) into the X register,
 		 * and store it in the cstate->off_linkpl.reg register.
-		 * That length is off_outermostlinkhdr.constant_part.
+		 * That length is off_outermostlinkhdr->constant_part.
 		 */
 		s = new_stmt(cstate, BPF_LDX|BPF_IMM);
-		s->s.k = cstate->off_outermostlinkhdr.constant_part;
+		s->s.k = cstate->off_outermostlinkhdr->constant_part;
 	}
 
 	/*
@@ -3453,7 +3445,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * annoying padding don't have multiple antennae and therefore
 	 * do not generate radiotap headers with multiple presence words.
 	 */
-	if (cstate->linktype == DLT_IEEE802_11_RADIO) {
+	if (cstate->outermostlinktype == DLT_IEEE802_11_RADIO) {
 		/*
 		 * Is the IEEE80211_RADIOTAP_FLAGS bit (0x0000002) set
 		 * in the first presence flag word?
@@ -3567,9 +3559,9 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * includes the variable part of the header. Therefore,
 	 * if nobody else has allocated a register for the link
 	 * header and we need it, do it now. */
-	if (cstate->off_linkpl.reg != -1 && cstate->off_linkhdr.is_variable &&
-	    cstate->off_linkhdr.reg == -1)
-		cstate->off_linkhdr.reg = alloc_reg(cstate);
+	if (cstate->off_linkpl.reg != -1 && cstate->off_outermostlinkhdr->is_variable &&
+	    cstate->off_outermostlinkhdr->reg == -1)
+		cstate->off_outermostlinkhdr->reg = alloc_reg(cstate);
 
 	/*
 	 * For link-layer types that have a variable-length header
@@ -8872,8 +8864,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
 		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&
-		    cstate->off_linkhdr.constant_part ==
-		    cstate->off_outermostlinkhdr.constant_part) {
+		    cstate->off_outermostlinkhdr == &(cstate->off_linkhdr)) {
 			/*
 			 * Do we need special VLAN handling?
 			 */
