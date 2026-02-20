@@ -371,7 +371,8 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		 * No.
 		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "block total length in header and trailer don't match");
+		    "block total length in header %u and trailer %u don't match",
+		    bhdr.total_length, btrlr->total_length);
 		return (-1);
 	}
 

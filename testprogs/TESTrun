@@ -22782,7 +22782,7 @@ my @filter_reject_tests = (
 	{
 		name => 'shb_option_too_long',
 		savefile => 'shb-option-too-long.pcapng',
-		errstr => 'Failed opening: block total length in header and trailer don\'t match',
+		errstr => 'Failed opening: block total length in header 32 and trailer 808464432 don\'t match',
 	},
 
 	{
