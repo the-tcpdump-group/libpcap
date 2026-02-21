@@ -711,10 +711,12 @@ static struct block *gen_set(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_unset(compiler_state_t *, bpf_u_int32, struct slist *);
 static struct block *gen_ncmp(compiler_state_t *, enum e_offrel, u_int,
     u_int, bpf_u_int32, int, int, bpf_u_int32);
-static struct slist *gen_load_absoffsetrel(compiler_state_t *, bpf_abs_offset *,
-    u_int, u_int);
-static struct slist *gen_load_a(compiler_state_t *, enum e_offrel, u_int,
-    u_int);
+static struct slist *gen_load_absoffsetrel(compiler_state_t *, struct slist *,
+    const u_int, const u_int);
+static struct slist *gen_load_absoffsetarthrel(compiler_state_t *,
+    struct slist *, const bpf_u_int32, const struct arth *, const u_int);
+static struct slist *gen_load_a(compiler_state_t *, const enum e_offrel, u_int,
+    const u_int);
 static struct slist *gen_loadx_iphdrlen(compiler_state_t *);
 static struct block *gen_uncond(compiler_state_t *, const u_char);
 static inline struct block *gen_true(compiler_state_t *);
@@ -783,8 +785,8 @@ static int lookup_proto(compiler_state_t *, const char *, const struct qual);
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
 #endif /* !defined(NO_PROTOCHAIN) */
 static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
-static struct slist *xfer_to_x(compiler_state_t *, struct arth *);
-static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
+static struct slist *xfer_to_x(compiler_state_t *, const struct arth *);
+static struct slist *xfer_to_a(compiler_state_t *, const struct arth *);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
 static struct block *gen_len(compiler_state_t *, int, int);
 static struct block *gen_encap_ll_check(compiler_state_t *cstate);
@@ -1209,6 +1211,63 @@ port_pq_to_ipproto(compiler_state_t *cstate, const int proto, const char *kw)
 		return PROTO_UNDEF;
 	}
 	bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), kw);
+}
+
+static uint8_t
+pq_to_ipproto(compiler_state_t *cstate, const u_char pqual)
+{
+	static const uint8_t map[UINT8_MAX + 1] = {
+		[Q_AH]     = IPPROTO_AH,
+		[Q_CARP]   = IPPROTO_CARP,
+		[Q_ESP]    = IPPROTO_ESP,
+		[Q_ICMP]   = IPPROTO_ICMP,
+		[Q_ICMPV6] = IPPROTO_ICMPV6,
+		[Q_IGMP]   = IPPROTO_IGMP,
+		[Q_IGRP]   = IPPROTO_IGRP,
+		[Q_PIM]    = IPPROTO_PIM,
+		[Q_SCTP]   = IPPROTO_SCTP,
+		[Q_TCP]    = IPPROTO_TCP,
+		[Q_UDP]    = IPPROTO_UDP,
+		[Q_VRRP]   = IPPROTO_VRRP,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no IP protocol", pqkw(pqual));
+}
+
+static uint8_t
+pq_to_llcsap(compiler_state_t *cstate, const u_char pqual)
+{
+	static const uint8_t map[UINT8_MAX + 1] = {
+		[Q_IPX]     = LLCSAP_IPX,
+		[Q_ISO]     = LLCSAP_ISONS,
+		[Q_NETBEUI] = LLCSAP_NETBEUI,
+		[Q_STP]     = LLCSAP_8021D,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no LLC SAP", pqkw(pqual));
+}
+
+static uint16_t
+pq_to_ethertype(compiler_state_t *cstate, const u_char pqual)
+{
+	static const uint16_t map[UINT8_MAX + 1] = {
+		[Q_AARP]   = ETHERTYPE_AARP,
+		[Q_ARP]    = ETHERTYPE_ARP,
+		[Q_ATALK]  = ETHERTYPE_ATALK,
+		[Q_DECNET] = ETHERTYPE_DN,
+		[Q_IP]     = ETHERTYPE_IP,
+		[Q_IPV6]   = ETHERTYPE_IPV6,
+		[Q_LAT]    = ETHERTYPE_LAT,
+		[Q_MOPDL]  = ETHERTYPE_MOPDL,
+		[Q_MOPRC]  = ETHERTYPE_MOPRC,
+		[Q_RARP]   = ETHERTYPE_REVARP,
+		[Q_SCA]    = ETHERTYPE_SCA,
+	};
+	if (map[pqual])
+		return map[pqual];
+	bpf_error(cstate, "Proto qualifier '%s' has no EtherType", pqkw(pqual));
 }
 
 int
@@ -2381,21 +2440,28 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
  * Load a value relative to the specified absolute offset.
  */
 static struct slist *
-gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
-    u_int offset, u_int size)
+gen_load_absoffsetrel(compiler_state_t *cstate, struct slist *s,
+    const u_int offset, const u_int size)
 {
-	struct slist *s, *s2;
-
-	s = gen_abs_offset_varpart(cstate, abs_offset);
+	switch (size) {
+	case BPF_B:
+	case BPF_H:
+	case BPF_W:
+		break;
+	default:
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "size", size);
+	}
 
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
 	 * contains the variable part of the absolute offset, so we
-	 * generate a load relative to that, with an offset of
-	 * abs_offset->constant_part + offset.
+	 * generate a load relative to that, with an offset of the constant
+	 * part of the absolute offset:
+	 *   (ldb|ldh|ld) [x + k]
 	 *
-	 * Otherwise, we can do an absolute load with an offset of
-	 * abs_offset->constant_part + offset.
+	 * Otherwise, we can do an absolute load with an offset of the
+	 * constant part of the absolute offset:
+	 *   (ldb|ldh|ld) [k]
 	 */
 	if (s != NULL) {
 		/*
@@ -2403,8 +2469,8 @@ gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
 		 * variable part of the absolute offset into the X register.
 		 * Do an indirect load, to use the X register as an offset.
 		 */
-		s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		s2->s.k = abs_offset->constant_part + offset;
+		struct slist *s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
+		s2->s.k = offset;
 		sappend(s, s2);
 	} else {
 		/*
@@ -2412,19 +2478,58 @@ gen_load_absoffsetrel(compiler_state_t *cstate, bpf_abs_offset *abs_offset,
 		 * just do an absolute load.
 		 */
 		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-		s->s.k = abs_offset->constant_part + offset;
+		s->s.k = offset;
 	}
 	return s;
+}
+
+/*
+ * Load a value relative to the specified absolute offset and the specified
+ * arithmetic expression.
+ */
+static struct slist *
+gen_load_absoffsetarthrel(compiler_state_t *cstate, struct slist *varpart,
+    const bpf_u_int32 constpart, const struct arth *arthpart,
+    const u_int bpf_size)
+{
+	/*
+	 * The required loading offset is a function of three inputs:
+	 *
+	 * - the variable part of an absolute offset (either absent or already
+	 *   loaded into X using the given sequence of instructions),
+	 * - the constant part of an absolute offset (the given integer), and
+	 * - the value of a given arithmetic expression (loadable into A or X
+	 *   from a scratch memory register).
+	 *
+	 * Converge this to "(ld|ldh|ldb) [x + k]", where 'k' holds the
+	 * constant part and 'x' holds the sum of the variable part (if any)
+	 * and the arithmetic expression value.  That is, if the variable part
+	 * is absent:
+	 *   X = <arithmetic expression value>
+	 * otherwise:
+	 *   A = <arithmetic expression value>
+	 *   A = A + X
+	 *   X = A
+	 * The rest is a case of a problem that already has a solution.
+	 */
+	if (! varpart)
+		varpart = xfer_to_x(cstate, arthpart);
+	else {
+		sappend(varpart, xfer_to_a(cstate, arthpart));
+		sappend(varpart, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
+		sappend(varpart, new_stmt(cstate, BPF_MISC|BPF_TAX));
+	}
+	return gen_load_absoffsetrel(cstate, varpart, constpart, bpf_size);
 }
 
 /*
  * Load a value relative to the beginning of the specified header.
  */
 static struct slist *
-gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
-    u_int size)
+gen_load_a(compiler_state_t *cstate, const enum e_offrel offrel, u_int offset,
+    const u_int size)
 {
-	struct slist *s, *s2;
+	struct slist *s;
 
 	/*
 	 * Squelch warnings from compilers that *don't* assume that
@@ -2442,37 +2547,43 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	switch (offrel) {
 
 	case OR_PACKET:
-		s = new_stmt(cstate, BPF_LD|BPF_ABS|size);
-		s->s.k = offset;
 		break;
 
 	case OR_LINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkhdr, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkhdr);
+		offset += cstate->off_linkhdr.constant_part;
 		break;
 
 	case OR_PREVLINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_prevlinkhdr, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_prevlinkhdr);
+		offset += cstate->off_prevlinkhdr.constant_part;
 		break;
 
 	case OR_LLC:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part;
 		break;
 
 	case OR_PREVMPLSHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
-		    cstate->off_nl - MPLS_STACKENTRY_LEN + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl -
+		    MPLS_STACKENTRY_LEN;
 		break;
 
 	case OR_LINKPL:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl;
 		break;
 
 	case OR_LINKPL_NOSNAP:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl_nosnap + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part +
+		    cstate->off_nl_nosnap;
 		break;
 
 	case OR_LINKTYPE:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linktype, offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linktype);
+		offset += cstate->off_linktype.constant_part;
 		break;
 
 	case OR_TRAN_IPV4:
@@ -2495,17 +2606,16 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		 * value in the X register, and we include the constant
 		 * part in the offset of the load.
 		 */
-		s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		s2->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + offset;
-		sappend(s, s2);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl;
 		break;
 
 	case OR_TRAN_IPV6:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl,
-		    cstate->off_nl + IP6_HDRLEN + offset, size);
+		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		offset += cstate->off_linkpl.constant_part + cstate->off_nl +
+		    IP6_HDRLEN;
 		break;
 	}
-	return s;
+	return gen_load_absoffsetrel(cstate, s, offset, size);
 }
 
 /*
@@ -5696,80 +5806,62 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 {
 	struct block *b0;
 	struct block *b1;
+	uint16_t protonum;
+	u_char basepqual;
 
 	switch (proto) {
 
 	case Q_SCTP:
-		return gen_proto(cstate, IPPROTO_SCTP, Q_DEFAULT);
-
 	case Q_TCP:
-		return gen_proto(cstate, IPPROTO_TCP, Q_DEFAULT);
-
 	case Q_UDP:
-		return gen_proto(cstate, IPPROTO_UDP, Q_DEFAULT);
+	case Q_AH:
+	case Q_ESP:
+	case Q_PIM:
+		// protocols based on IPv4/IPv6
+		basepqual = Q_DEFAULT;
+		protonum = pq_to_ipproto(cstate, (u_char)proto);
+		break;
 
 	case Q_ICMP:
-		return gen_proto(cstate, IPPROTO_ICMP, Q_IP);
-
 	case Q_IGMP:
-		return gen_proto(cstate, IPPROTO_IGMP, Q_IP);
-
 	case Q_IGRP:
-		return gen_proto(cstate, IPPROTO_IGRP, Q_IP);
-
-	case Q_PIM:
-		return gen_proto(cstate, IPPROTO_PIM, Q_DEFAULT);
-
 	case Q_VRRP:
-		return gen_proto(cstate, IPPROTO_VRRP, Q_IP);
-
 	case Q_CARP:
-		return gen_proto(cstate, IPPROTO_CARP, Q_IP);
-
-	case Q_IP:
-		return gen_linktype(cstate, ETHERTYPE_IP);
-
-	case Q_ARP:
-		return gen_linktype(cstate, ETHERTYPE_ARP);
-
-	case Q_RARP:
-		return gen_linktype(cstate, ETHERTYPE_REVARP);
-
-	case Q_ATALK:
-		return gen_linktype(cstate, ETHERTYPE_ATALK);
-
-	case Q_AARP:
-		return gen_linktype(cstate, ETHERTYPE_AARP);
-
-	case Q_DECNET:
-		return gen_linktype(cstate, ETHERTYPE_DN);
-
-	case Q_SCA:
-		return gen_linktype(cstate, ETHERTYPE_SCA);
-
-	case Q_LAT:
-		return gen_linktype(cstate, ETHERTYPE_LAT);
-
-	case Q_MOPDL:
-		return gen_linktype(cstate, ETHERTYPE_MOPDL);
-
-	case Q_MOPRC:
-		return gen_linktype(cstate, ETHERTYPE_MOPRC);
-
-	case Q_IPV6:
-		return gen_linktype(cstate, ETHERTYPE_IPV6);
+		// protocols based on IPv4 only
+		basepqual = Q_IP;
+		protonum = pq_to_ipproto(cstate, (u_char)proto);
+		break;
 
 	case Q_ICMPV6:
-		return gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
+		// protocols based on IPv6 only
+		basepqual = Q_IPV6;
+		protonum = pq_to_ipproto(cstate, (u_char)proto);
+		break;
 
-	case Q_AH:
-		return gen_proto(cstate, IPPROTO_AH, Q_DEFAULT);
-
-	case Q_ESP:
-		return gen_proto(cstate, IPPROTO_ESP, Q_DEFAULT);
+	case Q_IP:
+	case Q_ARP:
+	case Q_RARP:
+	case Q_ATALK:
+	case Q_AARP:
+	case Q_DECNET:
+	case Q_SCA:
+	case Q_LAT:
+	case Q_MOPDL:
+	case Q_MOPRC:
+	case Q_IPV6:
+		// link-layer protocols not based on LLC
+		basepqual = Q_LINK;
+		protonum = pq_to_ethertype(cstate, (u_char)proto);
+		break;
 
 	case Q_ISO:
-		return gen_linktype(cstate, LLCSAP_ISONS);
+	case Q_STP:
+	case Q_IPX:
+	case Q_NETBEUI:
+		// link-layer protocols based on LLC
+		basepqual = Q_LINK;
+		protonum = pq_to_llcsap(cstate, (u_char)proto);
+		break;
 
 	case Q_ESIS:
 		return gen_proto(cstate, ISO9542_ESIS, Q_ISO);
@@ -5833,16 +5925,11 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	case Q_CLNP:
 		return gen_proto(cstate, ISO8473_CLNP, Q_ISO);
 
-	case Q_STP:
-		return gen_linktype(cstate, LLCSAP_8021D);
-
-	case Q_IPX:
-		return gen_linktype(cstate, LLCSAP_IPX);
-
-	case Q_NETBEUI:
-		return gen_linktype(cstate, LLCSAP_NETBEUI);
+	default:
+		bpf_error(cstate, "'%s' cannot be used as an abbreviation",
+		    pqkw(proto));
 	}
-	bpf_error(cstate, "'%s' cannot be used as an abbreviation", pqkw(proto));
+	return gen_proto(cstate, protonum, basepqual);
 }
 
 struct block *
@@ -7405,7 +7492,7 @@ sprepend_to_block(struct slist *s, struct block *b)
 }
 
 static struct slist *
-xfer_to_x(compiler_state_t *cstate, struct arth *a)
+xfer_to_x(compiler_state_t *cstate, const struct arth *a)
 {
 	struct slist *s;
 
@@ -7415,7 +7502,7 @@ xfer_to_x(compiler_state_t *cstate, struct arth *a)
 }
 
 static struct slist *
-xfer_to_a(compiler_state_t *cstate, struct arth *a)
+xfer_to_a(compiler_state_t *cstate, const struct arth *a)
 {
 	struct slist *s;
 
@@ -7436,8 +7523,6 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
     bpf_u_int32 size)
 {
 	int size_code;
-	struct slist *s, *tmp;
-	struct block *b;
 	int regno = alloc_reg(cstate);
 
 	free_reg(cstate, inst->regno);
@@ -7459,6 +7544,9 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		size_code = BPF_W;
 		break;
 	}
+	struct block *b = NULL; // protocol checks
+	struct slist *s = NULL; // the variable part of an absolute offset
+	u_int constpart = 0;    // the constant part of an absolute offset
 	switch (proto) {
 	default:
 		bpf_error(cstate, "'%s' does not support the index operation", pqkw(proto));
@@ -7479,15 +7567,13 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		/*
 		 * Load into the X register the offset computed into the
 		 * register specified by "inst".
-		 */
-		s = xfer_to_x(cstate, inst);
-
-		/*
+		 *
 		 * Load the item at that offset.
+		 *
+		 * In other words, the variable part is not present, the
+		 * constant part is zero and there are no protocol checks, so
+		 * just break out to proceed with "inst" only.
 		 */
-		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-		sappend(s, tmp);
-		sappend(inst->s, s);
 		break;
 
 	case Q_LINK:
@@ -7514,25 +7600,15 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * into the X register.  Otherwise, just load into the X
 		 * register the offset computed into the register specified
 		 * by "inst".
-		 */
-		if (s != NULL) {
-			sappend(s, xfer_to_a(cstate, inst));
-			sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-			sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
-		} else
-			s = xfer_to_x(cstate, inst);
-
-		/*
+		 *
 		 * Load the item at the sum of the offset we've put in the
 		 * X register and the offset of the start of the link
 		 * layer header (which is 0 if the radio header is
 		 * variable-length; that header length is what we put
 		 * into the X register and then added to "inst").
 		 */
-		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-		tmp->s.k = cstate->off_linkhdr.constant_part;
-		sappend(s, tmp);
-		sappend(inst->s, s);
+		constpart = cstate->off_linkhdr.constant_part;
+		// There are no protocol checks.
 		break;
 
 	case Q_IP:
@@ -7563,34 +7639,20 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * and move that into the X register.  Otherwise, just
 		 * load into the X register the offset computed into
 		 * the register specified by "inst".
-		 */
-		if (s != NULL) {
-			sappend(s, xfer_to_a(cstate, inst));
-			sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-			sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
-		} else
-			s = xfer_to_x(cstate, inst);
-
-		/*
+		 *
 		 * Load the item at the sum of the offset we've put in the
 		 * X register, the offset of the start of the network
 		 * layer header from the beginning of the link-layer
 		 * payload, and the constant part of the offset of the
 		 * start of the link-layer payload.
 		 */
-		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
-		sappend(s, tmp);
-		sappend(inst->s, s);
+		constpart = cstate->off_linkpl.constant_part + cstate->off_nl;
 
 		/*
 		 * Do the computation only if the packet contains
 		 * the protocol in question.
 		 */
 		b = gen_proto_abbrev_internal(cstate, proto);
-		if (inst->b)
-			b = gen_and(inst->b, b);
-		inst->b = b;
 		break;
 
 	case Q_SCTP:
@@ -7634,24 +7696,22 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * relative to the beginning of the link-layer payload,
 		 * of the network-layer header.
 		 */
-		sappend(s, xfer_to_a(cstate, inst));
-		sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-		sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
-		sappend(s, tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code));
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
-		sappend(inst->s, s);
+		constpart = cstate->off_linkpl.constant_part + cstate->off_nl;
 
 		/*
 		 * Do the computation only if the packet contains
 		 * the protocol in question - which is true only
 		 * if this is an IP datagram and is the first or
 		 * only fragment of that datagram.
+		 *
+		 * Do not use gen_proto_abbrev_internal(cstate, proto): if it
+		 * matches the given proto qualifier using Q_DEFAULT, this
+		 * would produce an unreachable IPv6 branch.
 		 */
-		b = gen_and(gen_proto_abbrev_internal(cstate, proto), gen_ipfrag(cstate));
-		if (inst->b)
-			b = gen_and(inst->b, b);
-		b = gen_and(gen_proto_abbrev_internal(cstate, Q_IP), b);
-		inst->b = b;
+		b = gen_proto_abbrev_internal(cstate, Q_IP);
+		b = gen_and(b, gen_ip_proto(cstate, pq_to_ipproto(cstate,
+		    (u_char)proto)));
+		b = gen_and(b, gen_ipfrag(cstate));
 		break;
 	case Q_ICMPV6:
 		/*
@@ -7659,15 +7719,17 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 *
 		 * Do the computation only if the packet contains
 		 * the protocol in question.
+		 *
+		 * Do not use gen_proto(..., Q_IPV6): this would also match
+		 * IPPROTO_FRAGMENT and the side effect statements would
+		 * quietly load incorrect data.
 		 */
 		b = gen_proto_abbrev_internal(cstate, Q_IPV6);
-		inst->b = inst->b ? gen_and(inst->b, b) : b;
 
 		/*
 		 * Check if we have an icmp6 next header
 		 */
-		b = gen_ip6_proto(cstate, IPPROTO_ICMPV6);
-		inst->b = inst->b ? gen_and(inst->b, b) : b;
+		b = gen_and(b, gen_ip6_proto(cstate, IPPROTO_ICMPV6));
 
 		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 		/*
@@ -7678,30 +7740,24 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 		 * and move that into the X register.  Otherwise, just
 		 * load into the X register the offset computed into
 		 * the register specified by "inst".
-		 */
-		if (s != NULL) {
-			sappend(s, xfer_to_a(cstate, inst));
-			sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-			sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
-		} else
-			s = xfer_to_x(cstate, inst);
-
-		/*
+		 *
 		 * Load the item at the sum of the offset we've put in the
 		 * X register, the offset of the start of the network
 		 * layer header from the beginning of the link-layer
 		 * payload, and the constant part of the offset of the
 		 * start of the link-layer payload.
 		 */
-		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size_code);
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl +
+		constpart = cstate->off_linkpl.constant_part + cstate->off_nl +
 		    IP6_HDRLEN;
-
-		sappend(s, tmp);
-		sappend(inst->s, s);
-
 		break;
 	}
+
+	if (b)
+		inst->b = inst->b ? gen_and(inst->b, b) : b;
+	// NULL is a valid value for 's'.
+	sappend(inst->s, gen_load_absoffsetarthrel(cstate, s, constpart, inst,
+	    size_code));
+
 	inst->regno = regno;
 	s = new_stmt(cstate, BPF_ST);
 	s->s.k = regno;
@@ -7729,7 +7785,7 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
     struct arth *a1, int reversed)
 {
 	struct slist *s0, *s1;
-	struct block *b, *tmp;
+	struct block *b;
 
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
@@ -7745,12 +7801,11 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
 	free_reg(cstate, a1->regno);
 
 	/* 'and' together protocol checks */
-	if (a0->b) {
-		tmp = a1->b ? gen_and(a0->b, a1->b) : a0->b;
-	} else
-		tmp = a1->b;
-
-	return tmp ? gen_and(tmp, b) : b;
+	if (a0->b)
+		b = gen_and(a0->b, b);
+	if (a1->b)
+		b = gen_and(a1->b, b);
+	return b;
 }
 
 struct block *
