@@ -310,26 +310,7 @@ if test $needasprintf = yes; then
 	AC_LIBOBJ([asprintf])
 fi
 
-needstrlcat=no
-AC_CHECK_FUNCS(strlcat,,
-	[needstrlcat=yes])
-if test $needstrlcat = yes; then
-	AC_LIBOBJ([strlcat])
-fi
-
-needstrlcpy=no
-AC_CHECK_FUNCS(strlcpy,,
-	[needstrlcpy=yes])
-if test $needstrlcpy = yes; then
-	AC_LIBOBJ([strlcpy])
-fi
-
-needstrtok_r=no
-AC_CHECK_FUNCS(strtok_r,,
-	[needstrtok_r=yes])
-if test $needstrtok_r = yes; then
-	AC_LIBOBJ([strtok_r])
-fi
+AC_REPLACE_FUNCS(strlcat strlcpy strtok_r)
 
 #
 # Do this before checking for ether_hostton(), as it's a
