@@ -324,7 +324,6 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout
 		break;
 		}
 
-#ifdef AF_INET6
 	case RPCAP_AF_INET6:
 	case NEW_BSD_AF_INET6_BSD_BE:
 	case NEW_BSD_AF_INET6_FREEBSD_BE:
@@ -354,7 +353,6 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout
 		sockaddrout_ipv6->sin6_scope_id = ntohl(sockaddrin_ipv6->scope_id);
 		break;
 		}
-#endif
 
 	default:
 		/*

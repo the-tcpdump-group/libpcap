@@ -4046,15 +4046,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 				 */
 				return (gen_loopback_linktype(cstate, 24));
 #else /* _WIN32 */
-#ifdef AF_INET6
 				return (gen_loopback_linktype(cstate, AF_INET6));
-#else /* AF_INET6 */
-				/*
-				 * I guess this platform doesn't support
-				 * IPv6, so we just reject all packets.
-				 */
-				return gen_false(cstate);
-#endif /* AF_INET6 */
 #endif /* _WIN32 */
 			}
 

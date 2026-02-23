@@ -1675,9 +1675,7 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 			switch (address->addr->sa_family)
 			{
 			case AF_INET:
-#ifdef AF_INET6
 			case AF_INET6:
-#endif
 				CHECK_AND_INCREASE_REPLY_LEN(sizeof(struct rpcap_sockaddr) * 4);
 				if (naddrs == UINT16_MAX) {
 					pcapint_strlcpy(errmsgbuf,
@@ -1746,9 +1744,7 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 			switch (address->addr->sa_family)
 			{
 			case AF_INET:
-#ifdef AF_INET6
 			case AF_INET6:
-#endif
 				naddrs++;
 				break;
 
@@ -1785,9 +1781,7 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 			switch (address->addr->sa_family)
 			{
 			case AF_INET:
-#ifdef AF_INET6
 			case AF_INET6:
-#endif
 				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
 				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
 				    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
@@ -2874,7 +2868,6 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 		break;
 		}
 
-#ifdef AF_INET6
 	case AF_INET6:
 		{
 		struct sockaddr_in6 *sockaddrin_ipv6;
@@ -2890,7 +2883,6 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 		memcpy(sockaddrout, &sockaddrout_ipv6, sizeof(struct rpcap_sockaddr_in6));
 		break;
 		}
-#endif
 	}
 }
 

@@ -348,7 +348,6 @@ static int ifprint(pcap_if_t *d)
 #endif // AF_LINK
 #endif // ! defined(_WIN32)
 
-#ifdef AF_INET6
       case AF_INET6:
         printf("\tAddress Family: AF_INET6 (%d)\n", a->addr->sa_family);
         char ipv6_buf[INET6_ADDRSTRLEN];
@@ -372,7 +371,7 @@ static int ifprint(pcap_if_t *d)
               ((struct sockaddr_in6 *)(a->dstaddr))->sin6_addr.s6_addr,
                ipv6_buf, sizeof ipv6_buf));
         break;
-#endif // AF_INET6
+
       default:
         printf("\tAddress Family: Unknown (%d)\n", a->addr->sa_family);
         break;
