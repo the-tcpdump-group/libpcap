@@ -7987,12 +7987,6 @@ gen_less(compiler_state_t *cstate, int n)
 /*
  * This is for "byte {idx} {op} {val}"; "idx" is treated as relative to
  * the beginning of the link-layer header.
- * XXX - that means you can't test values in the radiotap header, but
- * as that header is difficult if not impossible to parse generally
- * without a loop, that might not be a severe problem.  A new keyword
- * "radio" could be added for that, although what you'd really want
- * would be a way of testing particular radio header values, which
- * would generate code appropriate to the radio header in question.
  */
 struct block *
 gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
