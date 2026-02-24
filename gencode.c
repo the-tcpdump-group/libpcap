@@ -257,6 +257,8 @@ struct addrinfo {
 
 /*
  * Network layer protocol identifiers
+ * ITU-T Rec. X.263 (1998 E)
+ * ISO/IEC TR 9577:1999(E)
  */
 #ifndef ISO8473_CLNP
 #define ISO8473_CLNP		0x81
@@ -264,11 +266,14 @@ struct addrinfo {
 #ifndef	ISO9542_ESIS
 #define	ISO9542_ESIS		0x82
 #endif
-#ifndef ISO9542X25_ESIS
-#define ISO9542X25_ESIS		0x8a
-#endif
 #ifndef	ISO10589_ISIS
 #define	ISO10589_ISIS		0x83
+#endif
+#ifndef ISO9577_IPV6
+#define ISO9577_IPV6		0x8e
+#endif
+#ifndef ISO9577_IPV4
+#define ISO9577_IPV4		0xcc
 #endif
 
 #define ISIS_L1_LAN_IIH      15
@@ -286,13 +291,6 @@ struct addrinfo {
  * octet, see sections 9.5~9.13 of ISO/IEC 10589:2002(E).
  */
 #define ISIS_PDU_TYPE_MAX 0x1FU
-
-#ifndef ISO8878A_CONS
-#define	ISO8878A_CONS		0x84
-#endif
-#ifndef	ISO10747_IDRP
-#define	ISO10747_IDRP		0x85
-#endif
 
 // Same as in tcpdump/print-sl.c.
 #define SLIPDIR_IN 0
@@ -3923,6 +3921,23 @@ gen_ip_version(compiler_state_t *cstate, const enum e_offrel offrel,
 }
 
 /*
+ * Match a Frame Relay (ITU-T Rec. Q.922) header with the Control field set to
+ * UI (Unnumbered information, 0x03, ibid., Table 3) and the NLPID field set to
+ * the given value.
+ *
+ * This code assumes a Frame Relay header encoding that has the Control field
+ * at offset 2 and the NLPID field at offset 3, which means no flags before the
+ * Address field (thus not the RFC 2427 encoding) and exactly 2 bytes for the
+ * Address field (thus the default, but not the only possible address format,
+ * ibid., Table 1).
+ */
+static struct block *
+gen_frelay_nlpid(compiler_state_t *cstate, const uint8_t nlpid)
+{
+	return gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03 << 8) | nlpid);
+}
+
+/*
  * The three different values we should check for when checking for an
  * IPv6 packet with DLT_NULL.
  */
@@ -4263,23 +4278,13 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		/*NOTREACHED*/
 
 	case DLT_FRELAY:
-		/*
-		 * XXX - assumes a 2-byte Frame Relay header with
-		 * DLCI and flags.  What if the address is longer?
-		 */
 		switch (ll_proto) {
 
 		case ETHERTYPE_IP:
-			/*
-			 * Check for the special NLPID for IP.
-			 */
-			return gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | 0xcc);
+			return gen_frelay_nlpid(cstate, ISO9577_IPV4);
 
 		case ETHERTYPE_IPV6:
-			/*
-			 * Check for the special NLPID for IPv6.
-			 */
-			return gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | 0x8e);
+			return gen_frelay_nlpid(cstate, ISO9577_IPV6);
 
 		case LLCSAP_ISONS:
 			/*
@@ -4288,14 +4293,10 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 * Frame Relay packets typically have an OSI
 			 * NLPID at the beginning; we check for each
 			 * of them.
-			 *
-			 * What we check for is the NLPID and a frame
-			 * control field of UI, i.e. 0x03 followed
-			 * by the NLPID.
 			 */
-			b0 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO8473_CLNP);
-			b1 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO9542_ESIS);
-			b2 = gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | ISO10589_ISIS);
+			b0 = gen_frelay_nlpid(cstate, ISO8473_CLNP);
+			b1 = gen_frelay_nlpid(cstate, ISO9542_ESIS);
+			b2 = gen_frelay_nlpid(cstate, ISO10589_ISIS);
 			b2 = gen_or(b1, b2);
 			return gen_or(b0, b2);
 
@@ -6678,16 +6679,9 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 			 * looking is bogus, as we can just check for
 			 * the NLPID.
 			 *
-			 * What we check for is the NLPID and a frame
-			 * control field value of UI, i.e. 0x03 followed
-			 * by the NLPID.
-			 *
-			 * XXX - assumes a 2-byte Frame Relay header with
-			 * DLCI and flags.  What if the address is longer?
-			 *
 			 * XXX - what about SNAP-encapsulated frames?
 			 */
-			return gen_cmp(cstate, OR_LINKHDR, 2, BPF_H, (0x03<<8) | v);
+			return gen_frelay_nlpid(cstate, (uint8_t)v);
 			/*NOTREACHED*/
 
 		case DLT_C_HDLC:
