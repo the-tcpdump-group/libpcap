@@ -192,8 +192,8 @@ test_pcapint_get_decint_noendp(const char *arg)
 	}
 	printf("OK: %u\n", output);
 	return EX_OK;
-
 }
+
 static const struct {
 	const char *name;
 	u_char null_ok;

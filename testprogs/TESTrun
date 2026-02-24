@@ -25444,6 +25444,10 @@ sub common_translatetest_args {
 	# and required a "+" to get the behavior they wanted, That
 	# Would Have Been Wonderful. But they didn't, so here we are.
 	#
+	# In practical terms, this allows to pass a negative integer
+	# as the second argument of translatetest and to get the expected
+	# behaviour from all known implementations of getopt().
+	#
 	my @args = ($translatetest, "--", $test->{cfuncname});
 	# The hash key exists.  For the value Perl undef means C NULL and no
 	# command-line argument in the shell command, an empty Perl string
