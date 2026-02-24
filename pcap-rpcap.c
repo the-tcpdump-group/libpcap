@@ -1235,7 +1235,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	rpcap_createhdr((struct rpcap_header *) sendbuf,
 	    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
-	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn));
+	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + max(1, fp->fcode.bf_len) * sizeof(struct rpcap_filterbpf_insn));
 
 	/* Fill the structure needed to open an adapter remotely */
 	startcapreq = (struct rpcap_startcapreq *) &sendbuf[sendbufidx];
@@ -1640,7 +1640,7 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 
 	rpcap_createhdr((struct rpcap_header *) sendbuf,
 	    pr->protocol_version, RPCAP_MSG_UPDATEFILTER_REQ, 0,
-	    sizeof(struct rpcap_filter) + prog->bf_len * sizeof(struct rpcap_filterbpf_insn));
+	    sizeof(struct rpcap_filter) + max(1, prog->bf_len) * sizeof(struct rpcap_filterbpf_insn));
 
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, prog))
 		return -1;
