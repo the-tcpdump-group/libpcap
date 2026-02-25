@@ -43,11 +43,14 @@
 #define IBV_FLOW_ATTR_SNIFFER	3
 #endif
 
-static const int RDMASNIFF_NUM_RECEIVES = 128;
+static const unsigned RDMASNIFF_NUM_RECEIVES = 128;
+/*
+ * This is used as a snapshot size, and the snapshot size is stored in
+ * an int, so we make this an int.
+ */
 static const int RDMASNIFF_RECEIVE_SIZE = 10000;
 
 struct pcap_rdmasniff {
-	struct ibv_device *		rdma_device;
 	struct ibv_context *		context;
 	struct ibv_comp_channel *	channel;
 	struct ibv_pd *			pd;
@@ -56,7 +59,6 @@ struct pcap_rdmasniff {
 	struct ibv_flow *               flow;
 	struct ibv_mr *			mr;
 	u_char *			oneshot_buffer;
-	unsigned long			port_num;
 	int                             cq_event;
 	u_int                           packets_recv;
 };
@@ -74,19 +76,55 @@ rdmasniff_stats(pcap_t *handle, struct pcap_stat *stat)
 }
 
 static void
+rdmasniff_free_resources(struct pcap_rdmasniff *priv)
+{
+	if (priv->flow) {
+		ibv_destroy_flow(priv->flow);
+		priv->flow = NULL;
+	}
+
+	if (priv->qp) {
+		ibv_destroy_qp(priv->qp);
+		priv->qp = NULL;
+	}
+
+	if (priv->cq) {
+		ibv_destroy_cq(priv->cq);
+		priv->cq = NULL;
+	}
+
+	if (priv->mr) {
+		ibv_dereg_mr(priv->mr);
+		priv->mr = NULL;
+	}
+
+	if (priv->pd) {
+		ibv_dealloc_pd(priv->pd);
+		priv->pd = NULL;
+	}
+
+	if (priv->channel) {
+		ibv_destroy_comp_channel(priv->channel);
+		priv->channel = NULL;
+	}
+
+	if (priv->context) {
+		ibv_close_device(priv->context);
+		priv->context = NULL;
+	}
+
+	if (priv->oneshot_buffer) {
+		free(priv->oneshot_buffer);
+		priv->oneshot_buffer = NULL;
+	}
+}
+
+static void
 rdmasniff_cleanup(pcap_t *handle)
 {
 	struct pcap_rdmasniff *priv = handle->priv;
 
-	ibv_dereg_mr(priv->mr);
-	ibv_destroy_flow(priv->flow);
-	ibv_destroy_qp(priv->qp);
-	ibv_destroy_cq(priv->cq);
-	ibv_dealloc_pd(priv->pd);
-	ibv_destroy_comp_channel(priv->channel);
-	ibv_close_device(priv->context);
-	free(priv->oneshot_buffer);
-
+	rdmasniff_free_resources(priv);
 	pcapint_cleanup_live_common(handle);
 }
 
@@ -199,42 +237,234 @@ rdmasniff_oneshot(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes
 	*sp->pkt = priv->oneshot_buffer;
 }
 
+static struct ibv_device *
+rdma_find_device_in_list(struct ibv_device **dev_list, int numdev,
+    const char *device, const char **portp)
+{
+	const char *port;
+	size_t namelen;
+
+	/*
+	 * The syntax of a name on which to capture is
+	 * device[:port].
+	 *
+	 * Is there a port number following the device name?
+	 */
+	port = strchr(device, ':');
+	if (port != NULL) {
+		/*
+		 * Yes. Get the length of the device name preceding
+		 * the colon.
+		 */
+		namelen = port - device;
+
+		/* Return a pointer to the port number after the colon. */
+		if (portp != NULL)
+			*portp = port + 1;
+	} else {
+		/* No. Get the length of the device name. */
+		namelen = strlen(device);
+
+		/* No port number. */
+		if (portp != NULL)
+			*portp = NULL;
+	}
+
+	for (int i = 0; i < numdev; ++i) {
+		if (strlen(dev_list[i]->name) == namelen &&
+		    strncmp(device, dev_list[i]->name, namelen) == 0) {
+			/* Found the device in the list. */
+			return dev_list[i];
+		}
+	}
+
+	/* Didn't find it. */
+	return NULL;
+}
+
 static int
 rdmasniff_activate(pcap_t *handle)
 {
 	struct pcap_rdmasniff *priv = handle->priv;
+	int ret;
+	struct ibv_device **dev_list;
+	int numdev;
+	const char *port;
+	unsigned long port_num;
+	struct ibv_device *rdma_device;
 	struct ibv_qp_init_attr qp_init_attr;
 	struct ibv_qp_attr qp_attr;
 	struct ibv_flow_attr flow_attr;
 	struct ibv_port_attr port_attr;
-	int i;
+	int errcode;
 
-	priv->context = ibv_open_device(priv->rdma_device);
+	dev_list = ibv_get_device_list(&numdev);
+	if (!dev_list) {
+		if (errno == EPERM) {
+			/*
+			 * This is not expected to occur, as enumerating
+			 * devices shouldn't require special privileges.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "ibv_get_device_list() - root privileges may be required");
+			ret = PCAP_ERROR_PERM_DENIED;
+		} else if (errno == ENOSYS) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "No kernel support for RDMA");
+			ret = PCAP_ERROR_CAPTURE_NOTSUP;
+		} else {
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+						     PCAP_ERRBUF_SIZE, errno,
+						     "ibv_get_device_list() failed");
+			ret = PCAP_ERROR;
+		}
+		goto error;
+	}
+	if (!numdev) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "No RDMA devices found");
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		goto error;
+	}
+
+	rdma_device = rdma_find_device_in_list(dev_list, numdev,
+	    handle->opt.device, &port);
+	if (rdma_device == NULL) {
+		/* Device not found in the list. */
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			      "Attempt to open %s failed - not a known RDMA device",
+			      handle->opt.device);
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		goto error;
+	}
+
+	/*
+	 * Do we have a port number?
+	 *
+	 * We treat either a missing port number (no colon in the name)
+	 * or an empty port number (the colon has nothing after it) as
+	 * referring to port 1, as that's what the previous code did.
+	 *
+	 * XXX - should an empty port number be treated as an error?
+	 */
+	if (port != NULL && *port != '\0') {
+		char *endp;
+
+		port_num = strtoul(port, &endp, 10);
+		if ((port_num == 0 && endp == port) ||
+		    *endp != '\0') {
+			/* The port number isn't valid. */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "\"%s\" isn't a valid port number",
+				 port);
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+			goto error;
+		}
+
+		/*
+		 * XXX - is there a port 0? The old code treated a
+		 * return value of 0 as meaning "use port 1".
+		 */
+		if (port_num == 0)
+			port_num = 1;
+	} else {
+		port_num = 1;
+	}
+
+	priv->context = ibv_open_device(rdma_device);
 	if (!priv->context) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to open device %s", handle->opt.device);
+			 "ibv_open_device() failed");
+		ret = PCAP_ERROR;
+		goto error;
+	}
+
+	/*
+	 * According to the ibv_get_device_list() documentation, now
+	 * that we've opened the device, we can free the device list
+	 * from which we got the struct ibv_device * for the device.
+	 */
+	ibv_free_device_list(dev_list);
+	dev_list = NULL;
+
+	errcode = ibv_query_port(priv->context, port_num, &port_attr);
+	if (errcode != 0) {
+		if (errcode == EINVAL) {
+			/*
+			 * According to RDMAmojo's ibv_query_port() page:
+			 *
+			 *    https://www.rdmamojo.com/2012/07/21/ibv_query_port/
+			 *
+			 * EINVAL means the port number is invalid, i.e.
+			 * there's no such device "dev_name:port_num".
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "Port number %lu is not valid", port_num);
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		} else {
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+						     PCAP_ERRBUF_SIZE, errcode,
+						     "Failed to get information for port %lu",
+						     port_num);
+			ret = PCAP_ERROR;
+		}
+		goto error;
+	}
+	switch (port_attr.link_layer) {
+
+	case IBV_LINK_LAYER_INFINIBAND:
+		handle->linktype = DLT_INFINIBAND;
+		break;
+
+	case IBV_LINK_LAYER_UNSPECIFIED:
+		/*
+		 * The RDMAmojo page
+		 *
+		 *    https://www.rdmamojo.com/2012/07/21/ibv_query_port/
+		 *
+		 * says this is a "legacy value, used to indicate that
+		 * the link layer protocol is InfiniBand".
+		 */
+		handle->linktype = DLT_INFINIBAND;
+		break;
+
+	case IBV_LINK_LAYER_ETHERNET:
+		handle->linktype = DLT_EN10MB;
+		break;
+
+	default:
+		/* XXX - what should we do here? */
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "Unknown link layer type %u", port_attr.link_layer);
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	priv->pd = ibv_alloc_pd(priv->context);
 	if (!priv->pd) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to alloc PD for device %s", handle->opt.device);
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "Failed to alloc PD");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	priv->channel = ibv_create_comp_channel(priv->context);
 	if (!priv->channel) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to create comp channel for device %s", handle->opt.device);
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "Failed to create comp channel");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	priv->cq = ibv_create_cq(priv->context, RDMASNIFF_NUM_RECEIVES,
 				 NULL, priv->channel, 0);
 	if (!priv->cq) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to create CQ for device %s", handle->opt.device);
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "Failed to create CQ");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
@@ -247,36 +477,57 @@ rdmasniff_activate(pcap_t *handle)
 	qp_init_attr.qp_type = IBV_QPT_RAW_PACKET;
 	priv->qp = ibv_create_qp(priv->pd, &qp_init_attr);
 	if (!priv->qp) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to create QP for device %s", handle->opt.device);
+		if (errno == EPERM) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+#ifdef __linux__
+				 "Failed to create QP - CAP_NET_RAW may be required");
+#else
+				 /* Root permission required? Something else? */
+				 "Faile to create QP");
+#endif
+			ret = PCAP_ERROR_PERM_DENIED;
+		} else {
+			pcapint_fmt_errmsg_for_errno(handle->errbuf,
+						     PCAP_ERRBUF_SIZE, errno,
+						     "Failed to create QP");
+			ret = PCAP_ERROR;
+		}
 		goto error;
 	}
 
 	memset(&qp_attr, 0, sizeof qp_attr);
 	qp_attr.qp_state = IBV_QPS_INIT;
-	qp_attr.port_num = priv->port_num;
-	if (ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE | IBV_QP_PORT)) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to modify QP to INIT for device %s", handle->opt.device);
+	qp_attr.port_num = port_num;
+	errcode = ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE | IBV_QP_PORT);
+	if (errcode != 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errcode,
+					     "Failed to modify QP to INIT");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	memset(&qp_attr, 0, sizeof qp_attr);
 	qp_attr.qp_state = IBV_QPS_RTR;
-	if (ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE)) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to modify QP to RTR for device %s", handle->opt.device);
+	errcode = ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE);
+	if (errcode != 0) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errcode,
+					     "Failed to modify QP to RTR");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	memset(&flow_attr, 0, sizeof flow_attr);
 	flow_attr.type = IBV_FLOW_ATTR_SNIFFER;
 	flow_attr.size = sizeof flow_attr;
-	flow_attr.port = priv->port_num;
+	flow_attr.port = port_num;
 	priv->flow = ibv_create_flow(priv->qp, &flow_attr);
 	if (!priv->flow) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to create flow for device %s", handle->opt.device);
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "Failed to create flow");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
@@ -284,34 +535,30 @@ rdmasniff_activate(pcap_t *handle)
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to allocate receive buffer for device %s", handle->opt.device);
+			      "Failed to allocate receive buffer");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	priv->oneshot_buffer = malloc(RDMASNIFF_RECEIVE_SIZE);
 	if (!priv->oneshot_buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to allocate oneshot buffer for device %s", handle->opt.device);
+			      "Failed to allocate oneshot buffer");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
 	priv->mr = ibv_reg_mr(priv->pd, handle->buffer, handle->bufsize, IBV_ACCESS_LOCAL_WRITE);
 	if (!priv->mr) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			      "Failed to register MR for device %s", handle->opt.device);
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "Failed to register MR");
+		ret = PCAP_ERROR;
 		goto error;
 	}
 
-
-	for (i = 0; i < RDMASNIFF_NUM_RECEIVES; ++i) {
+	for (unsigned i = 0; i < RDMASNIFF_NUM_RECEIVES; ++i) {
 		rdmasniff_post_recv(handle, i);
-	}
-
-	if (!ibv_query_port(priv->context, priv->port_num, &port_attr) &&
-	    port_attr.link_layer == IBV_LINK_LAYER_INFINIBAND) {
-		handle->linktype = DLT_INFINIBAND;
-	} else {
-		handle->linktype = DLT_EN10MB;
 	}
 
 	if (handle->snapshot <= 0 || handle->snapshot > RDMASNIFF_RECEIVE_SIZE)
@@ -332,57 +579,26 @@ rdmasniff_activate(pcap_t *handle)
 	return 0;
 
 error:
-	if (priv->mr) {
-		ibv_dereg_mr(priv->mr);
-	}
-
-	if (priv->flow) {
-		ibv_destroy_flow(priv->flow);
-	}
-
-	if (priv->qp) {
-		ibv_destroy_qp(priv->qp);
-	}
-
-	if (priv->cq) {
-		ibv_destroy_cq(priv->cq);
-	}
-
-	if (priv->channel) {
-		ibv_destroy_comp_channel(priv->channel);
-	}
-
-	if (priv->pd) {
-		ibv_dealloc_pd(priv->pd);
-	}
-
-	if (priv->context) {
-		ibv_close_device(priv->context);
-	}
-
-	if (priv->oneshot_buffer) {
-		free(priv->oneshot_buffer);
-	}
-
-	return PCAP_ERROR;
+	if (dev_list != NULL)
+		ibv_free_device_list(dev_list);
+	rdmasniff_free_resources(priv);
+	return ret;
 }
 
 pcap_t *
 rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 {
-	struct pcap_rdmasniff *priv;
 	struct ibv_device **dev_list;
 	int numdev;
-	size_t namelen;
-	const char *port;
-	unsigned long port_num;
-	int i;
 	pcap_t *p = NULL;
 
 	*is_ours = 0;
 
 	dev_list = ibv_get_device_list(&numdev);
 	if (!dev_list) {
+		pcapint_fmt_errmsg_for_errno(ebuf,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "ibv_get_device_list() failed");
 		return NULL;
 	}
 	if (!numdev) {
@@ -390,36 +606,45 @@ rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 	}
 
-	namelen = strlen(device);
+	/*
+	 * Device names are defined by the driver, not by the libpcap
+	 * module, so, to determine if the device name refers to an
+	 * RDMA-capable device, we have to enumerate the devices
+	 * and see if the device name, with the port number stripped
+	 * off, matches one of them.
+	 */
+	if (rdma_find_device_in_list(dev_list, numdev, device, NULL) != NULL) {
+		/*
+		 * We found the device.
+		 */
+		*is_ours = 1;
 
-	port = strchr(device, ':');
-	if (port) {
-		port_num = strtoul(port + 1, NULL, 10);
-		if (port_num > 0) {
-			namelen = port - device;
-		} else {
-			port_num = 1;
+		/*
+		 * Allocate the pcap_t.
+		 */
+		p = PCAP_CREATE_COMMON(ebuf, struct pcap_rdmasniff);
+		if (p) {
+			/*
+			 * We do *not* save the struct ibv_device *
+			 * for the device that we found, as we will
+			 * be freeing the array of structures, which
+			 * means that the struct ibv_device * will
+			 * not be usable - see the documentation for
+			 * ibv_get_device_list().
+			 *
+			 * We do not save the device list, as that
+			 * means that we can't free it up on a
+			 * failed activate. Instead, we will redo the
+			 * ibv_get_device_list() and the search in the
+			 * activate routine.
+			 */
+			p->activate_op = rdmasniff_activate;
 		}
-	} else {
-		port_num = 1;
 	}
 
-	for (i = 0; i < numdev; ++i) {
-		if (strlen(dev_list[i]->name) == namelen &&
-		    !strncmp(device, dev_list[i]->name, namelen)) {
-			*is_ours = 1;
-
-			p = PCAP_CREATE_COMMON(ebuf, struct pcap_rdmasniff);
-			if (p) {
-				p->activate_op = rdmasniff_activate;
-				priv = p->priv;
-				priv->rdma_device = dev_list[i];
-				priv->port_num = port_num;
-			}
-			break;
-		}
-	}
-
+	/*
+	 * Free up the device list.
+	 */
 	ibv_free_device_list(dev_list);
 	return p;
 }
@@ -434,7 +659,17 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 
 	dev_list = ibv_get_device_list(&numdev);
 	if (!dev_list) {
-		return 0;
+		if (errno == ENOSYS) {
+			/*
+			 * No kernel support for RDMA, so no RDMA
+			 * devices, so nothing more for us to do.
+			 */
+			return 0;
+		}
+		pcapint_fmt_errmsg_for_errno(err_str,
+					     PCAP_ERRBUF_SIZE, errno,
+					     "ibv_get_device_list() failed");
+		return PCAP_ERROR;
 	}
 
 	for (i = 0; i < numdev; ++i) {
@@ -443,7 +678,7 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 * "connected" apply here?
 		 */
 		if (!pcapint_add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
-			ret = -1;
+			ret = PCAP_ERROR;
 			break;
 		}
 	}
