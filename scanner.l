@@ -130,7 +130,6 @@ void pcap_set_column(int, yyscan_t);
 #endif /* _WIN32 */
 
 #include <pcap/namedb.h>
-#include "grammar.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
