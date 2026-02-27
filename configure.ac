@@ -1730,8 +1730,6 @@ AC_ARG_ENABLE([remote],
    [enableval=no])
 case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
-	AC_WARN([Remote packet capture may expose libpcap-based applications])
-	AC_WARN([to attacks by malicious remote capture servers!])
 	#
 	# rpcapd requires pthreads on UN*X.
 	#
@@ -3224,4 +3222,13 @@ AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap
 	rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile
 	testprogs/Makefile)
+AS_IF([test "x$enable_remote" = xyes],
+  [AC_MSG_WARN([
+
+	***  REMOTE PACKET CAPTURE IS ENABLED  ***
+
+	The --enable-remote feature is experimental and is not ready for
+	production use. Remote packet capture may expose libpcap-based
+	applications to attacks by malicious remote capture servers!
+  ])])
 exit 0
