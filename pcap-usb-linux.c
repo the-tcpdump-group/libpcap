@@ -211,10 +211,15 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 }
 
 /*
- * Matches what's in mon_bin.c in the Linux kernel.
+ * Matches what's in mon_bin.c in older Linux kernels.
  */
-#define MIN_RING_SIZE	(8*1024)
-#define MAX_RING_SIZE	(1200*1024)
+#define MIN_RING_SIZE		(8*1024)
+#define MAX_RING_SIZE_1200K	(1200*1024)
+
+/*
+ * The maximum ring size in newer kernels.
+ */
+#define MAX_RING_SIZE_64M	(64*1024*1024)
 
 static int
 usb_set_ring_size(pcap_t* handle, int header_size)
@@ -226,10 +231,10 @@ usb_set_ring_size(pcap_t* handle, int header_size)
 	 *  2) descriptors, for isochronous transfers;
 	 *  3) the payload.
 	 *
-	 * The kernel buffer has a size, defaulting to 300KB, with a
-	 * minimum of 8KB and a maximum of 1200KB.  The size is set with
-	 * the MON_IOCT_RING_SIZE ioctl; the size passed in is rounded up
-	 * to a page size.
+	 * The kernel buffer has a size, defaulting to 300 KiB, with a
+	 * minimum of 8 KiB and a maximum of 64 MiB (1200 KiB on older
+	 * kernels).  The size is set with the MON_IOCT_RING_SIZE ioctl;
+	 * the size passed in is rounded up to a page size.
 	 *
 	 * No more than {buffer size}/5 bytes worth of payload is saved.
 	 * Therefore, if we subtract the fixed-length size from the
@@ -248,18 +253,19 @@ usb_set_ring_size(pcap_t* handle, int header_size)
 
 	/*
 	 * Will this get an error?
-	 * (There's no way to query the minimum or maximum, so we just
-	 * copy the value from the kernel source.  We don't round it
-	 * up to a multiple of the page size.)
+	 * (There's no way to query the minimum or maximum, so we start
+	 * with the new maximum, and, if that fails with EINVAL, try
+	 * the old maximum.  We don't round it up to a multiple of the
+	 * page size.)
 	 */
-	if (ring_size > MAX_RING_SIZE) {
+	if (ring_size > MAX_RING_SIZE_64M) {
 		/*
 		 * Yes.  Lower the ring size to the maximum, and set the
 		 * snapshot length to the value that would give us a
 		 * maximum-size ring.
 		 */
-		ring_size = MAX_RING_SIZE;
-		handle->snapshot = header_size + (MAX_RING_SIZE/5);
+		ring_size = MAX_RING_SIZE_64M;
+		handle->snapshot = header_size + (MAX_RING_SIZE_64M/5);
 	} else if (ring_size < MIN_RING_SIZE) {
 		/*
 		 * Yes.  Raise the ring size to the minimum, but leave
@@ -270,12 +276,36 @@ usb_set_ring_size(pcap_t* handle, int header_size)
 		ring_size = MIN_RING_SIZE;
 	}
 
-	if (ioctl(handle->fd, MON_IOCT_RING_SIZE, ring_size) == -1) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Can't set ring size from fd %d", handle->fd);
-		return -1;
+	if (ioctl(handle->fd, MON_IOCT_RING_SIZE, ring_size) == 0) {
+		/* It worked. */
+		return ring_size;
 	}
-	return ring_size;
+
+	/*
+	 * It failed.  If the error was EINVAL, and the ring size
+	 * was bigger than the old maximum, we may be on a kernel
+	 * that doesn't support ring sizes that large.
+	 */
+	if (errno == EINVAL && ring_size > MAX_RING_SIZE_1200K) {
+		/*
+		 * Try again with the old maximum.
+		 */
+		ring_size = MAX_RING_SIZE_1200K;
+		handle->snapshot = header_size + (MAX_RING_SIZE_1200K/5);
+		if (ioctl(handle->fd, MON_IOCT_RING_SIZE, ring_size) == 0) {
+			/* That worked. */
+			return ring_size;
+		}
+	}
+
+	/*
+	 * Either the first ioctl failed for some reason other than
+	 * EINVAL with a ring size bigger than the old maximum, or
+	 * the second one failed.  Report the error.
+	 */
+	pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    errno, "Can't set ring size from fd %d", handle->fd);
+	return -1;
 }
 
 static
@@ -461,12 +491,9 @@ usb_activate(pcap_t* handle)
 	 * Turn a negative snapshot value (invalid), a snapshot value of
 	 * 0 (unspecified), or a value bigger than the normal maximum
 	 * value, into the maximum allowed value.
-	 *
-	 * If some application really *needs* a bigger snapshot
-	 * length, we should just increase MAXIMUM_SNAPLEN.
 	 */
-	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
-		handle->snapshot = MAXIMUM_SNAPLEN;
+	if (handle->snapshot <= 0 || handle->snapshot > MAX_RING_SIZE_64M/5)
+		handle->snapshot = MAX_RING_SIZE_64M/5;
 
 	/* Initialize some components of the pcap structure. */
 	handle->bufsize = handle->snapshot;
