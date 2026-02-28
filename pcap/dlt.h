@@ -1687,6 +1687,11 @@
  * direction, any protocol or any data integrity/consistency whatsoever.
  */
 #define DLT_DEBUG_ONLY		303
+/*
+ * MaxLinear DSA ethernet switch protocol.
+ * Requested by Peter Enderborg <peterend@axis.com>.
+ */
+#define DLT_DSA_TAG_GSW1XX	304
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1699,6 +1704,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	303	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	304	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
