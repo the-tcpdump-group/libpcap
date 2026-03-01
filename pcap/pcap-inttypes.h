@@ -95,4 +95,37 @@
   #include <inttypes.h>
 #endif /* defined(_MSC_VER) */
 
+#include <string.h>	/* for memcpy() */
+
+/*
+ * Some data structures have 64-bit values that are guaranteed to be
+ * on a 4-byte boundary but are not guaranteeed to be aligned on an
+ * 8-byte boundary.
+ */
+typedef struct {
+	uint32_t halves[2];
+} pcap_4_byte_aligned_uint64;
+
+static inline
+uint64_t pcap_4_byte_aligned_uint64_val(pcap_4_byte_aligned_uint64 val)
+{
+	uint64_t result;
+
+	memcpy(&result, &val, 8);
+	return result;
+}
+
+typedef struct {
+	uint32_t halves[2];
+} pcap_4_byte_aligned_int64;
+
+static inline
+int64_t pcap_4_byte_aligned_int64_val(pcap_4_byte_aligned_int64 val)
+{
+	int64_t result;
+
+	memcpy(&result, &val, 8);
+	return result;
+}
+
 #endif /* pcap/pcap-inttypes.h */

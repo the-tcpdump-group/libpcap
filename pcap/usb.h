@@ -77,7 +77,7 @@ typedef struct _iso_rec {
  * Appears at the front of each packet in DLT_USB_LINUX captures.
  */
 typedef struct _usb_header {
-	uint64_t id;
+	pcap_4_byte_aligned_uint64 id;
 	uint8_t event_type;
 	uint8_t transfer_type;
 	uint8_t endpoint_number;
@@ -85,7 +85,7 @@ typedef struct _usb_header {
 	uint16_t bus_id;
 	char setup_flag;/*if !=0 the urb setup header is not present*/
 	char data_flag; /*if !=0 no urb data is present*/
-	int64_t ts_sec;
+	pcap_4_byte_aligned_int64 ts_sec;
 	int32_t ts_usec;
 	int32_t status;
 	uint32_t urb_len;
@@ -102,7 +102,7 @@ typedef struct _usb_header {
  * Appears at the front of each packet in DLT_USB_LINUX_MMAPPED captures.
  */
 typedef struct _usb_header_mmapped {
-	uint64_t id;
+	pcap_4_byte_aligned_uint64 id;
 	uint8_t event_type;
 	uint8_t transfer_type;
 	uint8_t endpoint_number;
@@ -110,7 +110,7 @@ typedef struct _usb_header_mmapped {
 	uint16_t bus_id;
 	char setup_flag;/*if !=0 the urb setup header is not present*/
 	char data_flag; /*if !=0 no urb data is present*/
-	int64_t ts_sec;
+	pcap_4_byte_aligned_int64 ts_sec;
 	int32_t ts_usec;
 	int32_t status;
 	uint32_t urb_len;
