@@ -520,6 +520,28 @@ nfqueue_send_config_mode(const pcap_t *handle, uint16_t group_id, uint8_t copy_m
 }
 
 static int
+netfilter_handle_send_msg_error(pcap_t *handle, const char *tag)
+{
+	int ret;
+
+	if (errno == EPERM) {
+		/*
+		 * This requires CAP_NET_ADMIN, and we don't
+		 * have it.
+		 */
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "%s failed - CAP_NET_ADMIN may be required",
+				 tag);
+		ret = PCAP_ERROR_PERM_DENIED;
+	} else {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+		    PCAP_ERRBUF_SIZE, errno, "%s", tag);
+		ret = PCAP_ERROR;
+	}
+	return ret;
+}
+
+static int
 netfilter_activate(pcap_t* handle)
 {
 	const char *dev = handle->opt.device;
@@ -527,6 +549,7 @@ netfilter_activate(pcap_t* handle)
 	int group_count = 0;
 	nftype_t type = OTHER;
 	int i;
+	int ret;
 
 	if (strncmp(dev, NFLOG_IFACE, strlen(NFLOG_IFACE)) == 0) {
 		dev += strlen(NFLOG_IFACE);
@@ -619,6 +642,7 @@ netfilter_activate(pcap_t* handle)
 			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno,
 			    "Can't allocate DLT list");
+			ret = PCAP_ERROR;
 			goto close_fail;
 		}
 		handle->dlt_list[0] = DLT_NFLOG;
@@ -631,66 +655,54 @@ netfilter_activate(pcap_t* handle)
 	if (!handle->buffer) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't allocate dump buffer");
+		ret = PCAP_ERROR;
 		goto close_fail;
 	}
 
 	if (type == NFLOG) {
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			pcapint_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "NFULNL_CFG_CMD_PF_UNBIND");
+			ret = netfilter_handle_send_msg_error(handle, "NFULNL_CFG_CMD_PF_UNBIND");
 			goto close_fail;
 		}
 
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			pcapint_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "NFULNL_CFG_CMD_PF_BIND");
+			ret = netfilter_handle_send_msg_error(handle, "NFULNL_CFG_CMD_PF_BIND");
 			goto close_fail;
 		}
 
 		/* Bind socket to the nflog groups */
 		for (i = 0; i < group_count; i++) {
 			if (nflog_send_config_cmd(handle, groups[i], NFULNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				pcapint_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "Can't listen on group index");
+				ret = netfilter_handle_send_msg_error(handle, "Can't listen on group index");
 				goto close_fail;
 			}
 
 			if (nflog_send_config_mode(handle, groups[i], NFULNL_COPY_PACKET, handle->snapshot) < 0) {
-				pcapint_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "NFULNL_COPY_PACKET");
+				ret = netfilter_handle_send_msg_error(handle, "NFULNL_COPY_PACKET");
 				goto close_fail;
 			}
 		}
 
 	} else {
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			pcapint_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "NFQNL_CFG_CMD_PF_UNBIND");
+			ret = netfilter_handle_send_msg_error(handle, "NFQNL_CFG_CMD_PF_UNBIND");
 			goto close_fail;
 		}
 
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			pcapint_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "NFQNL_CFG_CMD_PF_BIND");
+			ret = netfilter_handle_send_msg_error(handle, "NFQNL_CFG_CMD_PF_BIND");
 			goto close_fail;
 		}
 
 		/* Bind socket to the nfqueue groups */
 		for (i = 0; i < group_count; i++) {
 			if (nfqueue_send_config_cmd(handle, groups[i], NFQNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				pcapint_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "Can't listen on group index");
+				ret = netfilter_handle_send_msg_error(handle, "Can't listen on group index");
 				goto close_fail;
 			}
 
 			if (nfqueue_send_config_mode(handle, groups[i], NFQNL_COPY_PACKET, handle->snapshot) < 0) {
-				pcapint_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "NFQNL_COPY_PACKET");
+				ret = netfilter_handle_send_msg_error(handle, "NFQNL_COPY_PACKET");
 				goto close_fail;
 			}
 		}
@@ -711,6 +723,7 @@ netfilter_activate(pcap_t* handle)
 		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF, &handle->opt.buffer_size, sizeof(handle->opt.buffer_size)) == -1) {
 			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "SO_RCVBUF");
+			ret = PCAP_ERROR;
 			goto close_fail;
 		}
 	}
@@ -720,7 +733,7 @@ netfilter_activate(pcap_t* handle)
 
 close_fail:
 	pcapint_cleanup_live_common(handle);
-	return PCAP_ERROR;
+	return ret;
 }
 
 pcap_t *

@@ -182,7 +182,7 @@ static int
 bt_monitor_activate(pcap_t* handle)
 {
     struct sockaddr_hci addr;
-    int err = PCAP_ERROR;
+    int err;
     int opt;
 
     if (handle->opt.rfmon) {
@@ -224,6 +224,7 @@ bt_monitor_activate(pcap_t* handle)
     if (!handle->buffer) {
         pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't allocate dump buffer");
+        err = PCAP_ERROR;
         goto close_fail;
     }
 
@@ -233,8 +234,15 @@ bt_monitor_activate(pcap_t* handle)
     addr.hci_channel = HCI_CHANNEL_MONITOR;
 
     if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-            errno, "Can't attach to interface");
+        if (errno == EPERM) {
+            snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+                "Can't attach to interface - CAP_NET_RAW may be required");
+            err = PCAP_ERROR_PERM_DENIED;
+        } else {
+            pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+                errno, "Can't attach to interface");
+            err = PCAP_ERROR;
+        }
         goto close_fail;
     }
 
@@ -242,6 +250,7 @@ bt_monitor_activate(pcap_t* handle)
     if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt)) < 0) {
         pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
             errno, "Can't enable time stamp");
+        err = PCAP_ERROR;
         goto close_fail;
     }
 
