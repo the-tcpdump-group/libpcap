@@ -59,6 +59,22 @@
      ((u_short)(((((u_int)(y))&0xff)<<8) | \
                 ((((u_int)(y))&0xff00)>>8)))
 
+/*
+ * Byte-swap a pcap_4_byte_aligned_uint64;
+ */
+static inline pcap_4_byte_aligned_uint64 swap_4_byte_aligned_uint64(pcap_4_byte_aligned_uint64 val)
+{
+	return (pcap_4_byte_aligned_uint64){.halves[0] = SWAPLONG(val.halves[1]), .halves[1] = SWAPLONG(val.halves[0])};
+}
+
+/*
+ * Byte-swap a pcap_4_byte_aligned_int64;
+ */
+static inline pcap_4_byte_aligned_int64 swap_4_byte_aligned_int64(pcap_4_byte_aligned_int64 val)
+{
+	return (pcap_4_byte_aligned_int64){.halves[0] = SWAPLONG(val.halves[1]), .halves[1] = SWAPLONG(val.halves[0])};
+}
+
 extern void pcapint_post_process(int linktype, int swapped,
     struct pcap_pkthdr *hdr, u_char *data);
 
