@@ -121,6 +121,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix propagation of getprotobyname_r() errors.
       Don't treat permission failures trying to fetch connection status
         as errors, just indicate connection status unknown.
+    Linux Bluetooth monitor:
+      Report permission failures as PCAP_ERROR_PERM_DENIED and indicate
+        what privileges may be required.
+    Linux nflog:
+      Report permission failures as PCAP_ERROR_PERM_DENIED and indicate
+        what privileges may be required.
     Haiku:
       Look for ethers(5) in /boot/system/settings/network/.
     DAG:
