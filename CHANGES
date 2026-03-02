@@ -19,6 +19,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         (EOA) as of December 31, 2017
       Make pcap_compile() error messages more uniform and consistent.
       Deprecate pcap_compile_nopcap().
+      Deprecate bpf_filter().
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
@@ -28,6 +29,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix DECnet packet filtering on big-endian hosts.
       Fix various failures to reject invalid DECnet primitives.
       Require "vpi" and "vci" values to be within valid ranges.
+      Initialize the scratch memory store to 0.
       Require "[wlan] dir" integer value to be within range.
       Fix the != comparison for ATM and MTP field values.
       Require a live capture for all Linux BPF extensions.
@@ -52,9 +54,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       In "gateway" negate the host(s), but not the protocol.
       Reject "gateway" within MPLS, VXLAN or Geneve.
       In "net <n> mask <m>" catch ENOMEM for the "m" too.
-      Match both byte orders for the AF_ value when filtering DLT_NULL
-        and DLT_ENC savefiles. (issue #74)
-      Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization
@@ -76,8 +75,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Discuss Linux BPF extensions in the man pages.
       Note endianness in pcap_compile(3PCAP) and pcap_lookupnet(3PCAP).
       man: Document devices, interfaces and "any" better.
+      Remove list of OSes that support "ipv6-icmp"; all the ones we
+        support appear to do so.
       Add a README.qnx.md file.
-      Improve dcumentation of TLS supprt in rpcapd man page.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
@@ -159,29 +159,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     QNX:
       Disable zero-copy BPF to work around portability issues.
       Use "unix.h" instead of the missing <sysexits.h>.
-    RDMA:
-      Fix some resource freeing issues. (issues #1532 and #1300)
-      Improve error messages for activate and findalldevs failures.
-
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.7 libpcap release (so far!)
-    General:
-      Free p->opt.device on close, not on cleanup (issue #1615). Issue
-        reported by Harrison Green.
-    Source code:
-      Deprecate bpf_filter().
-    Packet filtering:
-      Initialize the scratch memory store to 0.
-    Windows:
-      Fix error return from memory allocation error.
-    Documentation:
-      Remove list of OSes that support "ipv6-icmp"; all the ones we
-        support appear to do so.
-      Fix pcap_next_ex(3PCAP) man page to clarify the PCAP_ERROR_BREAK
-        return value.
-    Building and testing:
-      CMake: Disable remote capture support on Windows by default.
-      RDMA: Avoid valgrind errors when calling rdmasniff_findalldevs().
 
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
