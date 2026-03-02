@@ -262,7 +262,7 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 	offset += 8;			/* skip past id */
 	if (hdr->caplen < offset)
 		return;
-	uhdr->id = SWAPLL(uhdr->id);
+	uhdr->id = swap_4_byte_aligned_uint64(uhdr->id);
 
 	offset += 4;			/* skip past various 1-byte fields */
 
@@ -276,7 +276,7 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 	offset += 8;			/* skip past ts_sec */
 	if (hdr->caplen < offset)
 		return;
-	uhdr->ts_sec = SWAPLL(uhdr->ts_sec);
+	uhdr->ts_sec = swap_4_byte_aligned_int64(uhdr->ts_sec);
 
 	offset += 4;			/* skip past ts_usec */
 	if (hdr->caplen < offset)
