@@ -2843,12 +2843,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         # XXX - add /Qspectre if that is really worth doing.
         #
         check_and_add_compiler_option(-wd5045)
-        #
-        # Suppress warning C4204 from MSVC
-        # "nonstandard extension used: non-constant aggregate initializer"
-        # with code that returns a compound literal. This is allowed by C99.
-        #
-        check_and_add_compiler_option(-wd4204)
 
         #
         # Treat all (remaining) warnings as errors.
