@@ -34,7 +34,7 @@ void rpcapd_log(log_priority priority, const char *message, ...)
 }
 
 void sock_initfuzz(const uint8_t *Data, size_t Size);
-int daemon_serviceloop(int sockctrl, int isactive, char *passiveClients, int nullAuthAllowed, char *data_port, int uses_ssl);
+#include "rpcapd/daemon.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     int sock;
