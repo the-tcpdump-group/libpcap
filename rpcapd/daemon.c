@@ -133,8 +133,8 @@ static int daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars,
 static int daemon_msg_open_req(uint8_t ver, struct daemon_slpars *pars,
     uint32_t plen, char *source, size_t sourcelen);
 static int daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars,
-    uint32_t plen, char *source, char *data_port, struct session **sessionp,
-    struct rpcap_sampling *samp_param, int uses_ssl);
+    uint32_t plen, const char *source, const char *data_port,
+    struct session **sessionp, struct rpcap_sampling *samp_param, int uses_ssl);
 static int daemon_msg_endcap_req(uint8_t ver, struct daemon_slpars *pars,
     struct session *session);
 
@@ -210,7 +210,7 @@ static int is_url(const char *source);
 
 int
 daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
-    int nullAuthAllowed, char *data_port, int uses_ssl)
+    int nullAuthAllowed, const char *data_port, int uses_ssl)
 {
 	uint8_t first_octet;
 	struct tls_record_header tls_header;
@@ -1946,7 +1946,7 @@ error:
 */
 static int
 daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
-    char *source, char *data_port, struct session **sessionp,
+    const char *source, const char *data_port, struct session **sessionp,
     struct rpcap_sampling *samp_param _U_, int uses_ssl)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
