@@ -6,6 +6,8 @@
 
 #include <pcap/pcap.h>
 
+#include "../../rpcapd/daemon.h"
+
 FILE * outfile = NULL;
 
 void fuzz_openFile(const char * name) {
@@ -34,7 +36,6 @@ void rpcapd_log(log_priority priority, const char *message, ...)
 }
 
 void sock_initfuzz(const uint8_t *Data, size_t Size);
-int daemon_serviceloop(int sockctrl, int isactive, char *passiveClients, int nullAuthAllowed, int uses_ssl);
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     int sock;
@@ -49,8 +50,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     if (sock == INVALID_SOCKET) {
         abort();
     }
-    //dummy socket, active, null auth allowed, no ssl
-    daemon_serviceloop(sock, 1, malloc(0), 1, 0);
+    //dummy socket, active, null auth allowed, no specified data port, no ssl
+    daemon_serviceloop(sock, 1, malloc(0), 1, "", 0);
 
     return 0;
 }
