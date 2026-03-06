@@ -2336,86 +2336,95 @@ daemon_msg_endcap_req(uint8_t ver, struct daemon_slpars *pars,
 static int
 daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *ctrl_ssl, struct session *session, uint32_t *plenp, char *errmsgbuf)
 {
-	int status;
-	struct rpcap_filter filter;
-	struct rpcap_filterbpf_insn insn;
-	struct bpf_insn *bf_insn;
-	struct bpf_program bf_prog;
-	unsigned int i;
+    int status;
+    struct rpcap_filter filter;
+    struct rpcap_filterbpf_insn insn;
+    struct bpf_insn *bf_insn = NULL;
+    struct bpf_program bf_prog;
+    unsigned int i;
+    int ret = 0;
 
-	status = rpcapd_recv(sockctrl, ctrl_ssl, (char *) &filter,
-	    sizeof(struct rpcap_filter), plenp, errmsgbuf);
-	if (status == -1)
-	{
-		return -1;
-	}
-	if (status == -2)
-	{
-		return -2;
-	}
+    status = rpcapd_recv(sockctrl, ctrl_ssl, (char *) &filter,
+        sizeof(struct rpcap_filter), plenp, errmsgbuf);
+    if (status == -1)
+    {
+        return -1;
+    }
+    if (status == -2)
+    {
+        return -2;
+    }
 
-	bf_prog.bf_len = ntohl(filter.nitems);
+    bf_prog.bf_len = ntohl(filter.nitems);
 
-	if (ntohs(filter.filtertype) != RPCAP_UPDATEFILTER_BPF)
-	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
-		return -2;
-	}
+    if (ntohs(filter.filtertype) != RPCAP_UPDATEFILTER_BPF)
+    {
+        snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
+        return -2;
+    }
 
-	if (bf_prog.bf_len > RPCAP_BPF_MAXINSNS)
-	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
-		    "Filter program is larger than the maximum size of %d instructions",
-		    RPCAP_BPF_MAXINSNS);
-		return -2;
-	}
-	bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
-	if (bf_insn == NULL)
-	{
-		pcapint_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
-		    errno, "malloc() failed");
-		return -2;
-	}
+    if (bf_prog.bf_len > RPCAP_BPF_MAXINSNS)
+    {
+        snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+            "Filter program is larger than the maximum size of %d instructions",
+            RPCAP_BPF_MAXINSNS);
+        return -2;
+    }
+    bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
+    if (bf_insn == NULL)
+    {
+        pcapint_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
+            errno, "malloc() failed");
+        return -2;
+    }
 
-	bf_prog.bf_insns = bf_insn;
+    bf_prog.bf_insns = bf_insn;
 
-	for (i = 0; i < bf_prog.bf_len; i++)
-	{
-		status = rpcapd_recv(sockctrl, ctrl_ssl, (char *) &insn,
-		    sizeof(struct rpcap_filterbpf_insn), plenp, errmsgbuf);
-		if (status == -1)
-		{
-			return -1;
-		}
-		if (status == -2)
-		{
-			return -2;
-		}
+    for (i = 0; i < bf_prog.bf_len; i++)
+    {
+        status = rpcapd_recv(sockctrl, ctrl_ssl, (char *) &insn,
+            sizeof(struct rpcap_filterbpf_insn), plenp, errmsgbuf);
+        if (status == -1)
+        {
+            ret = -1;
+            goto cleanup;
+        }
+        if (status == -2)
+        {
+            ret = -2;
+            goto cleanup;
+        }
 
-		bf_insn->code = ntohs(insn.code);
-		bf_insn->jf = insn.jf;
-		bf_insn->jt = insn.jt;
-		bf_insn->k = ntohl(insn.k);
-
-		bf_insn++;
-	}
+        bf_insn[i].code = ntohs(insn.code);
+        bf_insn[i].jf   = insn.jf;
+        bf_insn[i].jt   = insn.jt;
+        bf_insn[i].k    = ntohl(insn.k);
+    }
 
 	//
 	// XXX - pcap_setfilter() should do the validation for us.
 	//
-	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
-	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains invalid instructions");
-		return -2;
-	}
+    if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
+    {
+        snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains invalid instructions");
+        ret = -2;
+        goto cleanup;
+    }
 
-	if (pcap_setfilter(session->fp, &bf_prog))
-	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
-		return -2;
-	}
+    if (pcap_setfilter(session->fp, &bf_prog))
+    {
+        snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
+        ret = -2;
+        goto cleanup;
+    }
 
-	return 0;
+    ret = 0;
+
+cleanup:
+    if (ret != 0 && bf_insn != NULL)
+        free(bf_insn);
+
+    return ret;
 }
 
 static int
