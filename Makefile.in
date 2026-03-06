@@ -774,11 +774,11 @@ tags: $(TAGFILES)
 
 #
 # Use git archive piped to tar to construct a subdirectory whose name
-# is libpcap-{release}, containing all the checked-in source files,
-# and then run autoreconf in that directory to generate the configure
-# script and other files from that source. Then remove autom4te.cache,
-# construct the release tarball from that subdirectory, and remove
-# the subdirectory.
+# is libpcap-{release}, containing all the checked-in source files
+# that are in RELEASE_FILES, and then run autoreconf in that directory
+# to generate the configure script and other files from that source.
+# Then remove autom4te.cache, construct the release tarball from that
+# subdirectory, and remove the subdirectory.
 #
 # The --format=tar is to force git archive to write a non-compressed
 # archive, in case the platform's tar command doesn't have built-in
