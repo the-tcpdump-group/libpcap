@@ -43,7 +43,7 @@
 // for active mode.
 //
 int daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
-    int nullAuthAllowed, char *data_port, int uses_ssl);
+    int nullAuthAllowed, const char *data_port, int uses_ssl);
 
 void sleep_secs(int secs);
 
