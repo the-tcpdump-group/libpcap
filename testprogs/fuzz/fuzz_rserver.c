@@ -5,6 +5,7 @@
 #include <stdarg.h>
 
 #include <pcap/pcap.h>
+#include "rpcapd/daemon.h"
 
 FILE * outfile = NULL;
 
@@ -34,7 +35,6 @@ void rpcapd_log(log_priority priority, const char *message, ...)
 }
 
 void sock_initfuzz(const uint8_t *Data, size_t Size);
-#include "rpcapd/daemon.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     int sock;
