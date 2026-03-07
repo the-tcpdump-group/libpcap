@@ -327,6 +327,17 @@ struct addrinfo {
 #define MPLS_LABEL_MAX 0xfffffU
 #define MPLS_LABEL_SHIFT 12
 
+// Offsets of various protocol header flags.
+#define IPV4_FLAGS_OFFSET 6
+#define TCP_FLAGS_OFFSET  12
+
+struct proto_flag {
+	const char *tok;
+	uint8_t offset;
+	uint8_t bitmask;
+	struct block *(*testfunc)(compiler_state_t *, const uint32_t, struct slist *);
+};
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -785,6 +796,7 @@ static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
 static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
 static struct slist *xfer_to_x(compiler_state_t *, const struct arth *);
 static struct slist *xfer_to_a(compiler_state_t *, const struct arth *);
+static struct block *gen_flag(compiler_state_t *, const char *, const uint8_t);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
 static struct block *gen_len(compiler_state_t *, int, int);
 static struct block *gen_encap_ll_check(compiler_state_t *cstate);
@@ -1040,6 +1052,7 @@ tqkw(const unsigned id)
 		[Q_PROTO] = "proto",
 		[Q_PROTOCHAIN] = "protochain",
 		[Q_PORTRANGE] = "portrange",
+		[Q_FLAG] = "flag",
 	};
 	return qual2kw("type", id, tokens, sizeof(tokens) / sizeof(tokens[0]));
 }
@@ -6726,6 +6739,103 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/*NOTREACHED*/
 }
 
+static struct block *
+gen_ip_flag(compiler_state_t *cstate, const struct proto_flag *f)
+{
+	struct block *ipv4 = gen_proto_abbrev_internal(cstate, Q_IP);
+	struct block *flagstate = f->testfunc(cstate, f->bitmask,
+	    gen_load_a(cstate, OR_LINKPL, IPV4_FLAGS_OFFSET + f->offset, BPF_B));
+	return gen_and(ipv4, flagstate);
+}
+
+static struct block *
+gen_tcp_flag(compiler_state_t *cstate, const struct proto_flag *f)
+{
+	struct slist *s;
+
+	/*
+	 * gen_proto() alone would not be sufficient to match correctly: in
+	 * this case the packet must be the first fragment for the offset to
+	 * be in the TCP header.
+	 */
+	struct block *b4 = gen_proto_abbrev_internal(cstate, Q_IP);
+	b4 = gen_and(b4, gen_ip_proto(cstate, IPPROTO_TCP));
+	b4 = gen_and(b4, gen_ipfrag(cstate));
+	s = gen_load_a(cstate, OR_TRAN_IPV4, TCP_FLAGS_OFFSET + f->offset, BPF_B);
+	b4 = gen_and(b4, f->testfunc(cstate, f->bitmask, s));
+
+	/*
+	 * gen_proto() would not match correctly because it also matches
+	 * IPPROTO_FRAGMENT, in which case the offset below would not be in
+	 * the TCP header.
+	 */
+	struct block *b6 = gen_proto_abbrev_internal(cstate, Q_IPV6);
+	b6 = gen_and(b6, gen_ip6_proto(cstate, IPPROTO_TCP));
+	s = gen_load_a(cstate, OR_TRAN_IPV6, TCP_FLAGS_OFFSET + f->offset, BPF_B);
+	b6 = gen_and(b6, f->testfunc(cstate, f->bitmask, s));
+
+	return gen_or(b4, b6);
+}
+
+static struct block *
+gen_flag(compiler_state_t *cstate, const char *name, const uint8_t proto)
+{
+	// A 2-bit mask in one octet starting at IPV4_FLAGS_OFFSET.
+	static const struct proto_flag ip_flags[] = {
+		{"mf-set",     0, 1U << 5, gen_set},
+		{"mf-cleared", 0, 1U << 5, gen_unset},
+		{"df-set",     0, 1U << 6, gen_set},
+		{"df-cleared", 0, 1U << 6, gen_unset},
+		{NULL, 0, 0, NULL}
+	};
+
+	// A 9-bit mask in 2 octets starting at TCP_FLAGS_OFFSET.
+	static const struct proto_flag tcp_flags[] = {
+		{"fin-set",     1, 1U << 0, gen_set},
+		{"fin-cleared", 1, 1U << 0, gen_unset},
+		{"syn-set",     1, 1U << 1, gen_set},
+		{"syn-cleared", 1, 1U << 1, gen_unset},
+		{"rst-set",     1, 1U << 2, gen_set},
+		{"rst-cleared", 1, 1U << 2, gen_unset},
+		{"psh-set",     1, 1U << 3, gen_set},
+		{"psh-cleared", 1, 1U << 3, gen_unset},
+		{"ack-set",     1, 1U << 4, gen_set},
+		{"ack-cleared", 1, 1U << 4, gen_unset},
+		{"urg-set",     1, 1U << 5, gen_set},
+		{"urg-cleared", 1, 1U << 5, gen_unset},
+		{"ece-set",     1, 1U << 6, gen_set},
+		{"ece-cleared", 1, 1U << 6, gen_unset},
+		{"cwr-set",     1, 1U << 7, gen_set},
+		{"cwr-cleared", 1, 1U << 7, gen_unset},
+		{"ae-set",      0, 1U << 0, gen_set},
+		{"ae-cleared",  0, 1U << 0, gen_unset},
+		{NULL, 0, 0, NULL}
+	};
+
+	const struct proto_flag *flag;
+	struct block *(*genfunc)(compiler_state_t *, const struct proto_flag *);
+	switch (proto) {
+	case Q_IP:
+		flag = ip_flags;
+		genfunc = gen_ip_flag;
+		break;
+	case Q_TCP:
+		flag = tcp_flags;
+		genfunc = gen_tcp_flag;
+		break;
+	case Q_DEFAULT:
+		bpf_error(cstate, "'%s' must be proto-qualified", tqkw(Q_FLAG));
+	default:
+		bpf_error(cstate, ERRSTR_INVALID_QUAL, pqkw(proto), tqkw(Q_FLAG));
+	}
+	while (flag->tok) {
+		if (! strcmp(name, flag->tok))
+			return genfunc(cstate, flag);
+		flag++;
+	}
+	bpf_error(cstate, "invalid '%s %s' ID '%s'", pqkw(proto), tqkw(Q_FLAG), name);
+}
+
 /*
  * Convert a non-numeric name to a port number.
  */
@@ -7157,6 +7267,10 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_PROTOCHAIN:
 		return gen_protochain(cstate, lookup_proto(cstate, name, q), proto);
 #endif /* !defined(NO_PROTOCHAIN) */
+
+	case Q_FLAG:
+		// q.dir == Q_DEFAULT (non-directional in the grammar)
+		return gen_flag(cstate, name, q.proto);
 
 	case Q_UNDEF:
 		syntax(cstate);
