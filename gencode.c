@@ -1901,6 +1901,13 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
+	case DLT_DSA_TAG_GSW1XX:
+            cstate->off_linktype.constant_part = 20;
+		cstate->off_linkpl.constant_part = 22;	/* Ethernet header length + Special Tag Length */
+		cstate->off_nl = 0;		/* Ethernet II */
+		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
+		break;
+
 	case DLT_SLIP:
 		/*
 		 * SLIP doesn't have a link level type.  The 16 byte
@@ -3968,6 +3975,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_NETANALYZER_TRANSPARENT:
 	case DLT_DSA_TAG_BRCM:
 	case DLT_DSA_TAG_DSA:
+        case DLT_DSA_TAG_GSW1XX:
 		/* Geneve has an EtherType regardless of whether there is an
 		 * L2 header. VXLAN always has an EtherType. */
 		if (!cstate->is_encap)
