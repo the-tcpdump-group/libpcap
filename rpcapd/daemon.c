@@ -2089,7 +2089,7 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	{
 		hints.ai_flags = AI_PASSIVE;
 
-		if (data_port[0] != '\0')
+		if (data_port != NULL && data_port[0] != '\0')
 		{
 			// Use the specified network port
 			addrinfo = sock_initaddress(NULL, data_port, &hints,
