@@ -581,9 +581,19 @@ found:
 	p->breakloop_op = pcapint_breakloop_common;
 
 	/*
-	 * Savefiles never require special BPF code generation.
+	 * For link-layer headers in which the packet type is indicated
+	 * by an AF_ value, we don't know what OS generated it, so we
+	 * don't know what numerical value corresponds to AF_INET6, and
+	 * we don't know the byte order of the host that originally
+	 * captured the packets in the file (as opposed to the host
+	 * that *wrote* this file), so we don't know the byte order
+	 * of multi-byte AF_ values.
+	 *
+	 * That requires different filtering code than a live capture.
+	 *
+	 * Savefiles don't require any other special BPF code generation.
 	 */
-	p->bpf_codegen_flags = 0;
+	p->bpf_codegen_flags = BPF_SAVEFILE_AF_HANDLING;
 
 	p->activated = 1;
 
