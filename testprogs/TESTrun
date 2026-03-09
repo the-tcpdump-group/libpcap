@@ -394,6 +394,12 @@ sub skip_little_endian {
 # * aliases (mandatory, array of strings): must contain at least one string,
 #   each string is a filter expression and must produce exactly the same
 #   bytecode (applies to "opt" and "unopt" separately)
+# * generate_offline_filter (optional, string): if defined, generate a
+#   filter for a savefile rather than a live capture, with "unswapped"
+#   causing the code to be generated for a savefile in the same byte
+#   order of the host running the test and "swapped" causing the code
+#   to be generated for a savefile in the opposite byte order of the
+#   host running the test
 # * snaplen (optional, int): the snapshot length to use for the test
 # * opt (optional, [multi-line] string or undef): the expected optimized filter
 #   program
@@ -9440,6 +9446,12 @@ my @filter_accept_blocks = (
 	# DLT_NULL and DLT_ENC depend on the values of AF_INET and AF_INET6,
 	# which are OS-specific, and on the host byte order.  Exercise these
 	# dimensions completely for DLT_NULL only.
+	#
+	# We run these tests both for filters generated for live captures,
+	# which only need to test for the AF_ values and byte order of the
+	# host doing the capture, and for filters generated for savefiles,
+	# which need to test for all possible AF_ values and both byte
+	# orders.
 	{
 		name => 'link_proto_ip_1LE_NULL',
 		skip => skip_big_endian() ||
@@ -9649,6 +9661,158 @@ my @filter_accept_blocks = (
 			',
 	}, # link_proto_stp_NULL
 	{
+		name => 'link_proto_ip_offline_unswapped_LE_NULL',
+		skip => skip_big_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'unswapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_unswapped_LE_NULL
+	{
+		name => 'link_proto_ip_offline_swapped_LE_NULL',
+		skip => skip_big_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'swapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_swapped_LE_NULL
+	{
+		name => 'link_proto_ip_offline_unswapped_BE_NULL',
+		skip => skip_little_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'unswapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_unswapped_BE_NULL
+	{
+		name => 'link_proto_ip_offline_swapped_BE_NULL',
+		skip => skip_little_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'swapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_swapped_BE_NULL
+	{
+		name => 'link_proto_ip6_offline_unswapped_LE_NULL',
+		skip => skip_big_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'unswapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e000000      jt 4	jf 2
+			(002) jeq      #0x18000000      jt 4	jf 3
+			(003) jeq      #0x1c000000      jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e000000      jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18000000      jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c000000      jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_unswapped_LE_NULL
+	{
+		name => 'link_proto_ip6_offline_swapped_LE_NULL',
+		skip => skip_big_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'swapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_swapped_LE_NULL
+	{
+		name => 'link_proto_ip6_offline_unswapped_BE_NULL',
+		skip => skip_little_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'unswapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_unswapped_BE_NULL
+	{
+		name => 'link_proto_ip6_offline_swapped_BE_NULL',
+		skip => skip_little_endian(),
+		DLT => 'NULL',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'swapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e000000      jt 4	jf 2
+			(002) jeq      #0x18000000      jt 4	jf 3
+			(003) jeq      #0x1c000000      jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e000000      jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18000000      jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c000000      jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_swapped_BE_NULL
+	{
 		name => 'link_proto_ip_2LE_ENC',
 		skip => skip_big_endian() ||
 			skip_os_not ('linux'),
@@ -9786,6 +9950,79 @@ my @filter_accept_blocks = (
 			',
 	}, # link_proto_ip6_30_LOOP
 	{
+		name => 'link_proto_ip_offline_unswapped_LOOP',
+		skip => skip_big_endian(),
+		DLT => 'LOOP',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'unswapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_unswapped_LOOP
+	{
+		name => 'link_proto_ip_offline_swapped_LOOP',
+		DLT => 'LOOP',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'swapped',
+		optunopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_swapped_LOOP
+	{
+		name => 'link_proto_ip6_offline_LOOP_unswapped',
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'unswapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_unswapped_LOOP
+	{
+		name => 'link_proto_ip6_offline_swapped_LOOP',
+		DLT => 'LOOP',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'swapped',
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ld       [0]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+	}, # link_proto_ip6_offline_swapped_LOOP
+	{
 		name => 'link_proto_ip_2_PFLOG',
 		skip => skip_os ('haiku'),
 		DLT => 'PFLOG',
@@ -9822,6 +10059,56 @@ my @filter_accept_blocks = (
 			(003) ret      #0
 			',
 	}, # link_proto_stp_PFLOG
+	{
+		name => 'link_proto_ip_offline_unswapped_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'unswapped',
+		optunopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_unswapped_PFLOG
+	{
+		name => 'link_proto_ip_offline_swapped_PFLOG',
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip'],
+		generate_offline_filter => 'swapped',
+		optunopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x2             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip_offline_swapped_PFLOG
+	{
+		name => 'link_proto_ip6_24_offline_unswapped_PFLOG',
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'unswapped',
+		optunopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x18            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_offline_unswapped_PFLOG
+	{
+		name => 'link_proto_ip6_24_offline_swapped_PFLOG',
+		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
+		DLT => 'PFLOG',
+		aliases => ['link proto \ip6'],
+		generate_offline_filter => 'swapped',
+		optunopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x18            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # link_proto_ip6_offline_swapped_PFLOG
 	{
 		name => 'link_proto_stp_ARCNET',
 		DLT => 'ARCNET',
@@ -29841,6 +30128,12 @@ sub run_filter_accept_test {
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
+	);
+	push @args, (
+		'-S',
+		$test->{generate_offline_filter}
+	) if $test->{generate_offline_filter};
+	push @args, (
 		$test->{DLT},
 	);
 	return run_generic_accept_test @args;
@@ -29961,6 +30254,7 @@ foreach my $test (@filter_accept_blocks) {
 					netmask => defined $test->{netmask} ? $test->{netmask} : undef,
 					optimize => int ($optunopt eq 'opt'),
 					linuxext => defined $test->{linuxext} && $test->{linuxext} == 1,
+					generate_offline_filter => defined $test->{generate_offline_filter} && $test->{generate_offline_filter},
 					expected => $multiline,
 				};
 			}
