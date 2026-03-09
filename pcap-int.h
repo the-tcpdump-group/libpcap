@@ -388,11 +388,11 @@ struct pcap {
  */
 #define BPF_SPECIAL_BASIC_HANDLING	0x00000002
 /*
- * Generatetests for both byte orders for multi-byte
+ * Generate tests for both byte orders for multi-byte
  * AF_ values and for all known AF_INET6 values; this is used when
  * reading a savefile rather than doing a live capture.
  */
-#define BPF_SAVEFILE_AF_HANDLING	0x00000004
+#define BPF_OFFLINE_AF_HANDLING	0x00000004
 
 /*
  * User data structure for the one-shot callback used for pcap_next()

@@ -81,14 +81,16 @@ PCAP_API void pcap_set_print_dot_graph(int);
 
 #ifdef __linux__
 #include <linux/filter.h> // SKF_AD_VLAN_TAG_PRESENT
+#endif // __linux__
+
 /*
  * pcap-int.h is a private header and should not be included by programs that
  * use libpcap.  This test program uses a special hack because it is the
  * simplest way to test internal code paths that otherwise would require
- * elevated privileges.  Do not do this in normal code.
+ * elevated privileges or that cannot be exercised otherwise.  Do not
+ * do this in normal code.
  */
 #include <pcap-int.h>
-#endif // __linux__
 
 static char *program_name;
 
@@ -297,6 +299,11 @@ main(int argc, char **argv)
 	int lflag = 0;
 #endif
 	int snaplen = MAXIMUM_SNAPLEN;
+	enum {
+		NOT_SAVEFILE_FILTER,
+		UNSWAPPED_SAVEFILE_FILTER,
+		SWAPPED_SAVEFILE_FILTER
+	} Sflag = NOT_SAVEFILE_FILTER;
 	char *p;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 
@@ -312,7 +319,7 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "hdF:gm:Os:lr:")) != -1) {
+	while ((op = getopt(argc, argv, "hdF:gm:Os:S:lr:")) != -1) {
 		switch (op) {
 
 		case 'h':
@@ -390,6 +397,15 @@ main(int argc, char **argv)
 			error(EX_USAGE, "libpcap and filtertest built without Linux BPF extensions");
 #endif
 
+		case 'S':
+			if (strcmp(optarg, "unswapped") == 0)
+				Sflag = UNSWAPPED_SAVEFILE_FILTER;
+			else if (strcmp(optarg, "swapped") == 0)
+				Sflag = SWAPPED_SAVEFILE_FILTER;
+			else
+				error(EX_USAGE, "invalid -S value \"%s\"", optarg);
+			break;
+
 		default:
 			usage(stderr);
 			/* NOTREACHED */
@@ -407,6 +423,8 @@ main(int argc, char **argv)
 		if (lflag)
 			warn("-l is a no-op with -r");
 #endif
+		if (Sflag != NOT_SAVEFILE_FILTER)
+			warn("-S is a no-op with -r");
 
 		char errbuf[PCAP_ERRBUF_SIZE];
 		if (NULL == (pd = pcap_open_offline(insavefile, errbuf)))
@@ -447,6 +465,14 @@ main(int argc, char **argv)
 		pcap_set_optimizer_debug(dflag);
 		pcap_set_print_dot_graph(gflag);
 #endif
+		if (Sflag != NOT_SAVEFILE_FILTER) {
+			/*
+			 * Make pcap_compile() generate code for a savefile
+			 * rather than a live capture.
+			 */
+			pd->bpf_codegen_flags |= BPF_OFFLINE_AF_HANDLING;
+			pd->swapped = (Sflag == SWAPPED_SAVEFILE_FILTER);
+		}
 	}
 
 	if (! infile)
@@ -519,7 +545,8 @@ usage(FILE *f)
 #ifdef __linux__
 	    "l"
 #endif
-	    "] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expr ]\n",
+	    " [ -S {unswapped|swapped} ] [ -F file ] [ -m netmask]\n"
+	    "       [ -s snaplen ] dlt [ expr ]\n",
 	    program_name);
 	(void)fprintf(f, "       (print the filter program bytecode)\n");
 	(void)fprintf(f,
@@ -539,6 +566,7 @@ usage(FILE *f)
 #ifdef BDEBUG
 	(void)fprintf(f, "  -g              print Graphviz dot graphs for the optimizer steps\n");
 #endif
+	(void)fprintf(f, "  -S {unswapped|swapped} generate filter code for a savefile\n");
 	(void)fprintf(f, "  -m <netmask>    use this netmask for pcap_compile(), e.g. 255.255.255.0\n");
 	(void)fprintf(f, "\n");
 	(void)fprintf(f, "Options common with tcpdump:\n");

@@ -593,7 +593,7 @@ found:
 	 *
 	 * Savefiles don't require any other special BPF code generation.
 	 */
-	p->bpf_codegen_flags = BPF_SAVEFILE_AF_HANDLING;
+	p->bpf_codegen_flags = BPF_OFFLINE_AF_HANDLING;
 
 	p->activated = 1;
 

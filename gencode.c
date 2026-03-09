@@ -2923,7 +2923,7 @@ gen_loopback_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		 * Then we run it through "htonl()", and generate
 		 * code to compare against the result.
 		 */
-		if ((cstate->bpf_pcap->bpf_codegen_flags & BPF_SAVEFILE_AF_HANDLING)
+		if ((cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING)
 		    && cstate->bpf_pcap->swapped)
 			ll_proto = SWAPLONG(ll_proto);
 		ll_proto = htonl(ll_proto);
@@ -4161,7 +4161,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 			 * possible values. and they might as well do
 			 * that even for live captures.)
 			 */
-			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SAVEFILE_AF_HANDLING) {
+			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING) {
 				/*
 				 * Savefile - check for all three
 				 * possible IPv6 values.
