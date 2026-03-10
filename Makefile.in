@@ -361,6 +361,7 @@ EXTRA_DIST = \
 	testprogs/capturetest.c \
 	testprogs/filtertest.c \
 	testprogs/findalldevstest.c \
+	testprogs/findalldevstest.supp \
 	testprogs/findalldevstest-perf.c \
 	testprogs/nonblocktest.c \
 	testprogs/opentest.c \

@@ -175,7 +175,7 @@ elif [ "$CMAKE" = no ]; then
     TRANSLATETEST_BIN="$VALGRIND_CMD testprogs/translatetest"
     export TRANSLATETEST_BIN
     run_after_echo "$MAKE_BIN" -s check
-    run_after_echo $VALGRIND_CMD testprogs/findalldevstest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=testprogs/findalldevstest.supp} testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
     run_after_echo $VALGRIND_CMD run/versiontest
@@ -184,7 +184,7 @@ else
     TRANSLATETEST_BIN="$VALGRIND_CMD run/translatetest"
     export TRANSLATETEST_BIN
     run_after_echo "$MAKE_BIN" -s check
-    run_after_echo $VALGRIND_CMD run/findalldevstest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=../testprogs/findalldevstest.supp} run/findalldevstest
 fi
 handle_matrix_debug
 if [ "$DELETE_PREFIX" = yes ]; then
