@@ -41,6 +41,7 @@ export LIBPCAP_CMAKE_TAINTED
 if "$VALGRIND_BIN" --version >/dev/null 2>&1; then
     VALGRIND_CMD="$VALGRIND_BIN --leak-check=full --error-exitcode=1 --quiet"
     export VALGRIND_CMD
+    echo_magenta 'Use Valgrind'
     # With Valgrind filtertest takes significantly longer to complete.
     : "${TEST_TIMEOUT:=5}"
     export TEST_TIMEOUT
