@@ -58,36 +58,47 @@ test_pcap_nametollc(const char *arg)
 	return EX_OK;
 }
 
-// pcapint_xdtoi() always returns a value.
+// Return 1 iff the given string parsed into the integer fine.
 static int
-test_pcapint_xdtoi(const char *arg)
+valid_unsigned_long(const char *arg, const unsigned long maxval,
+    unsigned long *output)
 {
 	char *endptr = NULL;
 	errno = 0;
 	unsigned long parsed = strtoul(arg, &endptr, 10);
 	if (endptr == arg) {
 		fprintf(stderr, "ERROR: no digits\n");
-		return EX_USAGE;
+		return 0;
 	}
 	if (*endptr) {
 		fprintf(stderr, "ERROR: invalid character '%c'\n", *endptr);
-		return EX_USAGE;
+		return 0;
 	}
 	if (errno) {
 		fprintf(stderr, "ERROR: errno %d\n", errno);
-		return EX_USAGE;
+		return 0;
 	}
 	char printed[PCAP_BUF_SIZE];
 	snprintf(printed, sizeof(printed), "%lu", parsed);
 	if (strcmp(arg, printed)) {
 		fprintf(stderr, "ERROR: there is other input besides the integer\n");
-		return EX_USAGE;
+		return 0;
 	}
-	if (parsed > UINT8_MAX) {
+	if (parsed > maxval) {
 		fprintf(stderr, "ERROR: the integer must be within the valid range\n");
-		return EX_USAGE;
+		return 0;
 	}
-	// Now ready to run the actual function.
+	*output = parsed;
+	return 1;
+}
+
+// pcapint_xdtoi() always returns a value.
+static int
+test_pcapint_xdtoi(const char *arg)
+{
+	unsigned long parsed;
+	if (! valid_unsigned_long(arg, UINT8_MAX, &parsed))
+		return EX_USAGE;
 	printf("OK: 0x%02x\n", pcapint_xdtoi((u_char)parsed));
 	return EX_OK;
 }
