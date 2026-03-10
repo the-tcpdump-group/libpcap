@@ -64,12 +64,6 @@
 #include <linux/filter.h>
 #endif
 
-enum {
-        BPF_S_ANC_NONE,
-        BPF_S_ANC_VLAN_TAG,
-        BPF_S_ANC_VLAN_TAG_PRESENT,
-};
-
 /*
  * Execute the filter program starting at pc on the packet p
  * wirelen is the length of the original packet
