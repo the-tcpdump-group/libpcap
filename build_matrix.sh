@@ -39,6 +39,7 @@ export LIBPCAP_CMAKE_TAINTED
 if command -v valgrind >/dev/null 2>&1; then
     VALGRIND_CMD="valgrind --leak-check=full --error-exitcode=1"
     export VALGRIND_CMD
+    echo_magenta 'Use Valgrind'
 fi
 
 run_after_echo git show --oneline -s | cat
