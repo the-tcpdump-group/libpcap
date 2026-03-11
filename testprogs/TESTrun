@@ -9666,11 +9666,20 @@ my @filter_accept_blocks = (
 		DLT => 'NULL',
 		aliases => ['link proto \ip'],
 		generate_offline_filter => 'unswapped',
-		optunopt => '
+		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x2000000       jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x2             jt 3	jf 2
+			(002) jeq      #0x2000000       jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 4	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x2000000       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
 			',
 	}, # link_proto_ip_offline_unswapped_LE_NULL
 	{
@@ -9679,11 +9688,20 @@ my @filter_accept_blocks = (
 		DLT => 'NULL',
 		aliases => ['link proto \ip'],
 		generate_offline_filter => 'swapped',
-		optunopt => '
+		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x2             jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x2000000       jt 3	jf 2
+			(002) jeq      #0x2             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 4	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x2             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
 			',
 	}, # link_proto_ip_offline_swapped_LE_NULL
 	{
@@ -9692,11 +9710,20 @@ my @filter_accept_blocks = (
 		DLT => 'NULL',
 		aliases => ['link proto \ip'],
 		generate_offline_filter => 'unswapped',
-		optunopt => '
+		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x2             jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x2             jt 3	jf 2
+			(002) jeq      #0x2000000       jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2             jt 4	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x2000000       jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
 			',
 	}, # link_proto_ip_offline_unswapped_BE_NULL
 	{
@@ -9705,11 +9732,20 @@ my @filter_accept_blocks = (
 		DLT => 'NULL',
 		aliases => ['link proto \ip'],
 		generate_offline_filter => 'swapped',
-		optunopt => '
+		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x2000000       jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x2000000       jt 3	jf 2
+			(002) jeq      #0x2             jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       [0]
+			(001) jeq      #0x2000000       jt 4	jf 2
+			(002) ld       [0]
+			(003) jeq      #0x2             jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
 			',
 	}, # link_proto_ip_offline_swapped_BE_NULL
 	{
@@ -9720,21 +9756,30 @@ my @filter_accept_blocks = (
 		generate_offline_filter => 'unswapped',
 		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e000000      jt 4	jf 2
-			(002) jeq      #0x18000000      jt 4	jf 3
-			(003) jeq      #0x1c000000      jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0x1e            jt 7	jf 2
+			(002) jeq      #0x18            jt 7	jf 3
+			(003) jeq      #0x1c            jt 7	jf 4
+			(004) jeq      #0x1e000000      jt 7	jf 5
+			(005) jeq      #0x18000000      jt 7	jf 6
+			(006) jeq      #0x1c000000      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 		unopt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e000000      jt 6	jf 2
+			(001) jeq      #0x1e            jt 12	jf 2
 			(002) ld       [0]
-			(003) jeq      #0x18000000      jt 6	jf 4
+			(003) jeq      #0x18            jt 12	jf 4
 			(004) ld       [0]
-			(005) jeq      #0x1c000000      jt 6	jf 7
-			(006) ret      #262144
-			(007) ret      #0
+			(005) jeq      #0x1c            jt 12	jf 6
+			(006) ld       [0]
+			(007) jeq      #0x1e000000      jt 12	jf 8
+			(008) ld       [0]
+			(009) jeq      #0x18000000      jt 12	jf 10
+			(010) ld       [0]
+			(011) jeq      #0x1c000000      jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # link_proto_ip6_offline_unswapped_LE_NULL
 	{
@@ -9745,21 +9790,30 @@ my @filter_accept_blocks = (
 		generate_offline_filter => 'swapped',
 		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e            jt 4	jf 2
-			(002) jeq      #0x18            jt 4	jf 3
-			(003) jeq      #0x1c            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0x1e000000      jt 7	jf 2
+			(002) jeq      #0x18000000      jt 7	jf 3
+			(003) jeq      #0x1c000000      jt 7	jf 4
+			(004) jeq      #0x1e            jt 7	jf 5
+			(005) jeq      #0x18            jt 7	jf 6
+			(006) jeq      #0x1c            jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 		unopt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e            jt 6	jf 2
+			(001) jeq      #0x1e000000      jt 12	jf 2
 			(002) ld       [0]
-			(003) jeq      #0x18            jt 6	jf 4
+			(003) jeq      #0x18000000      jt 12	jf 4
 			(004) ld       [0]
-			(005) jeq      #0x1c            jt 6	jf 7
-			(006) ret      #262144
-			(007) ret      #0
+			(005) jeq      #0x1c000000      jt 12	jf 6
+			(006) ld       [0]
+			(007) jeq      #0x1e            jt 12	jf 8
+			(008) ld       [0]
+			(009) jeq      #0x18            jt 12	jf 10
+			(010) ld       [0]
+			(011) jeq      #0x1c            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # link_proto_ip6_offline_swapped_LE_NULL
 	{
@@ -9770,21 +9824,30 @@ my @filter_accept_blocks = (
 		generate_offline_filter => 'unswapped',
 		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e            jt 4	jf 2
-			(002) jeq      #0x18            jt 4	jf 3
-			(003) jeq      #0x1c            jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0x1e            jt 7	jf 2
+			(002) jeq      #0x18            jt 7	jf 3
+			(003) jeq      #0x1c            jt 7	jf 4
+			(004) jeq      #0x1e000000      jt 7	jf 5
+			(005) jeq      #0x18000000      jt 7	jf 6
+			(006) jeq      #0x1c000000      jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 		unopt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e            jt 6	jf 2
+			(001) jeq      #0x1e            jt 12	jf 2
 			(002) ld       [0]
-			(003) jeq      #0x18            jt 6	jf 4
+			(003) jeq      #0x18            jt 12	jf 4
 			(004) ld       [0]
-			(005) jeq      #0x1c            jt 6	jf 7
-			(006) ret      #262144
-			(007) ret      #0
+			(005) jeq      #0x1c            jt 12	jf 6
+			(006) ld       [0]
+			(007) jeq      #0x1e000000      jt 12	jf 8
+			(008) ld       [0]
+			(009) jeq      #0x18000000      jt 12	jf 10
+			(010) ld       [0]
+			(011) jeq      #0x1c000000      jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # link_proto_ip6_offline_unswapped_BE_NULL
 	{
@@ -9795,21 +9858,30 @@ my @filter_accept_blocks = (
 		generate_offline_filter => 'swapped',
 		opt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e000000      jt 4	jf 2
-			(002) jeq      #0x18000000      jt 4	jf 3
-			(003) jeq      #0x1c000000      jt 4	jf 5
-			(004) ret      #262144
-			(005) ret      #0
+			(001) jeq      #0x1e000000      jt 7	jf 2
+			(002) jeq      #0x18000000      jt 7	jf 3
+			(003) jeq      #0x1c000000      jt 7	jf 4
+			(004) jeq      #0x1e            jt 7	jf 5
+			(005) jeq      #0x18            jt 7	jf 6
+			(006) jeq      #0x1c            jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 		unopt => '
 			(000) ld       [0]
-			(001) jeq      #0x1e000000      jt 6	jf 2
+			(001) jeq      #0x1e000000      jt 12	jf 2
 			(002) ld       [0]
-			(003) jeq      #0x18000000      jt 6	jf 4
+			(003) jeq      #0x18000000      jt 12	jf 4
 			(004) ld       [0]
-			(005) jeq      #0x1c000000      jt 6	jf 7
-			(006) ret      #262144
-			(007) ret      #0
+			(005) jeq      #0x1c000000      jt 12	jf 6
+			(006) ld       [0]
+			(007) jeq      #0x1e            jt 12	jf 8
+			(008) ld       [0]
+			(009) jeq      #0x18            jt 12	jf 10
+			(010) ld       [0]
+			(011) jeq      #0x1c            jt 12	jf 13
+			(012) ret      #262144
+			(013) ret      #0
 			',
 	}, # link_proto_ip6_offline_swapped_BE_NULL
 	{
@@ -10084,29 +10156,51 @@ my @filter_accept_blocks = (
 			',
 	}, # link_proto_ip_offline_swapped_PFLOG
 	{
-		name => 'link_proto_ip6_24_offline_unswapped_PFLOG',
-		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
+		name => 'link_proto_ip6_offline_unswapped_PFLOG',
 		DLT => 'PFLOG',
 		aliases => ['link proto \ip6'],
 		generate_offline_filter => 'unswapped',
-		optunopt => '
+		opt => '
 			(000) ldb      [1]
-			(001) jeq      #0x18            jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ldb      [1]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ldb      [1]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
 			',
 	}, # link_proto_ip6_offline_unswapped_PFLOG
 	{
-		name => 'link_proto_ip6_24_offline_swapped_PFLOG',
-		skip => (skip_os_not ('aix') && skip_os_not ('netbsd') && skip_os_not ('openbsd')),
+		name => 'link_proto_ip6_offline_swapped_PFLOG',
 		DLT => 'PFLOG',
 		aliases => ['link proto \ip6'],
 		generate_offline_filter => 'swapped',
-		optunopt => '
+		opt => '
 			(000) ldb      [1]
-			(001) jeq      #0x18            jt 2	jf 3
-			(002) ret      #262144
-			(003) ret      #0
+			(001) jeq      #0x1e            jt 4	jf 2
+			(002) jeq      #0x18            jt 4	jf 3
+			(003) jeq      #0x1c            jt 4	jf 5
+			(004) ret      #262144
+			(005) ret      #0
+			',
+		unopt => '
+			(000) ldb      [1]
+			(001) jeq      #0x1e            jt 6	jf 2
+			(002) ldb      [1]
+			(003) jeq      #0x18            jt 6	jf 4
+			(004) ldb      [1]
+			(005) jeq      #0x1c            jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
 			',
 	}, # link_proto_ip6_offline_swapped_PFLOG
 	{

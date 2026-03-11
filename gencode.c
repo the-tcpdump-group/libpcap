@@ -2895,9 +2895,183 @@ gen_ether_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	}
 }
 
+/*
+ * AF_INET is 2 in all the operating systems we support...
+ *
+ * ...except for Haiku, which defines it as 1.
+ *
+ * So we define BSD_AFNUM_INET as 2 (as AF_INET originated in 4.2BSD,
+ * and *almost* everybody just adopted it).
+ *
+ * Haiku doesn't use DLT_NULL (it uses DLT_RAW for the loopback device),
+ * so we don't need to check for it in DLT_NULL captures. We should,
+ * however, use BSD_AFNUM_INET rathr than AF_INET when checking for
+ * IPv4 in DLT_NULL, DLT_LOOP, and DLT_ENC captures.
+ */
+#define BSD_AFNUM_INET		2	/* Everybody but Haiku (and BeOS?) */
+
+/*
+ * The three different values we should check for when checking for an
+ * IPv6 packet with DLT_NULL.
+ */
+#define BSD_AFNUM_INET6_BSD	24	/* NetBSD, OpenBSD, BSD/OS, Npcap */
+#define BSD_AFNUM_INET6_FREEBSD	28	/* FreeBSD */
+#define BSD_AFNUM_INET6_DARWIN	30	/* macOS, iOS, other Darwin-based OSes */
+
+static struct block *
+gen_endian_linktype(compiler_state_t *cstate, u_int offset, u_int size,
+    bpf_u_int32 ll_proto, int swapped)
+{
+	return (gen_cmp(cstate, OR_LINKHDR, offset, size,
+	    swapped ? SWAPLONG(ll_proto) : ll_proto));
+}
+
+static struct block *
+gen_bsd_af_linktype_live(compiler_state_t *cstate, u_int offset, u_int size,
+    bpf_u_int32 ll_proto, int swapped)
+{
+	switch (ll_proto) {
+
+	case ETHERTYPE_IP:
+		return (gen_endian_linktype(cstate, offset, size, AF_INET,
+		    swapped));
+
+	case ETHERTYPE_IPV6:
+		return (gen_endian_linktype(cstate, offset, size, AF_INET6,
+		    swapped));
+
+	default:
+		/*
+		 * Not a type on which we support filtering.
+		 * XXX - support those that have AF_ values
+		 * #defined on this platform, at least?
+		 */
+		return gen_false(cstate);
+	}
+}
+
+static struct block *
+gen_bsd_af_linktype_offline(compiler_state_t *cstate, u_int offset, u_int size,
+    bpf_u_int32 ll_proto, int swapped)
+{
+	struct block *b0, *b1;
+
+	switch (ll_proto) {
+
+	case ETHERTYPE_IP:
+		/*
+		 * Only Haiku (and BeOS?) define AF_INET differently
+		 * from the value 4.2BSD used (2), and Haiku doesn't
+		 * have any capture type that uses AF_INET values
+		 * (its loopback device uses DLT_RAW), so, while
+		 * we must use BSD_AFNUM_INET when comparing,
+		 * we don't have to test for more than one value.
+		 */
+		return (gen_endian_linktype(cstate, offset, size, BSD_AFNUM_INET,
+		    swapped));
+
+	case ETHERTYPE_IPV6:
+		/*
+		 * AF_INET6 values are, unfortunately, be platform-dependent,
+		 * even on platforms that use it in link-layer headers,
+		 * because 4.2BSD didn't have a value for it (given that
+		 * IPv6 didn't exist back in the early 1980's), and they
+		 * all picked their own values.
+		 *
+		 * This means that, if we're reading from a savefile, we
+		 * need to check for all the possible values.
+		 *
+		 * If we're doing a live capture, we only need to check
+		 * for this platform's value; however, Npcap uses 24,
+		 * which isn't Windows's AF_INET6 value.  (Given the
+		 * multiple different values, programs that read pcap
+		 * files shouldn't be checking for their platform's
+		 * AF_INET6 value anyway, they should check for all of the
+		 * possible values. and they might as well do that even for
+		 * live captures.)
+		 */
+		b0 = gen_endian_linktype(cstate, offset, size,
+		    BSD_AFNUM_INET6_BSD, swapped);
+		b1 = gen_endian_linktype(cstate, offset, size,
+		    BSD_AFNUM_INET6_FREEBSD, swapped);
+		b1 = gen_or(b0, b1);
+		b0 = gen_endian_linktype(cstate, offset, size,
+		    BSD_AFNUM_INET6_DARWIN, swapped);
+		return gen_or(b0, b1);
+
+	default:
+		/*
+		 * Not a type on which we support filtering.
+		 * XXX - support those that have AF_ values
+		 * #defined on this platform, at least?
+		 */
+		return gen_false(cstate);
+	}
+}
+
+/*
+ * Generate a test for a loopback or DLT_ENC link-layer type; the type
+ * is the link-layer type.
+ */
+static struct block *
+gen_loopback_linktype_live(compiler_state_t *cstate, bpf_u_int32 ll_proto)
+{
+	switch (cstate->linktype) {
+
+	case DLT_NULL:
+	case DLT_ENC:
+		/*
+		 * The value is in host byte order in the packet.
+		 *
+		 * If that's big-endian, we can just compare it
+		 * with the specified type.
+		 *
+		 * if that's little-endian, we have to compare it
+		 * with a byte-swapped version of the specified
+		 * type.
+		 *
+		 * htonl(the specified type) will do nothing to
+		 * the specified type on a big-endian machine, and
+		 * will byte-swap the specified type on a little-
+		 * endian machine, so just use that as the value
+		 * against which to compare.
+		 */
+		return (gen_cmp(cstate, OR_LINKHDR, 0, BPF_W, htonl(ll_proto)));
+
+	case DLT_LOOP:
+		/*
+		 * The value is in network byte order in the packet,
+		 * so just compare it with the specified type.
+		 */
+		return (gen_cmp(cstate, OR_LINKHDR, 0, BPF_W, ll_proto));
+
+	default:
+		/* Should not happen. */
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "linktype",
+		    cstate->linktype);
+	}
+}
+
+/*
+ * Generate a test for the DLT_PFLOG  link-layer type; the type is the
+ * link-layer type.
+ */
+static struct block *
+gen_pflog_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
+{
+	if (cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING) {
+		return (gen_bsd_af_linktype_offline(cstate,
+		    offsetof(struct pfloghdr, af), BPF_B, ll_proto, 0));
+	}
+	return (gen_bsd_af_linktype_live(cstate, offsetof(struct pfloghdr, af),
+	    BPF_B, ll_proto, 0));
+}
+
 static struct block *
 gen_loopback_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 {
+	struct block *b0, *b1;
+
 	/*
 	 * For DLT_NULL, the link-layer header is a 32-bit word
 	 * containing an AF_ value in *host* byte order, and for
@@ -2911,24 +3085,86 @@ gen_loopback_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	 * For DLT_LOOP, the link-layer header is a 32-bit
 	 * word containing an AF_ value in *network* byte order.
 	 */
-	if (cstate->linktype == DLT_NULL || cstate->linktype == DLT_ENC) {
+	if (!(cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING)) {
 		/*
+		 * This is a live caapture, so we just check for this
+		 * platform's AF_ value (except when we don't).
+		 *
 		 * The AF_ value is in host byte order, but the BPF
-		 * interpreter will convert it to network byte order.
-		 *
-		 * If this is a save file, and it's from a machine
-		 * with the opposite byte order to ours, we byte-swap
-		 * the AF_ value.
-		 *
-		 * Then we run it through "htonl()", and generate
+		 * interpreter will convert it to network byte order,
+		 * so we run it through "htonl()", and generate
 		 * code to compare against the result.
 		 */
-		if ((cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING)
-		    && cstate->bpf_pcap->swapped)
-			ll_proto = SWAPLONG(ll_proto);
-		ll_proto = htonl(ll_proto);
+		switch (ll_proto) {
+
+		case ETHERTYPE_IP:
+			return (gen_loopback_linktype_live(cstate, AF_INET));
+
+		case ETHERTYPE_IPV6:
+#ifdef _WIN32
+			/*
+			 * Npcap doesn't use Windows's AF_INET6,
+			 * as that collides with AF_IPX on
+			 * some BSDs (both have the value 23).
+			 * Instead, it uses 24 (BSD_AFNUM_INET6_BSD).
+			 */
+			return (gen_loopback_linktype_live(cstate, BSD_AFNUM_INET6_BSD));
+#else /* _WIN32 */
+			return (gen_loopback_linktype_live(cstate, AF_INET6));
+#endif /* _WIN32 */
+
+		default:
+			/*
+			 * Not a type on which we support filtering.
+			 * XXX - support those that have AF_ values
+			 * #defined on this platform, at least?
+			 */
+			return gen_false(cstate);
+		}
 	}
-	return (gen_cmp(cstate, OR_LINKHDR, 0, BPF_W, ll_proto));
+
+	/*
+	 * This is a savefile.
+	 *
+	 * for DLT_NULL and DLT_ENC, the endianness of the value in the
+	 * packets is not necessarily the endianness of the capture file,
+	 * as the endianness of the value in the packets is the endianness
+	 * of the host that did the capture, but the endianness of the file
+	 * is the endianness of the host that wrote the file, and this
+	 * file might be the result of a host with one byte order processing
+	 * another file from a host with a different order.
+	 *
+	 * For those types, we first test for all the types using the
+	 * byte order of the file, and then test again for all the types
+	 * with the opposite byte order of the file, under the assumption
+	 * that the most likely case is that the file was written as
+	 * a live capture.
+	 *
+	 * for DLT_LOOP, the endianness of the value in the packets
+	 * is always big-endian.
+	 *
+	 * For DLT_PFLOG, the field is one byte long, so it has no
+	 * endianness. (None of our platform are nibble-addressible. :-))
+	 */
+	switch (cstate->linktype) {
+
+	case DLT_NULL:
+	case DLT_ENC:
+		b0 = gen_bsd_af_linktype_offline(cstate, 0, BPF_W, ll_proto,
+		    cstate->bpf_pcap->swapped);
+		b1 = gen_bsd_af_linktype_offline(cstate, 0, BPF_W, ll_proto,
+		    !cstate->bpf_pcap->swapped);
+		return (gen_or(b0, b1));
+		break;
+
+	case DLT_LOOP:
+		return (gen_bsd_af_linktype_offline(cstate, 0, BPF_W, ll_proto, 0));
+		break;
+
+	default:
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "linktype",
+		    cstate->linktype);
+	}
 }
 
 /*
@@ -3939,14 +4175,6 @@ gen_frelay_nlpid(compiler_state_t *cstate, const uint8_t nlpid)
 }
 
 /*
- * The three different values we should check for when checking for an
- * IPv6 packet with DLT_NULL.
- */
-#define BSD_AFNUM_INET6_BSD	24	/* NetBSD, OpenBSD, BSD/OS, Npcap */
-#define BSD_AFNUM_INET6_FREEBSD	28	/* FreeBSD */
-#define BSD_AFNUM_INET6_DARWIN	30	/* macOS, iOS, other Darwin-based OSes */
-
-/*
  * Generate code to match a particular packet type by matching the
  * link-layer type field or fields in the 802.2 LLC header.
  *
@@ -4133,86 +4361,16 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_NULL:
 	case DLT_LOOP:
 	case DLT_ENC:
-		switch (ll_proto) {
-
-		case ETHERTYPE_IP:
-			return (gen_loopback_linktype(cstate, AF_INET));
-
-		case ETHERTYPE_IPV6:
-			/*
-			 * AF_ values may, unfortunately, be platform-
-			 * dependent; AF_INET isn't, because everybody
-			 * used 4.2BSD's value, but AF_INET6 is, because
-			 * 4.2BSD didn't have a value for it (given that
-			 * IPv6 didn't exist back in the early 1980's),
-			 * and they all picked their own values.
-			 *
-			 * This means that, if we're reading from a
-			 * savefile, we need to check for all the
-			 * possible values.
-			 *
-			 * If we're doing a live capture, we only need
-			 * to check for this platform's value; however,
-			 * Npcap uses 24, which isn't Windows's AF_INET6
-			 * value.  (Given the multiple different values,
-			 * programs that read pcap files shouldn't be
-			 * checking for their platform's AF_INET6 value
-			 * anyway, they should check for all of the
-			 * possible values. and they might as well do
-			 * that even for live captures.)
-			 */
-			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_OFFLINE_AF_HANDLING) {
-				/*
-				 * Savefile - check for all three
-				 * possible IPv6 values.
-				 */
-				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_BSD);
-				b1 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_FREEBSD);
-				b1 = gen_or(b0, b1);
-				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_DARWIN);
-				return gen_or(b0, b1);
-			} else {
-				/*
-				 * Live capture, so we only need to
-				 * check for the value used on this
-				 * platform.
-				 */
-#ifdef _WIN32
-				/*
-				 * Npcap doesn't use Windows's AF_INET6,
-				 * as that collides with AF_IPX on
-				 * some BSDs (both have the value 23).
-				 * Instead, it uses 24.
-				 */
-				return (gen_loopback_linktype(cstate, 24));
-#else /* _WIN32 */
-				return (gen_loopback_linktype(cstate, AF_INET6));
-#endif /* _WIN32 */
-			}
-
-		default:
-			/*
-			 * Not a type on which we support filtering.
-			 * XXX - support those that have AF_ values
-			 * #defined on this platform, at least?
-			 */
-			return gen_false(cstate);
-		}
+		/*
+		 * 4-byte AF_ value at the beginning of the packet.
+		 */
+		return (gen_loopback_linktype(cstate, ll_proto));
 
 	case DLT_PFLOG:
 		/*
-		 * af field is host byte order in contrast to the rest of
-		 * the packet.
+		 * 1-byte AF_ value.
 		 */
-		if (ll_proto == ETHERTYPE_IP)
-			return (gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, af),
-			    BPF_B, AF_INET));
-		else if (ll_proto == ETHERTYPE_IPV6)
-			return (gen_cmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, af),
-			    BPF_B, AF_INET6));
-		else
-			return gen_false(cstate);
-		/*NOTREACHED*/
+		return (gen_pflog_linktype(cstate, ll_proto));
 
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
