@@ -173,6 +173,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
+    Building and testing:
+      CMake: Disable remote capture support on Windows by default.
 
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
