@@ -163,6 +163,17 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Disable zero-copy BPF to work around portability issues.
       Use "unix.h" instead of the missing <sysexits.h>.
 
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
+  Summary for 1.10.7 libpcap release (so far!)
+    General:
+      Free p->opt.device on close, not on cleanup (issue #1615). Issue
+        reported by Harrison Green.
+    Source code:
+      Deprecate bpf_filter().
+    Documentation:
+      Remove list of OSes that support "ipv6-icmp"; all the ones we
+        support appear to do so.
+
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
     General:
