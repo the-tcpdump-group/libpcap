@@ -570,6 +570,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
     const u_char **pkt_data)
 {
 	struct oneshot_userdata s;
+	int ret;
 
 	s.hdr = &p->pcap_header;
 	s.pkt = pkt_data;
@@ -616,7 +617,9 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcapint_offline_read() meaning "end of file".
 	*/
-	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
+	ret = p->read_op(p, 1, p->oneshot_callback, (u_char *)&s);
+	if (ret == PCAP_ERROR_BREAK)
+		p->break_loop = 0;
 }
 
 /*
@@ -2957,7 +2960,12 @@ pcapint_open_offline_common(char *ebuf, size_t total_size, size_t private_offset
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	return (p->read_op(p, cnt, callback, user));
+	int ret = p->read_op(p, cnt, callback, user);
+
+	if (ret == PCAP_ERROR_BREAK)
+		p->break_loop = 0;
+
+	return ret;
 }
 
 int
@@ -2980,6 +2988,8 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				n = p->read_op(p, cnt, callback, user);
 			} while (n == 0);
 		}
+		if (n == PCAP_ERROR_BREAK)
+			p->break_loop = 0;
 		if (n <= 0)
 			return (n);
 		if (!PACKET_COUNT_IS_UNLIMITED(cnt)) {
@@ -2996,7 +3006,13 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 void
 pcap_breakloop(pcap_t *p)
 {
-	p->breakloop_op(p);
+	p->breakloop_op(p, PCAPINT_BREAK_IMMEDIATE);
+}
+
+void
+pcap_breakloop_flush(pcap_t *p)
+{
+	p->breakloop_op(p, PCAPINT_BREAK_FLUSH);
 }
 
 int
@@ -4223,9 +4239,9 @@ pcapint_remove_from_pcaps_to_close(pcap_t *p)
 }
 
 void
-pcapint_breakloop_common(pcap_t *p)
+pcapint_breakloop_common(pcap_t *p, int mode)
 {
-	p->break_loop = 1;
+	p->break_loop = mode;
 }
 
 
@@ -4458,7 +4474,7 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 }
 
 static void
-pcap_breakloop_dead(pcap_t *p _U_)
+pcap_breakloop_dead(pcap_t *p _U_, int mode)
 {
 	/*
 	 * A "dead" pcap_t is just a placeholder to use in order to

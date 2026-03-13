@@ -70,10 +70,8 @@ dbus_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *us
 			return -1;
 		}
 
-		if (handle->break_loop) {
-			handle->break_loop = 0;
-			return -2;
-		}
+		if (handle->break_loop)
+			return PCAP_ERROR_BREAK;
 
 		message = dbus_connection_pop_message(handlep->conn);
 	}

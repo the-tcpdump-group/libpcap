@@ -334,15 +334,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 */
-		if (p->break_loop) {
-			/*
-			 * Yes - clear the flag that indicates that
-			 * it has, and return PCAP_ERROR_BREAK to indicate that
-			 * we were told to break out of the loop.
-			 */
-			p->break_loop = 0;
+		if (p->break_loop)
 			return PCAP_ERROR_BREAK;
-		}
 
 		/* dag_advance_stream() will block (unless nonblock is called)
 		 * until 64kB of data has accumulated.
@@ -395,15 +388,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 */
-		if (p->break_loop) {
-			/*
-			 * Yes - clear the flag that indicates that
-			 * it has, and return PCAP_ERROR_BREAK to indicate that
-			 * we were told to break out of the loop.
-			 */
-			p->break_loop = 0;
+		if (p->break_loop)
 			return PCAP_ERROR_BREAK;
-		}
 
 		rlen = ntohs(header->rlen);
 		if (rlen < dag_record_size)
