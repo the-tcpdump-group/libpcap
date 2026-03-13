@@ -54,6 +54,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       In "gateway" negate the host(s), but not the protocol.
       Reject "gateway" within MPLS, VXLAN or Geneve.
       In "net <n> mask <m>" catch ENOMEM for the "m" too.
+      Match both byte orders for the AF_ value when filtering DLT_NULL
+        and DLT_ENC savefiles. (issue #74)
+      Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization
