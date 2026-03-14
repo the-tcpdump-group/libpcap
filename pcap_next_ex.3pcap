@@ -39,7 +39,7 @@ If the packet was read without problems, the pointer pointed to by the
 .I pkt_header
 argument is set to point to the
 .B pcap_pkthdr
-struct for the packet, and the
+structure for the packet, and the
 pointer pointed to by the
 .I pkt_data
 argument is set to point to the data in the packet.  The

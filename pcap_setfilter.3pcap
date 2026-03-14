@@ -35,8 +35,8 @@ int pcap_setfilter(pcap_t *p, struct bpf_program *fp);
 is used to specify a filter program.
 .I fp
 is a pointer to a
-.I bpf_program
-struct, usually the result of a call to
+.B bpf_program
+structure, usually the result of a call to
 .BR \%pcap_compile (3PCAP).
 .PP
 If the calls to

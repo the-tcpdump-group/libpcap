@@ -36,12 +36,12 @@ int pcap_offline_filter(const struct bpf_program *fp,
 checks whether a filter matches a packet.
 .I fp
 is a pointer to a
-.I bpf_program
-struct, usually the result of a call to
+.B bpf_program
+structure, usually the result of a call to
 .BR pcap_compile (3PCAP).
 .I h
 points to the
-.I pcap_pkthdr
+.B pcap_pkthdr
 structure for the packet, and
 .I pkt
 points to the data in the packet.
