@@ -19,7 +19,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         (EOA) as of December 31, 2017
       Make pcap_compile() error messages more uniform and consistent.
       Deprecate pcap_compile_nopcap().
-      Deprecate bpf_filter().
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
@@ -77,8 +76,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Discuss Linux BPF extensions in the man pages.
       Note endianness in pcap_compile(3PCAP) and pcap_lookupnet(3PCAP).
       man: Document devices, interfaces and "any" better.
-      Remove list of OSes that support "ipv6-icmp"; all the ones we
-        support appear to do so.
       Add a README.qnx.md file.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
