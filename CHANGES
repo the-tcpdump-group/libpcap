@@ -170,6 +170,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         reported by Harrison Green.
     Source code:
       Deprecate bpf_filter().
+    Windows:
+      Fix error return from memory allocation error.
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.

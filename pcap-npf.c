@@ -1654,7 +1654,8 @@ get_ts_support(const char *device, pcap_t *p, char *ebuf)
 				pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 						errno, "malloc");
 				pcap_close(p);
-				return (NULL);
+				status = -1;
+				break;
 			}
 			p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 			p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
