@@ -2890,9 +2890,14 @@ daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *socka
 /*!
 	\brief Suspends a thread for secs seconds.
 */
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+/* Stub this out when fuzzing, so it doesn't slow the fuzzing process. */
+void sleep_secs(int secs _U_)
+{
+}
+#else
 void sleep_secs(int secs)
 {
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #ifdef _WIN32
 	Sleep(secs*1000);
 #else
@@ -2904,8 +2909,8 @@ void sleep_secs(int secs)
 	while (secs_remaining != 0)
 		secs_remaining = sleep(secs_remaining);
 #endif
-#endif
 }
+#endif
 
 /*
  * Read the header of a message.
