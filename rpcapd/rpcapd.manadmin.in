@@ -81,10 +81,10 @@ rpcapd
 .ti +8
 [
 .B \-K
-.I ssl_keyfile
+.I tls_keyfile
 ] [
 .B \-X
-.I ssl_certfile
+.I tls_certfile
 ] [
 .B \-C
 ]
@@ -95,7 +95,8 @@ rpcapd
 \fIRpcapd\fP is a daemon (Unix) or service (Win32) that allows the capture
 and filter part of libpcap to be run on a remote system.
 .LP
-Rpcapd can run in two modes: passive mode (default) and active mode.
+.I Rpcapd
+can run in two modes: passive mode (default) and active mode.
 .LP
 In passive mode, the client (e.g., a network sniffer) connects to
 .IR rpcapd .
@@ -118,6 +119,15 @@ can be configured to establish the connection to a given host,
 which has to be configured in order to wait for that connection. After
 establishing the connection, the protocol continues its job in almost
 the same way in both active and passive mode.
+.SH TLS support
+By default
+.I rpcapd
+will not support TLS connections. If built with TLS support, it will
+support TLS connections only if run with the
+.B \-S
+option, in which case it will
+.I require
+TLS connections.
 .SH Configuration file
 .LP
 The user can create a configuration file in the same directory as the
@@ -311,25 +321,25 @@ Print this help screen.
 .LP
 If
 .I rpcapd
-was compiled with SSL support, the following options are also
+was compiled with TLS support, the following options are also
 available:
 .TP
 .B \-S
-Require that SSL be used on connections.
+Enable TLS, and require that TLS be used on connections.
 .TP
 .B \-C
-With SSL enabled, XXX - I'm not sure how *fetching* the list of
+With TLS enabled, XXX - I'm not sure how *fetching* the list of
 compression mechanisms does anything to compression.
 .TP
-.BI \-K " ssl_keyfile"
-With SSL enabled, use
-.I ssl_keyfile
-as the SSL key file.
+.BI \-K " tls_keyfile"
+With TLS enabled, use
+.I tls_keyfile
+as the TLS key file.
 .TP
-.BI \-X " ssl_certfile"
-With SSL enabled, use
-.I ssl_certfile
-as the SSL certificate file.
+.BI \-X " tls_certfile"
+With TLS enabled, use
+.I tls_certfile
+as the TLS certificate file.
 .br
 .ad
 .SH "SEE ALSO"

@@ -77,6 +77,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Note endianness in pcap_compile(3PCAP) and pcap_lookupnet(3PCAP).
       man: Document devices, interfaces and "any" better.
       Add a README.qnx.md file.
+      Improve dcumentation of TLS supprt in rpcapd man page.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
