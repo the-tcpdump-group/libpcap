@@ -248,8 +248,11 @@
 /* support D-Bus sniffing */
 #cmakedefine PCAP_SUPPORT_DBUS 1
 
-/* target host supports DPDK */
+/* target host supports DPDK (standalone primary, dpdk:N devices) */
 #cmakedefine PCAP_SUPPORT_DPDK 1
+
+/* target host supports DPDK pdump (secondary process, grout:N devices) */
+#cmakedefine PCAP_SUPPORT_DPDK_PDUMP 1
 
 /* target host supports Linux usbmon for USB sniffing */
 #cmakedefine PCAP_SUPPORT_LINUX_USBMON 1

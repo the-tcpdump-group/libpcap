@@ -124,6 +124,10 @@
 #include "pcap-dpdk.h"
 #endif
 
+#ifdef PCAP_SUPPORT_DPDK_PDUMP
+#include "pcap-dpdk-pdump.h"
+#endif
+
 #ifdef ENABLE_REMOTE
 #include "pcap-rpcap.h"
 #endif
@@ -656,6 +660,9 @@ static struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_RDMASNIFF
 	{ rdmasniff_findalldevs, rdmasniff_create },
+#endif
+#ifdef PCAP_SUPPORT_DPDK_PDUMP
+	{ pcap_dpdk_pdump_findalldevs, pcap_dpdk_pdump_create },
 #endif
 #ifdef PCAP_SUPPORT_DPDK
 	{ pcap_dpdk_findalldevs, pcap_dpdk_create },
@@ -1576,6 +1583,9 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 #endif
 #ifdef PCAP_SUPPORT_DPDK
 	    || strncmp(device, "dpdk:", 5) == 0
+#endif
+#ifdef PCAP_SUPPORT_DPDK_PDUMP
+	    || strncmp(device, "grout:", 6) == 0
 #endif
 	    ) {
 		*netp = *maskp = 0;

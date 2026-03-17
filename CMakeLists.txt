@@ -531,7 +531,8 @@ endif()
 # immensely hard to keep compiling for every random API change
 # the DPDK folks make.
 #
-set(DISABLE_DPDK ON)
+set(DISABLE_DPDK ON CACHE BOOL "Disable DPDK support")
+set(DISABLE_DPDK_PDUMP OFF CACHE BOOL "Disable DPDK pdump support (grout:N devices)")
 
 #
 # We don't support D-Bus sniffing on macOS; see
@@ -2482,6 +2483,17 @@ if(NOT DISABLE_DPDK)
             set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} ${dpdk_PACKAGE_NAME}")
             set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
             set(PCAP_SUPPORT_DPDK TRUE)
+
+            #
+            # DPDK pdump support (grout:N devices, secondary process mode).
+            # Enabled automatically when DPDK is available. Can be disabled
+            # independently with -DDISABLE_DPDK_PDUMP=ON.
+            #
+            if(NOT DISABLE_DPDK_PDUMP)
+                set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk-pdump.c)
+                set(PCAP_SUPPORT_DPDK_PDUMP TRUE)
+                message(STATUS "building with DPDK pdump (grout:N devices)")
+            endif()
 
             #
             # Check whether the rte_ether.h file defines
