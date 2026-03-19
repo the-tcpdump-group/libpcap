@@ -381,6 +381,18 @@ sub skip_little_endian {
 	return pack ('S', 0x454c) eq 'LE' ? 'little-endian' : '';
 }
 
+sub skip_igrp9 {
+	return skip_os_not ('freebsd') &&
+        skip_os_not ('darwin') &&
+        skip_os_not ('dragonfly');
+}
+
+sub skip_igrp88 {
+	return skip_os ('freebsd') ||
+        skip_os ('darwin') ||
+        skip_os ('dragonfly');
+}
+
 # In filter_accept_blocks the top-level keys are test block names.  Each test
 # block defines one or more tests.  When possible, a test block name should be
 # easy to relate with the main filter expression, for example, ip_multicast for
@@ -3430,7 +3442,7 @@ my @filter_accept_blocks = (
 	}, # igmp_index_LINUX_SLL2
 	{
 		name => 'igrp_9_index_IEEE802_11_RADIO_AVS',
-		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		skip => skip_igrp88,
 		DLT => 'IEEE802_11_RADIO_AVS',
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
@@ -3484,7 +3496,7 @@ my @filter_accept_blocks = (
 	}, # igrp_9_index_IEEE802_11_RADIO_AVS
 	{
 		name => 'igrp_9_index_IEEE802_11',
-		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		skip => skip_igrp88,
 		DLT => 'IEEE802_11',
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
@@ -3535,7 +3547,7 @@ my @filter_accept_blocks = (
 	}, # igrp_9_index_IEEE802_11
 	{
 		name => 'igrp_9_index_DSA_TAG_BRCM',
-		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		skip => skip_igrp88,
 		DLT => 'DSA_TAG_BRCM',
 		aliases => ['igrp[0xab] == 0xcd'],
 		opt => '
@@ -3577,7 +3589,7 @@ my @filter_accept_blocks = (
 	}, # igrp_9_index_DSA_TAG_BRCM
 	{
 		name => 'igrp_88_index_IEEE802_11_RADIO_AVS',
-		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		skip => skip_igrp9,
 		DLT => 'IEEE802_11_RADIO_AVS',
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
@@ -3631,7 +3643,7 @@ my @filter_accept_blocks = (
 	}, # igrp_88_index_IEEE802_11_RADIO_AVS
 	{
 		name => 'igrp_88_index_IEEE802_11',
-		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		skip => skip_igrp9,
 		DLT => 'IEEE802_11',
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
@@ -3682,7 +3694,7 @@ my @filter_accept_blocks = (
 	}, # igrp_88_index_IEEE802_11
 	{
 		name => 'igrp_88_index_DSA_TAG_BRCM',
-		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		skip => skip_igrp9,
 		DLT => 'DSA_TAG_BRCM',
 		aliases => ['igrp[0xab] == 0xcd'],
 		opt => '
@@ -21090,7 +21102,7 @@ my @filter_accept_blocks = (
 	# different from FreeBSD).  Test each case separately.
 	{
 		name => 'igrp_9',
-		skip => skip_os ('freebsd') || skip_os ('darwin') || skip_os ('dragonfly'),
+		skip => skip_igrp88,
 		DLT => 'EN10MB',
 		aliases => [
 			'igrp',
@@ -21107,7 +21119,7 @@ my @filter_accept_blocks = (
 	}, # igrp_9
 	{
 		name => 'igrp_88',
-		skip => skip_os_not ('freebsd') && skip_os_not ('darwin') && skip_os_not ('dragonfly'),
+		skip => skip_igrp9,
 		DLT => 'EN10MB',
 		aliases => [
 			'igrp',
