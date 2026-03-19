@@ -318,6 +318,7 @@ sub skip_no_ethers_casecmp {
 		# ether_hostton() uses strcmp().
 		skip_os ('freebsd') ||
 		skip_os ('netbsd') ||
+		skip_os ('nto') ||
 		skip_os ('openbsd');
 }
 
@@ -384,12 +385,14 @@ sub skip_little_endian {
 sub skip_igrp9 {
 	return skip_os_not ('freebsd') &&
         skip_os_not ('darwin') &&
+        skip_os_not ('nto') &&
         skip_os_not ('dragonfly');
 }
 
 sub skip_igrp88 {
 	return skip_os ('freebsd') ||
         skip_os ('darwin') ||
+        skip_os ('nto') ||
         skip_os ('dragonfly');
 }
 
