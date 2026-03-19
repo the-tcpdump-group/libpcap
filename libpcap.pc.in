@@ -9,6 +9,7 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 includedir="@includedir@"
 libdir="@libdir@"
+plugindir="@plugindir@"
 
 Name: libpcap
 Description: Platform-independent network traffic capture library

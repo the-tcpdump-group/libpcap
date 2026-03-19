@@ -564,10 +564,14 @@ FILE	*pcapint_charset_fopen(const char *path, const char *mode);
  */
 #ifdef _WIN32
 #define pcap_code_handle_t	HMODULE
+#else
+#define pcap_code_handle_t	void *
+#endif
 
 pcap_code_handle_t	pcapint_load_code(const char *);
 void			*pcapint_find_function(pcap_code_handle_t, const char *);
-#endif
+void			pcapint_unload_code(pcap_code_handle_t);
+
 
 /*
  * Internal interfaces for doing user-mode filtering of packets and

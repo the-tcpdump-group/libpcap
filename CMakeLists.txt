@@ -2509,6 +2509,25 @@ if(NOT DISABLE_DPDK)
     endif()
 endif()
 
+#
+# Plugin loader — always compiled, discovers pcap-*.so at runtime.
+#
+set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-plugin.c)
+set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${CMAKE_DL_LIBS})
+
+#
+# Plugin directory (build-time default).
+# Exposed as plugindir in libpcap.pc so external projects can
+# query it with: pkg-config --variable=plugindir libpcap
+#
+set(PLUGIN_DIR "${CMAKE_INSTALL_PREFIX}/lib/pcap/plugins" CACHE STRING
+    "Plugin directory for pcap-*.so modules")
+add_definitions(-DPCAP_PLUGIN_DIR="${PLUGIN_DIR}")
+
+check_function_exists(secure_getenv HAVE_SECURE_GETENV)
+check_function_exists(issetugid HAVE_ISSETUGID)
+check_function_exists(getauxval HAVE_GETAUXVAL)
+
 # Check for Bluetooth sniffing support
 if(NOT DISABLE_BLUETOOTH)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -3574,6 +3593,7 @@ if(NOT MSVC)
             set(RPATH "")
         endif()
     endif()
+    set(plugindir "${PLUGIN_DIR}")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)

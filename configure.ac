@@ -3000,6 +3000,30 @@ if test "x$enable_rdma" != "xno"; then
 fi
 
 #
+# Plugin loader — always compiled, discovers pcap-*.so at runtime.
+# Needs -ldl on systems where dlopen is in libdl (not needed on
+# FreeBSD, musl, etc. where it is in libc).
+#
+MODULE_C_SRC="$MODULE_C_SRC pcap-plugin.c"
+AC_SEARCH_LIBS([dlopen], [dl])
+
+AC_CHECK_FUNCS([secure_getenv issetugid getauxval])
+
+# Plugin directory (build-time default).
+# Exposed as plugindir in libpcap.pc so external projects can
+# query it with: pkg-config --variable=plugindir libpcap
+plugindir='${libdir}/pcap/plugins'
+AC_ARG_WITH([plugin-dir],
+    AS_HELP_STRING([--with-plugin-dir=DIR],
+	[plugin directory @<:@LIBDIR/pcap/plugins@:>@]),
+    [
+	if test "$withval" != no && test "$withval" != yes; then
+		plugindir="$withval"
+	fi
+    ])
+AC_SUBST(plugindir)
+
+#
 # If this is a platform where we need to have the .pc file and
 # pcap-config script supply an rpath option to specify the directory
 # in which the libpcap shared library is installed, and the install

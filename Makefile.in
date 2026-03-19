@@ -33,6 +33,8 @@ sbindir = @sbindir@
 includedir = @includedir@
 # Pathname of directory to install the library
 libdir =  @libdir@
+# Pathname of directory to install plugin modules
+plugindir = @plugindir@
 # Pathname of directory to install the man pages
 mandir = @mandir@
 
@@ -53,7 +55,7 @@ MKDEP = @MKDEP@
 CCOPT = @V_CCOPT@
 SHLIB_CCOPT = @V_SHLIB_CCOPT@
 INCLS = -I. @V_INCLS@
-DEFS = -DBUILDING_PCAP -Dpcap_EXPORTS @DEFS@ @V_DEFS@
+DEFS = -DBUILDING_PCAP -Dpcap_EXPORTS -DPCAP_PLUGIN_DIR='"$(plugindir)"' @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
@@ -114,6 +116,7 @@ PUBHDR = \
 	pcap/nflog.h \
 	pcap/pcap-inttypes.h \
 	pcap/pcap.h \
+	pcap/pcap-plugin.h \
 	pcap/sll.h \
 	pcap/socket.h \
 	pcap/usb.h \
@@ -132,6 +135,7 @@ HDR = $(PUBHDR) \
 	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
+	pcap-plugin.h \
 	pcap-rpcap.h \
 	pcap-types.h \
 	pcap-usb-linux-common.h \
@@ -316,6 +320,8 @@ EXTRA_DIST = \
 	pcap-netmap.h \
 	pcap-npf.c \
 	pcap-null.c \
+	pcap-plugin.c \
+	pcap-plugin.h \
 	pcap-rdmasniff.c \
 	pcap-rdmasniff.h \
 	pcap-rpcap.c \
