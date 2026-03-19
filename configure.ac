@@ -2474,7 +2474,7 @@ AC_ARG_ENABLE([netmap],
 # In this block "yes" means the same as "ifpresent" in the DAG block above.
 # Windows is CMake-only.
 case "$host_os" in
-linux*|freebsd*)
+linux*|freebsd*|nto-qnx*)
 	;;
 *)
 	enable_netmap=no

@@ -520,6 +520,7 @@ option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
    CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+   CMAKE_SYSTEM_NAME STREQUAL "QNX" OR
    WIN32)
     option(DISABLE_NETMAP "Disable netmap support" OFF)
 else()
