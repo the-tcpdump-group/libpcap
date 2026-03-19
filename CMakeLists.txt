@@ -894,16 +894,16 @@ else(WIN32)
     #
     check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
     if(NOT STDLIBS_HAVE_GETADDRINFO)
-	#
-	# Not found in the standard system libraries.
-	#
-	# In some versions of Solaris, we need to link with libsocket
-	# and libnsl, so check in libsocket and also link with liblnsl
-	# when doing this test.
-	#
-	# Linking with libsocket and libnsl will find all the routines
-	# we need.
-	#
+        #
+        # Not found in the standard system libraries.
+        #
+        # In some versions of Solaris, we need to link with libsocket
+        # and libnsl, so check in libsocket and also link with liblnsl
+        # when doing this test.
+        #
+        # Linking with libsocket and libnsl will find all the routines
+        # we need.
+        #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES nsl)
         check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
@@ -917,17 +917,17 @@ else(WIN32)
             set(LIBS_STATIC "-lsocket -lnsl ${LIBS_STATIC}")
             set(LIBS_PRIVATE "-lsocket -lnsl ${LIBS_PRIVATE}")
         else(LIBSOCKET_HAS_GETADDRINFO)
-	    #
-	    # Not found in libsocket; test for it in libnetwork, which
-	    # is where it is in Haiku.
-	    #
-	    # Linking with libnetwork will find all the routines we
-	    # need.
-	    #
+            #
+            # Not found in libsocket; test for it in libnetwork, which
+            # is where it is in Haiku.
+            #
+            # Linking with libnetwork will find all the routines we
+            # need.
+            #
             check_library_exists(network getaddrinfo "" LIBNETWORK_HAS_GETADDRINFO)
             if(LIBNETWORK_HAS_GETADDRINFO)
                 #
-		# OK, we found it in libnetwork.
+                # OK, we found it in libnetwork.
                 #
                 set(PCAP_LINK_LIBRARIES network ${PCAP_LINK_LIBRARIES})
                 set(LIBS "-lnetwork ${LIBS}")
@@ -941,32 +941,32 @@ else(WIN32)
             endif(LIBNETWORK_HAS_GETADDRINFO)
         endif(LIBSOCKET_HAS_GETADDRINFO)
 
-	#
-	# We require a version of recvmsg() that conforms to the Single
-	# UNIX Specification, so that we can check whether a datagram
-	# received with recvmsg() was truncated when received due to the
-	# buffer being too small.
-	#
-	# On most systems, the version of recvmsg() in the libraries
-	# found above conforms to the SUS.
-	#
-	# On at least some versions of Solaris, it does not conform to
-	# the SUS, and we need the version in libxnet, which does
-	# conform.
-	#
-	# Check whether libxnet exists and has a version of recvmsg();
-	# if it does, link with libxnet before we link with libsocket,
-	# to get that version.
-	#
-	# This test also links with libsocket and libnsl.
-	#
+        #
+        # We require a version of recvmsg() that conforms to the Single
+        # UNIX Specification, so that we can check whether a datagram
+        # received with recvmsg() was truncated when received due to the
+        # buffer being too small.
+        #
+        # On most systems, the version of recvmsg() in the libraries
+        # found above conforms to the SUS.
+        #
+        # On at least some versions of Solaris, it does not conform to
+        # the SUS, and we need the version in libxnet, which does
+        # conform.
+        #
+        # Check whether libxnet exists and has a version of recvmsg();
+        # if it does, link with libxnet before we link with libsocket,
+        # to get that version.
+        #
+        # This test also links with libsocket and libnsl.
+        #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES socket nsl)
         check_library_exists(xnet recvmsg "" LIBXNET_HAS_RECVMSG)
         cmake_pop_check_state()
         if(LIBXNET_HAS_RECVMSG)
             #
-	    # libxnet has recvmsg(); link with it as well.
+            # libxnet has recvmsg(); link with it as well.
             #
             set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
             set(LIBSC "-lxnet ${LIBS_LIBS}")
