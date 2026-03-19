@@ -2509,6 +2509,23 @@ if(NOT DISABLE_DPDK)
     endif()
 endif()
 
+#
+# Plugin loader — always compiled, discovers pcap-*.so at runtime.
+#
+set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-plugin.c)
+set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${CMAKE_DL_LIBS})
+
+#
+# Plugin directory (build-time default, overrides nothing if unset).
+#
+set(PLUGIN_DIR "" CACHE STRING "Additional plugin directory to scan at runtime")
+if(NOT PLUGIN_DIR STREQUAL "")
+    add_definitions(-DPCAP_PLUGIN_DIR="${PLUGIN_DIR}")
+endif()
+
+check_function_exists(getauxval HAVE_GETAUXVAL)
+check_function_exists(issetugid HAVE_ISSETUGID)
+
 # Check for Bluetooth sniffing support
 if(NOT DISABLE_BLUETOOTH)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
