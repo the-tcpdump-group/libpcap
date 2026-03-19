@@ -34,6 +34,11 @@ tcc-*/*)
     # thread-local storage.
     LIBPCAP_TAINTED=yes
     ;;
+*/QNX-*)
+    # pcap-bpf.c:1409:28: warning: implicit conversion loses integer precision:
+    #   'long' to 'suseconds_t' (aka 'int')
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac
