@@ -11,12 +11,6 @@
 * CMake 4.0.1 works.
 * GCC 14.2.0 and Clang 20.1.2 work.
 
-## OmniOS r151052/AMD64
-
-* flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake 3.30.5 works.
-* GCC 14.2.0 and Clang 19.1.2 work.
-
 ## OmniOS r151046/AMD64
 
 * flex 2.6.4 and GNU Bison 3.8.2 work.
@@ -31,6 +25,11 @@
 
 For reference, the tests were done using a system installed from
 `OI-hipster-minimal-20240426.iso` plus the `build-essential` package.
+
+## Solaris CBE 11.4.90.212.0/AMD64
+* flex 2.6.4 and GNU Bison 3.8.2 work.
+* CMake 3.24.0 works.
+* Clang 21.1.0 and GCC 15.2.0 work.
 
 ## Solaris CBE 11.4.81.193.1/AMD64
 
