@@ -169,6 +169,31 @@ test_pcapint_parsesrcstr_ex(const char *arg)
 	return EX_OK;
 }
 
+/*
+ * pcap_lookupnet() should not treat remote capture source strings
+ * (e.g. rpcap://host/dev) as local interface names.
+ */
+static int
+test_pcap_lookupnet(const char *arg)
+{
+	bpf_u_int32 net = 0xdeadbeef, mask = 0xdeadbeef;
+	char errbuf[PCAP_ERRBUF_SIZE] = {0};
+
+	if (pcap_lookupnet(arg, &net, &mask, errbuf) < 0) {
+		fprintf(stderr, "ERROR: %s\n", errbuf);
+		return EX_DATAERR;
+	}
+	if (net != 0 || mask != 0) {
+		fprintf(stderr,
+		    "ERROR: expected 0x00000000 0x00000000, got 0x%08x 0x%08x\n",
+		    net, mask);
+		return EX_DATAERR;
+	}
+
+	printf("OK: 0x%08x 0x%08x\n", net, mask);
+	return EX_OK;
+}
+
 static const char *
 errcode(const int e)
 {
@@ -218,6 +243,7 @@ static const struct {
 	{"pcapint_atoan", 0, test_pcapint_atoan, "ARCnet address"},
 	{"pcap_ether_aton", 0, test_pcap_ether_aton, "MAC-48 address"},
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
+	{"pcap_lookupnet", 0, test_pcap_lookupnet, "device or source string"},
 	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decint_endp, "unsigned integer"},
 	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decint_noendp, "unsigned integer"},
 };
