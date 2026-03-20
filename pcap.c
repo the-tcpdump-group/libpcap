@@ -1582,6 +1582,37 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 		return (0);
 	}
 
+#ifdef ENABLE_REMOTE
+	/*
+	 * If this is a remote capture source (e.g. "rpcap://host/device"),
+	 * it is not a local interface name and therefore must not go through
+	 * the local ioctl(SIOCGIFADDR/SIOCGIFNETMASK) code path.
+	 *
+	 * For remote sources, returning 0.0.0.0/0.0.0.0 is the safest choice;
+	 * it disables any netmask-based filter optimizations while keeping the
+	 * API contract (success with net and mask) intact.
+	 *
+	 * Note: pcapint_parsesrcstr_ex() is available even if ENABLE_REMOTE is
+	 * not defined (as a stub); we keep this under ENABLE_REMOTE so we only
+	 * treat PCAP_SRC_IFREMOTE specially when remote capture is actually
+	 * enabled in the library.
+	 */
+	{
+		int srctype;
+		char userinfo[PCAP_BUF_SIZE] = {0}, host[PCAP_BUF_SIZE] = {0},
+		    port[PCAP_BUF_SIZE] = {0}, name[PCAP_BUF_SIZE] = {0};
+		u_char uses_ssl = 0;
+		char url_errbuf[PCAP_ERRBUF_SIZE] = {0};
+
+		if (pcapint_parsesrcstr_ex(device, &srctype, userinfo, host, port,
+		    name, &uses_ssl, url_errbuf) == 0 &&
+		    srctype == PCAP_SRC_IFREMOTE) {
+			*netp = *maskp = 0;
+			return (0);
+		}
+	}
+#endif /* ENABLE_REMOTE */
+
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
 		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,

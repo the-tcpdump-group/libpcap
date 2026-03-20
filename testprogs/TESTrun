@@ -29576,6 +29576,24 @@ my @translate_accept_blocks = (
 		expect => 'rpcap://eth0',
 	},
 
+	##### pcap_lookupnet()
+	# For remote capture sources, pcap_lookupnet() should succeed and
+	# return 0/0 rather than attempting local interface ioctls.
+	{
+		name => 'lookupnet_rpcap_remote',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE') || skip_os_not ('linux'),
+		cfunc => 'pcap_lookupnet',
+		aliases => ['rpcap://127.0.0.1/eth0'],
+		expect => '0x00000000 0x00000000',
+	},
+	{
+		name => 'lookupnet_rpcaps_remote',
+		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE') || skip_os_not ('linux'),
+		cfunc => 'pcap_lookupnet',
+		aliases => ['rpcaps://127.0.0.1/eth0'],
+		expect => '0x00000000 0x00000000',
+	},
+
 	# pcapint_get_decuint()
 	{
 		name => 'decuint_noendp_1',
