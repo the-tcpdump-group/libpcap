@@ -114,6 +114,7 @@ PUBHDR = \
 	pcap/nflog.h \
 	pcap/pcap-inttypes.h \
 	pcap/pcap.h \
+	pcap/pcap-plugin.h \
 	pcap/sll.h \
 	pcap/socket.h \
 	pcap/usb.h \
@@ -132,6 +133,7 @@ HDR = $(PUBHDR) \
 	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
+	pcap-plugin.h \
 	pcap-rpcap.h \
 	pcap-types.h \
 	pcap-usb-linux-common.h \
@@ -316,6 +318,8 @@ EXTRA_DIST = \
 	pcap-netmap.h \
 	pcap-npf.c \
 	pcap-null.c \
+	pcap-plugin.c \
+	pcap-plugin.h \
 	pcap-rdmasniff.c \
 	pcap-rdmasniff.h \
 	pcap-rpcap.c \

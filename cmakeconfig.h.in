@@ -42,6 +42,12 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO 1
 
+/* Define to 1 if you have the `getauxval' function. */
+#cmakedefine HAVE_GETAUXVAL 1
+
+/* Define to 1 if you have the `issetugid' function. */
+#cmakedefine HAVE_ISSETUGID 1
+
 /* Define to 1 if you have the `getspnam' function. */
 #cmakedefine HAVE_GETSPNAM 1
 
