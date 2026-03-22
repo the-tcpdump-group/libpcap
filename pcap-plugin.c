@@ -419,6 +419,28 @@ pcap_plugin_filter(const struct bpf_insn *pc, const unsigned char *pkt,
 	return pcapint_filter(pc, pkt, wirelen, caplen);
 }
 
+int
+pcap_plugin_get_tstamp_type(pcap_t *p)
+{
+	return p->opt.tstamp_type;
+}
+
+int
+pcap_plugin_set_tstamp_type_list(pcap_t *p, const int *types, int count)
+{
+	u_int *list;
+
+	list = malloc(count * sizeof(u_int));
+	if (list == NULL)
+		return -1;
+	for (int i = 0; i < count; i++)
+		list[i] = (u_int)types[i];
+	free(p->tstamp_type_list);
+	p->tstamp_type_list = list;
+	p->tstamp_type_count = count;
+	return 0;
+}
+
 pcap_if_t *
 pcap_plugin_add_dev(pcap_if_list_t *devlistp, const char *name,
     unsigned int flags, const char *description, char *errbuf)

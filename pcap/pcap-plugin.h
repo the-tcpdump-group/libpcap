@@ -193,6 +193,21 @@ PCAP_API struct bpf_insn *pcap_plugin_get_filter(pcap_t *p);
 PCAP_API void pcap_plugin_set_errbuf(pcap_t *p,
     PCAP_FORMAT_STRING(const char *fmt), ...) PCAP_PRINTFLIKE(2, 3);
 
+/*
+ * Get the timestamp type requested by the user (e.g. PCAP_TSTAMP_ADAPTER).
+ * Returns PCAP_TSTAMP_HOST if none was explicitly set.
+ * Call during activate to decide which clock source to use.
+ */
+PCAP_API int pcap_plugin_get_tstamp_type(pcap_t *p);
+
+/*
+ * Advertise supported timestamp types to libpcap. Call during create
+ * (before activate) so pcap_list_tstamp_types() works. The types
+ * array is copied. Returns 0 on success, -1 on allocation failure.
+ */
+PCAP_API int pcap_plugin_set_tstamp_type_list(pcap_t *p,
+    const int *types, int count);
+
 /* ---- Helper functions ---- */
 
 /*
