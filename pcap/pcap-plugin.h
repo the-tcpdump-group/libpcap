@@ -195,10 +195,36 @@ PCAP_API void pcap_plugin_set_errbuf(pcap_t *p,
 
 /*
  * Get the timestamp type requested by the user (e.g. PCAP_TSTAMP_ADAPTER).
- * Returns PCAP_TSTAMP_HOST if none was explicitly set.
+ * Returns -1 (not set) if none was explicitly requested.
  * Call during activate to decide which clock source to use.
  */
 PCAP_API int pcap_plugin_get_tstamp_type(pcap_t *p);
+
+/*
+ * Get the timestamp precision requested by the user.
+ * Returns PCAP_TSTAMP_PRECISION_MICRO (default) or
+ * PCAP_TSTAMP_PRECISION_NANO. Call during activate to decide
+ * whether to provide nanosecond timestamps.
+ */
+PCAP_API int pcap_plugin_get_tstamp_precision(pcap_t *p);
+
+/*
+ * Get the promiscuous mode flag (nonzero = user requested promisc).
+ * Call during activate.
+ */
+PCAP_API int pcap_plugin_get_promisc(pcap_t *p);
+
+/*
+ * Get the buffer size requested by the user (0 = platform default).
+ * Call during activate to size ring buffers or mempools.
+ */
+PCAP_API int pcap_plugin_get_buffer_size(pcap_t *p);
+
+/*
+ * Get the immediate mode flag (nonzero = deliver packets ASAP,
+ * don't wait to fill a buffer). Call during activate.
+ */
+PCAP_API int pcap_plugin_get_immediate(pcap_t *p);
 
 /*
  * Advertise supported timestamp types to libpcap. Call during create
@@ -207,6 +233,31 @@ PCAP_API int pcap_plugin_get_tstamp_type(pcap_t *p);
  */
 PCAP_API int pcap_plugin_set_tstamp_type_list(pcap_t *p,
     const int *types, int count);
+
+/*
+ * Advertise supported timestamp precisions. Call during create
+ * so pcap_list_tstamp_precisions() works. The array is copied.
+ * Returns 0 on success, -1 on allocation failure.
+ */
+PCAP_API int pcap_plugin_set_tstamp_precision_list(pcap_t *p,
+    const int *precisions, int count);
+
+/*
+ * Advertise supported data link types. Call during activate
+ * so pcap_list_datalinks() works. The array is copied.
+ * Returns 0 on success, -1 on allocation failure.
+ */
+PCAP_API int pcap_plugin_set_datalink_list(pcap_t *p,
+    const int *dlts, int count);
+
+/*
+ * Set the selectable file descriptor for poll/select/epoll.
+ * Plugins that can provide a pollable fd (e.g. eventfd, unix socket)
+ * should call this during activate. Set to -1 if not pollable
+ * (then also set a required_select_timeout via
+ * pcap_plugin_set_select_timeout).
+ */
+PCAP_API void pcap_plugin_set_selectable_fd(pcap_t *p, int fd);
 
 /* ---- Helper functions ---- */
 

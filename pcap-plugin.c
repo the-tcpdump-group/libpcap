@@ -426,6 +426,30 @@ pcap_plugin_get_tstamp_type(pcap_t *p)
 }
 
 int
+pcap_plugin_get_tstamp_precision(pcap_t *p)
+{
+	return p->opt.tstamp_precision;
+}
+
+int
+pcap_plugin_get_promisc(pcap_t *p)
+{
+	return p->opt.promisc;
+}
+
+int
+pcap_plugin_get_buffer_size(pcap_t *p)
+{
+	return (int)p->opt.buffer_size;
+}
+
+int
+pcap_plugin_get_immediate(pcap_t *p)
+{
+	return p->opt.immediate;
+}
+
+int
 pcap_plugin_set_tstamp_type_list(pcap_t *p, const int *types, int count)
 {
 	u_int *list;
@@ -439,6 +463,47 @@ pcap_plugin_set_tstamp_type_list(pcap_t *p, const int *types, int count)
 	p->tstamp_type_list = list;
 	p->tstamp_type_count = count;
 	return 0;
+}
+
+int
+pcap_plugin_set_tstamp_precision_list(pcap_t *p, const int *precisions,
+    int count)
+{
+	u_int *list;
+
+	list = malloc(count * sizeof(u_int));
+	if (list == NULL)
+		return -1;
+	for (int i = 0; i < count; i++)
+		list[i] = (u_int)precisions[i];
+	free(p->tstamp_precision_list);
+	p->tstamp_precision_list = list;
+	p->tstamp_precision_count = count;
+	return 0;
+}
+
+int
+pcap_plugin_set_datalink_list(pcap_t *p, const int *dlts, int count)
+{
+	u_int *list;
+
+	list = malloc(count * sizeof(u_int));
+	if (list == NULL)
+		return -1;
+	for (int i = 0; i < count; i++)
+		list[i] = (u_int)dlts[i];
+	free(p->dlt_list);
+	p->dlt_list = list;
+	p->dlt_count = count;
+	return 0;
+}
+
+void
+pcap_plugin_set_selectable_fd(pcap_t *p, int fd)
+{
+#ifndef _WIN32
+	p->selectable_fd = fd;
+#endif
 }
 
 pcap_if_t *
