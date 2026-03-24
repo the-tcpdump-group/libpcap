@@ -933,22 +933,19 @@ get_if_description(const char *name)
 			/*
 			 * OK, it begins with "usbus".
 			 */
-			long busnum;
-			char *p;
+			unsigned busnum;
+			int ret;
 
-			errno = 0;
-			busnum = strtol(name + 5, &p, 10);
-			if (errno == 0 && p != name + 5 && *p == '\0' &&
-			    busnum >= 0 && busnum <= INT_MAX) {
+			ret = pcapint_get_decuint(name + 5, NULL, &busnum);
+			if (ret == 0) {
 				/*
-				 * OK, it's a valid number that's not
-				 * bigger than INT_MAX.  Construct
+				 * OK, it's a valid number.  Construct
 				 * a description from it.
 				 * (If that fails, we don't worry about
 				 * it, we just return NULL.)
 				 */
 				if (pcapint_asprintf(&description,
-				    "USB bus number %ld", busnum) == -1) {
+				    "USB bus number %u", busnum) == -1) {
 					/* Failed. */
 					description = NULL;
 				}
@@ -3878,10 +3875,16 @@ pcap_strerror(int errnum)
  * numeric as an error and will treat values that don't fit into
  * an unsigned int as an error.
  *
- * On success, returns 0 and sets the value pointed to by the last
- * argument to the integer value; on error, returns EINVAL for an
- * invalid number or ERANGE for a value that's too large to fit in
- * an unsigned int.
+ * If endptr is non-null, the string may have additional text after
+ * the number; if it is null, any additional text after the number
+ * is treated as an error.
+ *
+ * On success, it returns 0 and sets the item pointed to by nump to the
+ * integer value and, if endptr is not null, sets the item pointed to by
+ * it to a pointer to the character following the number.
+ *
+ * On error, it returns EINVAL for an invalid number or ERANGE for a
+ * value that's too large to fit in an unsigned int.
  */
 int
 pcapint_get_decuint(const char *cp, char **endptr, unsigned *nump)

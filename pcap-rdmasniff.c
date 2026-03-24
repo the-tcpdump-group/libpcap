@@ -330,7 +330,7 @@ rdmasniff_activate(pcap_t *handle)
 	struct ibv_device **dev_list;
 	int numdev;
 	const char *port;
-	unsigned long port_num;
+	unsigned port_num;
 	struct ibv_device *rdma_device;
 	struct ibv_qp_init_attr qp_init_attr;
 	struct ibv_qp_attr qp_attr;
@@ -371,15 +371,29 @@ rdmasniff_activate(pcap_t *handle)
 	 * XXX - should an empty port number be treated as an error?
 	 */
 	if (port != NULL && *port != '\0') {
+		int err;
 		char *endp;
 
-		port_num = strtoul(port, &endp, 10);
-		if ((port_num == 0 && endp == port) ||
-		    *endp != '\0') {
-			/* The port number isn't valid. */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				 "\"%s\" isn't a valid port number",
-				 port);
+		err = pcapint_get_decuint(port, &endp, &port_num);
+		if (err != 0) {
+			if (err == EINVAL) {
+				/* The port number isn't valid. */
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					 "\"%s\" isn't a valid number",
+					 port);
+			} else if (err == ERANGE) {
+				/* The port number is too large. */
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					 "Port number %s is not valid",
+					 port);
+			} else {
+				/* Unknown error. */
+				pcapint_fmt_errmsg_for_errno(handle->errbuf,
+							     PCAP_ERRBUF_SIZE,
+							     err,
+							     "\"%s\" can't be parsed",
+							     port);
+			}
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			goto error;
 		}
@@ -422,12 +436,12 @@ rdmasniff_activate(pcap_t *handle)
 			 * there's no such device "dev_name:port_num".
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				 "Port number %lu is not valid", port_num);
+				 "Port number %u is not valid", port_num);
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 		} else {
 			pcapint_fmt_errmsg_for_errno(handle->errbuf,
 						     PCAP_ERRBUF_SIZE, errcode,
-						     "Failed to get information for port %lu",
+						     "Failed to get information for port %u",
 						     port_num);
 			ret = PCAP_ERROR;
 		}
