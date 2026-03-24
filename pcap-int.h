@@ -632,10 +632,17 @@ int	pcapint_parsesrcstr_ex(const char *, int *, char *, char *,
  * numeric as an error and will treat values that don't fit into
  * an unsigned int as an error.
  *
- * On success, returns 0 and sets the value pointed to by the last
- * argument to the integer value; on error, returns EINVAL for an
- * invalid number or ERANGE for a value that's too large to fit in
- * an unsigned int.
+ * If the secnd argument is non-null, the string may have additional text
+ * after the number; if it is null, any additional text after the number
+ * is treated as an error.
+ *
+ * On success, it returns 0 and sets the item pointed to by the third
+ * argument to the integer value and, if the second argument is not null,
+ * sets the item pointed to by it to a pointer to the character following
+ * the number.
+ *
+ * On error, it returns EINVAL for an invalid number or ERANGE for a
+ * value that's too large to fit in an unsigned int.
  */
 int	pcapint_get_decuint(const char *, char **, unsigned *);
 

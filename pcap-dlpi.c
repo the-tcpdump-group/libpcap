@@ -957,7 +957,7 @@ split_dname(char *device, u_int *unitp, char *ebuf)
 {
 	char *cp;
 	char *eos;
-	long unit;
+	u_int unit;
 
 	/*
 	 * Look for a number at the end of the device name string.
@@ -978,23 +978,23 @@ split_dname(char *device, u_int *unitp, char *ebuf)
 		return (NULL);
 	}
 
-	errno = 0;
-	unit = strtol(cp, &eos, 10);
-	if (*eos != '\0') {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
+	ret = pcapint_get_decuint(cp, NULL, &unit);
+	if (ret != 0) {
+		if (ret == EINVAL)
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
+		else if (ret == ERANGE) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number too large",
+			    device);
+		} else {
+			pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    ret, "%s unit number error", device);
+		}
 		return (NULL);
 	}
 	if (errno == ERANGE || unit > INT_MAX) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number too large",
-		    device);
 		return (NULL);
 	}
-	if (unit < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number is negative",
-		    device);
-		return (NULL);
-	}
-	*unitp = (u_int)unit;
+	*unitp = unit;
 	return (cp);
 }
 

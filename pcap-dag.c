@@ -120,23 +120,51 @@ static int dag_setnonblock(pcap_t *p, int nonblock);
 #define ENV_TX_IFACE "ERF_TX_INTERFACE"
 
 /*
- * Convert the return value of getenv() to an integer using matching stricter
- * than atoi().  If the environment variable is not set, return the default
- * value.  Otherwise return an integer in the interval [0, INT32_MAX] or -1 on
- * error.
+ * Convert the return value of getenv() to an unsigned integer in the
+ * range [0, UINT_MAX].
+ *
+ * If the environment variable is not set or is empty, return the default
+ * value supplied as an argument.
+ *
+ * Otherwise, on success, return 1 and set *val to the value, and, on
+ * error, return 0.
  */
-static int32_t
-strtouint31(const char *str, const int32_t defaultval) {
-	if (! str)
-		return defaultval;
-	if (! str[0])
-		return -1;
+static int
+get_decuint_from_env(const char *envname, unsigned *val, unsigned defaultval)
+{
+	const char *env;
 
-	char * endp;
-	unsigned long val = strtoul(str, &endp, 10);
-	if (*endp || val > INT32_MAX)
-		return -1;
-	return (int32_t)val;
+	env = getenv(envname);
+	if (env == NULL || *env == '\0') {
+		/*
+		 * The environment variable isn't set or is set to an
+		 * empty value; use the default.
+		 */
+		*val = defaultval;
+	} else {
+		/* Parse the environment variable. */
+		int ret;
+
+		ret = pcapint_get_decuint(env, NULL, val);
+		if (ret != 0) {
+			if (ret == EINVAL) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "invalid %s value: \"%s\" is not a valid unsigned number",
+				    envname, env);
+			} else if (ret == ERANGE) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "invalid %s value: \"%s\" is too large",
+				    envname, env);
+			} else {
+				pcapint_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, ret,
+				    "invalid %s value: \"%s\" can't be parsed",
+				    envname, env);
+			}
+			return 0;
+		}
+	}
+	return 1;
 }
 
 static void
@@ -812,20 +840,22 @@ dag_activate_tx(pcap_t *p)
 {
 	struct pcap_dag *pd = p->priv;
 
-	const char * env = getenv(ENV_TX_IFACE);
-	int32_t iface = strtouint31(env, 0);
-	if (iface < 0) {
+	const char * env;
+	uint32_t iface;
+
+	if (!get_decuint_from_env(ENV_TX_IFACE, &iface, 0))
+		return PCAP_ERROR;
+	uint32_t ifcount = dag_config_get_interface_count(pd->dag_ref);
+	if (iface >= ifcount) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: failed parsing %s value \"%s\"",
-		    __func__, ENV_TX_IFACE, env);
+		    "invalid %s value %u: this card has %u interface(s)",
+		    ENV_TX_IFACE, iface, ifcount);
 		return PCAP_ERROR;
 	}
-	uint32_t ifcount = dag_config_get_interface_count(pd->dag_ref);
-	if ((uint32_t)iface >= ifcount) {
+	if (iface > UINT8_MAX) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: invalid %s value %u: this card has %u interface(s)",
-		    __func__, ENV_TX_IFACE, iface, ifcount);
-		return PCAP_ERROR;
+		    "invalid %s value: %u is too large (> %u)",
+		    ENV_TX_IFACE, ifacev, UINT8_MAX);
 	}
 	pd->tx_iface = (uint8_t)iface;
 
@@ -1103,8 +1133,11 @@ static int dag_activate(pcap_t* p)
 	 * Assume Rx FCS length to be 32 bits unless the user has
 	 * requested a different value, in which case validate it well.
 	 */
-	s = getenv(ENV_RX_FCS_BITS);
-	switch ((n = strtouint31(s, 32))) {
+	if (!get_decuint_from_env(ENV_RX_FCS_BITS, &n, 32)) {
+		ret = PCAP_ERROR;
+		goto failstop;
+	}
+	switch (n) {
 	case 0:
 	case 16:
 	case 32:
@@ -1113,16 +1146,19 @@ static int dag_activate(pcap_t* p)
 	default:
 		ret = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s %s: invalid %s value (%s) in environment",
-		    __func__, device, ENV_RX_FCS_BITS, s);
+		    "%s: invalid %s value %u: must be 0 (no FCS), 16, or 32 bits",
+		    device, ENV_RX_FCS_BITS, n);
 		goto failstop;
 	}
 
 	/*
 	 * Did the user request that they not be stripped?
 	 */
-	s = getenv(ENV_RX_FCS_NOSTRIP);
-	switch ((n = strtouint31(s, 0))) {
+	if (!get_decuint_from_env(ENV_RX_FCS_NOSTRIP, &n, 0)) {
+		ret = PCAP_ERROR;
+		goto failstop;
+	}
+	switch (n) {
 	case 0:
 		break;
 	case 1:
@@ -1136,8 +1172,8 @@ static int dag_activate(pcap_t* p)
 	default:
 		ret = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s %s: invalid %s value (%s) in environment",
-		    __func__, device, ENV_RX_FCS_NOSTRIP, s);
+		    "%s: invalid %s value %u: must be 0 (false), or 1 (true)",
+		    device, ENV_RX_FCS_NOSTRIP, n);
 		goto failstop;
 	}
 
@@ -1224,9 +1260,9 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 {
 	const char *cp;
 	char *cpend;
-	long devnum;
+	unsigned devnum;
 	pcap_t *p;
-	long stream = 0;
+	unsigned stream = 0;
 
 	/*
 	 * The nominal libpcap DAG device name format is either "dagN" or
@@ -1247,14 +1283,18 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	}
 	/* Yes - is "dag" followed by a number from 0 to DAG_MAX_BOARDS-1 */
 	cp += 3;
-	devnum = strtol(cp, &cpend, 10);
+	if (pcapint_get_decuint(cp, &cpend, &devnum) != 0) {
+		/* Not followe by a valid number */
+		return NULL;
+	}
 	if (*cpend == ':') {
 		/* Followed by a stream number. */
-		stream = strtol(++cpend, &cpend, 10);
-	}
-
-	if (cpend == cp || *cpend != '\0') {
-		/* Not followed by a number. */
+		if (pcapint_get_decuint(++cpend, NULL, &stream) != 0) {
+			/* Not followe by a valid number */
+			return NULL;
+		}
+	} else if (*cpend != '\0') {
+		/* Followed by something other than a colon and stream number */
 		return NULL;
 	}
 
@@ -1268,16 +1308,6 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	snprintf (ebuf, PCAP_ERRBUF_SIZE,
 	    "DAG device name \"%s\" is invalid", device);
 
-	if (devnum < 0 || devnum > INT_MAX) {
-		/* Followed by a non-valid number. */
-		return NULL;
-	}
-
-	if (stream < 0 || stream > INT_MAX) {
-		/* Followed by a non-valid stream number. */
-		return NULL;
-	}
-
 	/*
 	 * The syntax validation done so far is lax enough to accept some
 	 * device strings that are not actually acceptable in libpcap as
@@ -1289,10 +1319,10 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	 * the input device string to match an acceptable string exactly.
 	 */
 	char buf[DAGNAME_BUFSIZE];
-	snprintf(buf, sizeof(buf), "dag%ld:%ld", devnum, stream);
+	snprintf(buf, sizeof(buf), "dag%u:%u", devnum, stream);
 	char acceptable = ! strcmp(device, buf);
 	if (! acceptable && stream == 0) {
-		snprintf(buf, sizeof(buf), "dag%ld", devnum);
+		snprintf(buf, sizeof(buf), "dag%u", devnum);
 		acceptable = ! strcmp(device, buf);
 	}
 	if (! acceptable)

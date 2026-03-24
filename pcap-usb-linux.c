@@ -122,7 +122,7 @@ struct mon_bin_mfetch {
 struct pcap_usb_linux {
 	u_char *mmapbuf;	/* memory-mapped region pointer */
 	size_t mmapbuflen;	/* size of region */
-	int bus_index;
+	unsigned bus_index;
 	u_int packets_read;
 };
 
@@ -414,8 +414,7 @@ pcap_t *
 usb_create(const char *device, char *ebuf, int *is_ours)
 {
 	const char *cp;
-	char *cpend;
-	long devnum;
+	unsigned bus_index;
 	pcap_t *p;
 
 	/* Does this look like a USB monitoring device? */
@@ -428,14 +427,8 @@ usb_create(const char *device, char *ebuf, int *is_ours)
 	}
 	/* Yes - is USB_IFACE followed by a number? */
 	cp += sizeof USB_IFACE - 1;
-	devnum = strtol(cp, &cpend, 10);
-	if (cpend == cp || *cpend != '\0') {
-		/* Not followed by a number. */
-		*is_ours = 0;
-		return NULL;
-	}
-	if (devnum < 0) {
-		/* Followed by a non-valid number. */
+	if (pcapint_get_decuint(cp, NULL, &bus_index) != 0) {
+		/* Not followed by a valid number */
 		*is_ours = 0;
 		return NULL;
 	}
@@ -447,7 +440,10 @@ usb_create(const char *device, char *ebuf, int *is_ours)
 	if (p == NULL)
 		return (NULL);
 
+	struct pcap_usb_linux *handlep = p->priv;
+
 	p->activate_op = usb_activate;
+	handlep->bus_index = bus_index;
 	return (p);
 }
 
@@ -479,14 +475,6 @@ usb_activate(pcap_t* handle)
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcapint_getnonblock_fd;
 	handle->setnonblock_op = pcapint_setnonblock_fd;
-
-	/*get usb bus index from device name */
-	if (sscanf(handle->opt.device, USB_IFACE"%d", &handlep->bus_index) != 1)
-	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't get USB bus index from %s", handle->opt.device);
-		return PCAP_ERROR;
-	}
 
 	/*
 	 * We require 2.6.27 or later kernels, so we have binary-mode support.

@@ -65,7 +65,7 @@ static int bt_stats_linux(pcap_t *, struct pcap_stat *);
  * Private data for capturing on Linux Bluetooth devices.
  */
 struct pcap_bt {
-	int dev_id;		/* device ID of device we're bound to */
+	unsigned dev_id;	/* device ID of device we're bound to */
 };
 
 int
@@ -149,9 +149,7 @@ pcap_t *
 bt_create(const char *device, char *ebuf, int *is_ours)
 {
 	const char *cp;
-	char *cpend;
-	int ret;
-	unsigned devnum;
+	unsigned dev_id;
 	pcap_t *p;
 
 	/* Does this look like a Bluetooth device? */
@@ -164,8 +162,7 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 	}
 	/* Yes - is BT_IFACE followed by a number? */
 	cp += sizeof BT_IFACE - 1;
-	ret = pcapint_get_decuint(cp, &cpend, &devnum);
-	if (ret != 0) {
+	if (pcapint_get_decuint(cp, NULL, &dev_id) != 0) {
 		/* Not followed by a valid number */
 		*is_ours = 0;
 		return NULL;
@@ -178,7 +175,10 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 	if (p == NULL)
 		return (NULL);
 
+	struct pcap_bt *handlep = p->priv;
+
 	p->activate_op = bt_activate;
+	handlep->dev_id = dev_id;
 	return (p);
 }
 
@@ -188,18 +188,8 @@ bt_activate(pcap_t* handle)
 	struct pcap_bt *handlep = handle->priv;
 	struct sockaddr_hci addr;
 	int opt;
-	int		dev_id;
 	struct hci_filter	flt;
 	int err = PCAP_ERROR;
-
-	/* get bt interface id */
-	if (sscanf(handle->opt.device, BT_IFACE"%d", &dev_id) != 1)
-	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't get Bluetooth device index from %s",
-			 handle->opt.device);
-		return PCAP_ERROR;
-	}
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
@@ -224,7 +214,6 @@ bt_activate(pcap_t* handle)
 	handle->getnonblock_op = pcapint_getnonblock_fd;
 	handle->setnonblock_op = pcapint_setnonblock_fd;
 	handle->stats_op = bt_stats_linux;
-	handlep->dev_id = dev_id;
 
 	/* Create HCI socket */
 	handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
