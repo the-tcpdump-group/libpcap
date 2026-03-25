@@ -177,6 +177,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
+      Fix pcap_next_ex(3PCAP) man page to clarify the PCAP_ERROR_BREAK
+        return value.
     Building and testing:
       CMake: Disable remote capture support on Windows by default.
       RDMA: Avoid valgrind errors when calling rdmasniff_findalldevs().
