@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "pcap-int.h"
 #include "thread-local.h"
@@ -405,15 +406,17 @@ enum e_offrel {
 };
 
 /*
- * We divvy out chunks of memory rather than call malloc each time so
- * we don't have to worry about leaking memory.  It's probably
- * not a big deal if all this memory was wasted but if this ever
- * goes into a library that would probably not be a good idea.
+ * Divvy out chunks of memory rather than call calloc() each time: this way
+ * pcap_compile() induces orders of magnitude fewer calloc() calls, which
+ * eventually require orders of magnitude fewer free() calls, which makes it
+ * much easier to prevent memory leaks, which is important in a library.
  *
- * XXX - this *is* in a library....
+ * The total amount of memory that can be allocated using 16 chunks, where
+ * chunk 0 size is 1KiB and each next chunk is double the size of the previous,
+ * is (64MiB - 1KiB).
  */
 #define NCHUNKS 16
-#define CHUNK0SIZE 1024
+#define CHUNKSIZE(idx) (1024U << (idx))
 struct chunk {
 	size_t n_left;
 	void *m;
@@ -613,7 +616,7 @@ struct _compiler_state {
 	 * Memory chunks.
 	 */
 	struct chunk chunks[NCHUNKS];
-	int cur_chunk;
+	unsigned cur_chunk;
 };
 
 /*
@@ -672,7 +675,7 @@ static void init_regs(compiler_state_t *);
 static int alloc_reg(compiler_state_t *);
 static void free_reg(compiler_state_t *, int);
 
-static void initchunks(compiler_state_t *cstate);
+static bool initchunks_ok(compiler_state_t *cstate);
 static void *newchunk_nolongjmp(compiler_state_t *cstate, size_t);
 static void *newchunk(compiler_state_t *cstate, size_t);
 static void freechunks(compiler_state_t *cstate);
@@ -797,8 +800,28 @@ static struct block *gen_atm_prototype(compiler_state_t *, const uint8_t);
 static struct block *gen_atm_vpi(compiler_state_t *, const uint8_t);
 static struct block *gen_atm_vci(compiler_state_t *, const uint16_t);
 
-static void
-initchunks(compiler_state_t *cstate)
+#define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
+
+static bool
+initcurrentchunk_ok(compiler_state_t *cstate)
+{
+	if (cstate->cur_chunk >= NCHUNKS) {
+		bpf_set_error(cstate, ERRSTR_FUNC_VAR_INT, __func__,
+		    "cur_chunk", cstate->cur_chunk);
+		return false;
+	}
+	const size_t size = CHUNKSIZE(cstate->cur_chunk);
+	cstate->chunks[cstate->cur_chunk].m = calloc(1, size);
+	if (cstate->chunks[cstate->cur_chunk].m == NULL) {
+		bpf_set_error(cstate, "%s: calloc() failed", __func__);
+		return false;
+	}
+	cstate->chunks[cstate->cur_chunk].n_left = size;
+	return true;
+}
+
+static bool
+initchunks_ok(compiler_state_t *cstate)
 {
 	int i;
 
@@ -807,40 +830,34 @@ initchunks(compiler_state_t *cstate)
 		cstate->chunks[i].m = NULL;
 	}
 	cstate->cur_chunk = 0;
+	return initcurrentchunk_ok(cstate);
 }
 
 static void *
 newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 {
-	struct chunk *cp;
-	size_t size;
-
 	/* Round up to chunk alignment. */
 	n = (n + CHUNK_ALIGN - 1) & ~(CHUNK_ALIGN - 1);
 
-	cp = &cstate->chunks[cstate->cur_chunk];
-	if (n > cp->n_left) {
+	if (n > cstate->chunks[cstate->cur_chunk].n_left) {
 		if (cstate->cur_chunk >= NCHUNKS - 1) {
 			bpf_set_error(cstate,
 			    "will not allocate more than %u chunks", NCHUNKS);
 			return (NULL);
 		}
-		++cp;
+		if (n > CHUNKSIZE(cstate->cur_chunk + 1)) {
+			bpf_set_error(cstate,
+			    "%zu bytes would not fit into chunk %u",
+			    n, cstate->cur_chunk + 1);
+			return (NULL);
+		}
 		++cstate->cur_chunk;
-		size = CHUNK0SIZE << cstate->cur_chunk;
-		cp->m = calloc(1, size);
-		if (cp->m == NULL) {
-			bpf_set_error(cstate, "out of memory");
-			return (NULL);
-		}
-		cp->n_left = size;
-		if (n > size) {
-			bpf_set_error(cstate, "out of memory");
-			return (NULL);
-		}
+		if (! initcurrentchunk_ok(cstate))
+			return (NULL); // The error buffer has been filled.
 	}
-	cp->n_left -= n;
-	return (void *)((char *)cp->m + cp->n_left);
+	cstate->chunks[cstate->cur_chunk].n_left -= n;
+	return (void *)((char *)cstate->chunks[cstate->cur_chunk].m +
+	    cstate->chunks[cstate->cur_chunk].n_left);
 }
 
 static void *
@@ -1191,7 +1208,6 @@ assert_nonwlan_dqual(compiler_state_t *cstate, const u_char dir)
 #define ERRSTR_INVALID_QUAL "'%s' is not a valid qualifier for '%s'"
 #define ERRSTR_UNKNOWN_MAC48HOST "unknown Ethernet-like host '%s'"
 #define ERRSTR_INVALID_IPV4_ADDR "invalid IPv4 address '%s'"
-#define ERRSTR_FUNC_VAR_INT "internal error in %s(): %s == %d"
 #define ERRSTR_FUNC_VAR_STR "internal error in %s(): %s == '%s'"
 
 // Validate a port/portrange proto qualifier and map to an IP protocol number.
@@ -1341,7 +1357,11 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		(p->save_current_filter_op)(p, buf);
 #endif
 
-	initchunks(&cstate);
+	if (! initchunks_ok(&cstate)) {
+		// The error buffer has been filled.
+		rc = PCAP_ERROR;
+		goto quit;
+	}
 	cstate.no_optimize = 0;
 	cstate.ai = NULL;
 	cstate.ic.root = NULL;
