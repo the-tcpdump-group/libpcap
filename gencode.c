@@ -813,7 +813,6 @@ static void *
 newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 {
 	struct chunk *cp;
-	int k;
 	size_t size;
 
 	/* Round up to chunk alignment. */
@@ -821,13 +820,14 @@ newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 
 	cp = &cstate->chunks[cstate->cur_chunk];
 	if (n > cp->n_left) {
-		++cp;
-		k = ++cstate->cur_chunk;
-		if (k >= NCHUNKS) {
-			bpf_set_error(cstate, "out of memory");
+		if (cstate->cur_chunk >= NCHUNKS - 1) {
+			bpf_set_error(cstate,
+			    "will not allocate more than %u chunks", NCHUNKS);
 			return (NULL);
 		}
-		size = CHUNK0SIZE << k;
+		++cp;
+		++cstate->cur_chunk;
+		size = CHUNK0SIZE << cstate->cur_chunk;
 		cp->m = calloc(1, size);
 		if (cp->m == NULL) {
 			bpf_set_error(cstate, "out of memory");
