@@ -180,16 +180,9 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/*
 			 * Has "pcap_breakloop()" been called?
 			 */
-			if (p->break_loop) {
-				/*
-				 * Yes - clear the flag that indicates
-				 * that it has, and return -2 to
-				 * indicate that we were told to
-				 * break out of the loop.
-				 */
-				p->break_loop = 0;
-				return (-2);
-			}
+			if (p->break_loop)
+				return PCAP_ERROR_BREAK;
+
 			/*
 			 * XXX - check for the DLPI primitive, which
 			 * would be DL_HP_RAWDATA_IND on HP-UX
