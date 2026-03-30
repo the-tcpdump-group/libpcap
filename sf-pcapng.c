@@ -42,13 +42,6 @@
 
 #include "sf-pcapng.h"
 #ifdef HAVE_RUST_PCAPNG
-/*
- * Keep parser-owned dynamic buffers in an opaque Rust state.
- *
- * This file continues to own pcapng parsing and format validation; Rust
- * centralizes checked allocation growth and per-interface table management
- * behind a narrow FFI, reducing memory-management risk on untrusted inputs.
- */
 #include "pcapng_rs_ffi.h"
 #endif
 
@@ -232,7 +225,6 @@ struct pcap_ng_if {
  * any limitations imposed by the operating system; 3) any limitations
  * imposed by the amount of available backing store for anonymous pages,
  * so we impose a limit regardless of the size of a pointer.
- *
  */
 struct pcap_ng_sf {
 	uint64_t user_tsresol;		/* time stamp resolution requested by the user */
@@ -243,7 +235,7 @@ struct pcap_ng_sf {
 	struct pcapng_rs_state *rs_state;	/* Rust-owned buffers and interfaces */
 #else
 	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
-	bpf_u_int32 ifaces_size;		/* size of array below */
+	bpf_u_int32 ifaces_size;	/* size of array below */
 	struct pcap_ng_if *ifaces;	/* array of interface information */
 #endif
 };
@@ -633,17 +625,15 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	uint64_t tsresol;
 	int64_t tsoffset;
 	int is_binary;
-	#ifdef HAVE_RUST_PCAPNG
+
+#ifdef HAVE_RUST_PCAPNG
 	tstamp_scale_type_t scale_type;
 	uint64_t scale_factor;
-	#else
-	bpf_u_int32 new_ifaces_size;
-	struct pcap_ng_if *new_ifaces;
-	#endif
+#endif
 
 	ps = p->priv;
 
-	#ifndef HAVE_RUST_PCAPNG
+#ifndef HAVE_RUST_PCAPNG
 	/*
 	 * Count this interface.
 	 */
@@ -656,9 +646,25 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 		/*
 		 * We need to grow the array.
 		 */
+		bpf_u_int32 new_ifaces_size;
+		struct pcap_ng_if *new_ifaces;
+
 		if (ps->ifaces_size == 0) {
 			/*
 			 * It's currently empty.
+			 *
+			 * (The Clang static analyzer doesn't do enough,
+			 * err, umm, dataflow *analysis* to realize that
+			 * ps->ifaces_size == 0 if ps->ifaces == NULL,
+			 * and so complains about a possible zero argument
+			 * to realloc(), so we check for the former
+			 * condition to shut it up.
+			 *
+			 * However, it doesn't complain that one of the
+			 * multiplications below could overflow, which is
+			 * a real, albeit extremely unlikely, problem (you'd
+			 * need a pcapng file with tens of millions of
+			 * interfaces).)
 			 */
 			new_ifaces_size = 1;
 			new_ifaces = malloc(sizeof (struct pcap_ng_if));
@@ -729,7 +735,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	}
 
 	ps->ifaces[ps->ifcount - 1].snaplen = idbp->snaplen;
-	#endif
+#endif
 
 	/*
 	 * Set the default time stamp resolution and offset.
@@ -737,9 +743,10 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	tsresol = 1000000;	/* microsecond resolution */
 	is_binary = 0;		/* which is a power of 10 */
 	tsoffset = 0;		/* absolute timestamps */
-	#ifdef HAVE_RUST_PCAPNG
+
+#ifdef HAVE_RUST_PCAPNG
 	scale_factor = 0;
-	#endif
+#endif
 
 	/*
 	 * Now look for various time stamp options, so we know
@@ -749,61 +756,79 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	    errbuf) == -1)
 		return (0);
 
-	#ifndef HAVE_RUST_PCAPNG
+#ifndef HAVE_RUST_PCAPNG
 	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
 	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
-	#endif
+#endif
 
 	/*
 	 * Determine whether we're scaling up or down or not
 	 * at all for this interface.
 	 */
 	if (tsresol == ps->user_tsresol) {
-		#ifdef HAVE_RUST_PCAPNG
+		/*
+		 * The resolution is the resolution the user wants,
+		 * so we don't have to do scaling.
+		 */
+#ifdef HAVE_RUST_PCAPNG
 		scale_type = PASS_THROUGH;
-		#else
+#else
 		ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
-		#endif
+#endif
 	} else if (tsresol > ps->user_tsresol) {
+		/*
+		 * The resolution is greater than what the user wants,
+		 * so we have to scale the timestamps down.
+		 */
 		if (is_binary)
-			#ifdef HAVE_RUST_PCAPNG
+#ifdef HAVE_RUST_PCAPNG
 			scale_type = SCALE_DOWN_BIN;
-			#else
+#else
 			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_BIN;
-			#endif
+#endif
 		else {
-			#ifdef HAVE_RUST_PCAPNG
+			/*
+			 * Calculate the scale factor.
+			 */
+#ifdef HAVE_RUST_PCAPNG
 			scale_factor = tsresol/ps->user_tsresol;
 			scale_type = SCALE_DOWN_DEC;
-			#else
+#else
 			ps->ifaces[ps->ifcount - 1].scale_factor = tsresol/ps->user_tsresol;
 			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_DEC;
-			#endif
+#endif
 		}
 	} else {
+		/*
+		 * The resolution is less than what the user wants,
+		 * so we have to scale the timestamps up.
+		 */
 		if (is_binary)
-			#ifdef HAVE_RUST_PCAPNG
+#ifdef HAVE_RUST_PCAPNG
 			scale_type = SCALE_UP_BIN;
-			#else
+#else
 			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_BIN;
-			#endif
+#endif
 		else {
-			#ifdef HAVE_RUST_PCAPNG
+			/*
+			 * Calculate the scale factor.
+			 */
+#ifdef HAVE_RUST_PCAPNG
 			scale_factor = ps->user_tsresol/tsresol;
 			scale_type = SCALE_UP_DEC;
-			#else
+#else
 			ps->ifaces[ps->ifcount - 1].scale_factor = ps->user_tsresol/tsresol;
 			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_DEC;
-			#endif
+#endif
 		}
 	}
 
-	#ifdef HAVE_RUST_PCAPNG
+#ifdef HAVE_RUST_PCAPNG
 	if (pcapng_rs_interface_push(ps->rs_state, idbp->snaplen,
 	    tsresol, scale_type, scale_factor, tsoffset,
 	    errbuf, PCAP_ERRBUF_SIZE) != 0)
 		return (0);
-	#endif
+#endif
 
 	return (1);
 }
