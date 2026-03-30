@@ -467,7 +467,9 @@ libpcap.shareda: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	$(AR) rc $@ shr.o
 
 $(PCAPNG_RS_STATICLIB): $(PCAPNG_RS_BUILD_SRCS)
-	$(CARGO) build --release --manifest-path "$(PCAPNG_RS_DIR)/Cargo.toml"
+	@if test -n "$(RUST_PCAPNG_STATICLIB)"; then \
+		$(CARGO) build --release --manifest-path "$(PCAPNG_RS_DIR)/Cargo.toml"; \
+	fi
 
 #
 # For platforms that don't support shared libraries (or on which we
@@ -570,9 +572,13 @@ build-rpcapd: libpcap.a
 #
 # Test programs - not built by default, and not installed.
 #
-testprogs: FORCE libpcap.a $(PCAPNG_RS_STATICLIB)
-	@PCAPNG_RS_ABS=`cd "$(PCAPNG_RS_DIR)/target/release" && pwd`/libpcapng_rs.a; \
-	(cd testprogs; $(MAKE) CFLAGS="$(CFLAGS)" LIBS="$(LIBS) $$PCAPNG_RS_ABS")
+testprogs: FORCE libpcap.a $(RUST_PCAPNG_STATICLIB)
+	@if test -n "$(RUST_PCAPNG_STATICLIB)"; then \
+		PCAPNG_RS_ABS=`cd "$(PCAPNG_RS_DIR)/target/release" && pwd`/libpcapng_rs.a; \
+		(cd testprogs; $(MAKE) CFLAGS="$(CFLAGS)" LIBS="$(LIBS) $$PCAPNG_RS_ABS"); \
+	else \
+		(cd testprogs; $(MAKE) CFLAGS="$(CFLAGS)" LIBS="$(LIBS)"); \
+	fi
 
 FORCE:
 
