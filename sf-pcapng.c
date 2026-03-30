@@ -343,6 +343,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			return (-1);
 		}
 		p->buffer = bigger_buffer;
+		p->bufsize = bhdr.total_length;
 	}
 
 	/*
@@ -902,9 +903,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	default:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown time stamp resolution %u", precision);
-		free(p);
-		*err = 1;
-		return (NULL);
+		goto fail;
 	}
 
 	p->opt.tstamp_precision = precision;
@@ -931,9 +930,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-		free(p);
-		*err = 1;
-		return (NULL);
+		goto fail;
 	}
 	ps->max_blocksize = INITIAL_MAX_BLOCKSIZE;
 
