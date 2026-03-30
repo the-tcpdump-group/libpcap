@@ -41,6 +41,7 @@
 #endif
 
 #include "sf-pcapng.h"
+#ifdef HAVE_RUST_PCAPNG
 /*
  * Keep parser-owned dynamic buffers in an opaque Rust state.
  *
@@ -49,6 +50,7 @@
  * behind a narrow FFI, reducing memory-management risk on untrusted inputs.
  */
 #include "pcapng_rs_ffi.h"
+#endif
 
 /*
  * Block types.
@@ -231,14 +233,19 @@ struct pcap_ng_if {
  * imposed by the amount of available backing store for anonymous pages,
  * so we impose a limit regardless of the size of a pointer.
  *
- * rs_state is an opaque Rust-owned allocation arena for parser scratch
- * memory.  The C side must never dereference it and must release it exactly
- * once on all terminal paths.
  */
 struct pcap_ng_sf {
 	uint64_t user_tsresol;		/* time stamp resolution requested by the user */
 	u_int max_blocksize;		/* don't grow buffer size past this */
+
+#ifdef HAVE_RUST_PCAPNG
+	/* Rust-owned parser buffers and interface table. */
 	struct pcapng_rs_state *rs_state;	/* Rust-owned buffers and interfaces */
+#else
+	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
+	bpf_u_int32 ifaces_size;		/* size of array below */
+	struct pcap_ng_if *ifaces;	/* array of interface information */
+#endif
 };
 
 /*
@@ -332,6 +339,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		return (-1);
 	}
 
+	#ifdef HAVE_RUST_PCAPNG
 	/*
 	 * Grow parser scratch space through the Rust state object.
 	 *
@@ -349,6 +357,30 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 		return (-1);
 	}
+	#else
+	/*
+	 * Is the buffer big enough?
+	 */
+	if (p->bufsize < bhdr.total_length) {
+		/*
+		 * No - make it big enough, unless it's too big, in
+		 * which case we fail.
+		 */
+		void *bigger_buffer;
+
+		if (bhdr.total_length > ps->max_blocksize) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", bhdr.total_length,
+			    ps->max_blocksize);
+			return (-1);
+		}
+		bigger_buffer = realloc(p->buffer, bhdr.total_length);
+		if (bigger_buffer == NULL) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+			return (-1);
+		}
+		p->buffer = bigger_buffer;
+	}
+	#endif
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -601,10 +633,103 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	uint64_t tsresol;
 	int64_t tsoffset;
 	int is_binary;
+	#ifdef HAVE_RUST_PCAPNG
 	tstamp_scale_type_t scale_type;
 	uint64_t scale_factor;
+	#else
+	bpf_u_int32 new_ifaces_size;
+	struct pcap_ng_if *new_ifaces;
+	#endif
 
 	ps = p->priv;
+
+	#ifndef HAVE_RUST_PCAPNG
+	/*
+	 * Count this interface.
+	 */
+	ps->ifcount++;
+
+	/*
+	 * Grow the array of per-interface information as necessary.
+	 */
+	if (ps->ifcount > ps->ifaces_size) {
+		/*
+		 * We need to grow the array.
+		 */
+		if (ps->ifaces_size == 0) {
+			/*
+			 * It's currently empty.
+			 */
+			new_ifaces_size = 1;
+			new_ifaces = malloc(sizeof (struct pcap_ng_if));
+		} else {
+			/*
+			 * It's not currently empty; double its size.
+			 * (Perhaps overkill once we have a lot of interfaces.)
+			 *
+			 * Check for overflow if we double it.
+			 */
+			if (ps->ifaces_size * 2 < ps->ifaces_size) {
+				/*
+				 * The maximum number of interfaces before
+				 * ps->ifaces_size overflows is the largest
+				 * possible 32-bit power of 2, as we do
+				 * size doubling.
+				 */
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "more than %u interfaces in the file",
+				    0x80000000U);
+				return (0);
+			}
+
+			/*
+			 * ps->ifaces_size * 2 doesn't overflow, so it's
+			 * safe to multiply.
+			 */
+			new_ifaces_size = ps->ifaces_size * 2;
+
+			/*
+			 * Now make sure that's not so big that it overflows
+			 * if we multiply by sizeof (struct pcap_ng_if).
+			 *
+			 * That can happen on 32-bit platforms, with a 32-bit
+			 * size_t; it shouldn't happen on 64-bit platforms,
+			 * with a 64-bit size_t, as new_ifaces_size is
+			 * 32 bits.
+			 */
+			if (new_ifaces_size * sizeof (struct pcap_ng_if) < new_ifaces_size) {
+				/*
+				 * As this fails only with 32-bit size_t,
+				 * the multiplication was 32x32->32, and
+				 * the largest 32-bit value that can safely
+				 * be multiplied by sizeof (struct pcap_ng_if)
+				 * without overflow is the largest 32-bit
+				 * (unsigned) value divided by
+				 * sizeof (struct pcap_ng_if).
+				 */
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "more than %u interfaces in the file",
+				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
+				return (0);
+			}
+			new_ifaces = realloc(ps->ifaces, new_ifaces_size * sizeof (struct pcap_ng_if));
+		}
+		if (new_ifaces == NULL) {
+			/*
+			 * We ran out of memory.
+			 * Give up.
+			 */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "out of memory for per-interface information (%u interfaces)",
+			    ps->ifcount);
+			return (0);
+		}
+		ps->ifaces_size = new_ifaces_size;
+		ps->ifaces = new_ifaces;
+	}
+
+	ps->ifaces[ps->ifcount - 1].snaplen = idbp->snaplen;
+	#endif
 
 	/*
 	 * Set the default time stamp resolution and offset.
@@ -612,7 +737,9 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	tsresol = 1000000;	/* microsecond resolution */
 	is_binary = 0;		/* which is a power of 10 */
 	tsoffset = 0;		/* absolute timestamps */
+	#ifdef HAVE_RUST_PCAPNG
 	scale_factor = 0;
+	#endif
 
 	/*
 	 * Now look for various time stamp options, so we know
@@ -622,32 +749,61 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	    errbuf) == -1)
 		return (0);
 
+	#ifndef HAVE_RUST_PCAPNG
+	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
+	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
+	#endif
+
 	/*
 	 * Determine whether we're scaling up or down or not
 	 * at all for this interface.
 	 */
 	if (tsresol == ps->user_tsresol) {
+		#ifdef HAVE_RUST_PCAPNG
 		scale_type = PASS_THROUGH;
+		#else
+		ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+		#endif
 	} else if (tsresol > ps->user_tsresol) {
 		if (is_binary)
+			#ifdef HAVE_RUST_PCAPNG
 			scale_type = SCALE_DOWN_BIN;
+			#else
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_BIN;
+			#endif
 		else {
+			#ifdef HAVE_RUST_PCAPNG
 			scale_factor = tsresol/ps->user_tsresol;
 			scale_type = SCALE_DOWN_DEC;
+			#else
+			ps->ifaces[ps->ifcount - 1].scale_factor = tsresol/ps->user_tsresol;
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_DEC;
+			#endif
 		}
 	} else {
 		if (is_binary)
+			#ifdef HAVE_RUST_PCAPNG
 			scale_type = SCALE_UP_BIN;
+			#else
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_BIN;
+			#endif
 		else {
+			#ifdef HAVE_RUST_PCAPNG
 			scale_factor = ps->user_tsresol/tsresol;
 			scale_type = SCALE_UP_DEC;
+			#else
+			ps->ifaces[ps->ifcount - 1].scale_factor = ps->user_tsresol/tsresol;
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_DEC;
+			#endif
 		}
 	}
 
+	#ifdef HAVE_RUST_PCAPNG
 	if (pcapng_rs_interface_push(ps->rs_state, idbp->snaplen,
 	    tsresol, scale_type, scale_factor, tsoffset,
 	    errbuf, PCAP_ERRBUF_SIZE) != 0)
 		return (0);
+	#endif
 
 	return (1);
 }
@@ -776,6 +932,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	}
 	p->swapped = swapped;
 	ps = p->priv;
+	#ifdef HAVE_RUST_PCAPNG
 	ps->rs_state = pcapng_rs_state_new();
 	if (ps->rs_state == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
@@ -783,6 +940,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		*err = 1;
 		return (NULL);
 	}
+	#endif
 
 	/*
 	 * What precision does the user want?
@@ -800,7 +958,13 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	default:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown time stamp resolution %u", precision);
+		#ifdef HAVE_RUST_PCAPNG
 		goto fail;
+		#else
+		free(p);
+		*err = 1;
+		return (NULL);
+		#endif
 	}
 
 	p->opt.tstamp_precision = precision;
@@ -826,6 +990,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		p->bufsize = total_length;
 	ps->max_blocksize = INITIAL_MAX_BLOCKSIZE;
 
+	#ifdef HAVE_RUST_PCAPNG
 	if (pcapng_rs_ensure_block_capacity(ps->rs_state, p->bufsize,
 	    ps->max_blocksize, errbuf, PCAP_ERRBUF_SIZE) != 0)
 		goto fail;
@@ -835,6 +1000,15 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 		goto fail;
 	}
+	#else
+	p->buffer = malloc(p->bufsize);
+	if (p->buffer == NULL) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		free(p);
+		*err = 1;
+		return (NULL);
+	}
+	#endif
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -975,9 +1149,14 @@ done:
 	return (p);
 
 fail:
+	#ifdef HAVE_RUST_PCAPNG
 	pcapng_rs_state_free(ps->rs_state);
 	ps->rs_state = NULL;
 	p->buffer = NULL;
+	#else
+	free(ps->ifaces);
+	free(p->buffer);
+	#endif
 	free(p);
 	*err = 1;
 	return (NULL);
@@ -988,10 +1167,14 @@ pcap_ng_cleanup(pcap_t *p)
 {
 	struct pcap_ng_sf *ps = p->priv;
 
+	#ifdef HAVE_RUST_PCAPNG
 	pcapng_rs_state_free(ps->rs_state);
 	ps->rs_state = NULL;
 	p->buffer = NULL;
 	p->bufsize = 0;
+	#else
+	free(ps->ifaces);
+	#endif
 	pcapint_sf_cleanup(p);
 }
 
@@ -1012,7 +1195,9 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	bpf_u_int32 interface_id = 0xFFFFFFFF;
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
+	#ifdef HAVE_RUST_PCAPNG
 	struct pcapng_rs_interface iface;
+	#endif
 	FILE *fp = p->rfile;
 	uint64_t t, sec, frac;
 
@@ -1250,7 +1435,11 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * any IDBs, we'll fail when we see a packet
 			 * block.)
 			 */
+			#ifdef HAVE_RUST_PCAPNG
 			pcapng_rs_interfaces_clear(ps->rs_state);
+			#else
+			ps->ifcount = 0;
+			#endif
 			break;
 
 		default:
@@ -1265,6 +1454,7 @@ found:
 	/*
 	 * Is the interface ID an interface we know?
 	 */
+	#ifdef HAVE_RUST_PCAPNG
 	if (interface_id >= pcapng_rs_interface_count(ps->rs_state)) {
 		/*
 		 * Yes.  Fail.
@@ -1296,6 +1486,17 @@ found:
 		    interface_id);
 		return (-1);
 	}
+	#else
+	if (interface_id >= ps->ifcount) {
+		/*
+		 * Yes.  Fail.
+		 */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "a packet arrived on interface %u, but there's no Interface Description Block for that interface",
+		    interface_id);
+		return (-1);
+	}
+	#endif
 
 	if (hdr->caplen > (bpf_u_int32)p->snapshot) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1308,14 +1509,23 @@ found:
 	 * Convert the time stamp to seconds and fractions of a second,
 	 * with the fractions being in units of the file-supplied resolution.
 	 */
+	#ifdef HAVE_RUST_PCAPNG
 	sec = t / iface.tsresol + iface.tsoffset;
 	frac = t % iface.tsresol;
+	#else
+	sec = t / ps->ifaces[interface_id].tsresol + ps->ifaces[interface_id].tsoffset;
+	frac = t % ps->ifaces[interface_id].tsresol;
+	#endif
 
 	/*
 	 * Convert the fractions from units of the file-supplied resolution
 	 * to units of the user-requested resolution.
 	 */
+	#ifdef HAVE_RUST_PCAPNG
 	switch (iface.scale_type) {
+	#else
+	switch (ps->ifaces[interface_id].scale_type) {
+	#endif
 
 	case PASS_THROUGH:
 		/*
@@ -1338,7 +1548,11 @@ found:
 		 * We've calculated that quotient already, so we just
 		 * multiply by it.
 		 */
+		#ifdef HAVE_RUST_PCAPNG
 		frac *= iface.scale_factor;
+		#else
+		frac *= ps->ifaces[interface_id].scale_factor;
+		#endif
 		break;
 
 	case SCALE_UP_BIN:
@@ -1362,7 +1576,11 @@ found:
 		 * two non-simple arithmetic operations.
 		 */
 		frac *= ps->user_tsresol;
+		#ifdef HAVE_RUST_PCAPNG
 		frac /= iface.tsresol;
+		#else
+		frac /= ps->ifaces[interface_id].tsresol;
+		#endif
 		break;
 
 	case SCALE_DOWN_DEC:
@@ -1381,7 +1599,11 @@ found:
 		 * the reciprocal of that quotient already, so we must
 		 * divide by it.
 		 */
+		#ifdef HAVE_RUST_PCAPNG
 		frac /= iface.scale_factor;
+		#else
+		frac /= ps->ifaces[interface_id].scale_factor;
+		#endif
 		break;
 
 
@@ -1409,14 +1631,20 @@ found:
 		 * two non-simple arithmetic operations.
 		 */
 		frac *= ps->user_tsresol;
+		#ifdef HAVE_RUST_PCAPNG
 		frac /= iface.tsresol;
+		#else
+		frac /= ps->ifaces[interface_id].tsresol;
+		#endif
 		break;
 
+	#ifdef HAVE_RUST_PCAPNG
 	default:
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "interface %u has invalid timestamp scale type %d",
 		    interface_id, iface.scale_type);
 		return (-1);
+	#endif
 	}
 #ifdef _WIN32
 	/*

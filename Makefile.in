@@ -68,10 +68,11 @@ PTHREAD_LIBS=@PTHREAD_LIBS@
 BUILD_RPCAPD=@BUILD_RPCAPD@
 INSTALL_RPCAPD=@INSTALL_RPCAPD@
 PERL?=perl
-CARGO?=cargo
+CARGO=@CARGO@
 
 PCAPNG_RS_DIR = $(srcdir)/pcapng_rs
 PCAPNG_RS_STATICLIB = $(PCAPNG_RS_DIR)/target/release/libpcapng_rs.a
+RUST_PCAPNG_STATICLIB = @RUST_PCAPNG_STATICLIB@
 PCAPNG_RS_BUILD_SRCS = \
 	$(PCAPNG_RS_DIR)/Cargo.toml \
 	$(PCAPNG_RS_DIR)/src/lib.rs
@@ -390,19 +391,19 @@ RELEASE_FILES = $(COMMON_C_SRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
 
 all: libpcap.a shared $(BUILD_RPCAPD) libpcap.pc pcap-config
 
-libpcap.a: $(OBJ) $(PCAPNG_RS_STATICLIB)
+libpcap.a: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	@rm -f $@
-	$(AR) rc $@ $(OBJ) $(ADDLARCHIVEOBJS) $(PCAPNG_RS_STATICLIB)
+	$(AR) rc $@ $(OBJ) $(ADDLARCHIVEOBJS) $(RUST_PCAPNG_STATICLIB)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
 
-libpcap.so: $(OBJ) $(PCAPNG_RS_STATICLIB)
+libpcap.so: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	@rm -f $@
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	@V_SHLIB_CMD@ $(LDFLAGS) @V_SHLIB_OPT@ @V_SONAME_OPT@$@.$$MAJOR_VER \
-	    -o $@.$$VER $(OBJ) $(ADDLOBJS) $(PCAPNG_RS_STATICLIB) $(LIBS)
+	    -o $@.$$VER $(OBJ) $(ADDLOBJS) $(RUST_PCAPNG_STATICLIB) $(LIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -420,14 +421,14 @@ libpcap.so: $(OBJ) $(PCAPNG_RS_STATICLIB)
 # form X[.Y[.Z]], with Y and Z possibly absent, and with all components
 # numeric).
 #
-libpcap.dylib: $(OBJ) $(PCAPNG_RS_STATICLIB)
+libpcap.dylib: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	rm -f libpcap*.dylib
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
 	$(CC) -dynamiclib -undefined error $(LDFLAGS) @V_LIB_LDFLAGS_FAT@ \
-	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(PCAPNG_RS_STATICLIB) $(LIBS) \
+	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(RUST_PCAPNG_STATICLIB) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
 	    -current_version $$CURRENT_VER
@@ -444,12 +445,12 @@ libpcap.dylib: $(OBJ) $(PCAPNG_RS_STATICLIB)
 # XXX - this assumes we're using the HP linker, rather than the GNU
 # linker, even with GCC.
 #
-libpcap.sl: $(OBJ) $(PCAPNG_RS_STATICLIB)
+libpcap.sl: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	@MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	rm -f libpcap.$$MAJOR_VER
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	ld -b $(LDFLAGS) -o libpcap.$$MAJOR_VER +h libpcap.$$MAJOR_VER \
-	    $(OBJ) $(ADDLOBJS) $(PCAPNG_RS_STATICLIB) $(LIBS)
+	    $(OBJ) $(ADDLOBJS) $(RUST_PCAPNG_STATICLIB) $(LIBS)
 
 #
 # AIX is different from everybody else.  A shared library is an archive
@@ -460,9 +461,9 @@ libpcap.sl: $(OBJ) $(PCAPNG_RS_STATICLIB)
 # in question, but we also build a shared library as "libpcap.shareda"
 # and install *it*, rather than the static library, as "libpcap.a".
 #
-libpcap.shareda: $(OBJ) $(PCAPNG_RS_STATICLIB)
+libpcap.shareda: $(OBJ) $(RUST_PCAPNG_STATICLIB)
 	@rm -f $@ shr.o
-	$(CC) $(LDFLAGS) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(PCAPNG_RS_STATICLIB) $(LIBS)
+	$(CC) $(LDFLAGS) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(RUST_PCAPNG_STATICLIB) $(LIBS)
 	$(AR) rc $@ shr.o
 
 $(PCAPNG_RS_STATICLIB): $(PCAPNG_RS_BUILD_SRCS)

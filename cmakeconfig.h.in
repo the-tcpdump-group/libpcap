@@ -102,6 +102,9 @@
 /* Define to 1 if you have a POSIX-style `strerror_r' function. */
 #cmakedefine HAVE_POSIX_STRERROR_R 1
 
+/* Define to 1 if Rust-backed pcapng support is enabled. */
+#cmakedefine HAVE_RUST_PCAPNG 1
+
 /* define if you have the Myricom SNF API */
 #cmakedefine HAVE_SNF_API 1
 

@@ -3048,6 +3048,20 @@ if test "$prefix" != "/usr"; then
 	esac
 fi
 
+AC_ARG_VAR([CARGO], [path to the cargo executable])
+AC_PATH_PROG([CARGO], [cargo], [no])
+
+if test "x$CARGO" != "xno"; then
+	AC_DEFINE([HAVE_RUST_PCAPNG], [1], [Define to 1 if Rust-backed pcapng support is enabled.])
+	RUST_PCAPNG_STATICLIB='$(PCAPNG_RS_STATICLIB)'
+	AC_MSG_NOTICE([cargo found; enabling Rust-backed pcapng support])
+else
+	RUST_PCAPNG_STATICLIB=
+	AC_MSG_NOTICE([cargo not found; building without Rust-backed pcapng support])
+fi
+AC_SUBST(CARGO)
+AC_SUBST(RUST_PCAPNG_STATICLIB)
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADERS([config.h])
