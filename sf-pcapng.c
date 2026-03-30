@@ -41,6 +41,14 @@
 #endif
 
 #include "sf-pcapng.h"
+/*
+ * Keep parser-owned dynamic buffers in an opaque Rust state.
+ *
+ * This file continues to own pcapng parsing and format validation; Rust
+ * centralizes checked allocation growth and per-interface table management
+ * behind a narrow FFI, reducing memory-management risk on untrusted inputs.
+ */
+#include "pcapng_rs_ffi.h"
 
 /*
  * Block types.
@@ -222,13 +230,15 @@ struct pcap_ng_if {
  * any limitations imposed by the operating system; 3) any limitations
  * imposed by the amount of available backing store for anonymous pages,
  * so we impose a limit regardless of the size of a pointer.
+ *
+ * rs_state is an opaque Rust-owned allocation arena for parser scratch
+ * memory.  The C side must never dereference it and must release it exactly
+ * once on all terminal paths.
  */
 struct pcap_ng_sf {
 	uint64_t user_tsresol;		/* time stamp resolution requested by the user */
 	u_int max_blocksize;		/* don't grow buffer size past this */
-	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
-	bpf_u_int32 ifaces_size;	/* size of array below */
-	struct pcap_ng_if *ifaces;	/* array of interface information */
+	struct pcapng_rs_state *rs_state;	/* Rust-owned buffers and interfaces */
 };
 
 /*
@@ -323,26 +333,21 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	}
 
 	/*
-	 * Is the buffer big enough?
+	 * Grow parser scratch space through the Rust state object.
+	 *
+	 * The Rust side performs checked growth and rejects oversized block
+	 * lengths, keeping overflow-prone realloc arithmetic out of this code
+	 * path.
 	 */
-	if (p->bufsize < bhdr.total_length) {
-		/*
-		 * No - make it big enough, unless it's too big, in
-		 * which case we fail.
-		 */
-		void *bigger_buffer;
+	if (pcapng_rs_ensure_block_capacity(ps->rs_state, bhdr.total_length,
+	    ps->max_blocksize, errbuf, PCAP_ERRBUF_SIZE) != 0)
+		return (-1);
 
-		if (bhdr.total_length > ps->max_blocksize) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", bhdr.total_length,
-			    ps->max_blocksize);
-			return (-1);
-		}
-		bigger_buffer = realloc(p->buffer, bhdr.total_length);
-		if (bigger_buffer == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-			return (-1);
-		}
-		p->buffer = bigger_buffer;
+	p->buffer = pcapng_rs_block_buffer_ptr(ps->rs_state);
+	p->bufsize = pcapng_rs_block_buffer_len(ps->rs_state);
+	if (p->buffer == NULL || p->bufsize < bhdr.total_length) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		return (-1);
 	}
 
 	/*
@@ -596,110 +601,10 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	uint64_t tsresol;
 	int64_t tsoffset;
 	int is_binary;
+	tstamp_scale_type_t scale_type;
+	uint64_t scale_factor;
 
 	ps = p->priv;
-
-	/*
-	 * Count this interface.
-	 */
-	ps->ifcount++;
-
-	/*
-	 * Grow the array of per-interface information as necessary.
-	 */
-	if (ps->ifcount > ps->ifaces_size) {
-		/*
-		 * We need to grow the array.
-		 */
-		bpf_u_int32 new_ifaces_size;
-		struct pcap_ng_if *new_ifaces;
-
-		if (ps->ifaces_size == 0) {
-			/*
-			 * It's currently empty.
-			 *
-			 * (The Clang static analyzer doesn't do enough,
-			 * err, umm, dataflow *analysis* to realize that
-			 * ps->ifaces_size == 0 if ps->ifaces == NULL,
-			 * and so complains about a possible zero argument
-			 * to realloc(), so we check for the former
-			 * condition to shut it up.
-			 *
-			 * However, it doesn't complain that one of the
-			 * multiplications below could overflow, which is
-			 * a real, albeit extremely unlikely, problem (you'd
-			 * need a pcapng file with tens of millions of
-			 * interfaces).)
-			 */
-			new_ifaces_size = 1;
-			new_ifaces = malloc(sizeof (struct pcap_ng_if));
-		} else {
-			/*
-			 * It's not currently empty; double its size.
-			 * (Perhaps overkill once we have a lot of interfaces.)
-			 *
-			 * Check for overflow if we double it.
-			 */
-			if (ps->ifaces_size * 2 < ps->ifaces_size) {
-				/*
-				 * The maximum number of interfaces before
-				 * ps->ifaces_size overflows is the largest
-				 * possible 32-bit power of 2, as we do
-				 * size doubling.
-				 */
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "more than %u interfaces in the file",
-				    0x80000000U);
-				return (0);
-			}
-
-			/*
-			 * ps->ifaces_size * 2 doesn't overflow, so it's
-			 * safe to multiply.
-			 */
-			new_ifaces_size = ps->ifaces_size * 2;
-
-			/*
-			 * Now make sure that's not so big that it overflows
-			 * if we multiply by sizeof (struct pcap_ng_if).
-			 *
-			 * That can happen on 32-bit platforms, with a 32-bit
-			 * size_t; it shouldn't happen on 64-bit platforms,
-			 * with a 64-bit size_t, as new_ifaces_size is
-			 * 32 bits.
-			 */
-			if (new_ifaces_size * sizeof (struct pcap_ng_if) < new_ifaces_size) {
-				/*
-				 * As this fails only with 32-bit size_t,
-				 * the multiplication was 32x32->32, and
-				 * the largest 32-bit value that can safely
-				 * be multiplied by sizeof (struct pcap_ng_if)
-				 * without overflow is the largest 32-bit
-				 * (unsigned) value divided by
-				 * sizeof (struct pcap_ng_if).
-				 */
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "more than %u interfaces in the file",
-				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
-				return (0);
-			}
-			new_ifaces = realloc(ps->ifaces, new_ifaces_size * sizeof (struct pcap_ng_if));
-		}
-		if (new_ifaces == NULL) {
-			/*
-			 * We ran out of memory.
-			 * Give up.
-			 */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "out of memory for per-interface information (%u interfaces)",
-			    ps->ifcount);
-			return (0);
-		}
-		ps->ifaces_size = new_ifaces_size;
-		ps->ifaces = new_ifaces;
-	}
-
-	ps->ifaces[ps->ifcount - 1].snaplen = idbp->snaplen;
 
 	/*
 	 * Set the default time stamp resolution and offset.
@@ -707,6 +612,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	tsresol = 1000000;	/* microsecond resolution */
 	is_binary = 0;		/* which is a power of 10 */
 	tsoffset = 0;		/* absolute timestamps */
+	scale_factor = 0;
 
 	/*
 	 * Now look for various time stamp options, so we know
@@ -716,48 +622,33 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	    errbuf) == -1)
 		return (0);
 
-	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
-	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
-
 	/*
 	 * Determine whether we're scaling up or down or not
 	 * at all for this interface.
 	 */
 	if (tsresol == ps->user_tsresol) {
-		/*
-		 * The resolution is the resolution the user wants,
-		 * so we don't have to do scaling.
-		 */
-		ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+		scale_type = PASS_THROUGH;
 	} else if (tsresol > ps->user_tsresol) {
-		/*
-		 * The resolution is greater than what the user wants,
-		 * so we have to scale the timestamps down.
-		 */
 		if (is_binary)
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_BIN;
+			scale_type = SCALE_DOWN_BIN;
 		else {
-			/*
-			 * Calculate the scale factor.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_factor = tsresol/ps->user_tsresol;
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_DEC;
+			scale_factor = tsresol/ps->user_tsresol;
+			scale_type = SCALE_DOWN_DEC;
 		}
 	} else {
-		/*
-		 * The resolution is less than what the user wants,
-		 * so we have to scale the timestamps up.
-		 */
 		if (is_binary)
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_BIN;
+			scale_type = SCALE_UP_BIN;
 		else {
-			/*
-			 * Calculate the scale factor.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_factor = ps->user_tsresol/tsresol;
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_DEC;
+			scale_factor = ps->user_tsresol/tsresol;
+			scale_type = SCALE_UP_DEC;
 		}
 	}
+
+	if (pcapng_rs_interface_push(ps->rs_state, idbp->snaplen,
+	    tsresol, scale_type, scale_factor, tsoffset,
+	    errbuf, PCAP_ERRBUF_SIZE) != 0)
+		return (0);
+
 	return (1);
 }
 
@@ -885,6 +776,13 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	}
 	p->swapped = swapped;
 	ps = p->priv;
+	ps->rs_state = pcapng_rs_state_new();
+	if (ps->rs_state == NULL) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		free(p);
+		*err = 1;
+		return (NULL);
+	}
 
 	/*
 	 * What precision does the user want?
@@ -902,9 +800,7 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	default:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown time stamp resolution %u", precision);
-		free(p);
-		*err = 1;
-		return (NULL);
+		goto fail;
 	}
 
 	p->opt.tstamp_precision = precision;
@@ -928,14 +824,17 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	p->bufsize = 2048;
 	if (p->bufsize < total_length)
 		p->bufsize = total_length;
-	p->buffer = malloc(p->bufsize);
-	if (p->buffer == NULL) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-		free(p);
-		*err = 1;
-		return (NULL);
-	}
 	ps->max_blocksize = INITIAL_MAX_BLOCKSIZE;
+
+	if (pcapng_rs_ensure_block_capacity(ps->rs_state, p->bufsize,
+	    ps->max_blocksize, errbuf, PCAP_ERRBUF_SIZE) != 0)
+		goto fail;
+	p->buffer = pcapng_rs_block_buffer_ptr(ps->rs_state);
+	p->bufsize = pcapng_rs_block_buffer_len(ps->rs_state);
+	if (p->buffer == NULL || p->bufsize < total_length) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		goto fail;
+	}
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -1076,8 +975,9 @@ done:
 	return (p);
 
 fail:
-	free(ps->ifaces);
-	free(p->buffer);
+	pcapng_rs_state_free(ps->rs_state);
+	ps->rs_state = NULL;
+	p->buffer = NULL;
 	free(p);
 	*err = 1;
 	return (NULL);
@@ -1088,7 +988,10 @@ pcap_ng_cleanup(pcap_t *p)
 {
 	struct pcap_ng_sf *ps = p->priv;
 
-	free(ps->ifaces);
+	pcapng_rs_state_free(ps->rs_state);
+	ps->rs_state = NULL;
+	p->buffer = NULL;
+	p->bufsize = 0;
 	pcapint_sf_cleanup(p);
 }
 
@@ -1109,6 +1012,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	bpf_u_int32 interface_id = 0xFFFFFFFF;
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
+	struct pcapng_rs_interface iface;
 	FILE *fp = p->rfile;
 	uint64_t t, sec, frac;
 
@@ -1346,7 +1250,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * any IDBs, we'll fail when we see a packet
 			 * block.)
 			 */
-			ps->ifcount = 0;
+			pcapng_rs_interfaces_clear(ps->rs_state);
 			break;
 
 		default:
@@ -1361,12 +1265,34 @@ found:
 	/*
 	 * Is the interface ID an interface we know?
 	 */
-	if (interface_id >= ps->ifcount) {
+	if (interface_id >= pcapng_rs_interface_count(ps->rs_state)) {
 		/*
 		 * Yes.  Fail.
 		 */
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "a packet arrived on interface %u, but there's no Interface Description Block for that interface",
+		    interface_id);
+		return (-1);
+	}
+
+	if (pcapng_rs_interface_get(ps->rs_state, interface_id,
+	    &iface) != 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "a packet arrived on interface %u, but that interface's metadata is unavailable",
+		    interface_id);
+		return (-1);
+	}
+
+	if (iface.tsresol == 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "interface %u has invalid zero timestamp resolution",
+		    interface_id);
+		return (-1);
+	}
+
+	if (iface.scale_type == SCALE_DOWN_DEC && iface.scale_factor == 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "interface %u has invalid zero decimal scale factor",
 		    interface_id);
 		return (-1);
 	}
@@ -1382,14 +1308,14 @@ found:
 	 * Convert the time stamp to seconds and fractions of a second,
 	 * with the fractions being in units of the file-supplied resolution.
 	 */
-	sec = t / ps->ifaces[interface_id].tsresol + ps->ifaces[interface_id].tsoffset;
-	frac = t % ps->ifaces[interface_id].tsresol;
+	sec = t / iface.tsresol + iface.tsoffset;
+	frac = t % iface.tsresol;
 
 	/*
 	 * Convert the fractions from units of the file-supplied resolution
 	 * to units of the user-requested resolution.
 	 */
-	switch (ps->ifaces[interface_id].scale_type) {
+	switch (iface.scale_type) {
 
 	case PASS_THROUGH:
 		/*
@@ -1412,7 +1338,7 @@ found:
 		 * We've calculated that quotient already, so we just
 		 * multiply by it.
 		 */
-		frac *= ps->ifaces[interface_id].scale_factor;
+		frac *= iface.scale_factor;
 		break;
 
 	case SCALE_UP_BIN:
@@ -1436,7 +1362,7 @@ found:
 		 * two non-simple arithmetic operations.
 		 */
 		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac /= iface.tsresol;
 		break;
 
 	case SCALE_DOWN_DEC:
@@ -1455,7 +1381,7 @@ found:
 		 * the reciprocal of that quotient already, so we must
 		 * divide by it.
 		 */
-		frac /= ps->ifaces[interface_id].scale_factor;
+		frac /= iface.scale_factor;
 		break;
 
 
@@ -1483,8 +1409,14 @@ found:
 		 * two non-simple arithmetic operations.
 		 */
 		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac /= iface.tsresol;
 		break;
+
+	default:
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "interface %u has invalid timestamp scale type %d",
+		    interface_id, iface.scale_type);
+		return (-1);
 	}
 #ifdef _WIN32
 	/*

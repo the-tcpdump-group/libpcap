@@ -3184,6 +3184,35 @@ add_subdirectory(testprogs)
 # Register targets
 ######################################
 
+find_program(CARGO_EXECUTABLE cargo)
+if(NOT CARGO_EXECUTABLE)
+    message(FATAL_ERROR "cargo is required to build the Rust pcapng support library")
+endif()
+
+set(PCAPNG_RS_CRATE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pcapng_rs)
+set(PCAPNG_RS_LIBRARY ${PCAPNG_RS_CRATE_DIR}/target/release/${CMAKE_STATIC_LIBRARY_PREFIX}pcapng_rs${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+add_custom_command(
+    OUTPUT ${PCAPNG_RS_LIBRARY}
+    COMMAND ${CARGO_EXECUTABLE} build --manifest-path ${PCAPNG_RS_CRATE_DIR}/Cargo.toml --release
+    WORKING_DIRECTORY ${PCAPNG_RS_CRATE_DIR}
+    COMMENT "Building Rust pcapng support library"
+    VERBATIM
+)
+
+add_custom_target(pcapng_rs_build DEPENDS ${PCAPNG_RS_LIBRARY})
+
+add_library(pcapng_rs_static STATIC IMPORTED GLOBAL)
+set_target_properties(pcapng_rs_static PROPERTIES
+    IMPORTED_LOCATION ${PCAPNG_RS_LIBRARY}
+)
+if(WIN32)
+    set_target_properties(pcapng_rs_static PROPERTIES
+        INTERFACE_LINK_LIBRARIES "advapi32;ntdll;userenv;ws2_32"
+    )
+endif()
+add_dependencies(pcapng_rs_static pcapng_rs_build)
+
 #
 # Special target to serialize the building of the generated source.
 #
@@ -3212,6 +3241,7 @@ if(BUILD_SHARED_LIBS)
         $<INSTALL_INTERFACE:include>
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
+    add_dependencies(${LIBRARY_NAME} pcapng_rs_build)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         COMPILE_DEFINITIONS BUILDING_PCAP)
     #
@@ -3241,6 +3271,7 @@ target_include_directories(${LIBRARY_NAME}_static PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
+add_dependencies(${LIBRARY_NAME}_static pcapng_rs_build)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES
     COMPILE_DEFINITIONS BUILDING_PCAP)
 
@@ -3310,8 +3341,10 @@ if(BUILD_SHARED_LIBS)
         set_target_properties(${LIBRARY_NAME} PROPERTIES
             OSX_ARCHITECTURES "${OSX_LIBRARY_ARCHITECTURES}")
     endif()
-    target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
+    target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES} pcapng_rs_static)
 endif(BUILD_SHARED_LIBS)
+
+target_link_libraries(${LIBRARY_NAME}_static PUBLIC pcapng_rs_static)
 
 if(NOT C_ADDITIONAL_FLAGS STREQUAL "")
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
