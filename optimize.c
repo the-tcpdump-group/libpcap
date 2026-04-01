@@ -328,6 +328,8 @@ static void opt_init(opt_state_t *, struct icode *);
 static void opt_cleanup(opt_state_t *);
 static void PCAP_NORETURN opt_error(opt_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
+static void PCAP_NORETURN conv_error(conv_state_t *, const char *, ...)
+    PCAP_PRINTFLIKE(2, 3);
 
 static void intern_blocks(opt_state_t *, struct icode *);
 
@@ -2652,9 +2654,6 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 #ifdef BDEBUG
 int bids[NBIDS];
 #endif
-
-static void PCAP_NORETURN conv_error(conv_state_t *, const char *, ...)
-    PCAP_PRINTFLIKE(2, 3);
 
 /*
  * Returns true if successful.  Returns false if a branch has
