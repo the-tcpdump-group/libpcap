@@ -936,7 +936,7 @@ PCAP_API const char *pcap_lib_version(void);
  * - file://path_and_filename [opens a local file]
  * - rpcap://devicename [opens the selected device available on the local host, without using the RPCAP protocol]
  * - rpcap://[username:password@]host[:port]/devicename [opens the selected device available on a remote host]
- *   - username and password, if present, will be used to authenticate to the remote host
+ *   - username and password, if present, will be ignored
  *   - port, if present, will specify a port for RPCAP rather than using the default
  * - adaptername [to open a local adapter; kept for compatibility, but it is strongly discouraged]
  * - (NULL) [equivalent to "any"; kept for compatibility, but it is strongly discouraged]
@@ -945,7 +945,7 @@ PCAP_API const char *pcap_lib_version(void);
  * - file://folder/ [lists all the files in the given folder]
  * - rpcap:// [lists all local adapters]
  * - rpcap://[username:password@]host[:port]/ [lists the devices available on a remote host]
- *   - username and password, if present, will be used to authenticate to the remote host
+ *   - username and password, if present, will be ignored
  *   - port, if present, will specify a port for RPCAP rather than using the default
  *
  * In all the above, "rpcaps://" can be substituted for "rpcap://" to enable

@@ -2241,6 +2241,7 @@ novers:
 	return -1;
 }
 
+#if RPCAP_USE_USERINFO
 /* non-alphanumeric unreserved characters plus sub-delims (RFC3986) */
 static const char userinfo_allowed_symbols[] = "-._~!&'()*+,;=";
 
@@ -2265,6 +2266,7 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 
 	if ((ptr = userinfo) != NULL)
 	{
+		// FIXME: 'pos' is not limited to the sizes of 'username' and 'password'.
 		for (int pos = -1; (buf[++pos] = *ptr) != '\0'; ++ptr)
 		{
 			/* handle %xx encoded characters */
@@ -2314,6 +2316,7 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 
 	return rpcap_doauth(sockctrl, ssl, ver, byte_swapped, NULL, errbuf);
 }
+#endif // RPCAP_USE_USERINFO
 
 
 /* We don't currently support non-blocking mode. */
@@ -2458,12 +2461,14 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 #endif
 		}
 
+#if RPCAP_USE_USERINFO
 		if (auth == NULL && *userinfo != '\0')
 		{
 			auth_result = rpcap_doauth_userinfo(*sockctrlp, *sslp,
 			    protocol_versionp, byte_swappedp, userinfo, errbuf);
 		}
 		else
+#endif // RPCAP_USE_USERINFO
 		{
 			auth_result = rpcap_doauth(*sockctrlp, *sslp,
 			    protocol_versionp, byte_swappedp, auth, errbuf);

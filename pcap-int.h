@@ -156,6 +156,12 @@ extern int pcapint_mmap_32bit;
 #define MAXIMUM_SNAPLEN		262144
 
 /*
+ * Do not enable this feature!  rpcap_doauth_userinfo() is subject to a stack
+ * buffer overflow and must be either reimplemented or removed.
+ */
+#define RPCAP_USE_USERINFO 0
+
+/*
  * Locale-independent macros for testing character types.
  * These can be passed any integral value, without worrying about, for
  * example, sign-extending char values, unlike the C macros.
