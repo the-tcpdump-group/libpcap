@@ -1357,11 +1357,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		(p->save_current_filter_op)(p, buf);
 #endif
 
-	if (! initchunks_ok(&cstate)) {
-		// The error buffer has been filled.
-		rc = PCAP_ERROR;
-		goto quit;
-	}
 	cstate.no_optimize = 0;
 	cstate.ai = NULL;
 	cstate.ic.root = NULL;
@@ -1369,6 +1364,13 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	cstate.bpf_pcap = p;
 	cstate.error_set = 0;
 	init_regs(&cstate);
+
+	// cstate.error_set must have been initialized first.
+	if (! initchunks_ok(&cstate)) {
+		// The error buffer has been filled.
+		rc = PCAP_ERROR;
+		goto quit;
+	}
 
 	cstate.netmask = mask;
 
