@@ -396,6 +396,58 @@ sub skip_igrp88 {
         skip_os ('dragonfly');
 }
 
+my $valid_opcodes_enumeration = '
+(000) ld       #0xf                               ; 0x0000
+(001) ldx      #0xf                               ; 0x0001
+(002) st       M[15]                              ; 0x0002
+(003) stx      M[15]                              ; 0x0003
+(004) add      #15                                ; 0x0004
+(005) ja       21                                 ; 0x0005
+(006) tax                                         ; 0x0007
+(007) add      x                                  ; 0x000c
+(008) sub      #15                                ; 0x0014
+(009) jeq      #0xf             jt 11	jf 10       ; 0x0015
+(010) sub      x                                  ; 0x001c
+(011) jeq      x                jt 13	jf 12       ; 0x001d
+(012) ld       [15]                               ; 0x0020
+(013) mul      #15                                ; 0x0024
+(014) jgt      #0xf             jt 16	jf 15       ; 0x0025
+(015) ldh      [15]                               ; 0x0028
+(016) mul      x                                  ; 0x002c
+(017) jgt      x                jt 19	jf 18       ; 0x002d
+(018) ldb      [15]                               ; 0x0030
+(019) div      #15                                ; 0x0034
+(020) jge      #0xf             jt 22	jf 21       ; 0x0035
+(021) div      x                                  ; 0x003c
+(022) jge      x                jt 24	jf 23       ; 0x003d
+(023) ld       [x + 15]                           ; 0x0040
+(024) or       #0xf                               ; 0x0044
+(025) jset     #0xf             jt 27	jf 26       ; 0x0045
+(026) ldh      [x + 15]                           ; 0x0048
+(027) or       x                                  ; 0x004c
+(028) jset     x                jt 30	jf 29       ; 0x004d
+(029) ldb      [x + 15]                           ; 0x0050
+(030) and      #0xf                               ; 0x0054
+(031) and      x                                  ; 0x005c
+(032) ld       M[15]                              ; 0x0060
+(033) ldx      M[15]                              ; 0x0061
+(034) lsh      #15                                ; 0x0064
+(035) lsh      x                                  ; 0x006c
+(036) rsh      #15                                ; 0x0074
+(037) rsh      x                                  ; 0x007c
+(038) ld       #pktlen                            ; 0x0080
+(039) ldx      #pktlen                            ; 0x0081
+(040) neg                                         ; 0x0084
+(041) txa                                         ; 0x0087
+(042) mod      #15                                ; 0x0094
+(043) mod      x                                  ; 0x009c
+(044) xor      #0xf                               ; 0x00a4
+(045) xor      x                                  ; 0x00ac
+(046) ldxb     4*([15]&0xf)                       ; 0x00b1
+(047) ret      #15                                ; 0x0006
+(048) ret                                         ; 0x0016
+';
+
 # In filter_accept_blocks the top-level keys are test block names.  Each test
 # block defines one or more tests.  When possible, a test block name should be
 # easy to relate with the main filter expression, for example, ip_multicast for
@@ -444,57 +496,7 @@ my @filter_accept_blocks = (
 		DLT => 'EN10MB',
 		aliases => ['_enumerate_bpf_image'],
 		opt => undef,
-		unopt => '
-			(000) ld       #0xabcd                            ; 0x0000
-			(000) ldx      #0xabcd                            ; 0x0001
-			(000) st       M[43981]                           ; 0x0002
-			(000) stx      M[43981]                           ; 0x0003
-			(000) add      #43981                             ; 0x0004
-			(000) ja       43982                              ; 0x0005
-			(000) ret      #43981                             ; 0x0006
-			(000) tax                                         ; 0x0007
-			(000) add      x                                  ; 0x000c
-			(000) sub      #43981                             ; 0x0014
-			(000) jeq      #0xabcd          jt 172	jf 206     ; 0x0015
-			(000) ret                                         ; 0x0016
-			(000) sub      x                                  ; 0x001c
-			(000) jeq      x                jt 172	jf 206     ; 0x001d
-			(000) ld       [43981]                            ; 0x0020
-			(000) mul      #43981                             ; 0x0024
-			(000) jgt      #0xabcd          jt 172	jf 206     ; 0x0025
-			(000) ldh      [43981]                            ; 0x0028
-			(000) mul      x                                  ; 0x002c
-			(000) jgt      x                jt 172	jf 206     ; 0x002d
-			(000) ldb      [43981]                            ; 0x0030
-			(000) div      #43981                             ; 0x0034
-			(000) jge      #0xabcd          jt 172	jf 206     ; 0x0035
-			(000) div      x                                  ; 0x003c
-			(000) jge      x                jt 172	jf 206     ; 0x003d
-			(000) ld       [x + 43981]                        ; 0x0040
-			(000) or       #0xabcd                            ; 0x0044
-			(000) jset     #0xabcd          jt 172	jf 206     ; 0x0045
-			(000) ldh      [x + 43981]                        ; 0x0048
-			(000) or       x                                  ; 0x004c
-			(000) jset     x                jt 172	jf 206     ; 0x004d
-			(000) ldb      [x + 43981]                        ; 0x0050
-			(000) and      #0xabcd                            ; 0x0054
-			(000) and      x                                  ; 0x005c
-			(000) ld       M[43981]                           ; 0x0060
-			(000) ldx      M[43981]                           ; 0x0061
-			(000) lsh      #43981                             ; 0x0064
-			(000) lsh      x                                  ; 0x006c
-			(000) rsh      #43981                             ; 0x0074
-			(000) rsh      x                                  ; 0x007c
-			(000) ld       #pktlen                            ; 0x0080
-			(000) ldx      #pktlen                            ; 0x0081
-			(000) neg                                         ; 0x0084
-			(000) txa                                         ; 0x0087
-			(000) mod      #43981                             ; 0x0094
-			(000) mod      x                                  ; 0x009c
-			(000) xor      #0xabcd                            ; 0x00a4
-			(000) xor      x                                  ; 0x00ac
-			(000) ldxb     4*([43981]&0xf)                    ; 0x00b1
-			',
+		unopt => $valid_opcodes_enumeration,
 	},
 
 	{

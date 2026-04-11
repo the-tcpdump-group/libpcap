@@ -61,11 +61,13 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <sys/stat.h>
 
 #include "pcap/funcattrs.h"
+#include "pcap/bpf.h"
 
 #define MAXIMUM_SNAPLEN		262144
 #define MAX_STDIN		(64 * 1024)
-#define BPF_IMAGE_UNIMPL	"(000) unimp"
+#define BPF_IMAGE_UNIMPL	") unimp "
 #define BPF_IMAGE_ARGV		"_enumerate_bpf_image"
+#define BPF_IMAGE_FORMAT	"%-50s; 0x%04x\n"
 
 #ifdef BDEBUG
 /*
@@ -273,14 +275,37 @@ enumerate_bpf_image(void)
 {
 	struct bpf_insn insn = {
 		.code = 0x0000,
-		.jt = 0xab,
-		.jf = 0xcd,
-		.k = 0xabcd,
+		/*
+		 * Use small offsets to keep the resulting jump labels within
+		 * the resulting mock program.
+		 */
+		.jt = 1,
+		.jf = 0,
+		/*
+		 * Use a value of k that for lsh/rsh is a valid number of bits
+		 * and for ld/ldx/st/stx is a valid scratch memory register
+		 * number.
+		 */
+		.k = 15,
 	};
+	uint16_t found = 0;
 	do {
-		const char *image = bpf_image(&insn, 0);
-		if (strncmp(image, BPF_IMAGE_UNIMPL, sizeof(BPF_IMAGE_UNIMPL) - 1))
-			printf("%-50s; 0x%04x\n", image, insn.code);
+		if (BPF_CLASS(insn.code) != BPF_RET) {
+			const char *image = bpf_image(&insn, found);
+			if (! strstr(image, BPF_IMAGE_UNIMPL)) {
+				printf(BPF_IMAGE_FORMAT, image, insn.code);
+				found++;
+			}
+		}
+	} while (insn.code++ != UINT16_MAX);
+	do {
+		if (BPF_CLASS(insn.code) == BPF_RET) {
+			const char *image = bpf_image(&insn, found);
+			if (! strstr(image, BPF_IMAGE_UNIMPL)) {
+				printf(BPF_IMAGE_FORMAT, image, insn.code);
+				found++;
+			}
+		}
 	} while (insn.code++ != UINT16_MAX);
 }
 
