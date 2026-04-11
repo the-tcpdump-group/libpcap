@@ -237,9 +237,14 @@ sub test_and_report {
 
 	my %seen_labels;
 	foreach (@tests) {
+		if (! defined $_->{label}) {
+			my $count = scalar %seen_labels;
+			die "ERROR: after $count tests 'label' is not defined for a test";
+		}
 		my $label = $_->{label};
 		die "ERROR: Duplicate test label '$label'" if exists $seen_labels{$label};
 		$seen_labels{$label} = 1;
+		die "ERROR: 'func' is not defined for test '$label'" unless defined $_->{func};
 	}
 	undef %seen_labels;
 
