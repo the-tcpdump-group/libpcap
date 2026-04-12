@@ -30279,12 +30279,13 @@ sub run_filter_reject_test {
 		push @args, ('-F', mytmpfile ($filename_filter));
 	}
 	push @args, $test->{DLT} if defined $test->{DLT};
-	return run_generic_reject_test $test->{exitstatus}, $test->{expected}, @args;
+	return run_generic_reject_test defined $test->{DLT} ? EX_DATAERR : EX_NOINPUT,
+		$test->{expected}, @args;
 }
 
 sub run_translate_reject_test {
 	my $test = shift;
-	return run_generic_reject_test $test->{exitstatus}, $test->{expected},
+	return run_generic_reject_test EX_DATAERR, $test->{expected},
 		common_translatetest_args $test;
 }
 
@@ -30436,7 +30437,6 @@ foreach my $test (@filter_reject_tests) {
 			func => \&run_filter_reject_test,
 			savefile => $test->{savefile},
 			expected => $test->{errstr},
-			exitstatus => EX_NOINPUT,
 		};
 	} else {
 		# The test requires an expression only.
@@ -30454,7 +30454,6 @@ foreach my $test (@filter_reject_tests) {
 			optimize => 1,
 			expr => $test->{expr},
 			expected => $test->{errstr},
-			exitstatus => EX_DATAERR,
 		};
 	}
 }
@@ -30508,7 +30507,6 @@ foreach my $test (@translate_reject_tests) {
 			cfuncname => $test->{cfunc},
 			cfuncarg => $test->{arg},
 			expected => "ERROR: $test->{errstr}",
-			exitstatus => EX_DATAERR,
 		};
 	}
 }
