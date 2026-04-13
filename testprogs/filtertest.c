@@ -325,6 +325,7 @@ main(int argc, char **argv)
 #ifdef __linux__
 	bool lflag = false;
 #endif
+	bool qflag = false;
 	int snaplen = MAXIMUM_SNAPLEN;
 	enum {
 		NOT_SAVEFILE_FILTER,
@@ -346,7 +347,7 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "hdF:gm:Os:S:lr:")) != -1) {
+	while ((op = getopt(argc, argv, "hdF:gm:Os:S:lqr:")) != -1) {
 		switch (op) {
 
 		case 'h':
@@ -424,6 +425,10 @@ main(int argc, char **argv)
 			error(EX_USAGE, "libpcap and filtertest built without Linux BPF extensions");
 #endif
 
+		case 'q':
+			qflag = true;
+			break;
+
 		case 'S':
 			if (strcmp(optarg, "unswapped") == 0)
 				Sflag = UNSWAPPED_SAVEFILE_FILTER;
@@ -450,6 +455,8 @@ main(int argc, char **argv)
 		if (lflag)
 			error(EX_USAGE, "-r is not compatible with -l");
 #endif
+		if (qflag)
+			error(EX_USAGE, "-r is not compatible with -q");
 		if (Sflag != NOT_SAVEFILE_FILTER)
 			error(EX_USAGE, "-r is not compatible with -S");
 		if (snaplen != MAXIMUM_SNAPLEN)
@@ -464,6 +471,8 @@ main(int argc, char **argv)
 			usage(stderr);
 			/* NOTREACHED */
 		}
+		if (dflag > 1 && qflag)
+			error(EX_USAGE, "-d is not compatible with -q");
 		int dlt = pcap_datalink_name_to_val(argv[optind]);
 		if (dlt < 0) {
 			dlt = (int)strtol(argv[optind], &p, 10);
@@ -539,7 +548,8 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 #endif
-		bpf_dump(&fcode, dflag);
+		if (! qflag)
+			bpf_dump(&fcode, dflag);
 	} else {
 		struct pcap_pkthdr *h;
 		const u_char *d;
@@ -573,7 +583,7 @@ usage(FILE *f)
 #ifdef __linux__
 	    "l"
 #endif
-	    "O] [-S {unswapped|swapped}] [-F <file>] [-m <netmask>]\n"
+	    "Oq] [-S {unswapped|swapped}] [-F <file>] [-m <netmask>]\n"
 	    "       [-s <snaplen>] <DLT> [<expression>]\n",
 	    program_name);
 	(void)fprintf(f, "       (compile a filter expression, validate and print the program)\n");
@@ -596,6 +606,7 @@ usage(FILE *f)
 #endif
 	(void)fprintf(f, "  -m <netmask>    use this IPv4 netmask for pcap_compile(3PCAP),\n");
 	(void)fprintf(f, "                  e.g. 255.255.255.0\n");
+	(void)fprintf(f, "  -q              do not print the filter program\n");
 	(void)fprintf(f, "  -S {unswapped|swapped} generate filter code for a savefile\n");
 	(void)fprintf(f, "\n");
 	(void)fprintf(f, "Options common with tcpdump:\n");
