@@ -35,6 +35,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
   #include "getopt.h"
@@ -322,7 +323,7 @@ main(int argc, char **argv)
 	char *insavefile = NULL;
 	int Oflag = 1;
 #ifdef __linux__
-	int lflag = 0;
+	bool lflag = false;
 #endif
 	int snaplen = MAXIMUM_SNAPLEN;
 	enum {
@@ -417,7 +418,7 @@ main(int argc, char **argv)
 		case 'l':
 #ifdef __linux__
 			// Enable Linux BPF extensions.
-			lflag = 1;
+			lflag = true;
 			break;
 #else
 			error(EX_USAGE, "libpcap and filtertest built without Linux BPF extensions");
