@@ -956,7 +956,6 @@ static char *
 split_dname(char *device, u_int *unitp, char *ebuf)
 {
 	char *cp;
-	char *eos;
 	u_int unit;
 	int ret;
 
