@@ -164,7 +164,6 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 				return PCAP_ERROR;
 			}
 			if (handle->break_loop) {
-				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
 			}
 		}
@@ -217,7 +216,6 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		rdmasniff_post_recv(handle, wc.wr_id);
 
 		if (handle->break_loop) {
-			handle->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
 	}
