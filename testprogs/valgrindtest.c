@@ -20,6 +20,7 @@
  */
 
 #include "varattrs.h"
+#include "diag-control.h"
 
 /*
  * This doesn't actually test libpcap itself; it tests whether
@@ -404,8 +405,15 @@ main(int argc, char **argv)
 #if defined(USE_BPF)
 	ioctl(pcap_fd, BIOCSETF, &bad_fcode);
 #elif defined(USE_SOCKET_FILTERS)
+	/*
+	 * The point of this test is not to initialize bad_fcode, as we're
+	 * testing to make sure that valgrind will complain that the structure
+	 * isn't initialized.
+	 */
+DIAG_OFF_UNINITIALIZED_CONST_POINTER
 	setsockopt(pcap_fd, SOL_SOCKET, SO_ATTACH_FILTER, &bad_fcode,
 	    sizeof(bad_fcode));
+DIAG_ON_UNINITIALIZED_CONST_POINTER
 #endif
 
 	/*
