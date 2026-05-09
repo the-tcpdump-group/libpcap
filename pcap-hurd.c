@@ -20,17 +20,9 @@
 #include <device/net_status.h>
 #include <hurd/ports.h>
 #include <net/if_ether.h>
+#include <sys/queue.h>
 
 #include "pcap-int.h"
-
-struct pcap_hurd {
-	struct pcap_stat stat;
-	device_t mach_dev;
-	mach_port_t rcv_port;
-	int filtering_in_kernel;
-	pthread_t pipe_thread_id;
-	int pipefd[2];
-};
 
 /* Accept all packets. */
 static struct bpf_insn filter[] = {
@@ -49,6 +41,77 @@ static struct bpf_insn filter[] = {
  * messages for them.
  */
 #define pcapint_fmt_errmsg_for_kern_return_t	pcapint_fmt_errmsg_for_errno
+
+struct message {
+	STAILQ_ENTRY(message) messages;
+	struct net_rcv_msg msg;
+};
+
+STAILQ_HEAD(message_head, message);
+
+struct pcap_hurd {
+	struct pcap_stat stat;
+	device_t mach_dev;
+	mach_port_t rcv_port;
+	int filtering_in_kernel;
+	pthread_t pipe_thread_id;
+	int pipefd[2];
+	pthread_mutex_t qlock;
+	struct message_head mqueue;
+};
+
+static int
+push_to_queue(struct pcap_hurd *ph, struct net_rcv_msg *msg)
+{
+	struct message *m;
+
+	m = calloc(sizeof(struct message), 1);
+	if (!m)
+		return -1;
+
+	memcpy(&m->msg, msg, sizeof(struct net_rcv_msg));
+
+	pthread_mutex_lock(&ph->qlock);
+	STAILQ_INSERT_TAIL(&ph->mqueue, m, messages);
+	pthread_mutex_unlock(&ph->qlock);
+
+	return 0;
+}
+
+static int
+pop_from_queue(struct pcap_hurd *ph, struct net_rcv_msg *msg)
+{
+	struct message *m = NULL;
+
+	pthread_mutex_lock(&ph->qlock);
+	if (!STAILQ_EMPTY(&ph->mqueue)) {
+		m = STAILQ_FIRST(&ph->mqueue);
+		STAILQ_REMOVE_HEAD(&ph->mqueue, messages);
+	}
+	pthread_mutex_unlock(&ph->qlock);
+
+	if (!m)
+		return -1;
+
+	memcpy(msg, &m->msg, sizeof(struct net_rcv_msg));
+	free(m);
+
+	return 0;
+}
+
+static void
+cleanup_queue(struct pcap_hurd *ph)
+{
+	struct message *m = NULL;
+
+	pthread_mutex_lock(&ph->qlock);
+	while (!STAILQ_EMPTY(&ph->mqueue)) {
+		m = STAILQ_FIRST(&ph->mqueue);
+		STAILQ_REMOVE_HEAD(&ph->mqueue, messages);
+		free(m);
+	}
+	pthread_mutex_unlock(&ph->qlock);
+}
 
 static int
 PCAP_WARN_UNUSED_RESULT
@@ -132,6 +195,7 @@ pcap_read_hurd(pcap_t *p, int cnt _U_, pcap_handler callback, u_char *user)
 	struct timespec ts;
 	int wirelen, caplen, rpipe, ret;
 	u_char *pkt;
+	u_char dumb;
 
 	ph = p->priv;
 	rpipe = ph->pipefd[0];
@@ -143,15 +207,21 @@ retry:
 		return PCAP_ERROR_BREAK;
 	}
 
-	ret = read(rpipe, &msg->msg_hdr, p->bufsize);
+	ret = read(rpipe, &dumb, 1);
 	if (ret < 0) {
 		pcapint_fmt_errmsg_for_kern_return_t(p->errbuf,
 			PCAP_ERRBUF_SIZE, errno, "read");
 		return PCAP_ERROR;
 	}
 	if (ret == 0)
-		/* Pipe closed, 0 packets read */
+		/* Pipe closed, nothing to read */
 		return 0;
+
+	ret = pop_from_queue(ph, msg);
+	if (ret < 0) {
+		/* Queue empty, 0 packets read */
+		return 0;
+	}
 	clock_gettime(CLOCK_REALTIME, &ts);
 
 	ph->stat.ps_recv++;
@@ -260,6 +330,10 @@ pcap_cleanup_hurd(pcap_t *p)
 		ph->pipefd[0] = -1;
 	}
 
+	/* Cleanup the queue resources */
+	cleanup_queue(ph);
+	pthread_mutex_destroy(&ph->qlock);
+
 	/* Release remaining resources */
 	if (ph->rcv_port != MACH_PORT_NULL) {
 		mach_port_deallocate(mach_task_self(), ph->rcv_port);
@@ -285,6 +359,7 @@ pipe_write_thread(void *arg) {
 	kern_return_t kr;
 	mach_msg_timeout_t timeout_ms;
 	sigset_t set;
+	u_char dumb = 0xFF;
 
 	pthread_setname_np (pthread_self(), "pcap_hurd_pipe_thread");
 
@@ -317,7 +392,14 @@ pipe_write_thread(void *arg) {
 			return NULL;
 		}
 
-		ret = write(wpipe, &msg, msgsize);
+		ret = push_to_queue(ph, &msg);
+		if (ret < 0) {
+			pcapint_fmt_errmsg_for_errno(p->errbuf,
+				PCAP_ERRBUF_SIZE, errno, "push_to_queue");
+			return NULL;
+		}
+
+		ret = write(wpipe, &dumb, sizeof(dumb));
 		if (ret < 0) {
 			pcapint_fmt_errmsg_for_errno(p->errbuf,
 				PCAP_ERRBUF_SIZE, errno, "write");
@@ -406,6 +488,10 @@ pcap_activate_hurd(pcap_t *p)
 		    errno, "malloc");
 		goto error;
 	}
+
+	/* Init message queue and signal pipe */
+	pthread_mutex_init (&ph->qlock, NULL);
+	STAILQ_INIT(&ph->mqueue);
 
 	ret = init_pipe(p);
 	if (ret != 0) {
