@@ -232,6 +232,7 @@ static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
+static int pcap_linux_open_breakloop_fd(pcap_t *);
 
 union thdr {
 	struct tpacket2_hdr		*h2;
@@ -382,6 +383,51 @@ pcapint_create_interface(const char *device, char *ebuf)
 	handlep->poll_breakloop_fd = -1;
 
 	return handle;
+}
+
+/*
+ * Open the eventfd used to break out of blocking poll() calls.
+ *
+ * If eventfd isn't supported, continue without it; breakloop won't
+ * interrupt blocking poll(), but capture still works.
+ */
+static int
+pcap_linux_open_breakloop_fd(pcap_t *handle)
+{
+	struct pcap_linux *handlep = handle->priv;
+	int fd;
+	int flags;
+
+	fd = eventfd(0, EFD_NONBLOCK);
+	if (fd == -1 && errno == EINVAL) {
+		/*
+		 * Some older kernels don't accept EFD_NONBLOCK in eventfd().
+		 * Fall back to plain eventfd and set O_NONBLOCK via fcntl().
+		 */
+		fd = eventfd(0, 0);
+		if (fd != -1) {
+			flags = fcntl(fd, F_GETFL, 0);
+			if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+				int save_errno = errno;
+				close(fd);
+				errno = save_errno;
+				fd = -1;
+			}
+		}
+	}
+
+	if (fd == -1) {
+		if (errno == ENOSYS || errno == EINVAL) {
+			handlep->poll_breakloop_fd = -1;
+			return 0;
+		}
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+		    PCAP_ERRBUF_SIZE, errno, "could not open eventfd");
+		return -1;
+	}
+	handlep->poll_breakloop_fd = fd;
+
+	return 0;
 }
 
 #ifdef HAVE_LIBNL
@@ -1253,13 +1299,7 @@ pcap_activate_linux(pcap_t *handle)
 	 * we're not going to start in non-blocking mode.
 	 */
 	if (!handle->opt.nonblock) {
-		handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
-		if (handlep->poll_breakloop_fd == -1) {
-			/*
-			 * Failed.
-			 */
-			pcapint_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "could not open eventfd");
+		if (pcap_linux_open_breakloop_fd(handle) == -1) {
 			status = PCAP_ERROR;
 			goto fail;
 		}
@@ -3558,13 +3598,8 @@ pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 		 * We're setting the mode to blocking mode.
 		 */
 		if (handlep->poll_breakloop_fd == -1) {
-			/* If we did not have an eventfd, open one now that we are blocking. */
-			if ( ( handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK) ) == -1 ) {
-				pcapint_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "could not open eventfd");
+			if (pcap_linux_open_breakloop_fd(handle) == -1)
 				return -1;
-			}
 		}
 		if (handlep->timeout < 0) {
 			handlep->timeout = ~handlep->timeout;
