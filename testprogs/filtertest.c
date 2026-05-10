@@ -620,7 +620,7 @@ usage(FILE *f)
 	(void)fprintf(f, "accepts all packets.  If the -F option is in use, it replaces any filter\n");
 	(void)fprintf(f, "expression specified as a command-line argument.\n");
 	(void)fprintf(f, "\nExit status codes:\n");
-	(void)fprintf(f, "  %3u: All input has been succefully processed.\n", EX_OK);
+	(void)fprintf(f, "  %3u: All input has been successfully processed.\n", EX_OK);
 	(void)fprintf(f, "  %3u: libpcap has orderly rejected the filter.\n", EX_DATAERR);
 	(void)fprintf(f, "  %3u: libpcap has orderly rejected the savefile.\n", EX_NOINPUT);
 	(void)fprintf(f, "  %3u: Unexpected libpcap error.\n", EX_SOFTWARE);

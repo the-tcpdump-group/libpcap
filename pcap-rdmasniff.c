@@ -520,7 +520,7 @@ rdmasniff_activate(pcap_t *handle)
 				 "Failed to create QP - CAP_NET_RAW may be required");
 #else
 				 /* Root permission required? Something else? */
-				 "Faile to create QP");
+				 "Failed to create QP");
 #endif
 			ret = PCAP_ERROR_PERM_DENIED;
 		} else {

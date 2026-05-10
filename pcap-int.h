@@ -638,7 +638,7 @@ int	pcapint_parsesrcstr_ex(const char *, int *, char *, char *,
  * numeric as an error and will treat values that don't fit into
  * an unsigned int as an error.
  *
- * If the secnd argument is non-null, the string may have additional text
+ * If the second argument is non-null, the string may have additional text
  * after the number; if it is null, any additional text after the number
  * is treated as an error.
  *

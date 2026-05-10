@@ -1284,13 +1284,13 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	/* Yes - is "dag" followed by a number from 0 to DAG_MAX_BOARDS-1 */
 	cp += 3;
 	if (pcapint_get_decuint(cp, &cpend, &devnum) != 0) {
-		/* Not followe by a valid number */
+		/* Not followed by a valid number */
 		return NULL;
 	}
 	if (*cpend == ':') {
 		/* Followed by a stream number. */
 		if (pcapint_get_decuint(++cpend, NULL, &stream) != 0) {
-			/* Not followe by a valid number */
+			/* Not followed by a valid number */
 			return NULL;
 		}
 	} else if (*cpend != '\0') {
