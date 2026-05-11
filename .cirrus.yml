@@ -9,7 +9,7 @@ freebsd_task:
   freebsd_instance:
     cpu: 1
     memory: 2G
-    image_family: freebsd-13-5
+    image_family: freebsd-15-0-amd64-ufs
   env:
     IGNORE_OSVERSION: yes
     MATRIX_CC: clang17 gcc13
