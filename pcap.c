@@ -1713,7 +1713,7 @@ static int
 pcap_parse_source(const char *source, char **schemep, char **userinfop,
     char **hostp, char **portp, char **pathp, char *ebuf)
 {
-	char *colonp;
+	const char *colonp;
 	size_t scheme_len;
 	char *scheme;
 	const char *endp;
@@ -1762,7 +1762,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 * include colons (e.g., I think some Solaris interfaces
 	 * might).
 	 */
-	colonp = strchr(source, ':');
+	colonp = (const char *)strchr(source, ':');
 	if (colonp == NULL) {
 		/*
 		 * The source is the device to open.
