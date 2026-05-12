@@ -3098,7 +3098,7 @@ static void session_close(struct session *session)
 static int
 is_url(const char *source)
 {
-	char *colonp;
+	const char *colonp;
 
 	/*
 	 * RFC 3986 says:
@@ -3120,7 +3120,7 @@ is_url(const char *source)
 	 * include colons (e.g., I think some Solaris interfaces
 	 * might).
 	 */
-	colonp = strchr(source, ':');
+	colonp = (const char *)strchr(source, ':');
 	if (colonp == NULL)
 	{
 		/*
