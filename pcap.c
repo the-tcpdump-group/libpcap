@@ -3408,6 +3408,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USER15, "Private use 15"),
 	DLT_CHOICE(EDK2_MM, "EDK II MM request serialization protocol"),
 	DLT_CHOICE(DEBUG_ONLY, "unstructured data for manual debugging only"),
+	DLT_CHOICE(DECT_NR_TAP, "DECT-2020 New Radio TAP"),
 	DLT_CHOICE_SENTINEL
 };
 
