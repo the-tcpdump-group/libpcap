@@ -9563,7 +9563,7 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * update all of the header pointers. Attach this code so that
 	 * it gets executed in the event that the Geneve filter matches. */
 	struct block *offsets =
-		sprepend_to_block(gen_geneve_offsets(cstate),gen_true(cstate));
+		sprepend_to_block(gen_geneve_offsets(cstate), gen_true(cstate));
 
 	cstate->is_encap = 1;
 
