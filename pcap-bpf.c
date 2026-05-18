@@ -251,6 +251,8 @@ static void remove_802_11(pcap_t *);
 static int pcap_can_set_rfmon_bpf(pcap_t *p);
 static int pcap_activate_bpf(pcap_t *p);
 static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
+static int pcap_setwritefilter_bpf(pcap_t *p, struct bpf_program *fp);
+static int pcap_lockfilter_bpf(pcap_t *p);
 static int pcap_setdirection_bpf(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
@@ -2767,6 +2769,8 @@ pcap_activate_bpf(pcap_t *p)
 	p->read_op = pcap_read_bpf;
 	p->inject_op = pcap_inject_bpf;
 	p->setfilter_op = pcap_setfilter_bpf;
+	p->setwritefilter_op = pcap_setwritefilter_bpf;
+	p->lockfilter_op = pcap_lockfilter_bpf;
 	p->setdirection_op = pcap_setdirection_bpf;
 	p->set_datalink_op = pcap_set_datalink_bpf;
 	p->getnonblock_op = pcap_getnonblock_bpf;
@@ -3558,6 +3562,42 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 		return (-1);
 	pb->filtering_in_kernel = 0;	/* filtering in userland */
 	return (0);
+}
+
+static int
+pcap_setwritefilter_bpf(pcap_t *p, struct bpf_program *fp)
+{
+#ifdef BIOCSETWF
+	/*
+	 * Try to install the kernel filter.
+	 */
+	if (ioctl(p->fd, BIOCSETWF, (caddr_t)fp) == 0)
+		return (0);
+#else
+	(void)fp;
+	errno = ENOSYS;
+#endif
+	pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+	    errno, "BIOCSETWF");
+	return (-1);
+}
+
+static int
+pcap_lockfilter_bpf(pcap_t *p)
+{
+#ifdef BIOCLOCK
+	struct pcap_bpf *pb = p->priv;
+
+	if (pb->filtering_in_kernel == 0)
+		errno = EINVAL;
+	else if (ioctl(p->fd, BIOCLOCK) == 0)
+		return (0);
+#else
+	errno = ENOSYS;
+#endif
+	pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+	    errno, "BIOCLOCK");
+	return (-1);
 }
 
 /*

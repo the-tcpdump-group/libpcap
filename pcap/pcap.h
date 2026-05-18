@@ -616,6 +616,14 @@ PCAP_AVAILABLE_0_4
 PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *)
 	     PCAP_WARN_UNUSED_RESULT;
 
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_setwritefilter(pcap_t *, struct bpf_program *)
+	     PCAP_WARN_UNUSED_RESULT;
+
+PCAP_AVAILABLE_1_11
+PCAP_API int	pcap_lockfilter(pcap_t *)
+	     PCAP_WARN_UNUSED_RESULT;
+
 PCAP_AVAILABLE_0_9
 PCAP_API int	pcap_setdirection(pcap_t *, pcap_direction_t)
 	     PCAP_WARN_UNUSED_RESULT;
