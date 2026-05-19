@@ -8900,7 +8900,7 @@ gen_vlan_no_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 }
 
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
-/* add v to variable part of off */
+/* Add v to variable part of off. */
 static void
 gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
     bpf_u_int32 v, struct slist *s)
@@ -8924,8 +8924,8 @@ gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
 }
 
 /*
- * patch block b_tpid (VLAN TPID test) to update variable parts of link payload
- * and link type offsets first
+ * Patch block b_tpid (VLAN TPID test) to update variable parts of link payload
+ * and link type offsets first.
  */
 static void
 gen_vlan_patch_tpid_test(compiler_state_t *cstate, struct block *b_tpid)
@@ -8943,8 +8943,8 @@ gen_vlan_patch_tpid_test(compiler_state_t *cstate, struct block *b_tpid)
 }
 
 /*
- * patch block b_vid (VLAN id test) to load VID value either from packet
- * metadata (using BPF extensions) if SKF_AD_VLAN_TAG_PRESENT is true
+ * Patch block b_vid (VLAN ID test) to load VID value either from packet
+ * metadata (using BPF extensions) if SKF_AD_VLAN_TAG_PRESENT is true.
  */
 static void
 gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)

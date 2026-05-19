@@ -319,7 +319,7 @@ struct rpcap_filter
 {
 	uint16_t filtertype;	/* type of the filter transferred (BPF instructions, ...) */
 	uint16_t dummy;		/* Must be zero */
-	uint32_t nitems;	/* Number of items contained into the filter (e.g. BPF instructions for BPF filters) */
+	uint32_t nitems;	/* Number of items contained in the filter (e.g. BPF instructions for BPF filters) */
 };
 
 /* Structure that keeps a single BPF instruction; it is repeated 'ninsn' times according to the 'rpcap_filterbpf' header */
