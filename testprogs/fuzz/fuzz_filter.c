@@ -5,7 +5,7 @@
 #include <pcap/pcap.h>
 
 void fuzz_openFile(const char * name){
-    //do nothing
+    (void)name;//do nothing
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
