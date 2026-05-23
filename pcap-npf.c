@@ -196,13 +196,24 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	PACKET_OID_DATA *oid_data_arg;
 
 	/*
-	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
-	 * It should be big enough to hold "*lenp" bytes of data;
-	 */
-	oid_data_arg = malloc(PACKET_OID_DATA_LENGTH(*lenp));
+	* Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
+	* It should be big enough to hold "*lenp" bytes of data.
+	* Check for overflow in the size calculation.
+	*/
+	size_t alloc_size;
+
+	if (*lenp > SIZE_MAX - offsetof(PACKET_OID_DATA, Data)) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			"OID request length too large");
+		return (PCAP_ERROR);
+	}
+
+	alloc_size = offsetof(PACKET_OID_DATA, Data) + *lenp;
+
+	oid_data_arg = malloc(alloc_size);
 	if (oid_data_arg == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Couldn't allocate argument buffer for PacketRequest");
+			"Couldn't allocate argument buffer for PacketRequest");
 		return (PCAP_ERROR);
 	}
 
@@ -396,7 +407,20 @@ pcap_oid_set_request_npf(pcap_t *p, bpf_u_int32 oid, const void *data,
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
 	 * It should be big enough to hold "*lenp" bytes of data;
 	 */
-	oid_data_arg = malloc(PACKET_OID_DATA_LENGTH(*lenp));
+	size_t alloc_size;
+
+	/*
+	 * Prevent integer overflow when computing allocation size.
+	 */
+	if (*lenp > SIZE_MAX - offsetof(PACKET_OID_DATA, Data)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "OID request length too large");
+		return (PCAP_ERROR);
+	}
+
+	alloc_size = offsetof(PACKET_OID_DATA, Data) + *lenp;
+
+	oid_data_arg = malloc(alloc_size);
 	if (oid_data_arg == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
