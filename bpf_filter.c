@@ -349,11 +349,17 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_K:
-			A <<= pc->k;
+			if (pc->k < 32)
+				A <<= pc->k;
+			else
+				A = 0;
 			continue;
 
 		case BPF_ALU|BPF_RSH|BPF_K:
-			A >>= pc->k;
+			if (pc->k < 32)
+				A >>= pc->k;
+			else
+				A = 0;
 			continue;
 
 		case BPF_ALU|BPF_NEG:
@@ -449,9 +455,12 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 			case BPF_OR:
 			case BPF_AND:
 			case BPF_XOR:
+			case BPF_NEG:
+				break;
 			case BPF_LSH:
 			case BPF_RSH:
-			case BPF_NEG:
+				if (BPF_SRC(p->code) == BPF_K && p->k >= 32)
+					return 0;
 				break;
 			case BPF_DIV:
 			case BPF_MOD:
