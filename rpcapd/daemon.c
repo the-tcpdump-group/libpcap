@@ -2385,10 +2385,12 @@ daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *ctrl_ssl, struct session *se
 		    sizeof(struct rpcap_filterbpf_insn), plenp, errmsgbuf);
 		if (status == -1)
 		{
+			free(bf_prog.bf_insns);
 			return -1;
 		}
 		if (status == -2)
 		{
+			free(bf_prog.bf_insns);
 			return -2;
 		}
 
@@ -2406,15 +2408,18 @@ daemon_unpackapplyfilter(PCAP_SOCKET sockctrl, SSL *ctrl_ssl, struct session *se
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
 		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains invalid instructions");
+		free(bf_prog.bf_insns);
 		return -2;
 	}
 
 	if (pcap_setfilter(session->fp, &bf_prog))
 	{
 		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
+		free(bf_prog.bf_insns);
 		return -2;
 	}
 
+	free(bf_prog.bf_insns);
 	return 0;
 }
 
