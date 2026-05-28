@@ -2727,7 +2727,7 @@ daemon_thrdatamain(void *ptr)
 
 		rpcap_createhdr((struct rpcap_header *) sendbuf,
 		    session->protocol_version, RPCAP_MSG_PACKET, 0,
-		    (uint16_t) (sizeof(struct rpcap_pkthdr) + pkt_header->caplen));
+		    (uint32_t) (sizeof(struct rpcap_pkthdr) + pkt_header->caplen));
 
 		net_pkt_header = (struct rpcap_pkthdr *) &sendbuf[sendbufidx];
 
