@@ -1,6 +1,8 @@
 /*	$OpenBSD: strlcat.c,v 1.15 2015/03/02 21:41:08 millert Exp $	*/
 
 /*
+ * SPDX-License-Identifier: ISC
+ *
  * Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
