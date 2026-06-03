@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: CMU-Mach
+ *
  * Point to Point Protocol (PPP) RFC1331
  *
  * Copyright 1989 by Carnegie Mellon.
