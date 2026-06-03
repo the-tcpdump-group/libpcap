@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 1999 - 2005 NetGroup, Politecnico di Torino (Italy)
  * Copyright (c) 2005 - 2010 CACE Technologies, Davis (California)
  * All rights reserved.

@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  *  pcap-linux.c: Packet capture interface to the Linux kernel
  *
  *  Copyright (c) 2000 Torsten Landschoff <torsten@debian.org>
