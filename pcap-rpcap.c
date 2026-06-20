@@ -1217,6 +1217,16 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	 * so I would have to call getpeername() anyway
 	 */
 	saddrlen = sizeof(struct sockaddr_storage);
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+	/*
+	 * When fuzzing, the control socket is never connected, so
+	 * getpeername() and getnameinfo() would fail and we'd give up
+	 * before reaching the packet-reading code.  Use the address
+	 * family and host that the fuzzing socket pretends to be.
+	 */
+	ai_family = AF_INET;
+	pcapint_strlcpy(host, "127.0.0.1", sizeof(host));
+#else
 	if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
 		sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
@@ -1233,6 +1243,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		    "getnameinfo() failed");
 		goto error_nodiscard;
 	}
+#endif
 
 	/*
 	 * Data connection is opened by the server toward the client if:
