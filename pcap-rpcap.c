@@ -576,7 +576,22 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 		return 0;	/* Return 'no packets received' */
 	}
 
-	if (ntohl(net_pkt_header->caplen) > plen)
+	/*
+	 * The payload holds the packet header followed by the captured
+	 * data, so it must be at least as large as the packet header.
+	 */
+	if (plen < sizeof(struct rpcap_pkthdr))
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Packet message payload is shorter than a packet header");
+		return -1;
+	}
+
+	/*
+	 * The captured data follows the packet header, so caplen bytes
+	 * must fit in what's left of the payload after the header.
+	 */
+	if (ntohl(net_pkt_header->caplen) > plen - sizeof(struct rpcap_pkthdr))
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Packet's captured data goes past the end of the received packet message.");
