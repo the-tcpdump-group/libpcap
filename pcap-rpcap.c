@@ -2266,8 +2266,16 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 
 	if ((ptr = userinfo) != NULL)
 	{
-		// FIXME: 'pos' is not limited to the sizes of 'username' and 'password'.
-		for (int pos = -1; (buf[++pos] = *ptr) != '\0'; ++ptr)
+		int pos;
+
+		/*
+		 * 'pos' must stay within the bounds of 'username' and
+		 * 'password' (both sizeof(username) bytes); stop before the
+		 * write when the field would overflow and report an error
+		 * below.
+		 */
+		for (pos = -1; ++pos < (int)sizeof(username) &&
+		    (buf[pos] = *ptr) != '\0'; ++ptr)
 		{
 			/* handle %xx encoded characters */
 			if (*ptr == '%')
@@ -2308,6 +2316,12 @@ static int rpcap_doauth_userinfo(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid character '%c' in userinfo", *ptr);
 				return -1;
 			}
+		}
+
+		if (pos >= (int)sizeof(username))
+		{
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Username or password in userinfo is too long");
+			return -1;
 		}
 
 		return rpcap_doauth(sockctrl, ssl, ver, byte_swapped, &auth,
