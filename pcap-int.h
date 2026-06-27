@@ -157,7 +157,12 @@ extern int pcapint_mmap_32bit;
 
 /*
  * Do not enable this feature!  rpcap_doauth_userinfo() is subject to a stack
- * buffer overflow and must be either reimplemented or removed.
+ * buffer overflow and must be either reimplemented or removed.  Specifically,
+ * here "reimplemented" besides the obvious buffer management matters means
+ * rejecting an URL with malformed credentials as soon as possible rather than
+ * after establishing the TCP connection.  That would require to resolve the
+ * current layering violation between the URL parsing code and the network
+ * protocol code.
  */
 #define RPCAP_USE_USERINFO 0
 
