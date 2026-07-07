@@ -3177,11 +3177,9 @@ gen_loopback_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 		b1 = gen_bsd_af_linktype_offline(cstate, 0, BPF_W, ll_proto,
 		    !cstate->bpf_pcap->swapped);
 		return (gen_or(b0, b1));
-		break;
 
 	case DLT_LOOP:
 		return (gen_bsd_af_linktype_offline(cstate, 0, BPF_W, ll_proto, 0));
-		break;
 
 	default:
 		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "linktype",

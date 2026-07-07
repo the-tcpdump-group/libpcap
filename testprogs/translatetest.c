@@ -261,7 +261,7 @@ main(int argc, char **argv)
 	{
 		int op;
 		opterr = 0;
-		while ((op = getopt(argc, argv, "h")) != -1) {
+		if ((op = getopt(argc, argv, "h")) != -1) {
 			switch (op) {
 			case 'h':
 				usage_long(stdout);
@@ -270,6 +270,11 @@ main(int argc, char **argv)
 				usage_short(stderr);
 				exit(EX_USAGE);
 			}
+			/*
+			 * The end of this block is not reachable, which
+			 * generates a warning from Sun C if the outer control
+			 * statement is "while", hence use "if".
+			 */
 		}
 		// At least the function name must be present.
 		if (argc < 2) {
