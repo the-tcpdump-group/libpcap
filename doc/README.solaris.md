@@ -11,12 +11,6 @@
 * CMake 4.0.1 works.
 * GCC 14.2.0 and Clang 20.1.2 work.
 
-## OmniOS r151046/AMD64
-
-* flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake 3.26.4 works.
-* GCC 12.2.0 and Clang 16.0.4 work.
-
 ## OpenIndiana 2024.04/AMD64
 
 * flex 2.6.4 and GNU Bison 3.7.6 work.
@@ -29,13 +23,7 @@ For reference, the tests were done using a system installed from
 ## Solaris CBE 11.4.90.212.0/AMD64
 * flex 2.6.4 and GNU Bison 3.8.2 work.
 * CMake 3.24.0 works.
-* Clang 21.1.0 and GCC 15.2.0 work.
-
-## Solaris CBE 11.4.81.193.1/AMD64
-
-* flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake 3.24.0 works.
-* Clang 19.1.7 and GCC 14.2.0 work.
+* Sun C 5.15, Clang 21.1.0 and GCC 15.2.0 work.
 
 ## Solaris 11.4.72.176.1/SPARC
 * flex 2.6.4 and GNU Bison 3.8.2 work.
@@ -43,18 +31,6 @@ For reference, the tests were done using a system installed from
 * Sun C 5.15 works.
 * GCC 13.2.0 and Clang 13.0.1 work, but require setting
   `PKG_CONFIG_PATH=/usr/lib/64/pkgconfig`
-
-## Solaris 11.4.57.144.3/SPARC
-
-* flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake does not work.
-* GCC 12.2.0 and Clang 13.0.1 work.
-
-## Solaris CBE 11.4.42.111.0/AMD64
-
-* flex 2.6.4 and GNU Bison 3.7.3 work.
-* CMake 3.21.0 works.
-* Clang 11.0, GCC 11.2 and Sun C 5.15 work.
 
 ## Solaris 11.3/SPARC
 
