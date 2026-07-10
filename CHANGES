@@ -19,6 +19,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         (EOA) as of December 31, 2017
       Make pcap_compile() error messages more uniform and consistent.
       Deprecate pcap_compile_nopcap().
+      Remove unmaintained DPDK capture backend (was disabled by default).
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
