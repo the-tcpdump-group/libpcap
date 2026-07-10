@@ -218,8 +218,6 @@ You can get around this by installing GCC.
 	pcap-dbus.c	    - D-Bus capture support
 	pcap-dbus.h	    - D-Bus capture support
 	pcap-dlpi.c	    - Data Link Provider Interface support
-	pcap-dpdk.c	    - DPDK device support
-	pcap-dpdk.h	    - DPDK device support
 	pcap-haiku.c	    - Haiku capture support
 	pcap-hurd.c	    - GNU Hurd support
 	pcap-int.h	    - internal libpcap definitions
