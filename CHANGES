@@ -1,3 +1,10 @@
+Monday, September 7, 2026 / The Tcpdump Group
+  Summary for 1.10.8 libpcap release (so far!)
+    Packet filtering:
+      Fix optimization of "jset #0xffffffff".
+      BPF_X is not valid for BPF_RET; remove the always-false test for
+        it in atomuse().
+
 Saturday, September 5, 2026 / The Tcpdump Group
   Summary for 1.10.7 libpcap release
     General:
