@@ -25170,8 +25170,12 @@ my @filter_accept_blocks = (
 		name => 'ldb_jset_0xFFFFFFFF',
 		DLT => 'RAW',
 		aliases => ['link[0:1] & 0xFFFFFFFF == 0'],
-		# FIXME: The "opt" leg of this block is a reject test.
-		opt => undef,
+		opt => '
+			(000) ldb      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
 		unopt => '
 			(000) ld       #0x0
 			(001) st       M[0]
@@ -25417,8 +25421,12 @@ my @filter_accept_blocks = (
 		name => 'ldh_jset_0xFFFFFFFF',
 		DLT => 'RAW',
 		aliases => ['link[0:2] & 0xFFFFFFFF == 0'],
-		# FIXME: The "opt" leg of this block is a reject test.
-		opt => undef,
+		opt => '
+			(000) ldh      [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
 		unopt => '
 			(000) ld       #0x0
 			(001) st       M[0]
@@ -25661,8 +25669,12 @@ my @filter_accept_blocks = (
 		name => 'ld_jset_0xFFFFFFFF',
 		DLT => 'RAW',
 		aliases => ['link[0:4] & 0xFFFFFFFF == 0'],
-		# FIXME: The "opt" leg of this block is a reject test.
-		opt => undef,
+		opt => '
+			(000) ld       [0]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
 		unopt => '
 			(000) ld       #0x0
 			(001) st       M[0]
@@ -28300,25 +28312,6 @@ my @filter_reject_tests = (
 		DLT => 'IPV4',
 		# Idem.
 		expr => 'not ip and ip6',
-		errstr => errstr_rejects_all,
-	},
-
-	{
-		name => 'ldb_jset_0xFFFFFFFF',
-		DLT => 'RAW',
-		expr => 'link[0:1] & 0xFFFFFFFF == 0',
-		errstr => errstr_rejects_all,
-	},
-	{
-		name => 'ldh_jset_0xFFFFFFFF',
-		DLT => 'RAW',
-		expr => 'link[0:2] & 0xFFFFFFFF == 0',
-		errstr => errstr_rejects_all,
-	},
-	{
-		name => 'ld_jset_0xFFFFFFFF',
-		DLT => 'RAW',
-		expr => 'link[0:4] & 0xFFFFFFFF == 0',
 		errstr => errstr_rejects_all,
 	},
 

@@ -54,6 +54,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Match both byte orders for the AF_ value when filtering DLT_NULL
         and DLT_ENC savefiles. (issue #74)
       Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
+      Fix optimization of "jset #0xffffffff".
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization

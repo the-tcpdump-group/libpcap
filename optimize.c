@@ -1079,14 +1079,33 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		}
 	}
 	/*
-	 * jset #0        ->   never
-	 * jset #ffffffff ->   always
+	 * jset #0x0         ->  never
+	 * jset #0xffffffff  ->  iff A != 0
 	 */
 	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
+		/*
+		 * This can be, but not necessarily is a result of the folding
+		 * into "jset #k" above.
+		 */
 		if (b->s.k == 0)
 			JT(b) = JF(b);
-		if (b->s.k == 0xffffffffU)
-			JF(b) = JT(b);
+		else if (b->s.k == 0xffffffffU) {
+			/*
+			 * For any A: "A has at least one bit set" means the
+			 * same as "A != 0".  Test the latter condition, which
+			 * executes slightly faster and is easier to read.
+			 * This is not meant to be the inverse of the folding,
+			 * hence do not prepend a [no-op] "and #0xffffffff".
+			 */
+			b->s.code = BPF_JMP|BPF_JEQ|BPF_K;
+			b->s.k = 0;
+			opt_not(b);
+			opt_state->done = 0;
+			/*
+			 * XXX - optimizer loop detection.
+			 */
+			opt_state->non_branch_movement_performed = 1;
+		}
 	}
 	/*
 	 * If we're comparing against the index register, and the index
