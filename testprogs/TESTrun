@@ -25041,6 +25041,742 @@ my @filter_accept_blocks = (
 			(003) ret      #262144
 			',
 	}, # bool_reduction_returns_not_true
+
+	{
+		name => 'ldb_jset_0x00000000',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0x00000000 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0x0
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0x000000FF',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0x000000FF == 0'],
+		# TODO: Use "jeq #0x0" instead.
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xff            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0x0000FFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0x0000FFFF == 0'],
+		# TODO: Use "jeq #0x0" instead.
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xffff          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0x00FFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0x00FFFFFF == 0'],
+		# TODO: Use "jeq #0x0" instead.
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xffffff        jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0xFFFFFFFF == 0'],
+		# FIXME: The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0xFFFFFF00',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0xFFFFFF00 == 0'],
+		# TODO: Reduce to "ret".
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xffffff00      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff00
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0xFFFF0000',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0xFFFF0000 == 0'],
+		# TODO: Reduce to "ret".
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xffff0000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff0000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldb_jset_0xFF000000',
+		DLT => 'RAW',
+		aliases => ['link[0:1] & 0xFF000000 == 0'],
+		# TODO: Reduce to "ret".
+		opt => '
+			(000) ldb      [0]
+			(001) jset     #0xff000000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff000000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+
+	{
+		name => 'ldh_jset_0x00000000',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0x00000000 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0x0
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0x000000FF',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0x000000FF == 0'],
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xff            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0x0000FFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0x0000FFFF == 0'],
+		# TODO: Use "jeq #0x0" instead.
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xffff          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0x00FFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0x00FFFFFF == 0'],
+		# TODO: Use "jeq #0x0" instead.
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xffffff        jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0xFFFFFFFF == 0'],
+		# FIXME: The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0xFFFFFF00',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0xFFFFFF00 == 0'],
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xffffff00      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff00
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0xFFFF0000',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0xFFFF0000 == 0'],
+		# TODO: Reduce to "ret".
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xffff0000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff0000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ldh_jset_0xFF000000',
+		DLT => 'RAW',
+		aliases => ['link[0:2] & 0xFF000000 == 0'],
+		# TODO: Reduce to "ret".
+		opt => '
+			(000) ldh      [0]
+			(001) jset     #0xff000000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldh      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff000000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+
+	{
+		name => 'ld_jset_0x00000000',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0x00000000 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0x0
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0x000000FF',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0x000000FF == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xff            jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0x0000FFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0x0000FFFF == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xffff          jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0x00FFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0x00FFFFFF == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xffffff        jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0xFFFFFFFF == 0'],
+		# FIXME: The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffffff
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0xFFFFFF00',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0xFFFFFF00 == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xffffff00      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffffff00
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0xFFFF0000',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0xFFFF0000 == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xffff0000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xffff0000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'ld_jset_0xFF000000',
+		DLT => 'RAW',
+		aliases => ['link[0:4] & 0xFF000000 == 0'],
+		opt => '
+			(000) ld       [0]
+			(001) jset     #0xff000000      jt 2	jf 3
+			(002) ret      #0
+			(003) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ld       [x + 0]
+			(004) st       M[1]
+			(005) ld       #0xff000000
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ld       M[1]
+			(009) and      x
+			(010) st       M[2]
+			(011) ld       #0x0
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -27564,6 +28300,25 @@ my @filter_reject_tests = (
 		DLT => 'IPV4',
 		# Idem.
 		expr => 'not ip and ip6',
+		errstr => errstr_rejects_all,
+	},
+
+	{
+		name => 'ldb_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		expr => 'link[0:1] & 0xFFFFFFFF == 0',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'ldh_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		expr => 'link[0:2] & 0xFFFFFFFF == 0',
+		errstr => errstr_rejects_all,
+	},
+	{
+		name => 'ld_jset_0xFFFFFFFF',
+		DLT => 'RAW',
+		expr => 'link[0:4] & 0xFFFFFFFF == 0',
 		errstr => errstr_rejects_all,
 	},
 
