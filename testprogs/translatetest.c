@@ -261,6 +261,30 @@ main(int argc, char **argv)
 	{
 		int op;
 		opterr = 0;
+
+		/*
+		 * Currently, the only option we support is "-h",
+		 * which causes us to print a help message and exit
+		 * with a success error code.
+		 *
+		 * All other options are invalid, which causes us
+		 * to print a usage message and exit with an "invalid
+		 * usage" error code.
+		 *
+		 * This means that no code after the switch statement
+		 * is ever executed, which generates a warning from Sun C
+		 * if the outer control statement is "while", because
+		 * there would be "continue the loop" machine code after
+		 * the switch statement.
+		 *
+		 * Therefore, we use an "if" statement, to suppress that
+		 * warning.
+		 *
+		 * If we ever add options that do *not* cause us to
+		 * exit, the "if" should become a "while", as the warning
+		 * should no longer occur, and we may want to support
+		 * processing more than one option.
+		 */
 		if ((op = getopt(argc, argv, "h")) != -1) {
 			switch (op) {
 			case 'h':
@@ -272,8 +296,7 @@ main(int argc, char **argv)
 			}
 			/*
 			 * The end of this block is not reachable, which
-			 * generates a warning from Sun C if the outer control
-			 * statement is "while", hence use "if".
+			 * generates the warning mentioned above.
 			 */
 		}
 		// At least the function name must be present.
