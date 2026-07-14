@@ -2350,6 +2350,7 @@ test "x$enable_shared" = "xno" && DYEXT="none"
 
 AC_PROG_RANLIB
 AC_CHECK_TOOL([AR], [ar])
+AC_CHECK_TOOL([STRIP], [strip], [:])
 
 AC_PROG_LN_S
 AC_SUBST(LN_S)
