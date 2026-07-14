@@ -124,6 +124,8 @@
 #include "pcap-dpdk.h"
 #endif
 
+#include "pcap-plugin.h"
+
 #ifdef ENABLE_REMOTE
 #include "pcap-rpcap.h"
 #endif
@@ -657,6 +659,7 @@ static struct capture_source_type {
 #ifdef PCAP_SUPPORT_RDMASNIFF
 	{ rdmasniff_findalldevs, rdmasniff_create },
 #endif
+	{ pcap_plugin_dispatch_findalldevs, pcap_plugin_dispatch_create },
 #ifdef PCAP_SUPPORT_DPDK
 	{ pcap_dpdk_findalldevs, pcap_dpdk_create },
 #endif
@@ -4339,7 +4342,6 @@ pcap_close(pcap_t *p)
 
 /*
  * Helpers for safely loading code at run time.
- * Currently Windows-only.
  */
 #ifdef _WIN32
 //
@@ -4423,7 +4425,33 @@ pcapint_find_function(pcap_code_handle_t code, const char *func)
 {
 	return ((void *)GetProcAddress(code, func));
 }
-#endif
+
+void
+pcapint_unload_code(pcap_code_handle_t code)
+{
+	FreeLibrary(code);
+}
+#else /* _WIN32 */
+#include <dlfcn.h>
+
+pcap_code_handle_t
+pcapint_load_code(const char *path)
+{
+	return (dlopen(path, RTLD_NOW));
+}
+
+void *
+pcapint_find_function(pcap_code_handle_t code, const char *func)
+{
+	return (dlsym(code, func));
+}
+
+void
+pcapint_unload_code(pcap_code_handle_t code)
+{
+	dlclose(code);
+}
+#endif /* _WIN32 */
 
 /*
  * Given a BPF program, a pcap_pkthdr structure for a packet, and the raw
