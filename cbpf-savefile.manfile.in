@@ -11,9 +11,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "9 February 2025"
+.TH CBPF-SAVEFILE @MAN_FILE_FORMATS@ "14 July 2026"
 .SH NAME
-cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 7)
+cbpf-savefile \- cBPF savefile format (work in progress, DRAFT revision 8)
 .SH DESCRIPTION
 This man page discusses a file format for cBPF, which is the "classic" (and
 for a long time the only) Berkeley Packet Filter.  It does
@@ -80,7 +80,7 @@ manual identification.
 
 .SS MajorVer and MinorVer
 Contain the major and the minor version numbers of this format respectively.
-The current major version is 1 and the current minor version is 0.  Format
+The current major version is 1 and the current minor version is 1.  Format
 changes that do not impact compatibility (e.g., new TLV types or flags)
 increment the minor version only.  Other format changes increment the major
 version and reset the minor version to 0.  All format versions have the first
