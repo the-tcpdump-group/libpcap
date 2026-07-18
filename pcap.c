@@ -342,6 +342,22 @@ pcap_setfilter_not_initialized(pcap_t *pcap, struct bpf_program *fp _U_)
 }
 
 static int
+pcap_setwritefilter_not_initialized(pcap_t *pcap, struct bpf_program *fp _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_lockfilter_not_initialized(pcap_t *pcap)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
 pcap_setdirection_not_initialized(pcap_t *pcap, pcap_direction_t d _U_)
 {
 	pcap_set_not_initialized_message(pcap);
@@ -2448,6 +2464,8 @@ initialize_ops(pcap_t *p)
 	p->read_op = pcap_read_not_initialized;
 	p->inject_op = pcap_inject_not_initialized;
 	p->setfilter_op = pcap_setfilter_not_initialized;
+	p->setwritefilter_op = pcap_setwritefilter_not_initialized;
+	p->lockfilter_op = pcap_lockfilter_not_initialized;
 	p->setdirection_op = pcap_setdirection_not_initialized;
 	p->set_datalink_op = pcap_set_datalink_not_initialized;
 	p->getnonblock_op = pcap_getnonblock_not_initialized;
@@ -3950,6 +3968,18 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 	return (p->setfilter_op(p, fp));
 }
 
+int
+pcap_setwritefilter(pcap_t *p, struct bpf_program *fp)
+{
+	return (p->setwritefilter_op(p, fp));
+}
+
+int
+pcap_lockfilter(pcap_t *p)
+{
+	return (p->lockfilter_op(p));
+}
+
 /*
  * Set direction flag, which controls whether we accept only incoming
  * packets, only outgoing packets, or both.
@@ -4491,6 +4521,22 @@ pcap_setfilter_dead(pcap_t *p, struct bpf_program *fp _U_)
 }
 
 static int
+pcap_setwritefilter_dead(pcap_t *p, struct bpf_program *fp _U_)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A filter cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_lockfilter_dead(pcap_t *p)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A filter cannot be locked on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
 pcap_setdirection_dead(pcap_t *p, pcap_direction_t d _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -4662,6 +4708,8 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->read_op = pcap_read_dead;
 	p->inject_op = pcap_inject_dead;
 	p->setfilter_op = pcap_setfilter_dead;
+	p->setwritefilter_op = pcap_setwritefilter_dead;
+	p->lockfilter_op = pcap_lockfilter_dead;
 	p->setdirection_op = pcap_setdirection_dead;
 	p->set_datalink_op = pcap_set_datalink_dead;
 	p->getnonblock_op = pcap_getnonblock_dead;
