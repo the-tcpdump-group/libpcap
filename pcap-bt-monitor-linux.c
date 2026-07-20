@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 2014 Michal Labedzki for Tieto Corporation
  * All rights reserved.
  *

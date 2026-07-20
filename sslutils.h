@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 2002 - 2003
  * NetGroup, Politecnico di Torino (Italy)
  * All rights reserved.

@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
  * Copyright (c) 2013, Petar Alilovic,
  * Faculty of Electrical Engineering and Computing, University of Zagreb
  * All rights reserved
