@@ -21,6 +21,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Deprecate pcap_compile_nopcap().
       Remove unmaintained DPDK capture backend (was disabled by default).
       Return more useful strings from pcap_statustostr().
+      Rename SWAPSHORT(), SWAPLONG(), SWAPLL() to PCAP_BSWAP_({16,32,64}).
     Link-layer types:
       Add LINKTYPE_DECT_NR_TAP/DLT_DECT_NR_TAP.
     Packet filtering:
