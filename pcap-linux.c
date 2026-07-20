@@ -2554,6 +2554,7 @@ setup_socket(pcap_t *handle, int is_any_device)
 			return status;
 		}
 		if (handle->linktype == -1 ||
+		    handle->opt.cook ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
 		    handle->linktype == DLT_LINUX_LAPD ||
