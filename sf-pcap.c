@@ -239,7 +239,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	if (magic_int != TCPDUMP_MAGIC &&
 	    magic_int != KUZNETZOV_TCPDUMP_MAGIC &&
 	    magic_int != NSEC_TCPDUMP_MAGIC) {
-		magic_int = SWAPLONG(magic_int);
+		magic_int = PCAPINT_BSWAP_32(magic_int);
 		if (magic_int != TCPDUMP_MAGIC &&
 		    magic_int != KUZNETZOV_TCPDUMP_MAGIC &&
 		    magic_int != NSEC_TCPDUMP_MAGIC)
@@ -271,12 +271,12 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	 * If it's a byte-swapped capture file, byte-swap the header.
 	 */
 	if (swapped) {
-		hdr.version_major = SWAPSHORT(hdr.version_major);
-		hdr.version_minor = SWAPSHORT(hdr.version_minor);
-		hdr.thiszone = SWAPLONG(hdr.thiszone);
-		hdr.sigfigs = SWAPLONG(hdr.sigfigs);
-		hdr.snaplen = SWAPLONG(hdr.snaplen);
-		hdr.linktype = SWAPLONG(hdr.linktype);
+		hdr.version_major = PCAPINT_BSWAP_16(hdr.version_major);
+		hdr.version_minor = PCAPINT_BSWAP_16(hdr.version_minor);
+		hdr.thiszone = PCAPINT_BSWAP_32(hdr.thiszone);
+		hdr.sigfigs = PCAPINT_BSWAP_32(hdr.sigfigs);
+		hdr.snaplen = PCAPINT_BSWAP_32(hdr.snaplen);
+		hdr.linktype = PCAPINT_BSWAP_32(hdr.linktype);
 	}
 
 	/*
@@ -542,10 +542,10 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 	if (p->swapped) {
 		/* these were written in opposite byte order */
-		hdr->caplen = SWAPLONG(sf_hdr.caplen);
-		hdr->len = SWAPLONG(sf_hdr.len);
-		hdr->ts.tv_sec = SWAPLONG(sf_hdr.ts.tv_sec);
-		hdr->ts.tv_usec = SWAPLONG(sf_hdr.ts.tv_usec);
+		hdr->caplen = PCAPINT_BSWAP_32(sf_hdr.caplen);
+		hdr->len = PCAPINT_BSWAP_32(sf_hdr.len);
+		hdr->ts.tv_sec = PCAPINT_BSWAP_32(sf_hdr.ts.tv_sec);
+		hdr->ts.tv_usec = PCAPINT_BSWAP_32(sf_hdr.ts.tv_usec);
 	} else {
 		hdr->caplen = sf_hdr.caplen;
 		hdr->len = sf_hdr.len;
@@ -1116,17 +1116,17 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			}
 			break;
 
-		case SWAPLONG(TCPDUMP_MAGIC):
-		case SWAPLONG(NSEC_TCPDUMP_MAGIC):
+		case PCAPINT_BSWAP_32(TCPDUMP_MAGIC):
+		case PCAPINT_BSWAP_32(NSEC_TCPDUMP_MAGIC):
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different byte order, cannot append to file", fname);
 			(void)fclose(f);
 			return (NULL);
 
 		case KUZNETZOV_TCPDUMP_MAGIC:
-		case SWAPLONG(KUZNETZOV_TCPDUMP_MAGIC):
+		case PCAPINT_BSWAP_32(KUZNETZOV_TCPDUMP_MAGIC):
 		case NAVTEL_TCPDUMP_MAGIC:
-		case SWAPLONG(NAVTEL_TCPDUMP_MAGIC):
+		case PCAPINT_BSWAP_32(NAVTEL_TCPDUMP_MAGIC):
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: not a pcap file to which we can append", fname);
 			(void)fclose(f);

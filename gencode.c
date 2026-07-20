@@ -1587,7 +1587,7 @@ finish_parse(compiler_state_t *cstate, struct block *p_arg)
 	 */
 	if (cstate->linktype == DLT_PPI) {
 		struct block *ppi_dlt_check = gen_cmp(cstate, OR_PACKET,
-			4, BPF_W, SWAPLONG(DLT_IEEE802_11));
+			4, BPF_W, PCAPINT_BSWAP_32(DLT_IEEE802_11));
 		p = gen_and(ppi_dlt_check, p);
 	}
 
@@ -2945,7 +2945,7 @@ gen_endian_linktype(compiler_state_t *cstate, u_int offset, u_int size,
     bpf_u_int32 ll_proto, int swapped)
 {
 	return (gen_cmp(cstate, OR_LINKHDR, offset, size,
-	    swapped ? SWAPLONG(ll_proto) : ll_proto));
+	    swapped ? PCAPINT_BSWAP_32(ll_proto) : ll_proto));
 }
 
 static struct block *
@@ -3846,7 +3846,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 
 		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_flags_present->s.k = SWAPLONG(0x00000002);
+		sjset_radiotap_flags_present->s.k = PCAPINT_BSWAP_32(0x00000002);
 		sappend(s, sjset_radiotap_flags_present);
 
 		/*
@@ -3858,7 +3858,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * Otherwise, is the "extension" bit set in that word?
 		 */
 		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_ext_present->s.k = SWAPLONG(0x80000000);
+		sjset_radiotap_ext_present->s.k = PCAPINT_BSWAP_32(0x80000000);
 		sappend(s, sjset_radiotap_ext_present);
 		sjset_radiotap_flags_present->s.jt = sjset_radiotap_ext_present;
 
@@ -3871,7 +3871,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
 		 */
 		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_tsft_present->s.k = SWAPLONG(0x00000001);
+		sjset_radiotap_tsft_present->s.k = PCAPINT_BSWAP_32(0x00000001);
 		sappend(s, sjset_radiotap_tsft_present);
 		sjset_radiotap_ext_present->s.jf = sjset_radiotap_tsft_present;
 
@@ -5417,7 +5417,7 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	 * To test PLENGTH and FLAGS, use multiple-byte constants with the
 	 * values and the masks, this maps to the required single bytes of
 	 * the message correctly on both big-endian and little-endian hosts.
-	 * For the DECnet address use SWAPSHORT(), which always swaps bytes,
+	 * For the DECnet address use PCAPINT_BSWAP_16(), which always swaps bytes,
 	 * because the wire encoding is little-endian and BPF multiple-byte
 	 * loads are big-endian.  When the destination address is near enough
 	 * to PLENGTH and FLAGS, generate one 32-bit comparison instead of two
@@ -5426,35 +5426,35 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	/* Check for pad = 1, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8106U, 0xFF07U);
 	b1 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_lh,
-	    BPF_H, SWAPSHORT(addr));
+	    BPF_H, PCAPINT_BSWAP_16(addr));
 	b1 = gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
 	tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x06U, 0x07U);
 	b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_lh, BPF_H,
-	    SWAPSHORT(addr));
+	    PCAPINT_BSWAP_16(addr));
 	b2 = gen_and(tmp, b2);
 	b1 = gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
 	if (dir == Q_DST) {
 		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
-		    0x81020000U | SWAPSHORT(addr),
+		    0x81020000U | PCAPINT_BSWAP_16(addr),
 		    0xFF07FFFFU);
 	} else {
 		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_H, 0x8102U, 0xFF07U);
 		b2 = gen_cmp(cstate, OR_LINKPL, 2 + 1 + offset_sh, BPF_H,
-		    SWAPSHORT(addr));
+		    PCAPINT_BSWAP_16(addr));
 		b2 = gen_and(tmp, b2);
 	}
 	b1 = gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
 	if (dir == Q_DST) {
 		b2 = gen_mcmp(cstate, OR_LINKPL, 2, BPF_W,
-		    0x02000000U | SWAPSHORT(addr) << 8,
+		    0x02000000U | PCAPINT_BSWAP_16(addr) << 8,
 		    0x07FFFF00U);
 	} else {
 		tmp = gen_mcmp(cstate, OR_LINKPL, 2, BPF_B, 0x02U, 0x07U);
 		b2 = gen_cmp(cstate, OR_LINKPL, 2 + offset_sh, BPF_H,
-		    SWAPSHORT(addr));
+		    PCAPINT_BSWAP_16(addr));
 		b2 = gen_and(tmp, b2);
 	}
 
@@ -10057,8 +10057,8 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_OPC:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		return gen_ncmp(cstate, OR_PACKET, newoff_opc, BPF_W,
-		    SWAPLONG(MTP3_PC_MAXVAL << 14), jtype, reverse,
-		    SWAPLONG(jvalue << 14));
+		    PCAPINT_BSWAP_32(MTP3_PC_MAXVAL << 14), jtype, reverse,
+		    PCAPINT_BSWAP_32(jvalue << 14));
 
 	case MH_DPC:
 		newoff_dpc += 3;
@@ -10067,8 +10067,8 @@ gen_mtp3field_code_internal(compiler_state_t *cstate, int mtp3field,
 	case M_DPC:
 		assert_maxval(cstate, ss7kw(mtp3field), jvalue, MTP3_PC_MAXVAL);
 		return gen_ncmp(cstate, OR_PACKET, newoff_dpc, BPF_H,
-		    SWAPSHORT(MTP3_PC_MAXVAL), jtype, reverse,
-		    SWAPSHORT(jvalue));
+		    PCAPINT_BSWAP_16(MTP3_PC_MAXVAL), jtype, reverse,
+		    PCAPINT_BSWAP_16(jvalue));
 
 	case MH_SLS:
 		newoff_sls += 3;

@@ -42,20 +42,21 @@
  * ntoh[ls] aren't sufficient because we might need to swap on a big-endian
  * machine (if the file was written in little-end order).
  */
-#define SWAPLL(y)  ((((uint64_t)(y) & 0xff00000000000000ULL) >> 56) | \
-                      (((uint64_t)(y) & 0x00ff000000000000ULL) >> 40) | \
-                      (((uint64_t)(y) & 0x0000ff0000000000ULL) >> 24) | \
-                      (((uint64_t)(y) & 0x000000ff00000000ULL) >> 8)  | \
-                      (((uint64_t)(y) & 0x00000000ff000000ULL) << 8)  | \
-                      (((uint64_t)(y) & 0x0000000000ff0000ULL) << 24) | \
-                      (((uint64_t)(y) & 0x000000000000ff00ULL) << 40) | \
-                      (((uint64_t)(y) & 0x00000000000000ffULL) << 56))
-#define	SWAPLONG(y) \
+#define PCAPINT_BSWAP_64(y) \
+    ((((uint64_t)(y) & 0xff00000000000000ULL) >> 56) | \
+     (((uint64_t)(y) & 0x00ff000000000000ULL) >> 40) | \
+     (((uint64_t)(y) & 0x0000ff0000000000ULL) >> 24) | \
+     (((uint64_t)(y) & 0x000000ff00000000ULL) >> 8)  | \
+     (((uint64_t)(y) & 0x00000000ff000000ULL) << 8)  | \
+     (((uint64_t)(y) & 0x0000000000ff0000ULL) << 24) | \
+     (((uint64_t)(y) & 0x000000000000ff00ULL) << 40) | \
+     (((uint64_t)(y) & 0x00000000000000ffULL) << 56))
+#define PCAPINT_BSWAP_32(y) \
     (((((u_int)(y))&0xff)<<24) | \
      ((((u_int)(y))&0xff00)<<8) | \
      ((((u_int)(y))&0xff0000)>>8) | \
      ((((u_int)(y))>>24)&0xff))
-#define	SWAPSHORT(y) \
+#define PCAPINT_BSWAP_16(y) \
      ((u_short)(((((u_int)(y))&0xff)<<8) | \
                 ((((u_int)(y))&0xff00)>>8)))
 
@@ -64,7 +65,7 @@
  */
 static inline pcap_4_byte_aligned_uint64 swap_4_byte_aligned_uint64(pcap_4_byte_aligned_uint64 val)
 {
-	return (pcap_4_byte_aligned_uint64){.halves[0] = SWAPLONG(val.halves[1]), .halves[1] = SWAPLONG(val.halves[0])};
+	return (pcap_4_byte_aligned_uint64){.halves[0] = PCAPINT_BSWAP_32(val.halves[1]), .halves[1] = PCAPINT_BSWAP_32(val.halves[0])};
 }
 
 /*
@@ -72,7 +73,7 @@ static inline pcap_4_byte_aligned_uint64 swap_4_byte_aligned_uint64(pcap_4_byte_
  */
 static inline pcap_4_byte_aligned_int64 swap_4_byte_aligned_int64(pcap_4_byte_aligned_int64 val)
 {
-	return (pcap_4_byte_aligned_int64){.halves[0] = SWAPLONG(val.halves[1]), .halves[1] = SWAPLONG(val.halves[0])};
+	return (pcap_4_byte_aligned_int64){.halves[0] = PCAPINT_BSWAP_32(val.halves[1]), .halves[1] = PCAPINT_BSWAP_32(val.halves[0])};
 }
 
 extern void pcapint_post_process(int linktype, int swapped,
