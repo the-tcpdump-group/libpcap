@@ -25810,6 +25810,18 @@ my @filter_accept_blocks = (
 # * results (mandatory, array): the list of program filter results to expect
 my @filter_apply_blocks = (
 	{
+		name => 'constant_true_subexpressions_on_pppoed',
+		savefile => 'pppoe.pcap',
+		expr => '1/2=1/3&&1>4/5&&1>6/7',
+		results => [1508],
+	},
+	{
+		name => 'constant_false_subexpressions_on_pppoed',
+		savefile => 'pppoe.pcap',
+		expr => '1/2=1/3&&1>4/5&&1=6/7',
+		results => [0],
+	},
+	{
 		name => 'pppoed_nullary_on_ctp',
 		savefile => 'loopback.pcap',
 		expr => 'pppoed',
