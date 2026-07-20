@@ -4204,7 +4204,7 @@ static int pcap_handle_packet_mmap(
 				 * field in little-endian byte order.
 				 */
 				/* Byte-swap priority/VCID. */
-				canxl_hdr->priority_vcid = SWAPLONG(canxl_hdr->priority_vcid);
+				canxl_hdr->priority_vcid = bswap_32(canxl_hdr->priority_vcid);
 #elif __BYTE_ORDER == __BIG_ENDIAN
 				/*
 				 * We're capturing on a big-endian
@@ -4214,7 +4214,7 @@ static int pcap_handle_packet_mmap(
 				 * fields to little-endian.
 				 */
 				/* Byte-swap the payload length */
-				canxl_hdr->payload_length = SWAPSHORT(canxl_hdr->payload_length);
+				canxl_hdr->payload_length = bswap_16(canxl_hdr->payload_length);
 
 				/*
 				 * Byte-swap the acceptance field.
@@ -4222,7 +4222,7 @@ static int pcap_handle_packet_mmap(
 				 * XXX - is it just a 4-octet string,
 				 * not in any byte order?
 				 */
-				canxl_hdr->acceptance_field = SWAPLONG(canxl_hdr->acceptance_field);
+				canxl_hdr->acceptance_field = bswap_32(canxl_hdr->acceptance_field);
 #else
 #error "Unknown byte order"
 #endif
