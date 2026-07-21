@@ -43,7 +43,7 @@
 #endif
 #include <sys/utsname.h>
 
-#if defined(__FreeBSD__) && __FreeBSD_version < 1600006
+#if defined(__FreeBSD__)
 /*
  * Add support for creating FreeBSD usbusN interfaces as necessary.
  */
@@ -2936,7 +2936,12 @@ finddevs_bpf(pcap_if_list_t *devlistp, char *errbuf)
 	free(bi.bi_ubuf);
 	return (0);
 }
-#else
+#endif
+
+/*
+ * Guess possible USB tap points on FreeBSD < 1600006 or when finddevs_bpf()
+ * failed due to lack of privileges to open /dev/bpf.
+ */
 static int
 finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 {
@@ -3011,7 +3016,6 @@ finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 	closedir(usbdir);
 	return (0);
 }
-#endif
 #endif	/* FreeBSD */
 
 /*
@@ -3156,13 +3160,12 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 #endif
 
 #if defined(__FreeBSD__)
+	if (
 #if __FreeBSD_version >= 1600006
-	if (finddevs_bpf(devlistp, errbuf) == -1)
-		return (-1);
-#else
-	if (finddevs_usb(devlistp, errbuf) == -1)
-		return (-1);
+	(finddevs_bpf(devlistp, errbuf) == -1) &&
 #endif
+	(finddevs_usb(devlistp, errbuf) == -1))
+		return (-1);
 #endif
 
 	return (0);
