@@ -5226,6 +5226,351 @@ my @filter_accept_blocks = (
 			',
 	}, # vxlan_and_tcp_index_IEEE802_11_RADIO
 
+	# Regression tests for issue #1670: BPF optimizer JT==JF bypass
+	# must not drop memory stores needed by the target block.
+	# Each test verifies that the optimized code preserves st M[1]
+	# which is later loaded by ldx M[1] to read the encapsulated
+	# EtherType.
+	{
+		name => 'vxlan_and_ip_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['vxlan and ip'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 33
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 33	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 33
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 33
+			(011) txa
+			(012) jeq      x                jt 23	jf 33
+			(013) jeq      #0x86dd          jt 14	jf 33
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 33
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 33
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 33
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) ld       #0x0
+			(028) jeq      #0x0             jt 29	jf 29
+			(029) ldx      M[1]
+			(030) ldh      [x + 0]
+			(031) jeq      #0x800           jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 15
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) jeq      #0x8             jt 12	jf 15
+			(012) ldxb     4*([14]&0xf)
+			(013) txa
+			(014) jeq      x                jt 26	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x86dd          jt 17	jf 40
+			(017) ldb      [20]
+			(018) jeq      #0x11            jt 19	jf 40
+			(019) ldh      [56]
+			(020) jeq      #0x12b5          jt 21	jf 40
+			(021) ldb      [62]
+			(022) jeq      #0x8             jt 23	jf 40
+			(023) ld       #0x28
+			(024) tax
+			(025) jeq      x                jt 26	jf 40
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 40
+			(036) ldx      M[1]
+			(037) ldh      [x + 0]
+			(038) jeq      #0x800           jt 39	jf 40
+			(039) ret      #262144
+			(040) ret      #0
+			',
+	}, # vxlan_and_ip_EN10MB
+
+	{
+		name => 'vxlan_and_ip6_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['vxlan and ip6'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 33
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 33	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 33
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 33
+			(011) txa
+			(012) jeq      x                jt 23	jf 33
+			(013) jeq      #0x86dd          jt 14	jf 33
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 33
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 33
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 33
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) ld       #0x0
+			(028) jeq      #0x0             jt 29	jf 29
+			(029) ldx      M[1]
+			(030) ldh      [x + 0]
+			(031) jeq      #0x86dd          jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 15
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) jeq      #0x8             jt 12	jf 15
+			(012) ldxb     4*([14]&0xf)
+			(013) txa
+			(014) jeq      x                jt 26	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x86dd          jt 17	jf 40
+			(017) ldb      [20]
+			(018) jeq      #0x11            jt 19	jf 40
+			(019) ldh      [56]
+			(020) jeq      #0x12b5          jt 21	jf 40
+			(021) ldb      [62]
+			(022) jeq      #0x8             jt 23	jf 40
+			(023) ld       #0x28
+			(024) tax
+			(025) jeq      x                jt 26	jf 40
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 40
+			(036) ldx      M[1]
+			(037) ldh      [x + 0]
+			(038) jeq      #0x86dd          jt 39	jf 40
+			(039) ret      #262144
+			(040) ret      #0
+			',
+	}, # vxlan_and_ip6_EN10MB
+
+	{
+		name => 'vxlan_and_arp_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['vxlan and arp'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 33
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 33	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 33
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 33
+			(011) txa
+			(012) jeq      x                jt 23	jf 33
+			(013) jeq      #0x86dd          jt 14	jf 33
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 33
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 33
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 33
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) ld       #0x0
+			(028) jeq      #0x0             jt 29	jf 29
+			(029) ldx      M[1]
+			(030) ldh      [x + 0]
+			(031) jeq      #0x806           jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 15
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) jeq      #0x8             jt 12	jf 15
+			(012) ldxb     4*([14]&0xf)
+			(013) txa
+			(014) jeq      x                jt 26	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x86dd          jt 17	jf 40
+			(017) ldb      [20]
+			(018) jeq      #0x11            jt 19	jf 40
+			(019) ldh      [56]
+			(020) jeq      #0x12b5          jt 21	jf 40
+			(021) ldb      [62]
+			(022) jeq      #0x8             jt 23	jf 40
+			(023) ld       #0x28
+			(024) tax
+			(025) jeq      x                jt 26	jf 40
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 40
+			(036) ldx      M[1]
+			(037) ldh      [x + 0]
+			(038) jeq      #0x806           jt 39	jf 40
+			(039) ret      #262144
+			(040) ret      #0
+			',
+	}, # vxlan_and_arp_EN10MB
+
+	{
+		name => 'vxlan_and_rarp_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['vxlan and rarp'],
+		opt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 13
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 33
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 33	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 33
+			(009) ldb      [x + 22]
+			(010) jeq      #0x8             jt 11	jf 33
+			(011) txa
+			(012) jeq      x                jt 23	jf 33
+			(013) jeq      #0x86dd          jt 14	jf 33
+			(014) ldb      [20]
+			(015) jeq      #0x11            jt 16	jf 33
+			(016) ldh      [56]
+			(017) jeq      #0x12b5          jt 18	jf 33
+			(018) ldb      [62]
+			(019) jeq      #0x8             jt 20	jf 33
+			(020) ldx      #0x28
+			(021) txa
+			(022) jeq      #0x28            jt 23	jf 23
+			(023) add      #22
+			(024) add      #8
+			(025) add      #12
+			(026) st       M[1]
+			(027) ld       #0x0
+			(028) jeq      #0x0             jt 29	jf 29
+			(029) ldx      M[1]
+			(030) ldh      [x + 0]
+			(031) jeq      #0x8035          jt 32	jf 33
+			(032) ret      #262144
+			(033) ret      #0
+			',
+		unopt => '
+			(000) ldh      [12]
+			(001) jeq      #0x800           jt 2	jf 15
+			(002) ldb      [23]
+			(003) jeq      #0x11            jt 4	jf 15
+			(004) ldh      [20]
+			(005) jset     #0x1fff          jt 15	jf 6
+			(006) ldxb     4*([14]&0xf)
+			(007) ldh      [x + 16]
+			(008) jeq      #0x12b5          jt 9	jf 15
+			(009) ldxb     4*([14]&0xf)
+			(010) ldb      [x + 22]
+			(011) jeq      #0x8             jt 12	jf 15
+			(012) ldxb     4*([14]&0xf)
+			(013) txa
+			(014) jeq      x                jt 26	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x86dd          jt 17	jf 40
+			(017) ldb      [20]
+			(018) jeq      #0x11            jt 19	jf 40
+			(019) ldh      [56]
+			(020) jeq      #0x12b5          jt 21	jf 40
+			(021) ldb      [62]
+			(022) jeq      #0x8             jt 23	jf 40
+			(023) ld       #0x28
+			(024) tax
+			(025) jeq      x                jt 26	jf 40
+			(026) add      #22
+			(027) add      #8
+			(028) st       M[0]
+			(029) add      #12
+			(030) st       M[1]
+			(031) add      #2
+			(032) tax
+			(033) stx      M[2]
+			(034) ld       #0x0
+			(035) jeq      #0x0             jt 36	jf 40
+			(036) ldx      M[1]
+			(037) ldh      [x + 0]
+			(038) jeq      #0x8035          jt 39	jf 40
+			(039) ret      #262144
+			(040) ret      #0
+			',
+	}, # vxlan_and_rarp_EN10MB
+
 	{
 		name => 'linux_sll_inbound',
 		DLT => 'LINUX_SLL',
