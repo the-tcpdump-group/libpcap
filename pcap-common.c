@@ -1312,7 +1312,15 @@
 // See DLT_DEBUG_ONLY
 #define LINKTYPE_DEBUG_ONLY	303
 
-#define LINKTYPE_HIGH_MATCHING_MAX	303		/* highest value in the "matching" range */
+/*
+ * DECT-2020 New Radio (NR) TAP with custom metadata header.
+ * Specification at https://github.com/DSRCorporation/dect-nr-tap
+ *
+ * Requested by Edem Khadiev <edem.khadiev@dsr-corporation.com>
+ */
+#define LINKTYPE_DECT_NR_TAP		304
+
+#define LINKTYPE_HIGH_MATCHING_MAX	304		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

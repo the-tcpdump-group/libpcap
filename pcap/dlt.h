@@ -1689,6 +1689,15 @@
 #define DLT_DEBUG_ONLY		303
 
 /*
+ * DECT-2020 New Radio (NR) TAP with custom metadata header prepended to
+ * standard DLT_DECT_NR MAC-layer frame.
+ * Specification at https://github.com/DSRCorporation/dect-nr-tap
+ *
+ * Requested by Edem Khadiev <edem.khadiev@dsr-corporation.com>
+ */
+#define DLT_DECT_NR_TAP		304
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1699,6 +1708,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	303	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	304	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */
