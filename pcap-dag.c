@@ -19,7 +19,7 @@
 #include "pcap-int.h"
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-// Will need SWAPLL().
+// Will need PCAPINT_BSWAP_64().
 #include "pcap-util.h"
 #endif
 
@@ -695,7 +695,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			unsigned long long ts;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-			ts = SWAPLL(header->ts);
+			ts = PCAPINT_BSWAP_64(header->ts);
 #else
 			ts = header->ts;
 #endif // __BYTE_ORDER
