@@ -95,6 +95,12 @@ use constant {
 	EX_NOINPUT => 66,
 };
 
+# In some environments a hostname that -- intentionally for the purposes of a
+# test -- resolves in neither IPv4 nor IPv6 tends to time the test out before
+# DNS manages to produce the expected negative result.  Define a uniform fixed
+# timeout to work around that in specific tests only.
+use constant DNS_NXDOMAIN_TIMEOUT => 5;
+
 # Set these later only if running any tests.
 my $diff_flags;
 my $timeout_bin;
@@ -27246,6 +27252,8 @@ sub errstr_rejects_all {
 # * errstr (mandatory, string): a substring that must appear in standard error
 #   from filtertest (this verifies that the reason for rejecting the expression
 #   is what the test expects, rather than some unrelated cause).
+# * timeout (optional, float): override the default test timeout with the
+#   specified value (in seconds).
 #
 # Reject tests that have the filter expression as the only cause of the
 # expected failure must define "DLT" and "expr", may define "netmask" and must
@@ -27666,24 +27674,28 @@ my @filter_reject_tests = (
 
 	# gen_scode() -> gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 	{
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => 'arp_host_nonexistent',
 		DLT => 'FDDI',
 		expr => "arp host $nonexistent",
 		errstr => errstr_nohost ($nonexistent),
 	},
 	{
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => 'ip_host_nonexistent',
 		DLT => 'FDDI',
 		expr => "ip host $nonexistent",
 		errstr => errstr_nohost ($nonexistent),
 	},
 	{
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => 'ip6_host_nonexistent',
 		DLT => 'FDDI',
 		expr => "ip6 host $nonexistent",
 		errstr => errstr_nohost ($nonexistent),
 	},
 	{
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => 'rarp_host_nonexistent',
 		DLT => 'FDDI',
 		expr => "rarp host $nonexistent",
@@ -29811,12 +29823,14 @@ foreach (DLTs_without 'ss7') {
 foreach (DLTs_without 'link_host_mac48') {
 	# gen_scode() -> gen_gateway() -> gen_mac48host_byname() -> fail_kw_on_dlt()
 	push @filter_reject_tests, {
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => "gateway_noeth_noipv4_noipv6_${_}",
 		DLT => $_,
 		expr => "gateway $nonexistent",
 		errstr => errstr_kw_notsup_on ('gateway', $_),
 	};
 	push @filter_reject_tests, {
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
 		DLT => $_,
@@ -29890,6 +29904,7 @@ foreach (DLTs_without 'link_host_mac48') {
 foreach (DLTs_with 'link_host_mac48') {
 	# gen_scode() -> gen_gateway() -> gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 	push @filter_reject_tests, {
+		timeout => DNS_NXDOMAIN_TIMEOUT,
 		name => "gateway_eth_noipv4_noipv6_${_}",
 		skip => skip_no_ethers(),
 		DLT => $_,
@@ -30836,8 +30851,9 @@ sub validate_generic_reject_test {
 }
 
 sub time_test_command {
+	my $this_test_timeout = shift;
 	# BSD timeout(1) does not implement --verbose.
-	unshift @_, ($timeout_bin, $test_timeout) if defined $timeout_bin;
+	unshift @_, ($timeout_bin, $this_test_timeout) if defined $timeout_bin;
 	# It would be much better to pass the arguments as a Perl list, but
 	# that is not possible so long as the command line uses shell
 	# redirection.
@@ -30859,7 +30875,7 @@ sub run_generic_accept_test {
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
-	my ($r, $T) = time_test_command @_;
+	my ($r, $T) = time_test_command $test_timeout, @_;
 
 	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
 
@@ -30880,13 +30896,14 @@ sub run_generic_accept_test {
 }
 
 sub run_generic_reject_test {
+	my $this_test_timeout = shift;
 	my $expected_status = shift;
 	my $expected_errstr = shift;
 	push @_, (
 		'>' . mytmpfile ($filename_stdout),
 		"2>&1",
 	);
-	my ($r, $T) = time_test_command @_;
+	my ($r, $T) = time_test_command $this_test_timeout, @_;
 
 	return result_failed (
 		'no test program error',
@@ -31027,13 +31044,19 @@ sub run_filter_reject_test {
 		push @args, ('-F', mytmpfile ($filename_filter));
 	}
 	push @args, $test->{DLT} if defined $test->{DLT};
-	return run_generic_reject_test defined $test->{DLT} ? EX_DATAERR : EX_NOINPUT,
-		$test->{expected}, @args;
+	return run_generic_reject_test
+		defined $test->{timeout} ? $test->{timeout} : $test_timeout,
+		defined $test->{DLT} ? EX_DATAERR : EX_NOINPUT,
+		$test->{expected},
+		@args;
 }
 
 sub run_translate_reject_test {
 	my $test = shift;
-	return run_generic_reject_test EX_DATAERR, $test->{expected},
+	return run_generic_reject_test
+		$test_timeout,
+		EX_DATAERR,
+		$test->{expected},
 		common_translatetest_args $test;
 }
 
@@ -31195,6 +31218,7 @@ foreach my $test (@filter_reject_tests) {
 		# is meant to fail in the optimizer, in which case the latter must be
 		# enabled.  So enable optimization for all expression-based reject tests.
 		push @ready_to_run, {
+			timeout => defined $test->{timeout} ? $test->{timeout} : undef,
 			label => $label,
 			func => \&run_filter_reject_test,
 			DLT => $test->{DLT},
