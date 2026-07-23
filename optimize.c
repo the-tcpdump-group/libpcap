@@ -2157,14 +2157,23 @@ opt_root(struct block **b)
 {
 	struct slist *tmp, *s;
 
-	s = (*b)->stmts;
-	(*b)->stmts = 0;
-	while (BPF_CLASS((*b)->s.code) == BPF_JMP && JT(*b) == JF(*b))
-		*b = JT(*b);
+	/*
+	 * A block with identical successors still executes its statements.
+	 * Preserve each statement list in order while collapsing the chain.
+	 */
+	s = 0;
+	for (;;) {
+		tmp = (*b)->stmts;
+		(*b)->stmts = 0;
+		if (s == 0)
+			s = tmp;
+		else if (tmp != 0)
+			sappend(s, tmp);
 
-	tmp = (*b)->stmts;
-	if (tmp != 0)
-		sappend(s, tmp);
+		if (BPF_CLASS((*b)->s.code) != BPF_JMP || JT(*b) != JF(*b))
+			break;
+		*b = JT(*b);
+	}
 	(*b)->stmts = s;
 
 	/*
