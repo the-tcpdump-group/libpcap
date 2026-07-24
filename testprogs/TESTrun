@@ -28278,6 +28278,102 @@ my @filter_reject_tests = (
 	},
 
 	# Savefile-based reject tests follow.
+	# pcap_fopen_offline_with_tstamp_precision() -> amt_read != sizeof(magic)
+	{
+		name => 'pcap_empty_file',
+		savefile => 'pcap-empty-file.pcap',
+		errstr => 'Failed opening: truncated dump file; tried to read 4 file header bytes, only got 0',
+	},
+	# pcap_check_header() -> amt_read != sizeof(hdr) - sizeof(magic)
+	{
+		name => 'pcap_truncated_hdr_23',
+		savefile => 'pcap-truncated-hdr-23.pcap',
+		errstr => 'Failed opening: truncated dump file; tried to read 24 file header bytes, only got 19',
+	},
+	# pcap_ng_check_header() -> read_block() == 0 (EOF), no BT_IDB seen
+	{
+		name => 'pcapng_no_idb',
+		savefile => 'pcapng-no-idb.pcapng',
+		errstr => 'Failed opening: the capture file has no Interface Description Blocks',
+	},
+	# pcap_ng_check_header() -> case BT_EPB before any BT_IDB
+	{
+		name => 'pcapng_packet_before_idb',
+		savefile => 'pcapng-packet-before-idb.pcapng',
+		errstr => 'Failed opening: the capture file has a packet block before any Interface Description Blocks',
+	},
+	# pcap_ng_check_header() -> read_block() -> total_length < sizeof(block_header) + sizeof(block_trailer)
+	{
+		name => 'pcapng_block_len_too_small',
+		savefile => 'pcapng-block-len-too-small.pcapng',
+		errstr => 'Failed opening: block in pcapng dump file has a length of 4 < 12',
+	},
+	# pcap_ng_check_header() -> read_block() -> total_length % 4 != 0
+	{
+		name => 'pcapng_block_len_not_mult4',
+		savefile => 'pcapng-block-len-not-mult4.pcapng',
+		errstr => 'Failed opening: block in pcapng dump file has a length of 21 that is not a multiple of 4',
+	},
+	# pcap_ng_check_header() -> total_length < sizeof(block_header) + sizeof(section_header_block) + sizeof(block_trailer)
+	{
+		name => 'pcapng_shb_len_too_small',
+		savefile => 'pcapng-shb-len-too-small.pcapng',
+		errstr => 'Failed opening: Section Header Block in pcapng dump file has invalid length 28 < _20_ < 1048576 (BT_SHB_INSANE_MAX)',
+	},
+	# pcap_ng_check_header() -> total_length > BT_SHB_INSANE_MAX
+	{
+		name => 'pcapng_shb_len_insane',
+		savefile => 'pcapng-shb-len-insane.pcapng',
+		errstr => 'Failed opening: Section Header Block in pcapng dump file has invalid length 28 < _2097152_ < 1048576 (BT_SHB_INSANE_MAX)',
+	},
+	# pcap_ng_check_header() -> read_bytes() -> amt_read != bytes_to_read
+	{
+		name => 'pcapng_truncated_shb',
+		savefile => 'pcapng-truncated-shb.pcapng',
+		errstr => 'Failed opening: truncated pcapng dump file; tried to read 16 bytes, only got 4',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSRESOL -> option_length != 1
+	{
+		name => 'pcapng_idb_tsresol_badlen',
+		savefile => 'pcapng-idb-tsresol-badlen.pcapng',
+		errstr => 'Failed opening: Interface Description Block has if_tsresol option with length 2 != 1',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSRESOL -> saw_tsresol
+	{
+		name => 'pcapng_idb_tsresol_dup',
+		savefile => 'pcapng-idb-tsresol-dup.pcapng',
+		errstr => 'Failed opening: Interface Description Block has more than one if_tsresol option',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case OPT_ENDOFOPT -> option_length != 0
+	{
+		name => 'pcapng_idb_endofopt_badlen',
+		savefile => 'pcapng-idb-endofopt-badlen.pcapng',
+		errstr => 'Failed opening: Interface Description Block has opt_endofopt option with length 1 != 0',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSRESOL -> tsresol_opt > 19
+	{
+		name => 'pcapng_idb_tsresol_dec_high',
+		savefile => 'pcapng-idb-tsresol-dec-high.pcapng',
+		errstr => 'Failed opening: Interface Description Block if_tsresol option resolution 10^-100 is too high',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSRESOL -> tsresol_shift > 63
+	{
+		name => 'pcapng_idb_tsresol_bin_high',
+		savefile => 'pcapng-idb-tsresol-bin-high.pcapng',
+		errstr => 'Failed opening: Interface Description Block if_tsresol option resolution 2^-72 is too high',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSOFFSET -> option_length != 8
+	{
+		name => 'pcapng_idb_tsoffset_badlen',
+		savefile => 'pcapng-idb-tsoffset-badlen.pcapng',
+		errstr => 'Failed opening: Interface Description Block has if_tsoffset option with length 3 != 8',
+	},
+	# pcap_ng_check_header() -> add_interface() -> process_idb_options() -> case IF_TSOFFSET -> saw_tsoffset
+	{
+		name => 'pcapng_idb_tsoffset_dup',
+		savefile => 'pcapng-idb-tsoffset-dup.pcapng',
+		errstr => 'Failed opening: Interface Description Block has more than one if_tsoffset option',
+	},
 	{
 		name => 'pcap_linktype_reserved_field_not_zero',
 		savefile => 'linktype-reserved-field-not-zero.pcap',
