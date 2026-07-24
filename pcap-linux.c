@@ -342,6 +342,7 @@ static const struct timeval netdown_timeout = {
 /*
  * Wrap some ioctl calls
  */
+static int	check_device_exists(const char *device, char *ebuf);
 static int	iface_get_id(int fd, const char *device, char *ebuf);
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int	iface_get_arptype(int fd, const char *device, char *ebuf);
@@ -1199,6 +1200,28 @@ pcap_activate_linux(pcap_t *handle)
 	}
 
 	/*
+	 * The "any" device is a special device which causes us not
+	 * to bind to a particular device and thus to look at all
+	 * devices.
+	 */
+	is_any_device = (strcmp(device, "any") == 0);
+
+	if (!is_any_device) {
+		/*
+		 * Check whether the device exists, so that we report
+		 * PCAP_ERROR_NO_SUCH_DEVICE for a non-existent device
+		 * rather than an error from some later operation, such
+		 * as PCAP_ERROR_PERM_DENIED if we don't have permission
+		 * to create a PF_PACKET socket.
+		 */
+		ret = check_device_exists(device, handle->errbuf);
+		if (ret < 0) {
+			status = ret;
+			goto fail;
+		}
+	}
+
+	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
 	 * 0 (unspecified), or a value bigger than the normal maximum
 	 * value, into the maximum allowed value.
@@ -1217,12 +1240,6 @@ pcap_activate_linux(pcap_t *handle)
 		goto fail;
 	}
 
-	/*
-	 * The "any" device is a special device which causes us not
-	 * to bind to a particular device and thus to look at all
-	 * devices.
-	 */
-	is_any_device = (strcmp(device, "any") == 0);
 	if (is_any_device) {
 		if (handle->opt.promisc) {
 			handle->opt.promisc = 0;
@@ -1765,6 +1782,40 @@ get_if_ioctl_socket(void)
 	 * types popular in non-Internet embedded systems?
 	 */
 	return (socket(AF_INET, SOCK_DGRAM, 0));
+}
+
+/*
+ * Check whether a device exists, so that we can report
+ * PCAP_ERROR_NO_SUCH_DEVICE for a non-existent device before
+ * attempting any operation that requires privileges the caller
+ * might not have, so that the caller gets "no such device" rather
+ * than, for example, "you don't have permission to capture".
+ *
+ * Returns 0 if the device exists and a PCAP_ERROR_ code, filling
+ * in ebuf, if it doesn't exist or if the attempt to check fails.
+ */
+static int
+check_device_exists(const char *device, char *ebuf)
+{
+	int	fd;
+	int	status;
+
+	fd = get_if_ioctl_socket();
+	if (fd < 0) {
+		pcapint_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * This fails with ENODEV, and thus returns
+	 * PCAP_ERROR_NO_SUCH_DEVICE, if the device doesn't exist.
+	 */
+	status = iface_get_arptype(fd, device, ebuf);
+	close(fd);
+	if (status < 0)
+		return status;
+	return 0;
 }
 
 /*
