@@ -1004,8 +1004,8 @@ static int
 pcap_can_set_rfmon_bpf(pcap_t *p)
 {
 	struct utsname osinfo;
-	int fd;
 #ifdef BIOCGDLTLIST
+	int fd;
 	struct bpf_dltlist bdl;
 	int err;
 #endif
@@ -1061,7 +1061,6 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		if (pcapint_asprintf(&wlt_name, "wlt%s", p->opt.device + 2) == -1) {
 			pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
-			close(fd);
 			return (PCAP_ERROR);
 		}
 		status = device_exists(wlt_name, p->errbuf);
@@ -1891,7 +1890,6 @@ pcap_activate_bpf(pcap_t *p)
 	int fd;
 	struct bpf_version bv;
 #ifdef __APPLE__
-	int sockfd;
 	char *wltdev = NULL;
 #endif
 #ifdef BIOCGDLTLIST
