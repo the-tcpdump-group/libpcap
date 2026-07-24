@@ -474,6 +474,60 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 	return (p);
 }
 
+#ifdef __APPLE__
+static int
+device_exists(const char *name, char *errbuf)
+{
+	int fd;
+	int status;
+	struct ifreq ifr;
+
+	if (strlen(name) >= sizeof(ifr.ifr_name)) {
+		/* The name is too long, so it can't possibly exist. */
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
+
+	/*
+	 * Attempt to pen a socket on which we can do an ioctl to
+	 * check whether the device exists.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd == -1) {
+		/* That failed; report that as the error. */
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't open socket to check whether a device exists");
+		return (PCAP_ERROR);
+	}
+
+	(void)pcapint_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
+
+	if (status < 0 && (errno == ENXIO || errno == EINVAL)) {
+		/*
+		 * macOS and *BSD return one of those two errors if
+		 * the device doesn't exist.
+		 *
+		 * Don't fill in an error, as this is an "expected"
+		 * condition; this routine's purpose is to test
+		 * whether a device exists, and "it doesn't exist"
+		 * is an answer, not an indication that we couldn't
+		 * determine whether it exists.
+		 */
+		close(fd);
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	}
+
+	/*
+	 * Either we were able to fetch the interface flags, indicating
+	 * that it exists, or we weren't able to fetch them but got an
+	 * error *other* than "there is no such device", which we
+	 * treat as an indication that the device exists.
+	 */
+	close(fd);
+	return (0);
+}
+#endif
+
 /*
  * On success, returns a file descriptor for a BPF device.
  * On failure, returns a PCAP_ERROR_ value, and sets p->errbuf.
@@ -863,60 +917,6 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	 */
 	return (fd);
 }
-
-#ifdef __APPLE__
-static int
-device_exists(const char *name, char *errbuf)
-{
-	int fd;
-	int status;
-	struct ifreq ifr;
-
-	if (strlen(name) >= sizeof(ifr.ifr_name)) {
-		/* The name is too long, so it can't possibly exist. */
-		return (PCAP_ERROR_NO_SUCH_DEVICE);
-	}
-
-	/*
-	 * Attempt to pen a socket on which we can do an ioctl to
-	 * check whether the device exists.
-	 */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (fd == -1) {
-		/* That failed; report that as the error. */
-		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Can't open socket to check whether a device exists");
-		return (PCAP_ERROR);
-	}
-
-	(void)pcapint_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
-	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
-
-	if (status < 0 && (errno == ENXIO || errno == EINVAL)) {
-		/*
-		 * macOS and *BSD return one of those two errors if
-		 * the device doesn't exist.
-		 *
-		 * Don't fill in an error, as this is an "expected"
-		 * condition; this routine's purpose is to test
-		 * whether a device exists, and "it doesn't exist"
-		 * is an answer, not an indication that we couldn't
-		 * determine whether it exists.
-		 */
-		close(fd);
-		return (PCAP_ERROR_NO_SUCH_DEVICE);
-	}
-
-	/*
-	 * Either we were able to fetch the interface flags, indicating
-	 * that it exists, or we weren't able to fetch them but got an
-	 * error *other* than "there is no such device", which we
-	 * treat as an indication that the device exists.
-	 */
-	close(fd);
-	return (0);
-}
-#endif
 
 #ifdef BIOCGDLTLIST
 static int
