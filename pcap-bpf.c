@@ -475,8 +475,16 @@ pcapint_create_interface(const char *device _U_, char *ebuf)
 }
 
 #ifdef __APPLE__
+/*
+ * Check whether a named device exists.
+ *
+ * Returns 0 if the device exists and a PCAP_ERROR_ code, filling
+ * in error, if it doesn't exist or if the attempt to check fails.
+ * PCAP_ERROR_NO_SUCH_DEVICE indicates that the device doesn't
+ * exist; other errors indicate that the attempt to check failed.
+ */
 static int
-device_exists(const char *name, char *errbuf)
+check_device_exists(const char *name, char *errbuf)
 {
 	int fd;
 	int status;
@@ -1063,7 +1071,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
-		status = device_exists(wlt_name, p->errbuf);
+		status = check_device_exists(wlt_name, p->errbuf);
 		free(wlt_name);
 		if (status != 0) {
 			if (status == PCAP_ERROR_NO_SUCH_DEVICE)
@@ -1828,7 +1836,7 @@ check_setif_failure(pcap_t *p, int error)
 				    "malloc");
 				return (PCAP_ERROR);
 			}
-			err = device_exists(en_name, p->errbuf);
+			err = check_device_exists(en_name, p->errbuf);
 			free(en_name);
 			if (err == PCAP_ERROR_NO_SUCH_DEVICE) {
 				/*
@@ -1988,7 +1996,7 @@ pcap_activate_bpf(pcap_t *p)
 					 * Not an enN device; check
 					 * whether the device even exists.
 					 */
-					status = device_exists(p->opt.device,
+					status = check_device_exists(p->opt.device,
 					    p->errbuf);
 					if (status == 0) {
 						/*
