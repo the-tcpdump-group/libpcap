@@ -154,7 +154,7 @@
     #define DIAG_OFF_UNINITIALIZED_CONST_POINTER \
       PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wuninitialized-const-pointer")
-    #define and DIAG_ON_UNINITIALIZED_CONST_POINTER \
+    #define DIAG_ON_UNINITIALIZED_CONST_POINTER \
       PCAP_DO_PRAGMA(clang diagnostic pop)
   #endif
 
