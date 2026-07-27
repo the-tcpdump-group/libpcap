@@ -99,7 +99,7 @@ use constant {
 # test -- resolves in neither IPv4 nor IPv6 tends to time the test out before
 # DNS manages to produce the expected negative result.  Define a uniform fixed
 # timeout to work around that in specific tests only.
-use constant DNS_NXDOMAIN_TIMEOUT => 5;
+use constant DNS_NXDOMAIN_TIMEOUT => 10;
 
 # Set these later only if running any tests.
 my $diff_flags;
