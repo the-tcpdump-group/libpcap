@@ -192,7 +192,7 @@ struct bpf_program {
 #define		BPF_K		0x00
 #define		BPF_X		0x08
 
-/* ret - BPF_K and BPF_X also apply */
+/* ret - BPF_K also applies */
 #define BPF_RVAL(code)	((code) & 0x18)
 #define		BPF_A		0x10
 /*				0x18	reserved */

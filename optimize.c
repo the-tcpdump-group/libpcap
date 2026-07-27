@@ -509,8 +509,7 @@ atomuse(struct stmt *s)
 	switch (BPF_CLASS(c)) {
 
 	case BPF_RET:
-		return (BPF_RVAL(c) == BPF_A) ? A_ATOM :
-			(BPF_RVAL(c) == BPF_X) ? X_ATOM : -1;
+		return BPF_RVAL(c) == BPF_A ? A_ATOM : -1;
 
 	case BPF_LD:
 	case BPF_LDX:
