@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #ifdef _WIN32
   #include "getopt.h"
@@ -205,6 +206,35 @@ test_pcapint_get_decint_noendp(const char *arg)
 	return EX_OK;
 }
 
+static int
+test_pcapint_scale_binary_timestamp(const char *arg)
+{
+	uint64_t values[3];
+	const char *input = arg;
+	char *endptr;
+	unsigned int i;
+
+	for (i = 0; i < 3; i++) {
+		errno = 0;
+		values[i] = strtoull(input, &endptr, 10);
+		if (endptr == input || errno == ERANGE ||
+		    (i < 2 ? *endptr != ',' : *endptr != '\0')) {
+			fprintf(stderr,
+			    "ERROR: expected frac,user_tsresol,file_tsresol\n");
+			return EX_DATAERR;
+		}
+		input = endptr + 1;
+	}
+	if (values[1] == 0 || values[2] == 0) {
+		fprintf(stderr, "ERROR: timestamp resolutions must be non-zero\n");
+		return EX_DATAERR;
+	}
+
+	printf("OK: %" PRIu64 "\n",
+	    pcapint_scale_binary_timestamp(values[0], values[1], values[2]));
+	return EX_OK;
+}
+
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -220,6 +250,9 @@ static const struct {
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
 	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decint_endp, "unsigned integer"},
 	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decint_noendp, "unsigned integer"},
+	{"pcapint_scale_binary_timestamp", 0,
+	    test_pcapint_scale_binary_timestamp,
+	    "frac,user_tsresol,file_tsresol"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 

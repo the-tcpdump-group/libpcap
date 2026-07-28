@@ -25810,6 +25810,12 @@ my @filter_accept_blocks = (
 # * results (mandatory, array): the list of program filter results to expect
 my @filter_apply_blocks = (
 	{
+		name => 'pcapng_binary_timestamp_resolution',
+		savefile => 'pcapng-tsresol-bin-overflow.pcapng',
+		expr => 'len >= 0',
+		results => [65535],
+	},
+	{
 		name => 'pppoed_nullary_on_ctp',
 		savefile => 'loopback.pcap',
 		expr => 'pppoed',
@@ -30060,6 +30066,64 @@ foreach (DLTs_with 'var_off_linkpl') {
 #   translatetest, which is expected to exit normally.
 
 my @translate_accept_blocks = (
+	##### pcapint_scale_binary_timestamp()
+	{
+		name => 'scale_binary_timestamp_zero',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['0,1000000,9223372036854775808'],
+		expect => '0',
+	},
+	{
+		name => 'scale_binary_timestamp_smallest_fraction',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['1,1000000,9223372036854775808'],
+		expect => '0',
+	},
+	{
+		name => 'scale_binary_timestamp_half',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['4611686018427387904,1000000,9223372036854775808'],
+		expect => '500000',
+	},
+	{
+		name => 'scale_binary_timestamp_largest_fraction_us',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['9223372036854775807,1000000,9223372036854775808'],
+		expect => '999999',
+	},
+	{
+		name => 'scale_binary_timestamp_largest_fraction_ns',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['9223372036854775807,1000000000,9223372036854775808'],
+		expect => '999999999',
+	},
+	{
+		name => 'scale_binary_timestamp_last_fast_path_value',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['18446744073709,1000000,9223372036854775808'],
+		expect => '1',
+	},
+	{
+		name => 'scale_binary_timestamp_first_wide_value',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['18446744073710,1000000,9223372036854775808'],
+		expect => '2',
+	},
+	{
+		name => 'scale_binary_timestamp_quarter_resolution',
+		skip => skip_no_translatetest(),
+		cfunc => 'pcapint_scale_binary_timestamp',
+		aliases => ['3,1000000,4'],
+		expect => '750000',
+	},
+
 	##### pcap_nametoeproto()
 	{
 		name => 'nametoeproto_aarp',

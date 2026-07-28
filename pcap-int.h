@@ -657,6 +657,12 @@ int	pcapint_parsesrcstr_ex(const char *, int *, char *, char *,
  */
 int	pcapint_get_decuint(const char *, char **, unsigned *);
 
+/*
+ * Scale the fractional part of a pcapng timestamp whose resolution is a
+ * power of 2 to the resolution requested by the user.
+ */
+uint64_t pcapint_scale_binary_timestamp(uint64_t, uint64_t, uint64_t);
+
 #ifdef YYDEBUG
 extern int pcap_debug;
 #endif

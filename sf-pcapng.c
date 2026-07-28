@@ -248,6 +248,48 @@ struct pcap_ng_sf {
 	 (max_snaplen) + 131072 + \
 	 sizeof (struct block_trailer))
 
+/*
+ * Scale a fractional timestamp from a power-of-2 resolution to the
+ * user-requested resolution without overflowing.
+ */
+uint64_t
+pcapint_scale_binary_timestamp(uint64_t frac, uint64_t user_tsresol,
+    uint64_t file_tsresol)
+{
+	uint64_t scaled, remainder, bit;
+
+	if (frac <= UINT64_MAX / user_tsresol)
+		return (frac * user_tsresol / file_tsresol);
+
+	/*
+	 * Build frac * user_tsresol one bit of user_tsresol at a time,
+	 * keeping the intermediate value as a quotient and remainder modulo
+	 * file_tsresol.  A binary file resolution is at most 2^63, so
+	 * doubling a reduced remainder and adding frac cannot overflow.
+	 */
+	scaled = 0;
+	remainder = 0;
+	bit = 1;
+	while (bit <= user_tsresol / 2)
+		bit <<= 1;
+	for (; bit != 0; bit >>= 1) {
+		scaled <<= 1;
+		remainder <<= 1;
+		if (remainder >= file_tsresol) {
+			remainder -= file_tsresol;
+			scaled++;
+		}
+		if (user_tsresol & bit) {
+			remainder += frac;
+			if (remainder >= file_tsresol) {
+				remainder -= file_tsresol;
+				scaled++;
+			}
+		}
+	}
+	return (scaled);
+}
+
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
     u_char **data);
@@ -1428,15 +1470,9 @@ found:
 		 * entirely with integer arithmetic, we multiply by the
 		 * user-requested resolution and divide by the file-
 		 * supplied resolution.
-		 *
-		 * XXX - Is there something clever we could do here,
-		 * given that we know that the file-supplied resolution
-		 * is a power of 2?  Doing a multiplication followed by
-		 * a division runs the risk of overflowing, and involves
-		 * two non-simple arithmetic operations.
 		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac = pcapint_scale_binary_timestamp(frac, ps->user_tsresol,
+		    ps->ifaces[interface_id].tsresol);
 		break;
 
 	case SCALE_DOWN_DEC:
@@ -1475,15 +1511,9 @@ found:
 		 * reciprocal, so, in order to do this entirely with
 		 * integer arithmetic, we multiply by the user-requested
 		 * resolution and divide by the file-supplied resolution.
-		 *
-		 * XXX - Is there something clever we could do here,
-		 * given that we know that the file-supplied resolution
-		 * is a power of 2?  Doing a multiplication followed by
-		 * a division runs the risk of overflowing, and involves
-		 * two non-simple arithmetic operations.
 		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac = pcapint_scale_binary_timestamp(frac, ps->user_tsresol,
+		    ps->ifaces[interface_id].tsresol);
 		break;
 	}
 #ifdef _WIN32
