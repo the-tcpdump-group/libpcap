@@ -380,6 +380,17 @@ sub skip_no_translatetest {
 	return skip_os ('msys');
 }
 
+sub skip_unless_service_uses_only {
+	my ($service, $proto) = @_;
+	my $other_proto = $proto eq 'tcp' ? 'udp' : 'tcp';
+
+	return "service '$service' is unavailable for $proto" unless
+		defined getservbyname ($service, $proto);
+	return "service '$service' is also available for $other_proto" if
+		defined getservbyname ($service, $other_proto);
+	return '';
+}
+
 sub skip_big_endian {
 	return pack ('S', 0x4245) eq 'BE' ? 'big-endian' : '';
 }
@@ -27597,6 +27608,34 @@ my @filter_reject_tests = (
 		DLT => 'IPV4',
 		expr => 'sctp portrange 70000-80000',
 		errstr => errstr_invport (70000),
+	},
+	{
+		name => 'udp_portrange_tcp_service_first',
+		skip => skip_unless_service_uses_only ('smtp', 'tcp'),
+		DLT => 'IPV4',
+		expr => 'udp portrange smtp-25',
+		errstr => 'port in range \'smtp-25\' is tcp',
+	},
+	{
+		name => 'udp_portrange_tcp_service_second',
+		skip => skip_unless_service_uses_only ('smtp', 'tcp'),
+		DLT => 'IPV4',
+		expr => 'udp portrange 25-smtp',
+		errstr => 'port in range \'25-smtp\' is tcp',
+	},
+	{
+		name => 'tcp_portrange_udp_service_first',
+		skip => skip_unless_service_uses_only ('tftp', 'udp'),
+		DLT => 'IPV4',
+		expr => 'tcp portrange tftp-69',
+		errstr => 'port in range \'tftp-69\' is udp',
+	},
+	{
+		name => 'tcp_portrange_udp_service_second',
+		skip => skip_unless_service_uses_only ('tftp', 'udp'),
+		DLT => 'IPV4',
+		expr => 'tcp portrange 69-tftp',
+		errstr => 'port in range \'69-tftp\' is udp',
 	},
 	{
 		name => 'pppoes_and_vlan',

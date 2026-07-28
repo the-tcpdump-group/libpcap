@@ -7114,12 +7114,11 @@ stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
  */
 static void
 stringtoportrange(compiler_state_t *cstate, const char *string,
-    bpf_u_int32 *port1, bpf_u_int32 *port2, int *proto)
+    bpf_u_int32 *port1, bpf_u_int32 *port2, int *proto1, int *proto2)
 {
 	const char *hyphen_off;
 	const char *first, *second;
 	size_t first_size, second_size;
-	int save_proto;
 
 	if ((hyphen_off = strchr(string, '-')) == NULL)
 		bpf_error(cstate, "port range '%s' contains no hyphen", string);
@@ -7148,8 +7147,7 @@ stringtoportrange(compiler_state_t *cstate, const char *string,
 	/*
 	 * Try to convert it to a port.
 	 */
-	*port1 = stringtoport(cstate, first, first_size, proto);
-	save_proto = *proto;
+	*port1 = stringtoport(cstate, first, first_size, proto1);
 
 	/*
 	 * Get the length of the second port.
@@ -7164,9 +7162,7 @@ stringtoportrange(compiler_state_t *cstate, const char *string,
 	/*
 	 * Try to convert it to a port.
 	 */
-	*port2 = stringtoport(cstate, second, second_size, proto);
-	if (*proto != save_proto)
-		*proto = PROTO_UNDEF;
+	*port2 = stringtoport(cstate, second, second_size, proto2);
 }
 
 struct block *
@@ -7175,7 +7171,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	int proto = q.proto;
 	int dir = q.dir;
 	bpf_u_int32 mask, addr;
-	int port, real_proto;
+	int port, real_proto, real_proto1, real_proto2;
 	bpf_u_int32 port1, port2;
 
 	/*
@@ -7275,33 +7271,41 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 	case Q_PORTRANGE:
 		(void)port_pq_to_ipproto(cstate, proto, "portrange"); // validate only
-		stringtoportrange(cstate, name, &port1, &port2, &real_proto);
+		stringtoportrange(cstate, name, &port1, &port2,
+		    &real_proto1, &real_proto2);
 		if (proto == Q_UDP) {
-			if (real_proto == IPPROTO_TCP)
+			if (real_proto1 == IPPROTO_TCP ||
+			    real_proto2 == IPPROTO_TCP)
 				bpf_error(cstate, "port in range '%s' is tcp", name);
-			else if (real_proto == IPPROTO_SCTP)
+			else if (real_proto1 == IPPROTO_SCTP ||
+			    real_proto2 == IPPROTO_SCTP)
 				bpf_error(cstate, "port in range '%s' is sctp", name);
 			else
-				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_UDP;
 		}
 		if (proto == Q_TCP) {
-			if (real_proto == IPPROTO_UDP)
+			if (real_proto1 == IPPROTO_UDP ||
+			    real_proto2 == IPPROTO_UDP)
 				bpf_error(cstate, "port in range '%s' is udp", name);
-			else if (real_proto == IPPROTO_SCTP)
+			else if (real_proto1 == IPPROTO_SCTP ||
+			    real_proto2 == IPPROTO_SCTP)
 				bpf_error(cstate, "port in range '%s' is sctp", name);
 			else
-				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_TCP;
 		}
 		if (proto == Q_SCTP) {
-			if (real_proto == IPPROTO_UDP)
+			if (real_proto1 == IPPROTO_UDP ||
+			    real_proto2 == IPPROTO_UDP)
 				bpf_error(cstate, "port in range '%s' is udp", name);
-			else if (real_proto == IPPROTO_TCP)
+			else if (real_proto1 == IPPROTO_TCP ||
+			    real_proto2 == IPPROTO_TCP)
 				bpf_error(cstate, "port in range '%s' is tcp", name);
 			else
-				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
+		}
+		if (proto == Q_DEFAULT) {
+			real_proto = real_proto1 == real_proto2 ?
+			    real_proto1 : PROTO_UNDEF;
 		}
 
 		/*
