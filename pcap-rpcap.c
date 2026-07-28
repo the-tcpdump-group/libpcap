@@ -2107,7 +2107,7 @@ static int rpcap_doauth(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			has_byte_order = 0;
 			reply_len = sizeof(struct rpcap_authreply_old);
 		}
-		else if (plen >= sizeof(struct rpcap_authreply_old))
+		else if (plen >= sizeof(struct rpcap_authreply))
 		{
 			/* Yes - read it all. */
 			has_byte_order = 1;
