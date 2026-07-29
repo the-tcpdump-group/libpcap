@@ -2119,7 +2119,10 @@ else(WIN32)
                 set(REQUIRES_PRIVATE "${LIBNL_PACKAGE_NAME} ${REQUIRES_PRIVATE}")
             else()
                 cmake_push_check_state()
-                set(CMAKE_REQUIRED_LIBRARIES nl-3)
+                # Both libraries are linked below, so require both here.
+                # Checking only nl-3 gives a false positive when libnl-genl
+                # is not installed.
+                set(CMAKE_REQUIRED_LIBRARIES nl-genl-3 nl-3)
                 check_function_exists(nl_socket_alloc HAVE_LIBNL)
                 cmake_pop_check_state()
                 if(HAVE_LIBNL)
