@@ -31701,6 +31701,33 @@ my @fcode_tests = (
 	},
 
 	{
+		name => 'inv_opcode_MSB',
+		program => cbpfsfdata_from_list (
+			{ opcode => 0x1400 },                      # invalid opcode
+			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
+		),
+		dump => '
+			(000) unimp    0x1400
+			(001) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'inv_opcode_LSB',
+		program => cbpfsfdata_from_list (
+			{ opcode => 0x00b0 },                      # invalid opcode
+			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
+		),
+		dump => '
+			(000) unimp    0xb0
+			(001) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
 		name => 'div_by_0_x',
 		program => '
 			(000) ldx      #0x0
