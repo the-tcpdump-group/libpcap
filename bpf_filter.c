@@ -452,11 +452,11 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_K:
-			A <<= pc->k;
+			A = (pc->k < 32) ? A << pc->k : 0;
 			continue;
 
 		case BPF_ALU|BPF_RSH|BPF_K:
-			A >>= pc->k;
+			A = (pc->k < 32) ? A >> pc->k : 0;
 			continue;
 
 		case BPF_ALU|BPF_NEG:
@@ -552,8 +552,11 @@ pcapint_valid_insn(const struct bpf_insn *insn)
 	case BPF_ALU|BPF_AND|BPF_K:
 	case BPF_ALU|BPF_OR|BPF_K:
 	case BPF_ALU|BPF_XOR|BPF_K:
+		return 1;
 	case BPF_ALU|BPF_LSH|BPF_K:
 	case BPF_ALU|BPF_RSH|BPF_K:
+		// Reject a constant shift by more than 31 bits.
+		return insn->k < 32;
 	case BPF_ALU|BPF_NEG:
 	case BPF_MISC|BPF_TAX:
 	case BPF_MISC|BPF_TXA:
