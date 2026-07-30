@@ -26674,19 +26674,24 @@ my @filter_apply_blocks = (
 		expr => 'geneve and tcp src port 22',
 		results => [0, 0, 0, 262144, 0, 262144, 0, 0, 262144, 0],
 	},
+	# Packets in ipv6_ext_headers.pcap:
+	# 1. IPv6 with 100 extension headers before a UDP header.
+	# 2. IPv6 with 75 extension headers before a UDP header.
+	# 3. IPv6 with 50 extension headers before a UDP header.
+	# 4. IPv6 with 25 extension headers before a UDP header.
 	{
 		name => 'ip_protochain_17_deepstack',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ext_headers.pcap',
 		expr => 'ip protochain 17',
-		results => [0],
+		results => [0, 0, 0, 0],
 	},
 	{
 		name => 'ip6_protochain_17_deepstack',
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ext_headers.pcap',
 		expr => 'ip6 protochain 17',
-		results => [65535],
+		results => [0, 0, 65535, 65535],
 	},
 	{
 		name => 'ip6_protochain_51_tunnel',
@@ -32230,11 +32235,267 @@ my @fcode_tests = (
 		results => [0],
 	},
 	{
+		name => 'ja_neg_2_infloop',
+		program => '
+			(000) ld       #0x0
+			(001) ja       0      ; k == -2
+			(002) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_neg_2_OK',
+		program => '
+			(000) ja       2 ; k == 1
+			(001) ja       3 ; k == 1
+			(002) ja       1 ; k == -2
+			(003) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
 		name => 'ja_0x00000000_OOB',
 		program => '
 			(000) ja       1      ; k == 0, after the last instruction
 			',
 		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	# In this group k == 0xFFFFFFFF == -1 is an obvious infinite loop on all
+	# architectures.  The other seven k values are less obvious unintended
+	# equivalents (via pointer arithmetics overflow) of the same on 32-bit
+	# architectures, and OOBR on 64-bit architectures.
+	{
+		name => 'ja_0x1FFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x1FFFFFFF }, # k == 536870911
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x3FFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x3FFFFFFF }, # k == 1073741823
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x5FFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x5FFFFFFF }, # k == 1610612735
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x7FFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x7FFFFFFF }, # k == 2147483647
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x9FFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x9FFFFFFF }, # k == -1610612737
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xBFFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xBFFFFFFF }, # k == -1073741825
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xDFFFFFFF',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xDFFFFFFF }, # k == -536870913
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xFFFFFFFF',
+		program => '
+			(000) ja       0      ; k == 0xFFFFFFFF == -1
+			(001) ret      #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'ja_neg_2_underlimit',
+		program => '
+			(000) ja       65 ; k >= 0, forward jump
+			(001) ja       66 ; k >= 0, forward jump
+			(002) ja       1  ; k == -2, backward jump number 64
+			(003) ja       2  ; k == -2, backward jump number 63
+			(004) ja       3  ; k == -2, backward jump number 62
+			(005) ja       4  ; k == -2, backward jump number 61
+			(006) ja       5  ; k == -2, backward jump number 60
+			(007) ja       6  ; k == -2, backward jump number 59
+			(008) ja       7  ; k == -2, backward jump number 58
+			(009) ja       8  ; k == -2, backward jump number 57
+			(010) ja       9  ; k == -2, backward jump number 56
+			(011) ja       10 ; k == -2, backward jump number 55
+			(012) ja       11 ; k == -2, backward jump number 54
+			(013) ja       12 ; k == -2, backward jump number 53
+			(014) ja       13 ; k == -2, backward jump number 52
+			(015) ja       14 ; k == -2, backward jump number 51
+			(016) ja       15 ; k == -2, backward jump number 50
+			(017) ja       16 ; k == -2, backward jump number 49
+			(018) ja       17 ; k == -2, backward jump number 48
+			(019) ja       18 ; k == -2, backward jump number 47
+			(020) ja       19 ; k == -2, backward jump number 46
+			(021) ja       20 ; k == -2, backward jump number 45
+			(022) ja       21 ; k == -2, backward jump number 44
+			(023) ja       22 ; k == -2, backward jump number 43
+			(024) ja       23 ; k == -2, backward jump number 42
+			(025) ja       24 ; k == -2, backward jump number 41
+			(026) ja       25 ; k == -2, backward jump number 40
+			(027) ja       26 ; k == -2, backward jump number 39
+			(028) ja       27 ; k == -2, backward jump number 38
+			(029) ja       28 ; k == -2, backward jump number 37
+			(030) ja       29 ; k == -2, backward jump number 36
+			(031) ja       30 ; k == -2, backward jump number 35
+			(032) ja       31 ; k == -2, backward jump number 34
+			(033) ja       32 ; k == -2, backward jump number 33
+			(034) ja       33 ; k == -2, backward jump number 32
+			(035) ja       34 ; k == -2, backward jump number 31
+			(036) ja       35 ; k == -2, backward jump number 30
+			(037) ja       36 ; k == -2, backward jump number 29
+			(038) ja       37 ; k == -2, backward jump number 28
+			(039) ja       38 ; k == -2, backward jump number 27
+			(040) ja       39 ; k == -2, backward jump number 26
+			(041) ja       40 ; k == -2, backward jump number 25
+			(042) ja       41 ; k == -2, backward jump number 24
+			(043) ja       42 ; k == -2, backward jump number 23
+			(044) ja       43 ; k == -2, backward jump number 22
+			(045) ja       44 ; k == -2, backward jump number 21
+			(046) ja       45 ; k == -2, backward jump number 20
+			(047) ja       46 ; k == -2, backward jump number 19
+			(048) ja       47 ; k == -2, backward jump number 18
+			(049) ja       48 ; k == -2, backward jump number 17
+			(050) ja       49 ; k == -2, backward jump number 16
+			(051) ja       50 ; k == -2, backward jump number 15
+			(052) ja       51 ; k == -2, backward jump number 14
+			(053) ja       52 ; k == -2, backward jump number 13
+			(054) ja       53 ; k == -2, backward jump number 12
+			(055) ja       54 ; k == -2, backward jump number 11
+			(056) ja       55 ; k == -2, backward jump number 10
+			(057) ja       56 ; k == -2, backward jump number 9
+			(058) ja       57 ; k == -2, backward jump number 8
+			(059) ja       58 ; k == -2, backward jump number 7
+			(060) ja       59 ; k == -2, backward jump number 6
+			(061) ja       60 ; k == -2, backward jump number 5
+			(062) ja       61 ; k == -2, backward jump number 4
+			(063) ja       62 ; k == -2, backward jump number 3
+			(064) ja       63 ; k == -2, backward jump number 2
+			(065) ja       64 ; k == -2, backward jump number 1
+			(066) ret      #1 ; success
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ja_neg_2_overlimit',
+		program => '
+			(000) ja       66 ; k >= 0, forward jump
+			(001) ja       67 ; k >= 0, not reached
+			(002) ja       1  ; k == -2, backward jump number 65, terminating!
+			(003) ja       2  ; k == -2, backward jump number 64
+			(004) ja       3  ; k == -2, backward jump number 63
+			(005) ja       4  ; k == -2, backward jump number 62
+			(006) ja       5  ; k == -2, backward jump number 61
+			(007) ja       6  ; k == -2, backward jump number 60
+			(008) ja       7  ; k == -2, backward jump number 59
+			(009) ja       8  ; k == -2, backward jump number 58
+			(010) ja       9  ; k == -2, backward jump number 57
+			(011) ja       10 ; k == -2, backward jump number 56
+			(012) ja       11 ; k == -2, backward jump number 55
+			(013) ja       12 ; k == -2, backward jump number 54
+			(014) ja       13 ; k == -2, backward jump number 53
+			(015) ja       14 ; k == -2, backward jump number 52
+			(016) ja       15 ; k == -2, backward jump number 51
+			(017) ja       16 ; k == -2, backward jump number 50
+			(018) ja       17 ; k == -2, backward jump number 49
+			(019) ja       18 ; k == -2, backward jump number 48
+			(020) ja       19 ; k == -2, backward jump number 47
+			(021) ja       20 ; k == -2, backward jump number 46
+			(022) ja       21 ; k == -2, backward jump number 45
+			(023) ja       22 ; k == -2, backward jump number 44
+			(024) ja       23 ; k == -2, backward jump number 43
+			(025) ja       24 ; k == -2, backward jump number 42
+			(026) ja       25 ; k == -2, backward jump number 41
+			(027) ja       26 ; k == -2, backward jump number 40
+			(028) ja       27 ; k == -2, backward jump number 39
+			(029) ja       28 ; k == -2, backward jump number 38
+			(030) ja       29 ; k == -2, backward jump number 37
+			(031) ja       30 ; k == -2, backward jump number 36
+			(032) ja       31 ; k == -2, backward jump number 35
+			(033) ja       32 ; k == -2, backward jump number 34
+			(034) ja       33 ; k == -2, backward jump number 33
+			(035) ja       34 ; k == -2, backward jump number 32
+			(036) ja       35 ; k == -2, backward jump number 31
+			(037) ja       36 ; k == -2, backward jump number 30
+			(038) ja       37 ; k == -2, backward jump number 29
+			(039) ja       38 ; k == -2, backward jump number 28
+			(040) ja       39 ; k == -2, backward jump number 27
+			(041) ja       40 ; k == -2, backward jump number 26
+			(042) ja       41 ; k == -2, backward jump number 25
+			(043) ja       42 ; k == -2, backward jump number 24
+			(044) ja       43 ; k == -2, backward jump number 23
+			(045) ja       44 ; k == -2, backward jump number 22
+			(046) ja       45 ; k == -2, backward jump number 21
+			(047) ja       46 ; k == -2, backward jump number 20
+			(048) ja       47 ; k == -2, backward jump number 19
+			(049) ja       48 ; k == -2, backward jump number 18
+			(050) ja       49 ; k == -2, backward jump number 17
+			(051) ja       50 ; k == -2, backward jump number 16
+			(052) ja       51 ; k == -2, backward jump number 15
+			(053) ja       52 ; k == -2, backward jump number 14
+			(054) ja       53 ; k == -2, backward jump number 13
+			(055) ja       54 ; k == -2, backward jump number 12
+			(056) ja       55 ; k == -2, backward jump number 11
+			(057) ja       56 ; k == -2, backward jump number 10
+			(058) ja       57 ; k == -2, backward jump number 9
+			(059) ja       58 ; k == -2, backward jump number 8
+			(060) ja       59 ; k == -2, backward jump number 7
+			(061) ja       60 ; k == -2, backward jump number 6
+			(062) ja       61 ; k == -2, backward jump number 5
+			(063) ja       62 ; k == -2, backward jump number 4
+			(064) ja       63 ; k == -2, backward jump number 3
+			(065) ja       64 ; k == -2, backward jump number 2
+			(066) ja       65 ; k == -2, backward jump number 1
+			(067) ret      #70773 ; not reached
+			',
 		savefile => 'pppoe.pcap',
 		results => [0],
 	},
