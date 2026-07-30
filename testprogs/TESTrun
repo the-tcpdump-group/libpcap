@@ -31728,12 +31728,34 @@ my @fcode_tests = (
 	},
 
 	{
+		name => 'div_by_0_k',
+		program => '
+			div #0     ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
 		name => 'div_by_0_x',
 		program => '
 			(000) ldx      #0x0
 			(001) div      x      ; Expect this to terminate the program.
 			(002) ret      #70773 ; not reached
 			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'mod_by_0_k',
+		program => '
+			mod #0     ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
 		savefile => 'pppoe.pcap',
 		results => [0],
 	},
