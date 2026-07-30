@@ -89,7 +89,8 @@ pcap_netmap_filter(u_char *arg, struct pcap_pkthdr *h, const u_char *buf)
 
 	++pn->rx_pkts;
 	if (pc == NULL ||
-	    (snaplen = pcapint_filter(pc, buf, h->len, h->caplen)) != 0) {
+	    (snaplen = pcapint_filter(pc, p->fcode.bf_len,
+	                              buf, h->len, h->caplen)) != 0) {
 		/*
 		 * Trim the packet to the snapshot length.
 		 */

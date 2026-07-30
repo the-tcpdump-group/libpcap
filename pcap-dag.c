@@ -689,8 +689,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * depends on the card/stream slen; the snapshot length
 		 * configured for this pcap handle is p->snapshot.
 		 */
-		if ((p->fcode.bf_insns == NULL) || pcapint_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
-
+		if (p->fcode.bf_insns == NULL ||
+		    pcapint_filter(p->fcode.bf_insns, p->fcode.bf_len,
+		                   dp, packet_len, caplen)) {
 			/* convert between timestamp formats */
 			unsigned long long ts;
 

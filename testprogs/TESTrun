@@ -31689,6 +31689,16 @@ my @fcode_tests = (
 		savefile => 'pppoe.pcap',
 		results => [1],
 	},
+	{
+		name => 'no_ret',
+		program => '
+			ld #0x0
+			; There was no "ret"!
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
 
 	{
 		name => 'div_by_0_x',
@@ -32154,6 +32164,324 @@ my @fcode_tests = (
 		program => '
 			ldx M[3221225472] ; Expect this to terminate the program.
 			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'ja_neg_2_OOB',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xFFFFFFFE }, # k == -2, before the first instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x00000000_OOB',
+		program => '
+			(000) ja       1      ; k == 0, after the last instruction
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	# In this group only k == 0 is a valid jump on all architectures.  The other
+	# seven k values are unintended equivalents (via pointer arithmetic
+	# overflow) of the same on 32-bit architectures, and OOBR on 64-bit
+	# architectures.
+	{
+		name => 'ja_0x00000000',
+		program => '
+			(000) ja       1      ; k == 0, within bounds
+			(001) ret      #1     ; return here
+			(002) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ja_0x20000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x20000000 }, # k == 536870912, after the last instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x40000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x40000000 }, # k == 1073741824, after the last instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x60000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x60000000 }, # k == 1610612736, after the last instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0x80000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x80000000 }, # k == -2147483648, before the first instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xA0000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xA0000000 }, # k == -1610612736, before the first instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xC0000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xC0000000 }, # k == -1073741824, before the first instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'ja_0xE0000000',
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xE0000000 }, # k == -536870912, before the first instruction
+			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+		),
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'ja_1_OK',
+		program => '
+			(000) ja       2      ; k == 1
+			(001) ret      #70773 ; not reached
+			(002) ret      #1     ; return here
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ja_1_OOB',
+		program => '
+			(000) ja  2      ; k == 1, after the last instruction
+			(001) ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jeq_k_jt',
+		program => '
+			(000) ld  #0x1
+			(001) jeq #0x1 jt 3 jf 2 ; jt == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jeq_k_jf',
+		program => '
+			(000) ld  #0x0
+			(001) jeq #0x1 jt 2 jf 3 ; jf == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jeq_x_jt',
+		program => '
+			(000) ld  #0x1
+			(001) ldx #0x1
+			(002) jeq x jt 4 jf 3 ; jt == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jeq_x_jf',
+		program => '
+			(000) ld  #0x0
+			(001) ldx #0x1
+			(002) jeq x jt 3 jf 4 ; jf == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jgt_k_jt',
+		program => '
+			(000) ld  #0x2
+			(001) jgt #0x1 jt 3 jf 2 ; jt == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jgt_k_jf',
+		program => '
+			(000) ld  #0x0
+			(001) jgt #0x1 jt 2 jf 3 ; jf == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jgt_x_jt',
+		program => '
+			(000) ld  #0x1
+			(001) ldx #0x0
+			(002) jgt x jt 4 jf 3 ; jt == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jgt_x_jf',
+		program => '
+			(000) ld  #0x1
+			(001) ldx #0x1
+			(002) jgt x jt 3 jf 4 ; jf == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jge_k_jt',
+		program => '
+			(000) ld  #0x1
+			(001) jge #0x1 jt 3 jf 2 ; jt == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jge_k_jf',
+		program => '
+			(000) ld  #0x0
+			(001) jge #0x1 jt 2 jf 3 ; jf == 1, after the last instruction
+			(002) ret #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jge_x_jt',
+		program => '
+			(000) ld  #0x1
+			(001) ldx #0x1
+			(002) jge x jt 4 jf 3 ; jt == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jge_x_jf',
+		program => '
+			(000) ld  #0x0
+			(001) ldx #0x1
+			(002) jge x jt 3 jf 4 ; jf == 1, after the last instruction
+			(003) ret #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jset_k_jt',
+		program => '
+			(000) ld   #0x1
+			(001) jset #0x1 jt 3 jf 2 ; jt == 1, after the last instruction
+			(002) ret  #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jset_k_jf',
+		program => '
+			(000) ld   #0x0
+			(001) jset #0x1 jt 2 jf 3 ; jf == 1, after the last instruction
+			(002) ret  #70773         ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'jset_x_jt',
+		program => '
+			(000) ld   #0x1
+			(001) ldx  #0x1
+			(002) jset x jt 4 jf 3 ; jt == 1, after the last instruction
+			(003) ret  #70773      ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		name => 'jset_x_jf',
+		program => '
+			(000) ld   #0x0
+			(001) ldx  #0x1
+			(002) jset x jt 3 jf 4 ; jf == 1, after the last instruction
+			(003) ret  #70773      ; not reached
 			',
 		dump => undef,
 		savefile => 'pppoe.pcap',

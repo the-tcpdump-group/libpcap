@@ -185,7 +185,8 @@ retry:
 	caplen = (wirelen > p->snapshot) ? p->snapshot : wirelen;
 
 	if (! ph->filtering_in_kernel &&
-	    ! pcapint_filter(p->fcode.bf_insns, pkt, wirelen, wirelen)) {
+	    ! pcapint_filter(p->fcode.bf_insns, p->fcode.bf_len,
+	                     pkt, wirelen, wirelen)) {
 		ph->stat.ps_drop++;
 		return 0;
 	}
