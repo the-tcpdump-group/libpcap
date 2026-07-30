@@ -66,6 +66,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       CVE-2026-31911: Fail opcodes safely in the BPF interpreter.
       CVE-2026-6244: Avoid division by zero via pcap_offline_filter().
       CVE-2026-6554: Limit "ja L" looping in pcap_offline_filter().
+      Validate BPF opcodes stricter.
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization

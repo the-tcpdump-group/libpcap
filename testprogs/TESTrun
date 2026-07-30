@@ -31008,10 +31008,17 @@ $DLTnames{149} = 'USER2' if $^O ne 'darwin';
 # * expect (mandatory, [multi-line] string): the expected output.
 
 my @enumerate_tests = (
+	# Each of the two functions below independently recognises a set of valid BPF
+	# instructions, require the two sets to be identical.
 	{
 		cfunc => 'bpf_image',
 		expect => $valid_opcodes_enumeration,
 	},
+	{
+		cfunc => 'pcapint_valid_insn',
+		expect => $valid_opcodes_enumeration,
+	},
+
 	{
 		cfunc => 'pcapint_opcode_without_k',
 		expect => '
@@ -31711,10 +31718,7 @@ my @fcode_tests = (
 			{ opcode => 0x1400 },                      # invalid opcode
 			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
 		),
-		dump => '
-			(000) unimp    0x1400
-			(001) ret      #70773
-			',
+		dump => undef,
 		savefile => 'pppoe.pcap',
 		results => [0],
 	},
@@ -31724,10 +31728,7 @@ my @fcode_tests = (
 			{ opcode => 0x00b0 },                      # invalid opcode
 			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
 		),
-		dump => '
-			(000) unimp    0xb0
-			(001) ret      #70773
-			',
+		dump => undef,
 		savefile => 'pppoe.pcap',
 		results => [0],
 	},

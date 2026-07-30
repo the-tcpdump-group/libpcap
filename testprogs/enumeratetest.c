@@ -111,6 +111,18 @@ enumerate_bpf_image(void)
 }
 
 static bool
+valid_bpf_insn(const struct bpf_insn *insn)
+{
+	return !! pcapint_valid_insn(insn);
+}
+
+static int
+enumerate_pcapint_valid_insn(void)
+{
+	return enumerate_bpf_space(valid_bpf_insn);
+}
+
+static bool
 insn_without_k(const struct bpf_insn *insn)
 {
 	return pcapint_opcode_without_k(insn->code);
@@ -259,6 +271,10 @@ static const struct enumfunc {
 	{
 		"bpf_image",
 		enumerate_bpf_image,
+	},
+	{
+		"pcapint_valid_insn",
+		enumerate_pcapint_valid_insn,
 	},
 	{
 		"pcap_statustostr",

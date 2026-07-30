@@ -39,6 +39,7 @@ add_test_executable(writecaptest)
 
 if(NOT WIN32)
   # pcapint_opcode_without_k()
+  # pcapint_valid_insn()
   add_test_executable(enumeratetest)
   add_test_executable(selpolltest)
   # Fails to link on Windows:
