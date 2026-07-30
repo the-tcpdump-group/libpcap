@@ -490,12 +490,83 @@ pcapint_filter(const struct bpf_insn *pc, const u_int proglen, const u_char *p,
 }
 
 /*
+ * Return true if the instruction is valid, as far as is possible to tell
+ * without knowing what the rest of the filter program is.
+ */
+uint8_t
+pcapint_valid_insn(const struct bpf_insn *insn)
+{
+	/*
+	 * Require the opcode to be valid, for particular opcodes also require
+	 * the value of k to be valid.  The list of opcodes below is exactly
+	 * the same as in bpf_filter() to make it easier to cross-reference.
+	 */
+	switch (insn->code) {
+	case BPF_RET|BPF_K:
+	case BPF_RET|BPF_A:
+	case BPF_LD|BPF_W|BPF_ABS:
+	case BPF_LD|BPF_H|BPF_ABS:
+	case BPF_LD|BPF_B|BPF_ABS:
+	case BPF_LD|BPF_W|BPF_LEN:
+	case BPF_LDX|BPF_W|BPF_LEN:
+	case BPF_LD|BPF_W|BPF_IND:
+	case BPF_LD|BPF_H|BPF_IND:
+	case BPF_LD|BPF_B|BPF_IND:
+	case BPF_LDX|BPF_MSH|BPF_B:
+	case BPF_LD|BPF_IMM:
+	case BPF_LDX|BPF_IMM:
+		return 1;
+	case BPF_LD|BPF_MEM:
+	case BPF_LDX|BPF_MEM:
+	case BPF_ST:
+	case BPF_STX:
+		// Reject a non-existent scratch memory register.
+		return insn->k < BPF_MEMWORDS;
+	case BPF_JMP|BPF_JA:
+	case BPF_JMP|BPF_JGT|BPF_K:
+	case BPF_JMP|BPF_JGE|BPF_K:
+	case BPF_JMP|BPF_JEQ|BPF_K:
+	case BPF_JMP|BPF_JSET|BPF_K:
+	case BPF_JMP|BPF_JGT|BPF_X:
+	case BPF_JMP|BPF_JGE|BPF_X:
+	case BPF_JMP|BPF_JEQ|BPF_X:
+	case BPF_JMP|BPF_JSET|BPF_X:
+	case BPF_ALU|BPF_ADD|BPF_X:
+	case BPF_ALU|BPF_SUB|BPF_X:
+	case BPF_ALU|BPF_MUL|BPF_X:
+	case BPF_ALU|BPF_DIV|BPF_X:
+	case BPF_ALU|BPF_MOD|BPF_X:
+	case BPF_ALU|BPF_AND|BPF_X:
+	case BPF_ALU|BPF_OR|BPF_X:
+	case BPF_ALU|BPF_XOR|BPF_X:
+	case BPF_ALU|BPF_LSH|BPF_X:
+	case BPF_ALU|BPF_RSH|BPF_X:
+	case BPF_ALU|BPF_ADD|BPF_K:
+	case BPF_ALU|BPF_SUB|BPF_K:
+	case BPF_ALU|BPF_MUL|BPF_K:
+		return 1;
+	case BPF_ALU|BPF_DIV|BPF_K:
+	case BPF_ALU|BPF_MOD|BPF_K:
+		// Reject a constant division or modulo by 0.
+		return insn->k != 0;
+	case BPF_ALU|BPF_AND|BPF_K:
+	case BPF_ALU|BPF_OR|BPF_K:
+	case BPF_ALU|BPF_XOR|BPF_K:
+	case BPF_ALU|BPF_LSH|BPF_K:
+	case BPF_ALU|BPF_RSH|BPF_K:
+	case BPF_ALU|BPF_NEG:
+	case BPF_MISC|BPF_TAX:
+	case BPF_MISC|BPF_TXA:
+		return 1;
+	}
+	// Reject an invalid opcode.
+	return 0;
+}
+
+/*
  * Return true if the 'fcode' is a valid filter program.
  * The constraints are that each jump be forward and to a valid
- * code, that memory accesses are within valid ranges (to the
- * extent that this can be checked statically; loads of packet
- * data have to be, and are, also checked at run time), and that
- * the code terminates with either an accept or reject.
+ * code and that the code terminates with either an accept or reject.
  *
  * The kernel needs to be able to verify an application's filter code.
  * Otherwise, a bogus program could easily crash the system.
@@ -511,64 +582,9 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 
 	for (i = 0; i < (u_int)len; ++i) {
 		p = &f[i];
+		if (! pcapint_valid_insn(p))
+			return 0;
 		switch (BPF_CLASS(p->code)) {
-		/*
-		 * Check that memory operations use valid addresses.
-		 */
-		case BPF_LD:
-		case BPF_LDX:
-			switch (BPF_MODE(p->code)) {
-			case BPF_IMM:
-				break;
-			case BPF_ABS:
-			case BPF_IND:
-			case BPF_MSH:
-				/*
-				 * There's no maximum packet data size
-				 * in userland.  The runtime packet length
-				 * check suffices.
-				 */
-				break;
-			case BPF_MEM:
-				if (p->k >= BPF_MEMWORDS)
-					return 0;
-				break;
-			case BPF_LEN:
-				break;
-			default:
-				return 0;
-			}
-			break;
-		case BPF_ST:
-		case BPF_STX:
-			if (p->k >= BPF_MEMWORDS)
-				return 0;
-			break;
-		case BPF_ALU:
-			switch (BPF_OP(p->code)) {
-			case BPF_ADD:
-			case BPF_SUB:
-			case BPF_MUL:
-			case BPF_OR:
-			case BPF_AND:
-			case BPF_XOR:
-			case BPF_LSH:
-			case BPF_RSH:
-			case BPF_NEG:
-				break;
-			case BPF_DIV:
-			case BPF_MOD:
-				/*
-				 * Check for constant division or modulus
-				 * by 0.
-				 */
-				if (BPF_SRC(p->code) == BPF_K && p->k == 0)
-					return 0;
-				break;
-			default:
-				return 0;
-			}
-			break;
 		case BPF_JMP:
 			/*
 			 * Check that jumps are within the code block,
@@ -632,16 +648,7 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 				if (from + p->jt >= (u_int)len || from + p->jf >= (u_int)len)
 					return 0;
 				break;
-			default:
-				return 0;
 			}
-			break;
-		case BPF_RET:
-			break;
-		case BPF_MISC:
-			break;
-		default:
-			return 0;
 		}
 	}
 	return BPF_CLASS(f[len - 1].code) == BPF_RET;

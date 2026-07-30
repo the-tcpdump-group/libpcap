@@ -593,6 +593,7 @@ u_int	pcapint_filter(const struct bpf_insn *, const u_int, const u_char *,
  * Routine to validate a BPF program.
  */
 int	pcapint_validate_filter(const struct bpf_insn *, int);
+uint8_t pcapint_valid_insn(const struct bpf_insn *);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
