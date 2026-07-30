@@ -64,6 +64,8 @@
 #include <linux/filter.h>
 #endif
 
+#define MAX_BACKWARD_JUMPS 64U
+
 /*
  * Kernel BPF implementations tend to define BPF_MAXINSNS to 512 or 4096, the
  * userland interpreter in libpcap is meant to support much longer filter
@@ -138,6 +140,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 	X = 0;
 	uint32_t mem[BPF_MEMWORDS] = {0};
 	const struct bpf_insn *pc0 = pc;
+	unsigned backward_jumps = 0;
 	--pc;
 	for (;;) {
 		++pc;
@@ -311,6 +314,17 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			 * 0 <= pc - pc0 < proglen <= BPF_MAXINSNS < INT32_MAX
 			 */
 			if ((bpf_u_int32)(pc - pc0) + 1 + pc->k >= proglen)
+				return 0;
+			/*
+			 * Terminate the program if this is a non-forward jump
+			 * and is:
+			 * - a guaranteed infinite loop because it jumps to
+			 *   itself (exactly the same as in the validator), or
+			 * - a backward jump after many enough backward jumps
+			 *   already made for this packet.
+			 */
+			if ((bpf_int32)pc->k < 0 && ((bpf_int32)pc->k == -1 ||
+			    backward_jumps++ >= MAX_BACKWARD_JUMPS))
 				return 0;
 			/*
 			 * XXX - we currently implement "ip6 protochain"
@@ -598,6 +612,17 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 				 * overflow.
 				 */
 				if (from + p->k >= (u_int)len)
+					return 0;
+				/*
+				 * The only type of infinite loop that can be
+				 * detected in this function is a "ja L" that
+				 * jumps to itself.  For this only k == -1
+				 * needs to be tested because the check above
+				 * has already rejected all other values that
+				 * would wrap the pointer equivalently on
+				 * 32-bit architectures.
+				 */
+				if ((bpf_int32)p->k == -1)
 					return 0;
 				break;
 			case BPF_JEQ:
