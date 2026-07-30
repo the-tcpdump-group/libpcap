@@ -65,6 +65,24 @@
 #endif
 
 /*
+ * Kernel BPF implementations tend to define BPF_MAXINSNS to 512 or 4096, the
+ * userland interpreter in libpcap is meant to support much longer filter
+ * programs.  In the latter case it is important that BPF_MAXINSNS does not
+ * interfere with the safety checks in the validator and the interpreter:
+ *   (BPF_MAXINSNS + UINT8_MAX) * sizeof(struct bpf_insn) < UINT32_MAX
+ * It makes the most sense to be able to interpret as many instructions as
+ * pcap_compile() can produce, without optimization, for a valid filter
+ * expression before it consumes as much memory as the current definitions of
+ * NCHUNKS and CHUNKSIZE() allow.  For some expressions this can be almost
+ * 1.53 million instructions on a 64-bit machine and twice as many on a 32-bit
+ * machine.
+ */
+#ifdef BPF_MAXINSNS
+#undef BPF_MAXINSNS
+#endif
+#define BPF_MAXINSNS 3060000U
+
+/*
  * Execute the filter program starting at pc on the packet p
  * wirelen is the length of the original packet
  * buflen is the amount of data present
@@ -78,12 +96,14 @@
  */
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
 u_int
-pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
-    u_int wirelen, u_int buflen, const struct pcap_bpf_aux_data *aux_data)
+pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
+    const u_char *p, const u_int wirelen, const u_int buflen,
+    const struct pcap_bpf_aux_data *aux_data)
 #else
 u_int
-pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
-    u_int wirelen, u_int buflen, const struct pcap_bpf_aux_data *aux_data _U_)
+pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
+    const u_char *p, const u_int wirelen, const u_int buflen,
+    const struct pcap_bpf_aux_data *aux_data _U_)
 #endif
 {
 	register uint32_t A, X;
@@ -92,14 +112,37 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 	if (pc == 0)
 		/*
 		 * No filter means accept all.
+		 * In this case the value of 'proglen' is irrelevant.
 		 */
 		return (u_int)-1;
+	if (proglen < 1 || proglen > BPF_MAXINSNS)
+		return 0;
+
+	/*
+	 * Require the current instruction pointer not to overflow for both the
+	 * filter program (where the pointer will be dereferenced) and an
+	 * immediately following margin (where it will be not).  So long as the
+	 * margin is large enough to represent the destination of any single
+	 * conditional [forward] jump from within the filter program, a single
+	 * guard prevents all filter program over-read attempts that result
+	 * from the program running out of instructions before a BPF_RET or a
+	 * conditional jump directing the interpreter beyond the program end.
+	 * Unconditional jumps mean a larger problem space, which the BPF_JA
+	 * case below addresses separately.
+	 */
+	const struct bpf_insn *pcend = pc + proglen;
+	if (pcend + UINT8_MAX < pc)
+		return 0;
+
 	A = 0;
 	X = 0;
 	uint32_t mem[BPF_MEMWORDS] = {0};
+	const struct bpf_insn *pc0 = pc;
 	--pc;
 	for (;;) {
 		++pc;
+		if (pc >= pcend)
+			return 0;
 		switch (pc->code) {
 
 		default:
@@ -235,6 +278,40 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_JMP|BPF_JA:
+			/*
+			 * The pointer (pc) decrements and increments in units
+			 * of sizeof(struct bpf_insn) == 8 bytes.  The number
+			 * of units is in the [INT32_MIN, INT32_MAX] interval,
+			 * hence the result can point before the beginning or
+			 * beyond the end of the filter program and can under-
+			 * or overflow; also on 32-bit architectures it can
+			 * under- or overflow more than once and can test
+			 * negative for underflow, overflow and out-of-range
+			 * conditions after under- or overflowing at least
+			 * once.
+			 *
+			 * However, it has been verified above that the program
+			 * length is sufficiently small and the pointer does
+			 * not wrap within the bounds of the filter program, so
+			 * there is a one-to-one correspondence between BPF
+			 * program counter values [0, proglen) and all valid
+			 * values of the pointer.  In other words, after this
+			 * unconditional jump the pointer arithmetic result
+			 * will be valid iff BPF program counter value will be
+			 * valid.  For the latter problem the solution is
+			 * almost the same as in the validator.
+			 *
+			 * The main difference is that here the current value
+			 * of BPF program counter is not a 32-bit unsigned
+			 * variable, but a ptrdiff_t expression, which is
+			 * 64-bit signed on 64-bit architectures and 32-bit
+			 * signed on 32-bit architectures.  However, the cast
+			 * to 32-bit unsigned is safe in both cases because:
+			 * pc0 <= pc < pc0 + proglen, therefore:
+			 * 0 <= pc - pc0 < proglen <= BPF_MAXINSNS < INT32_MAX
+			 */
+			if ((bpf_u_int32)(pc - pc0) + 1 + pc->k >= proglen)
+				return 0;
 			/*
 			 * XXX - we currently implement "ip6 protochain"
 			 * with backward jumps, so sign-extend pc->k.
@@ -388,10 +465,10 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 }
 
 u_int
-pcapint_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
-    u_int buflen)
+pcapint_filter(const struct bpf_insn *pc, const u_int proglen, const u_char *p,
+    u_int wirelen, u_int buflen)
 {
-	return pcapint_filter_with_aux_data(pc, p, wirelen, buflen, NULL);
+	return pcapint_filter_with_aux_data(pc, proglen, p, wirelen, buflen, NULL);
 }
 
 /*
@@ -411,7 +488,7 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 	u_int i, from;
 	const struct bpf_insn *p;
 
-	if (len < 1)
+	if (len < 1 || (u_int)len > BPF_MAXINSNS || f + len < f)
 		return 0;
 
 	for (i = 0; i < (u_int)len; ++i) {
@@ -477,33 +554,45 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 		case BPF_JMP:
 			/*
 			 * Check that jumps are within the code block,
-			 * and that unconditional branches don't go
-			 * backwards as a result of an overflow.
+			 * regardless of the direction.  libpcap uses
+			 * backward jumps to implement the "protochain"
+			 * primitive.  All offsets that mean a backward
+			 * jump in libpcap (whether in-range or not) in
+			 * kernel BPF implementations mean out-of-range
+			 * or overflow forward jumps -- kernel
+			 * implementations must reject that.
+			 *
 			 * Unconditional branches have a 32-bit offset,
 			 * so they could overflow; we check to make
 			 * sure they don't.  Conditional branches have
 			 * an 8-bit offset, and the from address is <=
-			 * BPF_MAXINSNS, and we assume that BPF_MAXINSNS
+			 * BPF_MAXINSNS, and we know that BPF_MAXINSNS
 			 * is sufficiently small that adding 255 to it
 			 * won't overflow.
 			 *
 			 * We know that len is <= BPF_MAXINSNS, and we
-			 * assume that BPF_MAXINSNS is < the maximum size
+			 * know that BPF_MAXINSNS is < the maximum value
 			 * of a u_int, so that i + 1 doesn't overflow.
-			 *
-			 * For userland, we don't know that the from
-			 * or len are <= BPF_MAXINSNS, but we know that
-			 * from <= len, and, except on a 64-bit system,
-			 * it's unlikely that len, if it truly reflects
-			 * the size of the program we've been handed,
-			 * will be anywhere near the maximum size of
-			 * a u_int.  We also don't check for backward
-			 * branches, as we currently support them in
-			 * userland for the protochain operation.
 			 */
 			from = i + 1;
 			switch (BPF_OP(p->code)) {
 			case BPF_JA:
+				/*
+				 * So long as both 'from' and bpf_insn.k are
+				 * 32-bit unsigned, this check rejects any jump
+				 * offset that points outside of the valid BPF
+				 * address space of the filter program no
+				 * matter whether signed interpretation of the
+				 * offset is positive or negative.
+				 *
+				 * Note that this condition is necessary, but
+				 * not sufficient to get correct results from
+				 * respective pointer arithmetic in the process
+				 * address space.  Other necessary conditions
+				 * are that BPF_MAXINSNS is correctly defined
+				 * and enforced, and that the pointer does not
+				 * overflow.
+				 */
 				if (from + p->k >= (u_int)len)
 					return 0;
 				break;
@@ -531,12 +620,14 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 
 /*
  * Exported because older versions of libpcap exported them.
+ * This function is deprecated and unsafe, use pcap_offline_filter() instead.
  */
 u_int
 bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
     u_int buflen)
 {
-	return pcapint_filter(pc, p, wirelen, buflen);
+	// The actual length of the filter program is not known.
+	return pcapint_filter(pc, BPF_MAXINSNS, p, wirelen, buflen);
 }
 
 int
