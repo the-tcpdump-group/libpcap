@@ -31300,6 +31300,591 @@ my @enumerate_tests = (
 	},
 );
 
+# Minimalistic BPF assembler and cbpf-savefile generator follow.
+
+use constant {
+	# class
+	BPF_LD   => 0x00,
+	BPF_LDX  => 0x01,
+	BPF_ST   => 0x02,
+	BPF_STX  => 0x03,
+	BPF_ALU  => 0x04,
+	BPF_JMP  => 0x05,
+	BPF_RET  => 0x06,
+	BPF_MISC => 0x07,
+	# size
+	BPF_W    => 0x00,
+	BPF_H    => 0x08,
+	BPF_B    => 0x10,
+	# addressing mode
+	BPF_IMM  => 0x00,
+	BPF_ABS  => 0x20,
+	BPF_IND  => 0x40,
+	BPF_MEM  => 0x60,
+	BPF_LEN  => 0x80,
+	BPF_MSH  => 0xa0,
+	# ALU
+	BPF_ADD  => 0x00,
+	BPF_SUB  => 0x10,
+	BPF_MUL  => 0x20,
+	BPF_DIV  => 0x30,
+	BPF_OR   => 0x40,
+	BPF_AND  => 0x50,
+	BPF_LSH  => 0x60,
+	BPF_RSH  => 0x70,
+	BPF_NEG  => 0x80,
+	BPF_MOD  => 0x90,
+	BPF_XOR  => 0xa0,
+	# branch
+	BPF_JA   => 0x00,
+	BPF_JEQ  => 0x10,
+	BPF_JGT  => 0x20,
+	BPF_JGE  => 0x30,
+	BPF_JSET => 0x40,
+	# source and return
+	BPF_K    => 0x00,
+	BPF_X    => 0x08,
+	# return
+	BPF_A    => 0x10,
+	# misc
+	BPF_TAX  => 0x00,
+	BPF_TXA  => 0x80,
+
+	# stdint
+	UINT8_MAX          => 255,
+	UINT16_MAX         => 65535,
+	UINT32_MAX         => 4294967295,
+	INT32_MAX          => 2147483647,
+	INT32_MIN          => -2147483648,
+	# cbpf-savefile
+	CBPFSF_HEADER_SIZE => 20,
+	CBPFSF_SIGNATURE   => 0xA1B2C3CB,
+	CBPFSF_ASCII_HINT  => 0x63425046, # 'c' 'B' 'P' 'F'
+};
+
+sub bpf_restore_line {
+	my $pc = shift;
+	my $line = shift;
+
+	local *int32touint32 = sub {
+		my $x = shift;
+		return $x >= 0 ? $x : (UINT32_MAX + $x + 1);
+	};
+
+	local *bpf_restore_branch_offset = sub {
+		my ($label, $pc, $min, $max, $line) = (shift, shift, shift, shift, shift);
+		my $offset = int $label - $pc - 1;
+		return $offset if $min <= $offset && $offset <= $max;
+		die sprintf "invalid label '%s' in '(%03u) %s'", $label, $pc, $line;
+	};
+
+	foreach my $rule (
+		# There are no explicit operands.
+		{
+			regexp => qr/^([a-z]+)$/o,
+			k_jt_jf => 'undef_undef_undef',
+			opcodes => {
+				tax => BPF_MISC | BPF_TAX,
+				txa => BPF_MISC | BPF_TXA,
+				neg => BPF_ALU | BPF_NEG,
+				ret => BPF_RET | BPF_A,
+			},
+		},
+		# The packet [wire] length register is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+#pktlen$/o,
+			k_jt_jf => 'undef_undef_undef',
+			opcodes => {
+				ld  => BPF_LEN | BPF_LD,
+				ldx => BPF_LEN | BPF_LDX,
+			},
+		},
+		# X is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+x$/o,
+			k_jt_jf => 'undef_undef_undef',
+			opcodes => {
+				add => BPF_X | BPF_ALU | BPF_ADD,
+				sub => BPF_X | BPF_ALU | BPF_SUB,
+				mul => BPF_X | BPF_ALU | BPF_MUL,
+				div => BPF_X | BPF_ALU | BPF_DIV,
+				or  => BPF_X | BPF_ALU | BPF_OR,
+				and => BPF_X | BPF_ALU | BPF_AND,
+				lsh => BPF_X | BPF_ALU | BPF_LSH,
+				rsh => BPF_X | BPF_ALU | BPF_RSH,
+				mod => BPF_X | BPF_ALU | BPF_MOD,
+				xor => BPF_X | BPF_ALU | BPF_XOR,
+			},
+		},
+		# An immediate value (decimal) is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+#([0-9]+)$/o,
+			k_jt_jf => 'dec_undef_undef',
+			opcodes => {
+				add => BPF_K | BPF_ALU | BPF_ADD,
+				sub => BPF_K | BPF_ALU | BPF_SUB,
+				mul => BPF_K | BPF_ALU | BPF_MUL,
+				div => BPF_K | BPF_ALU | BPF_DIV,
+				lsh => BPF_K | BPF_ALU | BPF_LSH,
+				rsh => BPF_K | BPF_ALU | BPF_RSH,
+				mod => BPF_K | BPF_ALU | BPF_MOD,
+				ret => BPF_K | BPF_RET,
+			},
+		},
+		# An immediate value (hexadecimal) is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+#(0x[0-9a-fA-F]+)$/o,
+			k_jt_jf => 'hex_undef_undef',
+			opcodes => {
+				ld  => BPF_IMM | BPF_LD,
+				ldx => BPF_IMM | BPF_LDX,
+				or  => BPF_IMM | BPF_ALU | BPF_OR,
+				and => BPF_IMM | BPF_ALU | BPF_AND,
+				xor => BPF_IMM | BPF_ALU | BPF_XOR,
+			},
+		},
+		# A label is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+([0-9]+)$/o,
+			k_jt_jf => 'L_undef_undef',
+			opcodes => {
+				ja => BPF_K | BPF_JMP | BPF_JA,
+			},
+		},
+		# An absolute address (decimal) is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+\[([0-9]+)\]$/o,
+			k_jt_jf => 'dec_undef_undef',
+			opcodes => {
+				ld  => BPF_ABS | BPF_LD | BPF_W,
+				ldh => BPF_ABS | BPF_LD | BPF_H,
+				ldb => BPF_ABS | BPF_LD | BPF_B,
+			},
+		},
+		# Idem.
+		{
+			regexp => qr/^([a-z]+)\s+4\*\(\[([0-9]+)\]&0xf\)$/o,
+			k_jt_jf => 'dec_undef_undef',
+			opcodes => {
+				ldxb => BPF_MSH | BPF_LDX | BPF_B,
+			},
+		},
+		# An indirect address (decimal) is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+\[x\s*\+\s*([0-9]+)\]$/o,
+			k_jt_jf => 'dec_undef_undef',
+			opcodes => {
+				ld  => BPF_IND | BPF_LD | BPF_W,
+				ldh => BPF_IND | BPF_LD | BPF_H,
+				ldb => BPF_IND | BPF_LD | BPF_B,
+			},
+		},
+		# A memory register index (decimal) is the only explicit operand.
+		{
+			regexp => qr/^([a-z]+)\s+M\[([0-9]+)\]$/o,
+			k_jt_jf => 'dec_undef_undef',
+			opcodes => {
+				ld  => BPF_MEM | BPF_LD,
+				ldx => BPF_MEM | BPF_LDX,
+				st  => BPF_ST,
+				stx => BPF_STX,
+			},
+		},
+		# X and two labels are the explicit operands.
+		{
+			regexp => qr/^([a-z]+)\s+x\s+jt\s+([0-9]+)\s+jf\s+([0-9]+)$/o,
+			k_jt_jf => 'undef_L_L',
+			opcodes => {
+				jeq  => BPF_X | BPF_JMP | BPF_JEQ,
+				jgt  => BPF_X | BPF_JMP | BPF_JGT,
+				jge  => BPF_X | BPF_JMP | BPF_JGE,
+				jset => BPF_X | BPF_JMP | BPF_JSET,
+			},
+		},
+		# An immediate value (hexadecimal) and two labels are the explicit operands.
+		{
+			regexp => qr/^([a-z]+)\s+#0x([0-9a-f]+)\s+jt\s+([0-9]+)\s+jf\s+([0-9]+)$/o,
+			k_jt_jf => 'hex_L_L',
+			opcodes => {
+				jeq  => BPF_K | BPF_JMP | BPF_JEQ,
+				jgt  => BPF_K | BPF_JMP | BPF_JGT,
+				jge  => BPF_K | BPF_JMP | BPF_JGE,
+				jset => BPF_K | BPF_JMP | BPF_JSET,
+			},
+		},
+	) {
+		next if $line !~ $rule->{regexp};
+		die "Invalid BPF syntax in '$line'" unless exists $rule->{opcodes}{$1};
+		my $opcode = $rule->{opcodes}{$1};
+		return {
+			opcode => $opcode,
+		} if $rule->{k_jt_jf} eq 'undef_undef_undef';
+		return {
+			opcode => $opcode,
+			k => int ($2),
+		} if $rule->{k_jt_jf} eq 'dec_undef_undef';
+		return {
+			opcode => $opcode,
+			k => hex ($2),
+		} if $rule->{k_jt_jf} eq 'hex_undef_undef';
+		return {
+			opcode => $opcode,
+			# Map "ja" signed offset back into the unsigned 32-bit range: although
+			# the subsequent pack() encodes the signed and the unsigned values
+			# identically, it is useful to keep the intermediate data structure as
+			# close to the spec as possible.
+			k => int32touint32 (bpf_restore_branch_offset ($2, $pc, INT32_MIN, INT32_MAX, $line)),
+		} if ($rule->{k_jt_jf} eq 'L_undef_undef');
+		return {
+			opcode => $opcode,
+			jt => bpf_restore_branch_offset ($2, $pc, 0, UINT8_MAX, $line),
+			jf => bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line),
+		} if ($rule->{k_jt_jf} eq 'undef_L_L');
+		return {
+			opcode => $opcode,
+			k => hex ($2),
+			jt => bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line),
+			jf => bpf_restore_branch_offset ($4, $pc, 0, UINT8_MAX, $line),
+		} if ($rule->{k_jt_jf} eq 'hex_L_L');
+		die "Internal error: invalid k_jt_jf value '$rule->{k_jt_jf}'";
+	}
+	die "No BPF restore rule has matched '$line'";
+}
+
+sub bpf_strip_comments {
+	my $ret = shift;
+	$ret =~ s/ *;.*$//ogm;
+	return $ret;
+}
+
+sub bpf_restore {
+	my @ret;
+	foreach my $line (split /^/o, normalise_expected_output bpf_strip_comments shift) {
+		chomp $line;
+		my $pc = scalar @ret;
+		# Strip the label iff present and valid.
+		if ($line =~ /^\(([0-9]+)\)\s+(.+)$/o) {
+			die "Bogus label at address $pc in line '$line'" if int $1 != $pc;
+			$line = $2;
+		}
+		push @ret, bpf_restore_line $pc, $line;
+	}
+	return @ret;
+}
+
+sub is_cbpfsfdata {
+	my $str = shift;
+	return 0 if length $str < CBPFSF_HEADER_SIZE;
+	my ($w1, $w2) = unpack 'NN', $str;
+	return $w1 == CBPFSF_SIGNATURE && $w2 == CBPFSF_ASCII_HINT;
+}
+
+sub cbpfsfdata_from_list {
+	if (scalar @_ > UINT16_MAX) {
+		die sprintf ("InstructionCount %u > %u", scalar @_, UINT16_MAX);
+	}
+	my $ret = pack 'NNCCnNnn', (
+		CBPFSF_SIGNATURE,
+		CBPFSF_ASCII_HINT,
+		1, # MajorVer
+		0, # MinorVer (ignored in filtertest)
+		0, # Flags (ignored in filtertest)
+		0, # SnapLen (ignored in filtertest)
+		0, # LinkTypeValue (ignored in filtertest)
+		scalar @_, # InstructionCount
+	);
+	local *guard = sub {
+		my ($h, $k, $max) = (shift, shift, shift);
+		return 0 unless $h->{$k};
+		die "invalid '$k' value '$h->{$k}'" if $h->{$k} < 0 || $h->{$k} > $max;
+		return $h->{$k};
+	};
+	$ret .= pack 'nCCN', (
+		guard ($_, 'opcode', UINT16_MAX),
+		guard ($_, 'jt', UINT8_MAX),
+		guard ($_, 'jf', UINT8_MAX),
+		guard ($_, 'k', UINT32_MAX),
+	) foreach @_;
+	return $ret;
+}
+
+# Translate a BPF dump to a cbpf-savefile.  This function is idempotent:
+# if applied to the same data more than once, the result will be
+# cbpf-savefile-encoded only once.
+sub cbpfsfdata_from_string {
+	my $arg = shift;
+	return is_cbpfsfdata ($arg) ? $arg : cbpfsfdata_from_list bpf_restore $arg;
+}
+
+# fcode_tests is a source of both accept, reject and apply tests.  Each list
+# element defines a pair of tests: one is either an accept or a reject test,
+# and the other is an apply test.  The list elements use the following keys:
+#
+# * name (mandatory, string): same as elsewhere
+# * program (mandatory, string): a sequence of BPF instructions in one of the
+#   following formats:
+#   * the binary cbpf-savefile encoding
+#   * the text format of bpf_dump() (empty lines, whitespace fluctuation and
+#     ";" comments are ignored; address labels may be omitted, but must be
+#     correct if present, in which case leading zeroes may be omitted; hex
+#     constants notation is case-insensitive)
+# * dump (optional): one of the following:
+#   * undef (in which case the program validation result is expected to be
+#     negative)
+#   * an empty string (in which case the program validation result is expected
+#     to be positive, but there is no verification of the program dump)
+#   * a non-empty string in the text format of bpf_dump() (in which case the
+#     program validation result is expected to be positive and the program dump
+#     is expected to be the same as the specified string, less any indentation
+#     and ";" comments)
+#   If not defined (not to be confused with defined to Perl undef), 'dump'
+#   defaults to an empty string if 'program' uses cbpf-savefile encoding and to
+#   the value of 'program' otherwise.
+# * savefile, results: same as in filter_apply_blocks
+
+my @fcode_tests = (
+	{
+		# Parse a filter program dump, encode it, decode it, validate the filter
+		# program, dump it and expect to see the original dump less the comments.
+		name => 'self_test',
+		program => $valid_opcodes_enumeration,
+		savefile => 'pppoe.pcap',
+		results => [15], # (047) ret #15
+	},
+	# Verify that standalone "ret #1" and "ret #70773" work at least when not
+	# mixed with other instructions.
+	{
+		name => 'ret_1',
+		program => '
+			(000) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ret_70773',
+		program => '
+			(000) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [70773],
+	},
+	{
+		name => 'empty',
+		program => '; empty',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		# Note that when the filter program is empty, pcap_offline_filter() rejects
+		# all packets and pcapint_filter() accepts all packets.  filtertest uses
+		# the former.
+		results => [0],
+	},
+	{
+		name => 'ret_not_last',
+		program => '
+			ret #1
+			ld #0x0
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+
+	{
+		name => 'div_by_0_x',
+		program => '
+			(000) ldx      #0x0
+			(001) div      x      ; Expect this to terminate the program.
+			(002) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'mod_by_0_x',
+		program => '
+			(000) ldx      #0x0
+			(001) mod      x      ; Expect this to terminate the program.
+			(002) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'lsh_x',
+		program => '
+			(000) ldx      #0x0
+			(001) lsh      x
+			(002) ldx      #0x1
+			(003) lsh      x
+			(004) ldx      #0x2
+			(005) lsh      x
+			(006) ldx      #0x3
+			(007) lsh      x
+			(008) ldx      #0x4
+			(009) lsh      x
+			(010) ldx      #0x5
+			(011) lsh      x
+			(012) ldx      #0x6
+			(013) lsh      x
+			(014) ldx      #0x7
+			(015) lsh      x
+			(016) ldx      #0x8
+			(017) lsh      x
+			(018) ldx      #0x9
+			(019) lsh      x
+			(020) ldx      #0xa
+			(021) lsh      x
+			(022) ldx      #0xb
+			(023) lsh      x
+			(024) ldx      #0xc
+			(025) lsh      x
+			(026) ldx      #0xd
+			(027) lsh      x
+			(028) ldx      #0xe
+			(029) lsh      x
+			(030) ldx      #0xf
+			(031) lsh      x
+			(032) ldx      #0x10
+			(033) lsh      x
+			(034) ldx      #0x11
+			(035) lsh      x
+			(036) ldx      #0x12
+			(037) lsh      x
+			(038) ldx      #0x13
+			(039) lsh      x
+			(040) ldx      #0x14
+			(041) lsh      x
+			(042) ldx      #0x15
+			(043) lsh      x
+			(044) ldx      #0x16
+			(045) lsh      x
+			(046) ldx      #0x17
+			(047) lsh      x
+			(048) ldx      #0x18
+			(049) lsh      x
+			(050) ldx      #0x19
+			(051) lsh      x
+			(052) ldx      #0x1a
+			(053) lsh      x
+			(054) ldx      #0x1b
+			(055) lsh      x
+			(056) ldx      #0x1c
+			(057) lsh      x
+			(058) ldx      #0x1d
+			(059) lsh      x
+			(060) ldx      #0x1e
+			(061) lsh      x
+			(062) ldx      #0x1f
+			(063) lsh      x
+			(064) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'lsh_by_32_x',
+		program => '
+			(000) ld       #0xffffffff
+			(001) ldx      #0x20
+			(002) lsh      x      ; Expect this to load 0 into A.
+			(003) jeq      #0x0             jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+
+	{
+		name => 'rsh_x',
+		program => '
+			(000) ldx      #0x0
+			(001) rsh      x
+			(002) ldx      #0x1
+			(003) rsh      x
+			(004) ldx      #0x2
+			(005) rsh      x
+			(006) ldx      #0x3
+			(007) rsh      x
+			(008) ldx      #0x4
+			(009) rsh      x
+			(010) ldx      #0x5
+			(011) rsh      x
+			(012) ldx      #0x6
+			(013) rsh      x
+			(014) ldx      #0x7
+			(015) rsh      x
+			(016) ldx      #0x8
+			(017) rsh      x
+			(018) ldx      #0x9
+			(019) rsh      x
+			(020) ldx      #0xa
+			(021) rsh      x
+			(022) ldx      #0xb
+			(023) rsh      x
+			(024) ldx      #0xc
+			(025) rsh      x
+			(026) ldx      #0xd
+			(027) rsh      x
+			(028) ldx      #0xe
+			(029) rsh      x
+			(030) ldx      #0xf
+			(031) rsh      x
+			(032) ldx      #0x10
+			(033) rsh      x
+			(034) ldx      #0x11
+			(035) rsh      x
+			(036) ldx      #0x12
+			(037) rsh      x
+			(038) ldx      #0x13
+			(039) rsh      x
+			(040) ldx      #0x14
+			(041) rsh      x
+			(042) ldx      #0x15
+			(043) rsh      x
+			(044) ldx      #0x16
+			(045) rsh      x
+			(046) ldx      #0x17
+			(047) rsh      x
+			(048) ldx      #0x18
+			(049) rsh      x
+			(050) ldx      #0x19
+			(051) rsh      x
+			(052) ldx      #0x1a
+			(053) rsh      x
+			(054) ldx      #0x1b
+			(055) rsh      x
+			(056) ldx      #0x1c
+			(057) rsh      x
+			(058) ldx      #0x1d
+			(059) rsh      x
+			(060) ldx      #0x1e
+			(061) rsh      x
+			(062) ldx      #0x1f
+			(063) rsh      x
+			(064) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'rsh_by_32_x',
+		program => '
+			(000) ld       #0xffffffff
+			(001) ldx      #0x20
+			(002) rsh      x      ; Expect this to load 0 into A.
+			(003) jeq      #0x0             jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773 ; not reached
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+);
+
 sub accept_test_label {
 	return join '_', ('accept', @_);
 }
@@ -31452,6 +32037,16 @@ sub common_filtertest_args {
 	return @args;
 }
 
+sub common_fcode_args {
+	my $test = shift;
+	file_put_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
+	return (
+		$filtertest,
+		'-i',
+		mytmpfile $filename_filter,
+	);
+}
+
 sub common_translatetest_args {
 	my $test = shift;
 	#
@@ -31532,6 +32127,14 @@ sub run_filter_accept_test {
 	return run_generic_accept_test @args;
 }
 
+sub run_fcode_accept_test {
+	my $test = shift;
+	my @args = common_fcode_args $test;
+	push @args, '-q' unless $test->{expected};
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
+	return run_generic_accept_test @args;
+}
+
 sub run_filter_apply_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
@@ -31543,6 +32146,14 @@ sub run_filter_apply_test {
 		'-r',
 		SAVEFILE_DIR . $test->{savefile},
 	);
+	return run_generic_accept_test @args;
+}
+
+sub run_fcode_apply_test {
+	my $test = shift;
+	my @args = common_fcode_args $test;
+	push @args, ('-r', SAVEFILE_DIR . $test->{savefile});
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	return run_generic_accept_test @args;
 }
 
@@ -31572,6 +32183,14 @@ sub run_filter_reject_test {
 		defined $test->{DLT} ? EX_DATAERR : EX_NOINPUT,
 		$test->{expected},
 		@args;
+}
+
+sub run_fcode_reject_test {
+	return run_generic_reject_test
+		$test_timeout,
+		EX_DATAERR,
+		'Filter doesn\'t pass validation',
+		common_fcode_args shift;
 }
 
 sub run_translate_reject_test {
@@ -31846,6 +32465,53 @@ foreach my $test (@enumerate_tests) {
 			expected => normalise_expected_output $test->{expect},
 		};
 	}
+}
+
+foreach my $test (@fcode_tests) {
+	my $descr = 'fcode validate test';
+	assert_named $descr, $test;
+	assert_nonempty_strings $descr, $test, 'program';
+	my $dump = exists ($test->{dump}) ? $test->{dump} :
+		is_cbpfsfdata ($test->{program}) ? '' : $test->{program};
+	my $label = defined ($dump) ?
+		accept_test_label 'fcode', $test->{name} :
+		reject_test_label 'fcode', $test->{name};
+	next if defined $only_one && $only_one ne $label;
+	# Prepare the cbpf-savefile contents in the main thread rather than in the
+	# tester threads: the latter fail without any diagnostics, which makes
+	# debugging unnecessarily complicated.
+	my $cbpfsfdata = cbpfsfdata_from_string $test->{program};
+	if (defined $dump) {
+		$dump =~ s/^\s+//gm;
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_fcode_accept_test,
+			cbpfsfdata => $cbpfsfdata,
+			expected => normalise_expected_output bpf_strip_comments $dump,
+		};
+	} else {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_fcode_reject_test,
+			cbpfsfdata => $cbpfsfdata,
+		};
+	}
+}
+foreach my $test (@fcode_tests) {
+	my $descr = 'fcode apply test';
+	assert_named $descr, $test;
+	assert_nonempty_strings $descr, $test, 'program', 'savefile';
+	assert_nonempty_array $descr, $test, 'results';
+	my $label = apply_test_label 'fcode', $test->{name};
+	next if defined $only_one && $only_one ne $label;
+	push @ready_to_run, {
+		label => $label,
+		func => \&run_fcode_apply_test,
+		# Same as the above.
+		cbpfsfdata => cbpfsfdata_from_string ($test->{program}),
+		savefile => 'filter/' . $test->{savefile},
+		expected => join ("\n", @{$test->{results}}) . "\n",
+	};
 }
 
 if (! scalar @ready_to_run) {
