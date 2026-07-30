@@ -61,6 +61,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         and DLT_ENC savefiles. (issue #74)
       Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
       Fix optimization of "jset #0xffffffff".
+      CVE-2026-0799: Access M[] safely in the BPF interpreter.
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization

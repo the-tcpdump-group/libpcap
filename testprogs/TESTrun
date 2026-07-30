@@ -31883,6 +31883,282 @@ my @fcode_tests = (
 		savefile => 'pppoe.pcap',
 		results => [1],
 	},
+
+	{
+		name => 'st_M',
+		program => '
+			(000) st       M[0]
+			(001) st       M[1]
+			(002) st       M[2]
+			(003) st       M[3]
+			(004) st       M[4]
+			(005) st       M[5]
+			(006) st       M[6]
+			(007) st       M[7]
+			(008) st       M[8]
+			(009) st       M[9]
+			(010) st       M[10]
+			(011) st       M[11]
+			(012) st       M[12]
+			(013) st       M[13]
+			(014) st       M[14]
+			(015) st       M[15]
+			(016) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'st_M_16',
+		program => '
+			st  M[16]  ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# 1073741824 == 0x40000000.  0x40000000 * 4 == 0x100000000, which on a
+		# 32-bit architecture overflows the pointer back to itself, then M[0] and
+		# M[1073741824] access the same 4 bytes in the address space of the
+		# process.  Require both the validator and the interpreter to reject this
+		# correctly regardless of the architecture.
+		name => 'st_M_1073741824',
+		program => '
+			st  M[1073741824] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Idem, 2147483648 == 0x80000000.
+		name => 'st_M_2147483648',
+		program => '
+			st  M[2147483648] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Idem, 3221225472 == 0xC0000000.
+		name => 'st_M_3221225472',
+		program => '
+			st  M[3221225472] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'stx_M',
+		program => '
+			(000) stx      M[0]
+			(001) stx      M[1]
+			(002) stx      M[2]
+			(003) stx      M[3]
+			(004) stx      M[4]
+			(005) stx      M[5]
+			(006) stx      M[6]
+			(007) stx      M[7]
+			(008) stx      M[8]
+			(009) stx      M[9]
+			(010) stx      M[10]
+			(011) stx      M[11]
+			(012) stx      M[12]
+			(013) stx      M[13]
+			(014) stx      M[14]
+			(015) stx      M[15]
+			(016) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'stx_M_16',
+		program => '
+			stx M[16]  ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_1073741824" above.
+		name => 'stx_M_1073741824',
+		program => '
+			stx M[1073741824] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_2147483648" above.
+		name => 'stx_M_2147483648',
+		program => '
+			stx M[2147483648] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_3221225472" above.
+		name => 'stx_M_3221225472',
+		program => '
+			stx M[3221225472] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'ld_M',
+		program => '
+			(000) ld       M[0]
+			(001) ld       M[1]
+			(002) ld       M[2]
+			(003) ld       M[3]
+			(004) ld       M[4]
+			(005) ld       M[5]
+			(006) ld       M[6]
+			(007) ld       M[7]
+			(008) ld       M[8]
+			(009) ld       M[9]
+			(010) ld       M[10]
+			(011) ld       M[11]
+			(012) ld       M[12]
+			(013) ld       M[13]
+			(014) ld       M[14]
+			(015) ld       M[15]
+			(016) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ld_M_16',
+		program => '
+			ld  M[16]  ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_1073741824" above.
+		name => 'ld_M_1073741824',
+		program => '
+			ld  M[1073741824] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_2147483648" above.
+		name => 'ld_M_2147483648',
+		program => '
+			ld  M[2147483648] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_3221225472" above.
+		name => 'ld_M_3221225472',
+		program => '
+			ld  M[3221225472] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+
+	{
+		name => 'ldx_M',
+		program => '
+			(000) ldx      M[0]
+			(001) ldx      M[1]
+			(002) ldx      M[2]
+			(003) ldx      M[3]
+			(004) ldx      M[4]
+			(005) ldx      M[5]
+			(006) ldx      M[6]
+			(007) ldx      M[7]
+			(008) ldx      M[8]
+			(009) ldx      M[9]
+			(010) ldx      M[10]
+			(011) ldx      M[11]
+			(012) ldx      M[12]
+			(013) ldx      M[13]
+			(014) ldx      M[14]
+			(015) ldx      M[15]
+			(016) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'ldx_M_16',
+		program => '
+			ldx M[16]  ; Expect this to terminate the program.
+			ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_1073741824" above.
+		name => 'ldx_M_1073741824',
+		program => '
+			ldx M[1073741824] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_2147483648" above.
+		name => 'ldx_M_2147483648',
+		program => '
+			ldx M[2147483648] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
+	{
+		# Same as for "st_M_3221225472" above.
+		name => 'ldx_M_3221225472',
+		program => '
+			ldx M[3221225472] ; Expect this to terminate the program.
+			ret #70773        ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [0],
+	},
 );
 
 sub accept_test_label {

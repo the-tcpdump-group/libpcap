@@ -208,18 +208,26 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_LD|BPF_MEM:
+			if (pc->k >= BPF_MEMWORDS)
+				return 0;
 			A = mem[pc->k];
 			continue;
 
 		case BPF_LDX|BPF_MEM:
+			if (pc->k >= BPF_MEMWORDS)
+				return 0;
 			X = mem[pc->k];
 			continue;
 
 		case BPF_ST:
+			if (pc->k >= BPF_MEMWORDS)
+				return 0;
 			mem[pc->k] = A;
 			continue;
 
 		case BPF_STX:
+			if (pc->k >= BPF_MEMWORDS)
+				return 0;
 			mem[pc->k] = X;
 			continue;
 
