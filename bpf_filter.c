@@ -146,7 +146,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 		switch (pc->code) {
 
 		default:
-			abort();
+			return 0;
 		case BPF_RET|BPF_K:
 			return (u_int)pc->k;
 
