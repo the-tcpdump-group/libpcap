@@ -8,6 +8,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Packet filtering:
       Initialize the scratch memory store to 0.
       In "net <n> mask <m>" catch ENOMEM for the "m" too.
+      CVE-2026-0799: Access M[] safely in the BPF interpreter.
     Windows:
       Fix error return from memory allocation error.
     Documentation:
