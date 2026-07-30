@@ -31778,6 +31778,60 @@ my @fcode_tests = (
 	},
 
 	{
+		name => 'lsh_k',
+		program => '
+			(000) lsh      #0
+			(001) lsh      #1
+			(002) lsh      #2
+			(003) lsh      #3
+			(004) lsh      #4
+			(005) lsh      #5
+			(006) lsh      #6
+			(007) lsh      #7
+			(008) lsh      #8
+			(009) lsh      #9
+			(010) lsh      #10
+			(011) lsh      #11
+			(012) lsh      #12
+			(013) lsh      #13
+			(014) lsh      #14
+			(015) lsh      #15
+			(016) lsh      #16
+			(017) lsh      #17
+			(018) lsh      #18
+			(019) lsh      #19
+			(020) lsh      #20
+			(021) lsh      #21
+			(022) lsh      #22
+			(023) lsh      #23
+			(024) lsh      #24
+			(025) lsh      #25
+			(026) lsh      #26
+			(027) lsh      #27
+			(028) lsh      #28
+			(029) lsh      #29
+			(030) lsh      #30
+			(031) lsh      #31
+			(032) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'lsh_by_32_k',
+		program => '
+			(0) ld  #0xFFFFFFFF
+			(1) lsh #32    ; Expect this to load 0 into A.
+			(2) jeq #0x0 jt 3 jf 4
+			(3) ret #1
+			(4) ret #70773 ; not reached
+			',
+		dump => undef,
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+
+	{
 		name => 'lsh_x',
 		program => '
 			(000) ldx      #0x0
@@ -31859,6 +31913,60 @@ my @fcode_tests = (
 			(004) ret      #1
 			(005) ret      #70773 ; not reached
 			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+
+	{
+		name => 'rsh_k',
+		program => '
+			(000) rsh      #0
+			(001) rsh      #1
+			(002) rsh      #2
+			(003) rsh      #3
+			(004) rsh      #4
+			(005) rsh      #5
+			(006) rsh      #6
+			(007) rsh      #7
+			(008) rsh      #8
+			(009) rsh      #9
+			(010) rsh      #10
+			(011) rsh      #11
+			(012) rsh      #12
+			(013) rsh      #13
+			(014) rsh      #14
+			(015) rsh      #15
+			(016) rsh      #16
+			(017) rsh      #17
+			(018) rsh      #18
+			(019) rsh      #19
+			(020) rsh      #20
+			(021) rsh      #21
+			(022) rsh      #22
+			(023) rsh      #23
+			(024) rsh      #24
+			(025) rsh      #25
+			(026) rsh      #26
+			(027) rsh      #27
+			(028) rsh      #28
+			(029) rsh      #29
+			(030) rsh      #30
+			(031) rsh      #31
+			(032) ret      #1
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'rsh_by_32_k',
+		program => '
+			(0) ld  #0xFFFFFFFF
+			(1) rsh #32    ; Expect this to load 0 into A.
+			(2) jeq #0x0 jt 3 jf 4
+			(3) ret #1
+			(4) ret #70773 ; not reached
+			',
+		dump => undef,
 		savefile => 'pppoe.pcap',
 		results => [1],
 	},
