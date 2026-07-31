@@ -20,6 +20,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make pcap_compile() error messages more uniform and consistent.
       Deprecate pcap_compile_nopcap().
       Remove unmaintained DPDK capture backend (was disabled by default).
+    Link-layer types:
+      Add LINKTYPE_DECT_NR_TAP/DLT_DECT_NR_TAP.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
@@ -143,17 +145,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       If the environment variable ERF_FCS_BITS is set, require it to be either
         0 or 16 or 32.  Likewise for ERF_DONT_STRIP_FCS (either 0 or 1).
       Remove FCS quirks specific to 4.2S and 4.23S.
-      Fix packet filtering with low snaplen.
       Fix ps_drop for stream drop counters.
       Add experimental packet transmit support.
     SNF:
-      Fix packet filtering with low snaplen.
       Require SNF_VERSION_API >= 0x0003.
       Improve device descriptions and flags.
       Fill pcap_if_t in more consistently.
-    Netmap:
-      Set packet captured length based on the snapshot length and return
-        value of the capture filter.
     QNX:
       Use "unix.h" instead of the missing <sysexits.h>.
     RDMA:
@@ -184,6 +181,13 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       capturetest: Treat SA_RESTART as optional.
     QNX:
       Disable zero-copy BPF to work around portability issues.
+    DAG:
+      Fix packet filtering with low snaplen.
+    SNF:
+      Fix packet filtering with low snaplen.
+    Netmap:
+      Set packet captured length based on the snapshot length and return
+        value of the capture filter.
 
 Tuesday, December 30, 2025 / The Tcpdump Group
   Summary for 1.10.6 libpcap release
