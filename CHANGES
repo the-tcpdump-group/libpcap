@@ -77,6 +77,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         another incorporate-remote-capture project. (issue #1120)
       rpcapd: Refine SSL options in printusage().
       Fix parameter name validation in the configuration file.
+      CVE-2026-18313: Fix a memory leak in rpcapd.
     Documentation:
       Add a README.hurd.md file.
       Cross-reference some man pages better.
