@@ -17,6 +17,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       For "lsh" and "rsh" guard "#k" as well.
     Windows:
       Fix error return from memory allocation error.
+    rpcap:
+      CVE-2026-18313: Fix a memory leak in rpcapd.
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
