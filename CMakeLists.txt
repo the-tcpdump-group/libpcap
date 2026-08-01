@@ -899,9 +899,9 @@ else(WIN32)
         #
         cmake_push_check_state()
         set(CMAKE_REQUIRED_LIBRARIES nsl)
-        check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
+        check_library_exists(socket getaddrinfo "" LIBSOCKET_LIBNSL_HAVE_GETADDRINFO)
         cmake_pop_check_state()
-        if(LIBSOCKET_HAS_GETADDRINFO)
+        if(LIBSOCKET_LIBNSL_HAVE_GETADDRINFO)
             #
             # OK, we found it in libsocket.
             #
@@ -909,7 +909,7 @@ else(WIN32)
             set(LIBS "-lsocket -lnsl ${LIBS}")
             set(LIBS_STATIC "-lsocket -lnsl ${LIBS_STATIC}")
             set(LIBS_PRIVATE "-lsocket -lnsl ${LIBS_PRIVATE}")
-        else(LIBSOCKET_HAS_GETADDRINFO)
+        else(LIBSOCKET_LIBNSL_HAVE_GETADDRINFO)
             #
             # Not found in libsocket; test for it in libnetwork, which
             # is where it is in Haiku.
@@ -928,11 +928,22 @@ else(WIN32)
                 set(LIBS_PRIVATE "-lnetwork ${LIBS_PRIVATE}")
             else(LIBNETWORK_HAS_GETADDRINFO)
                 #
-                # We didn't find it.
+                # Same as in Autoconf.
                 #
-                message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
+                check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
+                if(LIBSOCKET_HAS_GETADDRINFO)
+                    set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
+                    set(LIBS "-lsocket ${LIBS}")
+                    set(LIBS_STATIC "-lsocket ${LIBS_STATIC}")
+                    set(LIBS_PRIVATE "-lsocket ${LIBS_PRIVATE}")
+                else(LIBSOCKET_HAS_GETADDRINFO)
+                    #
+                    # We didn't find it.
+                    #
+                    message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
+                endif(LIBSOCKET_HAS_GETADDRINFO)
             endif(LIBNETWORK_HAS_GETADDRINFO)
-        endif(LIBSOCKET_HAS_GETADDRINFO)
+        endif(LIBSOCKET_LIBNSL_HAVE_GETADDRINFO)
 
         #
         # We require a version of recvmsg() that conforms to the Single

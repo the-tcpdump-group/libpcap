@@ -111,6 +111,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       translatetest: Add a test program for various translation functions.
       Autoconf: Fix detection of crypt() in QNX.
       Autoconf: Update config.{guess,sub}, timestamps 2025-07-10.
+      CMake: Fix getaddrinfo() detection on QNX.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
