@@ -18,6 +18,9 @@
 /* Define to 1 if you have the `asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
+/* Define to 1 if you have the '__builtin_ctz' compiler builtin. */
+#cmakedefine HAVE_BUILTIN_CTZ
+
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 

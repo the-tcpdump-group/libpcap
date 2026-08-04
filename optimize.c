@@ -110,10 +110,7 @@ pcap_set_print_dot_graph(int value)
  *
  * This is the same as the count of trailing zeroes in the word.
  */
-#if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4)
-  /*
-   * GCC 3.4 and later; we have __builtin_ctz().
-   */
+#ifdef HAVE_BUILTIN_CTZ
   #define lowest_set_bit(mask) ((u_int)__builtin_ctz(mask))
 #elif defined(_MSC_VER)
   /*

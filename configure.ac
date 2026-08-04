@@ -2347,6 +2347,21 @@ AC_SUBST(LN_S)
 AC_LBL_DEVEL(V_CCOPT)
 
 #
+# To get a correct builtin test result, the source must be compiled and linked,
+# which in Autoconf means AC_LINK_IFELSE().
+#
+AC_MSG_CHECKING([whether the compiler implements __builtin_ctz()])
+AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM([],[[return __builtin_ctz(1);]])],
+	[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_BUILTIN_CTZ, 1,
+			[Define to 1 if you have the '__builtin_ctz' compiler builtin.])
+	],
+	[AC_MSG_RESULT(no)]
+)
+
+#
 # Check to see if the sockaddr struct has the 4.4 BSD sa_len member.
 #
 AC_CHECK_MEMBERS([struct sockaddr.sa_len],,,

@@ -2840,6 +2840,12 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
 endif()
 
 #
+# To get a correct builtin test result, the source must be compiled and linked,
+# which in CMake means check_c_source_compiles().
+#
+check_c_source_compiles("int main(void) {return __builtin_ctz(1);}" HAVE_BUILTIN_CTZ)
+
+#
 # Suppress some warnings we get with MSVC even without /Wall.
 #
 if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
