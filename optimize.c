@@ -924,10 +924,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				continue;
 
 			/*
-			 * Check that the instruction following the ldi
-			 * is an addx, or it's an ldxms with an addx
+			 * Check that the instruction following the
+			 * "ld #k" is an "add x", or it's an
+			 * "ldxb 4*([k]&0xf)" with an "add x"
 			 * following it (with 0 or more nops between the
-			 * ldxms and addx).
+			 * "ldxb 4*([k]&0xf)" and "add x").
 			 */
 			if (next->s.code != (BPF_LDX|BPF_MSH|BPF_B))
 				add = next;
@@ -945,7 +946,8 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				continue;
 
 			/*
-			 * Check that an ild follows that (with 0 or more
+			 * Check that an "ld [x+k]", an "ldh [x+k]" or an
+			 * "ldb [x+k]" follows that (with 0 or more
 			 * nops between them).
 			 */
 			ild = this_op(tax->next);
@@ -955,19 +957,19 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			/*
 			 * We want to turn this sequence:
 			 *
-			 * (004) ldi     #0x2		{s}
-			 * (005) ldxms   [14]		{next}  -- optional
-			 * (006) addx			{add}
+			 * (004) ld      #0x2		{s}
+			 * (005) ldxb    4*([14]&0xf)	{next}  -- optional
+			 * (006) add x			{add}
 			 * (007) tax			{tax}
-			 * (008) ild     [x+0]		{ild}
+			 * (008) ld      [x+0]		{ild}
 			 *
 			 * into this sequence:
 			 *
 			 * (004) nop
-			 * (005) ldxms   [14]
+			 * (005) ldxb    4*([14]&0xf)
 			 * (006) nop
 			 * (007) nop
-			 * (008) ild     [x+2]
+			 * (008) ld      [x+2]
 			 *
 			 * XXX We need to check that X is not
 			 * subsequently used, because we want to change
