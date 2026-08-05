@@ -259,6 +259,7 @@ static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_inject_linux(pcap_t *, const void *, int);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
+static int pcap_lockfilter_linux(pcap_t *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 
@@ -1327,6 +1328,7 @@ pcap_activate_linux(pcap_t *handle)
 
 	handle->inject_op = pcap_inject_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
+	handle->lockfilter_op = pcap_lockfilter_linux;
 	handle->setdirection_op = pcap_setdirection_linux;
 	handle->set_datalink_op = pcap_set_datalink_linux;
 	handle->setnonblock_op = pcap_setnonblock_linux;
@@ -4823,6 +4825,26 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 	handlep->filter_in_userland = 1;
 
 	return 0;
+}
+
+static int
+pcap_lockfilter_linux(pcap_t *handle)
+{
+#ifdef SO_LOCK_FILTER
+	struct pcap_linux *handlep = handle->priv;
+	int fd = handle->fd, on = 1;
+
+	if (handlep->filter_in_userland)
+		errno = EINVAL;
+	else if (setsockopt(fd, SOL_SOCKET, SO_LOCK_FILTER, &on, sizeof(on)) == 0)
+		return (0);
+#else
+	errno = ENOSYS;
+#endif
+
+	pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    errno, "SO_LOCK_FILTER");
+	return (-1);
 }
 
 /*
