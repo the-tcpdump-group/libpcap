@@ -64,7 +64,7 @@ returns
 .B 0
 on success and
 .B PCAP_ERROR
-on failure. If
+on failure.  If
 .B PCAP_ERROR
 is returned,
 .I errbuf

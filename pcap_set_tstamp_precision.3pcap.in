@@ -42,12 +42,12 @@ It must be called on a pcap descriptor created by
 .BR pcap_create (3PCAP)
 that has not yet been activated by
 .BR pcap_activate (3PCAP).
-Two time stamp precisions are supported, microseconds and nanoseconds. One can
+Two time stamp precisions are supported, microseconds and nanoseconds.  One can
 use options
 .B PCAP_TSTAMP_PRECISION_MICRO
 and
 .B PCAP_TSTAMP_PRECISION_NANO
-to request desired precision. By default, time stamps are in microseconds.
+to request desired precision.  By default, time stamps are in microseconds.
 .SH RETURN VALUE
 .BR pcap_set_tstamp_precision ()
 returns

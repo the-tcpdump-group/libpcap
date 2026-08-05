@@ -34,7 +34,7 @@ void pcap_dump_close(pcap_dumper_t *p);
 .BR pcap_dump_close ()
 closes the ``savefile'' associated with
 .I p
-and deallocates resources. This means that, for example, if
+and deallocates resources.  This means that, for example, if
 .I p
 refers to a savefile that was opened with
 .BR pcap_dump_fopen (),

@@ -69,7 +69,7 @@ is the maximum number of packets to process before returning, but is not
 a minimum number; when reading a live capture, only one
 bufferful of packets is read at a time, so fewer than
 .I cnt
-packets may be processed. A value of
+packets may be processed.  A value of
 .B \-1
 or
 .B 0
@@ -180,7 +180,7 @@ platforms that support a packet buffer timeout that starts before any
 packets arrive, the timeout expires before any packets arrive, or if the
 file descriptor for the capture device is in non-blocking mode and no
 packets were available to be read) or if no more packets are available
-in a ``savefile''. It returns
+in a ``savefile''.  It returns
 .B PCAP_ERROR_BREAK
 if the loop terminated due to a call to
 .BR pcap_breakloop ()

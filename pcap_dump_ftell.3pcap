@@ -40,7 +40,7 @@ number of bytes written by
 and
 .BR pcap_dump (3PCAP).
 .B PCAP_ERROR
-is returned on error. If the current file position does not fit in a
+is returned on error.  If the current file position does not fit in a
 .BR long ,
 it will be truncated; this can happen on 32-bit UNIX-like systems with
 large file support and on Windows.

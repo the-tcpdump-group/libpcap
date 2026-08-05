@@ -38,7 +38,7 @@ pcap_dumper_t *pcap_dump_fopen(pcap_t *p, FILE *fp);
 .BR pcap_dump_open ()
 is called to open a ``savefile'' for writing.
 .I fname
-specifies the name of the file to open. The file will have
+specifies the name of the file to open.  The file will have
 the same format as those used by
 .BR tcpdump (1)
 and

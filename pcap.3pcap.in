@@ -30,7 +30,7 @@ pcap \- Packet Capture library
 .fi
 .SH DESCRIPTION
 The Packet Capture library
-provides a high level interface to packet capture systems. All packets
+provides a high level interface to packet capture systems.  All packets
 on the network, even those destined for other hosts, are accessible
 through this mechanism.
 It also supports saving captured packets to a ``savefile'', and reading

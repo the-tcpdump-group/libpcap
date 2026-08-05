@@ -48,7 +48,7 @@ and
 are called to open a ``savefile'' for reading.
 .PP
 .I fname
-specifies the name of the file to open. The file can have the pcap file
+specifies the name of the file to open.  The file can have the pcap file
 format as described in
 .BR \%pcap-savefile (@MAN_FILE_FORMATS@),
 which is the file format used by, among other programs,

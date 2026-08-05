@@ -92,7 +92,7 @@ or
 .B PCAP_ERROR
 if there is another error or if
 .I p
-doesn't support packet statistics. If
+doesn't support packet statistics.  If
 .B PCAP_ERROR
 is returned,
 .BR pcap_geterr (3PCAP)

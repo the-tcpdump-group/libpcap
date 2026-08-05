@@ -122,7 +122,7 @@ the same way in both active and passive mode.
 .SH TLS support
 By default
 .I rpcapd
-will not support TLS connections. If built with TLS support, it will
+will not support TLS connections.  If built with TLS support, it will
 support TLS connections only if run with the
 .B \-S
 option, in which case it will
