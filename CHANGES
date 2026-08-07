@@ -78,6 +78,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       rpcapd: Refine SSL options in printusage().
       Fix parameter name validation in the configuration file.
       CVE-2026-18313: Fix a memory leak in rpcapd.
+      CVE-2026-18238: Fix RPCAP_MSG_PACKET validation.
     Documentation:
       Add a README.hurd.md file.
       Cross-reference some man pages better.
