@@ -2676,10 +2676,24 @@ int bids[NBIDS];
 #endif
 
 /*
- * Returns true if successful.  Returns false if a branch has
- * an offset that is too large.  If so, we have marked that
- * branch so that on a subsequent iteration, it will be treated
- * properly.
+ * Returns true if successful.  Returns false if any branch has an
+ * offset that is too large.  If so, we have marked every such branch
+ * so that on a subsequent iteration, they will be treated properly.
+ *
+ * Marking all of them in one pass, rather than returning as soon as the
+ * first one turns up, is what keeps this from costing one pass over the
+ * whole flowgraph per long jump.  It is safe because a long jump only
+ * ever makes the code longer, so a branch that does not fit now will
+ * not fit in a later pass either.
+ *
+ * A branch marked in this pass does not get its extra jump until the
+ * next pass, so the offsets computed here do not yet account for the
+ * jumps marked here and are smaller than the ones the next pass will
+ * compute.  This pass can therefore miss a branch that goes out of
+ * range only once those jumps are in place, and the next pass marks
+ * that branch instead.  The number of passes thus depends on how far
+ * such knock-on effects propagate, not on how many long jumps there
+ * are.
  */
 static int
 convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
@@ -2689,15 +2703,16 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 	u_int slen;
 	u_int off;
 	struct slist **offset = NULL;
+	int status = 1;
 
 	if (p == 0 || isMarked(ic, p))
 		return (1);
 	Mark(ic, p);
 
 	if (convert_code_r(conv_state, ic, JF(p)) == 0)
-		return (0);
+		status = 0;
 	if (convert_code_r(conv_state, ic, JT(p)) == 0)
-		return (0);
+		status = 0;
 
 	slen = slength(p->stmts);
 	dst = conv_state->ftail -= (slen + 1 + p->longjt + p->longjf);
@@ -2817,14 +2832,15 @@ filled:
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
 		    if (p->longjt == 0) {
-			/* mark this instruction and retry */
+			/* mark this instruction, discard this pass */
 			p->longjt++;
-			return(0);
+			status = 0;
+		    } else {
+			dst->jt = extrajmps;
+			extrajmps++;
+			dst[extrajmps].code = BPF_JMP|BPF_JA;
+			dst[extrajmps].k = off - extrajmps;
 		    }
-		    dst->jt = extrajmps;
-		    extrajmps++;
-		    dst[extrajmps].code = BPF_JMP|BPF_JA;
-		    dst[extrajmps].k = off - extrajmps;
 		}
 		else
 		    dst->jt = (u_char)off;
@@ -2832,21 +2848,22 @@ filled:
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
 		    if (p->longjf == 0) {
-			/* mark this instruction and retry */
+			/* mark this instruction, discard this pass */
 			p->longjf++;
-			return(0);
+			status = 0;
+		    } else {
+			/* branch if F to following jump */
+			/* if two jumps are inserted, F goes to second one */
+			dst->jf = extrajmps;
+			extrajmps++;
+			dst[extrajmps].code = BPF_JMP|BPF_JA;
+			dst[extrajmps].k = off - extrajmps;
 		    }
-		    /* branch if F to following jump */
-		    /* if two jumps are inserted, F goes to second one */
-		    dst->jf = extrajmps;
-		    extrajmps++;
-		    dst[extrajmps].code = BPF_JMP|BPF_JA;
-		    dst[extrajmps].k = off - extrajmps;
 		}
 		else
 		    dst->jf = (u_char)off;
 	}
-	return (1);
+	return (status);
 }
 
 
