@@ -50,7 +50,6 @@ CMakeFiles/
 /pcap_set_tstamp_precision.3pcap
 /pcap_set_tstamp_type.3pcap
 /scanner.c
-/scanner.c.bottom
 /scanner.h
 *.log
 *.tlog

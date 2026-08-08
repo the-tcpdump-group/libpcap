@@ -1,6 +1,6 @@
-Makefile
+/Makefile
 *~
-*.o
-rpcapd
-rpcapd.manadmin
-rpcapd-config.manfile
+/*.o
+/rpcapd
+/rpcapd-config.manfile
+/rpcapd.manadmin
