@@ -116,6 +116,56 @@ static char *cmdbuf;
 static pcap_t *pd;
 static struct bpf_program fcode;
 
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+static void
+apply_aux_vlan_packets(void)
+{
+	/*
+	 * When the VLAN tag is supplied as packet metadata, the Ethernet type
+	 * remains at bytes 12 and 13.  The second packet deliberately has the
+	 * target value at bytes 16 and 17 to detect an incorrect offset shift.
+	 */
+	static const u_char metadata_match[] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0x88, 0x92, 0, 0, 0, 0
+	};
+	static const u_char metadata_false_positive[] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0x08, 0x00, 0, 0, 0x88, 0x92
+	};
+	static const u_char inline_vlan_match[] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0x81, 0x00, 0, 100, 0x88, 0x92
+	};
+	static const u_char ordinary_nonmatch[] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0x08, 0x00, 0, 0, 0, 0
+	};
+	struct pcap_bpf_aux_data aux_data = { 0 };
+
+	aux_data.vlan_tag_present = 1;
+	aux_data.vlan_tag = 100;
+	printf("%u\n", pcapint_filter_with_aux_data(fcode.bf_insns,
+	    metadata_match, sizeof(metadata_match), sizeof(metadata_match),
+	    &aux_data));
+	printf("%u\n", pcapint_filter_with_aux_data(fcode.bf_insns,
+	    metadata_false_positive, sizeof(metadata_false_positive),
+	    sizeof(metadata_false_positive), &aux_data));
+
+	aux_data.vlan_tag_present = 0;
+	printf("%u\n", pcapint_filter_with_aux_data(fcode.bf_insns,
+	    inline_vlan_match, sizeof(inline_vlan_match),
+	    sizeof(inline_vlan_match), &aux_data));
+	printf("%u\n", pcapint_filter_with_aux_data(fcode.bf_insns,
+	    ordinary_nonmatch, sizeof(ordinary_nonmatch),
+	    sizeof(ordinary_nonmatch), &aux_data));
+}
+#endif
+
 /*
  * atexit() is broken on Linux/ARMv7 with TinyCC, work around by calling this
  * function explicitly just before exit() if there is a possibility any of
@@ -325,6 +375,9 @@ main(int argc, char **argv)
 #ifdef __linux__
 	bool lflag = false;
 #endif
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	bool Aflag = false;
+#endif
 	bool qflag = false;
 	int snaplen = MAXIMUM_SNAPLEN;
 	enum {
@@ -347,8 +400,16 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "hdF:gm:Os:S:lqr:")) != -1) {
+	while ((op = getopt(argc, argv, "AhdF:gm:Os:S:lqr:")) != -1) {
 		switch (op) {
+
+		case 'A':
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+			Aflag = true;
+			break;
+#else
+			error(EX_USAGE, "libpcap and filtertest built without VLAN auxiliary-data support");
+#endif
 
 		case 'h':
 			usage(stdout);
@@ -445,6 +506,10 @@ main(int argc, char **argv)
 	}
 
 	if (insavefile) {
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+		if (Aflag)
+			error(EX_USAGE, "-r is not compatible with -A");
+#endif
 		if (dflag > 1)
 			error(EX_USAGE, "-r is not compatible with -d");
 #ifdef BDEBUG
@@ -485,6 +550,10 @@ main(int argc, char **argv)
 		if (pd == NULL)
 			error(EX_SOFTWARE, "Can't open fake pcap_t");
 #ifdef __linux__
+#if defined(SKF_AD_VLAN_TAG_PRESENT)
+		if (Aflag && !lflag)
+			error(EX_USAGE, "-A requires -l");
+#endif
 		if (lflag) {
 #ifdef SKF_AD_VLAN_TAG_PRESENT
 			/*
@@ -533,6 +602,11 @@ main(int argc, char **argv)
 	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
 		error(EX_SOFTWARE, "Filter doesn't pass validation");
 
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	if (Aflag) {
+		apply_aux_vlan_packets();
+	} else
+#endif
 	if (! insavefile) {
 #ifdef BDEBUG
 		// only show machine code if BDEBUG defined, since dflag > 3
@@ -576,7 +650,11 @@ usage(FILE *f)
 	(void)fprintf(f, "%s, with %s\n", program_name,
 	    pcap_lib_version());
 	(void)fprintf(f,
-	    "Usage: %s [-d"
+	    "Usage: %s "
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	    "[-A] "
+#endif
+	    "[-d"
 #ifdef BDEBUG
 	    "g"
 #endif
@@ -603,6 +681,9 @@ usage(FILE *f)
 #endif
 #ifdef __linux__
 	(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
+#endif
+#if defined(__linux__) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	(void)fprintf(f, "  -A              apply the filter to a built-in packet with VLAN metadata\n");
 #endif
 	(void)fprintf(f, "  -m <netmask>    use this IPv4 netmask for pcap_compile(3PCAP),\n");
 	(void)fprintf(f, "                  e.g. 255.255.255.0\n");

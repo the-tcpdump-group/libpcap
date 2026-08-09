@@ -11675,6 +11675,58 @@ my @filter_accept_blocks = (
 			',
 	}, # vlan_eth_linuxext_nullary
 	{
+		name => 'vlan_eth_linuxext_offset_branch',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		DLT => 'EN10MB',
+		linuxext => 1,
+		aliases => ['ether proto 0x8892 or (vlan and ether proto 0x8892)'],
+		opt => '
+			(000) ld       #0x0
+			(001) st       M[1]
+			(002) ldh      [12]
+			(003) jeq      #0x8892          jt 15	jf 4
+			(004) ldb      [vlanp]
+			(005) jeq      #0x1             jt 12	jf 6
+			(006) ld       #0x4
+			(007) st       M[1]
+			(008) ldh      [12]
+			(009) jeq      #0x8100          jt 12	jf 10
+			(010) jeq      #0x88a8          jt 12	jf 11
+			(011) jeq      #0x9100          jt 12	jf 16
+			(012) ldx      M[1]
+			(013) ldh      [x + 12]
+			(014) jeq      #0x8892          jt 15	jf 16
+			(015) ret      #262144
+			(016) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) st       M[1]
+			(003) ldh      [12]
+			(004) jeq      #0x8892          jt 22	jf 5
+			(005) ldb      [vlanp]
+			(006) jeq      #0x1             jt 19	jf 7
+			(007) ld       M[0]
+			(008) add      #4
+			(009) st       M[0]
+			(010) ld       M[1]
+			(011) add      #4
+			(012) st       M[1]
+			(013) ldh      [12]
+			(014) jeq      #0x8100          jt 19	jf 15
+			(015) ldh      [12]
+			(016) jeq      #0x88a8          jt 19	jf 17
+			(017) ldh      [12]
+			(018) jeq      #0x9100          jt 19	jf 23
+			(019) ldx      M[1]
+			(020) ldh      [x + 12]
+			(021) jeq      #0x8892          jt 22	jf 23
+			(022) ret      #262144
+			(023) ret      #0
+			',
+	}, # vlan_eth_linuxext_offset_branch
+	{
 		name => 'vlan_eth_linuxext_unary',
 		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
 		DLT => 'EN10MB',
@@ -25805,10 +25857,25 @@ my @filter_accept_blocks = (
 # a hash, where the keys have the following meaning:
 #
 # * name, expr and netmask: same as in filter_accept_blocks above
-# * savefile (mandatory, string): the file in tests/filter/ to use with
-#   "filtertest -r", this should not have too many packets
+# * savefile (string): the file in tests/filter/ to use with "filtertest -r",
+#   this should not have too many packets; mandatory unless aux_vlan is set
+# * aux_vlan (optional, int): if set to 1, apply the filter to filtertest's
+#   built-in packet with a VLAN tag supplied as auxiliary metadata
+# * DLT and linuxext: same as in filter_accept_blocks above; mandatory when
+#   aux_vlan is set
 # * results (mandatory, array): the list of program filter results to expect
 my @filter_apply_blocks = (
+	{
+		name => 'vlan_metadata_offset_branch',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		DLT => 'EN10MB',
+		linuxext => 1,
+		aux_vlan => 1,
+		expr => 'ether proto 0x8892 or (vlan and ether proto 0x8892)',
+		# Metadata match, metadata false-positive probe, inline VLAN match,
+		# and ordinary nonmatch, in that order.
+		results => [262144, 0, 262144, 0],
+	},
 	{
 		name => 'pppoed_nullary_on_ctp',
 		savefile => 'loopback.pcap',
@@ -31020,12 +31087,12 @@ sub run_filter_apply_test {
 	my @args = common_filtertest_args $test;
 	file_put_contents mytmpfile ($filename_filter), $test->{expr};
 	file_put_contents mytmpfile ($filename_expected), $test->{expected};
-	push @args, (
-		'-F',
-		mytmpfile ($filename_filter),
-		'-r',
-		SAVEFILE_DIR . $test->{savefile},
-	);
+	push @args, ('-F', mytmpfile ($filename_filter));
+	if ($test->{aux_vlan}) {
+		push @args, ('-A', $test->{DLT});
+	} else {
+		push @args, ('-r', SAVEFILE_DIR . $test->{savefile});
+	}
 	return run_generic_accept_test @args;
 }
 
@@ -31147,7 +31214,19 @@ foreach my $test (@filter_accept_blocks) {
 foreach my $block (@filter_apply_blocks) {
 	my $descr = 'filter apply block';
 	assert_named $descr, $block;
-	assert_nonempty_strings $descr, $block, 'savefile', 'expr';
+	assert_nonempty_strings $descr, $block, 'expr';
+	if (exists $block->{aux_vlan}) {
+		if (! defined $block->{aux_vlan} || $block->{aux_vlan} ne '1') {
+			die "Internal error: $descr '$block->{name}' defines 'aux_vlan' as a value other than 1";
+		}
+		assert_nonempty_strings $descr, $block, 'DLT';
+		if (! exists $block->{linuxext} || ! defined $block->{linuxext} ||
+		    $block->{linuxext} ne '1') {
+			die "Internal error: $descr '$block->{name}' with 'aux_vlan' does not define 'linuxext' as 1";
+		}
+	} else {
+		assert_nonempty_strings $descr, $block, 'savefile';
+	}
 	assert_nonempty_array $descr, $block, 'results';
 	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
 		$block->{skip} : undef;
@@ -31174,7 +31253,10 @@ foreach my $block (@filter_apply_blocks) {
 			optimize => int ($optunopt eq 'opt'),
 			expr => $block->{expr},
 			expected => $multiline,
-			savefile => 'filter/' . $block->{savefile},
+			savefile => defined $block->{savefile} ? 'filter/' . $block->{savefile} : undef,
+			aux_vlan => defined $block->{aux_vlan} && $block->{aux_vlan} == 1,
+			DLT => defined $block->{DLT} ? $block->{DLT} : undef,
+			linuxext => defined $block->{linuxext} && $block->{linuxext} == 1,
 		};
 	}
 }
