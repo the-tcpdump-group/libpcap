@@ -1929,19 +1929,17 @@ or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 		if ((*samep)->val[A_ATOM] == val)
 			break;
 
-		/* XXX Need to check that there are no data dependencies
-		   between dp0 and dp1.  Currently, the code generator
-		   will not produce such dependencies. */
 		samep = &JF(*samep);
 	}
-#ifdef notdef
-	/* XXX This doesn't cover everything. */
-	for (i = 0; i < N_ATOMS; ++i)
-		if ((*samep)->val[i] != pred->val[i])
-			return;
-#endif
-	/* Pull up the node. */
+	/*
+	 * Pulling this block ahead of diffp makes its statements run on paths
+	 * that did not previously execute them.  Do not move definitions that
+	 * are live on any of those paths.
+	 */
 	pull = *samep;
+	if ((pull->def & (*diffp)->in_use) != 0)
+		return;
+	/* Pull up the node. */
 	*samep = JF(pull);
 	JF(pull) = *diffp;
 
