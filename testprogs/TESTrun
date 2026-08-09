@@ -403,6 +403,16 @@ sub skip_igrp88 {
         skip_os ('dragonfly');
 }
 
+# Dedent, then discard all empty lines, then ensure every remaining line ends
+# with a newline.
+sub normalise_expected_output {
+	my $ret = '';
+	foreach (split /^/o, shift) {
+		$ret .= "$1\n" if /^[\t]*([^\t].+)$/o;
+	}
+	return $ret;
+}
+
 my $valid_opcodes_enumeration = '
 (000) ld       #0xf                               ; 0x0000
 (001) ldx      #0xf                               ; 0x0001
@@ -31089,11 +31099,7 @@ foreach my $test (@filter_accept_blocks) {
 				$skip_reason = '';
 			}
 		} else {
-			# Dedent and trim to restore the format of bpf_dump().
-			my $multiline = '';
-			foreach (split /^/o, $test->{$optunopt}) {
-				$multiline .= "$1\n" if /^[\t]*(\(.+)$/o;
-			}
+			my $multiline = normalise_expected_output $test->{$optunopt};
 			if ($multiline eq '') {
 				die "Internal error: accept test block '$test->{name}' defines an empty expected output";
 			}
