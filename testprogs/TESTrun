@@ -454,15 +454,12 @@ my $valid_opcodes_enumeration = '
 (048) ret                                         ; 0x0016
 ';
 
-# In filter_accept_blocks the top-level keys are test block names.  Each test
-# block defines one or more tests.  When possible, a test block name should be
-# easy to relate with the main filter expression, for example, ip_multicast for
-# "ip multicast" etc.  However, because in Perl hashes the keys are not ordered,
-# sometimes the easiest way to group the tests in the alphabetically-sorted
-# output is to use an artificial prefix, for example, mtp2_ for "fisu", "lssu",
-# "msu" etc.  The top-level values are in turn hashes, where the keys have the
-# following meaning:
+# In filter_accept_blocks each element defines one or more tests and is a hash,
+# where the keys have the following meaning:
 #
+# * name (mandatory, string): the test name; when possible, should be easy to
+#   relate with the main filter expression, for example, ip_multicast for
+#   "ip multicast" etc.
 # * DLT (mandatory, string): the name of the DLT to use for the test
 # * aliases (mandatory, array of strings): must contain at least one string,
 #   each string is a filter expression and must produce exactly the same
@@ -31060,8 +31057,6 @@ sub run_translate_reject_test {
 		common_translatetest_args $test;
 }
 
-# Sort all hash elements by key, otherwise the pseudo-random ordering in Perl
-# hashes will make it difficult to compare outputs of two invocations.
 # Validate all accept test blocks and all reject tests, decide if this is a
 # "run all tests" or a "run only this specific test or test block" invocation
 # and produce the required test(s) using appropriate permutations of the main
