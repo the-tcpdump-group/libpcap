@@ -173,6 +173,7 @@ You can get around this by installing GCC.
 	testprogs/TESTlib.pm - TESTrun helper file
 	testprogs/TESTmt.pm - TESTrun helper file
 	testprogs/TESTst.pm - TESTrun helper file
+	testprogs/enumeratetest.c   - test program for various enumerations
 	testprogs/filtertest.c      - test program for BPF compiler
 	testprogs/findalldevstest.c - test program for pcap_findalldevs()
 	testprogs/translatetest.c   - test program for various translation functions

@@ -356,6 +356,7 @@ EXTRA_DIST = \
 	testprogs/activatetest.c \
 	testprogs/can_set_rfmon_test.c \
 	testprogs/capturetest.c \
+	testprogs/enumeratetest.c \
 	testprogs/filtertest.c \
 	testprogs/findalldevstest.c \
 	testprogs/findalldevstest.supp \

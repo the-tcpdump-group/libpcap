@@ -5,6 +5,7 @@ Makefile
 /activatetest
 /can_set_rfmon_test
 /capturetest
+/enumeratetest
 /filtertest
 /findalldevstest
 /findalldevstest-perf

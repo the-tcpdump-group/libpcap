@@ -108,6 +108,7 @@ my $timeout_bin;
 my $test_timeout;
 my $filtertest;
 my $translatetest;
+my $enumeratetest;
 
 sub usage_text {
 	my $detailed = shift;
@@ -137,10 +138,11 @@ binary works.  If it is set (on macOS there is no default \"timeout\" and the
 binary from GNU coreutils package may be available as \"gtimeout\" only), the
 custom binary must work.
 
-FILTERTEST_BIN, TRANSLATETEST_BIN and CONFIG_H allow to specify custom paths to
-respective files if the current working directory is not the directory where
-the build output files go to.  Otherwise by default this script finds the
-files for both Autoconf and CMake, both in-tree and out-of-tree builds.
+FILTERTEST_BIN, TRANSLATETEST_BIN, ENUMERATETEST_BIN and CONFIG_H allow to
+specify custom paths to respective files if the current working directory is
+not the directory where the build output files go to.  Otherwise by default
+this script finds the files for both Autoconf and CMake, both in-tree and
+out-of-tree builds.
 
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
@@ -505,14 +507,6 @@ my $valid_opcodes_enumeration = '
 #   the expression)
 
 my @filter_accept_blocks = (
-	{
-		name => 'bpf_image',
-		DLT => 'EN10MB',
-		aliases => ['_enumerate_bpf_image'],
-		opt => undef,
-		unopt => $valid_opcodes_enumeration,
-	},
-
 	{
 		name => 'empty',
 		DLT => 'EN10MB',
@@ -30751,6 +30745,20 @@ push @translate_accept_blocks, {
 	expect => "0x0${_}",
 } foreach qw(a b c d e f);
 
+# In enumerate_tests each element defines one test and is a hash, where the
+# keys have the following meaning:
+#
+# * cfunc (mandatory, string): the C function name (this is the first argument
+#   to enumeratetest), also used as the test name.
+# * expect (mandatory, [multi-line] string): the expected output.
+
+my @enumerate_tests = (
+	{
+		cfunc => 'bpf_image',
+		expect => $valid_opcodes_enumeration,
+	},
+);
+
 sub accept_test_label {
 	return join '_', ('accept', @_);
 }
@@ -31001,6 +31009,12 @@ sub run_translate_accept_test {
 	my $test = shift;
 	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	return run_generic_accept_test common_translatetest_args $test;
+}
+
+sub run_enumerate_test {
+	my $test = shift;
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
+	return run_generic_accept_test $enumeratetest, '--', $test->{cfuncname};
 }
 
 sub run_filter_reject_test {
@@ -31269,6 +31283,19 @@ foreach my $test (@translate_reject_tests) {
 	}
 }
 
+foreach my $test (@enumerate_tests) {
+	my $descr = 'enumerate test';
+	assert_nonempty_strings $descr, $test, 'cfunc', 'expect';
+	my $label = accept_test_label 'enum', $test->{cfunc};
+	next if defined $only_one && $only_one ne $label;
+	push @ready_to_run, {
+		label => $label,
+		func => \&run_enumerate_test,
+		cfuncname => $test->{cfunc},
+		expected => normalise_expected_output $test->{expect},
+	};
+}
+
 if (! scalar @ready_to_run) {
 	die "ERROR: Unknown test label '${only_one}'" if defined $only_one;
 	die 'Internal error: no tests defined to run!'
@@ -31281,6 +31308,7 @@ if ($only_list) {
 $diff_flags = get_diff_flags;
 $filtertest = detect_testprog 'filtertest', 'FILTERTEST_BIN';
 $translatetest = detect_testprog 'translatetest', 'TRANSLATETEST_BIN';
+$enumeratetest = detect_testprog 'enumeratetest', 'ENUMERATETEST_BIN';
 
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking

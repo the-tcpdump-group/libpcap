@@ -112,6 +112,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Autoconf: Fix detection of crypt() in QNX.
       Autoconf: Update config.{guess,sub}, timestamps 2025-07-10.
       CMake: Fix getaddrinfo() detection on QNX.
+      enumeratetest: Add a new test program.
     Hurd:
       Support network capture devices too.
       Fix a few device activation bugs.
