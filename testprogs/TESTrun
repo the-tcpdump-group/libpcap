@@ -93,6 +93,7 @@ use constant {
 	EX_DATAERR => 65,
 	# Likewise, EX_NOINPUT if pcap_open_offline() has failed.
 	EX_NOINPUT => 66,
+	EX_OSFILE => 72,
 };
 
 # In some environments a hostname that -- intentionally for the purposes of a
@@ -31057,6 +31058,23 @@ sub run_translate_reject_test {
 		common_translatetest_args $test;
 }
 
+sub detect_testprog {
+	my ($progname, $envvar) = (shift, shift);
+	my $executable = defined $ENV{$envvar} ? $ENV{$envvar} :
+		string_in_file ('/* cmakeconfig.h.in */', $config_h) ? "./run/$progname" :
+		"./testprogs/$progname";
+
+	# Every test program that needs to interface with this Perl script must
+	# exit with status 0 if given the "-h" flag.
+	if (system ("$executable -h >/dev/null 2>&1") >> 8) {
+		# Make it easier to see what the problem is.
+		system "$executable -h";
+		print STDERR "ERROR: '$executable -h' exit status was not 0.\n";
+		exit EX_OSFILE;
+	}
+	return $executable;
+}
+
 # Validate all accept test blocks and all reject tests, decide if this is a
 # "run all tests" or a "run only this specific test or test block" invocation
 # and produce the required test(s) using appropriate permutations of the main
@@ -31288,30 +31306,8 @@ if ($only_list) {
 }
 
 $diff_flags = get_diff_flags;
-
-$filtertest = defined $ENV{FILTERTEST_BIN} ? $ENV{FILTERTEST_BIN} :
-	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? './run/filtertest' :
-	'./testprogs/filtertest';
-
-# In this libpcap version "filtertest -h" prints to stdout and exits normally.
-if (system ("$filtertest -h >/dev/null 2>&1") >> 8) {
-	# Make it easier to see what the problem is.
-	system $filtertest;
-	print STDERR "ERROR: $filtertest is not usable\n";
-	exit 2;
-}
-
-$translatetest = defined $ENV{TRANSLATETEST_BIN} ? $ENV{TRANSLATETEST_BIN} :
-	string_in_file ('/* cmakeconfig.h.in */', $config_h) ? './run/translatetest' :
-	'./testprogs/translatetest';
-
-# translatetest implements the same convention.
-if (system ("$translatetest -h >/dev/null 2>&1") >> 8) {
-	# Make it easier to see what the problem is.
-	system $translatetest;
-	print STDERR "ERROR: $translatetest is not usable\n";
-	exit 2;
-}
+$filtertest = detect_testprog 'filtertest', 'FILTERTEST_BIN';
+$translatetest = detect_testprog 'translatetest', 'TRANSLATETEST_BIN';
 
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking
@@ -31326,7 +31322,7 @@ if ($test_timeout eq '0') {
 	$timeout_bin = $ENV{TIMEOUT_BIN};
 	if (system ($timeout_bin, '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
 		print STDERR "ERROR: TIMEOUT_BIN='$timeout_bin' is not usable.\n";
-		exit 1;
+		exit EX_OSFILE;
 	}
 	print "INFO: Using a test timeout of $test_timeout (TIMEOUT_BIN='$timeout_bin').\n";
 } elsif (system ('timeout', '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
