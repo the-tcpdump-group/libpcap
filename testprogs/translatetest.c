@@ -308,7 +308,7 @@ main(int argc, char **argv)
 
 	argc -= optind;
 	argv += optind;
-	char *funcname = argv[0];
+	const char *funcname = argv[0];
 	for (unsigned i = 0; i < NUM_FUNCS; i++) {
 		if (strcmp(testfunc[i].name, funcname))
 			continue;

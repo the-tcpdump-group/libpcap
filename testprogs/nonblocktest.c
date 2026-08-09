@@ -43,7 +43,7 @@
 #include <fcntl.h>
 
 static pcap_t *pd;
-static char *program_name = "nonblocktest";
+static const char *program_name = "nonblocktest";
 /* Forwards */
 static void PCAP_NORETURN usage(void);
 static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);

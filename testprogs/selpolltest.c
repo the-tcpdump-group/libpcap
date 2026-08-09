@@ -48,7 +48,7 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
-static char *program_name;
+static const char *program_name;
 
 /* Forwards */
 static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);

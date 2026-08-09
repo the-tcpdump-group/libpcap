@@ -118,7 +118,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #undef BPF_JUMP
 #include <pcap.h>
 
-static char *program_name;
+static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);

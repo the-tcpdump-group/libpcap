@@ -95,7 +95,7 @@ PCAP_API void pcap_set_print_dot_graph(int);
  */
 #include <pcap-int.h>
 
-static char *program_name;
+static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(FILE *);
