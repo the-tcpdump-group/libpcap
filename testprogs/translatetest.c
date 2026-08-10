@@ -178,7 +178,7 @@ errcode(const int e)
 }
 
 static int
-test_pcapint_get_decint_endp(const char *arg)
+test_pcapint_get_decuint_endp(const char *arg)
 {
 	char *endp;
 	unsigned output;
@@ -193,7 +193,7 @@ test_pcapint_get_decint_endp(const char *arg)
 }
 
 static int
-test_pcapint_get_decint_noendp(const char *arg)
+test_pcapint_get_decuint_noendp(const char *arg)
 {
 	unsigned output;
 	int res = pcapint_get_decuint(arg, NULL, &output);
@@ -218,8 +218,8 @@ static const struct {
 	{"pcapint_atoan", 0, test_pcapint_atoan, "ARCnet address"},
 	{"pcap_ether_aton", 0, test_pcap_ether_aton, "MAC-48 address"},
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
-	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decint_endp, "unsigned integer"},
-	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decint_noendp, "unsigned integer"},
+	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decuint_endp, "unsigned integer"},
+	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decuint_noendp, "unsigned integer"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 
