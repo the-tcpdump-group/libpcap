@@ -30061,98 +30061,84 @@ my @translate_accept_blocks = (
 	##### pcap_nametoeproto()
 	{
 		name => 'nametoeproto_aarp',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['aarp'],
 		expect => '0x80f3',
 	},
 	{
 		name => 'nametoeproto_arp',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['arp'],
 		expect => '0x0806',
 	},
 	{
 		name => 'nametoeproto_atalk',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['atalk'],
 		expect => '0x809b',
 	},
 	{
 		name => 'nametoeproto_decnet',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['decnet'],
 		expect => '0x6003',
 	},
 	{
 		name => 'nametoeproto_ip',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['ip'],
 		expect => '0x0800',
 	},
 	{
 		name => 'nametoeproto_ip6',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['ip6'],
 		expect => '0x86dd',
 	},
 	{
 		name => 'nametoeproto_lat',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['lat'],
 		expect => '0x6004',
 	},
 	{
 		name => 'nametoeproto_lldp',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['lldp'],
 		expect => '0x88cc',
 	},
 	{
 		name => 'nametoeproto_loopback',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['loopback'],
 		expect => '0x9000',
 	},
 	{
 		name => 'nametoeproto_mopdl',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['mopdl'],
 		expect => '0x6001',
 	},
 	{
 		name => 'nametoeproto_moprc',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['moprc'],
 		expect => '0x6002',
 	},
 	{
 		name => 'nametoeproto_rarp',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['rarp'],
 		expect => '0x8035',
 	},
 	{
 		name => 'nametoeproto_sca',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['sca'],
 		expect => '0x6007',
 	},
 	{
 		name => 'nametoeproto_slow',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['slow'],
 		expect => '0x8809',
@@ -30161,7 +30147,6 @@ my @translate_accept_blocks = (
 	# returns PROTO_UNDEF for any input that it does not recognize.
 	{
 		name => 'nametoeproto_other',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametoeproto',
 		aliases => ['unknown', ''],
 		expect => 'PROTO_UNDEF',
@@ -30170,28 +30155,24 @@ my @translate_accept_blocks = (
 	##### pcap_nametollc()
 	{
 		name => 'nametollc_iso',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametollc',
 		aliases => ['iso'],
 		expect => '0xfe',
 	},
 	{
 		name => 'nametollc_stp',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametollc',
 		aliases => ['stp'],
 		expect => '0x42',
 	},
 	{
 		name => 'nametollc_ipx',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametollc',
 		aliases => ['ipx'],
 		expect => '0xe0',
 	},
 	{
 		name => 'nametollc_netbeui',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametollc',
 		aliases => ['netbeui'],
 		expect => '0xf0',
@@ -30199,7 +30180,6 @@ my @translate_accept_blocks = (
 	# Same as for pcap_nametoeproto() above.
 	{
 		name => 'nametollc_other',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcap_nametollc',
 		aliases => ['unknown', ''],
 		expect => 'PROTO_UNDEF',
@@ -30208,21 +30188,18 @@ my @translate_accept_blocks = (
 	##### pcapint_atodn()
 	{
 		name => 'atodn_0_0',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		aliases => ['0.0', '0.00000', '000.0', '000.00000'],
 		expect => '0.0',
 	},
 	{
 		name => 'atodn_31_511',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		aliases => ['31.511'],
 		expect => '31.511',
 	},
 	{
 		name => 'atodn_63_1023',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		aliases => ['63.1023', '63.01023', '063.1023', '063.01023'],
 		expect => '63.1023',
@@ -30231,14 +30208,12 @@ my @translate_accept_blocks = (
 	##### pcapint_atoan()
 	{
 		name => 'atoan_4bit',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		aliases => ['$0d', '$d', '$0D', '$D'],
 		expect => '$0d',
 	},
 	{
 		name => 'atoan_8bit',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		aliases => ['$cd', '$cD', '$Cd', '$CD'],
 		expect => '$cd',
@@ -30281,7 +30256,6 @@ my @translate_accept_blocks = (
 	##### pcapint_parsesrcstr_ex()
 	{
 		name => 'srcstr_file_relfile',
-		skip => skip_no_translatetest(),
 		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file://file.pcap'],
@@ -30289,35 +30263,35 @@ my @translate_accept_blocks = (
 	},
 	{
 		name => 'srcstr_file_reldir',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file://dir/'],
 		expect => 'file://dir/',
 	},
 	{
 		name => 'srcstr_file_reldirfile',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file://dir/file.pcap'],
 		expect => 'file://dir/file.pcap',
 	},
 	{
 		name => 'srcstr_file_absfile',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file:///file.pcap'],
 		expect => 'file:///file.pcap',
 	},
 	{
 		name => 'srcstr_file_absdir',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file:///dir/'],
 		expect => 'file:///dir/',
 	},
 	{
 		name => 'srcstr_file_absdirfile',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['file:///dir/file.pcap'],
 		expect => 'file:///dir/file.pcap',
@@ -30326,14 +30300,14 @@ my @translate_accept_blocks = (
 	# pcapint_createsrcstr_ex() would reject the parsed data with an error.
 	{
 		name => 'srcstr_rpcap_local',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['rpcap://'],
 		expect => 'rpcap://',
 	},
 	{
 		name => 'srcstr_local_device',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		aliases => ['rpcap://eth0', 'eth0'],
 		expect => 'rpcap://eth0',
@@ -30380,35 +30354,30 @@ my @translate_reject_tests = (
 	##### pcapint_atodn()
 	{
 		name => 'atodn_64_0',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		arg => '64.0',
 		errstr => '0',
 	},
 	{
 		name => 'atodn_0_1024',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		arg => '0.1024',
 		errstr => '0',
 	},
 	{
 		name => 'atodn_64_1024',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		arg => '64.1024',
 		errstr => '0',
 	},
 	{
 		name => 'atodn_10_a',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		arg => '10.a',
 		errstr => '0',
 	},
 	{
 		name => 'atodn_a_10',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atodn',
 		arg => 'a.10',
 		errstr => '0',
@@ -30417,42 +30386,36 @@ my @translate_reject_tests = (
 	##### pcapint_atoan()
 	{
 		name => 'atoan_1',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '$g',
 		errstr => '0',
 	},
 	{
 		name => 'atoan_2',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '$0g',
 		errstr => '0',
 	},
 	{
 		name => 'atoan_3',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '$g0',
 		errstr => '0',
 	},
 	{
 		name => 'atoan_4',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '0',
 		errstr => '0',
 	},
 	{
 		name => 'atoan_5',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '12',
 		errstr => '0',
 	},
 	{
 		name => 'atoan_6',
-		skip => skip_no_translatetest(),
 		cfunc => 'pcapint_atoan',
 		arg => '123',
 		errstr => '0',
@@ -30607,49 +30570,49 @@ my @translate_reject_tests = (
 	##### pcapint_parsesrcstr_ex()
 	{
 		name => 'srcstr_null',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => undef,
 		errstr => 'The source string must not be NULL.',
 	},
 	{
 		name => 'srcstr_empty',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => '',
 		errstr => 'The source string must not be empty.',
 	},
 	{
 		name => 'srcstr_ftp',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => 'ftp://',
 		errstr => 'The source string URL scheme is not supported.',
 	},
 	{
 		name => 'srcstr_http_host_dev',
-		skip => skip_no_translatetest() || skip_config_not_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => 'http://host/device',
 		errstr => 'The source string URL scheme is not supported.',
 	},
 	{
 		name => 'noremote_srcstr_null',
-		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => undef,
 		errstr => 'pcapint_parsesrcstr_ex() is not supported',
 	},
 	{
 		name => 'noremote_srcstr_empty',
-		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => '',
 		errstr => 'pcapint_parsesrcstr_ex() is not supported',
 	},
 	{
 		name => 'noremote_srcstr_localdev',
-		skip => skip_no_translatetest() || skip_config_def1 ('ENABLE_REMOTE'),
+		skip => skip_config_def1 ('ENABLE_REMOTE'),
 		cfunc => 'pcapint_parsesrcstr_ex',
 		arg => 'rpcap://eth0',
 		errstr => 'pcapint_parsesrcstr_ex() is not supported',
@@ -30753,8 +30716,7 @@ foreach my $scheme (sort keys %src_scheme) {
 						$src_dev{$dev};
 					push @translate_accept_blocks, {
 						name => "srcstr_${scheme}_${auth}_${host}_${port}_${dev}",
-						skip => skip_no_translatetest() ||
-							skip_config_not_def1 ('ENABLE_REMOTE'),
+						skip => skip_config_not_def1 ('ENABLE_REMOTE'),
 						cfunc => 'pcapint_parsesrcstr_ex',
 						aliases => $host ne 'ipv6' ? [$srcstr, $srcstr2] : [$srcstr],
 						expect => $srcstr,
@@ -30768,14 +30730,12 @@ foreach my $scheme (sort keys %src_scheme) {
 ##### pcapint_xdtoi()
 push @translate_accept_blocks, {
 	name => "xdtoi_${_}",
-	skip => skip_no_translatetest(),
 	cfunc => 'pcapint_xdtoi',
 	aliases => [ord],
 	expect => "0x0${_}",
 } foreach qw(0 1 2 3 4 5 6 7 8 9);
 push @translate_accept_blocks, {
 	name => "xdtoi_${_}",
-	skip => skip_no_translatetest(),
 	cfunc => 'pcapint_xdtoi',
 	aliases => [ord, ord uc],
 	expect => "0x0${_}",
@@ -31243,12 +31203,15 @@ foreach my $test (@filter_reject_tests) {
 	}
 }
 
+my $skip_no_translatetest = skip_no_translatetest;
 foreach my $block (@translate_accept_blocks) {
 	my $descr = 'parse accept block';
 	validate_generic_accept_block $descr, $block;
 	assert_nonempty_strings $descr, $block, 'cfunc', 'expect';
-	my $skip_reason = (defined $block->{skip} && $block->{skip} ne '') ?
-		$block->{skip} : undef;
+	my $skip_reason =
+		$skip_no_translatetest ne '' ? $skip_no_translatetest :
+		(defined $block->{skip} && $block->{skip} ne '') ? $block->{skip} :
+		undef;
 	my $i = 0;
 	foreach (@{$block->{aliases}}) {
 		my $label = accept_test_label 'parse', $block->{name}, $i++;
@@ -31275,15 +31238,19 @@ foreach my $test (@translate_reject_tests) {
 	my $descr = 'parse reject test';
 	validate_generic_reject_test $descr, $test;
 	assert_exists $descr, $test, 'arg';
+	my $skip_reason =
+		$skip_no_translatetest ne '' ? $skip_no_translatetest :
+		(defined $test->{skip} && $test->{skip} ne '') ? $test->{skip} :
+		undef;
 	# "arg" can be empty in some tests, this is normal.
 	my $label = reject_test_label 'parse', $test->{name};
 	next if defined $only_one && $only_one ne $label;
 
-	if (defined $test->{skip} && $test->{skip} ne '') {
+	if (defined $skip_reason) {
 		push @ready_to_run, {
 			label => $label,
 			func => \&run_skip_test,
-			skip => $print_skipped ? $test->{skip} : '',
+			skip => $print_skipped ? $skip_reason : '',
 		};
 	} else {
 		push @ready_to_run, {
