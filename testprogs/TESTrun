@@ -30350,16 +30350,10 @@ my @translate_accept_blocks = (
 		expect => 'Unknown error: -100',
 	},
 	{
-		name => 'pcap_statustostr_success',
-		cfunc => 'pcap_statustostr',
-		aliases => ['0'],
-		expect => 'Unknown error: 0',
-	},
-	{
 		name => 'pcap_statustostr_warning_100',
 		cfunc => 'pcap_statustostr',
 		aliases => ['100'],
-		expect => 'Unknown error: 100',
+		expect => 'Unknown warning: 100',
 	},
 );
 
@@ -30792,6 +30786,7 @@ my @enumerate_tests = (
 			-3: The pcap_t has not been activated
 			-2: Loop terminated by pcap_breakloop
 			-1: Generic error
+			0: Success
 			1: Generic warning
 			2: That device doesn\'t support promiscuous mode
 			3: That type of time stamp is not supported by that device

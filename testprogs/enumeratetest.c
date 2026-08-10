@@ -109,13 +109,16 @@ enumerate_bpf_image(void)
  * pcap_statustostr() returns a string for any argument, so the results must
  * be filtered.
  */
-#define UNKNOWN_ERROR "Unknown error: "
+#define UNKNOWN_ERROR "Unknown error: -"
+#define UNKNOWN_WARNING "Unknown warning: "
 static int
 enumerate_pcap_statustostr(void)
 {
 	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++) {
 		const char *errstr = pcap_statustostr(i);
-		if (strncmp(errstr, UNKNOWN_ERROR, sizeof(UNKNOWN_ERROR) - 1))
+		if ((i < 0 && strncmp(errstr, UNKNOWN_ERROR, sizeof(UNKNOWN_ERROR) - 1)) ||
+		     i == 0 ||
+		    (i > 0 && strncmp(errstr, UNKNOWN_WARNING, sizeof(UNKNOWN_WARNING) - 1)))
 			printf("%d: %s\n", i, errstr);
 	}
 	return EX_OK;

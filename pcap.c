@@ -3710,6 +3710,8 @@ pcap_statustostr(int errnum)
 	static thread_local char ebuf[15+10+1];
 
 	switch (errnum) {
+	case 0:
+		return ("Success");
 
 	case PCAP_WARNING:
 		return("Generic warning");
@@ -3759,7 +3761,8 @@ pcap_statustostr(int errnum)
 	case PCAP_ERROR_CAPTURE_NOTSUP:
 		return ("Packet capture is not supported on that device");
 	}
-	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	(void)snprintf(ebuf, sizeof ebuf, "Unknown %s: %d",
+	               errnum < 0 ? "error" : "warning", errnum);
 	return(ebuf);
 }
 

@@ -20,6 +20,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make pcap_compile() error messages more uniform and consistent.
       Deprecate pcap_compile_nopcap().
       Remove unmaintained DPDK capture backend (was disabled by default).
+      Return more useful strings from pcap_statustostr().
     Link-layer types:
       Add LINKTYPE_DECT_NR_TAP/DLT_DECT_NR_TAP.
     Packet filtering:

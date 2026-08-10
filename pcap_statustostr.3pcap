@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_STATUSTOSTR 3PCAP "3 January 2014"
+.TH PCAP_STATUSTOSTR 3PCAP "12 August 2026"
 .SH NAME
 pcap_statustostr \- convert a PCAP_ERROR_ or PCAP_WARNING_ value to a string
 .SH SYNOPSIS
@@ -36,6 +36,11 @@ converts a
 .B PCAP_ERROR_
 or
 .B PCAP_WARNING_
-value returned by a libpcap routine to an error string.
+value returned by a libpcap routine to an error/warning string.
+.SH RETURN VALUE
+The function never returns
+.BR NULL :
+for an argument that is not a known error/warning value it produces a generic
+message that quotes the argument.
 .SH SEE ALSO
 .BR pcap (3PCAP)
