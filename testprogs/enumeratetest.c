@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <config.h> // for "pcap-int.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +49,7 @@
 
 #include "pcap/pcap.h"
 #include "pcap/bpf.h"
+#include "pcap-int.h" // PCAP_ISDIGIT() etc.
 
 /*
  * For functions that take an int it is not practicable to test every possible
@@ -172,6 +174,69 @@ enumerate_pcap_tstamp_type_val_to_name(void)
 	                            pcap_tstamp_type_name_to_val);
 }
 
+static void
+print_int_as_char(const int i)
+{
+	if (0 <= i && i <= INT8_MAX)
+		printf("%d: '%c'\n", i, (char)i);
+	else
+		printf("%d: ???\n", i);
+}
+
+static int
+enumerate_PCAP_ISDIGIT(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISDIGIT(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
+static int
+enumerate_PCAP_ISXDIGIT(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISXDIGIT(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
+static int
+enumerate_PCAP_ISUPPER(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISUPPER(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
+static int
+enumerate_PCAP_ISLOWER(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISLOWER(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
+static int
+enumerate_PCAP_ISALPHA(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISALPHA(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
+static int
+enumerate_PCAP_ISALNUM(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++)
+		if (PCAP_ISALNUM(i))
+			print_int_as_char(i);
+	return EX_OK;
+}
+
 static const struct enumfunc {
 	const char *name;
 	int (*runner)(void);
@@ -191,6 +256,30 @@ static const struct enumfunc {
 	{
 		"pcap_tstamp_type_val_to_name",
 		enumerate_pcap_tstamp_type_val_to_name,
+	},
+	{
+		"PCAP_ISDIGIT",
+		enumerate_PCAP_ISDIGIT,
+	},
+	{
+		"PCAP_ISXDIGIT",
+		enumerate_PCAP_ISXDIGIT,
+	},
+	{
+		"PCAP_ISUPPER",
+		enumerate_PCAP_ISUPPER,
+	},
+	{
+		"PCAP_ISLOWER",
+		enumerate_PCAP_ISLOWER,
+	},
+	{
+		"PCAP_ISALPHA",
+		enumerate_PCAP_ISALPHA,
+	},
+	{
+		"PCAP_ISALNUM",
+		enumerate_PCAP_ISALNUM,
 	},
 	{NULL, NULL}
 };
