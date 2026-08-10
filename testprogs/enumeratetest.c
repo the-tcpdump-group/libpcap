@@ -124,6 +124,54 @@ enumerate_pcap_statustostr(void)
 	return EX_OK;
 }
 
+/*
+ * Enumerate by attempting a number-to-string translation, for every successful
+ * (i.e. the string is not NULL) translation require a successful (i.e. the
+ * number is not PCAP_ERROR) string-to-number translation and the two numbers
+ * to be equal.  This does not prove a one-to-one correspondence, even in the
+ * case-insensitive string comparison sense -- if a string translates to a
+ * number, but the number does not translate to the string (e.g. "USER2" -> 149
+ * -> "PKTAP" on macOS), finding any such strings would be out of scope of a
+ * quick test.  Also -1 cannot be a valid number.
+ */
+static int
+enumerate_and_verify(const char *(*tostr)(int), int (*fromstr)(const char *))
+{
+	int ret = EX_OK;
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++) {
+		const char *str = tostr(i);
+		if (! str)
+			continue;
+		printf("%d: %s\n", i, str);
+		const int inverse = fromstr(str);
+		if (inverse == PCAP_ERROR) {
+			fprintf(stderr,
+			        "ERROR: \"%s\" failed to translate\n", str);
+			ret = EX_SOFTWARE;
+		} else if (inverse != i) {
+			fprintf(stderr,
+			        "ERROR: \"%s\" translated to %d, not %d\n",
+			        str, inverse, i);
+			ret = EX_SOFTWARE;
+		}
+	}
+	return ret;
+}
+
+static int
+enumerate_pcap_datalink_val_to_name(void)
+{
+	return enumerate_and_verify(pcap_datalink_val_to_name,
+	                            pcap_datalink_name_to_val);
+}
+
+static int
+enumerate_pcap_tstamp_type_val_to_name(void)
+{
+	return enumerate_and_verify(pcap_tstamp_type_val_to_name,
+	                            pcap_tstamp_type_name_to_val);
+}
+
 static const struct enumfunc {
 	const char *name;
 	int (*runner)(void);
@@ -135,6 +183,14 @@ static const struct enumfunc {
 	{
 		"pcap_statustostr",
 		enumerate_pcap_statustostr,
+	},
+	{
+		"pcap_datalink_val_to_name",
+		enumerate_pcap_datalink_val_to_name,
+	},
+	{
+		"pcap_tstamp_type_val_to_name",
+		enumerate_pcap_tstamp_type_val_to_name,
 	},
 	{NULL, NULL}
 };
@@ -158,6 +214,7 @@ usage_long(FILE *f)
 		printf("       %s %s\n", program_name, ef->name);
 	fprintf(f, "\nExit status codes:\n");
 	fprintf(f, "  %3u: Success.\n", EX_OK);
+	fprintf(f, "  %3u: Unexpected error in the results.\n", EX_SOFTWARE);
 	fprintf(f, "  %3u: Invalid command-line argument(s).\n", EX_USAGE);
 }
 

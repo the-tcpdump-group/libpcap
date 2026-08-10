@@ -30758,6 +30758,224 @@ push @translate_accept_blocks, {
 	expect => "0x0${_}",
 } foreach qw(a b c d e f);
 
+# This is used for an enumeration test only.  There is a separate hash for more
+# detailed DLT-specific testing (%DLTfeatures).
+my %DLTnames = (
+	0 => 'NULL',
+	1 => 'EN10MB',
+	2 => 'EN3MB',
+	3 => 'AX25',
+	4 => 'PRONET',
+	5 => 'CHAOS',
+	6 => 'IEEE802',
+	7 => 'ARCNET',
+	8 => 'SLIP',
+	9 => 'PPP',
+	10 => 'FDDI',
+	11 => 'ATM_RFC1483',
+	19 => 'ATM_CLIP',
+	32 => 'REDBACK_SMARTEDGE',
+	50 => 'PPP_SERIAL',
+	51 => 'PPP_ETHER',
+	99 => 'SYMANTEC_FIREWALL',
+	104 => 'C_HDLC',
+	105 => 'IEEE802_11',
+	107 => 'FRELAY',
+	113 => 'LINUX_SLL',
+	114 => 'LTALK',
+	117 => 'PFLOG',
+	119 => 'PRISM_HEADER',
+	122 => 'IP_OVER_FC',
+	123 => 'SUNATM',
+	127 => 'IEEE802_11_RADIO',
+	129 => 'ARCNET_LINUX',
+	130 => 'JUNIPER_MLPPP',
+	131 => 'JUNIPER_MLFR',
+	132 => 'JUNIPER_ES',
+	133 => 'JUNIPER_GGSN',
+	134 => 'JUNIPER_MFR',
+	135 => 'JUNIPER_ATM2',
+	136 => 'JUNIPER_SERVICES',
+	137 => 'JUNIPER_ATM1',
+	138 => 'APPLE_IP_OVER_IEEE1394',
+	139 => 'MTP2_WITH_PHDR',
+	140 => 'MTP2',
+	141 => 'MTP3',
+	142 => 'SCCP',
+	143 => 'DOCSIS',
+	144 => 'LINUX_IRDA',
+	147 => 'USER0',
+	148 => 'USER1',
+	150 => 'USER3',
+	151 => 'USER4',
+	152 => 'USER5',
+	153 => 'USER6',
+	154 => 'USER7',
+	155 => 'USER8',
+	156 => 'USER9',
+	157 => 'USER10',
+	158 => 'USER11',
+	159 => 'USER12',
+	160 => 'USER13',
+	161 => 'USER14',
+	162 => 'USER15',
+	163 => 'IEEE802_11_RADIO_AVS',
+	164 => 'JUNIPER_MONITOR',
+	165 => 'BACNET_MS_TP',
+	166 => 'PPP_PPPD',
+	167 => 'JUNIPER_PPPOE',
+	168 => 'JUNIPER_PPPOE_ATM',
+	169 => 'GPRS_LLC',
+	170 => 'GPF_T',
+	171 => 'GPF_F',
+	174 => 'JUNIPER_PIC_PEER',
+	175 => 'ERF_ETH',
+	176 => 'ERF_POS',
+	177 => 'LINUX_LAPD',
+	178 => 'JUNIPER_ETHER',
+	179 => 'JUNIPER_PPP',
+	180 => 'JUNIPER_FRELAY',
+	181 => 'JUNIPER_CHDLC',
+	182 => 'MFR',
+	183 => 'JUNIPER_VP',
+	184 => 'A429',
+	185 => 'A653_ICM',
+	186 => 'USB_FREEBSD',
+	187 => 'BLUETOOTH_HCI_H4',
+	188 => 'IEEE802_16_MAC_CPS',
+	189 => 'USB_LINUX',
+	190 => 'CAN20B',
+	191 => 'IEEE802_15_4_LINUX',
+	192 => 'PPI',
+	193 => 'IEEE802_16_MAC_CPS_RADIO',
+	194 => 'JUNIPER_ISM',
+	195 => 'IEEE802_15_4',
+	196 => 'SITA',
+	197 => 'ERF',
+	198 => 'RAIF1',
+	199 => 'IPMB_KONTRON',
+	200 => 'JUNIPER_ST',
+	201 => 'BLUETOOTH_HCI_H4_WITH_PHDR',
+	202 => 'AX25_KISS',
+	209 => 'I2C_LINUX',
+	215 => 'IEEE802_15_4_NONASK_PHY',
+	216 => 'LINUX_EVDEV',
+	219 => 'MPLS',
+	220 => 'USB_LINUX_MMAPPED',
+	221 => 'DECT',
+	222 => 'AOS',
+	223 => 'WIHART',
+	224 => 'FC_2',
+	225 => 'FC_2_WITH_FRAME_DELIMS',
+	226 => 'IPNET',
+	227 => 'CAN_SOCKETCAN',
+	228 => 'IPV4',
+	229 => 'IPV6',
+	230 => 'IEEE802_15_4_NOFCS',
+	231 => 'DBUS',
+	232 => 'JUNIPER_VS',
+	233 => 'JUNIPER_SRX_E2E',
+	234 => 'JUNIPER_FIBRECHANNEL',
+	235 => 'DVB_CI',
+	236 => 'MUX27010',
+	237 => 'STANAG_5066_D_PDU',
+	238 => 'JUNIPER_ATM_CEMIC',
+	239 => 'NFLOG',
+	240 => 'NETANALYZER',
+	241 => 'NETANALYZER_TRANSPARENT',
+	242 => 'IPOIB',
+	243 => 'MPEG_2_TS',
+	244 => 'NG40',
+	245 => 'NFC_LLCP',
+	247 => 'INFINIBAND',
+	248 => 'SCTP',
+	249 => 'USBPCAP',
+	250 => 'RTAC_SERIAL',
+	251 => 'BLUETOOTH_LE_LL',
+	253 => 'NETLINK',
+	254 => 'BLUETOOTH_LINUX_MONITOR',
+	255 => 'BLUETOOTH_BREDR_BB',
+	256 => 'BLUETOOTH_LE_LL_WITH_PHDR',
+	257 => 'PROFIBUS_DL',
+	259 => 'EPON',
+	260 => 'IPMI_HPM_2',
+	261 => 'ZWAVE_R1_R2',
+	262 => 'ZWAVE_R3',
+	263 => 'WATTSTOPPER_DLM',
+	264 => 'ISO_14443',
+	265 => 'RDS',
+	266 => 'USB_DARWIN',
+	267 => 'OPENFLOW',
+	268 => 'SDLC',
+	269 => 'TI_LLN_SNIFFER',
+	271 => 'VSOCK',
+	272 => 'NORDIC_BLE',
+	273 => 'DOCSIS31_XRA31',
+	274 => 'ETHERNET_MPACKET',
+	275 => 'DISPLAYPORT_AUX',
+	276 => 'LINUX_SLL2',
+	278 => 'OPENVIZSLA',
+	279 => 'EBHSCR',
+	280 => 'VPP_DISPATCH',
+	281 => 'DSA_TAG_BRCM',
+	282 => 'DSA_TAG_BRCM_PREPEND',
+	283 => 'IEEE802_15_4_TAP',
+	284 => 'DSA_TAG_DSA',
+	285 => 'DSA_TAG_EDSA',
+	286 => 'ELEE',
+	287 => 'Z_WAVE_SERIAL',
+	288 => 'USB_2_0',
+	289 => 'ATSC_ALP',
+	290 => 'ETW',
+	291 => 'NETANALYZER_NG',
+	292 => 'ZBOSS_NCP',
+	293 => 'USB_2_0_LOW_SPEED',
+	294 => 'USB_2_0_FULL_SPEED',
+	295 => 'USB_2_0_HIGH_SPEED',
+	296 => 'AUERSWALD_LOG',
+	297 => 'ZWAVE_TAP',
+	298 => 'SILABS_DEBUG_CHANNEL',
+	299 => 'FIRA_UCI',
+	300 => 'MDB',
+	301 => 'DECT_NR',
+	302 => 'EDK2_MM',
+	303 => 'DEBUG_ONLY',
+	304 => 'DECT_NR_TAP',
+);
+# The conditional part is a subset of what "pcap/dlt.h" defines because
+# dlt_choices[] in pcap.c includes neither DLT_HIPPI nor DLT_HDLC nor
+# DLT_HHDLC.
+$DLTnames{
+	$^O eq 'openbsd' ? 12 :
+	108
+} = 'LOOP';
+$DLTnames{
+	$^O eq 'openbsd' ? 13 :
+	109
+} = 'ENC';
+$DLTnames{
+	$^O eq 'openbsd' ? 14 :
+	12
+} = 'RAW';
+$DLTnames{
+	$^O eq 'netbsd' || $^O eq 'freebsd' ? 13 :
+	15
+} = 'SLIP_BSDOS';
+$DLTnames{
+	$^O eq 'netbsd' || $^O eq 'freebsd' ? 14 :
+	16
+} = 'PPP_BSDOS';
+$DLTnames{
+	$^O eq 'openbsd' || $^O eq 'netbsd' || $^O eq 'dragonfly' || $^O eq 'darwin' ? 18 :
+	$^O eq 'freebsd' ? 121 :
+	246
+} = 'PFSYNC';
+$DLTnames{
+	$^O eq 'darwin' ? 149 :
+	258
+} = 'PKTAP';
+$DLTnames{149} = 'USER2' if $^O ne 'darwin';
+
 # In enumerate_tests each element defines one test and is a hash, where the
 # keys have the following meaning:
 #
@@ -30790,6 +31008,21 @@ my @enumerate_tests = (
 			1: Generic warning
 			2: That device doesn\'t support promiscuous mode
 			3: That type of time stamp is not supported by that device
+			',
+	},
+	{
+		cfunc => 'pcap_datalink_val_to_name',
+		expect => join ('', map {"$_: $DLTnames{$_}\n"} sort {$a <=> $b} keys %DLTnames),
+	},
+	{
+		cfunc => 'pcap_tstamp_type_val_to_name',
+		expect => '
+			0: host
+			1: host_lowprec
+			2: host_hiprec
+			3: adapter
+			4: adapter_unsynced
+			5: host_hiprec_unsynced
 			',
 	},
 );
