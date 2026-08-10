@@ -49,6 +49,13 @@
 #include "pcap/pcap.h"
 #include "pcap/bpf.h"
 
+/*
+ * For functions that take an int it is not practicable to test every possible
+ * value, so use a smaller interval.
+ */
+#define ENUMERATE_INT_MIN INT16_MIN
+#define ENUMERATE_INT_MAX INT16_MAX
+
 static const char *program_name;
 
 #define BPF_IMAGE_FORMAT "%-50s; 0x%04x\n"
@@ -98,6 +105,22 @@ enumerate_bpf_image(void)
 	return enumerate_bpf_space(valid_bpf_image);
 }
 
+/*
+ * pcap_statustostr() returns a string for any argument, so the results must
+ * be filtered.
+ */
+#define UNKNOWN_ERROR "Unknown error: "
+static int
+enumerate_pcap_statustostr(void)
+{
+	for (int i = ENUMERATE_INT_MIN; i <= ENUMERATE_INT_MAX; i++) {
+		const char *errstr = pcap_statustostr(i);
+		if (strncmp(errstr, UNKNOWN_ERROR, sizeof(UNKNOWN_ERROR) - 1))
+			printf("%d: %s\n", i, errstr);
+	}
+	return EX_OK;
+}
+
 static const struct enumfunc {
 	const char *name;
 	int (*runner)(void);
@@ -105,6 +128,10 @@ static const struct enumfunc {
 	{
 		"bpf_image",
 		enumerate_bpf_image,
+	},
+	{
+		"pcap_statustostr",
+		enumerate_pcap_statustostr,
 	},
 	{NULL, NULL}
 };

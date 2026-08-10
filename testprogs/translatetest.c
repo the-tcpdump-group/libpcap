@@ -205,6 +205,29 @@ test_pcapint_get_decuint_noendp(const char *arg)
 	return EX_OK;
 }
 
+static int
+test_pcap_statustostr(const char *arg)
+{
+	errno = 0;
+	long i = strtol(arg, NULL, 10);
+	if (errno) {
+		fprintf(stderr, "ERROR: failed parsing \"%s\" (%s)\n", arg, strerror(errno));
+		return EX_USAGE;
+	}
+	char buf[64];
+	snprintf(buf, sizeof(buf), "%ld", i);
+	if (strcmp(buf, arg)) {
+		fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+		return EX_USAGE;
+	}
+	if (i < INT32_MIN || i > INT32_MAX) {
+		fprintf(stderr, "ERROR: value \"%s\" is out of range\n", arg);
+		return EX_USAGE;
+	}
+	printf("OK: %s\n", pcap_statustostr((int)i));
+	return EX_OK;
+}
+
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -220,6 +243,7 @@ static const struct {
 	{"pcapint_parsesrcstr_ex", 1, test_pcapint_parsesrcstr_ex, "source string"},
 	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decuint_endp, "unsigned integer"},
 	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decuint_noendp, "unsigned integer"},
+	{"pcap_statustostr", 0, test_pcap_statustostr, "signed integer"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 
