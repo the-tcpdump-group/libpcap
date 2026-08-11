@@ -3199,9 +3199,12 @@ monitor_mode(pcap_t *p, int set)
 			return (PCAP_ERROR);
 		}
 	}
-	if (req.ifm_count == 0) {
+	if (req.ifm_count <= 0) {
 		/*
-		 * No media types.
+		 * No media types, or negative count (guard against a kernel
+		 * bug or unexpected ioctl return value: ifm_count is int,
+		 * so a negative value would wrap to a huge size_t in the
+		 * malloc() call below).
 		 */
 		close(sock);
 		return (PCAP_ERROR_RFMON_NOTSUP);
