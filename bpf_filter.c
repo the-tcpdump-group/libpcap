@@ -45,9 +45,6 @@
 #include "extract.h"
 #include "diag-control.h"
 
-#define EXTRACT_SHORT	EXTRACT_BE_U_2
-#define EXTRACT_LONG	EXTRACT_BE_U_4
-
 #ifndef _WIN32
 #include <sys/param.h>
 #include <sys/types.h>
@@ -115,7 +112,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			if (k > buflen || sizeof(int32_t) > buflen - k) {
 				return 0;
 			}
-			A = EXTRACT_LONG(&p[k]);
+			A = EXTRACT_BE_U_4(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_H|BPF_ABS:
@@ -123,7 +120,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			if (k > buflen || sizeof(int16_t) > buflen - k) {
 				return 0;
 			}
-			A = EXTRACT_SHORT(&p[k]);
+			A = EXTRACT_BE_U_2(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_B|BPF_ABS:
@@ -174,7 +171,7 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			    sizeof(int32_t) > buflen - k) {
 				return 0;
 			}
-			A = EXTRACT_LONG(&p[k]);
+			A = EXTRACT_BE_U_4(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_H|BPF_IND:
@@ -183,7 +180,7 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			    sizeof(int16_t) > buflen - k) {
 				return 0;
 			}
-			A = EXTRACT_SHORT(&p[k]);
+			A = EXTRACT_BE_U_2(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_B|BPF_IND:
