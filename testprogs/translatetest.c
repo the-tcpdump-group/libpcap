@@ -1,6 +1,8 @@
 // for "pcap-int.h"
 #include <config.h>
 
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +27,7 @@
 #include "nametoaddr.h"
 // pcapint_parsesrcstr_ex() and pcapint_createsrcstr_ex()
 #include "pcap-int.h"
+#include "pcap-util.h" // PCAP_BSWAP_16() etc.
 
 static const char *program_name;
 
@@ -228,6 +231,73 @@ test_pcap_statustostr(const char *arg)
 	return EX_OK;
 }
 
+static int
+parse_hex(const char *arg, const uint64_t maxval, uint64_t *result)
+{
+	errno = 0;
+	unsigned long long i = strtoull(arg, NULL, 16);
+	if (errno || i > maxval)
+		return 1;
+	*result = (uint64_t)i;
+	return 0;
+}
+
+static int
+test_PCAP_BSWAP_16(const char *arg)
+{
+	uint64_t i;
+	if (parse_hex(arg, UINT16_MAX, &i))
+		goto fail;
+	char buf[64];
+	snprintf(buf, sizeof(buf), "0x%04x", (uint16_t)i);
+	if (strcasecmp(buf, arg))
+		goto fail;
+	printf("OK: 0x%04x\n", PCAP_BSWAP_16(i));
+	return EX_OK;
+fail:
+	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+	return EX_USAGE;
+}
+
+static int
+test_PCAP_BSWAP_32(const char *arg)
+{
+	uint64_t i;
+	if (parse_hex(arg, UINT32_MAX, &i))
+		goto fail;
+	char buf[64];
+	snprintf(buf, sizeof(buf), "0x%08x", (uint32_t)i);
+	if (strcasecmp(buf, arg))
+		goto fail;
+	printf("OK: 0x%08x\n", PCAP_BSWAP_32(i));
+	return EX_OK;
+fail:
+	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+	return EX_USAGE;
+}
+
+static int
+test_PCAP_BSWAP_64(const char *arg)
+{
+	uint64_t i;
+	if (parse_hex(arg, UINT64_MAX, &i))
+		goto fail;
+	char buf[64];
+	snprintf(buf, sizeof(buf), "0x%016" PRIx64, i);
+	if (strcasecmp(buf, arg))
+		goto fail;
+	/*
+	 * The current definition of PCAP_BSWAP_64() is an unsigned long long,
+	 * which does not match PRIx64 on 64-bit architectures, so cast it to
+	 * an uint64_t, which does match, to avoid a -Wformat.
+	 */
+	printf("OK: 0x%016" PRIx64 "\n", (uint64_t)PCAP_BSWAP_64(i));
+	return EX_OK;
+fail:
+	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+	return EX_USAGE;
+}
+
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -244,6 +314,9 @@ static const struct {
 	{"pcapint_get_decuint/endp", 1, test_pcapint_get_decuint_endp, "unsigned integer"},
 	{"pcapint_get_decuint/noendp", 1, test_pcapint_get_decuint_noendp, "unsigned integer"},
 	{"pcap_statustostr", 0, test_pcap_statustostr, "signed integer"},
+	{"PCAP_BSWAP_16", 0, test_PCAP_BSWAP_16, "0xXXXX"},
+	{"PCAP_BSWAP_32", 0, test_PCAP_BSWAP_32, "0xXXXXXXXX"},
+	{"PCAP_BSWAP_64", 0, test_PCAP_BSWAP_64, "0xXXXXXXXXXXXXXXXX"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 

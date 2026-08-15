@@ -30355,6 +30355,25 @@ my @translate_accept_blocks = (
 		aliases => ['100'],
 		expect => 'Unknown warning: 100',
 	},
+
+	{
+		name => 'PCAP_BSWAP_16',
+		cfunc => 'PCAP_BSWAP_16',
+		aliases => ['0x1a2b'],
+		expect => '0x2b1a',
+	},
+	{
+		name => 'PCAP_BSWAP_32',
+		cfunc => 'PCAP_BSWAP_32',
+		aliases => ['0x1a2b3c4d'],
+		expect => '0x4d3c2b1a',
+	},
+	{
+		name => 'PCAP_BSWAP_64',
+		cfunc => 'PCAP_BSWAP_64',
+		aliases => ['0x1a2b3c4d5e6f7a8b'],
+		expect => '0x8b7a6f5e4d3c2b1a',
+	},
 );
 
 # This works similar to @filter_reject_tests.  In each array element the hash
