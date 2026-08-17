@@ -65,7 +65,6 @@ static int
 enumerate_bpf_space(bool (*is_valid)(const struct bpf_insn *))
 {
 	struct bpf_insn insn = {
-		.code = 0x0000,
 		/*
 		 * Use small offsets to keep the resulting jump labels within
 		 * the resulting mock program.
@@ -80,16 +79,20 @@ enumerate_bpf_space(bool (*is_valid)(const struct bpf_insn *))
 		.k = 15,
 	};
 	uint16_t found = 0;
-	do {
+	for (insn.code = 0; ; insn.code++) {
 		if (BPF_CLASS(insn.code) != BPF_RET && is_valid(&insn))
 			printf(BPF_IMAGE_FORMAT, bpf_image(&insn, found++),
 			       insn.code);
-	} while (insn.code++ != UINT16_MAX);
-	do {
+		if (insn.code == UINT16_MAX)
+			break;
+	}
+	for (insn.code = 0; ; insn.code++) {
 		if (BPF_CLASS(insn.code) == BPF_RET && is_valid(&insn))
 			printf(BPF_IMAGE_FORMAT, bpf_image(&insn, found++),
 			       insn.code);
-	} while (insn.code++ != UINT16_MAX);
+		if (insn.code == UINT16_MAX)
+			break;
+	}
 	return EX_OK;
 }
 
