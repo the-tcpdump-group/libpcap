@@ -18,6 +18,15 @@
 /* Define to 1 if you have the `asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
+/* Define to 1 if you have the '__builtin_bswap16' compiler builtin. */
+#cmakedefine HAVE_BUILTIN_BSWAP16
+
+/* Define to 1 if you have the '__builtin_bswap32' compiler builtin. */
+#cmakedefine HAVE_BUILTIN_BSWAP32
+
+/* Define to 1 if you have the '__builtin_bswap64' compiler builtin. */
+#cmakedefine HAVE_BUILTIN_BSWAP64
+
 /* Define to 1 if you have the '__builtin_ctz' compiler builtin. */
 #cmakedefine HAVE_BUILTIN_CTZ
 

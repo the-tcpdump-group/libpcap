@@ -109,6 +109,10 @@ pcap_set_print_dot_graph(int value)
  * after midnight, and don't pass zero to it.
  *
  * This is the same as the count of trailing zeroes in the word.
+ *
+ * Because lowest_set_bit() is intended to be used as a function, to define
+ * HAVE_BUILTIN_CTZ it is sufficient to verify that __builtin_ctz() can return
+ * a value (the builtin does not have to evaluate to a compile-time constant).
  */
 #ifdef HAVE_BUILTIN_CTZ
   #define lowest_set_bit(mask) ((u_int)__builtin_ctz(mask))

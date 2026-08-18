@@ -2843,6 +2843,48 @@ endif()
 # To get a correct builtin test result, the source must be compiled and linked,
 # which in CMake means check_c_source_compiles().
 #
+# Different builtins require different methods of testing, see the comments
+# about HAVE_BUILTIN_BSWAPnn in pcap-util.h and HAVE_BUILTIN_CTZ in optimize.c.
+#
+check_c_source_compiles(
+"int main(int argc, char **argv)
+{
+	switch (argc) {
+	case __builtin_bswap16(0):
+		return 0;
+	default:
+		return 1;
+	}
+}
+"
+    HAVE_BUILTIN_BSWAP16)
+
+check_c_source_compiles(
+"int main(int argc, char **argv)
+{
+	switch (argc) {
+	case __builtin_bswap32(0):
+		return 0;
+	default:
+		return 1;
+	}
+}
+"
+    HAVE_BUILTIN_BSWAP32)
+
+check_c_source_compiles(
+"int main(int argc, char **argv)
+{
+	switch (argc) {
+	case __builtin_bswap64(0):
+		return 0;
+	default:
+		return 1;
+	}
+}
+"
+    HAVE_BUILTIN_BSWAP64)
+
 check_c_source_compiles("int main(void) {return __builtin_ctz(1);}" HAVE_BUILTIN_CTZ)
 
 #
