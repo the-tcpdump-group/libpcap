@@ -286,12 +286,7 @@ test_PCAP_BSWAP_64(const char *arg)
 	snprintf(buf, sizeof(buf), "0x%016" PRIx64, i);
 	if (pcapint_strcasecmp(buf, arg))
 		goto fail;
-	/*
-	 * The current definition of PCAP_BSWAP_64() is an unsigned long long,
-	 * which does not match PRIx64 on 64-bit architectures, so cast it to
-	 * an uint64_t, which does match, to avoid a -Wformat.
-	 */
-	printf("OK: 0x%016" PRIx64 "\n", (uint64_t)PCAP_BSWAP_64(i));
+	printf("OK: 0x%016" PRIx64 "\n", PCAP_BSWAP_64(i));
 	return EX_OK;
 fail:
 	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
