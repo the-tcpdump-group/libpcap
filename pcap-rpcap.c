@@ -1231,9 +1231,39 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		goto error_nodiscard;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf,
-	    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
-	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn));
+	{
+		size_t filter_size;
+
+		if (fp->fcode.bf_len >
+		    SIZE_MAX / sizeof(struct rpcap_filterbpf_insn)) {
+			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "BPF filter too large");
+			goto error_nodiscard;
+		}
+
+		filter_size =
+		    fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn);
+
+		if (filter_size > SIZE_MAX - sizeof(struct rpcap_filter)) {
+			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "BPF filter too large");
+			goto error_nodiscard;
+		}
+
+		filter_size += sizeof(struct rpcap_filter);
+
+		if (filter_size > SIZE_MAX - sizeof(struct rpcap_startcapreq)) {
+			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+			    "BPF filter too large");
+			goto error_nodiscard;
+		}
+
+		filter_size += sizeof(struct rpcap_startcapreq);
+
+		rpcap_createhdr((struct rpcap_header *) sendbuf,
+		    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
+		    filter_size);
+	}
 
 	/* Fill the structure needed to open an adapter remotely */
 	startcapreq = (struct rpcap_startcapreq *) &sendbuf[sendbufidx];
@@ -1424,6 +1454,11 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	 * namely the length of the message header plus the length
 	 * of the packet header plus the snapshot length.
 	 */
+	if (fp->snapshot > SIZE_MAX - sizeof(struct rpcap_header) - sizeof(struct rpcap_pkthdr)) {
+		pcapint_fmt_errmsg_for_errno(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "snapshot length too large");
+		goto error;
+	}
 	fp->bufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + fp->snapshot;
 
 	fp->buffer = (u_char *)malloc(fp->bufsize);
@@ -1684,6 +1719,8 @@ pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter)
 			filter = "";
 
 		pr->currentfilter = strdup(filter);
+		if (pr->currentfilter == NULL)
+			return;
 	}
 }
 

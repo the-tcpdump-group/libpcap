@@ -347,9 +347,13 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 	while (cmsg) {
 		switch (cmsg->cmsg_type) {
 			case HCI_CMSG_DIR:
+				if (cmsg->cmsg_len < CMSG_LEN(sizeof(in)))
+					break;
 				memcpy(&in, CMSG_DATA(cmsg), sizeof in);
 				break;
 			case HCI_CMSG_TSTAMP:
+				if (cmsg->cmsg_len < CMSG_LEN(sizeof(pkth.ts)))
+					break;
 				memcpy(&pkth.ts, CMSG_DATA(cmsg),
 					sizeof pkth.ts);
 				break;

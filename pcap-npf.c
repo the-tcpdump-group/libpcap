@@ -189,6 +189,7 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 #define PACKET_OID_DATA_LENGTH(_DataLength) \
 	(offsetof(PACKET_OID_DATA, Data) + _DataLength)
 #endif
+#define PACKET_OID_DATA_LENGTH_MAX (1024 * 1024)
 static int
 oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
     char *errbuf)
@@ -199,6 +200,16 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
 	 * It should be big enough to hold "*lenp" bytes of data;
 	 */
+	if (*lenp > PACKET_OID_DATA_LENGTH_MAX) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "OID data length too large");
+		return (PCAP_ERROR);
+	}
+	if (*lenp > SIZE_MAX - offsetof(PACKET_OID_DATA, Data)) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "OID data length too large");
+		return (PCAP_ERROR);
+	}
 	oid_data_arg = malloc(PACKET_OID_DATA_LENGTH(*lenp));
 	if (oid_data_arg == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -210,7 +221,7 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	 * No need to copy the data - we're doing a fetch.
 	 */
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
+	oid_data_arg->Length = (ULONG)(*lenp);
 	if (!PacketRequest(adapter, FALSE, oid_data_arg)) {
 		pcapint_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
 		    GetLastError(), "Error calling PacketRequest");
@@ -219,8 +230,12 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	}
 
 	/*
-	 * Get the length actually supplied.
+	 * Get the length actually supplied; clamp to the original
+	 * buffer size to prevent overflow if the driver returns a
+	 * larger value.
 	 */
+	if (oid_data_arg->Length > *lenp)
+		oid_data_arg->Length = (ULONG)(*lenp);
 	*lenp = oid_data_arg->Length;
 
 	/*
@@ -396,6 +411,16 @@ pcap_oid_set_request_npf(pcap_t *p, bpf_u_int32 oid, const void *data,
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
 	 * It should be big enough to hold "*lenp" bytes of data;
 	 */
+	if (*lenp > PACKET_OID_DATA_LENGTH_MAX) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "OID data length too large");
+		return (PCAP_ERROR);
+	}
+	if (*lenp > SIZE_MAX - offsetof(PACKET_OID_DATA, Data)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "OID data length too large");
+		return (PCAP_ERROR);
+	}
 	oid_data_arg = malloc(PACKET_OID_DATA_LENGTH(*lenp));
 	if (oid_data_arg == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -404,7 +429,7 @@ pcap_oid_set_request_npf(pcap_t *p, bpf_u_int32 oid, const void *data,
 	}
 
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
+	oid_data_arg->Length = (ULONG)(*lenp);
 	memcpy(oid_data_arg->Data, data, *lenp);
 	if (!PacketRequest(pw->adapter, TRUE, oid_data_arg)) {
 		pcapint_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1940,6 +1965,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	 * pass that to it.
 	 */
 	name_copy = strdup(name);
+	if (name_copy == NULL)
+		return (0);
 	adapter = PacketOpenAdapter(name_copy);
 	free(name_copy);
 	if (adapter == NULL) {

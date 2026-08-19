@@ -4062,7 +4062,10 @@ pcap_sendqueue_destroy(pcap_send_queue *queue)
 int
 pcap_sendqueue_queue(pcap_send_queue *queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 {
-	if (queue->len + sizeof(struct pcap_pkthdr) + pkt_header->caplen > queue->maxlen){
+	if (queue->len > queue->maxlen ||
+	    queue->maxlen - queue->len < sizeof(struct pcap_pkthdr) ||
+	    pkt_header->caplen >
+	        queue->maxlen - queue->len - sizeof(struct pcap_pkthdr)){
 		return (-1);
 	}
 

@@ -7031,6 +7031,10 @@ stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
 		 * Not a valid number; try looking it up as a port.
 		 */
 		cpy = malloc(string_size + 1);	/* +1 for terminating '\0' */
+		if (cpy == NULL) {
+			longjmp(cstate->top_ctx, 1);
+			/*NOTREACHED*/
+		}
 		memcpy(cpy, string, string_size);
 		cpy[string_size] = '\0';
 		tcp_port = nametoport(cstate, cpy, IPPROTO_TCP);

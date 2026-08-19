@@ -369,12 +369,27 @@ DIAG_ON_NARROWING
 	nfg->res_id = htons(res_id);
 
 	if (mynfa) {
-		struct nfattr *nfa = (struct nfattr *) (buf + NLMSG_ALIGN(nlh->nlmsg_len));
+		size_t offset;
+		size_t attr_len;
+		size_t needed;
 
+		offset = NLMSG_ALIGN(nlh->nlmsg_len);
+		if (offset > sizeof(buf))
+			return -1;
+
+		attr_len = NFA_LENGTH(mynfa->nfa_len);
+		if (attr_len > sizeof(buf) - offset)
+			return -1;
+
+		needed = offset + NFA_ALIGN(attr_len);
+		if (needed > sizeof(buf))
+			return -1;
+
+		struct nfattr *nfa = (struct nfattr *)(buf + offset);
 		nfa->nfa_type = mynfa->nfa_type;
 		nfa->nfa_len = NFA_LENGTH(mynfa->nfa_len);
 		memcpy(NFA_DATA(nfa), mynfa->data, mynfa->nfa_len);
-		nlh->nlmsg_len = NLMSG_ALIGN(nlh->nlmsg_len) + NFA_ALIGN(nfa->nfa_len);
+		nlh->nlmsg_len = needed;
 	}
 
 	memset(&snl, 0, sizeof(snl));

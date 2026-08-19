@@ -47,8 +47,10 @@ struct pcap_options {
 pcap_options *pcap_alloc_option(void)
 {
         pcap_options *po = malloc(sizeof(struct pcap_options));
+        if (po == NULL)
+                return NULL;
         memset(po, 0, sizeof(struct pcap_options));
-        return po;  // caller has to check for NULL anyway.
+        return po;
 }
 
 void pcap_free_option(pcap_options *po)
@@ -66,6 +68,8 @@ int pcap_set_option_string(pcap_options *po,
                            const char *value)
 {
         const char *saved = strdup(value);
+        if (saved == NULL)
+                return -1;
         switch(pon) {
         case PON_TSTAMP_PRECISION:
                 free((void *)saved);

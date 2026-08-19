@@ -159,6 +159,10 @@ static void print_debug(void *this_fn, void *call_site, action_type action)
 		}
 
 		symtab = (asymbol **)malloc((size_t)symsize);
+		if (symtab == NULL) {
+			bfd_perror("malloc");
+			return;
+		}
 		symcount = bfd_canonicalize_symtab(abfd, symtab);
 		if (symcount < 0) {
 			free(symtab);
