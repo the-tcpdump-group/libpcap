@@ -2017,8 +2017,8 @@ pcap_activate_bpf(pcap_t *p)
 					status = PCAP_ERROR;
 					goto bad;
 				}
-				strcpy(wltdev, "wlt");
-				strcat(wltdev, p->opt.device + 2);
+				pcapint_strlcpy(wltdev, "wlt", strlen(p->opt.device) + 2);
+				pcapint_strlcat(wltdev, p->opt.device + 2, strlen(p->opt.device) + 2);
 				free(p->opt.device);
 				p->opt.device = wltdev;
 			}
@@ -2800,8 +2800,8 @@ check_bpf_bindable(const char *name)
 			    errno, "malloc");
 			return (-1);
 		}
-		strcpy(en_name, "en");
-		strcat(en_name, name + 3);
+		pcapint_strlcpy(en_name, "en", en_name_len + 1);
+		pcapint_strlcat(en_name, name + 3, en_name_len + 1);
 		fd = bpf_open_and_bind(en_name, errbuf);
 		free(en_name);
 	} else

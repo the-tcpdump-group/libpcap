@@ -626,6 +626,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					caplen += MTP2_HDR_LEN;
 					packet_len += MTP2_HDR_LEN;
 
+					if (caplen > sizeof(TempPkt) - MTP2_HDR_LEN) {
+						caplen = sizeof(TempPkt) - MTP2_HDR_LEN;
+					}
 					TempPkt[MTP2_SENT_OFFSET] = 0;
 					TempPkt[MTP2_ANNEX_A_USED_OFFSET] = MTP2_ANNEX_A_USED_UNKNOWN;
 					*(TempPkt+MTP2_LINK_NUMBER_OFFSET) = ((header->rec.mc_hdlc.mc_header>>16)&0x01);

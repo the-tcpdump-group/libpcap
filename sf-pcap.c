@@ -857,7 +857,7 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	 * attempted, but it is better than nothing.
 	 */
 	if (fwrite(&sf_hdr, sizeof(sf_hdr), 1, f) == 1) {
-		(void)fwrite(sp, h->caplen, 1, f);
+		fwrite(sp, h->caplen, 1, f);
 	}
 }
 

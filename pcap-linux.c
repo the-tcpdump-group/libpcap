@@ -3405,6 +3405,12 @@ retry:
 	}
 
 	/* memory map the rx ring */
+	if (req.tp_block_nr != 0 && req.tp_block_size > SIZE_MAX / req.tp_block_nr) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "rx ring size overflow");
+		destroy_ring(handle);
+		return PCAP_ERROR;
+	}
 	handlep->mmapbuflen = req.tp_block_nr * req.tp_block_size;
 #ifdef MAP_32BIT
 	if (pcapint_mmap_32bit) flags |= MAP_32BIT;
@@ -3421,6 +3427,12 @@ retry:
 
 	/* allocate a ring for each frame header pointer*/
 	handle->cc = req.tp_frame_nr;
+	if (req.tp_frame_nr > SIZE_MAX / sizeof(union thdr *)) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "frame header ring size overflow");
+		destroy_ring(handle);
+		return PCAP_ERROR;
+	}
 	handle->buffer = malloc(handle->cc * sizeof(union thdr *));
 	if (!handle->buffer) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -3496,7 +3508,12 @@ pcapint_oneshot_linux(u_char *user, const struct pcap_pkthdr *h,
 	struct pcap_linux *handlep = handle->priv;
 
 	*sp->hdr = *h;
-	memcpy(handlep->oneshot_buffer, bytes, h->caplen);
+	{
+		size_t copylen = h->caplen;
+		if (copylen > (size_t)handle->snapshot)
+			copylen = (size_t)handle->snapshot;
+		memcpy(handlep->oneshot_buffer, bytes, copylen);
+	}
 	*sp->pkt = handlep->oneshot_buffer;
 }
 
@@ -4344,7 +4361,7 @@ static int pcap_handle_packet_mmap(
 	 * the memory-mapped buffer.
 	 */
 	if (pcaphdr.caplen > (bpf_u_int32)handle->snapshot)
-		pcaphdr.caplen = handle->snapshot;
+		pcaphdr.caplen = (bpf_u_int32)handle->snapshot;
 
 	/* pass the packet to the user */
 	callback(user, &pcaphdr, bp);
@@ -5925,6 +5942,11 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode)
 	 * Make a copy of the filter, and modify that copy if
 	 * necessary.
 	 */
+	if (handle->fcode.bf_len > SIZE_MAX / sizeof(*handle->fcode.bf_insns)) {
+		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BPF filter too large");
+		return -1;
+	}
 	prog_size = sizeof(*handle->fcode.bf_insns) * handle->fcode.bf_len;
 	len = handle->fcode.bf_len;
 	f = (struct bpf_insn *)malloc(prog_size);

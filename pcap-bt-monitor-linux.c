@@ -145,7 +145,8 @@ DIAG_ON_SIGN_COMPARE
         if (cmsg->cmsg_level != SOL_SOCKET) continue;
 
         if (cmsg->cmsg_type == SCM_TIMESTAMP) {
-            memcpy(&pkth.ts, CMSG_DATA(cmsg), sizeof(pkth.ts));
+            if (cmsg->cmsg_len >= CMSG_LEN(sizeof(pkth.ts)))
+                memcpy(&pkth.ts, CMSG_DATA(cmsg), sizeof(pkth.ts));
         }
     }
 

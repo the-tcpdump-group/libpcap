@@ -349,6 +349,12 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * Copy the stuff we've read to the buffer, and read the rest
 	 * of the block.
 	 */
+	if (bhdr.total_length < sizeof(bhdr)) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "block total length %u < minimum %lu",
+		    bhdr.total_length, (unsigned long)sizeof(bhdr));
+		return (-1);
+	}
 	memcpy(p->buffer, &bhdr, sizeof(bhdr));
 	bdata = p->buffer + sizeof(bhdr);
 	data_remaining = bhdr.total_length - sizeof(bhdr);
