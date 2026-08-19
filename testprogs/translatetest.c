@@ -250,7 +250,7 @@ test_PCAP_BSWAP_16(const char *arg)
 		goto fail;
 	char buf[64];
 	snprintf(buf, sizeof(buf), "0x%04x", (uint16_t)i);
-	if (strcasecmp(buf, arg))
+	if (pcapint_strcasecmp(buf, arg))
 		goto fail;
 	printf("OK: 0x%04x\n", PCAP_BSWAP_16(i));
 	return EX_OK;
@@ -267,7 +267,7 @@ test_PCAP_BSWAP_32(const char *arg)
 		goto fail;
 	char buf[64];
 	snprintf(buf, sizeof(buf), "0x%08x", (uint32_t)i);
-	if (strcasecmp(buf, arg))
+	if (pcapint_strcasecmp(buf, arg))
 		goto fail;
 	printf("OK: 0x%08x\n", PCAP_BSWAP_32(i));
 	return EX_OK;
@@ -284,7 +284,7 @@ test_PCAP_BSWAP_64(const char *arg)
 		goto fail;
 	char buf[64];
 	snprintf(buf, sizeof(buf), "0x%016" PRIx64, i);
-	if (strcasecmp(buf, arg))
+	if (pcapint_strcasecmp(buf, arg))
 		goto fail;
 	/*
 	 * The current definition of PCAP_BSWAP_64() is an unsigned long long,
