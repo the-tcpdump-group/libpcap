@@ -1270,7 +1270,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 		rpcap_createhdr((struct rpcap_header *) sendbuf,
 		    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
-		    filter_size);
+		    (uint32_t)filter_size);
 	}
 
 	/* Fill the structure needed to open an adapter remotely */
