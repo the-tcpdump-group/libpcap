@@ -1261,6 +1261,13 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 		filter_size += sizeof(struct rpcap_startcapreq);
 
+
+        if (filter_size > UINT32_MAX) {
+                snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+                    "BPF filter too large");
+                goto error_nodiscard;
+        }
+
 		rpcap_createhdr((struct rpcap_header *) sendbuf,
 		    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
 		    filter_size);
