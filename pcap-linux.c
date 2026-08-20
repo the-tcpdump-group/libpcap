@@ -3427,12 +3427,14 @@ retry:
 
 	/* allocate a ring for each frame header pointer*/
 	handle->cc = req.tp_frame_nr;
-	if ((size_t)req.tp_frame_nr > SIZE_MAX / sizeof(union thdr *)) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "frame header ring size overflow");
-		destroy_ring(handle);
-		return PCAP_ERROR;
-	}
+#if SIZE_MAX < UINT_MAX
+   if (req.tp_frame_nr > SIZE_MAX / sizeof(union thdr *)) {
+           pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+               errno, "frame header ring size overflow");
+           destroy_ring(handle);
+           return PCAP_ERROR;
+   }
+#endif
 	handle->buffer = malloc(handle->cc * sizeof(union thdr *));
 	if (!handle->buffer) {
 		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -5942,11 +5944,13 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode)
 	 * Make a copy of the filter, and modify that copy if
 	 * necessary.
 	 */
-	if ((size_t)handle->fcode.bf_len > SIZE_MAX / sizeof(*handle->fcode.bf_insns)) {
-		pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "BPF filter too large");
-		return -1;
-	}
+#if SIZE_MAX < UINT_MAX
+   if (handle->fcode.bf_len > SIZE_MAX / sizeof(*handle->fcode.bf_insns)) {
+           pcapint_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+               errno, "BPF filter too large");
+           return -1;
+   }
+#endif
 	prog_size = sizeof(*handle->fcode.bf_insns) * handle->fcode.bf_len;
 	len = handle->fcode.bf_len;
 	f = (struct bpf_insn *)malloc(prog_size);
