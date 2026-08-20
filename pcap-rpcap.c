@@ -1233,13 +1233,14 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	{
 		size_t filter_size;
-
-		if (fp->fcode.bf_len >
-		    SIZE_MAX / sizeof(struct rpcap_filterbpf_insn)) {
-			snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
-			    "BPF filter too large");
-			goto error_nodiscard;
-		}
+#if SIZE_MAX < UINT_MAX
+        if (fp->fcode.bf_len >
+            SIZE_MAX / sizeof(struct rpcap_filterbpf_insn)) {
+                snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+                    "BPF filter too large");
+                goto error_nodiscard;
+        }
+#endif
 
 		filter_size =
 		    fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn);
@@ -1454,7 +1455,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	 * namely the length of the message header plus the length
 	 * of the packet header plus the snapshot length.
 	 */
-	if (fp->snapshot > SIZE_MAX - sizeof(struct rpcap_header) - sizeof(struct rpcap_pkthdr)) {
+	if ((size_t)fp->snapshot > SIZE_MAX - sizeof(struct rpcap_header) - sizeof(struct rpcap_pkthdr)) {
 		pcapint_fmt_errmsg_for_errno(fp->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "snapshot length too large");
 		goto error;
