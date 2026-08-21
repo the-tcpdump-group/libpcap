@@ -1367,7 +1367,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	if (res == -1)
 	{
 		sock_geterrmsg(fp->errbuf, PCAP_ERRBUF_SIZE,
-		    "pcap_startcapture_remote(): getsockopt() failed");
+		    "%s(): getsockopt() failed", __func__);
 		goto error;
 	}
 
@@ -3494,8 +3494,8 @@ static int rpcap_check_msg_type(PCAP_SOCKET sock, SSL *ssl, uint8_t request_type
 			{
 				/* This should not happen. */
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "rpcap_check_msg_type called for request message with type %u",
-				    request_type);
+				    "%s called for request message with type %u",
+				    __func__, request_type);
 				return -1;
 			}
 			if (msg_type_string != NULL)

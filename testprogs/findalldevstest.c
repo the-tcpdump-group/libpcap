@@ -146,7 +146,7 @@ int main(int argc, char **argv)
       auth.password = password;
       if (pcap_findalldevs_ex(argv[1], &auth, &alldevs, errbuf) == -1)
       {
-        fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
+        fprintf(stderr, "Error in pcap_findalldevs_ex: %s\n", errbuf);
         exit(1);
       }
     }
