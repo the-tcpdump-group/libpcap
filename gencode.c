@@ -7457,11 +7457,14 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		} else {
 			mask = 0xffffffff;
 			if (s == NULL && q.addr == Q_NET) {
+				uint64_t mask64 = mask;
+
 				/* Promote short net number */
 				while (v && (v & 0xff000000) == 0) {
 					v <<= 8;
-					mask <<= 8;
+					mask64 <<= 8;
 				}
+				mask = (bpf_u_int32)mask64;
 			} else {
 				/* Promote short ipaddr */
 				v <<= 32 - vlen;
