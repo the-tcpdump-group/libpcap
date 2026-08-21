@@ -2682,7 +2682,7 @@ daemon_thrdatamain(void *ptr)
 	//
 	// Set the signal set to include just SIGUSR1, and block that
 	// signal; we only want it unblocked when we're reading
-	// packets - we dn't want any other system calls, such as
+	// packets - we don't want any other system calls, such as
 	// ones being used to send to the client or to log messages,
 	// to be interrupted.
 	//

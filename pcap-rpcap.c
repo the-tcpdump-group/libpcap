@@ -368,7 +368,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout
 /*
  * This function reads a packet from the network socket.  It does not
  * deliver the packet to a pcap_dispatch()/pcap_loop() callback (hence
- * the "nocb" string into its name).
+ * the "nocb" string in its name).
  *
  * This function is called by pcap_read_rpcap().
  *
