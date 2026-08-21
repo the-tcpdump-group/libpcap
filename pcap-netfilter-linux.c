@@ -137,7 +137,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 * is also a u_int.
 		 */
 		cc = (u_int)read_ret;
-		bp = (unsigned char *)handle->buffer;
+		bp = handle->buffer;
 	} else
 		bp = handle->bp;
 
