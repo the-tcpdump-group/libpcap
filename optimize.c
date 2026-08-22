@@ -999,7 +999,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 * comparison against a constant, and nobody uses the value
 	 * we leave in the A register at the end of a block, and
 	 * the operation preceding the comparison is an arithmetic
-	 * operation, we can sometime optimize it away.
+	 * operation, we can sometimes optimize it away.
 	 */
 	if (b->s.code == (BPF_JMP|BPF_JEQ|BPF_K) &&
 	    !ATOMELEM(b->out_use, A_ATOM)) {
@@ -1117,6 +1117,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	val = b->val[X_ATOM];
 	if (opt_state->vmap[val].is_const && BPF_SRC(b->s.code) == BPF_X) {
 		bpf_u_int32 v = opt_state->vmap[val].const_val;
+		// Make "BPF_SRC(b->s.code) == BPF_K" true.
 		b->s.code &= ~BPF_X;
 		b->s.k = v;
 	}
@@ -2356,7 +2357,7 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 {
 	struct block *p;
 	u_int i, j;
-	int done1; /* don't shadow global */
+	int done1;
  top:
 	done1 = 1;
 	for (i = 0; i < opt_state->n_blocks; ++i)
@@ -3018,11 +3019,13 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
 	dot_dump_edge(ic, JF(block), out);
 }
 
-/* Output the block CFG using graphviz/DOT language
- * In the CFG, block's code, value index for each registers at EXIT,
- * and the jump relationship is show.
+/*
+ * Output the filter program's CFG using Graphviz DOT language.  Show each
+ * block with the instructions and every known value index for the registers at
+ * exit.  Show all jumps between the blocks.
  *
- * example DOT for BPF `ip src host 1.1.1.1' is:
+ * Example DOT output for DLT_EN10MB and the expression "ip src host 1.1.1.1":
+ * ----------------
     digraph BPF {
 	block0 [shape=ellipse, id="block-0" label="BLOCK0\n\n(000) ldh      [12]\n(001) jeq      #0x800           jt 2	jf 5" tooltip="val[A]=0 val[X]=0"];
 	block1 [shape=ellipse, id="block-1" label="BLOCK1\n\n(002) ld       [26]\n(003) jeq      #0x1010101       jt 4	jf 5" tooltip="val[A]=0 val[X]=0"];
@@ -3033,9 +3036,14 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
 	"block1":se -> "block2":n [label="T"];
 	"block1":sw -> "block3":n [label="F"];
     }
+ * ----------------
+ * After installing Graphviz from a package or directly from [1], save the DOT
+ * output as bpf.dot and run `dot -Tpng -O bpf.dot' to produce an image.
+ * Alternatively, use XDot to browse .dot files directly or BPF Exam [2] to see
+ * multiple CFGs on one web page.
  *
- *  After install graphviz on https://www.graphviz.org/, save it as bpf.dot
- *  and run `dot -Tpng -O bpf.dot' to draw the graph.
+ * 1: https://www.graphviz.org/
+ * 2: https://www.tcpdump.org/bpfexam/
  */
 static int
 dot_dump(struct icode *ic, char *errbuf)
