@@ -334,7 +334,7 @@ static void PCAP_NORETURN conv_error(conv_state_t *, const char *, ...)
 
 static void intern_blocks(opt_state_t *, struct icode *);
 
-static void find_inedges(opt_state_t *, struct block *);
+static void find_inedges(opt_state_t *, const struct block *);
 #ifdef BDEBUG
 static void opt_dump(opt_state_t *, struct icode *);
 #endif
@@ -418,7 +418,7 @@ find_dom(opt_state_t *opt_state, struct block *root)
 }
 
 static void
-propedom(opt_state_t *opt_state, struct edge *ep)
+propedom(const opt_state_t *opt_state, struct edge *ep)
 {
 	SET_INSERT(ep->edom, ep->id);
 	if (ep->succ) {
@@ -467,7 +467,7 @@ find_edom(opt_state_t *opt_state, struct block *root)
  * Assumes graph has been leveled.
  */
 static void
-find_closure(opt_state_t *opt_state, struct block *root)
+find_closure(opt_state_t *opt_state, const struct block *root)
 {
 	int level;
 	struct block *b;
@@ -500,7 +500,7 @@ find_closure(opt_state_t *opt_state, struct block *root)
  * The implementation should probably change to an array access.
  */
 static int
-atomuse(struct stmt *s)
+atomuse(const struct stmt *s)
 {
 	int c = s->code;
 
@@ -645,7 +645,7 @@ compute_local_ud(struct block *b)
  * Assume graph is already leveled.
  */
 static void
-find_ud(opt_state_t *opt_state, struct block *root)
+find_ud(const opt_state_t *opt_state, const struct block *root)
 {
 	int i, maxlevel;
 	struct block *p;
@@ -1579,7 +1579,7 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
  * from 'b'.
  */
 static int
-use_conflict(struct block *b, struct block *succ)
+use_conflict(const struct block *b, const struct block *succ)
 {
 	int atom;
 	atomset use = succ->out_use;
@@ -2134,7 +2134,7 @@ link_inedge(struct edge *parent, struct block *child)
 }
 
 static void
-find_inedges(opt_state_t *opt_state, struct block *root)
+find_inedges(opt_state_t *opt_state, const struct block *root)
 {
 	u_int i;
 	int level;
