@@ -318,7 +318,7 @@ typedef struct {
 	/*
 	 * Some pointers used to convert the basic block form of the code,
 	 * into the array form that BPF requires.  'fstart' will point to
-	 * the malloc'd array while 'ftail' is used during the recursive
+	 * the allocated array while 'ftail' is used during the recursive
 	 * traversal.
 	 */
 	struct bpf_insn *fstart;
@@ -2525,14 +2525,14 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	size_t block_memsize, edge_memsize;
 
 	/*
-	 * First, count the blocks, so we can malloc an array to map
+	 * First, count the blocks, so we can allocate an array to map
 	 * block number to block.  Then, put the blocks into the array.
 	 */
 	unMarkAll(ic);
 	n = count_blocks(ic, ic->root);
 	opt_state->blocks = (struct block **)calloc(n, sizeof(*opt_state->blocks));
 	if (opt_state->blocks == NULL)
-		opt_error(opt_state, "malloc");
+		opt_error(opt_state, "calloc");
 	unMarkAll(ic);
 	opt_state->n_blocks = 0;
 	number_blks_r(opt_state, ic, ic->root);
@@ -2552,7 +2552,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	}
 	opt_state->edges = (struct edge **)calloc(opt_state->n_edges, sizeof(*opt_state->edges));
 	if (opt_state->edges == NULL) {
-		opt_error(opt_state, "malloc");
+		opt_error(opt_state, "calloc");
 	}
 
 	/*
@@ -2560,7 +2560,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	 */
 	opt_state->levels = (struct block **)calloc(opt_state->n_blocks, sizeof(*opt_state->levels));
 	if (opt_state->levels == NULL) {
-		opt_error(opt_state, "malloc");
+		opt_error(opt_state, "calloc");
 	}
 
 	opt_state->edgewords = opt_state->n_edges / BITS_PER_WORD + 1;
@@ -2659,11 +2659,11 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	opt_state->maxval = 3 * max_stmts;
 	opt_state->vmap = (struct vmapinfo *)calloc(opt_state->maxval, sizeof(*opt_state->vmap));
 	if (opt_state->vmap == NULL) {
-		opt_error(opt_state, "malloc");
+		opt_error(opt_state, "calloc");
 	}
 	opt_state->vnode_base = (struct valnode *)calloc(opt_state->maxval, sizeof(*opt_state->vnode_base));
 	if (opt_state->vnode_base == NULL) {
-		opt_error(opt_state, "malloc");
+		opt_error(opt_state, "calloc");
 	}
 }
 
