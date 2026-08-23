@@ -2327,14 +2327,14 @@ static int
 eq_slist(struct slist *x, struct slist *y)
 {
 	for (;;) {
-		while (x && x->s.code == NOP)
-			x = x->next;
-		while (y && y->s.code == NOP)
-			y = y->next;
-		if (x == 0)
-			return y == 0;
-		if (y == 0)
-			return x == 0;
+		x = this_op(x);
+		y = this_op(y);
+		/*
+		 * If at least one list has been exhausted, return true iff
+		 * both lists have been exhausted.
+		 */
+		if (! (x && y))
+			return ! (x || y);
 		if (x->s.code != y->s.code || x->s.k != y->s.k)
 			return 0;
 		x = x->next;
