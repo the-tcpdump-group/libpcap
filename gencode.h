@@ -286,6 +286,7 @@ struct block {
  * A value of 0 for val[i] means the value is unknown.
  */
 #define VAL_UNKNOWN	0
+#define IS_KNOWN(block, atom) ((block)->val[(atom)] != VAL_UNKNOWN)
 
 struct arth {
 	struct block *b;	/* protocol checks */

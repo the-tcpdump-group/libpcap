@@ -32,6 +32,7 @@
 #include <string.h>
 #include <limits.h> /* for SIZE_MAX */
 #include <errno.h>
+#include <stdbool.h>
 
 #include "pcap-int.h"
 
@@ -2970,31 +2971,51 @@ pcapint_install_bpf_program(pcap_t *p, struct bpf_program *fp)
 
 #ifdef BDEBUG
 static void
-dot_dump_node(struct icode *ic, struct block *block, struct bpf_program *prog,
-    FILE *out)
+dot_dump_node(const struct icode *ic, struct block *block,
+    const struct bpf_program *prog, FILE *out)
 {
-	int icount, noffset;
-	int i;
-
 	if (block == NULL || isMarked(ic, block))
 		return;
 	Mark(ic, block);
 
-	icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
-	noffset = min(block->offset + icount, (int)prog->bf_len);
+	{
+		const unsigned icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
+		const unsigned noffset = min(block->offset + icount, prog->bf_len);
 
-	fprintf(out, "\tblock%u [shape=ellipse, id=\"block-%u\" label=\"BLOCK%u\\n", block->id, block->id, block->id);
-	for (i = block->offset; i < noffset; i++) {
-		fprintf(out, "\\n%s", bpf_image(prog->bf_insns + i, i));
+		fprintf(out, "\tblock%u [label=\"BLOCK%u\\l\\l", block->id, block->id);
+		for (unsigned i = block->offset; i < noffset; i++)
+			fprintf(out, "%s\\l", bpf_image(prog->bf_insns + i, i));
+		fprintf(out, "\"");
 	}
-	fprintf(out, "\" tooltip=\"");
-	for (i = 0; i < BPF_MEMWORDS; i++)
-		if (block->val[i] != VAL_UNKNOWN)
-			fprintf(out, "val[%d]=%d ", i, block->val[i]);
-	fprintf(out, "val[A]=%d ", block->val[A_ATOM]);
-	fprintf(out, "val[X]=%d", block->val[X_ATOM]);
-	fprintf(out, "\"");
-	if (JT(block) == NULL)
+
+	{
+		bool tooltip = false;
+		tooltip |= IS_KNOWN(block, A_ATOM);
+		tooltip |= IS_KNOWN(block, X_ATOM);
+		for (unsigned i = 0; i < BPF_MEMWORDS; i++)
+			tooltip |= IS_KNOWN(block, i);
+
+		if (tooltip) {
+			const char *sep = "";
+			fprintf(out, ", tooltip=\"");
+			if (IS_KNOWN(block, A_ATOM)) {
+				fprintf(out, "val[A]=%d", block->val[A_ATOM]);
+				sep = " ";
+			}
+			if (IS_KNOWN(block, X_ATOM)) {
+				fprintf(out, "%sval[X]=%d", sep, block->val[X_ATOM]);
+				sep = " ";
+			}
+			for (unsigned i = 0; i < BPF_MEMWORDS; i++)
+				if (IS_KNOWN(block, i)) {
+					fprintf(out, "%sval[%d]=%d", sep, i, block->val[i]);
+					sep = " ";
+				}
+			fprintf(out, "\"");
+		}
+	}
+
+	if (JT(block) == NULL && JF(block) == NULL)
 		fprintf(out, ", peripheries=2");
 	fprintf(out, "];\n");
 
@@ -3003,18 +3024,18 @@ dot_dump_node(struct icode *ic, struct block *block, struct bpf_program *prog,
 }
 
 static void
-dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
+dot_dump_edge(const struct icode *ic, struct block *block, FILE *out)
 {
 	if (block == NULL || isMarked(ic, block))
 		return;
 	Mark(ic, block);
 
-	if (JT(block)) {
-		fprintf(out, "\t\"block%u\":se -> \"block%u\":n [label=\"T\"]; \n",
-				block->id, JT(block)->id);
-		fprintf(out, "\t\"block%u\":sw -> \"block%u\":n [label=\"F\"]; \n",
-			   block->id, JF(block)->id);
-	}
+	if (JT(block))
+		fprintf(out, "\t\"block%u\":se -> \"block%u\" [label=\"T\"];\n",
+		        block->id, JT(block)->id);
+	if (JF(block))
+		fprintf(out, "\t\"block%u\":sw -> \"block%u\" [label=\"F\"];\n",
+		        block->id, JF(block)->id);
 	dot_dump_edge(ic, JT(block), out);
 	dot_dump_edge(ic, JF(block), out);
 }
@@ -3027,14 +3048,16 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
  * Example DOT output for DLT_EN10MB and the expression "ip src host 1.1.1.1":
  * ----------------
     digraph BPF {
-	block0 [shape=ellipse, id="block-0" label="BLOCK0\n\n(000) ldh      [12]\n(001) jeq      #0x800           jt 2	jf 5" tooltip="val[A]=0 val[X]=0"];
-	block1 [shape=ellipse, id="block-1" label="BLOCK1\n\n(002) ld       [26]\n(003) jeq      #0x1010101       jt 4	jf 5" tooltip="val[A]=0 val[X]=0"];
-	block2 [shape=ellipse, id="block-2" label="BLOCK2\n\n(004) ret      #68" tooltip="val[A]=0 val[X]=0", peripheries=2];
-	block3 [shape=ellipse, id="block-3" label="BLOCK3\n\n(005) ret      #0" tooltip="val[A]=0 val[X]=0", peripheries=2];
-	"block0":se -> "block1":n [label="T"];
-	"block0":sw -> "block3":n [label="F"];
-	"block1":se -> "block2":n [label="T"];
-	"block1":sw -> "block3":n [label="F"];
+	node [shape=box, fontname="Courier"];
+	edge [fontname="Courier"];
+	block0 [label="BLOCK0\l\l(000) ldh      [12]\l(001) jeq      #0x800           jt 2	jf 5\l", tooltip="val[A]=1"];
+	block1 [label="BLOCK1\l\l(002) ld       [26]\l(003) jeq      #0x1010101       jt 4	jf 5\l", tooltip="val[A]=3"];
+	block2 [label="BLOCK2\l\l(004) ret      #262144\l", tooltip="val[A]=3", peripheries=2];
+	block3 [label="BLOCK3\l\l(005) ret      #0\l", peripheries=2];
+	"block0":se -> "block1" [label="T"];
+	"block0":sw -> "block3" [label="F"];
+	"block1":se -> "block2" [label="T"];
+	"block1":sw -> "block3" [label="F"];
     }
  * ----------------
  * After installing Graphviz from a package or directly from [1], save the DOT
@@ -3045,58 +3068,43 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
  * 1: https://www.graphviz.org/
  * 2: https://www.tcpdump.org/bpfexam/
  */
-static int
-dot_dump(struct icode *ic, char *errbuf)
+static void
+dot_dump(struct icode *ic, const struct bpf_program *f, FILE *out)
 {
-	struct bpf_program f;
-	FILE *out = stdout;
-
-	memset(bids, 0, sizeof bids);
-	f.bf_insns = icode_to_fcode(ic, ic->root, &f.bf_len, errbuf);
-	if (f.bf_insns == NULL)
-		return -1;
-
+	/*
+	 * Do not specify "strict" because in opt_loop() a graph can have two
+	 * edges between the same pair of nodes, e.g. after "JF(b) = JT(b);".
+	 */
 	fprintf(out, "digraph BPF {\n");
+	fprintf(out, "\tnode [shape=box, fontname=\"Courier\"];\n");
+	fprintf(out, "\tedge [fontname=\"Courier\"];\n");
 	unMarkAll(ic);
-	dot_dump_node(ic, ic->root, &f, out);
+	dot_dump_node(ic, ic->root, f, out);
 	unMarkAll(ic);
 	dot_dump_edge(ic, ic->root, out);
 	fprintf(out, "}\n");
-
-	free((char *)f.bf_insns);
-	return 0;
-}
-
-static int
-plain_dump(struct icode *ic, char *errbuf)
-{
-	struct bpf_program f;
-
-	memset(bids, 0, sizeof bids);
-	f.bf_insns = icode_to_fcode(ic, ic->root, &f.bf_len, errbuf);
-	if (f.bf_insns == NULL)
-		return -1;
-	bpf_dump(&f, 1);
-	putchar('\n');
-	free((char *)f.bf_insns);
-	return 0;
 }
 
 static void
 opt_dump(opt_state_t *opt_state, struct icode *ic)
 {
-	int status;
+	memset(bids, 0, sizeof(bids));
 	char errbuf[PCAP_ERRBUF_SIZE];
+	struct bpf_program f;
+	f.bf_insns = icode_to_fcode(ic, ic->root, &f.bf_len, errbuf);
+	if (f.bf_insns == NULL)
+		opt_error(opt_state, "%s: icode_to_fcode failed: %s", __func__, errbuf);
 
 	/*
 	 * If the CFG, in DOT format, is requested, output it rather than
 	 * the code that would be generated from that graph.
 	 */
 	if (pcap_print_dot_graph)
-		status = dot_dump(ic, errbuf);
-	else
-		status = plain_dump(ic, errbuf);
-	if (status == -1)
-		opt_error(opt_state, "%s: icode_to_fcode failed: %s", __func__, errbuf);
+		dot_dump(ic, &f, stdout);
+	else {
+		bpf_dump(&f, 1);
+		putchar('\n');
+	}
+	free(f.bf_insns);
 }
 #endif

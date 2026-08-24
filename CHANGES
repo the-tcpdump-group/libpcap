@@ -82,6 +82,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       man: Document devices, interfaces and "any" better.
       Add a README.qnx.md file.
       Improve documentation of TLS support in rpcapd man page.
+      Produce cleaner DOT in the optimizer debugging code.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
