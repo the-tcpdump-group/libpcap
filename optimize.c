@@ -33,6 +33,7 @@
 #include <limits.h> /* for SIZE_MAX */
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "pcap-int.h"
 
@@ -890,6 +891,22 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		    s->s.k == next->s.k) {
 			opt_state->done = 0;
 			next->s.code = BPF_MISC|BPF_TAX;
+			/*
+			 * The value of 'k' is still the scratch memory
+			 * register index from the "ldx M[k]", so if it is not
+			 * zero, the replacement "tax" is not identical to a
+			 * "tax" produced in pcap_parse().  Make it identical
+			 * to eliminate the need to reason whether it will be
+			 * equivalent in all possible contexts.
+			 *
+			 * Belt and braces: the replacement "tax" very likely
+			 * will have been optimised away before opt_loop()
+			 * returns, and even if it gets to eq_slist(), the
+			 * latter will ignore 'k' if it is irrelevant for the
+			 * opcode, but let's make bugs less likely elsewhere
+			 * too.
+			 */
+			next->s.k = 0;
 			/*
 			 * XXX - optimizer loop detection.
 			 */
@@ -2319,6 +2336,36 @@ mark_code(struct icode *ic)
 	make_marks(ic, ic->root);
 }
 
+// Return 1 iff opcode is valid and uses the 'k' field.
+bool
+pcapint_opcode_without_k(const uint16_t opcode)
+{
+	static const bool without_k[UINT8_MAX + 1] = {
+		[BPF_LD   | BPF_LEN         ] = true,
+		[BPF_LDX  | BPF_LEN         ] = true,
+		[BPF_JMP  | BPF_JA          ] = true, // no_optimize == 1
+		[BPF_JMP  | BPF_JEQ  | BPF_X] = true, // block exit only
+		[BPF_JMP  | BPF_JGT  | BPF_X] = true, // block exit only
+		[BPF_JMP  | BPF_JGE  | BPF_X] = true, // block exit only
+		[BPF_JMP  | BPF_JSET | BPF_X] = true, // block exit only
+		[BPF_ALU  | BPF_ADD  | BPF_X] = true,
+		[BPF_ALU  | BPF_SUB  | BPF_X] = true,
+		[BPF_ALU  | BPF_MUL  | BPF_X] = true,
+		[BPF_ALU  | BPF_DIV  | BPF_X] = true,
+		[BPF_ALU  | BPF_OR   | BPF_X] = true,
+		[BPF_ALU  | BPF_AND  | BPF_X] = true,
+		[BPF_ALU  | BPF_LSH  | BPF_X] = true,
+		[BPF_ALU  | BPF_RSH  | BPF_X] = true,
+		[BPF_ALU  | BPF_NEG         ] = true,
+		[BPF_ALU  | BPF_MOD  | BPF_X] = true,
+		[BPF_ALU  | BPF_XOR  | BPF_X] = true,
+		[BPF_RET  | BPF_A           ] = true,
+		[BPF_MISC | BPF_TAX         ] = true,
+		[BPF_MISC | BPF_TXA         ] = true,
+	};
+	return opcode <= UINT8_MAX && without_k[(uint8_t)opcode];
+}
+
 /*
  * True iff the two stmt lists load the same value from the packet into
  * the accumulator.
@@ -2335,7 +2382,13 @@ eq_slist(struct slist *x, struct slist *y)
 		 */
 		if (! (x && y))
 			return ! (x || y);
-		if (x->s.code != y->s.code || x->s.k != y->s.k)
+		/*
+		 * After this_op() neither of the two opcodes is NOP, so the
+		 * type cast is as safe as in convert_code_r().
+		 */
+		if (x->s.code != y->s.code ||
+		    (! pcapint_opcode_without_k((uint16_t)x->s.code) &&
+		     x->s.k != y->s.k))
 			return 0;
 		x = x->next;
 		y = y->next;

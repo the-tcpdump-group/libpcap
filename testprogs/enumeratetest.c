@@ -110,6 +110,18 @@ enumerate_bpf_image(void)
 	return enumerate_bpf_space(valid_bpf_image);
 }
 
+static bool
+insn_without_k(const struct bpf_insn *insn)
+{
+	return pcapint_opcode_without_k(insn->code);
+}
+
+static int
+enumerate_pcapint_opcode_without_k(void)
+{
+	return enumerate_bpf_space(insn_without_k);
+}
+
 /*
  * pcap_statustostr() returns a string for any argument, so the results must
  * be filtered.
@@ -251,6 +263,10 @@ static const struct enumfunc {
 	{
 		"pcap_statustostr",
 		enumerate_pcap_statustostr,
+	},
+	{
+		"pcapint_opcode_without_k",
+		enumerate_pcapint_opcode_without_k,
 	},
 	{
 		"pcap_datalink_val_to_name",

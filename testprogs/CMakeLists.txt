@@ -29,7 +29,6 @@ endmacro()
 add_test_executable(activatetest)
 add_test_executable(can_set_rfmon_test)
 add_test_executable(capturetest)
-add_test_executable(enumeratetest)
 add_test_executable(filtertest)
 add_test_executable(findalldevstest)
 add_test_executable(findalldevstest-perf)
@@ -39,6 +38,8 @@ add_test_executable(versiontest)
 add_test_executable(writecaptest)
 
 if(NOT WIN32)
+  # pcapint_opcode_without_k()
+  add_test_executable(enumeratetest)
   add_test_executable(selpolltest)
   # Fails to link on Windows:
   # translatetest.obj : error LNK2019: unresolved external symbol

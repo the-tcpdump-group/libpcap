@@ -35,6 +35,8 @@
 #define	pcap_int_h
 
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include <signal.h>
 
@@ -610,6 +612,8 @@ u_int	pcapint_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
  * Routine to validate a BPF program.
  */
 int	pcapint_validate_filter(const struct bpf_insn *, int);
+
+bool pcapint_opcode_without_k(const uint16_t);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that

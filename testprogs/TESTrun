@@ -31008,6 +31008,32 @@ my @enumerate_tests = (
 		expect => $valid_opcodes_enumeration,
 	},
 	{
+		cfunc => 'pcapint_opcode_without_k',
+		expect => '
+			(000) ja       16                                 ; 0x0005
+			(001) tax                                         ; 0x0007
+			(002) add      x                                  ; 0x000c
+			(003) sub      x                                  ; 0x001c
+			(004) jeq      x                jt 6	jf 5         ; 0x001d
+			(005) mul      x                                  ; 0x002c
+			(006) jgt      x                jt 8	jf 7         ; 0x002d
+			(007) div      x                                  ; 0x003c
+			(008) jge      x                jt 10	jf 9        ; 0x003d
+			(009) or       x                                  ; 0x004c
+			(010) jset     x                jt 12	jf 11       ; 0x004d
+			(011) and      x                                  ; 0x005c
+			(012) lsh      x                                  ; 0x006c
+			(013) rsh      x                                  ; 0x007c
+			(014) ld       #pktlen                            ; 0x0080
+			(015) ldx      #pktlen                            ; 0x0081
+			(016) neg                                         ; 0x0084
+			(017) txa                                         ; 0x0087
+			(018) mod      x                                  ; 0x009c
+			(019) xor      x                                  ; 0x00ac
+			(020) ret                                         ; 0x0016
+			',
+	},
+	{
 		cfunc => 'pcap_statustostr',
 		expect => '
 			-13: Packet capture is not supported on that device
@@ -31803,12 +31829,23 @@ foreach my $test (@enumerate_tests) {
 	assert_nonempty_strings $descr, $test, 'cfunc', 'expect';
 	my $label = accept_test_label 'enum', $test->{cfunc};
 	next if defined $only_one && $only_one ne $label;
-	push @ready_to_run, {
-		label => $label,
-		func => \&run_enumerate_test,
-		cfuncname => $test->{cfunc},
-		expected => normalise_expected_output $test->{expect},
-	};
+	my $skip_reason =
+		$skip_no_translatetest ne '' ? $skip_no_translatetest :
+		undef;
+	if (defined $skip_reason) {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_skip_test,
+			skip => $print_skipped ? $skip_reason : '',
+		};
+	} else {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_enumerate_test,
+			cfuncname => $test->{cfunc},
+			expected => normalise_expected_output $test->{expect},
+		};
+	}
 }
 
 if (! scalar @ready_to_run) {
