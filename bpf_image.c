@@ -243,7 +243,13 @@ bpf_image(const struct bpf_insn *p, int n)
 
 	case BPF_JMP|BPF_JA:
 		op = "ja";
-		(void)snprintf(operand_buf, sizeof operand_buf, "%d", n + 1 + p->k);
+		/*
+		 * The evaluator sign-extends p->k, so evaluate the
+		 * destination the same way here, in 64-bit arithmetic,
+		 * to avoid both wraparound and overflow.
+		 */
+		(void)snprintf(operand_buf, sizeof operand_buf, "%lld",
+		    (long long)n + 1 + (bpf_int32)p->k);
 		operand = operand_buf;
 		break;
 

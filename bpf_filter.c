@@ -398,6 +398,7 @@ int
 pcapint_validate_filter(const struct bpf_insn *f, int len)
 {
 	u_int i, from;
+	int64_t target;
 	const struct bpf_insn *p;
 
 	if (len < 1)
@@ -493,7 +494,17 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 			from = i + 1;
 			switch (BPF_OP(p->code)) {
 			case BPF_JA:
-				if (from + p->k >= (u_int)len)
+				/*
+				 * The run-time evaluator sign-extends
+				 * p->k, so a value with the most
+				 * significant bit set is a backward
+				 * jump.  Compute the target in 64-bit
+				 * arithmetic to keep out-of-range jumps
+				 * from passing this check via 32-bit
+				 * wraparound.
+				 */
+				target = (int64_t)from + (bpf_int32)p->k;
+				if (target < 0 || target >= (int64_t)len)
 					return 0;
 				break;
 			case BPF_JEQ:
