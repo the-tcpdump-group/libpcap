@@ -153,8 +153,13 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	 * contain a NUL-terminated string.
 	 */
 	(void)pcapint_strlcpy(ifr.ifr_name, d->req.nr_name, sizeof(ifr.ifr_name));
+	const char *reqstr = "bogus";
 	switch (what) {
+	case SIOCGIFFLAGS:
+		reqstr = "SIOCGIFFLAGS";
+		break;
 	case SIOCSIFFLAGS:
+		reqstr = "SIOCSIFFLAGS";
 		/*
 		 * The flags we pass in are 32-bit and unsigned.
 		 *
@@ -179,7 +184,11 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 		break;
 	}
 	error = ioctl(fd, what, &ifr);
-	if (!error) {
+	if (error) {
+		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "ioctl() request 0x%lx (%s)", what, reqstr);
+		return PCAP_ERROR;
+	} else {
 		switch (what) {
 		case SIOCGIFFLAGS:
 			/*
@@ -208,7 +217,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 #ifdef __linux__
 	close(fd);
 #endif /* __linux__ */
-	return error ? -1 : 0;
+	return 0;
 }
 
 
@@ -220,8 +229,8 @@ pcap_netmap_close(pcap_t *p)
 	uint32_t if_flags = 0;
 
 	if (pn->must_clear_promisc) {
-		pcap_netmap_ioctl(p, SIOCGIFFLAGS, &if_flags); /* fetch flags */
-		if (if_flags & IFF_PPROMISC) {
+		if (! pcap_netmap_ioctl(p, SIOCGIFFLAGS, &if_flags) &&
+		    if_flags & IFF_PPROMISC) {
 			if_flags &= ~IFF_PPROMISC;
 			pcap_netmap_ioctl(p, SIOCSIFFLAGS, &if_flags);
 		}
@@ -266,11 +275,13 @@ pcap_netmap_activate(pcap_t *p)
 		p->snapshot = MAXIMUM_SNAPLEN;
 
 	if (p->opt.promisc && !(d->req.nr_ringid & NETMAP_SW_RING)) {
-		pcap_netmap_ioctl(p, SIOCGIFFLAGS, &if_flags); /* fetch flags */
+		if (pcap_netmap_ioctl(p, SIOCGIFFLAGS, &if_flags))
+			return PCAP_ERROR; // errbuf already filled
 		if (!(if_flags & IFF_PPROMISC)) {
 			pn->must_clear_promisc = 1;
 			if_flags |= IFF_PPROMISC;
-			pcap_netmap_ioctl(p, SIOCSIFFLAGS, &if_flags);
+			if (pcap_netmap_ioctl(p, SIOCSIFFLAGS, &if_flags))
+				return PCAP_ERROR; // errbuf already filled
 		}
 	}
 	p->linktype = DLT_EN10MB;
