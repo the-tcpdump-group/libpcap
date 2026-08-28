@@ -1419,7 +1419,14 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 				bintime2timespec(&bt, &ts);
 				pkthdr.ts.tv_sec = ts.tv_sec;
-				pkthdr.ts.tv_usec = ts.tv_nsec;
+				/*
+				 * On QNX 8.0 the former (timeval.tv_usec) is
+				 * an int via suseconds_t and the latter
+				 * (timespec.tv_nsec) is a long.  The value is
+				 * supposed to be in the [0 .. 999999999]
+				 * interval.
+				 */
+				pkthdr.ts.tv_usec = (suseconds_t)ts.tv_nsec;
 			} else {
 				struct timeval tv;
 

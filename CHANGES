@@ -93,6 +93,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Make NetBSD build warning-free.
       Make Sun C build warning-free.
       Make FreeBSD, Linux and macOS builds warning-free.
+      Make QNX build warning-free.
       Print MAC addresses in findalldevstest.
       Parameterize the interface name in reactivatetest.
       When necessary, trust the OS to implement ffs().

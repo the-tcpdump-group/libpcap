@@ -103,11 +103,6 @@ suncc-5.14/SunOS-5.10|suncc-5.15/SunOS-5.10)
     #   returning, might return
     LIBPCAP_TAINTED=yes
     ;;
-*/QNX-*)
-    # pcap-bpf.c:1409:28: warning: implicit conversion loses integer precision:
-    #   'long' to 'suseconds_t' (aka 'int')
-    LIBPCAP_TAINTED=yes
-    ;;
 clang-22.*/Haiku-*)
     # pcap-rpcap.c:340:40: warning: allocation of insufficient size '28' for
     #   type 'struct sockaddr' with size '32' [-Walloc-size]
