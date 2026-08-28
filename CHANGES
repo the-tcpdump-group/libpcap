@@ -159,6 +159,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fill pcap_if_t in more consistently.
     QNX:
       Use "unix.h" instead of the missing <sysexits.h>.
+      Fix promiscuous mode for netmap.
     RDMA:
       Fix some resource freeing issues. (issues #1532 and #1300)
       Improve error messages for activate and findalldevs failures.

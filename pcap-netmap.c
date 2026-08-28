@@ -41,9 +41,16 @@
 #include "pcap-int.h"
 #include "pcap-netmap.h"
 
-#ifndef __FreeBSD__
+#if ! defined(__FreeBSD__) && ! defined(__QNX__)
   /*
    * On FreeBSD we use IFF_PPROMISC which is in ifr_flagshigh.
+   * The reason for this is the same as in ifconfig(8) and is documented in
+   * ifnet(9): IFF_PROMISC is a part of the IFF_CANTCHANGE bitmask and is
+   * reserved for kernel purposes.  ioctl(2) silently disregards requests to
+   * change IFF_PROMISC, so trying to use the latter would not even cause an
+   * obvious run-time error.  Exactly the same applies to QNX 8.0, which uses
+   * FreeBSD network stack.
+   *
    * Remap to IFF_PROMISC on other platforms.
    *
    * XXX - DragonFly BSD?
@@ -172,7 +179,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 		 * So we mask out the upper 16 bits.
 		 */
 		ifr.ifr_flags = *if_flags & 0xffff;
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__QNX__)
 		/*
 		 * In FreeBSD, we need to set the high-order flags,
 		 * as we're using IFF_PPROMISC, which is in those bits.
@@ -202,7 +209,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 			 * sign-extended value.
 			 */
 			*if_flags = ifr.ifr_flags & 0xffff;
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__QNX__)
 			/*
 			 * In FreeBSD, we need to return the
 			 * high-order flags, as we're using
