@@ -46,20 +46,10 @@
  * Block types.
  */
 
-/*
- * Common part at the beginning of all blocks.
- */
-struct block_header {
-	bpf_u_int32	block_type;
-	bpf_u_int32	total_length;
-};
-
-/*
- * Common trailer at the end of all blocks.
- */
-struct block_trailer {
-	bpf_u_int32	total_length;
-};
+/* Sizes of serialized pcapng fields; these are format properties, not C ABIs. */
+#define BLOCK_HEADER_LENGTH	8U
+#define BLOCK_TRAILER_LENGTH	4U
+#define OPTION_HEADER_LENGTH	4U
 
 /*
  * Common options.
@@ -68,11 +58,11 @@ struct block_trailer {
 #define OPT_COMMENT	1	/* comment string */
 
 /*
- * Option header.
+ * Decoded option header.
  */
 struct option_header {
-	u_short		option_code;
-	u_short		option_length;
+	uint16_t	option_code;
+	uint16_t	option_length;
 };
 
 /*
@@ -85,10 +75,11 @@ struct option_header {
  */
 #define BT_SHB			0x0A0D0D0A
 #define BT_SHB_INSANE_MAX       1024U*1024U*1U  /* 1MB should be enough */
+#define SHB_FIXED_LENGTH	16U
 struct section_header_block {
-	bpf_u_int32	byte_order_magic;
-	u_short		major_version;
-	u_short		minor_version;
+	uint32_t	byte_order_magic;
+	uint16_t	major_version;
+	uint16_t	minor_version;
 	uint64_t	section_length;
 	/* followed by options and trailer */
 };
@@ -110,11 +101,12 @@ struct section_header_block {
  * Interface Description Block.
  */
 #define BT_IDB			0x00000001
+#define IDB_FIXED_LENGTH	8U
 
 struct interface_description_block {
-	u_short		linktype;
-	u_short		reserved;
-	bpf_u_int32	snaplen;
+	uint16_t	linktype;
+	uint16_t	reserved;
+	uint32_t	snaplen;
 	/* followed by options and trailer */
 };
 
@@ -139,13 +131,14 @@ struct interface_description_block {
  * Enhanced Packet Block.
  */
 #define BT_EPB			0x00000006
+#define EPB_FIXED_LENGTH	20U
 
 struct enhanced_packet_block {
-	bpf_u_int32	interface_id;
-	bpf_u_int32	timestamp_high;
-	bpf_u_int32	timestamp_low;
-	bpf_u_int32	caplen;
-	bpf_u_int32	len;
+	uint32_t	interface_id;
+	uint32_t	timestamp_high;
+	uint32_t	timestamp_low;
+	uint32_t	caplen;
+	uint32_t	len;
 	/* followed by packet data, options, and trailer */
 };
 
@@ -153,9 +146,10 @@ struct enhanced_packet_block {
  * Simple Packet Block.
  */
 #define BT_SPB			0x00000003
+#define SPB_FIXED_LENGTH	4U
 
 struct simple_packet_block {
-	bpf_u_int32	len;
+	uint32_t	len;
 	/* followed by packet data and trailer */
 };
 
@@ -163,14 +157,15 @@ struct simple_packet_block {
  * Packet Block.
  */
 #define BT_PB			0x00000002
+#define PB_FIXED_LENGTH		20U
 
 struct packet_block {
-	u_short		interface_id;
-	u_short		drops_count;
-	bpf_u_int32	timestamp_high;
-	bpf_u_int32	timestamp_low;
-	bpf_u_int32	caplen;
-	bpf_u_int32	len;
+	uint16_t	interface_id;
+	uint16_t	drops_count;
+	uint32_t	timestamp_high;
+	uint32_t	timestamp_low;
+	uint32_t	caplen;
+	uint32_t	len;
 	/* followed by packet data, options, and trailer */
 };
 
@@ -180,9 +175,10 @@ struct packet_block {
  * of bytes remaining in the block.
  */
 struct block_cursor {
-	u_char		*data;
+	const u_char	*data;
 	size_t		data_remaining;
 	bpf_u_int32	block_type;
+	int		swapped;
 };
 
 typedef enum {
@@ -243,10 +239,10 @@ struct pcap_ng_sf {
  * options.
  */
 #define MAX_BLOCKSIZE_FOR_SNAPLEN(max_snaplen) \
-	(sizeof (struct block_header) + \
-	 sizeof (struct enhanced_packet_block) + \
+	(BLOCK_HEADER_LENGTH + \
+	 EPB_FIXED_LENGTH + \
 	 (max_snaplen) + 131072 + \
-	 sizeof (struct block_trailer))
+	 BLOCK_TRAILER_LENGTH)
 
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
@@ -275,69 +271,105 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 	return (1);
 }
 
+/*
+ * Decode integers from byte storage.  memcpy() makes these operations valid
+ * for every input alignment and does not give file data an effective C type.
+ */
+static uint16_t
+extract_uint16(const u_char *data, int swapped)
+{
+	uint16_t value;
+
+	memcpy(&value, data, sizeof(value));
+	if (swapped)
+		value = PCAP_BSWAP_16(value);
+	return (value);
+}
+
+static uint32_t
+extract_uint32(const u_char *data, int swapped)
+{
+	uint32_t value;
+
+	memcpy(&value, data, sizeof(value));
+	if (swapped)
+		value = PCAP_BSWAP_32(value);
+	return (value);
+}
+
+static uint64_t
+extract_uint64(const u_char *data, int swapped)
+{
+	uint64_t value;
+
+	memcpy(&value, data, sizeof(value));
+	if (swapped)
+		value = PCAP_BSWAP_64(value);
+	return (value);
+}
+
 static int
 read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
 	int status;
-	struct block_header bhdr;
-	struct block_trailer *btrlr;
+	u_char header[BLOCK_HEADER_LENGTH];
+	bpf_u_int32 block_type;
+	bpf_u_int32 total_length;
+	bpf_u_int32 trailer_length;
 	u_char *bdata;
 	size_t data_remaining;
 
 	ps = p->priv;
 
-	status = read_bytes(fp, &bhdr, sizeof(bhdr), 0, errbuf);
+	status = read_bytes(fp, header, sizeof(header), 0, errbuf);
 	if (status <= 0)
 		return (status);	/* error or EOF */
 
-	if (p->swapped) {
-		bhdr.block_type = PCAP_BSWAP_32(bhdr.block_type);
-		bhdr.total_length = PCAP_BSWAP_32(bhdr.total_length);
-	}
+	block_type = extract_uint32(header, p->swapped);
+	total_length = extract_uint32(header + sizeof(uint32_t), p->swapped);
 
 	/*
 	 * Is this block "too small" - i.e., is it shorter than a block
 	 * header plus a block trailer?
 	 */
-	if (bhdr.total_length < sizeof(struct block_header) +
-	    sizeof(struct block_trailer)) {
+	if (total_length < BLOCK_HEADER_LENGTH + BLOCK_TRAILER_LENGTH) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block in pcapng dump file has a length of %u < %zu",
-		    bhdr.total_length,
-		    sizeof(struct block_header) + sizeof(struct block_trailer));
+		    total_length,
+		    (size_t)(BLOCK_HEADER_LENGTH + BLOCK_TRAILER_LENGTH));
 		return (-1);
 	}
 
 	/*
 	 * Is the block total length a multiple of 4?
 	 */
-	if ((bhdr.total_length % 4) != 0) {
+	if ((total_length % 4) != 0) {
 		/*
 		 * No.  Report that as an error.
 		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block in pcapng dump file has a length of %u that is not a multiple of 4",
-		    bhdr.total_length);
+		    total_length);
 		return (-1);
 	}
 
 	/*
 	 * Is the buffer big enough?
 	 */
-	if (p->bufsize < bhdr.total_length) {
+	if (p->bufsize < total_length) {
 		/*
 		 * No - make it big enough, unless it's too big, in
 		 * which case we fail.
 		 */
 		void *bigger_buffer;
 
-		if (bhdr.total_length > ps->max_blocksize) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", bhdr.total_length,
+		if (total_length > ps->max_blocksize) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", total_length,
 			    ps->max_blocksize);
 			return (-1);
 		}
-		bigger_buffer = realloc(p->buffer, bhdr.total_length);
+		bigger_buffer = realloc(p->buffer, total_length);
 		if (bigger_buffer == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 			return (-1);
@@ -346,33 +378,32 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	}
 
 	/*
-	 * Copy the stuff we've read to the buffer, and read the rest
-	 * of the block.
+	 * Preserve the complete serialized block in p->buffer, but treat its
+	 * header as bytes rather than as a C object.
 	 */
-	memcpy(p->buffer, &bhdr, sizeof(bhdr));
-	bdata = p->buffer + sizeof(bhdr);
-	data_remaining = bhdr.total_length - sizeof(bhdr);
+	memcpy(p->buffer, header, sizeof(header));
+	bdata = p->buffer + BLOCK_HEADER_LENGTH;
+	data_remaining = total_length - BLOCK_HEADER_LENGTH;
 	if (read_bytes(fp, bdata, data_remaining, 1, errbuf) == -1)
 		return (-1);
 
 	/*
 	 * Get the block size from the trailer.
 	 */
-	btrlr = (struct block_trailer *)(bdata + data_remaining - sizeof (struct block_trailer));
-	if (p->swapped)
-		btrlr->total_length = PCAP_BSWAP_32(btrlr->total_length);
+	trailer_length = extract_uint32(
+	    bdata + data_remaining - BLOCK_TRAILER_LENGTH, p->swapped);
 
 	/*
 	 * Is the total length from the trailer the same as the total
 	 * length from the header?
 	 */
-	if (bhdr.total_length != btrlr->total_length) {
+	if (total_length != trailer_length) {
 		/*
 		 * No.
 		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block total length in header %u and trailer %u don't match",
-		    bhdr.total_length, btrlr->total_length);
+		    total_length, trailer_length);
 		return (-1);
 	}
 
@@ -380,16 +411,17 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * Initialize the cursor.
 	 */
 	cursor->data = bdata;
-	cursor->data_remaining = data_remaining - sizeof(struct block_trailer);
-	cursor->block_type = bhdr.block_type;
+	cursor->data_remaining = data_remaining - BLOCK_TRAILER_LENGTH;
+	cursor->block_type = block_type;
+	cursor->swapped = p->swapped;
 	return (1);
 }
 
-static void *
-get_from_block_data(struct block_cursor *cursor, size_t chunk_size,
+static const u_char *
+get_block_data(struct block_cursor *cursor, size_t chunk_size,
     char *errbuf)
 {
-	void *data;
+	const u_char *data;
 
 	/*
 	 * Make sure we have the specified amount of data remaining in
@@ -411,42 +443,88 @@ get_from_block_data(struct block_cursor *cursor, size_t chunk_size,
 	return (data);
 }
 
-static struct option_header *
-get_opthdr_from_block_data(pcap_t *p, struct block_cursor *cursor, char *errbuf)
+static int
+get_fixed_fields(struct block_cursor *cursor, size_t fields_size,
+    struct block_cursor *fields, char *errbuf)
 {
-	struct option_header *opthdr;
+	const u_char *data;
 
-	opthdr = get_from_block_data(cursor, sizeof(*opthdr), errbuf);
-	if (opthdr == NULL) {
+	data = get_block_data(cursor, fields_size, errbuf);
+	if (data == NULL)
+		return (0);
+	fields->data = data;
+	fields->data_remaining = fields_size;
+	fields->block_type = cursor->block_type;
+	fields->swapped = cursor->swapped;
+	return (1);
+}
+
+static int
+read_uint16(struct block_cursor *cursor, uint16_t *value, char *errbuf)
+{
+	const u_char *data;
+
+	data = get_block_data(cursor, sizeof(*value), errbuf);
+	if (data == NULL)
+		return (0);
+	*value = extract_uint16(data, cursor->swapped);
+	return (1);
+}
+
+static int
+read_uint32(struct block_cursor *cursor, uint32_t *value, char *errbuf)
+{
+	const u_char *data;
+
+	data = get_block_data(cursor, sizeof(*value), errbuf);
+	if (data == NULL)
+		return (0);
+	*value = extract_uint32(data, cursor->swapped);
+	return (1);
+}
+
+static int
+read_uint64(struct block_cursor *cursor, uint64_t *value, char *errbuf)
+{
+	const u_char *data;
+
+	data = get_block_data(cursor, sizeof(*value), errbuf);
+	if (data == NULL)
+		return (0);
+	*value = extract_uint64(data, cursor->swapped);
+	return (1);
+}
+
+static int
+get_opthdr_from_block_data(struct block_cursor *cursor,
+    struct option_header *opthdr, char *errbuf)
+{
+	struct block_cursor fields;
+
+	if (!get_fixed_fields(cursor, OPTION_HEADER_LENGTH, &fields, errbuf) ||
+	    !read_uint16(&fields, &opthdr->option_code, errbuf) ||
+	    !read_uint16(&fields, &opthdr->option_length, errbuf)) {
 		/*
 		 * Option header is cut short.
 		 */
-		return (NULL);
+		return (0);
 	}
 
-	/*
-	 * Byte-swap it if necessary.
-	 */
-	if (p->swapped) {
-		opthdr->option_code = PCAP_BSWAP_16(opthdr->option_code);
-		opthdr->option_length = PCAP_BSWAP_16(opthdr->option_length);
-	}
-
-	return (opthdr);
+	return (1);
 }
 
-static void *
+static const u_char *
 get_optvalue_from_block_data(struct block_cursor *cursor,
-    struct option_header *opthdr, char *errbuf)
+    const struct option_header *opthdr, char *errbuf)
 {
 	size_t padded_option_len;
-	void *optvalue;
+	const u_char *optvalue;
 
 	/* Pad option length to 4-byte boundary */
 	padded_option_len = opthdr->option_length;
 	padded_option_len = ((padded_option_len + 3)/4)*4;
 
-	optvalue = get_from_block_data(cursor, padded_option_len, errbuf);
+	optvalue = get_block_data(cursor, padded_option_len, errbuf);
 	if (optvalue == NULL) {
 		/*
 		 * Option value is cut short.
@@ -457,12 +535,81 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 	return (optvalue);
 }
 
+/*
+ * Decode fixed block fields one scalar at a time.  Keeping serialized sizes
+ * and decoded C objects separate prevents a future compiler ABI change from
+ * becoming a parser change.
+ */
+static int
+read_section_header_block(struct block_cursor *cursor,
+    struct section_header_block *shb, char *errbuf)
+{
+	struct block_cursor fields;
+
+	return (get_fixed_fields(cursor, SHB_FIXED_LENGTH, &fields, errbuf) &&
+	    read_uint32(&fields, &shb->byte_order_magic, errbuf) &&
+	    read_uint16(&fields, &shb->major_version, errbuf) &&
+	    read_uint16(&fields, &shb->minor_version, errbuf) &&
+	    read_uint64(&fields, &shb->section_length, errbuf));
+}
+
+static int
+read_interface_description_block(struct block_cursor *cursor,
+    struct interface_description_block *idb, char *errbuf)
+{
+	struct block_cursor fields;
+
+	return (get_fixed_fields(cursor, IDB_FIXED_LENGTH, &fields, errbuf) &&
+	    read_uint16(&fields, &idb->linktype, errbuf) &&
+	    read_uint16(&fields, &idb->reserved, errbuf) &&
+	    read_uint32(&fields, &idb->snaplen, errbuf));
+}
+
+static int
+read_enhanced_packet_block(struct block_cursor *cursor,
+    struct enhanced_packet_block *epb, char *errbuf)
+{
+	struct block_cursor fields;
+
+	return (get_fixed_fields(cursor, EPB_FIXED_LENGTH, &fields, errbuf) &&
+	    read_uint32(&fields, &epb->interface_id, errbuf) &&
+	    read_uint32(&fields, &epb->timestamp_high, errbuf) &&
+	    read_uint32(&fields, &epb->timestamp_low, errbuf) &&
+	    read_uint32(&fields, &epb->caplen, errbuf) &&
+	    read_uint32(&fields, &epb->len, errbuf));
+}
+
+static int
+read_simple_packet_block(struct block_cursor *cursor,
+    struct simple_packet_block *spb, char *errbuf)
+{
+	struct block_cursor fields;
+
+	return (get_fixed_fields(cursor, SPB_FIXED_LENGTH, &fields, errbuf) &&
+	    read_uint32(&fields, &spb->len, errbuf));
+}
+
+static int
+read_packet_block(struct block_cursor *cursor, struct packet_block *pb,
+    char *errbuf)
+{
+	struct block_cursor fields;
+
+	return (get_fixed_fields(cursor, PB_FIXED_LENGTH, &fields, errbuf) &&
+	    read_uint16(&fields, &pb->interface_id, errbuf) &&
+	    read_uint16(&fields, &pb->drops_count, errbuf) &&
+	    read_uint32(&fields, &pb->timestamp_high, errbuf) &&
+	    read_uint32(&fields, &pb->timestamp_low, errbuf) &&
+	    read_uint32(&fields, &pb->caplen, errbuf) &&
+	    read_uint32(&fields, &pb->len, errbuf));
+}
+
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
     int64_t *tsoffset, int *is_binary, char *errbuf)
 {
-	struct option_header *opthdr;
-	void *optvalue;
+	struct option_header opthdr;
+	const u_char *optvalue;
 	int saw_tsresol, saw_tsoffset;
 	uint8_t tsresol_opt;
 	u_int i;
@@ -473,8 +620,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
 		/*
 		 * Get the option header.
 		 */
-		opthdr = get_opthdr_from_block_data(p, cursor, errbuf);
-		if (opthdr == NULL) {
+		if (!get_opthdr_from_block_data(cursor, &opthdr, errbuf)) {
 			/*
 			 * Option header is cut short.
 			 */
@@ -484,7 +630,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
 		/*
 		 * Get option value.
 		 */
-		optvalue = get_optvalue_from_block_data(cursor, opthdr,
+		optvalue = get_optvalue_from_block_data(cursor, &opthdr,
 		    errbuf);
 		if (optvalue == NULL) {
 			/*
@@ -493,22 +639,22 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
 			return (-1);
 		}
 
-		switch (opthdr->option_code) {
+		switch (opthdr.option_code) {
 
 		case OPT_ENDOFOPT:
-			if (opthdr->option_length != 0) {
+			if (opthdr.option_length != 0) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has opt_endofopt option with length %u != 0",
-				    opthdr->option_length);
+				    opthdr.option_length);
 				return (-1);
 			}
 			goto done;
 
 		case IF_TSRESOL:
-			if (opthdr->option_length != 1) {
+			if (opthdr.option_length != 1) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has if_tsresol option with length %u != 1",
-				    opthdr->option_length);
+				    opthdr.option_length);
 				return (-1);
 			}
 			if (saw_tsresol) {
@@ -562,10 +708,10 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
 			break;
 
 		case IF_TSOFFSET:
-			if (opthdr->option_length != 8) {
+			if (opthdr.option_length != 8) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has if_tsoffset option with length %u != 8",
-				    opthdr->option_length);
+				    opthdr.option_length);
 				return (-1);
 			}
 			if (saw_tsoffset) {
@@ -589,7 +735,7 @@ done:
 }
 
 static int
-add_interface(pcap_t *p, struct interface_description_block *idbp,
+add_interface(pcap_t *p, const struct interface_description_block *idbp,
     struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
@@ -773,14 +919,13 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	size_t amt_read;
 	bpf_u_int32 total_length;
 	bpf_u_int32 byte_order_magic;
-	struct block_header *bhdrp;
-	struct section_header_block *shbp;
+	struct section_header_block shb;
 	pcap_t *p;
 	int swapped = 0;
 	struct pcap_ng_sf *ps;
 	int status;
 	struct block_cursor cursor;
-	struct interface_description_block *idbp;
+	struct interface_description_block idb;
 
 	/*
 	 * Assume no read errors.
@@ -861,11 +1006,11 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	/*
 	 * Check the sanity of the total length.
 	 */
-	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer) ||
+	if (total_length < BLOCK_HEADER_LENGTH + SHB_FIXED_LENGTH + BLOCK_TRAILER_LENGTH ||
             (total_length > BT_SHB_INSANE_MAX)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Section Header Block in pcapng dump file has invalid length %zu < _%u_ < %u (BT_SHB_INSANE_MAX)",
-		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer),
+		    (size_t)(BLOCK_HEADER_LENGTH + SHB_FIXED_LENGTH + BLOCK_TRAILER_LENGTH),
 		    total_length,
 		    BT_SHB_INSANE_MAX);
 
@@ -938,31 +1083,24 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	ps->max_blocksize = INITIAL_MAX_BLOCKSIZE;
 
 	/*
-	 * Copy the stuff we've read to the buffer, and read the rest
-	 * of the SHB.
+	 * Read the rest of the SHB.  We have already consumed its block type,
+	 * total length, and byte-order magic.
 	 */
-	bhdrp = (struct block_header *)p->buffer;
-	shbp = (struct section_header_block *)(p->buffer + sizeof(struct block_header));
-	bhdrp->block_type = magic_int;
-	bhdrp->total_length = total_length;
-	shbp->byte_order_magic = byte_order_magic;
-	if (read_bytes(fp,
-	    p->buffer + (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
-	    total_length - (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
-	    1, errbuf) == -1)
+	if (read_bytes(fp, p->buffer,
+	    total_length - (sizeof(magic_int) + sizeof(total_length) +
+	    sizeof(byte_order_magic)), 1, errbuf) == -1)
+		goto fail;
+	cursor.data = p->buffer;
+	cursor.data_remaining = total_length - BLOCK_HEADER_LENGTH -
+	    sizeof(byte_order_magic) - BLOCK_TRAILER_LENGTH;
+	cursor.block_type = BT_SHB;
+	cursor.swapped = p->swapped;
+	shb.byte_order_magic = BYTE_ORDER_MAGIC;
+	if (!read_uint16(&cursor, &shb.major_version, errbuf) ||
+	    !read_uint16(&cursor, &shb.minor_version, errbuf) ||
+	    !read_uint64(&cursor, &shb.section_length, errbuf))
 		goto fail;
 
-	if (p->swapped) {
-		/*
-		 * Byte-swap the fields we've read.
-		 */
-		shbp->major_version = PCAP_BSWAP_16(shbp->major_version);
-		shbp->minor_version = PCAP_BSWAP_16(shbp->minor_version);
-
-		/*
-		 * XXX - we don't care about the section length.
-		 */
-	}
 	/* Currently only SHB versions 1.0 and 1.2 are supported;
 	   version 1.2 is treated as being the same as version 1.0.
 	   See the current version of the pcapng specification.
@@ -977,16 +1115,16 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	   presumably they can also report an error if they skip
 	   all the way to the end of the file without finding
 	   any versions that they support. */
-	if (! (shbp->major_version == PCAP_NG_VERSION_MAJOR &&
-	       (shbp->minor_version == PCAP_NG_VERSION_MINOR ||
-	        shbp->minor_version == 2))) {
+	if (! (shb.major_version == PCAP_NG_VERSION_MAJOR &&
+	       (shb.minor_version == PCAP_NG_VERSION_MINOR ||
+	        shb.minor_version == 2))) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unsupported pcapng savefile version %u.%u",
-		    shbp->major_version, shbp->minor_version);
+		    shb.major_version, shb.minor_version);
 		goto fail;
 	}
-	p->version_major = shbp->major_version;
-	p->version_minor = shbp->minor_version;
+	p->version_major = shb.major_version;
+	p->version_minor = shb.minor_version;
 
 	/*
 	 * Save the time stamp resolution the user requested.
@@ -1013,26 +1151,16 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 
 		case BT_IDB:
 			/*
-			 * Get a pointer to the fixed-length portion of the
-			 * IDB.
+			 * Decode the fixed-length portion of the IDB.
 			 */
-			idbp = get_from_block_data(&cursor, sizeof(*idbp),
-			    errbuf);
-			if (idbp == NULL)
+			if (!read_interface_description_block(&cursor, &idb,
+			    errbuf))
 				goto fail;	/* error */
-
-			/*
-			 * Byte-swap it if necessary.
-			 */
-			if (p->swapped) {
-				idbp->linktype = PCAP_BSWAP_16(idbp->linktype);
-				idbp->snaplen = PCAP_BSWAP_32(idbp->snaplen);
-			}
 
 			/*
 			 * Try to add this interface.
 			 */
-			if (!add_interface(p, idbp, &cursor, errbuf))
+			if (!add_interface(p, &idb, &cursor, errbuf))
 				goto fail;
 
 			goto done;
@@ -1058,8 +1186,8 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	}
 
 done:
-	p->linktype = linktype_to_dlt(idbp->linktype);
-	p->snapshot = pcapint_adjust_snapshot(p->linktype, idbp->snaplen);
+	p->linktype = linktype_to_dlt(idb.linktype);
+	p->snapshot = pcapint_adjust_snapshot(p->linktype, idb.snaplen);
 	p->linktype_ext = 0;
 
 	/*
@@ -1103,12 +1231,12 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	struct pcap_ng_sf *ps = p->priv;
 	struct block_cursor cursor;
 	int status;
-	struct enhanced_packet_block *epbp;
-	struct simple_packet_block *spbp;
-	struct packet_block *pbp;
+	struct enhanced_packet_block epb;
+	struct simple_packet_block spb;
+	struct packet_block pb;
 	bpf_u_int32 interface_id = 0xFFFFFFFF;
-	struct interface_description_block *idbp;
-	struct section_header_block *shbp;
+	struct interface_description_block idb;
+	struct section_header_block shb;
 	FILE *fp = p->rfile;
 	uint64_t t, sec, frac;
 
@@ -1130,41 +1258,23 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 		case BT_EPB:
 			/*
-			 * Get a pointer to the fixed-length portion of the
-			 * EPB.
+			 * Decode the fixed-length portion of the EPB.
 			 */
-			epbp = get_from_block_data(&cursor, sizeof(*epbp),
-			    p->errbuf);
-			if (epbp == NULL)
+			if (!read_enhanced_packet_block(&cursor, &epb, p->errbuf))
 				return (-1);	/* error */
 
-			/*
-			 * Byte-swap it if necessary.
-			 */
-			if (p->swapped) {
-				/* these were written in opposite byte order */
-				interface_id = PCAP_BSWAP_32(epbp->interface_id);
-				hdr->caplen = PCAP_BSWAP_32(epbp->caplen);
-				hdr->len = PCAP_BSWAP_32(epbp->len);
-				t = ((uint64_t)PCAP_BSWAP_32(epbp->timestamp_high)) << 32 |
-				    PCAP_BSWAP_32(epbp->timestamp_low);
-			} else {
-				interface_id = epbp->interface_id;
-				hdr->caplen = epbp->caplen;
-				hdr->len = epbp->len;
-				t = ((uint64_t)epbp->timestamp_high) << 32 |
-				    epbp->timestamp_low;
-			}
+			interface_id = epb.interface_id;
+			hdr->caplen = epb.caplen;
+			hdr->len = epb.len;
+			t = ((uint64_t)epb.timestamp_high) << 32 |
+			    epb.timestamp_low;
 			goto found;
 
 		case BT_SPB:
 			/*
-			 * Get a pointer to the fixed-length portion of the
-			 * SPB.
+			 * Decode the fixed-length portion of the SPB.
 			 */
-			spbp = get_from_block_data(&cursor, sizeof(*spbp),
-			    p->errbuf);
-			if (spbp == NULL)
+			if (!read_simple_packet_block(&cursor, &spb, p->errbuf))
 				return (-1);	/* error */
 
 			/*
@@ -1173,14 +1283,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 */
 			interface_id = 0;
 
-			/*
-			 * Byte-swap it if necessary.
-			 */
-			if (p->swapped) {
-				/* these were written in opposite byte order */
-				hdr->len = PCAP_BSWAP_32(spbp->len);
-			} else
-				hdr->len = spbp->len;
+			hdr->len = spb.len;
 
 			/*
 			 * The SPB doesn't give the captured length;
@@ -1195,50 +1298,25 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 		case BT_PB:
 			/*
-			 * Get a pointer to the fixed-length portion of the
-			 * PB.
+			 * Decode the fixed-length portion of the PB.
 			 */
-			pbp = get_from_block_data(&cursor, sizeof(*pbp),
-			    p->errbuf);
-			if (pbp == NULL)
+			if (!read_packet_block(&cursor, &pb, p->errbuf))
 				return (-1);	/* error */
 
-			/*
-			 * Byte-swap it if necessary.
-			 */
-			if (p->swapped) {
-				/* these were written in opposite byte order */
-				interface_id = PCAP_BSWAP_16(pbp->interface_id);
-				hdr->caplen = PCAP_BSWAP_32(pbp->caplen);
-				hdr->len = PCAP_BSWAP_32(pbp->len);
-				t = ((uint64_t)PCAP_BSWAP_32(pbp->timestamp_high)) << 32 |
-				    PCAP_BSWAP_32(pbp->timestamp_low);
-			} else {
-				interface_id = pbp->interface_id;
-				hdr->caplen = pbp->caplen;
-				hdr->len = pbp->len;
-				t = ((uint64_t)pbp->timestamp_high) << 32 |
-				    pbp->timestamp_low;
-			}
+			interface_id = pb.interface_id;
+			hdr->caplen = pb.caplen;
+			hdr->len = pb.len;
+			t = ((uint64_t)pb.timestamp_high) << 32 |
+			    pb.timestamp_low;
 			goto found;
 
 		case BT_IDB:
 			/*
-			 * Interface Description Block.  Get a pointer
-			 * to its fixed-length portion.
+			 * Decode the fixed-length portion of the IDB.
 			 */
-			idbp = get_from_block_data(&cursor, sizeof(*idbp),
-			    p->errbuf);
-			if (idbp == NULL)
+			if (!read_interface_description_block(&cursor, &idb,
+			    p->errbuf))
 				return (-1);	/* error */
-
-			/*
-			 * Byte-swap it if necessary.
-			 */
-			if (p->swapped) {
-				idbp->linktype = PCAP_BSWAP_16(idbp->linktype);
-				idbp->snaplen = PCAP_BSWAP_32(idbp->snaplen);
-			}
 
 			/*
 			 * If the link-layer type or snapshot length
@@ -1248,10 +1326,10 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * XXX - just discard packets from those
 			 * interfaces?
 			 */
-			if (p->linktype != idbp->linktype) {
+			if (p->linktype != idb.linktype) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a type %u different from the type of the first interface",
-				    idbp->linktype);
+				    idb.linktype);
 				return (-1);
 			}
 
@@ -1260,48 +1338,33 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * snapshot length.
 			 */
 			if ((bpf_u_int32)p->snapshot !=
-			    pcapint_adjust_snapshot(p->linktype, idbp->snaplen)) {
+			    pcapint_adjust_snapshot(p->linktype, idb.snaplen)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the snapshot length of the first interface",
-				    idbp->snaplen);
+				    idb.snaplen);
 				return (-1);
 			}
 
 			/*
 			 * Try to add this interface.
 			 */
-			if (!add_interface(p, idbp, &cursor, p->errbuf))
+			if (!add_interface(p, &idb, &cursor, p->errbuf))
 				return (-1);
 			break;
 
 		case BT_SHB:
 			/*
-			 * Section Header Block.  Get a pointer
-			 * to its fixed-length portion.
+			 * Decode the fixed-length portion of the SHB.
 			 */
-			shbp = get_from_block_data(&cursor, sizeof(*shbp),
-			    p->errbuf);
-			if (shbp == NULL)
+			if (!read_section_header_block(&cursor, &shb, p->errbuf))
 				return (-1);	/* error */
-
-			/*
-			 * Assume the byte order of this section is
-			 * the same as that of the previous section.
-			 * We'll check for that later.
-			 */
-			if (p->swapped) {
-				shbp->byte_order_magic =
-				    PCAP_BSWAP_32(shbp->byte_order_magic);
-				shbp->major_version =
-				    PCAP_BSWAP_16(shbp->major_version);
-			}
 
 			/*
 			 * Make sure the byte order doesn't change;
 			 * pcap_is_swapped() shouldn't change its
 			 * return value in the middle of reading a capture.
 			 */
-			switch (shbp->byte_order_magic) {
+			switch (shb.byte_order_magic) {
 
 			case BYTE_ORDER_MAGIC:
 				/*
@@ -1330,10 +1393,10 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * Make sure the major version is the version
 			 * we handle.
 			 */
-			if (shbp->major_version != PCAP_NG_VERSION_MAJOR) {
+			if (shb.major_version != PCAP_NG_VERSION_MAJOR) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "unknown pcapng savefile major version number %u",
-				    shbp->major_version);
+				    shb.major_version);
 				return (-1);
 			}
 
@@ -1507,7 +1570,7 @@ found:
 	/*
 	 * Get a pointer to the packet data.
 	 */
-	*data = get_from_block_data(&cursor, hdr->caplen, p->errbuf);
+	*data = (u_char *)get_block_data(&cursor, hdr->caplen, p->errbuf);
 	if (*data == NULL)
 		return (-1);
 
