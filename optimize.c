@@ -40,6 +40,7 @@
 #include "gencode.h"
 #include "optimize.h"
 #include "diag-control.h"
+#include "no_sanitize.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -688,7 +689,7 @@ init_val(opt_state_t *opt_state)
  * otherwise it makes a new entry in the table and returns the
  * value number of that entry.
  */
-static bpf_u_int32
+UNSIGNED_SHIFT_OK static bpf_u_int32
 F(opt_state_t *opt_state, int code, bpf_u_int32 v0, bpf_u_int32 v1)
 {
 	u_int hash;

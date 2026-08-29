@@ -51,6 +51,7 @@
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "diag-control.h"
+#include "no_sanitize.h"
 #include "pcap-util.h"
 
 #include "scanner.h"
@@ -7407,7 +7408,7 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 	/*NOTREACHED*/
 }
 
-struct block *
+UNSIGNED_SHIFT_OK struct block *
 gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 {
 	bpf_u_int32 mask;
