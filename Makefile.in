@@ -129,6 +129,7 @@ HDR = $(PUBHDR) \
 	ieee80211.h \
 	llc.h \
 	nametoaddr.h \
+	no_sanitize.h \
 	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
