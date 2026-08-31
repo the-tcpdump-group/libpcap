@@ -1551,10 +1551,24 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		}
 		return -1;
 	}
-	if (strcmp(user_password, crypt_password) != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
-		return -1;
+		/*
+		 * Use constant-time comparison to prevent timing
+		 * side-channel on password hash verification.
+		 */
+		size_t ulen = strlen(user_password);
+		size_t clen = strlen(crypt_password);
+		size_t maxlen = (ulen > clen) ? ulen : clen;
+		volatile unsigned char diff = (ulen != clen);
+		size_t i;
+		for (i = 0; i < maxlen; i++)
+			diff |= (i < ulen ? (unsigned char)user_password[i] : 0)
+			       ^ (i < clen ? (unsigned char)crypt_password[i] : 0);
+		if (diff != 0)
+		{
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
+			return -1;
+		}
 	}
 
 	if (setuid(user->pw_uid))
