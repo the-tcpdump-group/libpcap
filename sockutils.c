@@ -128,8 +128,8 @@ void sock_initfuzz(const uint8_t *Data, size_t Size) {
 }
 
 static int fuzz_recv(char *bufp, int remaining) {
-	if (remaining > fuzzSize - fuzzPos) {
-		remaining = fuzzSize - fuzzPos;
+	if (remaining > (int)(fuzzSize - fuzzPos)) {
+		remaining = (int)(fuzzSize - fuzzPos);
 	}
 	if (fuzzPos < fuzzSize) {
 		memcpy(bufp, fuzzBuffer + fuzzPos, remaining);
@@ -654,9 +654,7 @@ PCAP_SOCKET sock_open(const char *host, struct addrinfo *addrinfo,
 		for (i = 0; i < numaddrinfos; i++)
 		{
 			tempaddrinfo = addrs_to_try[i].info;
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-			break;
-#endif
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 			/*
 			 * If we have a socket, but it's for a
 			 * different address family, close it.
@@ -690,6 +688,7 @@ PCAP_SOCKET sock_open(const char *host, struct addrinfo *addrinfo,
 			}
 			else
 				break;
+#endif // !FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 		}
 
 		/*
@@ -1226,6 +1225,7 @@ int sock_send(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer,
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 		nsent = remaining;
+		(void)(sock);
 #else
 #ifdef MSG_NOSIGNAL
 		/*
@@ -1441,6 +1441,9 @@ int sock_recv(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 	for (;;) {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 		nread = fuzz_recv(bufp, remaining);
+		(void)(recv_flags);
+		(void)(sock);
+		(void)(ssl);
 #elif defined(HAVE_OPENSSL)
 		if (ssl)
 		{
@@ -1597,7 +1600,8 @@ int sock_recv_dgram(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer,
 	message.msg_flags = 0;
 #endif
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-	nread = fuzz_recv(buffer, size);
+	nread = fuzz_recv(buffer, (int)size);
+	(void)(sock);
 #else
 	nread = recvmsg(sock, &message, 0);
 #endif
