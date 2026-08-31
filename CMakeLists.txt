@@ -3627,6 +3627,8 @@ if(NOT MSVC)
         install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline_with_tstamp_precision.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
         install_manpage_symlink(pcap_tstamp_type_val_to_name.3pcap pcap_tstamp_type_val_to_description.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
         install_manpage_symlink(pcap_setnonblock.3pcap pcap_getnonblock.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+        install_manpage_symlink(pcap_setfilter.3pcap pcap_setwritefilter.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+        install_manpage_symlink(pcap_setfilter.3pcap pcap_lockfilter.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
 
         set(MANFILE "")
         foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})

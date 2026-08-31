@@ -28,6 +28,8 @@ pcap_setfilter \- set the filter
 .LP
 .ft B
 int pcap_setfilter(pcap_t *p, struct bpf_program *fp);
+int pcap_setwritefilter(pcap_t *p, struct bpf_program *fp);
+int pcap_lockfilter(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
@@ -57,9 +59,23 @@ but if it stands for a live packet capture, the filter program may use the
 extensions if necessary.  See
 .BR pcap_compile ()
 for more information.
+.PP
+.BR \%pcap_setwritefilter ()
+functions the same as
+.BR pcap_setfilter () ,
+except it filters packets written to the network rather than read from.
+This can only be a kernel filter.
+.PP
+.BR \%pcap_lockfilter ()
+will lock the in kernel read and write filters and stop them from being
+changed or removed.
+Once locked, they cannot be unlocked.
 .SH RETURN VALUE
-.BR pcap_setfilter ()
-returns
+.BR pcap_setfilter () ,
+.BR pcap_setwritefilter ()
+and
+.BR pcap_lockfilter ()
+return
 .B 0
 on success,
 .B PCAP_ERROR_NOT_ACTIVATED
