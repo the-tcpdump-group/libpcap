@@ -3326,7 +3326,7 @@ create_ring(pcap_t *handle)
 				 * Hardware timestamp, synchronized
 				 * with the system clock.
 				 */
-				timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
+				timesource = SOF_TIMESTAMPING_RX_HARDWARE;
 			} else {
 				/*
 				 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
@@ -5093,7 +5093,7 @@ static const struct {
 	int pcap_tstamp_val;
 } sof_ts_type_map[3] = {
 	{ SOF_TIMESTAMPING_SOFTWARE, PCAP_TSTAMP_HOST },
-	{ SOF_TIMESTAMPING_SYS_HARDWARE, PCAP_TSTAMP_ADAPTER },
+	{ SOF_TIMESTAMPING_RX_HARDWARE, PCAP_TSTAMP_ADAPTER },
 	{ SOF_TIMESTAMPING_RAW_HARDWARE, PCAP_TSTAMP_ADAPTER_UNSYNCED }
 };
 #define NUM_SOF_TIMESTAMPING_TYPES	(sizeof sof_ts_type_map / sizeof sof_ts_type_map[0])
