@@ -21,19 +21,19 @@ on Haiku are as follows:
 * `ps_ifdrop` is the number of packets dropped by the network interface (as
   seen via `SIOCGIFSTATS`) since the capture handle became active.
 
-## AMD64 R1/beta5
+## AMD64 R1/beta6
 
 * Autoconf 2.72 works.
-* CMake 3.28.3 works.
+* CMake 4.1.6 works.
 * GCC 13.3.0 works.
-* Clang 18.1.7 works.
+* Clang 22.1.8 works.
 * flex 2.6.4 works.
 * bison 3.8.2 works.
 
 The following command will install respective non-default packages:
 ```
-pkgman install cmake llvm18_clang
+pkgman install cmake llvm22_clang
 ```
 
 For reference, the tests were done using a system installed from
-`haiku-r1beta5-x86_64-anyboot.iso`.
+`haiku-r1beta6-x86_64-anyboot.iso`.

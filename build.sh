@@ -113,6 +113,11 @@ suncc-5.14/SunOS-5.10|suncc-5.15/SunOS-5.10)
     #   location of the previous definition
     LIBPCAP_TAINTED=yes
     ;;
+clang-22.*/Haiku-*)
+    # pcap-rpcap.c:340:40: warning: allocation of insufficient size '28' for
+    #   type 'struct sockaddr' with size '32' [-Walloc-size]
+    LIBPCAP_TAINTED=yes
+    ;;
 *)
     ;;
 esac
