@@ -2453,12 +2453,12 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 static void
 opt_cleanup(opt_state_t *opt_state)
 {
-	free((void *)opt_state->vnode_base);
-	free((void *)opt_state->vmap);
-	free((void *)opt_state->edges);
-	free((void *)opt_state->space);
-	free((void *)opt_state->levels);
-	free((void *)opt_state->blocks);
+	free(opt_state->vnode_base);
+	free(opt_state->vmap);
+	free(opt_state->edges);
+	free(opt_state->space);
+	free(opt_state->levels);
+	free(opt_state->blocks);
 }
 
 /*

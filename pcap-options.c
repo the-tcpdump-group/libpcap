@@ -54,9 +54,9 @@ pcap_options *pcap_alloc_option(void)
 void pcap_free_option(pcap_options *po)
 {
         if(po != NULL) {
-                if(po->io_read_plugin) free((void *)po->io_read_plugin);
-                if(po->io_write_plugin) free((void *)po->io_write_plugin);
-                free((void *)po);
+                if(po->io_read_plugin) free(po->io_read_plugin);
+                if(po->io_write_plugin) free(po->io_write_plugin);
+                free(po);
         }
 }
 
@@ -68,7 +68,7 @@ int pcap_set_option_string(pcap_options *po,
         const char *saved = strdup(value);
         switch(pon) {
         case PON_TSTAMP_PRECISION:
-                free((void *)saved);
+                free(saved);
                 return -2;
 
         case PON_IO_READ_PLUGIN:
@@ -78,7 +78,7 @@ int pcap_set_option_string(pcap_options *po,
                 po->io_write_plugin= saved;
                 break;
         default:
-                free((void *)saved);
+                free(saved);
                 return -1;
         }
         return 0;
