@@ -2498,16 +2498,29 @@ slength(struct slist *s)
 }
 
 /*
+ * Bound on how deep count_blocks() is allowed to recurse. A filter
+ * expression with this many chained terms (e.g. that many "and"ed
+ * "not host X" clauses) is already unreasonable, and letting the
+ * recursion go deeper than this risks exhausting the stack on a
+ * pathological or maliciously crafted filter before we ever get to
+ * do anything useful with it.
+ */
+#define MAX_BLOCK_NESTING	10000
+
+/*
  * Return the number of nodes reachable by 'p'.
  * All nodes should be initially unmarked.
  */
 static int
-count_blocks(struct icode *ic, struct block *p)
+count_blocks(opt_state_t *opt_state, struct icode *ic, struct block *p, u_int depth)
 {
 	if (p == 0 || isMarked(ic, p))
 		return 0;
+	if (depth > MAX_BLOCK_NESTING)
+		opt_error(opt_state, "filter is too complex to optimize");
 	Mark(ic, p);
-	return count_blocks(ic, JT(p)) + count_blocks(ic, JF(p)) + 1;
+	return count_blocks(opt_state, ic, JT(p), depth + 1) +
+	    count_blocks(opt_state, ic, JF(p), depth + 1) + 1;
 }
 
 /*
@@ -2585,7 +2598,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	 * block number to block.  Then, put the blocks into the array.
 	 */
 	unMarkAll(ic);
-	n = count_blocks(ic, ic->root);
+	n = count_blocks(opt_state, ic, ic->root, 0);
 	opt_state->blocks = (struct block **)calloc(n, sizeof(*opt_state->blocks));
 	if (opt_state->blocks == NULL)
 		opt_error(opt_state, "calloc");
