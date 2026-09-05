@@ -61,6 +61,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         and DLT_ENC savefiles. (issue #74)
       Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
       Fix optimization of "jset #0xffffffff".
+      Place all long jumps in one pass, not one pass per long jump, so
+        that compiling a large filter is no longer quadratic in the
+        number of them. (issue #1255)
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization
