@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_TSTAMP_TYPE_VAL_TO_NAME 3PCAP "22 August 2018"
+.TH PCAP_TSTAMP_TYPE_VAL_TO_NAME 3PCAP "6 September 2026"
 .SH NAME
 pcap_tstamp_type_val_to_name, pcap_tstamp_type_val_to_description \- get
 a name or description for a time stamp type value
@@ -37,13 +37,13 @@ const char *pcap_tstamp_type_val_to_description(int tstamp_type);
 .BR pcap_tstamp_type_val_to_name ()
 translates a time stamp type value to the corresponding time stamp type
 name.
-.B NULL
+A null pointer
 is returned on failure.
 .PP
 .BR pcap_tstamp_type_val_to_description ()
 translates a time stamp type value to a short description of that time
 stamp type.
-.B NULL
+A null pointer
 is returned on failure.
 .SH BACKWARD COMPATIBILITY
 .PP

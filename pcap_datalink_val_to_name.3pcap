@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DATALINK_VAL_TO_NAME 3PCAP "4 May 2022"
+.TH PCAP_DATALINK_VAL_TO_NAME 3PCAP "6 September 2026"
 .SH NAME
 pcap_datalink_val_to_name, pcap_datalink_val_to_description,
 pcap_datalink_val_to_description_or_dlt \- get a
@@ -42,7 +42,7 @@ link-layer header type name, which is the
 name for the link-layer header type value with the
 .B DLT_
 removed.
-.B NULL
+A null pointer
 is returned if the type value does not correspond to a known
 .B DLT_
 value.
@@ -50,7 +50,7 @@ value.
 .BR pcap_datalink_val_to_description ()
 translates a link-layer header type value to a short description of that
 link-layer header type.
-.B NULL
+A null pointer
 is returned if the type value does not correspond to a known
 .B DLT_
 value.
@@ -70,7 +70,7 @@ function first became available in libpcap release 1.9.1.  In previous
 releases,
 .BR pcap_datalink_val_to_description ()
 would have to be called and, if it returned
-.BR NULL ,
+a null pointer,
 a default string would have to be constructed.
 .SH SEE ALSO
 .BR pcap (3PCAP),

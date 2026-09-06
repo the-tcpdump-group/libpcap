@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_SELECTABLE_FD 3PCAP "29 January 2020"
+.TH PCAP_GET_SELECTABLE_FD 3PCAP "6 September 2026"
 .SH NAME
 pcap_get_selectable_fd \- get a file descriptor on which a select() can
 be done for a live capture
@@ -69,7 +69,10 @@ and an attempt must always be made to read packets from the device
 when the call returns.  If
 .BR \%pcap_get_required_select_timeout ()
 returns
-.BR NULL ,
+a null timeout pointer for a device for which
+.BR pcap_get_selectable_fd ()
+returned
+.BR \-1 ,
 it is not possible to wait for packets to arrive on the device in an
 event loop.
 .PP

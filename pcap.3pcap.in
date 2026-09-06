@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3PCAP "18 September 2024"
+.TH PCAP 3PCAP "6 September 2026"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -171,7 +171,7 @@ adapter could well be in promiscuous mode for some other reason.
 .IP
 For now, this doesn't work on the "any" device; if an argument of "any"
 or
-.B NULL
+a null pointer
 is supplied, the setting of promiscuous mode is ignored.
 .IP
 Promiscuous mode is set with
@@ -626,7 +626,7 @@ packet.  It returns a
 to the first
 .B caplen
 bytes of the packet on success, and
-.B NULL
+a null pointer
 on error.
 .PP
 .BR pcap_next_ex ()
@@ -702,7 +702,10 @@ routine returns, an attempt should be made to read packets from the
 device.  If
 .BR pcap_get_required_select_timeout ()
 returns
-.BR NULL ,
+a null timeout pointer for a device for which
+.BR pcap_get_selectable_fd ()
+returned
+.BR \-1 ,
 no such timeout is available, and those routines cannot be
 used with the device.
 .PP

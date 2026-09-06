@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FILE 3PCAP "3 January 2014"
+.TH PCAP_FILE 3PCAP "6 September 2026"
 .SH NAME
 pcap_file \- get the standard I/O stream for a savefile being read
 .SH SYNOPSIS
@@ -36,7 +36,7 @@ returns the standard I/O stream of the ``savefile'', if a ``savefile''
 was opened with
 .BR pcap_open_offline (3PCAP),
 or
-.BR NULL ,
+a null pointer,
 if a network device was opened with
 .BR pcap_create (3PCAP)
 and

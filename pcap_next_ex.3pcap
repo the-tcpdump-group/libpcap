@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_NEXT_EX 3PCAP "26 March 2026"
+.TH PCAP_NEXT_EX 3PCAP "6 September 2026"
 .SH NAME
 pcap_next_ex, pcap_next \- read the next packet from a pcap_t
 .SH SYNOPSIS
@@ -141,7 +141,7 @@ as an argument to fetch or display the error text.
 .PP
 .BR pcap_next ()
 returns a pointer to the packet data on success, and returns
-.B NULL
+a null pointer
 if an error occurred, or if no packets were read from a live capture
 (if, for example, they were discarded because they didn't pass the
 packet filter, or if, on platforms that support a packet buffer timeout

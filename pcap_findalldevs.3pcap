@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FINDALLDEVS 3PCAP "1 February 2026"
+.TH PCAP_FINDALLDEVS 3PCAP "6 September 2026"
 .SH NAME
 pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
 free that list
@@ -85,7 +85,7 @@ If
 succeeds, the pointer pointed to by
 .I alldevsp
 is set to point to the first element of the list, or to
-.B NULL
+a null pointer
 if no devices were found (this is considered success).
 Each element of the list is of type
 .BR pcap_if_t ,
@@ -94,9 +94,9 @@ and has the following members:
 .TP
 .B next
 if not
-.BR NULL ,
+a null pointer,
 a pointer to the next element in the list;
-.B NULL
+a null pointer
 for the last element of the list
 .TP
 .B name
@@ -107,14 +107,14 @@ or
 .TP
 .B description
 if not
-.BR NULL ,
+a null pointer,
 a pointer to a string giving a human-readable description of the device
 .TP
 .B addresses
 a pointer to the first element of a list of network addresses for the
 device,
 or
-.B NULL
+a null pointer
 if the device has no addresses
 .TP
 .B flags
@@ -163,9 +163,9 @@ and has the following members:
 .TP
 .B next
 if not
-.BR NULL ,
+a null pointer,
 a pointer to the next element in the list;
-.B NULL
+a null pointer
 for the last element of the list
 .TP
 .B addr
@@ -175,7 +175,7 @@ containing an address
 .TP
 .B netmask
 if not
-.BR NULL ,
+a null pointer,
 a pointer to a
 .B "struct sockaddr"
 that contains the netmask corresponding to the address pointed to by
@@ -183,26 +183,26 @@ that contains the netmask corresponding to the address pointed to by
 .TP
 .B broadaddr
 if not
-.BR NULL ,
+a null pointer,
 a pointer to a
 .B "struct sockaddr"
 that contains the broadcast address corresponding to the address pointed
 to by
 .BR addr ;
 may be
-.B NULL
+a null pointer
 if the device doesn't support broadcasts
 .TP
 .B dstaddr
 if not
-.BR NULL ,
+a null pointer,
 a pointer to a
 .B "struct sockaddr"
 that contains the destination address corresponding to the address pointed
 to by
 .BR addr ;
 may be
-.B NULL
+a null pointer
 if the device isn't a point-to-point interface
 .RE
 .PP
@@ -267,7 +267,7 @@ is filled in with an appropriate error message,
 and the pointer pointed to by
 .I alldevsp
 is set to
-.BR NULL .
+a null pointer.
 .SH BACKWARD COMPATIBILITY
 .PP
 The

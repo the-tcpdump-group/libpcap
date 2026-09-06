@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_CREATE 3PCAP "11 March 2025"
+.TH PCAP_CREATE 3PCAP "6 September 2026"
 .SH NAME
 pcap_create \- create a live capture handle
 .SH SYNOPSIS
@@ -42,8 +42,8 @@ is used to create a packet capture handle to capture packets on a device
 .BR \%pcap_findalldevs (3PCAP)
 for a more detailed explanation).
 .I source
-is a string that specifies the capture device to open, in this function
-.B NULL
+is a string that specifies the capture device to open; in this function,
+a null pointer
 means the same as the string "any".
 .I errbuf
 is a buffer large enough to hold at least
@@ -60,10 +60,10 @@ on the handle before activating it.
 returns a
 .B pcap_t *
 on success and
-.B NULL
+a null pointer
 on failure.
 If
-.B NULL
+a null pointer
 is returned,
 .I errbuf
 is filled in with an appropriate error message.

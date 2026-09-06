@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SETNONBLOCK 3PCAP "30 November 2023"
+.TH PCAP_SETNONBLOCK 3PCAP "6 September 2026"
 .SH NAME
 pcap_setnonblock, pcap_getnonblock \- set or get the state of
 non-blocking mode on a capture device
@@ -65,7 +65,7 @@ available;
 should be used instead.
 .BR pcap_next (3PCAP)
 will return
-.B NULL
+a null pointer
 if there are no packets currently available to read;
 this is indistinguishable from an error, so
 .BR pcap_next_ex ()
