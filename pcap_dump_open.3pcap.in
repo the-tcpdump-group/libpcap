@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DUMP_OPEN 3PCAP "3 July 2020"
+.TH PCAP_DUMP_OPEN 3PCAP "6 September 2026"
 .SH NAME
 pcap_dump_open, pcap_dump_open_append, pcap_dump_fopen \- open a file to
 which to write packets
@@ -89,10 +89,10 @@ structure to use in subsequent
 and
 .BR pcap_dump_close (3PCAP)
 calls is returned on success.
-.B NULL
+A null pointer
 is returned on failure.
 If
-.B NULL
+a null pointer
 is returned,
 .BR pcap_geterr (3PCAP)
 can be used to get the error text.

@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_OPEN_OFFLINE 3PCAP "12 October 2024"
+.TH PCAP_OPEN_OFFLINE 3PCAP "6 September 2026"
 .SH NAME
 pcap_open_offline, pcap_open_offline_with_tstamp_precision,
 pcap_fopen_offline, pcap_fopen_offline_with_tstamp_precision \- open a saved capture file for reading
@@ -104,10 +104,10 @@ and
 return a
 .B pcap_t *
 on success and
-.B NULL
+a null pointer
 on failure.
 If
-.B NULL
+a null pointer
 is returned,
 .I errbuf
 is filled in with an appropriate error message.

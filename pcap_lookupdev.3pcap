@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOKUPDEV 3PCAP "30 November 2023"
+.TH PCAP_LOOKUPDEV 3PCAP "6 September 2026"
 .SH NAME
 pcap_lookupdev \- find the default device on which to capture
 .SH SYNOPSIS
@@ -51,7 +51,7 @@ chars.
 .B If
 .BR pcap_init (3PCAP)
 .B has been called, this interface always returns
-.BR NULL .
+a null pointer.
 .LP
 .BR pcap_lookupdev ()
 returns a pointer to a string giving the name of a network device
@@ -67,7 +67,7 @@ If there is an error,
 or if
 .BR pcap_init (3PCAP)
 has been called,
-.B NULL
+a null pointer
 is returned and
 .I errbuf
 is filled in with an appropriate error message.

@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_REQUIRED_SELECT_TIMEOUT 3PCAP "29 January 2020"
+.TH PCAP_GET_REQUIRED_SELECT_TIMEOUT 3PCAP "6 September 2026"
 .SH NAME
 pcap_get_required_select_timeout \- get a timeout to be used when doing
 select() for a live capture
@@ -42,11 +42,11 @@ containing a value that must be used as the minimum timeout in
 and
 .BR kevent (2)
 calls, or
-.B NULL
+a null pointer
 if there is no such timeout.
 If a
-.RB non- NULL
-value is returned, it must be used regardless of whether
+non-null
+timeout pointer is returned, it must be used regardless of whether
 .BR pcap_get_selectable_fd (3PCAP)
 returns
 .B \-1
@@ -100,13 +100,13 @@ when the call returns,
 should be called for all
 .BR pcap_t s
 for which a
-.RB non- NULL
-timeout was returned, regardless of whether it's indicated as having
+non-null
+timeout pointer was returned, regardless of whether it's indicated as having
 anything to read from it or not.
 .PP
 All devices with a
-.RB non- NULL
-timeout must be put in non-blocking mode with
+non-null
+timeout pointer must be put in non-blocking mode with
 .BR pcap_setnonblock (3PCAP).
 .PP
 Note that a device on which a read can be done without blocking may,
@@ -125,7 +125,7 @@ is not available on Windows.
 A pointer to a
 .B struct timeval
 is returned if the timeout is required; otherwise
-.B NULL
+a null pointer
 is returned.
 .SH BACKWARD COMPATIBILITY
 This function became available in libpcap release 1.9.0.  In previous
