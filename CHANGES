@@ -61,13 +61,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         and DLT_ENC savefiles. (issue #74)
       Match all AF_INET6 values when filtering DLT_PFLOG savefiles.
       Fix optimization of "jset #0xffffffff".
-      CVE-2026-0799: Access M[] safely in the BPF interpreter.
-      CVE-2026-31912: Mind the program bounds in pcap_offline_filter().
-      CVE-2026-31911: Fail opcodes safely in the BPF interpreter.
-      CVE-2026-6244: Avoid division by zero via pcap_offline_filter().
-      CVE-2026-6554: Limit "ja L" looping in pcap_offline_filter().
-      Validate BPF opcodes stricter.
-      For "lsh" and "rsh" guard "#k" as well.
     Capture file reading:
       Fix misaligned accesses in processing Linux USB captures (issue
         #1634, reported by FuzzAnything Organization
@@ -77,8 +70,6 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         another incorporate-remote-capture project. (issue #1120)
       rpcapd: Refine SSL options in printusage().
       Fix parameter name validation in the configuration file.
-      CVE-2026-18313: Fix a memory leak in rpcapd.
-      CVE-2026-18238: Fix RPCAP_MSG_PACKET validation.
     Documentation:
       Add a README.hurd.md file.
       Cross-reference some man pages better.
@@ -175,8 +166,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix some resource freeing issues. (issues #1532 and #1300)
       Improve error messages for activate and findalldevs failures.
 
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.7 libpcap release (so far!)
+Saturday, September 5, 2026 / The Tcpdump Group
+  Summary for 1.10.7 libpcap release
     General:
       Free p->opt.device on close, not on cleanup (issue #1615). Issue
         reported by Harrison Green.
@@ -185,8 +176,18 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Packet filtering:
       Initialize the scratch memory store to 0.
       In "net <n> mask <m>" catch ENOMEM for the "m" too.
+      CVE-2026-0799: Access M[] safely in the BPF interpreter.
+      CVE-2026-31912: Mind the program bounds in pcap_offline_filter().
+      CVE-2026-31911: Fail opcodes safely in the BPF interpreter.
+      CVE-2026-6244: Avoid division by zero via pcap_offline_filter().
+      CVE-2026-6554: Limit "ja L" looping in pcap_offline_filter().
+      Validate BPF opcodes stricter.
+      For "lsh" and "rsh" guard "#k" as well.
     Windows:
       Fix error return from memory allocation error.
+    rpcap:
+      CVE-2026-18313: Fix a memory leak in rpcapd.
+      CVE-2026-18238: Fix RPCAP_MSG_PACKET validation.
     Documentation:
       Remove list of OSes that support "ipv6-icmp"; all the ones we
         support appear to do so.
