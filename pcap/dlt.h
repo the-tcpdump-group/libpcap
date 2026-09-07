@@ -121,6 +121,7 @@
  * didn't.  So it goes.
  */
 #if defined(__NetBSD__) || defined(__FreeBSD__)
+// Via __FreeBSD__ this matches MidnightBSD too.
 #ifndef DLT_SLIP_BSDOS
 #define DLT_SLIP_BSDOS	13	/* BSD/OS Serial Line IP */
 #define DLT_PPP_BSDOS	14	/* BSD/OS Point-to-point Protocol */
@@ -445,6 +446,7 @@
  * didn't map to 246 as DLT_PFSYNC files.
  */
 #ifdef __FreeBSD__
+// Via __FreeBSD__ this matches MidnightBSD too.
 #define DLT_PFSYNC		121
 #else
 #define DLT_HHDLC		121

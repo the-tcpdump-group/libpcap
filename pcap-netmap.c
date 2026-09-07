@@ -49,7 +49,8 @@
    * reserved for kernel purposes.  ioctl(2) silently disregards requests to
    * change IFF_PROMISC, so trying to use the latter would not even cause an
    * obvious run-time error.  Exactly the same applies to QNX 8.0, which uses
-   * FreeBSD network stack.
+   * FreeBSD network stack.  Idem MidnightBSD, which also defines __FreeBSD__
+   * and thus does not need a separate condition.
    *
    * Remap to IFF_PROMISC on other platforms.
    *
