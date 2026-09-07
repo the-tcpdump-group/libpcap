@@ -31,6 +31,7 @@ my %osnames = (
 	haiku => 'Haiku',
 	hpux => 'HP-UX',
 	linux => 'Linux',
+	midnightbsd => 'MidnightBSD',
 	msys => 'Windows',
 	netbsd => 'NetBSD',
 	nto => 'QNX',

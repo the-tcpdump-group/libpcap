@@ -395,6 +395,7 @@ sub skip_igrp9 {
 	return skip_os_not ('freebsd') &&
         skip_os_not ('darwin') &&
         skip_os_not ('nto') &&
+        skip_os_not ('midnightbsd') &&
         skip_os_not ('dragonfly');
 }
 
@@ -402,6 +403,7 @@ sub skip_igrp88 {
 	return skip_os ('freebsd') ||
         skip_os ('darwin') ||
         skip_os ('nto') ||
+        skip_os ('midnightbsd') ||
         skip_os ('dragonfly');
 }
 
@@ -30982,16 +30984,16 @@ $DLTnames{
 	12
 } = 'RAW';
 $DLTnames{
-	$^O eq 'netbsd' || $^O eq 'freebsd' ? 13 :
+	$^O eq 'netbsd' || $^O eq 'freebsd' || $^O eq 'midnightbsd' ? 13 :
 	15
 } = 'SLIP_BSDOS';
 $DLTnames{
-	$^O eq 'netbsd' || $^O eq 'freebsd' ? 14 :
+	$^O eq 'netbsd' || $^O eq 'freebsd' || $^O eq 'midnightbsd' ? 14 :
 	16
 } = 'PPP_BSDOS';
 $DLTnames{
 	$^O eq 'openbsd' || $^O eq 'netbsd' || $^O eq 'dragonfly' || $^O eq 'darwin' ? 18 :
-	$^O eq 'freebsd' ? 121 :
+	$^O eq 'freebsd' || $^O eq 'midnightbsd' ? 121 :
 	246
 } = 'PFSYNC';
 $DLTnames{
