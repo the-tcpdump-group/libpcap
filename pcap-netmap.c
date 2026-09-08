@@ -54,7 +54,7 @@
    *
    * Remap to IFF_PROMISC on other platforms.
    *
-   * XXX - DragonFly BSD?
+   * DragonFly BSD does not implement netmap.
    */
   #define IFF_PPROMISC	IFF_PROMISC
 #endif /* __FreeBSD__ */
