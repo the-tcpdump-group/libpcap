@@ -1396,6 +1396,7 @@ pcapint_add_any_dev(pcap_if_list_t *devlistp, char *errbuf)
 	return pcapint_add_dev(devlistp, "any",
 	    PCAP_IF_UP |
 	    PCAP_IF_RUNNING |
+	    PCAP_IF_NO_INJECT |
 	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf);
 }

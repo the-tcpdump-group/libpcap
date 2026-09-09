@@ -234,6 +234,14 @@ static int ifprint(pcap_if_t *d)
     printf("%sLOOPBACK", sep);
     sep = ", ";
   }
+  if (d->flags & PCAP_IF_NO_CAPTURE) {
+    printf("%sNO_CAPTURE", sep);
+    sep = ", ";
+  }
+  if (d->flags & PCAP_IF_NO_INJECT) {
+    printf("%sNO_INJECT", sep);
+    sep = ", ";
+  }
   if (d->flags & PCAP_IF_WIRELESS) {
     printf("%sWIRELESS", sep);
     switch (d->flags & PCAP_IF_CONNECTION_STATUS) {
