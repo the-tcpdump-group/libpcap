@@ -255,6 +255,22 @@ pcap_stats_npf(pcap_t *p, struct pcap_stat *ps)
 		    GetLastError(), "PacketGetStats error");
 		return (-1);
 	}
+
+	/*
+	 * "ps_recv" counts only packets that *passed* the
+	 * filter, not packets that didn't pass the filter.
+	 * This includes packets later dropped because we
+	 * ran out of buffer space.
+	 *
+	 * "ps_drop" counts packets dropped because we ran
+	 * out of buffer space.  It doesn't count packets
+	 * dropped by the interface driver.  It counts only
+	 * packets that passed the filter.
+	 *
+	 * Both statistics include packets not yet read from
+	 * the kernel by libpcap, and thus not yet seen by
+	 * the application.
+	 */
 	ps->ps_recv = bstats.bs_recv;
 	ps->ps_drop = bstats.bs_drop;
 

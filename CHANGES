@@ -23,6 +23,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Return more useful strings from pcap_statustostr().
       Rename SWAPSHORT(), SWAPLONG(), SWAPLL() to PCAP_BSWAP_({16,32,64}).
       Replace EXTRACT_SHORT by EXTRACT_BE_U_2, EXTRACT_LONG by EXTRACT_BE_U_4.
+      Add a comment to pcap-npf.c describing what pcap_stats() returns
+          as ps_recv and ps_drop.
     Link-layer types:
       Add LINKTYPE_DECT_NR_TAP/DLT_DECT_NR_TAP.
     Packet filtering:
