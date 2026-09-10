@@ -152,6 +152,7 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 * that would apply to a particular USB interface.
 		 */
 		if (pcapint_add_dev(devlistp, dev_name,
+		    PCAP_IF_NO_INJECT |
 		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 		    "Raw USB traffic, all USB buses", err_str) == NULL)
 			return -1;
@@ -163,7 +164,9 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
 		 */
 		snprintf(dev_descr, sizeof(dev_descr), "Raw USB traffic, bus number %d", n);
-		if (pcapint_add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
+		if (pcapint_add_dev(devlistp, dev_name,
+		    PCAP_IF_NO_INJECT,
+		    dev_descr, err_str) == NULL)
 			return -1;
 	}
 

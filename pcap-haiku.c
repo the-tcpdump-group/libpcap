@@ -452,6 +452,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	if (validate_ifname(name, errbuf) < 0)
 		return PCAP_ERROR;
 
+	*flags |= PCAP_IF_NO_INJECT;
+
 	if (*flags & PCAP_IF_LOOPBACK ||
 	    ! strncmp(name, "tun", strlen("tun")) ||
 	    ! strncmp(name, "tap", strlen("tap"))) {

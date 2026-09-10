@@ -81,6 +81,7 @@ bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
      */
     if (pcapint_add_dev(devlistp, INTERFACE_NAME,
                 PCAP_IF_WIRELESS |
+                PCAP_IF_NO_INJECT |
                 PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
                 "Bluetooth Linux Monitor", err_str) == NULL)
     {
