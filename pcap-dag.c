@@ -1429,6 +1429,7 @@ dag_stream_long_description(char *strbuf, const size_t strbufsize,
 
 /*
  * Add all DAG devices.
+ * This excludes vDAG Tx streams, which libpcap cannot use.
  */
 int
 dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
@@ -1537,6 +1538,14 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 					if (1 == sscanf(linebuf, "Stream %u:", &stream)) {
 #ifndef ENABLE_DAG_TX
 						if (TX_ONLY(stream))
+							continue;
+#else
+						/*
+						 * TODO: To tell whether the current device is a vDAG,
+						 * instead of comparing the device index with hard-coded
+						 * values parse the allocation type of the current stream.
+						 */
+						if (TX_ONLY(stream) && c >= 16 && c <= 31)
 							continue;
 #endif // ENABLE_DAG_TX
 						// a conditional shorthand device
