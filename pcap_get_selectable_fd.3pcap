@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_SELECTABLE_FD 3PCAP "6 September 2026"
+.TH PCAP_GET_SELECTABLE_FD 3PCAP "10 September 2026"
 .SH NAME
 pcap_get_selectable_fd \- get a file descriptor on which a select() can
 be done for a live capture
@@ -32,19 +32,34 @@ int pcap_get_selectable_fd(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
+If
+.I p
+refers to a network device that was opened for a live capture using
+a combination of
+.BR pcap_create (3PCAP)
+and
+.BR pcap_activate (3PCAP),
+or using
+.BR pcap_open_live (3PCAP),
 .BR pcap_get_selectable_fd ()
-returns, on UNIX, a file descriptor number for a file descriptor on
-which one can
+returns, on Unix-like systems, a file descriptor number for a
+file descriptor on which one can
 do a
 .BR select (2),
 .BR poll (2),
 .BR epoll_wait (2),
 .BR kevent (2),
 or other such call
-to wait for it to be possible to read packets without blocking, if such
-a descriptor exists, or
+to wait for it to be possible to read or inject packets without
+blocking, if such a descriptor exists, or
 .BR \-1 ,
 if no such descriptor exists.
+.PP
+The returned file descriptor must only be used for detecting
+whether reading or injecting packets can be done without blocking.
+No other operations, including
+.BR close (2),
+should be performed on the file descriptor.
 .PP
 Some network devices opened with
 .BR pcap_create (3PCAP)
@@ -152,4 +167,7 @@ A selectable file descriptor is returned if one exists; otherwise,
 is returned.
 .SH SEE ALSO
 .BR pcap (3PCAP),
+.BR select (2),
+.BR poll (2),
+.BR epoll_wait (2),
 .BR kqueue (2)

@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FILENO 3PCAP "25 July 2018"
+.TH PCAP_FILENO 3PCAP "10 September 2026"
 .SH NAME
 pcap_fileno \- get the file descriptor for a live capture
 .SH SYNOPSIS
@@ -33,7 +33,7 @@ int pcap_fileno(pcap_t *p);
 .SH DESCRIPTION
 If
 .I p
-refers to a network device that was opened for a live capture using
+refers to a capture device that was opened for a live capture using
 a combination of
 .BR pcap_create (3PCAP)
 and
@@ -42,6 +42,10 @@ or using
 .BR pcap_open_live (3PCAP),
 .BR pcap_fileno ()
 returns the file descriptor from which captured packets are read.
+.LP
+A
+.BR close (2)
+must not be performed on the file descriptor.
 .LP
 If
 .I p
