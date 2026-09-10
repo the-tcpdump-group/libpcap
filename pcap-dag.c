@@ -15,6 +15,7 @@
 #include <endian.h>
 #include <limits.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "pcap-int.h"
 
@@ -123,14 +124,15 @@ static int dag_setnonblock(pcap_t *p, int nonblock);
  * Convert the return value of getenv() to an unsigned integer in the
  * range [0, UINT_MAX].
  *
- * If the environment variable is not set or is empty, return the default
- * value supplied as an argument.
+ * If the environment variable is not set or is empty, set *val to the default
+ * value supplied as an argument and return true.
  *
- * Otherwise, on success, return 1 and set *val to the value, and, on
- * error, return 0.
+ * Otherwise, on success, return true and set *val to the parsed value, and, on
+ * error, return false.
  */
-static int
-get_decuint_from_env(const char *envname, unsigned *val, unsigned defaultval)
+static bool
+get_decuint_from_env(const char *envname, unsigned *val,
+    const unsigned defaultval, char *errbuf)
 {
 	const char *env;
 
@@ -148,23 +150,23 @@ get_decuint_from_env(const char *envname, unsigned *val, unsigned defaultval)
 		ret = pcapint_get_decuint(env, NULL, val);
 		if (ret != 0) {
 			if (ret == EINVAL) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "invalid %s value: \"%s\" is not a valid unsigned number",
 				    envname, env);
 			} else if (ret == ERANGE) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "invalid %s value: \"%s\" is too large",
 				    envname, env);
 			} else {
-				pcapint_fmt_errmsg_for_errno(p->errbuf,
+				pcapint_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, ret,
 				    "invalid %s value: \"%s\" can't be parsed",
 				    envname, env);
 			}
-			return 0;
+			return false;
 		}
 	}
-	return 1;
+	return true;
 }
 
 static void
@@ -841,10 +843,8 @@ dag_activate_tx(pcap_t *p)
 {
 	struct pcap_dag *pd = p->priv;
 
-	const char * env;
 	uint32_t iface;
-
-	if (!get_decuint_from_env(ENV_TX_IFACE, &iface, 0))
+	if (!get_decuint_from_env(ENV_TX_IFACE, &iface, 0, p->errbuf))
 		return PCAP_ERROR;
 	uint32_t ifcount = dag_config_get_interface_count(pd->dag_ref);
 	if (iface >= ifcount) {
@@ -856,7 +856,7 @@ dag_activate_tx(pcap_t *p)
 	if (iface > UINT8_MAX) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "invalid %s value: %u is too large (> %u)",
-		    ENV_TX_IFACE, ifacev, UINT8_MAX);
+		    ENV_TX_IFACE, iface, UINT8_MAX);
 	}
 	pd->tx_iface = (uint8_t)iface;
 
@@ -948,8 +948,6 @@ dag_activate_tx(pcap_t *p)
 static int dag_activate(pcap_t* p)
 {
 	struct pcap_dag *pd = p->priv;
-	char *s;
-	int n;
 	char * device = p->opt.device;
 	int ret;
 	dag_size_t mindata;
@@ -1129,12 +1127,13 @@ static int dag_activate(pcap_t* p)
 	pd->dag_mem_bottom = 0;
 	pd->dag_mem_top = 0;
 
+	unsigned n;
 	/*
 	 * Find out how many FCS bits we should strip.
 	 * Assume Rx FCS length to be 32 bits unless the user has
 	 * requested a different value, in which case validate it well.
 	 */
-	if (!get_decuint_from_env(ENV_RX_FCS_BITS, &n, 32)) {
+	if (!get_decuint_from_env(ENV_RX_FCS_BITS, &n, 32, p->errbuf)) {
 		ret = PCAP_ERROR;
 		goto failstop;
 	}
@@ -1155,7 +1154,7 @@ static int dag_activate(pcap_t* p)
 	/*
 	 * Did the user request that they not be stripped?
 	 */
-	if (!get_decuint_from_env(ENV_RX_FCS_NOSTRIP, &n, 0)) {
+	if (!get_decuint_from_env(ENV_RX_FCS_NOSTRIP, &n, 0, p->errbuf)) {
 		ret = PCAP_ERROR;
 		goto failstop;
 	}
