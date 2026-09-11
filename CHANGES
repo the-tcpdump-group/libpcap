@@ -87,6 +87,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Produce cleaner DOT in the optimizer debugging code.
       man: Use "null pointer" rather than "NULL" and fix some other
         issues.
+      Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
+        the descriptors returned by those routinesmust not be closed.
+        (Issue #1722)
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
