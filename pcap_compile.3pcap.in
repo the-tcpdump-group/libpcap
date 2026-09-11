@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_COMPILE 3PCAP "29 May 2025"
+.TH PCAP_COMPILE 3PCAP "11 September 2026"
 .SH NAME
 pcap_compile \- compile a filter expression
 .SH SYNOPSIS
@@ -92,6 +92,17 @@ keyword is valid for any live capture on Linux, but when reading packets
 from a savefile, regardless of the OS it is valid for
 .B DLT_LINUX_SLL2
 only.
+.PP
+By convention, in this function both a null pointer and an empty string are
+valid arguments for the
+.I str
+input parameter and mean the same: to accept all packets.  This should not be
+confused with an empty resulting filter program: even a program that accepts
+or rejects all packets comprises at least one BPF instruction, so on success
+.I \%fp.bf_insns
+is never a null pointer and
+.I \%fp.bf_len
+is always greater than zero.
 .SH RETURN VALUE
 .BR pcap_compile ()
 returns
