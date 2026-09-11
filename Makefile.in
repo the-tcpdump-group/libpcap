@@ -53,12 +53,22 @@ MKDEP = @MKDEP@
 CCOPT = @V_CCOPT@
 SHLIB_CCOPT = @V_SHLIB_CCOPT@
 INCLS = -I. @V_INCLS@
-DEFS = -DBUILDING_PCAP -Dpcap_EXPORTS @DEFS@ @V_DEFS@
+# Optional Clang -fbounds-safety (default off). make ENABLE_FBOUNDS_SAFETY=1
+ENABLE_FBOUNDS_SAFETY ?= 0
+ifeq ($(ENABLE_FBOUNDS_SAFETY),1)
+FBOUNDS_DEFS = -DPCAP_SUPPORT_FBOUNDS_SAFETY
+FBOUNDS_CFLAGS = -fbounds-safety
+else
+FBOUNDS_DEFS =
+FBOUNDS_CFLAGS =
+endif
+
+DEFS = -DBUILDING_PCAP -Dpcap_EXPORTS @DEFS@ @V_DEFS@ $(FBOUNDS_DEFS)
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
 CROSSFLAGS=
-CFLAGS = @CFLAGS@   ${CROSSFLAGS}
+CFLAGS = @CFLAGS@   ${CROSSFLAGS} $(FBOUNDS_CFLAGS)
 LDFLAGS = @LDFLAGS@ ${CROSSFLAGS}
 DYEXT = @DYEXT@
 RPATH = @RPATH@
@@ -133,6 +143,7 @@ HDR = $(PUBHDR) \
 	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
+	pcap_bounds_safety.h \
 	pcap-rpcap.h \
 	pcap-types.h \
 	pcap-usb-linux-common.h \

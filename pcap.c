@@ -4242,7 +4242,9 @@ pcapint_cleanup_live_common(pcap_t *p)
 	 */
 	if (p->buffer != NULL) {
 		free(p->buffer);
+		/* clear: drop counted pointer then size */
 		p->buffer = NULL;
+		p->bufsize = 0;
 	}
 	if (p->dlt_list != NULL) {
 		free(p->dlt_list);

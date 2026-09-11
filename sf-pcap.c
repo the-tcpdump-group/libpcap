@@ -496,8 +496,9 @@ grow_buffer(pcap_t *p, u_int bufsize)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 		return (0);
 	}
-	p->buffer = bigger_buffer;
+	/* counted_by: set capacity before pointer */
 	p->bufsize = bufsize;
+	p->buffer = bigger_buffer;
 	return (1);
 }
 

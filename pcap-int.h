@@ -48,6 +48,7 @@
 #include <stdarg.h>
 
 #include "portability.h"
+#include "pcap_bounds_safety.h"
 
 #define PCAP_DEBUG {printf(" [%s:%d %s] ", __FILE__, __LINE__, __func__); fflush(stdout);}
 
@@ -261,9 +262,15 @@ struct pcap {
 
 	/*
 	 * Read buffer.
+	 * bufsize is declared before buffer so PCAP_COUNTED_BY_OR_NULL can name
+	 * it. Capacity is assigned before the pointer at update sites.
+	 * On most capture/savefile paths, buffer holds bufsize bytes (or is NULL
+	 * with bufsize 0). Linux TPACKET uses buffer as a frame-pointer ring with
+	 * a different size relationship — follow-up before enabling
+	 * -fbounds-safety on that backend.
 	 */
 	u_int bufsize;
-	u_char *buffer;
+	u_char * PCAP_COUNTED_BY_OR_NULL(bufsize) buffer;
 	u_char *bp;
 	u_int cc;
 

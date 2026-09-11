@@ -342,6 +342,8 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 			return (-1);
 		}
+		/* counted_by: set capacity before pointer */
+		p->bufsize = bhdr.total_length;
 		p->buffer = bigger_buffer;
 	}
 

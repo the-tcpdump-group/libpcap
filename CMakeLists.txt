@@ -492,6 +492,16 @@ else()
     set(NO_PROTOCHAIN ON)
 endif()
 
+# Optional Clang -fbounds-safety. Default OFF: PCAP_*COUNTED_BY* macros in
+# pcap_bounds_safety.h are inert and the ABI/build is unchanged. When ON,
+# requires a Clang that provides -fbounds-safety / <ptrcheck.h>.
+option(ENABLE_FBOUNDS_SAFETY
+       "Enable Clang -fbounds-safety annotations (experimental toolchain)" OFF)
+if(ENABLE_FBOUNDS_SAFETY)
+  add_definitions(-DPCAP_SUPPORT_FBOUNDS_SAFETY)
+  add_compile_options(-fbounds-safety)
+endif()
+
 #
 # Start out with the capture mechanism type unspecified; the user
 # can explicitly specify it and, if they don't, we'll pick an

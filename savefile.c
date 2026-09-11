@@ -238,8 +238,12 @@ pcapint_sf_cleanup(pcap_t *p)
 {
 	if (p->rfile != stdin)
 		(void)fclose(p->rfile);
-	if (p->buffer != NULL)
+	if (p->buffer != NULL) {
 		free(p->buffer);
+		/* clear: drop counted pointer then size */
+		p->buffer = NULL;
+		p->bufsize = 0;
+	}
 	pcap_freecode(&p->fcode);
 }
 
