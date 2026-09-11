@@ -4433,6 +4433,10 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 {
 	const struct bpf_insn *fcode = fp->bf_insns;
 
+	/*
+	 * Here .bf_insns == NULL means to reject all packets, but downstream
+	 * of pcapint_filter() it means to accept all packets.
+	 */
 	if (fcode != NULL)
 		return (pcapint_filter(fcode, fp->bf_len, pkt, h->len, h->caplen));
 	else

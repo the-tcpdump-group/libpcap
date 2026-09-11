@@ -108,9 +108,10 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 	uint32_t A, X;
 	bpf_u_int32 k;
 
-	if (pc == 0)
+	if (pc == NULL)
 		/*
 		 * No filter means accept all.
+		 * (Which is the opposite of the pcap_offline_filter() convention.)
 		 * In this case the value of 'proglen' is irrelevant.
 		 */
 		return (u_int)-1;
