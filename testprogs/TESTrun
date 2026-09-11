@@ -12215,31 +12215,7 @@ my @filter_accept_blocks = (
 		name => 'vxlan_nullary',
 		DLT => 'EN10MB',
 		aliases => ['vxlan'],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 13
-			(002) ldb      [23]
-			(003) jeq      #0x11            jt 4	jf 21
-			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 21	jf 6
-			(006) ldxb     4*([14]&0xf)
-			(007) ldh      [x + 16]
-			(008) jeq      #0x12b5          jt 9	jf 21
-			(009) ldb      [x + 22]
-			(010) jeq      #0x8             jt 11	jf 21
-			(011) txa
-			(012) jeq      x                jt 20	jf 21
-			(013) jeq      #0x86dd          jt 14	jf 21
-			(014) ldb      [20]
-			(015) jeq      #0x11            jt 16	jf 21
-			(016) ldh      [56]
-			(017) jeq      #0x12b5          jt 18	jf 21
-			(018) ldb      [62]
-			(019) jeq      #0x8             jt 20	jf 21
-			(020) ret      #262144
-			(021) ret      #0
-			',
-		unopt => '
+		optunopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 15
 			(002) ldb      [23]
@@ -12284,37 +12260,7 @@ my @filter_accept_blocks = (
 		name => 'vxlan_unary',
 		DLT => 'EN10MB',
 		aliases => ['vxlan 12345'],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 16
-			(002) ldb      [23]
-			(003) jeq      #0x11            jt 4	jf 27
-			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 27	jf 6
-			(006) ldxb     4*([14]&0xf)
-			(007) ldh      [x + 16]
-			(008) jeq      #0x12b5          jt 9	jf 27
-			(009) ldb      [x + 22]
-			(010) jeq      #0x8             jt 11	jf 27
-			(011) ld       [x + 26]
-			(012) and      #0xffffff00
-			(013) jeq      #0x303900        jt 14	jf 27
-			(014) txa
-			(015) jeq      x                jt 26	jf 27
-			(016) jeq      #0x86dd          jt 17	jf 27
-			(017) ldb      [20]
-			(018) jeq      #0x11            jt 19	jf 27
-			(019) ldh      [56]
-			(020) jeq      #0x12b5          jt 21	jf 27
-			(021) ldb      [62]
-			(022) jeq      #0x8             jt 23	jf 27
-			(023) ld       [66]
-			(024) and      #0xffffff00
-			(025) jeq      #0x303900        jt 26	jf 27
-			(026) ret      #262144
-			(027) ret      #0
-			',
-		unopt => '
+		optunopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 19
 			(002) ldb      [23]
@@ -12366,85 +12312,7 @@ my @filter_accept_blocks = (
 		name => 'vxlan_and_vxlan',
 		DLT => 'EN10MB',
 		aliases => ['vxlan and vxlan'],
-		opt => '
-			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 13
-			(002) ldb      [23]
-			(003) jeq      #0x11            jt 4	jf 75
-			(004) ldh      [20]
-			(005) jset     #0x1fff          jt 75	jf 6
-			(006) ldxb     4*([14]&0xf)
-			(007) ldh      [x + 16]
-			(008) jeq      #0x12b5          jt 9	jf 75
-			(009) ldb      [x + 22]
-			(010) jeq      #0x8             jt 11	jf 75
-			(011) txa
-			(012) jeq      x                jt 23	jf 75
-			(013) jeq      #0x86dd          jt 14	jf 75
-			(014) ldb      [20]
-			(015) jeq      #0x11            jt 16	jf 75
-			(016) ldh      [56]
-			(017) jeq      #0x12b5          jt 18	jf 75
-			(018) ldb      [62]
-			(019) jeq      #0x8             jt 20	jf 75
-			(020) ldx      #0x28
-			(021) txa
-			(022) jeq      #0x28            jt 23	jf 23
-			(023) add      #22
-			(024) add      #8
-			(025) add      #12
-			(026) st       M[1]
-			(027) add      #2
-			(028) tax
-			(029) stx      M[2]
-			(030) ld       #0x0
-			(031) jeq      #0x0             jt 32	jf 32
-			(032) ldx      M[1]
-			(033) ldh      [x + 0]
-			(034) jeq      #0x800           jt 35	jf 62
-			(035) ldx      M[2]
-			(036) ldb      [x + 9]
-			(037) jeq      #0x11            jt 38	jf 75
-			(038) ldh      [x + 6]
-			(039) jset     #0x1fff          jt 75	jf 40
-			(040) ldb      [x + 0]
-			(041) and      #0xf
-			(042) lsh      #2
-			(043) add      x
-			(044) tax
-			(045) ldh      [x + 2]
-			(046) jeq      #0x12b5          jt 47	jf 75
-			(047) ldx      M[2]
-			(048) ldb      [x + 0]
-			(049) and      #0xf
-			(050) lsh      #2
-			(051) add      x
-			(052) tax
-			(053) ldb      [x + 8]
-			(054) jeq      #0x8             jt 55	jf 75
-			(055) ldx      M[2]
-			(056) ldb      [x + 0]
-			(057) and      #0xf
-			(058) lsh      #2
-			(059) add      x
-			(060) tax
-			(061) jeq      x                jt 74	jf 75
-			(062) jeq      #0x86dd          jt 63	jf 75
-			(063) ldx      M[2]
-			(064) ldb      [x + 6]
-			(065) jeq      #0x11            jt 66	jf 75
-			(066) ldh      [x + 42]
-			(067) jeq      #0x12b5          jt 68	jf 75
-			(068) ldb      [x + 48]
-			(069) jeq      #0x8             jt 70	jf 75
-			(070) ld       #0x28
-			(071) add      x
-			(072) tax
-			(073) jeq      x                jt 74	jf 75
-			(074) ret      #262144
-			(075) ret      #0
-			',
-		unopt => '
+		optunopt => '
 			(000) ldh      [12]
 			(001) jeq      #0x800           jt 2	jf 15
 			(002) ldb      [23]

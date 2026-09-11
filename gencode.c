@@ -9737,6 +9737,12 @@ gen_vxlan(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	/*
+	 * This code generates blocks that are known to trigger a bug in the
+	 * optimizer (see GitHub 1670), so avoid the bug until it gets fixed.
+	 */
+	cstate->no_optimize = 1;
+
 	b0 = gen_vxlan4(cstate, vni, has_vni);
 	b1 = gen_vxlan6(cstate, vni, has_vni);
 
