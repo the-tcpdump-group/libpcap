@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SETFILTER 3PCAP "13 February 2025"
+.TH PCAP_SETFILTER 3PCAP "11 September 2026"
 .SH NAME
 pcap_setfilter \- set the filter
 .SH SYNOPSIS
@@ -38,6 +38,15 @@ is a pointer to a
 .B bpf_program
 structure, usually the result of a call to
 .BR \%pcap_compile (3PCAP).
+The structure members have the same meaning as in
+.BR \%pcap_offline_filter (3PCAP),
+except in
+.BR \%pcap_setfilter ()
+.I \%fp.bf_insns
+must be a non-null pointer.  In other words, any successful result of
+.BR \%pcap_compile ()
+is always valid in
+.BR \%pcap_setfilter ().
 .PP
 If the calls to
 .BR \%pcap_compile ()
