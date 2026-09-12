@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "7 September 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "12 September 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1998,6 +1998,12 @@ The
 and
 .B slow
 protocols became available for "ether proto" in libpcap 1.11.0.
+.PP
+Before libpcap 1.11.0 the
+.B gateway
+primitive had a different definition, which did not produce the expected
+results, also its support was conditional and since libpcap 1.0.0 was disabled
+by default.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS

@@ -29418,7 +29418,7 @@ foreach (DLTs_without 'link_proto') {
 		name => "link_proto_1_${_}",
 		DLT => $_,
 		expr => 'link proto 1',
-		errstr => "link-layer type filtering not implemented for DLT_${_}",
+		errstr => "link-layer protocol filtering not implemented for DLT_${_}",
 	};
 }
 

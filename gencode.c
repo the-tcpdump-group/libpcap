@@ -1443,7 +1443,20 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 	program->bf_len = len;
 
-	rc = 0;  /* We're all okay */
+	/*
+	 * If the code generator and the optimizer (if involved) work
+	 * correctly, the resulting filter program is valid.  If it is invalid,
+	 * fail now to make this type of bugs easier to detect and to debug.
+	 *
+	 * This sanity check is duplicate when the result is immediately used
+	 * with pcap_setfilter(), which validates the program too.  However,
+	 * pcap_offline_filter() will just quietly reject the packet if the BPF
+	 * interpreter runs into an invalid detail.  Also the program could be
+	 * used in external code and/or at a later time and/or after being
+	 * stored in a file or transmitted over the network.
+	 */
+	rc = pcapint_validate_filter(program->bf_insns, program->bf_len) ? 0 :
+		PCAP_ERROR;
 
 quit:
 	/*
@@ -4546,7 +4559,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	 * to tell only the address family of the packet, other meaningful
 	 * data is either missing or behind TLVs.
 	 */
-	bpf_error(cstate, "link-layer type filtering not implemented for %s",
+	bpf_error(cstate, "link-layer protocol filtering not implemented for %s",
 	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
@@ -7032,6 +7045,11 @@ stringtoport(compiler_state_t *cstate, const char *string, size_t string_size,
 		 * Not a valid number; try looking it up as a port.
 		 */
 		cpy = malloc(string_size + 1);	/* +1 for terminating '\0' */
+		if (cpy == NULL) {
+			bpf_set_error(cstate, "%s: out of memory", __func__);
+			longjmp(cstate->top_ctx, 1);
+			/*NOTREACHED*/
+		}
 		memcpy(cpy, string, string_size);
 		cpy[string_size] = '\0';
 		tcp_port = nametoport(cstate, cpy, IPPROTO_TCP);
