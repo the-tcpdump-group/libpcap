@@ -1443,7 +1443,20 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 	program->bf_len = len;
 
-	rc = 0;  /* We're all okay */
+	/*
+	 * If the code generator and the optimizer (if involved) work
+	 * correctly, the resulting filter program is valid.  If it is invalid,
+	 * fail now to make this type of bugs easier to detect and to debug.
+	 *
+	 * This sanity check is duplicate when the result is immediately used
+	 * with pcap_setfilter(), which validates the program too.  However,
+	 * pcap_offline_filter() will just quietly reject the packet if the BPF
+	 * interpreter runs into an invalid detail.  Also the program could be
+	 * used in external code and/or at a later time and/or after being
+	 * stored in a file or transmitted over the network.
+	 */
+	rc = pcapint_validate_filter(program->bf_insns, program->bf_len) ? 0 :
+		PCAP_ERROR;
 
 quit:
 	/*
