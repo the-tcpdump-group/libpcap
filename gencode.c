@@ -4546,7 +4546,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	 * to tell only the address family of the packet, other meaningful
 	 * data is either missing or behind TLVs.
 	 */
-	bpf_error(cstate, "link-layer type filtering not implemented for %s",
+	bpf_error(cstate, "link-layer protocol filtering not implemented for %s",
 	    pcapint_datalink_val_to_string(cstate->linktype));
 }
 
