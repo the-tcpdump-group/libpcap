@@ -56,6 +56,7 @@ Additional people who have contributed patches (in alphabetical order):
     Christian Svensson            <blue at cmd dot nu>
     Christopher K Lee             <christopher dot lee at cspi dot com>
     Clément Péron                 <peron dot clem at gmail dot com>
+    corubba                       <corubba at gmx dot de>
     Daniel Borkmann               <dborkman at redhat dot com>
     Daniele Orlandi               <daniele at orlandi dot com>
     Daniel Lublin                 <daniel at lublin dot se>
@@ -70,12 +71,14 @@ Additional people who have contributed patches (in alphabetical order):
     David Ward                    <david dot ward at ll dot mit dot edu>
     David Young                   <dyoung at ojctech dot com>
     Dean Gaudet                   <dean at arctic dot org>
+    deprrous                      <sukhbatsuugii2004 at gmail dot com>
     dhruv                         <rsrivat at sourceforge dot net>
     Dmytro Ovdiienko              <dmitriy dot ovdienko at gmail dot com>
     Don Ebright                   <Don dot Ebright at compuware dot com>
     Dug Song                      <dugsong at monkey dot org>
     Dustin Spicuzza               <dustin at virtualroadside dot com>
     dzejarczech                   <dzejarczech at sourceforge dot net>
+    Edem Khadiev                  <edem dot khadiev at dsr-corporation dot com>
     Ed Maste                      <emaste at FreeBSD dot org>
     Edward Sheldrake              <ejs1920 at sourceforge dot net>
     Ege Çetin                     <egecetin at hotmail dot com dot tr>
@@ -142,6 +145,7 @@ Additional people who have contributed patches (in alphabetical order):
     JHA                           <jon dot anderson at oracle dot com>
     jingyu yang                   <jingleyang at users dot noreply dot github dot com>
     Jiri Slaby                    <jirislaby at gmail dot com>
+    Joao                          <joaonasmont at gmail dot com>
     João Valverde                 <joao dot valverde at tecnico dot ulisboa dot pt>
     Joel                          <82591719+joelg989 at users dot noreply dot github dot com>
     Joerg Mayer                   <jmayer at loplof dot de>
@@ -224,6 +228,7 @@ Additional people who have contributed patches (in alphabetical order):
     Onno van der Linden           <onno at simplex dot nl>
     Orgad Shaneh                  <orgad dot shaneh at audiocodes dot com>
     Ørjan Malde                   <red at foxi dot me>
+    OwenSanzas                    <zesheng at tamu dot edu>
     Paolo Abeni                   <pabeni at redhat dot com>
     Patrick Marie                 <mycroft at virgaria dot org>
     Patrick McHardy               <kaber at trash dot net>
@@ -245,10 +250,12 @@ Additional people who have contributed patches (in alphabetical order):
     Rick Jones                    <raj at cup dot hp dot com>
     Robert Edmonds                <edmonds at debian dot org>
     Roberto Mariani               <jelot-tcpdump at jelot dot it>
+    Robin Jarry                   <rjarry at redhat dot com>
     Roland Dreier                 <roland at purestorage dot com>
     Romain Francoise              <rfrancoise at debian dot org>
     Rongxi Li                     <rongxi dot li at chaitin dot com>
     Rose                          <83477269+AtariDreams at users dot noreply dot github dot com>
+    Rudi Heitbaum                 <rudi at heitbaum dot com>
     Ryan Castellucci              <github-1b66+210325 at ryanc dot org>
     Sagun Shakya                  <sagun dot shakya at sun dot com>
     Samuel Thibault               <samuel dot thibault at ens-lyon dot org>
