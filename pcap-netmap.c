@@ -64,7 +64,7 @@ struct pcap_netmap {
 	pcap_handler cb;	/* callback and argument */
 	u_char *cb_arg;
 	int must_clear_promisc;	/* flag */
-	uint64_t rx_pkts;	/* # of pkts received before the filter */
+	uint64_t rx_pkts;	/* # of pkts that passed the filter */
 };
 
 
@@ -88,7 +88,6 @@ pcap_netmap_filter(u_char *arg, struct pcap_pkthdr *h, const u_char *buf)
 	const struct bpf_insn *pc = p->fcode.bf_insns;
 	u_int snaplen = (u_int)p->snapshot; /* guaranteed not to be negative */
 
-	++pn->rx_pkts;
 	if (pc == NULL ||
 	    (snaplen = pcapint_filter(pc, p->fcode.bf_len,
 	                              buf, h->len, h->caplen)) != 0) {
@@ -97,6 +96,7 @@ pcap_netmap_filter(u_char *arg, struct pcap_pkthdr *h, const u_char *buf)
 		 */
 		if (h->caplen > snaplen)
 			h->caplen = snaplen;
+		++pn->rx_pkts;
 		pn->cb(pn->cb_arg, h, buf);
 	}
 }
