@@ -86,6 +86,9 @@ Sunday, September 13, 2026 / The Tcpdump Group
       Improve documentation of TLS support in rpcapd man page.
       man: Use "null pointer" rather than "NULL" and fix some other
         issues.
+      Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
+        the descriptors returned by those routinesmust not be closed.
+        (Issue #1722)
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       CI: Introduce and use LIBPCAP_CMAKE_TAINTED.
