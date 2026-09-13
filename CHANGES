@@ -1,5 +1,5 @@
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.11.0 libpcap release (so far!)
+Sunday, September 13, 2026 / The Tcpdump Group
+  Summary for 1.11.0 libpcap release
     Source code:
       Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
