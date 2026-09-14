@@ -293,6 +293,25 @@ fail:
 	return EX_USAGE;
 }
 
+static int
+test_pcapint_lowest_set_bit(const char *arg)
+{
+	uint64_t i;
+	if (parse_hex(arg, UINT32_MAX, &i))
+		goto fail;
+	if (i == 0)
+		goto fail; // The function argument must not be 0.
+	char buf[64];
+	snprintf(buf, sizeof(buf), "0x%08x", (uint32_t)i);
+	if (pcapint_strcasecmp(buf, arg))
+		goto fail;
+	printf("OK: %u\n", pcapint_lowest_set_bit((uint32_t)i));
+	return EX_OK;
+fail:
+	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+	return EX_USAGE;
+}
+
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -312,6 +331,7 @@ static const struct {
 	{"PCAP_BSWAP_16", 0, test_PCAP_BSWAP_16, "0xXXXX"},
 	{"PCAP_BSWAP_32", 0, test_PCAP_BSWAP_32, "0xXXXXXXXX"},
 	{"PCAP_BSWAP_64", 0, test_PCAP_BSWAP_64, "0xXXXXXXXXXXXXXXXX"},
+	{"pcapint_lowest_set_bit", 0, test_pcapint_lowest_set_bit, "0xXXXXXXXX (must not be 0)"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 

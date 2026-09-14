@@ -155,6 +155,17 @@ lowest_set_bit(int mask)
 #endif
 
 /*
+ * This is an extern shim to be invoked from translatetest.c because
+ * lowest_set_bit() can be an inline function (which can be unnecessarily
+ * complicated to declare extern) or a macro.
+ */
+uint32_t
+pcapint_lowest_set_bit(const uint32_t x)
+{
+	return lowest_set_bit(x);
+}
+
+/*
  * Represents a deleted instruction.
  */
 #define NOP -1

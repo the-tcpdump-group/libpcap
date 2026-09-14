@@ -30249,6 +30249,294 @@ my @translate_accept_blocks = (
 		aliases => ['0x1a2b3c4d5e6f7a8b'],
 		expect => '0x8b7a6f5e4d3c2b1a',
 	},
+
+	{
+		name => 'pcapint_lowest_set_bit_0',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000001',
+			'0x0af69ec5',
+		],
+		expect => '0',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_1',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000002',
+			'0xdc1b97da',
+		],
+		expect => '1',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_2',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000004',
+			'0xca2f467c',
+		],
+		expect => '2',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_3',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000008',
+			'0x9ac1e878',
+		],
+		expect => '3',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_4',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000010',
+			'0x3c38ebd0',
+		],
+		expect => '4',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_5',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000020',
+			'0xd3da1fe0',
+		],
+		expect => '5',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_6',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000040',
+			'0xa39778c0',
+		],
+		expect => '6',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_7',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000080',
+			'0x74b94b80',
+		],
+		expect => '7',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_8',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000100',
+			'0x55f48700',
+		],
+		expect => '8',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_9',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000200',
+			'0x536cda00',
+		],
+		expect => '9',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_10',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000400',
+			'0x508cac00',
+		],
+		expect => '10',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_11',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00000800',
+			'0xafae7800',
+		],
+		expect => '11',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_12',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00001000',
+			'0xf112f000',
+		],
+		expect => '12',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_13',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00002000',
+			'0x36d62000',
+		],
+		expect => '13',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_14',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00004000',
+			'0x7b104000',
+		],
+		expect => '14',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_15',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00008000',
+			'0xf1f18000',
+		],
+		expect => '15',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_16',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00010000',
+			'0x4cd70000',
+		],
+		expect => '16',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_17',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00020000',
+			'0xf41e0000',
+		],
+		expect => '17',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_18',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00040000',
+			'0x1abc0000',
+		],
+		expect => '18',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_19',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00080000',
+			'0xd1f80000',
+		],
+		expect => '19',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_20',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00100000',
+			'0x75300000',
+		],
+		expect => '20',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_21',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00200000',
+			'0x51a00000',
+		],
+		expect => '21',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_22',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00400000',
+			'0x4fc00000',
+		],
+		expect => '22',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_23',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x00800000',
+			'0x27800000',
+		],
+		expect => '23',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_24',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x01000000',
+			'0xb9000000',
+		],
+		expect => '24',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_25',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x02000000',
+			'0x72000000',
+		],
+		expect => '25',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_26',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x04000000',
+			'0x44000000',
+		],
+		expect => '26',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_27',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x08000000',
+			'0x48000000',
+		],
+		expect => '27',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_28',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x10000000',
+			'0x90000000',
+		],
+		expect => '28',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_29',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x20000000',
+			'0xe0000000',
+		],
+		expect => '29',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_30',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x40000000',
+			'0xc0000000',
+		],
+		expect => '30',
+	},
+	{
+		name => 'pcapint_lowest_set_bit_31',
+		cfunc => 'pcapint_lowest_set_bit',
+		aliases => [
+			'0x80000000',
+		],
+		expect => '31',
+	},
 );
 
 # This works similar to @filter_reject_tests.  In each array element the hash

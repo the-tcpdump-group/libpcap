@@ -617,6 +617,7 @@ int	pcapint_validate_filter(const struct bpf_insn *, int);
 uint8_t pcapint_valid_insn(const struct bpf_insn *);
 
 bool pcapint_opcode_without_k(const uint16_t);
+uint32_t pcapint_lowest_set_bit(const uint32_t);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
