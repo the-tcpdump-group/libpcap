@@ -1310,7 +1310,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	compiler_state_t cstate;
 	yyscan_t scanner = NULL;
 	YY_BUFFER_STATE in_buffer = NULL;
-	u_int len;
 	int rc;
 
 	/*
@@ -1435,13 +1434,12 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		}
 	}
 	program->bf_insns = icode_to_fcode(&cstate.ic,
-	    cstate.ic.root, &len, p->errbuf);
+	    cstate.ic.root, &program->bf_len, p->errbuf);
 	if (program->bf_insns == NULL) {
 		/* Failure */
 		rc = PCAP_ERROR;
 		goto quit;
 	}
-	program->bf_len = len;
 
 	/*
 	 * If the code generator and the optimizer (if involved) work

@@ -2949,7 +2949,7 @@ icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
 	 */
 	for (;;) {
 	    unMarkAll(ic);
-	    n = *lenp = count_stmts(ic, root);
+	    n = count_stmts(ic, root);
 
 	    fp = (struct bpf_insn *)calloc(n, sizeof(*fp));
 	    if (fp == NULL) {
@@ -2965,6 +2965,7 @@ icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
 	    free(fp);
 	}
 
+	*lenp = n;
 	return fp;
 }
 
