@@ -819,6 +819,28 @@ if (NOT CMAKE_CROSSCOMPILING)
     libpcap would not work correctly even if it managed to compile."
         )
     endif()
+
+    #
+    # Require a proof of working atexit(3), same as in Autoconf.
+    #
+    check_c_source_runs("
+    #include <stdlib.h>
+
+    static void exitfunc()
+    {
+      return;
+    }
+
+    int main()
+    {
+      return atexit(exitfunc);
+    }
+    "
+        ATEXIT_WORKS
+    )
+    if(NOT ATEXIT_WORKS)
+        message(FATAL_ERROR "atexit(3) is broken, try another compiler.")
+    endif()
 else()
     message(STATUS "Skipped SUITABLE_SNPRINTF because cross-compiling.")
 endif()

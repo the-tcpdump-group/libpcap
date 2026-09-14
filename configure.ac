@@ -303,6 +303,38 @@ libpcap would not work correctly even if it managed to compile.])
     ]
 )
 
+#
+# Require a proof of working atexit(3).
+#
+AC_MSG_CHECKING([whether atexit works])
+AC_RUN_IFELSE(
+    [
+        AC_LANG_SOURCE([[
+#include <stdlib.h>
+
+static void exitfunc()
+{
+  return;
+}
+
+int main()
+{
+  return atexit(exitfunc);
+}
+        ]])
+    ],
+    [
+        AC_MSG_RESULT([yes])
+    ],
+    [
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([atexit(3) is broken, try another compiler.])
+    ],
+    [
+        AC_MSG_RESULT(not while cross-compiling)
+    ]
+)
+
 needasprintf=no
 AC_CHECK_FUNCS(vasprintf asprintf,,
 	[needasprintf=yes])

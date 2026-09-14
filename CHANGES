@@ -1,5 +1,7 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.1 libpcap release (so far!)
+    Building and testing:
+      At the build time require atexit(3) not to crash.
 
 Sunday, September 13, 2026 / The Tcpdump Group
   Summary for 1.11.0 libpcap release
