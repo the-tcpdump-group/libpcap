@@ -158,6 +158,22 @@
       PCAP_DO_PRAGMA(clang diagnostic pop)
   #endif
 
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(20,1)
+    /*
+     * Clang 20.1.0 release notes: "Clang now emits a '-Wtautological-compare'
+     * diagnostic when a check for pointer addition overflow is always true or
+     * false, because overflow would be undefined behavior."
+     *
+     * Clang 20.1.8, 21.1.8 and 22.1.8: pointer-overflowing code compiles as
+     * usual, at the run time the pointer overflows and wraps as usual.
+     */
+    #define DIAG_OFF_TAUTOLOGICAL_COMPARE \
+      PCAP_DO_PRAGMA(clang diagnostic push) \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wtautological-compare")
+    #define DIAG_ON_TAUTOLOGICAL_COMPARE \
+      PCAP_DO_PRAGMA(clang diagnostic pop)
+  #endif
+
 #elif defined(_MSC_VER)
   /*
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
@@ -437,6 +453,12 @@
 #endif
 #ifndef DIAG_ON_UNINITIALIZED_CONST_POINTER
 #define DIAG_ON_UNINITIALIZED_CONST_POINTER
+#endif
+#ifndef DIAG_OFF_TAUTOLOGICAL_COMPARE
+#define DIAG_OFF_TAUTOLOGICAL_COMPARE
+#endif
+#ifndef DIAG_ON_TAUTOLOGICAL_COMPARE
+#define DIAG_ON_TAUTOLOGICAL_COMPARE
 #endif
 #ifndef PCAP_UNREACHABLE
 #define PCAP_UNREACHABLE
