@@ -149,10 +149,10 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 		default:
 			return 0;
 		case BPF_RET|BPF_K:
-			return (u_int)pc->k;
+			return pc->k;
 
 		case BPF_RET|BPF_A:
-			return (u_int)A;
+			return A;
 
 		case BPF_LD|BPF_W|BPF_ABS:
 			k = pc->k;
