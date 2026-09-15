@@ -25975,6 +25975,673 @@ my @filter_accept_blocks = (
 			(020) ret      #0
 			',
 	},
+
+	# In some of the following blocks the negative value is at the
+	# beginning of the filter expression and looks like a command-line
+	# option (short or long) -- the Perl code that drives filtertest must
+	# handle this correctly.
+	{
+		name => '0_eq_0',
+		DLT => 'RAW',
+		aliases => ['0 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "0_eq_0".
+		name => 'neg_0_eq_0',
+		DLT => 'RAW',
+		aliases => ['-0 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #0x0
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "0_eq_0".
+		name => 'neg_neg_0_eq_0',
+		DLT => 'RAW',
+		aliases => ['--0 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       M[0]
+			(006) neg
+			(007) st       M[0]
+			(008) ld       #0x0
+			(009) st       M[1]
+			(010) ldx      M[1]
+			(011) ld       M[0]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	},
+
+	{
+		name => '1_eq_1',
+		DLT => 'RAW',
+		aliases => ['1 == 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	},
+	{
+		name => 'neg_1_ne_1',
+		DLT => 'RAW',
+		aliases => ['-1 != 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #0x1
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #0
+			(011) ret      #262144
+			',
+	},
+	{
+		# This could potentially reduce to "1_eq_1".
+		name => 'neg_neg_1_eq_1',
+		DLT => 'RAW',
+		aliases => ['--1 == 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       M[0]
+			(006) neg
+			(007) st       M[0]
+			(008) ld       #0x1
+			(009) st       M[1]
+			(010) ldx      M[1]
+			(011) ld       M[0]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "neg_1_ne_1".
+		name => 'neg_neg_neg_1_ne_1',
+		DLT => 'RAW',
+		aliases => ['---1 != 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       M[0]
+			(006) neg
+			(007) st       M[0]
+			(008) ld       M[0]
+			(009) neg
+			(010) st       M[0]
+			(011) ld       #0x1
+			(012) st       M[1]
+			(013) ldx      M[1]
+			(014) ld       M[0]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #0
+			(017) ret      #262144
+			',
+	},
+
+	{
+		# Negative of INT32_MAX.
+		name => 'neg_2147483647_eq_2147483649',
+		DLT => 'RAW',
+		aliases => ['-2147483647 == 2147483649'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x7fffffff
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #0x80000001
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	},
+	{
+		# Negative of INT32_MAX + 1.
+		name => 'neg_2147483648_eq_2147483648',
+		DLT => 'RAW',
+		aliases => ['-2147483648 == 2147483648'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x80000000
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #0x80000000
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	},
+	{
+		# Negative of UINT32_MAX.
+		name => 'neg_4294967295_eq_1',
+		DLT => 'RAW',
+		aliases => ['-4294967295 == 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xffffffff
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #0x1
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #262144
+			(011) ret      #0
+			',
+	},
+
+	{
+		# This could potentially reduce to "always true".
+		name => 'len_eq_len',
+		DLT => 'RAW',
+		aliases => ['len == len'],
+		opt => '
+			(000) ld       #pktlen
+			(001) tax
+			(002) jeq      x                jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       #pktlen
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "len != 0".
+		name => 'neg_len_ne_len',
+		DLT => 'RAW',
+		aliases => ['-len != len'],
+		opt => '
+			(000) ld       #pktlen
+			(001) neg
+			(002) st       M[0]
+			(003) ld       #pktlen
+			(004) tax
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #0
+			(008) ret      #262144
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #pktlen
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) jeq      x                jt 10	jf 11
+			(010) ret      #0
+			(011) ret      #262144
+			',
+	},
+	{
+		# This could potentially reduce to "len_eq_len".
+		name => 'neg_neg_len_eq_len',
+		DLT => 'RAW',
+		aliases => ['--len == len'],
+		opt => '
+			(000) ld       #pktlen
+			(001) neg
+			(002) neg
+			(003) st       M[0]
+			(004) ld       #pktlen
+			(005) tax
+			(006) ld       M[0]
+			(007) jeq      x                jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       M[0]
+			(006) neg
+			(007) st       M[0]
+			(008) ld       #pktlen
+			(009) st       M[1]
+			(010) ldx      M[1]
+			(011) ld       M[0]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "neg_len_ne_len".
+		name => 'neg_neg_neg_len_ne_len',
+		DLT => 'RAW',
+		aliases => ['---len != len'],
+		opt => '
+			(000) ld       #pktlen
+			(001) neg
+			(002) neg
+			(003) neg
+			(004) st       M[0]
+			(005) ld       #pktlen
+			(006) tax
+			(007) ld       M[0]
+			(008) jeq      x                jt 9	jf 10
+			(009) ret      #0
+			(010) ret      #262144
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       M[0]
+			(003) neg
+			(004) st       M[0]
+			(005) ld       M[0]
+			(006) neg
+			(007) st       M[0]
+			(008) ld       M[0]
+			(009) neg
+			(010) st       M[0]
+			(011) ld       #pktlen
+			(012) st       M[1]
+			(013) ldx      M[1]
+			(014) ld       M[0]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #0
+			(017) ret      #262144
+			',
+	},
+
+	{
+		name => 'PDA_eq_PDA',
+		DLT => 'RAW',
+		aliases => ['link[0] == link[0]'],
+		opt => '
+			(000) ldb      [0]
+			(001) tax
+			(002) jeq      x                jt 3	jf 4
+			(003) ret      #262144
+			(004) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       #0x0
+			(006) st       M[2]
+			(007) ldx      M[2]
+			(008) ldb      [x + 0]
+			(009) st       M[3]
+			(010) ldx      M[3]
+			(011) ld       M[1]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	},
+	{
+		name => 'neg_PDA_ne_PDA',
+		DLT => 'RAW',
+		aliases => ['-link[0] != link[0]'],
+		opt => '
+			(000) ldb      [0]
+			(001) neg
+			(002) st       M[1]
+			(003) ldb      [0]
+			(004) tax
+			(005) ld       M[1]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #0
+			(008) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       M[1]
+			(006) neg
+			(007) st       M[1]
+			(008) ld       #0x0
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ldb      [x + 0]
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #0
+			(017) ret      #262144
+			',
+	},
+	{
+		# This could potentially reduce to "PDA_eq_PDA".
+		name => 'neg_neg_PDA_eq_PDA',
+		DLT => 'RAW',
+		aliases => ['--link[0] == link[0]'],
+		opt => '
+			(000) ldb      [0]
+			(001) neg
+			(002) neg
+			(003) st       M[1]
+			(004) ldb      [0]
+			(005) tax
+			(006) ld       M[1]
+			(007) jeq      x                jt 8	jf 9
+			(008) ret      #262144
+			(009) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       M[1]
+			(006) neg
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x0
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ldb      [x + 0]
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "neg_PDA_ne_PDA".
+		name => 'neg_neg_neg_PDA_ne_PDA',
+		DLT => 'RAW',
+		aliases => ['---link[0] != link[0]'],
+		opt => '
+			(000) ldb      [0]
+			(001) neg
+			(002) neg
+			(003) neg
+			(004) st       M[1]
+			(005) ldb      [0]
+			(006) tax
+			(007) ld       M[1]
+			(008) jeq      x                jt 9	jf 10
+			(009) ret      #0
+			(010) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ldx      M[0]
+			(003) ldb      [x + 0]
+			(004) st       M[1]
+			(005) ld       M[1]
+			(006) neg
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       M[1]
+			(012) neg
+			(013) st       M[1]
+			(014) ld       #0x0
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ldb      [x + 0]
+			(018) st       M[3]
+			(019) ldx      M[3]
+			(020) ld       M[1]
+			(021) jeq      x                jt 22	jf 23
+			(022) ret      #0
+			(023) ret      #262144
+			',
+	},
+
+	{
+		name => 'arth_eq_arth',
+		DLT => 'RAW',
+		aliases => ['(1 + 0) == (0 + 1)'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       #0x0
+			(009) st       M[2]
+			(010) ld       #0x1
+			(011) st       M[3]
+			(012) ldx      M[3]
+			(013) ld       M[2]
+			(014) add      x
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'neg_arth_ne_arth',
+		DLT => 'RAW',
+		aliases => ['-(1 + 0) != (0 + 1)'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x0
+			(012) st       M[2]
+			(013) ld       #0x1
+			(014) st       M[3]
+			(015) ldx      M[3]
+			(016) ld       M[2]
+			(017) add      x
+			(018) st       M[3]
+			(019) ldx      M[3]
+			(020) ld       M[1]
+			(021) jeq      x                jt 22	jf 23
+			(022) ret      #0
+			(023) ret      #262144
+			',
+	},
+	{
+		# This could potentially reduce to "arth_eq_arth".
+		name => 'neg_neg_arth_eq_arth',
+		DLT => 'RAW',
+		aliases => ['--(1 + 0) == (0 + 1)'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       M[1]
+			(012) neg
+			(013) st       M[1]
+			(014) ld       #0x0
+			(015) st       M[2]
+			(016) ld       #0x1
+			(017) st       M[3]
+			(018) ldx      M[3]
+			(019) ld       M[2]
+			(020) add      x
+			(021) st       M[3]
+			(022) ldx      M[3]
+			(023) ld       M[1]
+			(024) jeq      x                jt 25	jf 26
+			(025) ret      #262144
+			(026) ret      #0
+			',
+	},
+	{
+		# This could potentially reduce to "neg_arth_ne_arth".
+		name => 'neg_neg_neg_arth_ne_arth',
+		DLT => 'RAW',
+		aliases => ['---(1 + 0) != (0 + 1)'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       M[1]
+			(012) neg
+			(013) st       M[1]
+			(014) ld       M[1]
+			(015) neg
+			(016) st       M[1]
+			(017) ld       #0x0
+			(018) st       M[2]
+			(019) ld       #0x1
+			(020) st       M[3]
+			(021) ldx      M[3]
+			(022) ld       M[2]
+			(023) add      x
+			(024) st       M[3]
+			(025) ldx      M[3]
+			(026) ld       M[1]
+			(027) jeq      x                jt 28	jf 29
+			(028) ret      #0
+			(029) ret      #262144
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
