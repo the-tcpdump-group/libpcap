@@ -1,5 +1,7 @@
 /* cmakeconfig.h.in */
 
+#define LIBPCAP_CONFIG_H
+
 /* Define to 1 if arpa/inet.h declares `ether_hostton' */
 #cmakedefine ARPA_INET_H_DECLARES_ETHER_HOSTTON 1
 

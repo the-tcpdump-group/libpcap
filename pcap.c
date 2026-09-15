@@ -32,6 +32,9 @@
  */
 
 #include <config.h>
+#ifndef LIBPCAP_CONFIG_H
+#error "The included config.h header is not from the libpcap build."
+#endif
 
 /*
  * Include this before including any system header files, as it
