@@ -25667,6 +25667,129 @@ my @filter_accept_blocks = (
 			(017) ret      #0
 			',
 	},
+
+	{
+		name => 'div_by_0_optimizer',
+		DLT => 'RAW',
+		aliases => ['1 / (1 - 1) == 1'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) sub      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) div      x
+			(013) st       M[2]
+			(014) ld       #0x1
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'mod_by_0_optimizer',
+		DLT => 'RAW',
+		aliases => ['1 % (1 - 1) == 1'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) sub      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) mod      x
+			(013) st       M[2]
+			(014) ld       #0x1
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'lsh_by_32_optimizer',
+		DLT => 'RAW',
+		aliases => ['0xFFFFFFFF << (16 + 16) == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xffffffff
+			(001) st       M[0]
+			(002) ld       #0x10
+			(003) st       M[1]
+			(004) ld       #0x10
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) add      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) lsh      x
+			(013) st       M[2]
+			(014) ld       #0x0
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'rsh_by_32_optimizer',
+		DLT => 'RAW',
+		aliases => ['0xFFFFFFFF >> (16 + 16) == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xffffffff
+			(001) st       M[0]
+			(002) ld       #0x10
+			(003) st       M[1]
+			(004) ld       #0x10
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) add      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) rsh      x
+			(013) st       M[2]
+			(014) ld       #0x0
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -27123,6 +27246,18 @@ sub errstr_rejects_all {
 	return 'expression rejects all packets';
 }
 
+sub errstr_div_by_zero {
+	return 'division by zero';
+}
+
+sub errstr_mod_by_zero {
+	return 'modulo by zero';
+}
+
+sub errstr_shift_by_more {
+	return 'shift by more than 31 bits';
+}
+
 # * name, DLT, expr, netmask and skip: same as in filter_accept_blocks above
 # * savefile: same as in filter_apply_blocks above, but the directory is one
 #   level up.
@@ -28215,6 +28350,88 @@ my @filter_reject_tests = (
 		DLT => 'PFLOG',
 		expr => 'rarp host 1.2.3.4',
 		errstr => errstr_rejects_all,
+	},
+
+	{
+		name => 'div_by_0_gencode',
+		DLT => 'RAW',
+		expr => '1 / 0 == 1',
+		errstr => errstr_div_by_zero,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'div_by_neg_0_gencode',
+		DLT => 'RAW',
+		expr => '1 / -0 == 1',
+		errstr => errstr_div_by_zero,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'not_div_by_0',
+		DLT => 'RAW',
+		expr => '1 / (0 + 1) == 1',
+		errstr => errstr_div_by_zero,
+	},
+	{
+		name => 'div_by_0_optimizer',
+		DLT => 'RAW',
+		expr => '1 / (1 - 1) == 1',
+		errstr => errstr_div_by_zero,
+	},
+
+	{
+		name => 'mod_by_0_gencode',
+		DLT => 'RAW',
+		expr => '1 % 0 == 0',
+		errstr => errstr_mod_by_zero,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'mod_by_neg_0_gencode',
+		DLT => 'RAW',
+		expr => '1 % -0 == 1',
+		errstr => errstr_mod_by_zero,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'not_mod_by_0',
+		DLT => 'RAW',
+		expr => '1 % (0 + 1) == 0',
+		errstr => errstr_mod_by_zero,
+	},
+	{
+		name => 'mod_by_0_optimizer',
+		DLT => 'RAW',
+		expr => '1 % (1 - 1) == 0',
+		errstr => errstr_mod_by_zero,
+	},
+
+	{
+		name => 'lsh_by_32_gencode',
+		DLT => 'RAW',
+		expr => '0xFFFFFFFF << 32 == 0',
+		errstr => errstr_shift_by_more,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'not_lsh_by_32',
+		DLT => 'RAW',
+		expr => '0xFFFFFFFF << (32 - 1) == 0x80000000',
+		errstr => errstr_shift_by_more,
+	},
+
+	{
+		name => 'rsh_by_32_gencode',
+		DLT => 'RAW',
+		expr => '0xFFFFFFFF >> 32 == 0',
+		errstr => errstr_shift_by_more,
+	},
+	{
+		# FIXME: This is a bug in gen_arth().
+		name => 'not_rsh_by_32',
+		DLT => 'RAW',
+		expr => '0xFFFFFFFF >> (32 - 1) == 0x00000001',
+		errstr => errstr_shift_by_more,
 	},
 );
 
