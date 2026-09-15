@@ -440,4 +440,8 @@ int pcap_parse(void *, compiler_state_t *);
 #define JT(b)  ((b)->et.succ)
 #define JF(b)  ((b)->ef.succ)
 
+#define ERRSTR_DIV_BY_ZERO "division by zero"
+#define ERRSTR_MOD_BY_ZERO "modulo by zero"
+#define ERRSTR_SHIFT_BY_MORE "shift by more than 31 bits"
+
 #endif /* gencode_h */

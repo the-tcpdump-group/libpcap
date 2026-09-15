@@ -778,13 +778,13 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 
 	case BPF_DIV:
 		if (b == 0)
-			opt_error(opt_state, "division by zero");
+			opt_error(opt_state, ERRSTR_DIV_BY_ZERO);
 		a /= b;
 		break;
 
 	case BPF_MOD:
 		if (b == 0)
-			opt_error(opt_state, "modulus by zero");
+			opt_error(opt_state, ERRSTR_MOD_BY_ZERO);
 		a %= b;
 		break;
 
@@ -1293,7 +1293,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				 * fixup the generated math code.
 				 *
 				 * Fail if we're dividing by zero or taking
-				 * a modulus by zero.
+				 * a modulo by zero.
 				 */
 				if (op == BPF_ADD ||
 				    op == BPF_LSH || op == BPF_RSH ||
@@ -1308,10 +1308,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				}
 				if (op == BPF_DIV)
 					opt_error(opt_state,
-					    "division by zero");
+					    ERRSTR_DIV_BY_ZERO);
 				if (op == BPF_MOD)
 					opt_error(opt_state,
-					    "modulus by zero");
+					    ERRSTR_MOD_BY_ZERO);
 			}
 			if (opt_state->vmap[val[A_ATOM]].is_const) {
 				fold_op(opt_state, s, val[A_ATOM], K(s->k));
@@ -1344,7 +1344,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				if ((op == BPF_LSH || op == BPF_RSH) &&
 				    s->k > 31)
 					opt_error(opt_state,
-					    "shift by more than 31 bits");
+					    ERRSTR_SHIFT_BY_MORE);
 				opt_state->done = 0;
 				val[A_ATOM] =
 					F(opt_state, s->code, val[A_ATOM], K(s->k));
