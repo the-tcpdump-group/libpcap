@@ -25669,6 +25669,65 @@ my @filter_accept_blocks = (
 	},
 
 	{
+		name => 'not_div_by_0',
+		DLT => 'RAW',
+		# This is a regression guard: in the past this triggered a bug.
+		aliases => ['1 / (0 + 1) == 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) add      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) div      x
+			(013) st       M[2]
+			(014) ld       #0x1
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'div_by_neg_0_optimizer',
+		DLT => 'RAW',
+		aliases => ['1 / -0 == 1'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ld       M[1]
+			(005) neg
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) div      x
+			(010) st       M[1]
+			(011) ld       #0x1
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
 		name => 'div_by_0_optimizer',
 		DLT => 'RAW',
 		aliases => ['1 / (1 - 1) == 1'],
@@ -25696,6 +25755,66 @@ my @filter_accept_blocks = (
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
+			',
+	},
+
+	{
+		name => 'not_mod_by_0',
+		DLT => 'RAW',
+		# This is a regression guard: in the past this triggered a bug.
+		aliases => ['1 % (0 + 1) == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) add      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) mod      x
+			(013) st       M[2]
+			(014) ld       #0x0
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+	{
+		name => 'mod_by_neg_0_optimizer',
+		DLT => 'RAW',
+		aliases => ['1 % -0 == 1'],
+		# The "opt" leg of this block is a reject test.
+		opt => undef,
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ld       M[1]
+			(005) neg
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
+			(009) mod      x
+			(010) st       M[1]
+			(011) ld       #0x1
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
 			',
 	},
 	{
@@ -25728,6 +25847,39 @@ my @filter_accept_blocks = (
 			(020) ret      #0
 			',
 	},
+
+	{
+		name => 'not_lsh_by_32',
+		DLT => 'RAW',
+		# This is a regression guard: in the past this triggered a bug.
+		aliases => ['0xFFFFFFFF << (32 - 1) == 0x80000000'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xffffffff
+			(001) st       M[0]
+			(002) ld       #0x20
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) sub      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) lsh      x
+			(013) st       M[2]
+			(014) ld       #0x80000000
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
 	{
 		name => 'lsh_by_32_optimizer',
 		DLT => 'RAW',
@@ -25751,6 +25903,39 @@ my @filter_accept_blocks = (
 			(012) lsh      x
 			(013) st       M[2]
 			(014) ld       #0x0
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+
+	{
+		name => 'not_rsh_by_32',
+		DLT => 'RAW',
+		# This is a regression guard: in the past this triggered a bug.
+		aliases => ['0xFFFFFFFF >> (32 - 1) == 0x00000001'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xffffffff
+			(001) st       M[0]
+			(002) ld       #0x20
+			(003) st       M[1]
+			(004) ld       #0x1
+			(005) st       M[2]
+			(006) ldx      M[2]
+			(007) ld       M[1]
+			(008) sub      x
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[0]
+			(012) rsh      x
+			(013) st       M[2]
+			(014) ld       #0x1
 			(015) st       M[3]
 			(016) ldx      M[3]
 			(017) ld       M[2]
@@ -28359,17 +28544,9 @@ my @filter_reject_tests = (
 		errstr => errstr_div_by_zero,
 	},
 	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'div_by_neg_0_gencode',
+		name => 'div_by_neg_0_optimizer',
 		DLT => 'RAW',
 		expr => '1 / -0 == 1',
-		errstr => errstr_div_by_zero,
-	},
-	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'not_div_by_0',
-		DLT => 'RAW',
-		expr => '1 / (0 + 1) == 1',
 		errstr => errstr_div_by_zero,
 	},
 	{
@@ -28386,17 +28563,9 @@ my @filter_reject_tests = (
 		errstr => errstr_mod_by_zero,
 	},
 	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'mod_by_neg_0_gencode',
+		name => 'mod_by_neg_0_optimizer',
 		DLT => 'RAW',
 		expr => '1 % -0 == 1',
-		errstr => errstr_mod_by_zero,
-	},
-	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'not_mod_by_0',
-		DLT => 'RAW',
-		expr => '1 % (0 + 1) == 0',
 		errstr => errstr_mod_by_zero,
 	},
 	{
@@ -28412,25 +28581,11 @@ my @filter_reject_tests = (
 		expr => '0xFFFFFFFF << 32 == 0',
 		errstr => errstr_shift_by_more,
 	},
-	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'not_lsh_by_32',
-		DLT => 'RAW',
-		expr => '0xFFFFFFFF << (32 - 1) == 0x80000000',
-		errstr => errstr_shift_by_more,
-	},
 
 	{
 		name => 'rsh_by_32_gencode',
 		DLT => 'RAW',
 		expr => '0xFFFFFFFF >> 32 == 0',
-		errstr => errstr_shift_by_more,
-	},
-	{
-		# FIXME: This is a bug in gen_arth().
-		name => 'not_rsh_by_32',
-		DLT => 'RAW',
-		expr => '0xFFFFFFFF >> (32 - 1) == 0x00000001',
 		errstr => errstr_shift_by_more,
 	},
 );

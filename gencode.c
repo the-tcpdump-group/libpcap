@@ -8076,6 +8076,19 @@ gen_loadi(compiler_state_t *cstate, bpf_u_int32 val)
 }
 
 /*
+ * Return true iff the given arithmetic expression is a result of gen_loadi(),
+ * which in the current implementation means it uses exactly two BPF
+ * statements: an "ld #k" followed by an "st M[k]".
+ */
+static inline bool
+is_loadi(const struct arth *a)
+{
+	return a->s->s.code == (BPF_LD|BPF_IMM) &&
+	    a->s->next != NULL && a->s->next->s.code == BPF_ST &&
+	    a->s->next->next == NULL;
+}
+
+/*
  * The a_arg dance is to avoid annoying whining by compilers that
  * a might be clobbered by longjmp - yeah, it might, but *WHO CARES*?
  * It's not *used* after setjmp returns.
@@ -8130,17 +8143,29 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
 	 *
 	 * Also disallow shifts by a value greater than 31; we do this
 	 * here, for the same reason.
+	 *
+	 * These checks apply only to the simplest case of the 2nd operand of
+	 * a binary operation -- an immediate value.  Anything more
+	 * sophisticated (even a negation of an immediate value) will have to be
+	 * handled in the optimizer and/or the interpreter.
 	 */
-	if (code == BPF_DIV) {
-		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
-			bpf_error(cstate, ERRSTR_DIV_BY_ZERO);
-	} else if (code == BPF_MOD) {
-		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
-			bpf_error(cstate, ERRSTR_MOD_BY_ZERO);
-	} else if (code == BPF_LSH || code == BPF_RSH) {
-		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k > 31)
-			bpf_error(cstate, ERRSTR_SHIFT_BY_MORE);
-	}
+	if (is_loadi(a1))
+		switch (code) {
+		case BPF_DIV:
+			if (a1->s->s.k == 0)
+				bpf_error(cstate, ERRSTR_DIV_BY_ZERO);
+			break;
+		case BPF_MOD:
+			if (a1->s->s.k == 0)
+				bpf_error(cstate, ERRSTR_MOD_BY_ZERO);
+			break;
+		case BPF_LSH:
+		case BPF_RSH:
+			if (a1->s->s.k > 31)
+				bpf_error(cstate, ERRSTR_SHIFT_BY_MORE);
+			break;
+		}
+
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
 	s2 = new_stmt(cstate, BPF_ALU|BPF_X|code);
