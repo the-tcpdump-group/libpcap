@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "12 September 2026"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "16 September 2026"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -1552,10 +1552,14 @@ bitwise binary operations
 .BR ^ ,
 .BR << ,
 .BR >> },
+parentheses, the negative of any arithmetic expression (using unary
+.B \-
+and defined as the expression subtracted from zero),
 a length accessor, and packet data accessors.  All arithmetic expressions
 regardless of the complexity and composition resolve to an integer value.
-Note that all comparisons are unsigned, so that, for example, both 0x80000000
-and 0xffffffff are > 0.
+Note that in a filter program all integer values are 32-bit unsigned, so that,
+for example, both 0x80000000 and 0xffffffff are > 0, and \-1 is a synonym for
+0xffffffff.
 .LP
 Note that 32-bit octal integer constants in the [010000000000 .. 037777777777]
 interval, which includes 75% of all 32-bit integers, are interpreted as MAC-48
@@ -1564,14 +1568,15 @@ addresses when prepended with a single zero (e.g., 012345670123 means
 number with more zeroes (0012345670123) or represent the same value using a
 decimal (1402433619) or hexadecimal (0x53977053) number.
 .LP
-The
-.B %
-and
-.B ^
+The modulo
+.RB ( % )
+and bitwise XOR
+.RB ( ^ )
 operators are currently only supported for filtering in the kernel on
-particular operating systems (for example: FreeBSD, Linux with 3.7 and later
-kernels, NetBSD); on all other systems (for example: AIX, Hurd, illumos, Solaris,
-OpenBSD), if
+particular operating systems (for example: FreeBSD 12.0 and later, Linux
+with 3.7 and later kernels, NetBSD 8.0 and later, OpenBSD 7.9 and later,
+Windows with Npcap 1.81 and later); on all other systems (for example: AIX,
+Hurd, illumos, Solaris), if
 those operators are used, filtering will be done in user mode, which
 will increase the overhead of capturing packets and may cause more
 packets to be dropped.
