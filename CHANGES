@@ -1,5 +1,9 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.1 libpcap release (so far!)
+    Packet filtering:
+      Place all long jumps in one pass, not one pass per long jump, so
+        that compiling a large filter is no longer quadratic in the
+        number of them. (issue #1255)
 
 Sunday, September 13, 2026 / The Tcpdump Group
   Summary for 1.11.0 libpcap release
