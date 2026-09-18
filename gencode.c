@@ -6509,13 +6509,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
 	struct block *b0, *b;
 	struct slist *s[100];
-	int fix2, fix3, fix4, fix5;
-	int ahcheck, again, end;
-	int i, max;
 	int reg2 = alloc_reg(cstate);
 
 	memset(s, 0, sizeof(s));
-	fix3 = fix4 = fix5 = 0;
 
 	switch (proto) {
 	case Q_IP:
@@ -6567,7 +6563,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * by s[fix] = foo with uninitialized variable "fix".  It is somewhat
 	 * hard to find interdependency made by jump table fixup.
 	 */
-	i = 0;
+	unsigned i = 0;
 	s[i] = new_stmt(cstate, 0);	/*dummy*/
 	i++;
 
@@ -6601,12 +6597,12 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	}
 
 	/* again: if (A == v) goto end; else fall through; */
-	again = i;
+	unsigned again = i;
 	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.k = v;
 	s[i]->s.jt = NULL;		/*later*/
 	s[i]->s.jf = NULL;		/*update in next stmt*/
-	fix5 = i;
+	unsigned fix5 = i;
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
@@ -6615,13 +6611,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.jf = NULL;	/*update in next stmt*/
 	s[i]->s.k = IPPROTO_NONE;
 	s[fix5]->s.jf = s[i];
-	fix2 = i;
+	unsigned fix2 = i;
 	i++;
 
+	unsigned fix3 = 0;
 	if (proto == Q_IPV6) {
-		int v6start, v6end, v6advance, j;
+		unsigned v6start = i;
 
-		v6start = i;
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
 		s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
@@ -6647,11 +6643,11 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i]->s.jf = NULL;	/*later*/
 		s[i]->s.k = IPPROTO_FRAGMENT;
 		fix3 = i;
-		v6end = i;
+		unsigned v6end = i;
 		i++;
 
 		/* v6advance: */
-		v6advance = i;
+		unsigned v6advance = i;
 
 		/*
 		 * in short,
@@ -6697,7 +6693,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 
 		/* fixup */
-		for (j = v6start; j <= v6end; j++)
+		for (unsigned j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
 	} else {
 		/* nop */
@@ -6708,7 +6704,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	}
 
 	/* ahcheck: */
-	ahcheck = i;
+	unsigned ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
 	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
@@ -6716,7 +6712,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.k = IPPROTO_AH;
 	if (fix3)
 		s[fix3]->s.jf = s[ahcheck];
-	fix4 = i;
+	unsigned fix4 = i;
 	i++;
 
 	/*
@@ -6769,21 +6765,19 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	i++;
 
 	/* end: nop */
-	end = i;
 	s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s[i]->s.k = 0;
-	s[fix2]->s.jt = s[end];
-	s[fix4]->s.jf = s[end];
-	s[fix5]->s.jt = s[end];
+	s[fix2]->s.jt = s[i];
+	s[fix4]->s.jf = s[i];
+	s[fix5]->s.jt = s[i];
 	i++;
 
 	/*
 	 * make slist chain
 	 */
-	max = i;
-	for (i = 0; i < max - 1; i++)
-		s[i]->next = s[i + 1];
-	s[max - 1]->next = NULL;
+	for (unsigned j = 0; j < i - 1; j++)
+		s[j]->next = s[j + 1];
+	s[i - 1]->next = NULL;
 
 	/*
 	 * emit final check
