@@ -6567,8 +6567,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i] = new_stmt(cstate, 0);	/*dummy*/
 	i++;
 
-	switch (proto) {
-	case Q_IP:
+	if (proto == Q_IP) {
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 
 		/* A = ip->ip_p */
@@ -6577,9 +6576,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		/* X = ip->ip_hl << 2 */
 		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
-		break;
-
-	case Q_IPV6:
+	} else {
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 
 		/* A = ip6->ip_nxt */
@@ -6589,11 +6586,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
 		s[i]->s.k = IP6_HDRLEN;
 		i++;
-		break;
-
-	default:
-		bpf_error(cstate, "unsupported proto to gen_protochain");
-		/*NOTREACHED*/
 	}
 
 	/* again: if (A == v) goto end; else fall through; */
