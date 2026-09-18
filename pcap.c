@@ -2260,8 +2260,7 @@ pcapint_createsrcstr_ex(char *source _U_, int type _U_, const char *userinfo _U_
    const char *host _U_, const char *port _U_, const char *name _U_,
    unsigned char uses_ssl _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_createsrcstr_ex() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2269,8 +2268,7 @@ int
 pcap_createsrcstr(char *source _U_, int type _U_, const char *host _U_,
     const char *port _U_, const char *name _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_createsrcstr() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2279,8 +2277,7 @@ pcapint_parsesrcstr_ex(const char *source _U_, int *type _U_,
     char *userinfo _U_, char *host _U_, char *port _U_, char *name _U_,
     unsigned char *uses_ssl _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_parsesrcstr_ex() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2288,8 +2285,7 @@ int
 pcap_parsesrcstr(const char *source _U_, int *type _U_, char *host _U_,
     char *port _U_, char *name _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_parsesrcstr() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
