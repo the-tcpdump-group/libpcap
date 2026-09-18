@@ -2262,7 +2262,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 
 		/* frames captured on a Juniper PPPoE service PIC
-		 * contain raw ethernet frames */
+		 * contain raw Ethernet frames */
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_ETHER:
 		cstate->off_linkpl.constant_part = 14;
@@ -9075,7 +9075,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 #endif
 
 /*
- * support IEEE 802.1Q VLAN trunk over ethernet
+ * Support IEEE 802.1Q VLAN trunk over Ethernet.
  */
 struct block *
 gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
