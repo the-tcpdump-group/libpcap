@@ -423,7 +423,7 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	for (level = root->level; level >= 0; --level) {
 		for (b = opt_state->levels[level]; b; b = b->link) {
 			SET_INSERT(b->dom, b->id);
-			if (JT(b) == 0)
+			if (JT(b) == NULL)
 				continue;
 			SET_INTERSECT(JT(b)->dom, b->dom, opt_state->nodewords);
 			SET_INTERSECT(JF(b)->dom, b->dom, opt_state->nodewords);
@@ -496,7 +496,7 @@ find_closure(opt_state_t *opt_state, const struct block *root)
 	for (level = root->level; level >= 0; --level) {
 		for (b = opt_state->levels[level]; b; b = b->link) {
 			SET_INSERT(b->closure, b->id);
-			if (JT(b) == 0)
+			if (JT(b) == NULL)
 				continue;
 			SET_UNION(JT(b)->closure, b->closure, opt_state->nodewords);
 			SET_UNION(JF(b)->closure, b->closure, opt_state->nodewords);
@@ -865,7 +865,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	bpf_u_int32 val;
 
 	s = b->stmts;
-	if (s == 0)
+	if (s == NULL)
 		return;
 
 	last = s;
@@ -874,7 +874,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * Skip over nops.
 		 */
 		s = this_op(s);
-		if (s == 0)
+		if (s == NULL)
 			break;	/* nothing left in the block */
 
 		/*
@@ -882,7 +882,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * (skipping nops).
 		 */
 		next = this_op(s->next);
-		if (next == 0)
+		if (next == NULL)
 			break;	/* no next instruction */
 		last = next;
 
@@ -957,7 +957,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				add = next;
 			else
 				add = this_op(next->next);
-			if (add == 0 || add->s.code != (BPF_ALU|BPF_ADD|BPF_X))
+			if (add == NULL || add->s.code != (BPF_ALU|BPF_ADD|BPF_X))
 				continue;
 
 			/*
@@ -965,7 +965,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			 * nops between them).
 			 */
 			tax = this_op(add->next);
-			if (tax == 0 || tax->s.code != (BPF_MISC|BPF_TAX))
+			if (tax == NULL || tax->s.code != (BPF_MISC|BPF_TAX))
 				continue;
 
 			/*
@@ -974,7 +974,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			 * nops between them).
 			 */
 			ild = this_op(tax->next);
-			if (ild == 0 || BPF_CLASS(ild->s.code) != BPF_LD ||
+			if (ild == NULL || BPF_CLASS(ild->s.code) != BPF_LD ||
 			    BPF_MODE(ild->s.code) != BPF_IND)
 				continue;
 			/*
@@ -1508,7 +1508,7 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	 * Initialize the atom values.
 	 */
 	p = b->in_edges;
-	if (p == 0) {
+	if (p == NULL) {
 		/*
 		 * We have no predecessors, so everything is undefined
 		 * upon entry to this block.
@@ -1715,7 +1715,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 	 * statement?
 	 * If so, there's nothing to optimize.
 	 */
-	if (JT(ep->succ) == 0)
+	if (JT(ep->succ) == NULL)
 		return;
 
 	/*
@@ -1838,7 +1838,7 @@ or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	struct edge *ep;
 
 	ep = b->in_edges;
-	if (ep == 0)
+	if (ep == NULL)
 		return;
 
 	/*
@@ -1878,7 +1878,7 @@ or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 		/*
 		 * Done if that's not going anywhere XXX
 		 */
-		if (*diffp == 0)
+		if (*diffp == NULL)
 			return;
 
 		/*
@@ -1927,7 +1927,7 @@ or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 		/*
 		 * Done if that's not going anywhere XXX
 		 */
-		if (*samep == 0)
+		if (*samep == NULL)
 			return;
 
 		/*
@@ -2007,7 +2007,7 @@ and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	struct edge *ep;
 
 	ep = b->in_edges;
-	if (ep == 0)
+	if (ep == NULL)
 		return;
 
 	/*
@@ -2025,7 +2025,7 @@ and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 
 	at_top = 1;
 	for (;;) {
-		if (*diffp == 0)
+		if (*diffp == NULL)
 			return;
 
 		if (JF(*diffp) != JF(b))
@@ -2042,7 +2042,7 @@ and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	}
 	samep = &JT(*diffp);
 	for (;;) {
-		if (*samep == 0)
+		if (*samep == NULL)
 			return;
 
 		if (JF(*samep) != JF(b))
@@ -2439,7 +2439,7 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 	}
 	for (i = 0; i < opt_state->n_blocks; ++i) {
 		p = opt_state->blocks[i];
-		if (JT(p) == 0)
+		if (JT(p) == NULL)
 			continue;
 		if (JT(p)->link) {
 			done1 = 0;
@@ -2507,7 +2507,7 @@ slength(struct slist *s)
 static int
 count_blocks(struct icode *ic, struct block *p)
 {
-	if (p == 0 || isMarked(ic, p))
+	if (p == NULL || isMarked(ic, p))
 		return 0;
 	Mark(ic, p);
 	return count_blocks(ic, JT(p)) + count_blocks(ic, JF(p)) + 1;
@@ -2522,7 +2522,7 @@ number_blks_r(opt_state_t *opt_state, struct icode *ic, struct block *p)
 {
 	u_int n;
 
-	if (p == 0 || isMarked(ic, p))
+	if (p == NULL || isMarked(ic, p))
 		return;
 
 	Mark(ic, p);
@@ -2563,7 +2563,7 @@ count_stmts(struct icode *ic, struct block *p)
 {
 	u_int n;
 
-	if (p == 0 || isMarked(ic, p))
+	if (p == NULL || isMarked(ic, p))
 		return 0;
 	Mark(ic, p);
 	n = count_stmts(ic, JT(p)) + count_stmts(ic, JF(p));
@@ -2750,7 +2750,7 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 	u_int off;
 	struct slist **offset = NULL;
 
-	if (p == 0 || isMarked(ic, p))
+	if (p == NULL || isMarked(ic, p))
 		return (1);
 	Mark(ic, p);
 
