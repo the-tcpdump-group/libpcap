@@ -4658,6 +4658,13 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	if (p == NULL)
 		return NULL;
 	memset (p, 0, sizeof(*p));
+	/* This has no file descriptors/HANDLEs. */
+#ifdef _WIN32
+	p->handle = INVALID_HANDLE_VALUE;
+#else
+	p->fd = -1;
+	p->selectable_fd = -1;
+#endif
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;
