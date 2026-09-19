@@ -10,6 +10,7 @@ Makefile
 /findalldevstest
 /findalldevstest-perf
 /nonblocktest
+/opendeadtest
 /opentest
 /reactivatetest
 /selpolltest

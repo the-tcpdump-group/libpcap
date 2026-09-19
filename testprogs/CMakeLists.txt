@@ -41,6 +41,9 @@ if(NOT WIN32)
   # pcapint_opcode_without_k()
   # pcapint_valid_insn()
   add_test_executable(enumeratetest)
+  # On Windows, pcap_fileno() is deprecated and pcap_get_selectable_fd()
+  # is not available
+  add_test_executable(opendeadtest)
   add_test_executable(selpolltest)
   # Fails to link on Windows:
   # translatetest.obj : error LNK2019: unresolved external symbol

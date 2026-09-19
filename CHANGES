@@ -2,6 +2,11 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.1 libpcap release (so far!)
     Source code:
       Fix function names in two error messages.
+      Have pcap_fileno() return -1 rather than PCAP_ERRNO if the HANDLE
+        is invalid, as the return value isn't a general error.
+    General:
+      Set all the file descriptors/HANDLEs to an invalid value in
+        pcap_open_dead().
     Building and testing:
       At the build time require atexit(3) not to crash.
       Require config.h to be from the libpcap build.

@@ -3552,6 +3552,16 @@ pcap_file(pcap_t *p)
 	return (p->rfile);
 }
 
+/*
+ * This returns -1, not PCAP_ERROR, as it doesn't return arbitrary
+ * PCAP_ERROR_ return values (and can't return PCAP_WARN_ errors,
+ * as those are indistinguishable from valid file descriptors),
+ * and as some software might check only for a -1 error return.
+ *
+ * XXX - this should probably be replaced by routines to perform
+ * ioctls, socket calls, and fcntls on the descriptor on Unix-like
+ * systems; we already have calls to get and set OIDs on Windows.
+ */
 #ifdef _WIN32
 int
 pcap_fileno(pcap_t *p)
@@ -3570,7 +3580,7 @@ DIAG_OFF_NARROWING
 		return ((int)(intptr_t)p->handle);
 DIAG_ON_NARROWING
 	} else
-		return (PCAP_ERROR);
+		return (-1);
 }
 #else /* _WIN32 */
 int
@@ -4652,6 +4662,13 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	if (p == NULL)
 		return NULL;
 	memset (p, 0, sizeof(*p));
+	/* This has no file descriptors/HANDLEs. */
+#ifdef _WIN32
+	p->handle = INVALID_HANDLE_VALUE;
+#else
+	p->fd = -1;
+	p->selectable_fd = -1;
+#endif
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;

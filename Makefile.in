@@ -363,6 +363,7 @@ EXTRA_DIST = \
 	testprogs/findalldevstest.supp \
 	testprogs/findalldevstest-perf.c \
 	testprogs/nonblocktest.c \
+	testprogs/opendeadtest.c \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
@@ -765,6 +766,7 @@ distclean: clean
 
 check: testprogs
 	$(PERL) $(srcdir)/testprogs/TESTrun
+	testprogs/opendeadtest EN10MB
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
