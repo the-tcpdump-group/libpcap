@@ -33573,7 +33573,7 @@ my @fcode_tests = (
 
 	# In this group k == 0xFFFFFFFF == -1 is an obvious infinite loop on all
 	# architectures.  The other seven k values are less obvious unintended
-	# equivalents (via pointer arithmetics overflow) of the same on 32-bit
+	# equivalents (via pointer arithmetic overflow) of the same on 32-bit
 	# architectures, and OOBR on 64-bit architectures.
 	{
 		name => 'ja_0x1FFFFFFF',
