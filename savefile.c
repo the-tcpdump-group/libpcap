@@ -622,7 +622,6 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 int
 pcapint_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct bpf_insn *fcode;
 	int n = 0;
 	u_char *data;
 
@@ -680,8 +679,8 @@ pcapint_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * OK, we've read a packet; run it through the filter
 		 * and, if it passes, process it.
 		 */
-		if ((fcode = p->fcode.bf_insns) == NULL ||
-		    pcapint_filter(fcode, p->fcode.bf_len,
+		if (p->fcode.bf_insns == NULL ||
+		    pcapint_filter(p->fcode.bf_insns, p->fcode.bf_len,
 		                   data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
 			n++;	/* count the packet */

@@ -1310,7 +1310,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	compiler_state_t cstate;
 	yyscan_t scanner = NULL;
 	YY_BUFFER_STATE in_buffer = NULL;
-	u_int len;
 	int rc;
 
 	/*
@@ -1435,13 +1434,12 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		}
 	}
 	program->bf_insns = icode_to_fcode(&cstate.ic,
-	    cstate.ic.root, &len, p->errbuf);
+	    cstate.ic.root, &program->bf_len, p->errbuf);
 	if (program->bf_insns == NULL) {
 		/* Failure */
 		rc = PCAP_ERROR;
 		goto quit;
 	}
-	program->bf_len = len;
 
 	/*
 	 * If the code generator and the optimizer (if involved) work
@@ -2264,7 +2262,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 
 		/* frames captured on a Juniper PPPoE service PIC
-		 * contain raw ethernet frames */
+		 * contain raw Ethernet frames */
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_ETHER:
 		cstate->off_linkpl.constant_part = 14;
@@ -6511,13 +6509,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
 	struct block *b0, *b;
 	struct slist *s[100];
-	int fix2, fix3, fix4, fix5;
-	int ahcheck, again, end;
-	int i, max;
 	int reg2 = alloc_reg(cstate);
 
 	memset(s, 0, sizeof(s));
-	fix3 = fix4 = fix5 = 0;
 
 	switch (proto) {
 	case Q_IP:
@@ -6569,12 +6563,11 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * by s[fix] = foo with uninitialized variable "fix".  It is somewhat
 	 * hard to find interdependency made by jump table fixup.
 	 */
-	i = 0;
+	unsigned i = 0;
 	s[i] = new_stmt(cstate, 0);	/*dummy*/
 	i++;
 
-	switch (proto) {
-	case Q_IP:
+	if (proto == Q_IP) {
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
 
 		/* A = ip->ip_p */
@@ -6583,9 +6576,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		/* X = ip->ip_hl << 2 */
 		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
-		break;
-
-	case Q_IPV6:
+	} else {
 		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
 
 		/* A = ip6->ip_nxt */
@@ -6595,20 +6586,15 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
 		s[i]->s.k = IP6_HDRLEN;
 		i++;
-		break;
-
-	default:
-		bpf_error(cstate, "unsupported proto to gen_protochain");
-		/*NOTREACHED*/
 	}
 
 	/* again: if (A == v) goto end; else fall through; */
-	again = i;
+	unsigned again = i;
 	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.k = v;
 	s[i]->s.jt = NULL;		/*later*/
 	s[i]->s.jf = NULL;		/*update in next stmt*/
-	fix5 = i;
+	unsigned fix5 = i;
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
@@ -6617,13 +6603,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.jf = NULL;	/*update in next stmt*/
 	s[i]->s.k = IPPROTO_NONE;
 	s[fix5]->s.jf = s[i];
-	fix2 = i;
+	unsigned fix2 = i;
 	i++;
 
+	unsigned fix3 = 0;
 	if (proto == Q_IPV6) {
-		int v6start, v6end, v6advance, j;
+		unsigned v6start = i;
 
-		v6start = i;
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
 		s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 		s[i]->s.jt = NULL;	/*later*/
@@ -6649,11 +6635,11 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i]->s.jf = NULL;	/*later*/
 		s[i]->s.k = IPPROTO_FRAGMENT;
 		fix3 = i;
-		v6end = i;
+		unsigned v6end = i;
 		i++;
 
 		/* v6advance: */
-		v6advance = i;
+		unsigned v6advance = i;
 
 		/*
 		 * in short,
@@ -6699,7 +6685,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 
 		/* fixup */
-		for (j = v6start; j <= v6end; j++)
+		for (unsigned j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
 	} else {
 		/* nop */
@@ -6710,7 +6696,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	}
 
 	/* ahcheck: */
-	ahcheck = i;
+	unsigned ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
 	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
 	s[i]->s.jt = NULL;	/*later*/
@@ -6718,7 +6704,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.k = IPPROTO_AH;
 	if (fix3)
 		s[fix3]->s.jf = s[ahcheck];
-	fix4 = i;
+	unsigned fix4 = i;
 	i++;
 
 	/*
@@ -6771,21 +6757,19 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	i++;
 
 	/* end: nop */
-	end = i;
 	s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s[i]->s.k = 0;
-	s[fix2]->s.jt = s[end];
-	s[fix4]->s.jf = s[end];
-	s[fix5]->s.jt = s[end];
+	s[fix2]->s.jt = s[i];
+	s[fix4]->s.jf = s[i];
+	s[fix5]->s.jt = s[i];
 	i++;
 
 	/*
 	 * make slist chain
 	 */
-	max = i;
-	for (i = 0; i < max - 1; i++)
-		s[i]->next = s[i + 1];
-	s[max - 1]->next = NULL;
+	for (unsigned j = 0; j < i - 1; j++)
+		s[j]->next = s[j + 1];
+	s[i - 1]->next = NULL;
 
 	/*
 	 * emit final check
@@ -9077,7 +9061,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 #endif
 
 /*
- * support IEEE 802.1Q VLAN trunk over ethernet
+ * Support IEEE 802.1Q VLAN trunk over Ethernet.
  */
 struct block *
 gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)

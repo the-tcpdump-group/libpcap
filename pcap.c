@@ -2260,8 +2260,7 @@ pcapint_createsrcstr_ex(char *source _U_, int type _U_, const char *userinfo _U_
    const char *host _U_, const char *port _U_, const char *name _U_,
    unsigned char uses_ssl _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_createsrcstr_ex() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2269,8 +2268,7 @@ int
 pcap_createsrcstr(char *source _U_, int type _U_, const char *host _U_,
     const char *port _U_, const char *name _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_createsrcstr() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2279,8 +2277,7 @@ pcapint_parsesrcstr_ex(const char *source _U_, int *type _U_,
     char *userinfo _U_, char *host _U_, char *port _U_, char *name _U_,
     unsigned char *uses_ssl _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_parsesrcstr_ex() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -2288,8 +2285,7 @@ int
 pcap_parsesrcstr(const char *source _U_, int *type _U_, char *host _U_,
     char *port _U_, char *name _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcapint_parsesrcstr() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -4434,14 +4430,12 @@ int
 pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
     const u_char *pkt)
 {
-	const struct bpf_insn *fcode = fp->bf_insns;
-
 	/*
 	 * Here .bf_insns == NULL means to reject all packets, but downstream
 	 * of pcapint_filter() it means to accept all packets.
 	 */
-	if (fcode != NULL)
-		return (pcapint_filter(fcode, fp->bf_len, pkt, h->len, h->caplen));
+	if (fp->bf_insns != NULL)
+		return (pcapint_filter(fp->bf_insns, fp->bf_len, pkt, h->len, h->caplen));
 	else
 		return (0);
 }

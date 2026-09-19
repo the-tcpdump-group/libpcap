@@ -34342,6 +34342,7 @@ sub run_filter_accept_test {
 		$test->{generate_offline_filter}
 	) if $test->{generate_offline_filter};
 	push @args, (
+		'--', # for consistency with common_translatetest_args()
 		$test->{DLT},
 	);
 	return run_generic_accept_test @args;
@@ -34386,7 +34387,11 @@ sub run_translate_accept_test {
 sub run_enumerate_test {
 	my $test = shift;
 	file_put_contents mytmpfile ($filename_expected), $test->{expected};
-	return run_generic_accept_test $enumeratetest, '--', $test->{cfuncname};
+	return run_generic_accept_test (
+		$enumeratetest,
+		'--', # for consistency with common_translatetest_args()
+		$test->{cfuncname}
+	);
 }
 
 sub run_filter_reject_test {
@@ -34397,6 +34402,7 @@ sub run_filter_reject_test {
 		file_put_contents mytmpfile ($filename_filter), $test->{expr};
 		push @args, ('-F', mytmpfile ($filename_filter));
 	}
+	push @args, '--'; # for consistency with common_translatetest_args()
 	push @args, $test->{DLT} if defined $test->{DLT};
 	return run_generic_reject_test
 		defined $test->{timeout} ? $test->{timeout} : $test_timeout,

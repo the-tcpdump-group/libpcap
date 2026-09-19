@@ -149,10 +149,10 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 		default:
 			return 0;
 		case BPF_RET|BPF_K:
-			return (u_int)pc->k;
+			return pc->k;
 
 		case BPF_RET|BPF_A:
-			return (u_int)A;
+			return A;
 
 		case BPF_LD|BPF_W|BPF_ABS:
 			k = pc->k;
@@ -573,15 +573,18 @@ pcapint_valid_insn(const struct bpf_insn *insn)
  * Otherwise, a bogus program could easily crash the system.
  */
 int
-pcapint_validate_filter(const struct bpf_insn *f, int len)
+pcapint_validate_filter(const struct bpf_insn *f, const unsigned len)
 {
 	u_int i, from;
 	const struct bpf_insn *p;
 
-	if (len < 1 || (u_int)len > BPF_MAXINSNS || f + len < f)
+	// This also rejects any negative argument converted to unsigned.
+DIAG_OFF_TAUTOLOGICAL_COMPARE
+	if (len < 1 || len > BPF_MAXINSNS || f + len < f)
 		return 0;
+DIAG_ON_TAUTOLOGICAL_COMPARE
 
-	for (i = 0; i < (u_int)len; ++i) {
+	for (i = 0; i < len; ++i) {
 		p = &f[i];
 		if (! pcapint_valid_insn(p))
 			return 0;
@@ -628,7 +631,7 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 				 * and enforced, and that the pointer does not
 				 * overflow.
 				 */
-				if (from + p->k >= (u_int)len)
+				if (from + p->k >= len)
 					return 0;
 				/*
 				 * The only type of infinite loop that can be
@@ -646,7 +649,7 @@ pcapint_validate_filter(const struct bpf_insn *f, int len)
 			case BPF_JGT:
 			case BPF_JGE:
 			case BPF_JSET:
-				if (from + p->jt >= (u_int)len || from + p->jf >= (u_int)len)
+				if (from + p->jt >= len || from + p->jf >= len)
 					return 0;
 				break;
 			}
@@ -670,5 +673,6 @@ bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
 int
 bpf_validate(const struct bpf_insn *f, int len)
 {
+	// The implicit conversion of 'len' from signed to unsigned is fine.
 	return pcapint_validate_filter(f, len);
 }

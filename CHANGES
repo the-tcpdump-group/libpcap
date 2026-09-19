@@ -1,5 +1,7 @@
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.1 libpcap release (so far!)
+    Source code:
+      Fix function names in two error messages.
     Building and testing:
       At the build time require atexit(3) not to crash.
       Require config.h to be from the libpcap build.

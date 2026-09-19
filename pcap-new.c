@@ -541,8 +541,7 @@ int
 pcap_findalldevs_ex(const char *source _U_, struct pcap_rmtauth *auth _U_,
     pcap_if_t **alldevs _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcap_findalldevs_ex() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (-1);
 }
 
@@ -550,8 +549,7 @@ pcap_t *
 pcap_open(const char *source _U_, int snaplen _U_, int flags _U_,
     int read_timeout _U_, struct pcap_rmtauth *auth _U_, char *errbuf)
 {
-	pcapint_strlcpy(errbuf, "pcap_open() is not supported",
-	    PCAP_ERRBUF_SIZE);
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s() is not supported", __func__);
 	return (NULL);
 }
 
