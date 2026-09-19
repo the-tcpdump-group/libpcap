@@ -82,6 +82,7 @@ SRC = @VALGRINDTEST_SRC@ \
 	filtertest.c \
 	findalldevstest-perf.c \
 	findalldevstest.c \
+	opendeadtest.c \
 	opentest.c \
 	nonblocktest.c \
 	reactivatetest.c \
@@ -132,6 +133,10 @@ findalldevstest: $(srcdir)/findalldevstest.c ../libpcap.a
 findalldevstest-perf: $(srcdir)/findalldevstest-perf.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/findalldevstest-perf.c \
+	    ../libpcap.a $(LIBS)
+
+opendeadtest: $(srcdir)/opendeadtest.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/opendeadtest.c \
 	    ../libpcap.a $(LIBS)
 
 opentest: $(srcdir)/opentest.c ../libpcap.a
