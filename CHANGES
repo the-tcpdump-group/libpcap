@@ -7,7 +7,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
     Documentation:
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
-        the descriptors returned by those routinesmust must not be
+        the descriptors returned by those routines must not be
         closed. (Issue #1722)
 
 Sunday, September 13, 2026 / The Tcpdump Group
