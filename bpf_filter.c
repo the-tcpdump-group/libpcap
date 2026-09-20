@@ -576,6 +576,7 @@ int
 pcapint_validate_filter(const struct bpf_insn *f, const unsigned len)
 {
 	u_int i, from;
+	int64_t target;
 	const struct bpf_insn *p;
 
 	// This also rejects any negative argument converted to unsigned.
@@ -616,12 +617,13 @@ DIAG_ON_TAUTOLOGICAL_COMPARE
 			switch (BPF_OP(p->code)) {
 			case BPF_JA:
 				/*
-				 * So long as both 'from' and bpf_insn.k are
-				 * 32-bit unsigned, this check rejects any jump
-				 * offset that points outside of the valid BPF
-				 * address space of the filter program no
-				 * matter whether signed interpretation of the
-				 * offset is positive or negative.
+				 * Treat bpf_insn.k as a signed 32-bit offset,
+				 * which is how libpcap represents backward
+				 * jumps for "protochain", then check the
+				 * resulting instruction index.  Use a 64-bit
+				 * temporary so large positive and wrapped
+				 * negative offsets can be rejected without
+				 * overflowing.
 				 *
 				 * Note that this condition is necessary, but
 				 * not sufficient to get correct results from
@@ -631,7 +633,8 @@ DIAG_ON_TAUTOLOGICAL_COMPARE
 				 * and enforced, and that the pointer does not
 				 * overflow.
 				 */
-				if (from + p->k >= len)
+				target = (int64_t)from + (bpf_int32)p->k;
+				if (target < 0 || target >= (int64_t)len)
 					return 0;
 				/*
 				 * The only type of infinite loop that can be
