@@ -342,6 +342,95 @@ static void find_inedges(opt_state_t *, const struct block *);
 static void opt_dump(opt_state_t *, struct icode *);
 #endif
 
+/*
+ * Several optimizer passes below walk the control-flow graph recursively.
+ * A filter expression can therefore turn a pathologically deep graph into
+ * C-stack exhaustion before the normal complexity checks get a chance to
+ * reject it.  Keep a single iterative preflight in front of those walkers.
+ *
+ * The CFG is expected to be acyclic, but track the greatest depth at which a
+ * block has been seen rather than treating the first visit as final.  That is
+ * important for DAGs where a shared block is reachable by paths of different
+ * lengths; it also makes an unexpected cycle grow until it is rejected.
+ * block->level is scratch here and is recomputed by find_levels() before any
+ * optimizer pass consumes it.
+ */
+#define MAX_CFG_RECURSION_DEPTH 128U
+
+struct cfg_depth_entry {
+	struct block *block;
+	u_int depth;
+};
+
+static void
+check_cfg_depth(opt_state_t *opt_state, struct icode *ic)
+{
+	struct cfg_depth_entry *stack, *new_stack;
+	struct cfg_depth_entry item;
+	struct block *b;
+	size_t count, capacity, new_capacity;
+
+	capacity = 64;
+	count = 0;
+	stack = (struct cfg_depth_entry *)malloc(capacity * sizeof(*stack));
+	if (stack == NULL)
+		opt_error(opt_state, "malloc");
+
+	unMarkAll(ic);
+	stack[count].block = ic->root;
+	stack[count].depth = 1;
+	++count;
+
+	while (count != 0) {
+		item = stack[--count];
+		b = item.block;
+		if (b == NULL)
+			continue;
+		if (item.depth > MAX_CFG_RECURSION_DEPTH) {
+			free(stack);
+			opt_error(opt_state,
+			    "filter expression is too deeply nested to optimize");
+		}
+
+		if (isMarked(ic, b)) {
+			if ((u_int)b->level >= item.depth)
+				continue;
+			b->level = (int)item.depth;
+		} else {
+			Mark(ic, b);
+			b->level = (int)item.depth;
+		}
+
+		if (count + 2 > capacity) {
+			if (capacity > SIZE_MAX / 2 / sizeof(*stack)) {
+				free(stack);
+				opt_error(opt_state,
+				    "filter is too complex to optimize");
+			}
+			new_capacity = capacity * 2;
+			new_stack = (struct cfg_depth_entry *)realloc(stack,
+			    new_capacity * sizeof(*stack));
+			if (new_stack == NULL) {
+				free(stack);
+				opt_error(opt_state, "realloc");
+			}
+			stack = new_stack;
+			capacity = new_capacity;
+		}
+		if (JF(b) != NULL) {
+			stack[count].block = JF(b);
+			stack[count].depth = item.depth + 1;
+			++count;
+		}
+		if (JT(b) != NULL) {
+			stack[count].block = JT(b);
+			stack[count].depth = item.depth + 1;
+			++count;
+		}
+	}
+	free(stack);
+}
+
 static void
 find_levels_r(opt_state_t *opt_state, struct icode *ic, struct block *b)
 {
@@ -2571,6 +2660,12 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	int i, n, max_stmts;
 	u_int product;
 	size_t block_memsize, edge_memsize;
+
+	/*
+	 * Reject a pathological CFG before any recursive optimizer walk can
+	 * exhaust the process stack.
+	 */
+	check_cfg_depth(opt_state, ic);
 
 	/*
 	 * First, count the blocks, so we can allocate an array to map
