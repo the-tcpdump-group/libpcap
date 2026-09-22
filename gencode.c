@@ -6564,7 +6564,8 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 * hard to find interdependency made by jump table fixup.
 	 */
 	unsigned i = 0;
-	s[i] = new_stmt(cstate, 0);	/*dummy*/
+	s[i] = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
+	s[i]->s.k = 0;
 	i++;
 
 	if (proto == Q_IP) {
