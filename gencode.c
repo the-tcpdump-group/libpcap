@@ -6668,7 +6668,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 		/* A += X */
 		s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
-		s[i]->s.k = 0;
 		i++;
 		/* X = A; */
 		s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
@@ -8093,7 +8092,6 @@ gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 	s = xfer_to_a(cstate, a);
 	sappend(a->s, s);
 	s = new_stmt(cstate, BPF_ALU|BPF_NEG);
-	s->s.k = 0;
 	sappend(a->s, s);
 	s = new_stmt(cstate, BPF_ST);
 	s->s.k = a->regno;
@@ -9418,7 +9416,6 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
-		s1->s.k = 0;
 		sappend(s, s1);
 	} else {
 		s = new_stmt(cstate, BPF_LD|BPF_IMM);
@@ -9493,7 +9490,6 @@ gen_geneve_offsets(compiler_state_t *cstate)
 
 	/* Add the Geneve header length to its offset and store. */
 	s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
-	s1->s.k = 0;
 	sappend(s, s1);
 
 	/* Set the encapsulated type as Ethernet. Even though we may
@@ -9671,7 +9667,6 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
-		s1->s.k = 0;
 		sappend(s, s1);
 	} else {
 		s = new_stmt(cstate, BPF_LD|BPF_IMM);
