@@ -3827,7 +3827,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	sjset_qos->s.jt = s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
 	s2->s.k = cstate->off_linkpl.reg;
 	sappend(s, s2);
-	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s2->s.k = 2;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ST);
@@ -3937,10 +3937,10 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s_roundup = new_stmt(cstate, BPF_LD|BPF_MEM);
 		s_roundup->s.k = cstate->off_linkpl.reg;
 		sappend(s, s_roundup);
-		s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
+		s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 		s2->s.k = 3;
 		sappend(s, s2);
-		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_IMM);
+		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
 		s2->s.k = (bpf_u_int32)~3;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ST);
@@ -8946,7 +8946,7 @@ gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
 	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
 	s2->s.k = off->reg;
 	sappend(s, s2);
-	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s2->s.k = v;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ST);

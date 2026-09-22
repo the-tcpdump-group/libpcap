@@ -32648,9 +32648,9 @@ sub bpf_restore_line {
 			opcodes => {
 				ld  => BPF_IMM | BPF_LD,
 				ldx => BPF_IMM | BPF_LDX,
-				or  => BPF_IMM | BPF_ALU | BPF_OR,
-				and => BPF_IMM | BPF_ALU | BPF_AND,
-				xor => BPF_IMM | BPF_ALU | BPF_XOR,
+				or  => BPF_K | BPF_ALU | BPF_OR,
+				and => BPF_K | BPF_ALU | BPF_AND,
+				xor => BPF_K | BPF_ALU | BPF_XOR,
 			},
 		},
 		# A label is the only explicit operand.
