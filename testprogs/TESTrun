@@ -32552,8 +32552,9 @@ use constant {
 	BPF_JSET => 0x40,
 	# source and return
 	BPF_K    => 0x00,
+	# source only
 	BPF_X    => 0x08,
-	# return
+	# return only
 	BPF_A    => 0x10,
 	# misc
 	BPF_TAX  => 0x00,
