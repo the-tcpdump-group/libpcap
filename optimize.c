@@ -3001,6 +3001,14 @@ pcapint_install_bpf_program(pcap_t *p, struct bpf_program *fp)
 {
 	size_t prog_size;
 
+	if (p == NULL)
+		return (-1);
+	if (fp == NULL) {
+		snprintf(p->errbuf, sizeof(p->errbuf),
+			"setfilter: filter program is NULL");
+		return (-1);
+	}
+
 	/*
 	 * Validate the program.
 	 */

@@ -1509,6 +1509,8 @@ pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 void
 pcap_freecode(struct bpf_program *program)
 {
+	if (program == NULL)
+		return;
 	program->bf_len = 0;
 	if (program->bf_insns != NULL) {
 		free(program->bf_insns);

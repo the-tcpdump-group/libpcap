@@ -3942,6 +3942,12 @@ pcapint_get_decuint(const char *cp, char **endptr, unsigned *nump)
 int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
+	if (p == NULL)
+		return (-1);
+	if (fp == NULL) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "setfilter: filter program is NULL");
+		return (-1);
+	}
 	return (p->setfilter_op(p, fp));
 }
 
@@ -4434,7 +4440,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 	 * Here .bf_insns == NULL means to reject all packets, but downstream
 	 * of pcapint_filter() it means to accept all packets.
 	 */
-	if (fp->bf_insns != NULL)
+	if (fp != NULL && fp->bf_insns != NULL)
 		return (pcapint_filter(fp->bf_insns, fp->bf_len, pkt, h->len, h->caplen));
 	else
 		return (0);

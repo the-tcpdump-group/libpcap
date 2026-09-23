@@ -580,7 +580,7 @@ pcapint_validate_filter(const struct bpf_insn *f, const unsigned len)
 
 	// This also rejects any negative argument converted to unsigned.
 DIAG_OFF_TAUTOLOGICAL_COMPARE
-	if (len < 1 || len > BPF_MAXINSNS || f + len < f)
+	if (f == NULL || len < 1 || len > BPF_MAXINSNS || f + len < f)
 		return 0;
 DIAG_ON_TAUTOLOGICAL_COMPARE
 
