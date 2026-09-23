@@ -276,7 +276,8 @@ PCAP_AVAILABLE_0_6
 PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
 /*
- * Number of scratch memory words (for BPF_LD|BPF_MEM and BPF_ST).
+ * Number of scratch memory words (for "ld M[k]", "ldx M[k]", "st M[k]" and
+ * "stx M[k]").
  */
 #define BPF_MEMWORDS 16
 
