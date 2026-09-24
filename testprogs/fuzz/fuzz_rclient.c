@@ -43,7 +43,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     //loop over packets
     r = pcap_next_ex(pkts, &header, &pkt);
     while (r > 0) {
+        unsigned int i, sum = 0;
         fprintf(outfile, "packet length=%d/%d\n",header->caplen, header->len);
+        for (i = 0; i < header->caplen; i++)
+            sum += pkt[i];
+        fprintf(outfile, "checksum=%u\n", sum);
         r = pcap_next_ex(pkts, &header, &pkt);
     }
     if (pcap_stats(pkts, &stats) == 0) {
