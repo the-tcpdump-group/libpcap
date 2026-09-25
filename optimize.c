@@ -2184,7 +2184,8 @@ opt_root(struct block **b)
 
 	s = (*b)->stmts;
 	(*b)->stmts = 0;
-	while (BPF_CLASS((*b)->s.code) == BPF_JMP && JT(*b) == JF(*b))
+	while (BPF_CLASS((*b)->s.code) == BPF_JMP && JT(*b) == JF(*b) &&
+	    ((*b)->def & JT(*b)->in_use) == 0)
 		*b = JT(*b);
 
 	tmp = (*b)->stmts;

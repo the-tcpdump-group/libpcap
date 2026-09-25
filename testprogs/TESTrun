@@ -26642,6 +26642,201 @@ my @filter_accept_blocks = (
 			(029) ret      #262144
 			',
 	},
+	# A filter expression whose constant-folded subexpressions make it
+	# always true must not be optimised into one that always rejects.
+	# Regression tests for the JT==JF chain collapse in opt_root(): it
+	# dropped the statements of the blocks it skipped, so a later
+	# comparison read a stale register.
+	{
+		name => 'const_fold_always_true',
+		DLT => 'EN10MB',
+		aliases => ['1/2=1/3&&1>4/5&&1>6/7'],
+		opt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) jeq      #0x0             jt 3	jf 3
+			(003) ld       #0x1
+			(004) jgt      #0x0             jt 5	jf 5
+			(005) jgt      x                jt 6	jf 7
+			(006) ret      #262144
+			(007) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) div      x
+			(007) st       M[1]
+			(008) ld       #0x1
+			(009) st       M[2]
+			(010) ld       #0x3
+			(011) st       M[3]
+			(012) ldx      M[3]
+			(013) ld       M[2]
+			(014) div      x
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 46
+			(019) ld       #0x1
+			(020) st       M[3]
+			(021) ld       #0x4
+			(022) st       M[4]
+			(023) ld       #0x5
+			(024) st       M[5]
+			(025) ldx      M[5]
+			(026) ld       M[4]
+			(027) div      x
+			(028) st       M[5]
+			(029) ldx      M[5]
+			(030) ld       M[3]
+			(031) jgt      x                jt 32	jf 46
+			(032) ld       #0x1
+			(033) st       M[5]
+			(034) ld       #0x6
+			(035) st       M[6]
+			(036) ld       #0x7
+			(037) st       M[7]
+			(038) ldx      M[7]
+			(039) ld       M[6]
+			(040) div      x
+			(041) st       M[7]
+			(042) ldx      M[7]
+			(043) ld       M[5]
+			(044) jgt      x                jt 45	jf 46
+			(045) ret      #262144
+			(046) ret      #0
+			',
+	},
+	{
+		name => 'const_fold_always_true_arith',
+		DLT => 'EN10MB',
+		aliases => ['(1+5>(2)*(1))&&(3/4=(3)-(3))&&(3/5=(6)-(6))'],
+		opt => '
+			(000) ld       #0x6
+			(001) ldx      #0x0
+			(002) txa
+			(003) jeq      #0x0             jt 4	jf 4
+			(004) jeq      x                jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x5
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       #0x2
+			(009) st       M[2]
+			(010) ld       #0x1
+			(011) st       M[3]
+			(012) ldx      M[3]
+			(013) ld       M[2]
+			(014) mul      x
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[1]
+			(018) jgt      x                jt 19	jf 58
+			(019) ld       #0x3
+			(020) st       M[3]
+			(021) ld       #0x4
+			(022) st       M[4]
+			(023) ldx      M[4]
+			(024) ld       M[3]
+			(025) div      x
+			(026) st       M[4]
+			(027) ld       #0x3
+			(028) st       M[5]
+			(029) ld       #0x3
+			(030) st       M[6]
+			(031) ldx      M[6]
+			(032) ld       M[5]
+			(033) sub      x
+			(034) st       M[6]
+			(035) ldx      M[6]
+			(036) ld       M[4]
+			(037) jeq      x                jt 38	jf 58
+			(038) ld       #0x3
+			(039) st       M[6]
+			(040) ld       #0x5
+			(041) st       M[7]
+			(042) ldx      M[7]
+			(043) ld       M[6]
+			(044) div      x
+			(045) st       M[7]
+			(046) ld       #0x6
+			(047) st       M[8]
+			(048) ld       #0x6
+			(049) st       M[9]
+			(050) ldx      M[9]
+			(051) ld       M[8]
+			(052) sub      x
+			(053) st       M[9]
+			(054) ldx      M[9]
+			(055) ld       M[7]
+			(056) jeq      x                jt 57	jf 58
+			(057) ret      #262144
+			(058) ret      #0
+			',
+	},
+	{
+		name => 'const_fold_always_true_eq0',
+		DLT => 'EN10MB',
+		aliases => ['0=0&&1>4/5&&1>6/7'],
+		opt => '
+			(000) ld       #0x0
+			(001) ldx      #0x0
+			(002) ld       #0x1
+			(003) jgt      #0x0             jt 4	jf 4
+			(004) jgt      x                jt 5	jf 6
+			(005) ret      #262144
+			(006) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x0
+			(001) st       M[0]
+			(002) ld       #0x0
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 34
+			(007) ld       #0x1
+			(008) st       M[1]
+			(009) ld       #0x4
+			(010) st       M[2]
+			(011) ld       #0x5
+			(012) st       M[3]
+			(013) ldx      M[3]
+			(014) ld       M[2]
+			(015) div      x
+			(016) st       M[3]
+			(017) ldx      M[3]
+			(018) ld       M[1]
+			(019) jgt      x                jt 20	jf 34
+			(020) ld       #0x1
+			(021) st       M[3]
+			(022) ld       #0x6
+			(023) st       M[4]
+			(024) ld       #0x7
+			(025) st       M[5]
+			(026) ldx      M[5]
+			(027) ld       M[4]
+			(028) div      x
+			(029) st       M[5]
+			(030) ldx      M[5]
+			(031) ld       M[3]
+			(032) jgt      x                jt 33	jf 34
+			(033) ret      #262144
+			(034) ret      #0
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
