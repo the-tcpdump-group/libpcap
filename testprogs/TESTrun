@@ -26642,6 +26642,1135 @@ my @filter_accept_blocks = (
 			(029) ret      #262144
 			',
 	},
+
+	{
+		name => '14_memregs_before_link_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+link[64]))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xd
+			(003) add      x
+			(004) tax
+			(005) ld       #0xc
+			(006) add      x
+			(007) tax
+			(008) ld       #0xb
+			(009) add      x
+			(010) tax
+			(011) ld       #0xa
+			(012) add      x
+			(013) tax
+			(014) ld       #0x9
+			(015) add      x
+			(016) tax
+			(017) ld       #0x8
+			(018) add      x
+			(019) tax
+			(020) ld       #0x7
+			(021) add      x
+			(022) tax
+			(023) ld       #0x6
+			(024) add      x
+			(025) tax
+			(026) ld       #0x5
+			(027) add      x
+			(028) tax
+			(029) ld       #0x4
+			(030) add      x
+			(031) tax
+			(032) ld       #0x3
+			(033) add      x
+			(034) tax
+			(035) ld       #0x2
+			(036) add      x
+			(037) tax
+			(038) ld       #0x1
+			(039) add      x
+			(040) jeq      #0x0             jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0x40
+			(027) st       M[13]
+			(028) ldx      M[13]
+			(029) ldb      [x + 0]
+			(030) st       M[14]
+			(031) ldx      M[14]
+			(032) ld       M[12]
+			(033) add      x
+			(034) st       M[14]
+			(035) ldx      M[14]
+			(036) ld       M[11]
+			(037) add      x
+			(038) st       M[14]
+			(039) ldx      M[14]
+			(040) ld       M[10]
+			(041) add      x
+			(042) st       M[14]
+			(043) ldx      M[14]
+			(044) ld       M[9]
+			(045) add      x
+			(046) st       M[14]
+			(047) ldx      M[14]
+			(048) ld       M[8]
+			(049) add      x
+			(050) st       M[14]
+			(051) ldx      M[14]
+			(052) ld       M[7]
+			(053) add      x
+			(054) st       M[14]
+			(055) ldx      M[14]
+			(056) ld       M[6]
+			(057) add      x
+			(058) st       M[14]
+			(059) ldx      M[14]
+			(060) ld       M[5]
+			(061) add      x
+			(062) st       M[14]
+			(063) ldx      M[14]
+			(064) ld       M[4]
+			(065) add      x
+			(066) st       M[14]
+			(067) ldx      M[14]
+			(068) ld       M[3]
+			(069) add      x
+			(070) st       M[14]
+			(071) ldx      M[14]
+			(072) ld       M[2]
+			(073) add      x
+			(074) st       M[14]
+			(075) ldx      M[14]
+			(076) ld       M[1]
+			(077) add      x
+			(078) st       M[14]
+			(079) ldx      M[14]
+			(080) ld       M[0]
+			(081) add      x
+			(082) st       M[14]
+			(083) ld       #0x0
+			(084) st       M[15]
+			(085) ldx      M[15]
+			(086) ld       M[14]
+			(087) jeq      x                jt 88	jf 89
+			(088) ret      #262144
+			(089) ret      #0
+			',
+	},
+	{
+		name => '14_memregs_before_tcp_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+tcp[64]))))))))))))==0'],
+		opt => '
+			(000) ldxb     4*([14]&0xf)
+			(001) ldb      [x + 78]
+			(002) tax
+			(003) ld       #0xd
+			(004) add      x
+			(005) tax
+			(006) ld       #0xc
+			(007) add      x
+			(008) tax
+			(009) ld       #0xb
+			(010) add      x
+			(011) tax
+			(012) ld       #0xa
+			(013) add      x
+			(014) tax
+			(015) ld       #0x9
+			(016) add      x
+			(017) tax
+			(018) ld       #0x8
+			(019) add      x
+			(020) tax
+			(021) ld       #0x7
+			(022) add      x
+			(023) tax
+			(024) ld       #0x6
+			(025) add      x
+			(026) tax
+			(027) ld       #0x5
+			(028) add      x
+			(029) tax
+			(030) ld       #0x4
+			(031) add      x
+			(032) tax
+			(033) ld       #0x3
+			(034) add      x
+			(035) tax
+			(036) ld       #0x2
+			(037) add      x
+			(038) tax
+			(039) ld       #0x1
+			(040) add      x
+			(041) jeq      #0x0             jt 42	jf 43
+			(042) ret      #262144
+			(043) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0x40
+			(027) st       M[13]
+			(028) ldxb     4*([14]&0xf)
+			(029) ld       M[13]
+			(030) add      x
+			(031) tax
+			(032) ldb      [x + 14]
+			(033) st       M[14]
+			(034) ldx      M[14]
+			(035) ld       M[12]
+			(036) add      x
+			(037) st       M[14]
+			(038) ldx      M[14]
+			(039) ld       M[11]
+			(040) add      x
+			(041) st       M[14]
+			(042) ldx      M[14]
+			(043) ld       M[10]
+			(044) add      x
+			(045) st       M[14]
+			(046) ldx      M[14]
+			(047) ld       M[9]
+			(048) add      x
+			(049) st       M[14]
+			(050) ldx      M[14]
+			(051) ld       M[8]
+			(052) add      x
+			(053) st       M[14]
+			(054) ldx      M[14]
+			(055) ld       M[7]
+			(056) add      x
+			(057) st       M[14]
+			(058) ldx      M[14]
+			(059) ld       M[6]
+			(060) add      x
+			(061) st       M[14]
+			(062) ldx      M[14]
+			(063) ld       M[5]
+			(064) add      x
+			(065) st       M[14]
+			(066) ldx      M[14]
+			(067) ld       M[4]
+			(068) add      x
+			(069) st       M[14]
+			(070) ldx      M[14]
+			(071) ld       M[3]
+			(072) add      x
+			(073) st       M[14]
+			(074) ldx      M[14]
+			(075) ld       M[2]
+			(076) add      x
+			(077) st       M[14]
+			(078) ldx      M[14]
+			(079) ld       M[1]
+			(080) add      x
+			(081) st       M[14]
+			(082) ldx      M[14]
+			(083) ld       M[0]
+			(084) add      x
+			(085) st       M[14]
+			(086) ld       #0x0
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[14]
+			(090) jeq      x                jt 91	jf 92
+			(091) ret      #262144
+			(092) ret      #0
+			',
+	},
+	{
+		name => '14_memregs_before_link_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+link[64]))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xd
+			(003) add      x
+			(004) tax
+			(005) ld       #0xc
+			(006) add      x
+			(007) tax
+			(008) ld       #0xb
+			(009) add      x
+			(010) tax
+			(011) ld       #0xa
+			(012) add      x
+			(013) tax
+			(014) ld       #0x9
+			(015) add      x
+			(016) tax
+			(017) ld       #0x8
+			(018) add      x
+			(019) tax
+			(020) ld       #0x7
+			(021) add      x
+			(022) tax
+			(023) ld       #0x6
+			(024) add      x
+			(025) tax
+			(026) ld       #0x5
+			(027) add      x
+			(028) tax
+			(029) ld       #0x4
+			(030) add      x
+			(031) tax
+			(032) ld       #0x3
+			(033) add      x
+			(034) tax
+			(035) ld       #0x2
+			(036) add      x
+			(037) tax
+			(038) ld       #0x1
+			(039) add      x
+			(040) jeq      #0x0             jt 41	jf 42
+			(041) ret      #262144
+			(042) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0x40
+			(027) st       M[13]
+			(028) ldx      M[13]
+			(029) ldb      [x + 0]
+			(030) st       M[14]
+			(031) ldx      M[14]
+			(032) ld       M[12]
+			(033) add      x
+			(034) st       M[14]
+			(035) ldx      M[14]
+			(036) ld       M[11]
+			(037) add      x
+			(038) st       M[14]
+			(039) ldx      M[14]
+			(040) ld       M[10]
+			(041) add      x
+			(042) st       M[14]
+			(043) ldx      M[14]
+			(044) ld       M[9]
+			(045) add      x
+			(046) st       M[14]
+			(047) ldx      M[14]
+			(048) ld       M[8]
+			(049) add      x
+			(050) st       M[14]
+			(051) ldx      M[14]
+			(052) ld       M[7]
+			(053) add      x
+			(054) st       M[14]
+			(055) ldx      M[14]
+			(056) ld       M[6]
+			(057) add      x
+			(058) st       M[14]
+			(059) ldx      M[14]
+			(060) ld       M[5]
+			(061) add      x
+			(062) st       M[14]
+			(063) ldx      M[14]
+			(064) ld       M[4]
+			(065) add      x
+			(066) st       M[14]
+			(067) ldx      M[14]
+			(068) ld       M[3]
+			(069) add      x
+			(070) st       M[14]
+			(071) ldx      M[14]
+			(072) ld       M[2]
+			(073) add      x
+			(074) st       M[14]
+			(075) ldx      M[14]
+			(076) ld       M[1]
+			(077) add      x
+			(078) st       M[14]
+			(079) ldx      M[14]
+			(080) ld       M[0]
+			(081) add      x
+			(082) st       M[14]
+			(083) ld       #0x0
+			(084) st       M[15]
+			(085) ldx      M[15]
+			(086) ld       M[14]
+			(087) jeq      x                jt 88	jf 89
+			(088) ret      #262144
+			(089) ret      #0
+			',
+	},
+	{
+		name => '14_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+tcp[64]))))))))))))==0'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[15]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[15]
+			(009) add      #2
+			(010) st       M[15]
+			(011) ld       #0x1
+			(012) st       M[0]
+			(013) ld       #0x2
+			(014) st       M[1]
+			(015) ld       #0x3
+			(016) st       M[2]
+			(017) ld       #0x4
+			(018) st       M[3]
+			(019) ld       #0x5
+			(020) st       M[4]
+			(021) ld       #0x6
+			(022) st       M[5]
+			(023) ld       #0x7
+			(024) st       M[6]
+			(025) ld       #0x8
+			(026) st       M[7]
+			(027) ld       #0x9
+			(028) st       M[8]
+			(029) ld       #0xa
+			(030) st       M[9]
+			(031) ld       #0xb
+			(032) st       M[10]
+			(033) ld       #0xc
+			(034) st       M[11]
+			(035) ld       #0xd
+			(036) st       M[12]
+			(037) ld       #0x40
+			(038) st       M[13]
+			(039) ldx      M[15]
+			(040) ldb      [x + 8]
+			(041) and      #0xf
+			(042) lsh      #2
+			(043) add      x
+			(044) tax
+			(045) ld       M[13]
+			(046) add      x
+			(047) tax
+			(048) ldb      [x + 8]
+			(049) st       M[14]
+			(050) ldx      M[14]
+			(051) ld       M[12]
+			(052) add      x
+			(053) st       M[12]
+			(054) ldx      M[12]
+			(055) ld       M[11]
+			(056) add      x
+			(057) st       M[12]
+			(058) ldx      M[12]
+			(059) ld       M[10]
+			(060) add      x
+			(061) st       M[12]
+			(062) ldx      M[12]
+			(063) ld       M[9]
+			(064) add      x
+			(065) st       M[12]
+			(066) ldx      M[12]
+			(067) ld       M[8]
+			(068) add      x
+			(069) st       M[12]
+			(070) ldx      M[12]
+			(071) ld       M[7]
+			(072) add      x
+			(073) st       M[12]
+			(074) ldx      M[12]
+			(075) ld       M[6]
+			(076) add      x
+			(077) st       M[12]
+			(078) ldx      M[12]
+			(079) ld       M[5]
+			(080) add      x
+			(081) st       M[12]
+			(082) ldx      M[12]
+			(083) ld       M[4]
+			(084) add      x
+			(085) st       M[12]
+			(086) ldx      M[12]
+			(087) ld       M[3]
+			(088) add      x
+			(089) st       M[12]
+			(090) ldx      M[12]
+			(091) ld       M[2]
+			(092) add      x
+			(093) st       M[12]
+			(094) ldx      M[12]
+			(095) ld       M[1]
+			(096) add      x
+			(097) st       M[12]
+			(098) ldx      M[12]
+			(099) ld       M[0]
+			(100) add      x
+			(101) st       M[12]
+			(102) ld       #0x0
+			(103) st       M[13]
+			(104) ldx      M[13]
+			(105) ld       M[12]
+			(106) jeq      x                jt 107	jf 108
+			(107) ret      #262144
+			(108) ret      #0
+			',
+	},
+
+	{
+		name => '15_memregs_before_link_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+link[64])))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xe
+			(003) add      x
+			(004) tax
+			(005) ld       #0xd
+			(006) add      x
+			(007) tax
+			(008) ld       #0xc
+			(009) add      x
+			(010) tax
+			(011) ld       #0xb
+			(012) add      x
+			(013) tax
+			(014) ld       #0xa
+			(015) add      x
+			(016) tax
+			(017) ld       #0x9
+			(018) add      x
+			(019) tax
+			(020) ld       #0x8
+			(021) add      x
+			(022) tax
+			(023) ld       #0x7
+			(024) add      x
+			(025) tax
+			(026) ld       #0x6
+			(027) add      x
+			(028) tax
+			(029) ld       #0x5
+			(030) add      x
+			(031) tax
+			(032) ld       #0x4
+			(033) add      x
+			(034) tax
+			(035) ld       #0x3
+			(036) add      x
+			(037) tax
+			(038) ld       #0x2
+			(039) add      x
+			(040) tax
+			(041) ld       #0x1
+			(042) add      x
+			(043) jeq      #0x0             jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0x40
+			(029) st       M[14]
+			(030) ldx      M[14]
+			(031) ldb      [x + 0]
+			(032) st       M[15]
+			(033) ldx      M[15]
+			(034) ld       M[13]
+			(035) add      x
+			(036) st       M[15]
+			(037) ldx      M[15]
+			(038) ld       M[12]
+			(039) add      x
+			(040) st       M[15]
+			(041) ldx      M[15]
+			(042) ld       M[11]
+			(043) add      x
+			(044) st       M[15]
+			(045) ldx      M[15]
+			(046) ld       M[10]
+			(047) add      x
+			(048) st       M[15]
+			(049) ldx      M[15]
+			(050) ld       M[9]
+			(051) add      x
+			(052) st       M[15]
+			(053) ldx      M[15]
+			(054) ld       M[8]
+			(055) add      x
+			(056) st       M[15]
+			(057) ldx      M[15]
+			(058) ld       M[7]
+			(059) add      x
+			(060) st       M[15]
+			(061) ldx      M[15]
+			(062) ld       M[6]
+			(063) add      x
+			(064) st       M[15]
+			(065) ldx      M[15]
+			(066) ld       M[5]
+			(067) add      x
+			(068) st       M[15]
+			(069) ldx      M[15]
+			(070) ld       M[4]
+			(071) add      x
+			(072) st       M[15]
+			(073) ldx      M[15]
+			(074) ld       M[3]
+			(075) add      x
+			(076) st       M[15]
+			(077) ldx      M[15]
+			(078) ld       M[2]
+			(079) add      x
+			(080) st       M[15]
+			(081) ldx      M[15]
+			(082) ld       M[1]
+			(083) add      x
+			(084) st       M[15]
+			(085) ldx      M[15]
+			(086) ld       M[0]
+			(087) add      x
+			(088) st       M[15]
+			(089) ld       #0x0
+			(090) st       M[0]
+			(091) ldx      M[0]
+			(092) ld       M[15]
+			(093) jeq      x                jt 94	jf 95
+			(094) ret      #262144
+			(095) ret      #0
+			',
+	},
+	{
+		name => '15_memregs_before_tcp_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0'],
+		opt => '
+			(000) ldxb     4*([14]&0xf)
+			(001) ldb      [x + 78]
+			(002) tax
+			(003) ld       #0xe
+			(004) add      x
+			(005) tax
+			(006) ld       #0xd
+			(007) add      x
+			(008) tax
+			(009) ld       #0xc
+			(010) add      x
+			(011) tax
+			(012) ld       #0xb
+			(013) add      x
+			(014) tax
+			(015) ld       #0xa
+			(016) add      x
+			(017) tax
+			(018) ld       #0x9
+			(019) add      x
+			(020) tax
+			(021) ld       #0x8
+			(022) add      x
+			(023) tax
+			(024) ld       #0x7
+			(025) add      x
+			(026) tax
+			(027) ld       #0x6
+			(028) add      x
+			(029) tax
+			(030) ld       #0x5
+			(031) add      x
+			(032) tax
+			(033) ld       #0x4
+			(034) add      x
+			(035) tax
+			(036) ld       #0x3
+			(037) add      x
+			(038) tax
+			(039) ld       #0x2
+			(040) add      x
+			(041) tax
+			(042) ld       #0x1
+			(043) add      x
+			(044) jeq      #0x0             jt 45	jf 46
+			(045) ret      #262144
+			(046) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0x40
+			(029) st       M[14]
+			(030) ldxb     4*([14]&0xf)
+			(031) ld       M[14]
+			(032) add      x
+			(033) tax
+			(034) ldb      [x + 14]
+			(035) st       M[15]
+			(036) ldx      M[15]
+			(037) ld       M[13]
+			(038) add      x
+			(039) st       M[15]
+			(040) ldx      M[15]
+			(041) ld       M[12]
+			(042) add      x
+			(043) st       M[15]
+			(044) ldx      M[15]
+			(045) ld       M[11]
+			(046) add      x
+			(047) st       M[15]
+			(048) ldx      M[15]
+			(049) ld       M[10]
+			(050) add      x
+			(051) st       M[15]
+			(052) ldx      M[15]
+			(053) ld       M[9]
+			(054) add      x
+			(055) st       M[15]
+			(056) ldx      M[15]
+			(057) ld       M[8]
+			(058) add      x
+			(059) st       M[15]
+			(060) ldx      M[15]
+			(061) ld       M[7]
+			(062) add      x
+			(063) st       M[15]
+			(064) ldx      M[15]
+			(065) ld       M[6]
+			(066) add      x
+			(067) st       M[15]
+			(068) ldx      M[15]
+			(069) ld       M[5]
+			(070) add      x
+			(071) st       M[15]
+			(072) ldx      M[15]
+			(073) ld       M[4]
+			(074) add      x
+			(075) st       M[15]
+			(076) ldx      M[15]
+			(077) ld       M[3]
+			(078) add      x
+			(079) st       M[15]
+			(080) ldx      M[15]
+			(081) ld       M[2]
+			(082) add      x
+			(083) st       M[15]
+			(084) ldx      M[15]
+			(085) ld       M[1]
+			(086) add      x
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[0]
+			(090) add      x
+			(091) st       M[15]
+			(092) ld       #0x0
+			(093) st       M[0]
+			(094) ldx      M[0]
+			(095) ld       M[15]
+			(096) jeq      x                jt 97	jf 98
+			(097) ret      #262144
+			(098) ret      #0
+			',
+	},
+	{
+		name => '15_memregs_before_link_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+link[64])))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xe
+			(003) add      x
+			(004) tax
+			(005) ld       #0xd
+			(006) add      x
+			(007) tax
+			(008) ld       #0xc
+			(009) add      x
+			(010) tax
+			(011) ld       #0xb
+			(012) add      x
+			(013) tax
+			(014) ld       #0xa
+			(015) add      x
+			(016) tax
+			(017) ld       #0x9
+			(018) add      x
+			(019) tax
+			(020) ld       #0x8
+			(021) add      x
+			(022) tax
+			(023) ld       #0x7
+			(024) add      x
+			(025) tax
+			(026) ld       #0x6
+			(027) add      x
+			(028) tax
+			(029) ld       #0x5
+			(030) add      x
+			(031) tax
+			(032) ld       #0x4
+			(033) add      x
+			(034) tax
+			(035) ld       #0x3
+			(036) add      x
+			(037) tax
+			(038) ld       #0x2
+			(039) add      x
+			(040) tax
+			(041) ld       #0x1
+			(042) add      x
+			(043) jeq      #0x0             jt 44	jf 45
+			(044) ret      #262144
+			(045) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0x40
+			(029) st       M[14]
+			(030) ldx      M[14]
+			(031) ldb      [x + 0]
+			(032) st       M[15]
+			(033) ldx      M[15]
+			(034) ld       M[13]
+			(035) add      x
+			(036) st       M[15]
+			(037) ldx      M[15]
+			(038) ld       M[12]
+			(039) add      x
+			(040) st       M[15]
+			(041) ldx      M[15]
+			(042) ld       M[11]
+			(043) add      x
+			(044) st       M[15]
+			(045) ldx      M[15]
+			(046) ld       M[10]
+			(047) add      x
+			(048) st       M[15]
+			(049) ldx      M[15]
+			(050) ld       M[9]
+			(051) add      x
+			(052) st       M[15]
+			(053) ldx      M[15]
+			(054) ld       M[8]
+			(055) add      x
+			(056) st       M[15]
+			(057) ldx      M[15]
+			(058) ld       M[7]
+			(059) add      x
+			(060) st       M[15]
+			(061) ldx      M[15]
+			(062) ld       M[6]
+			(063) add      x
+			(064) st       M[15]
+			(065) ldx      M[15]
+			(066) ld       M[5]
+			(067) add      x
+			(068) st       M[15]
+			(069) ldx      M[15]
+			(070) ld       M[4]
+			(071) add      x
+			(072) st       M[15]
+			(073) ldx      M[15]
+			(074) ld       M[3]
+			(075) add      x
+			(076) st       M[15]
+			(077) ldx      M[15]
+			(078) ld       M[2]
+			(079) add      x
+			(080) st       M[15]
+			(081) ldx      M[15]
+			(082) ld       M[1]
+			(083) add      x
+			(084) st       M[15]
+			(085) ldx      M[15]
+			(086) ld       M[0]
+			(087) add      x
+			(088) st       M[15]
+			(089) ld       #0x0
+			(090) st       M[0]
+			(091) ldx      M[0]
+			(092) ld       M[15]
+			(093) jeq      x                jt 94	jf 95
+			(094) ret      #262144
+			(095) ret      #0
+			',
+	},
+	{
+		# This is a bug: "(040) st M[14]" overwrites the variable offset and makes
+		# subsequent loads incorrect.
+		name => '15_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[14]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[14]
+			(009) add      #2
+			(010) st       M[14]
+			(011) ld       #0x1
+			(012) st       M[0]
+			(013) ld       #0x2
+			(014) st       M[1]
+			(015) ld       #0x3
+			(016) st       M[2]
+			(017) ld       #0x4
+			(018) st       M[3]
+			(019) ld       #0x5
+			(020) st       M[4]
+			(021) ld       #0x6
+			(022) st       M[5]
+			(023) ld       #0x7
+			(024) st       M[6]
+			(025) ld       #0x8
+			(026) st       M[7]
+			(027) ld       #0x9
+			(028) st       M[8]
+			(029) ld       #0xa
+			(030) st       M[9]
+			(031) ld       #0xb
+			(032) st       M[10]
+			(033) ld       #0xc
+			(034) st       M[11]
+			(035) ld       #0xd
+			(036) st       M[12]
+			(037) ld       #0xe
+			(038) st       M[13]
+			(039) ld       #0x40
+			(040) st       M[14]
+			(041) ldx      M[14]
+			(042) ldb      [x + 8]
+			(043) and      #0xf
+			(044) lsh      #2
+			(045) add      x
+			(046) tax
+			(047) ld       M[14]
+			(048) add      x
+			(049) tax
+			(050) ldb      [x + 8]
+			(051) st       M[15]
+			(052) ldx      M[15]
+			(053) ld       M[13]
+			(054) add      x
+			(055) st       M[15]
+			(056) ldx      M[15]
+			(057) ld       M[12]
+			(058) add      x
+			(059) st       M[15]
+			(060) ldx      M[15]
+			(061) ld       M[11]
+			(062) add      x
+			(063) st       M[15]
+			(064) ldx      M[15]
+			(065) ld       M[10]
+			(066) add      x
+			(067) st       M[15]
+			(068) ldx      M[15]
+			(069) ld       M[9]
+			(070) add      x
+			(071) st       M[15]
+			(072) ldx      M[15]
+			(073) ld       M[8]
+			(074) add      x
+			(075) st       M[15]
+			(076) ldx      M[15]
+			(077) ld       M[7]
+			(078) add      x
+			(079) st       M[15]
+			(080) ldx      M[15]
+			(081) ld       M[6]
+			(082) add      x
+			(083) st       M[15]
+			(084) ldx      M[15]
+			(085) ld       M[5]
+			(086) add      x
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[4]
+			(090) add      x
+			(091) st       M[15]
+			(092) ldx      M[15]
+			(093) ld       M[3]
+			(094) add      x
+			(095) st       M[15]
+			(096) ldx      M[15]
+			(097) ld       M[2]
+			(098) add      x
+			(099) st       M[15]
+			(100) ldx      M[15]
+			(101) ld       M[1]
+			(102) add      x
+			(103) st       M[15]
+			(104) ldx      M[15]
+			(105) ld       M[0]
+			(106) add      x
+			(107) st       M[15]
+			(108) ld       #0x0
+			(109) st       M[0]
+			(110) ldx      M[0]
+			(111) ld       M[15]
+			(112) jeq      x                jt 113	jf 114
+			(113) ret      #262144
+			(114) ret      #0
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -28110,6 +29239,10 @@ sub errstr_shift_by_more {
 	return 'shift by more than 31 bits';
 }
 
+sub errstr_too_many_regs {
+	return 'too many registers needed to evaluate expression';
+}
+
 # * name, DLT, expr, netmask and skip: same as in filter_accept_blocks above
 # * savefile: same as in filter_apply_blocks above, but the directory is one
 #   level up.
@@ -29254,6 +30387,80 @@ my @filter_reject_tests = (
 		DLT => 'RAW',
 		expr => '0xFFFFFFFF >> 32 == 0',
 		errstr => errstr_shift_by_more,
+	},
+
+	{
+		name => 'vxlan_6_times',
+		DLT => 'EN10MB',
+		expr => 'vxlan and vxlan and vxlan and vxlan and vxlan and vxlan',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => 'geneve_6_times',
+		DLT => 'EN10MB',
+		expr => 'geneve and geneve and geneve and geneve and geneve and geneve',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => 'protochain_16_times',
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		DLT => 'EN10MB',
+		expr => 'protochain 1 and protochain 2 and protochain 3 and protochain 4 and ' .
+			'protochain 5 and protochain 6 and protochain 7 and protochain 8 and ' .
+			'protochain 9 and protochain 10 and protochain 11 and protochain 12 and ' .
+			'protochain 13 and protochain 14 and protochain 15 and protochain 16',
+		errstr => errstr_too_many_regs,
+	},
+
+	{
+		name => '16_memregs_before_link_EN10MB',
+		DLT => 'EN10MB',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '16_memregs_before_tcp_EN10MB',
+		DLT => 'EN10MB',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+tcp[64]))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '16_memregs_before_link_IEEE802_11',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '16_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+tcp[64]))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+
+	# gen_loadi() -> alloc_reg()
+	{
+		name => '17_memregs_before_link_EN10MB',
+		DLT => 'EN10MB',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+link[64])))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '17_memregs_before_tcp_EN10MB',
+		DLT => 'EN10MB',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+tcp[64])))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '17_memregs_before_link_IEEE802_11',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+link[64])))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+	{
+		name => '17_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+tcp[64])))))))))))))))==0',
+		errstr => errstr_too_many_regs,
 	},
 );
 
