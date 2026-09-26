@@ -360,7 +360,7 @@ struct addrinfo {
 #define NEW_STMT_LD_IMM(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOAD(BPF_W, BPF_IMM), (k))
 #define NEW_STMT_LD_M(cstate, regno) \
-        new_stmt_k((cstate), OPCODE_LOAD(BPF_W, BPF_MEM), (regno))
+        new_stmt_k((cstate), OPCODE_LOAD(BPF_W, BPF_MEM), guard_reg((cstate), (regno)))
 #define NEW_STMT_LDB_ABS(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOAD(BPF_B, BPF_ABS), (k))
 #define NEW_STMT_LDH_ABS(cstate, k) \
@@ -376,7 +376,7 @@ struct addrinfo {
 #define NEW_STMT_LDX_IMM(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOADX(BPF_W, BPF_IMM), (k))
 #define NEW_STMT_LDX_M(cstate, regno) \
-        new_stmt_k((cstate), OPCODE_LOADX(BPF_W, BPF_MEM), (regno))
+        new_stmt_k((cstate), OPCODE_LOADX(BPF_W, BPF_MEM), guard_reg((cstate), (regno)))
 #define NEW_STMT_LDXB_MSH(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOADX(BPF_B, BPF_MSH), (k))
 
@@ -384,9 +384,9 @@ struct addrinfo {
  * Store instruction opcodes are single constants.
  */
 #define NEW_STMT_ST_M(cstate, regno) \
-        new_stmt_k((cstate), BPF_ST, (regno))
+        new_stmt_k((cstate), BPF_ST, guard_reg((cstate), (regno)))
 #define NEW_STMT_STX_M(cstate, regno) \
-        new_stmt_k((cstate), BPF_STX, (regno))
+        new_stmt_k((cstate), BPF_STX, guard_reg((cstate), (regno)))
 
 /*
  * Branch instruction opcodes comprise two (for "ja L") or three (for
@@ -771,7 +771,9 @@ static int init_linktype(compiler_state_t *, pcap_t *);
 
 static void init_regs(compiler_state_t *);
 static int alloc_reg(compiler_state_t *);
+static int guard_reg(compiler_state_t *, const int);
 static void free_reg(compiler_state_t *, int);
+static void free_reg_arth(compiler_state_t *, struct arth *);
 
 static bool initchunks_ok(compiler_state_t *cstate);
 static void *newchunk_nolongjmp(compiler_state_t *cstate, size_t);
@@ -7965,7 +7967,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	 * Only now it is correct to deallocate the input register because
 	 * gen_load_absoffsetarthrel() was using it just before.
 	 */
-	free_reg(cstate, inst->regno);
+	free_reg_arth(cstate, inst);
 
 	inst->regno = regno;
 	s = NEW_STMT_ST_M(cstate, regno);
@@ -8005,8 +8007,8 @@ gen_relation_internal(compiler_state_t *cstate, int code, struct arth *a0,
 	if (reversed)
 		gen_not(b);
 
-	free_reg(cstate, a0->regno);
-	free_reg(cstate, a1->regno);
+	free_reg_arth(cstate, a0);
+	free_reg_arth(cstate, a1);
 
 	/* 'and' together protocol checks */
 	if (a0->b)
@@ -8184,8 +8186,8 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
 	sappend(a1->s, s0);
 	sappend(a0->s, a1->s);
 
-	free_reg(cstate, a0->regno);
-	free_reg(cstate, a1->regno);
+	free_reg_arth(cstate, a0);
+	free_reg_arth(cstate, a1);
 
 	a0->regno = alloc_reg(cstate);
 	s0 = NEW_STMT_ST_M(cstate, a0->regno);
@@ -8225,13 +8227,42 @@ alloc_reg(compiler_state_t *cstate)
 }
 
 /*
+ * compiler_state_t.regused is a fixed-size array.  If the array index points
+ * outside of the array, this means a bug that is about to cause OOBR or OOBW.
+ * If the register index is valid, but the register has already been freed,
+ * trying to use it or to free it again means another bug.  In either case,
+ * fail before such bugs cascade.
+ */
+static int
+guard_reg(compiler_state_t *cstate, const int regno)
+{
+	if (regno < 0 || regno >= BPF_MEMWORDS || ! cstate->regused[regno])
+		bpf_error(cstate, ERRSTR_FUNC_VAR_INT, __func__, "regno", regno);
+	return regno;
+}
+
+/*
  * Return a register to the table so it can
  * be used later.
  */
 static void
 free_reg(compiler_state_t *cstate, int n)
 {
-	cstate->regused[n] = 0;
+	cstate->regused[guard_reg(cstate, n)] = 0;
+}
+
+/*
+ * If the code deallocates an arithmetic expression register, then allocates
+ * the same register for a different purpose and erroneously uses the
+ * expression again, the register index will look valid (in bounds and marked
+ * as allocated), but will be logically invalid.  Invalidate the index on
+ * deallocation to avoid this.
+ */
+static void
+free_reg_arth(compiler_state_t *cstate, struct arth *a)
+{
+	free_reg(cstate, a->regno);
+	a->regno = -1;
 }
 
 static struct block *
