@@ -334,16 +334,51 @@ struct addrinfo {
 #endif
 
 /*
- * A valid jump instruction code is a bitwise OR of three values and one of the
- * values is BPF_JMP.  To make sure both of the other two values are always
- * present, define a macro of two arguments and use it instead of ORing the
- * values in place.
+ * Valid BPF opcodes comprise one (e.g. BPF_ST), two (e.g. BPF_RET|BPF_K) or
+ * three (e.g. BPF_ALU|BPF_ADD|BPF_X) constants.  Even constants that are only
+ * nominally specified because they are defined to zero (e.g. BPF_K) have
+ * meaning in the source code and the ISA.  Instead of ORing the constants in
+ * place use the following two macros: so long as the code uses a correct
+ * macro, not specifying the correct number of constants will be a compile-time
+ * error.  Groups of related BPF opcodes can wrap these with their own macros
+ * to factor common parts out.
  *
- * Note that "ja L" (documented as "jmp L" in the 1993 BPF paper) does not quite
- * follow the pattern and there is no "ja x", but internally it works very much
- * like "ja #k", so JMP(BPF_JA, BPF_K) is appropriate enough.
+ * Each of the statement-specific NEW_STMT_xxx() macros wraps either new_stmt()
+ * (if the statement does not use the 'k' member) or new_stmt_k() (if it does).
+ * This likewise makes an erroneous absence or presence of 'k' a compile-time
+ * error.
  */
-#define JMP(jtype, src) (BPF_JMP | (jtype) | (src))
+#define OPCODE_2ARY(x1, x2) ((x1) | (x2))
+#define OPCODE_3ARY(x1, x2, x3) ((x1) | (x2) | (x3))
+
+/*
+ * Branch instruction opcodes comprise two (for "ja L") or three (for
+ * everything else) constants.
+ */
+#define NEW_STMT_JA(cstate, k) \
+        new_stmt_k((cstate), OPCODE_2ARY(BPF_JMP, BPF_JA), (k))
+
+#define OPCODE_BRANCH_X(jtype) OPCODE_3ARY(BPF_JMP, (jtype), BPF_X)
+
+#define OPCODE_BRANCH_K(jtype) OPCODE_3ARY(BPF_JMP, (jtype), BPF_K)
+#define NEW_STMT_JEQ_K(cstate, k) \
+        new_stmt_k((cstate), OPCODE_BRANCH_K(BPF_JEQ), (k))
+#define NEW_STMT_JSET_K(cstate, k) \
+        new_stmt_k((cstate), OPCODE_BRANCH_K(BPF_JSET), (k))
+
+/*
+ * Return instruction opcodes always comprise two constants.
+ */
+#define OPCODE_RET(rval) OPCODE_2ARY(BPF_RET, (rval))
+
+/*
+ * Miscellaneous instruction opcodes always comprise two constants.
+ */
+#define OPCODE_MISC(op) OPCODE_2ARY(BPF_MISC, (op))
+#define NEW_STMT_TAX(cstate) \
+        new_stmt((cstate), OPCODE_MISC(BPF_TAX))
+#define NEW_STMT_TXA(cstate) \
+        new_stmt((cstate), OPCODE_MISC(BPF_TXA))
 
 /*
  * "Push" the current value of the link-layer header type and link-layer
@@ -925,10 +960,18 @@ new_stmt(compiler_state_t *cstate, int code)
 	return p;
 }
 
+static inline struct slist *
+new_stmt_k(compiler_state_t *cstate, const int code, const uint32_t k)
+{
+	struct slist *ret = new_stmt(cstate, code);
+	ret->s.k = k;
+	return ret;
+}
+
 static struct block *
 gen_retblk_internal(compiler_state_t *cstate, int v)
 {
-	struct block *b = new_block(cstate, BPF_RET|BPF_K);
+	struct block *b = new_block(cstate, OPCODE_RET(BPF_K));
 
 	b->s.k = v;
 	return b;
@@ -1795,7 +1838,7 @@ static struct block *
 gen_jmp_k(compiler_state_t *cstate, const int jtype, const bpf_u_int32 v,
           struct slist *stmts)
 {
-	struct block *b = new_block(cstate, JMP(jtype, BPF_K));
+	struct block *b = new_block(cstate, OPCODE_BRANCH_K(jtype));
 	b->s.k = v;
 	b->stmts = stmts;
 	return b;
@@ -1808,7 +1851,7 @@ gen_jmp_k(compiler_state_t *cstate, const int jtype, const bpf_u_int32 v,
 static struct block *
 gen_jmp_x(compiler_state_t *cstate, const int jtype, struct slist *stmts)
 {
-	struct block *b = new_block(cstate, JMP(jtype, BPF_X));
+	struct block *b = new_block(cstate, OPCODE_BRANCH_X(jtype));
 	b->stmts = stmts;
 	return b;
 }
@@ -2572,7 +2615,7 @@ gen_load_absoffsetarthrel(compiler_state_t *cstate, struct slist *varpart,
 	else {
 		sappend(varpart, xfer_to_a(cstate, arthpart));
 		sappend(varpart, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-		sappend(varpart, new_stmt(cstate, BPF_MISC|BPF_TAX));
+		sappend(varpart, NEW_STMT_TAX(cstate));
 	}
 	return gen_load_absoffsetrel(cstate, varpart, constpart, bpf_size);
 }
@@ -2712,7 +2755,7 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 		 * register, and move the result into the X register.
 		 */
 		sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
-		sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
+		sappend(s, NEW_STMT_TAX(cstate));
 	} else {
 		/*
 		 * The offset of the link-layer payload is a constant,
@@ -3424,7 +3467,7 @@ gen_load_pflog_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		return (s1);
@@ -3482,8 +3525,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Compare with 0x80211000.
 		 */
-		sjeq_avs_cookie = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
-		sjeq_avs_cookie->s.k = 0x80211000;
+		sjeq_avs_cookie = NEW_STMT_JEQ_K(cstate, 0x80211000);
 		sappend(s1, sjeq_avs_cookie);
 
 		/*
@@ -3506,8 +3548,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * it's added to the PC, so, as we're jumping
 		 * over a single instruction, it should be 1.)
 		 */
-		sjcommon = new_stmt(cstate, JMP(BPF_JA, BPF_K));
-		sjcommon->s.k = 1;
+		sjcommon = NEW_STMT_JA(cstate, 1);
 		sappend(s1, sjcommon);
 
 		/*
@@ -3534,7 +3575,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		return (s1);
@@ -3574,7 +3615,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		return (s1);
@@ -3611,7 +3652,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		s2 = new_stmt(cstate, BPF_ALU|BPF_LSH|BPF_K);
 		sappend(s1, s2);
 		s2->s.k = 8;
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		/*
@@ -3635,7 +3676,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		return (s1);
@@ -3679,7 +3720,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		s2 = new_stmt(cstate, BPF_ALU|BPF_LSH|BPF_K);
 		sappend(s1, s2);
 		s2->s.k = 8;
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		/*
@@ -3703,7 +3744,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s2 = NEW_STMT_TAX(cstate);
 		sappend(s1, s2);
 
 		return (s1);
@@ -3777,7 +3818,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * in cstate->off_linkpl.reg, and then load the Frame Control field,
 	 * which is at the offset in the X register, with an indexed load.
 	 */
-	s2 = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	s2 = NEW_STMT_TXA(cstate);
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s2->s.k = 24;
@@ -3795,16 +3836,15 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * a data frame has the 0x08 bit (b3) in that field set and the
 	 * 0x04 bit (b2) clear.
 	 */
-	sjset_data_frame_1 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-	sjset_data_frame_1->s.k = IEEE80211_FC0_TYPE_DATA;
+	sjset_data_frame_1 = NEW_STMT_JSET_K(cstate, IEEE80211_FC0_TYPE_DATA);
 	sappend(s, sjset_data_frame_1);
 
 	/*
 	 * If b3 is set, test b2, otherwise go to the first statement of
 	 * the rest of the program.
 	 */
-	sjset_data_frame_1->s.jt = sjset_data_frame_2 = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-	sjset_data_frame_2->s.k = IEEE80211_FC0_TYPE_CTL;
+	sjset_data_frame_1->s.jt = sjset_data_frame_2 =
+	    NEW_STMT_JSET_K(cstate, IEEE80211_FC0_TYPE_CTL);
 	sappend(s, sjset_data_frame_2);
 	sjset_data_frame_1->s.jf = snext;
 
@@ -3814,8 +3854,8 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * program.
 	 */
 	sjset_data_frame_2->s.jt = snext;
-	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-	sjset_qos->s.k = IEEE80211_FC0_SUBTYPE_QOS;
+	sjset_data_frame_2->s.jf = sjset_qos =
+	    NEW_STMT_JSET_K(cstate, IEEE80211_FC0_SUBTYPE_QOS);
 	sappend(s, sjset_qos);
 
 	/*
@@ -3862,8 +3902,8 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s2->s.k = 4;
 		sappend(s, s2);
 
-		sjset_radiotap_flags_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_flags_present->s.k = PCAP_BSWAP_32(0x00000002);
+		sjset_radiotap_flags_present =
+		    NEW_STMT_JSET_K(cstate, PCAP_BSWAP_32(0x00000002));
 		sappend(s, sjset_radiotap_flags_present);
 
 		/*
@@ -3874,8 +3914,8 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the "extension" bit set in that word?
 		 */
-		sjset_radiotap_ext_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_ext_present->s.k = PCAP_BSWAP_32(0x80000000);
+		sjset_radiotap_ext_present =
+		    NEW_STMT_JSET_K(cstate, PCAP_BSWAP_32(0x80000000));
 		sappend(s, sjset_radiotap_ext_present);
 		sjset_radiotap_flags_present->s.jt = sjset_radiotap_ext_present;
 
@@ -3887,8 +3927,8 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		/*
 		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
 		 */
-		sjset_radiotap_tsft_present = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_radiotap_tsft_present->s.k = PCAP_BSWAP_32(0x00000001);
+		sjset_radiotap_tsft_present =
+		    NEW_STMT_JSET_K(cstate, PCAP_BSWAP_32(0x00000001));
 		sappend(s, sjset_radiotap_tsft_present);
 		sjset_radiotap_ext_present->s.jf = sjset_radiotap_tsft_present;
 
@@ -3906,8 +3946,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jt = s2;
 
-		sjset_tsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_tsft_datapad->s.k = 0x20;
+		sjset_tsft_datapad = NEW_STMT_JSET_K(cstate, 0x20);
 		sappend(s, sjset_tsft_datapad);
 
 		/*
@@ -3923,8 +3962,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		sjset_radiotap_tsft_present->s.jf = s2;
 
-		sjset_notsft_datapad = new_stmt(cstate, JMP(BPF_JSET, BPF_K));
-		sjset_notsft_datapad->s.k = 0x20;
+		sjset_notsft_datapad = NEW_STMT_JSET_K(cstate, 0x20);
 		sappend(s, sjset_notsft_datapad);
 
 		/*
@@ -6591,18 +6629,16 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/* again: if (A == v) goto end; else fall through; */
 	unsigned again = i;
-	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
-	s[i]->s.k = v;
+	s[i] = NEW_STMT_JEQ_K(cstate, v);
 	s[i]->s.jt = NULL;		/*later*/
 	s[i]->s.jf = NULL;		/*update in next stmt*/
 	unsigned fix5 = i;
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
-	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_NONE);
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*update in next stmt*/
-	s[i]->s.k = IPPROTO_NONE;
 	s[fix5]->s.jf = s[i];
 	unsigned fix2 = i;
 	i++;
@@ -6612,29 +6648,25 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		unsigned v6start = i;
 
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
-		s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+		s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_HOPOPTS);
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
-		s[i]->s.k = IPPROTO_HOPOPTS;
 		s[fix2]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_DSTOPTS);
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
-		s[i]->s.k = IPPROTO_DSTOPTS;
 		i++;
 		/* if (A == IPPROTO_ROUTING) goto v6advance */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_ROUTING);
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*update in next stmt*/
-		s[i]->s.k = IPPROTO_ROUTING;
 		i++;
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
-		s[i - 1]->s.jf = s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_FRAGMENT);
 		s[i]->s.jt = NULL;	/*later*/
 		s[i]->s.jf = NULL;	/*later*/
-		s[i]->s.k = IPPROTO_FRAGMENT;
 		fix3 = i;
 		unsigned v6end = i;
 		i++;
@@ -6671,7 +6703,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
 		i++;
 		/* X = A; */
-		s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
+		s[i] = NEW_STMT_TAX(cstate);
 		i++;
 		/* A = MEM[reg2] */
 		s[i] = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
@@ -6679,8 +6711,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		i++;
 
 		/* goto again; (must use BPF_JA for backward jump) */
-		s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
-		s[i]->s.k = again - i - 1;
+		s[i] = NEW_STMT_JA(cstate, again - i - 1);
 		s[i - 1]->s.jf = s[i];
 		i++;
 
@@ -6698,10 +6729,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/* ahcheck: */
 	unsigned ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
-	s[i] = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
+	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_AH);
 	s[i]->s.jt = NULL;	/*later*/
 	s[i]->s.jf = NULL;	/*later*/
-	s[i]->s.k = IPPROTO_AH;
 	if (fix3)
 		s[fix3]->s.jf = s[ahcheck];
 	unsigned fix4 = i;
@@ -6722,14 +6752,14 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.k = reg2;
 	i++;
 	/* A = X */
-	s[i - 1]->s.jt = s[i] = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	s[i - 1]->s.jt = s[i] = NEW_STMT_TXA(cstate);
 	i++;
 	/* A += 1 */
 	s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
 	s[i]->s.k = 1;
 	i++;
 	/* X = A */
-	s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s[i] = NEW_STMT_TAX(cstate);
 	i++;
 	/* A = P[X + packet head] */
 	s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
@@ -6744,7 +6774,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i]->s.k = 4;
 	i++;
 	/* X = A; */
-	s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s[i] = NEW_STMT_TAX(cstate);
 	i++;
 	/* A = MEM[reg2] */
 	s[i] = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
@@ -6752,8 +6782,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	i++;
 
 	/* goto again; (must use BPF_JA for backward jump) */
-	s[i] = new_stmt(cstate, JMP(BPF_JA, BPF_K));
-	s[i]->s.k = again - i - 1;
+	s[i] = NEW_STMT_JA(cstate, again - i - 1);
 	i++;
 
 	/* end: nop */
@@ -8986,8 +9015,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	s->s.k = (bpf_u_int32)(SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT);
 
 	/* true -> next instructions, false -> beginning of b_vid */
-	sjeq = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
-	sjeq->s.k = 1;
+	sjeq = NEW_STMT_JEQ_K(cstate, 1);
 	sjeq->s.jf = b_vid->stmts;
 	sappend(s, sjeq);
 
@@ -9003,8 +9031,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)
 		cnt++;
-	s2 = new_stmt(cstate, JMP(BPF_JA, BPF_K));
-	s2->s.k = cnt - 1;
+	s2 = NEW_STMT_JA(cstate, cnt - 1);
 	sappend(s, s2);
 
 	/* insert our statements at the beginning of b_vid */
@@ -9389,7 +9416,7 @@ gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Load the IP header length into A. */
 	s = gen_loadx_iphdrlen(cstate);
 
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	s1 = NEW_STMT_TXA(cstate);
 	sappend(s, s1);
 
 	/* Forcibly append these statements to the true condition
@@ -9426,7 +9453,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s1 = NEW_STMT_TAX(cstate);
 	sappend(s, s1);
 
 	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
@@ -9452,7 +9479,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	s->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 8;
 
 	/* Stash this in X since we'll need it later. */
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s1 = NEW_STMT_TAX(cstate);
 	sappend(s, s1);
 
 	/* The EtherType in Geneve is 2 bytes in. Calculate this and
@@ -9528,11 +9555,10 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	/* Check if the EtherType is Transparent Ethernet Bridging. At the
 	 * end of this check, we should have the total length in X. In
 	 * the non-Ethernet case, it's already there. */
-	s_proto = new_stmt(cstate, JMP(BPF_JEQ, BPF_K));
-	s_proto->s.k = ETHERTYPE_TEB;
+	s_proto = NEW_STMT_JEQ_K(cstate, ETHERTYPE_TEB);
 	sappend(s, s_proto);
 
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	s1 = NEW_STMT_TXA(cstate);
 	sappend(s, s1);
 	s_proto->s.jt = s1;
 
@@ -9553,7 +9579,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	sappend(s, s1);
 
 	/* Move the result to X. */
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s1 = NEW_STMT_TAX(cstate);
 	sappend(s, s1);
 
 	/* Store the final result of our linkpl calculation. */
@@ -9640,7 +9666,7 @@ gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Load the IP header length into A. */
 	s = gen_loadx_iphdrlen(cstate);
 
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TXA);
+	s1 = NEW_STMT_TXA(cstate);
 	sappend(s, s1);
 
 	/* Forcibly append these statements to the true condition
@@ -9677,7 +9703,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s1 = NEW_STMT_TAX(cstate);
 	sappend(s, s1);
 
 	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
@@ -9735,7 +9761,7 @@ gen_vxlan_offsets(compiler_state_t *cstate)
 	sappend(s, s1);
 
 	/* Move the result to X. */
-	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
+	s1 = NEW_STMT_TAX(cstate);
 	sappend(s, s1);
 
 	/* Store the final result of our linkpl calculation. */
