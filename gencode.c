@@ -7729,7 +7729,6 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	int size_code;
 	int regno = alloc_reg(cstate);
 
-	free_reg(cstate, inst->regno);
 	switch (size) {
 
 	default:
@@ -7961,6 +7960,12 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	// NULL is a valid value for 's'.
 	sappend(inst->s, gen_load_absoffsetarthrel(cstate, s, constpart, inst,
 	    size_code));
+
+	/*
+	 * Only now it is correct to deallocate the input register because
+	 * gen_load_absoffsetarthrel() was using it just before.
+	 */
+	free_reg(cstate, inst->regno);
 
 	inst->regno = regno;
 	s = NEW_STMT_ST_M(cstate, regno);

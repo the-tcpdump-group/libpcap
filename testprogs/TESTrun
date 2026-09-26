@@ -27647,130 +27647,7 @@ my @filter_accept_blocks = (
 			(095) ret      #0
 			',
 	},
-	{
-		# This is a bug: "(040) st M[14]" overwrites the variable offset and makes
-		# subsequent loads incorrect.
-		name => '15_memregs_before_tcp_IEEE802_11',
-		DLT => 'IEEE802_11',
-		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0'],
-		optunopt => '
-			(000) ldx      #0x0
-			(001) txa
-			(002) add      #24
-			(003) st       M[14]
-			(004) ldb      [x + 0]
-			(005) jset     #0x8             jt 6	jf 11
-			(006) jset     #0x4             jt 11	jf 7
-			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[14]
-			(009) add      #2
-			(010) st       M[14]
-			(011) ld       #0x1
-			(012) st       M[0]
-			(013) ld       #0x2
-			(014) st       M[1]
-			(015) ld       #0x3
-			(016) st       M[2]
-			(017) ld       #0x4
-			(018) st       M[3]
-			(019) ld       #0x5
-			(020) st       M[4]
-			(021) ld       #0x6
-			(022) st       M[5]
-			(023) ld       #0x7
-			(024) st       M[6]
-			(025) ld       #0x8
-			(026) st       M[7]
-			(027) ld       #0x9
-			(028) st       M[8]
-			(029) ld       #0xa
-			(030) st       M[9]
-			(031) ld       #0xb
-			(032) st       M[10]
-			(033) ld       #0xc
-			(034) st       M[11]
-			(035) ld       #0xd
-			(036) st       M[12]
-			(037) ld       #0xe
-			(038) st       M[13]
-			(039) ld       #0x40
-			(040) st       M[14]
-			(041) ldx      M[14]
-			(042) ldb      [x + 8]
-			(043) and      #0xf
-			(044) lsh      #2
-			(045) add      x
-			(046) tax
-			(047) ld       M[14]
-			(048) add      x
-			(049) tax
-			(050) ldb      [x + 8]
-			(051) st       M[15]
-			(052) ldx      M[15]
-			(053) ld       M[13]
-			(054) add      x
-			(055) st       M[15]
-			(056) ldx      M[15]
-			(057) ld       M[12]
-			(058) add      x
-			(059) st       M[15]
-			(060) ldx      M[15]
-			(061) ld       M[11]
-			(062) add      x
-			(063) st       M[15]
-			(064) ldx      M[15]
-			(065) ld       M[10]
-			(066) add      x
-			(067) st       M[15]
-			(068) ldx      M[15]
-			(069) ld       M[9]
-			(070) add      x
-			(071) st       M[15]
-			(072) ldx      M[15]
-			(073) ld       M[8]
-			(074) add      x
-			(075) st       M[15]
-			(076) ldx      M[15]
-			(077) ld       M[7]
-			(078) add      x
-			(079) st       M[15]
-			(080) ldx      M[15]
-			(081) ld       M[6]
-			(082) add      x
-			(083) st       M[15]
-			(084) ldx      M[15]
-			(085) ld       M[5]
-			(086) add      x
-			(087) st       M[15]
-			(088) ldx      M[15]
-			(089) ld       M[4]
-			(090) add      x
-			(091) st       M[15]
-			(092) ldx      M[15]
-			(093) ld       M[3]
-			(094) add      x
-			(095) st       M[15]
-			(096) ldx      M[15]
-			(097) ld       M[2]
-			(098) add      x
-			(099) st       M[15]
-			(100) ldx      M[15]
-			(101) ld       M[1]
-			(102) add      x
-			(103) st       M[15]
-			(104) ldx      M[15]
-			(105) ld       M[0]
-			(106) add      x
-			(107) st       M[15]
-			(108) ld       #0x0
-			(109) st       M[0]
-			(110) ldx      M[0]
-			(111) ld       M[15]
-			(112) jeq      x                jt 113	jf 114
-			(113) ret      #262144
-			(114) ret      #0
-			',
-	},
+	# "15_memregs_before_tcp_IEEE802_11" is a reject test.
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -30412,6 +30289,12 @@ my @filter_reject_tests = (
 		errstr => errstr_too_many_regs,
 	},
 
+	{
+		name => '15_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
 	{
 		name => '16_memregs_before_link_EN10MB',
 		DLT => 'EN10MB',
