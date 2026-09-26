@@ -8581,6 +8581,37 @@ gen_ifindex(compiler_state_t *cstate, int ifindex)
 	}
 }
 
+/* Linux packet mark (skb->mark) */
+#if defined(__linux__) && defined(SKF_AD_MARK)
+struct block *
+gen_mark(compiler_state_t *cstate, bpf_u_int32 mark)
+#else
+struct block *
+gen_mark(compiler_state_t *cstate, bpf_u_int32 mark _U_)
+#endif
+{
+	/*
+	 * Catch errors reported by us and routines below us, and return NULL
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (NULL);
+
+#if defined(__linux__) && defined(SKF_AD_MARK)
+	require_basic_bpf_extensions(cstate, "mark");
+	if (! (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_MARK_HANDLING))
+		bpf_error(cstate, "'mark' not supported by the running kernel");
+	/*
+	 * Load from the magic offset as is, even if the link-layer header
+	 * does not start at offset 0.
+	 */
+	return gen_cmp(cstate, OR_PACKET, SKF_AD_OFF + SKF_AD_MARK, BPF_W, mark);
+#else
+	fail_kw_on_dlt(cstate, "mark");
+	/*NOTREACHED*/
+#endif
+}
+
 /*
  * Filter on inbound (outbound == 0) or outbound (outbound == 1) traffic.
  * Outbound traffic is sent by this machine, while inbound traffic is

@@ -12,6 +12,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require config.h to be from the libpcap build.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
+      Add a "mark" primitive to match the Linux packet mark (issue #275).
     Documentation:
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
