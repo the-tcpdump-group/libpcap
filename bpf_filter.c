@@ -246,21 +246,21 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			X = (p[pc->k] & 0xf) << 2;
 			continue;
 
-		case BPF_LD|BPF_IMM:
+		case BPF_LD|BPF_W|BPF_IMM:
 			A = pc->k;
 			continue;
 
-		case BPF_LDX|BPF_IMM:
+		case BPF_LDX|BPF_W|BPF_IMM:
 			X = pc->k;
 			continue;
 
-		case BPF_LD|BPF_MEM:
+		case BPF_LD|BPF_W|BPF_MEM:
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			A = mem[pc->k];
 			continue;
 
-		case BPF_LDX|BPF_MEM:
+		case BPF_LDX|BPF_W|BPF_MEM:
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			X = mem[pc->k];
@@ -511,11 +511,11 @@ pcapint_valid_insn(const struct bpf_insn *insn)
 	case BPF_LD|BPF_H|BPF_IND:
 	case BPF_LD|BPF_B|BPF_IND:
 	case BPF_LDX|BPF_MSH|BPF_B:
-	case BPF_LD|BPF_IMM:
-	case BPF_LDX|BPF_IMM:
+	case BPF_LD|BPF_W|BPF_IMM:
+	case BPF_LDX|BPF_W|BPF_IMM:
 		return 1;
-	case BPF_LD|BPF_MEM:
-	case BPF_LDX|BPF_MEM:
+	case BPF_LD|BPF_W|BPF_MEM:
+	case BPF_LDX|BPF_W|BPF_MEM:
 	case BPF_ST:
 	case BPF_STX:
 		// Reject a non-existent scratch memory register.

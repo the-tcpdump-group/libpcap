@@ -199,13 +199,13 @@ bpf_image(const struct bpf_insn *p, int n)
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_IMM:
+	case BPF_LD|BPF_W|BPF_IMM:
 		op = "ld";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LDX|BPF_IMM:
+	case BPF_LDX|BPF_W|BPF_IMM:
 		op = "ldx";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
@@ -217,13 +217,13 @@ bpf_image(const struct bpf_insn *p, int n)
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_MEM:
+	case BPF_LD|BPF_W|BPF_MEM:
 		op = "ld";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LDX|BPF_MEM:
+	case BPF_LDX|BPF_W|BPF_MEM:
 		op = "ldx";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
