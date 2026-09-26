@@ -6567,7 +6567,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
 	struct block *b0, *b;
 	struct slist *s[100];
-	int reg2 = alloc_reg(cstate);
 
 	memset(s, 0, sizeof(s));
 
@@ -6661,6 +6660,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	unsigned fix2 = i;
 	i++;
 
+	int reg2 = alloc_reg(cstate);
 	unsigned fix3 = 0;
 	if (proto == Q_IPV6) {
 		unsigned v6start = i;

@@ -13,6 +13,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
       Fix a dangling register index in "proto[expr]".
+      Fix a register index leak in "protochain".
     Documentation:
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
