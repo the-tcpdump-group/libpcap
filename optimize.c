@@ -832,7 +832,7 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 		abort();
 	}
 	s->k = a;
-	s->code = BPF_LD|BPF_IMM;
+	s->code = BPF_LD|BPF_W|BPF_IMM;
 	opt_state->done = 0;
 	/*
 	 * XXX - optimizer loop detection.
@@ -891,7 +891,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * ldx M[k]		tax
 		 */
 		if (s->s.code == BPF_ST &&
-		    next->s.code == (BPF_LDX|BPF_MEM) &&
+		    next->s.code == (BPF_LDX|BPF_W|BPF_MEM) &&
 		    s->s.k == next->s.k) {
 			opt_state->done = 0;
 			next->s.code = BPF_MISC|BPF_TAX;
@@ -920,9 +920,9 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * ld  #k	-->	ldx  #k
 		 * tax			txa
 		 */
-		if (s->s.code == (BPF_LD|BPF_IMM) &&
+		if (s->s.code == (BPF_LD|BPF_W|BPF_IMM) &&
 		    next->s.code == (BPF_MISC|BPF_TAX)) {
-			s->s.code = BPF_LDX|BPF_IMM;
+			s->s.code = BPF_LDX|BPF_W|BPF_IMM;
 			next->s.code = BPF_MISC|BPF_TXA;
 			opt_state->done = 0;
 			/*
@@ -934,7 +934,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * This is an ugly special case, but it happens
 		 * when you say tcp[k] or udp[k] where k is a constant.
 		 */
-		if (s->s.code == (BPF_LD|BPF_IMM)) {
+		if (s->s.code == (BPF_LD|BPF_W|BPF_IMM)) {
 			struct slist *add, *tax, *ild;
 
 			/*
@@ -1225,17 +1225,17 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LD|BPF_LEN:
+	case BPF_LD|BPF_W|BPF_LEN:
 		v = F(opt_state, s->code, 0L, 0L);
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LD|BPF_IMM:
+	case BPF_LD|BPF_W|BPF_IMM:
 		v = K(s->k);
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LDX|BPF_IMM:
+	case BPF_LDX|BPF_W|BPF_IMM:
 		v = K(s->k);
 		vstore(s, &val[X_ATOM], v, alter);
 		break;
@@ -1247,7 +1247,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 
 	case BPF_ALU|BPF_NEG:
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
-			s->code = BPF_LD|BPF_IMM;
+			s->code = BPF_LD|BPF_W|BPF_IMM;
 			/*
 			 * Do this negation as unsigned arithmetic; that's
 			 * what modern BPF engines do, and it guarantees
@@ -1302,7 +1302,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 					break;
 				}
 				if (op == BPF_MUL || op == BPF_AND) {
-					s->code = BPF_LD|BPF_IMM;
+					s->code = BPF_LD|BPF_W|BPF_IMM;
 					val[A_ATOM] = K(s->k);
 					break;
 				}
@@ -1371,7 +1371,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 			}
 			else if (op == BPF_MUL || op == BPF_DIV || op == BPF_MOD ||
 				 op == BPF_AND || op == BPF_LSH || op == BPF_RSH) {
-				s->code = BPF_LD|BPF_IMM;
+				s->code = BPF_LD|BPF_W|BPF_IMM;
 				s->k = 0;
 				vstore(s, &val[A_ATOM], K(s->k), alter);
 				break;
@@ -1388,10 +1388,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[A_ATOM], val[X_ATOM], alter);
 		break;
 
-	case BPF_LD|BPF_MEM:
+	case BPF_LD|BPF_W|BPF_MEM:
 		v = val[s->k];
 		if (alter && opt_state->vmap[v].is_const) {
-			s->code = BPF_LD|BPF_IMM;
+			s->code = BPF_LD|BPF_W|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
 			opt_state->done = 0;
 			/*
@@ -1406,10 +1406,10 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[X_ATOM], val[A_ATOM], alter);
 		break;
 
-	case BPF_LDX|BPF_MEM:
+	case BPF_LDX|BPF_W|BPF_MEM:
 		v = val[s->k];
 		if (alter && opt_state->vmap[v].is_const) {
-			s->code = BPF_LDX|BPF_IMM;
+			s->code = BPF_LDX|BPF_W|BPF_IMM;
 			s->k = opt_state->vmap[v].const_val;
 			opt_state->done = 0;
 			/*
@@ -2345,8 +2345,8 @@ bool
 pcapint_opcode_without_k(const uint16_t opcode)
 {
 	static const bool without_k[UINT8_MAX + 1] = {
-		[BPF_LD   | BPF_LEN         ] = true,
-		[BPF_LDX  | BPF_LEN         ] = true,
+		[BPF_LD   | BPF_W  | BPF_LEN] = true,
+		[BPF_LDX  | BPF_W  | BPF_LEN] = true,
 		[BPF_JMP  | BPF_JA          ] = true, // no_optimize == 1
 		[BPF_JMP  | BPF_JEQ  | BPF_X] = true, // block exit only
 		[BPF_JMP  | BPF_JGT  | BPF_X] = true, // block exit only
