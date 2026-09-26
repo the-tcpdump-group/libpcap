@@ -381,6 +381,14 @@ struct addrinfo {
         new_stmt_k((cstate), OPCODE_LOADX(BPF_B, BPF_MSH), (k))
 
 /*
+ * Store instruction opcodes are single constants.
+ */
+#define NEW_STMT_ST_M(cstate, regno) \
+        new_stmt_k((cstate), BPF_ST, (regno))
+#define NEW_STMT_STX_M(cstate, regno) \
+        new_stmt_k((cstate), BPF_STX, (regno))
+
+/*
  * Branch instruction opcodes comprise two (for "ja L") or three (for
  * everything else) constants.
  */
@@ -3506,8 +3514,7 @@ gen_load_pflog_llprefixlen(compiler_state_t *cstate)
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkpl.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
 		sappend(s1, s2);
 
 		/*
@@ -3609,8 +3616,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * it.  The code for the AVS header will jump here after
 		 * loading the length of the AVS header.
 		 */
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 		sappend(s1, s2);
 		sjcommon->s.jf = s2;
 
@@ -3649,8 +3655,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 		sappend(s1, s2);
 
 		/*
@@ -3707,8 +3712,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 		sappend(s1, s2);
 
 		/*
@@ -3772,8 +3776,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 		sappend(s1, s2);
 
 		/*
@@ -3857,8 +3860,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	sappend(s, s2);
 	s2 = NEW_STMT_ADD_K(cstate, 24);
 	sappend(s, s2);
-	s2 = new_stmt(cstate, BPF_ST);
-	s2->s.k = cstate->off_linkpl.reg;
+	s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
 	sappend(s, s2);
 
 	s2 = NEW_STMT_LDB_IND(cstate, 0);
@@ -3901,8 +3903,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	sappend(s, s2);
 	s2 = NEW_STMT_ADD_K(cstate, 2);
 	sappend(s, s2);
-	s2 = new_stmt(cstate, BPF_ST);
-	s2->s.k = cstate->off_linkpl.reg;
+	s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
 	sappend(s, s2);
 
 	/*
@@ -4006,8 +4007,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		sappend(s, s2);
 		s2 = NEW_STMT_AND_K(cstate, (bpf_u_int32)~3);
 		sappend(s, s2);
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkpl.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
 		sappend(s, s2);
 
 		sjset_tsft_datapad->s.jt = s_roundup;
@@ -4107,11 +4107,9 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 			cstate->off_linktype.reg = alloc_reg(cstate);
 
 		s = NEW_STMT_LD_IMM(cstate, 0);
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkpl.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
 		sappend(s, s2);
-		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linktype.reg;
+		s2 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
 		sappend(s, s2);
 	}
 
@@ -6702,8 +6700,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		    cstate->off_linkpl.constant_part + cstate->off_nl);
 		i++;
 		/* MEM[reg2] = A */
-		s[i] = new_stmt(cstate, BPF_ST);
-		s[i]->s.k = reg2;
+		s[i] = NEW_STMT_ST_M(cstate, reg2);
 		i++;
 		/* A = P[X + packet head + 1]; */
 		s[i] = NEW_STMT_LDB_IND(cstate,
@@ -6762,8 +6759,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i - 1]->s.jt = s[i];
 	i++;
 	/* MEM[reg2] = A */
-	s[i] = new_stmt(cstate, BPF_ST);
-	s[i]->s.k = reg2;
+	s[i] = NEW_STMT_ST_M(cstate, reg2);
 	i++;
 	/* A = X */
 	s[i - 1]->s.jt = s[i] = NEW_STMT_TXA(cstate);
@@ -7967,8 +7963,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	    size_code));
 
 	inst->regno = regno;
-	s = new_stmt(cstate, BPF_ST);
-	s->s.k = regno;
+	s = NEW_STMT_ST_M(cstate, regno);
 	sappend(inst->s, s);
 
 	return inst;
@@ -8047,8 +8042,7 @@ gen_loadlen(compiler_state_t *cstate)
 	regno = alloc_reg(cstate);
 	a = (struct arth *)newchunk(cstate, sizeof(*a));
 	s = NEW_STMT_LD_LEN(cstate);
-	s->next = new_stmt(cstate, BPF_ST);
-	s->next->s.k = regno;
+	s->next = NEW_STMT_ST_M(cstate, regno);
 	a->s = s;
 	a->regno = regno;
 
@@ -8067,8 +8061,7 @@ gen_loadi_internal(compiler_state_t *cstate, bpf_u_int32 val)
 	reg = alloc_reg(cstate);
 
 	s = NEW_STMT_LD_IMM(cstate, val);
-	s->next = new_stmt(cstate, BPF_ST);
-	s->next->s.k = reg;
+	s->next = NEW_STMT_ST_M(cstate, reg);
 	a->s = s;
 	a->regno = reg;
 
@@ -8123,8 +8116,7 @@ gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 	sappend(a->s, s);
 	s = NEW_STMT_NEG(cstate);
 	sappend(a->s, s);
-	s = new_stmt(cstate, BPF_ST);
-	s->s.k = a->regno;
+	s = NEW_STMT_ST_M(cstate, a->regno);
 	sappend(a->s, s);
 
 	return a;
@@ -8190,8 +8182,8 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
 	free_reg(cstate, a0->regno);
 	free_reg(cstate, a1->regno);
 
-	s0 = new_stmt(cstate, BPF_ST);
-	a0->regno = s0->s.k = alloc_reg(cstate);
+	a0->regno = alloc_reg(cstate);
+	s0 = NEW_STMT_ST_M(cstate, a0->regno);
 	sappend(a0->s, s0);
 
 	return a0;
@@ -8974,8 +8966,7 @@ gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
 	sappend(s, s2);
 	s2 = NEW_STMT_ADD_K(cstate, v);
 	sappend(s, s2);
-	s2 = new_stmt(cstate, BPF_ST);
-	s2->s.k = off->reg;
+	s2 = NEW_STMT_ST_M(cstate, off->reg);
 	sappend(s, s2);
 }
 
@@ -9486,8 +9477,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	cstate->off_linktype.is_variable = 1;
 	cstate->off_linktype.constant_part = 0;
 
-	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linktype.reg;
+	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
 	sappend(s, s1);
 
 	/* Load the Geneve option length and mask and shift to get the
@@ -9520,8 +9510,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	 *   Ethernet at runtime before executing these checks. */
 	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
 
-	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linkhdr.reg;
+	s1 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 	sappend(s, s1);
 
 	/* Calculate whether we have an Ethernet header or just raw IP/
@@ -9555,8 +9544,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	s1 = NEW_STMT_ADD_K(cstate, 12);
 	sappend(s, s1);
 
-	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linktype.reg;
+	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
 	sappend(s, s1);
 
 	/* Advance two bytes further to get the end of the Ethernet
@@ -9573,8 +9561,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	cstate->off_linkpl.is_variable = 1;
 	cstate->off_linkpl.constant_part = 0;
 
-	s1 = new_stmt(cstate, BPF_STX);
-	s1->s.k = cstate->off_linkpl.reg;
+	s1 = NEW_STMT_STX_M(cstate, cstate->off_linkpl.reg);
 	sappend(s, s1);
 	s_proto->s.jf = s1;
 
@@ -9719,8 +9706,7 @@ gen_vxlan_offsets(compiler_state_t *cstate)
 	 * frames. */
 	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
 
-	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linkhdr.reg;
+	s1 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
 	sappend(s, s1);
 
 	/* As the payload is an Ethernet packet, we can use the
@@ -9732,8 +9718,7 @@ gen_vxlan_offsets(compiler_state_t *cstate)
 	cstate->off_linktype.is_variable = 1;
 	cstate->off_linktype.constant_part = 0;
 
-	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linktype.reg;
+	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
 	sappend(s, s1);
 
 	/* Two bytes further is the end of the Ethernet header and the
@@ -9750,8 +9735,7 @@ gen_vxlan_offsets(compiler_state_t *cstate)
 	cstate->off_linkpl.is_variable = 1;
 	cstate->off_linkpl.constant_part = 0;
 
-	s1 = new_stmt(cstate, BPF_STX);
-	s1->s.k = cstate->off_linkpl.reg;
+	s1 = NEW_STMT_STX_M(cstate, cstate->off_linkpl.reg);
 	sappend(s, s1);
 
 	cstate->off_nl = 0;
