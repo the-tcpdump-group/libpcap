@@ -2744,7 +2744,7 @@ gen_uncond(compiler_state_t *cstate, const u_char rsense)
 {
 	struct slist *s;
 
-	s = new_stmt(cstate, BPF_LD|BPF_IMM);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 	s->s.k = !rsense;
 	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0, s);
 	ret->meaning = rsense ? IS_TRUE : IS_FALSE;
@@ -3766,7 +3766,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * and store it in the cstate->off_linkpl.reg register.
 		 * That length is off_outermostlinkhdr.constant_part.
 		 */
-		s = new_stmt(cstate, BPF_LDX|BPF_IMM);
+		s = new_stmt(cstate, BPF_LDX|BPF_W|BPF_IMM);
 		s->s.k = cstate->off_outermostlinkhdr.constant_part;
 	}
 
@@ -3824,7 +3824,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * Otherwise, go to the first statement of the rest of the
 	 * program.
 	 */
-	sjset_qos->s.jt = s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	sjset_qos->s.jt = s2 = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 	s2->s.k = cstate->off_linkpl.reg;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
@@ -3934,7 +3934,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * dividing by and multiplying by 4, which we do by
 		 * ANDing with ~3.
 		 */
-		s_roundup = new_stmt(cstate, BPF_LD|BPF_MEM);
+		s_roundup = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 		s_roundup->s.k = cstate->off_linkpl.reg;
 		sappend(s, s_roundup);
 		s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
@@ -4094,7 +4094,7 @@ gen_abs_offset_varpart(compiler_state_t *cstate, bpf_abs_offset *off)
 		 * Load the register containing the variable part of the
 		 * offset of the link-layer header into the X register.
 		 */
-		s = new_stmt(cstate, BPF_LDX|BPF_MEM);
+		s = new_stmt(cstate, BPF_LDX|BPF_W|BPF_MEM);
 		s->s.k = off->reg;
 		return s;
 	} else {
@@ -6584,7 +6584,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = gen_load_a(cstate, OR_LINKPL, IPV6_PROTO_OFFSET, BPF_B);
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
-		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
+		s[i] = new_stmt(cstate, BPF_LDX|BPF_W|BPF_IMM);
 		s[i]->s.k = IP6_HDRLEN;
 		i++;
 	}
@@ -6674,7 +6674,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
 		i++;
 		/* A = MEM[reg2] */
-		s[i] = new_stmt(cstate, BPF_LD|BPF_MEM);
+		s[i] = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 		s[i]->s.k = reg2;
 		i++;
 
@@ -6747,7 +6747,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	s[i] = new_stmt(cstate, BPF_MISC|BPF_TAX);
 	i++;
 	/* A = MEM[reg2] */
-	s[i] = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s[i] = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 	s[i]->s.k = reg2;
 	i++;
 
@@ -7674,7 +7674,7 @@ xfer_to_x(compiler_state_t *cstate, const struct arth *a)
 {
 	struct slist *s;
 
-	s = new_stmt(cstate, BPF_LDX|BPF_MEM);
+	s = new_stmt(cstate, BPF_LDX|BPF_W|BPF_MEM);
 	s->s.k = a->regno;
 	return s;
 }
@@ -7684,7 +7684,7 @@ xfer_to_a(compiler_state_t *cstate, const struct arth *a)
 {
 	struct slist *s;
 
-	s = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 	s->s.k = a->regno;
 	return s;
 }
@@ -8016,7 +8016,7 @@ gen_loadlen(compiler_state_t *cstate)
 
 	regno = alloc_reg(cstate);
 	a = (struct arth *)newchunk(cstate, sizeof(*a));
-	s = new_stmt(cstate, BPF_LD|BPF_LEN);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_LEN);
 	s->next = new_stmt(cstate, BPF_ST);
 	s->next->s.k = regno;
 	a->s = s;
@@ -8036,7 +8036,7 @@ gen_loadi_internal(compiler_state_t *cstate, bpf_u_int32 val)
 
 	reg = alloc_reg(cstate);
 
-	s = new_stmt(cstate, BPF_LD|BPF_IMM);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 	s->s.k = val;
 	s->next = new_stmt(cstate, BPF_ST);
 	s->next->s.k = reg;
@@ -8067,7 +8067,7 @@ gen_loadi(compiler_state_t *cstate, bpf_u_int32 val)
 static inline bool
 is_loadi(const struct arth *a)
 {
-	return a->s->s.code == (BPF_LD|BPF_IMM) &&
+	return a->s->s.code == (BPF_LD|BPF_W|BPF_IMM) &&
 	    a->s->next != NULL && a->s->next->s.code == BPF_ST &&
 	    a->s->next->next == NULL;
 }
@@ -8213,7 +8213,7 @@ gen_len(compiler_state_t *cstate, int jmp, int n)
 {
 	struct slist *s;
 
-	s = new_stmt(cstate, BPF_LD|BPF_LEN);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_LEN);
 	return gen_jmp_k(cstate, jmp, n, s);
 }
 
@@ -8942,7 +8942,7 @@ gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
 	if (off->reg == -1)
 		off->reg = alloc_reg(cstate);
 
-	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2 = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 	s2->s.k = off->reg;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
@@ -9412,14 +9412,14 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * variable length link prefix if there is one. */
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
-		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s1 = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 		s1->s.k = IP6_HDRLEN;
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
 		sappend(s, s1);
 	} else {
-		s = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 		s->s.k = IP6_HDRLEN;
 	}
 
@@ -9521,7 +9521,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	sappend(s, s1);
 
 	/* Load X with the end of the Geneve header. */
-	s1 = new_stmt(cstate, BPF_LDX|BPF_MEM);
+	s1 = new_stmt(cstate, BPF_LDX|BPF_W|BPF_MEM);
 	s1->s.k = cstate->off_linkhdr.reg;
 	sappend(s, s1);
 
@@ -9663,14 +9663,14 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * variable length link prefix if there is one. */
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
-		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s1 = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 		s1->s.k = IP6_HDRLEN;
 		sappend(s, s1);
 
 		s1 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X);
 		sappend(s, s1);
 	} else {
-		s = new_stmt(cstate, BPF_LD|BPF_IMM);
+		s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 		s->s.k = IP6_HDRLEN;
 	}
 
@@ -9799,10 +9799,10 @@ gen_encap_ll_check(compiler_state_t *cstate)
 
 	/* Geneve always generates pure variable offsets so we can
 	 * compare only the registers. */
-	s = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s = new_stmt(cstate, BPF_LD|BPF_W|BPF_MEM);
 	s->s.k = cstate->off_linkhdr.reg;
 
-	s1 = new_stmt(cstate, BPF_LDX|BPF_MEM);
+	s1 = new_stmt(cstate, BPF_LDX|BPF_W|BPF_MEM);
 	s1->s.k = cstate->off_linkpl.reg;
 	sappend(s, s1);
 

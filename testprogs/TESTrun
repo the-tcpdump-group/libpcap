@@ -32605,8 +32605,8 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#pktlen$/o,
 			k_jt_jf => 'undef_undef_undef',
 			opcodes => {
-				ld  => BPF_LEN | BPF_LD,
-				ldx => BPF_LEN | BPF_LDX,
+				ld  => BPF_LEN | BPF_LD | BPF_W,
+				ldx => BPF_LEN | BPF_LDX | BPF_W,
 			},
 		},
 		# X is the only explicit operand.
@@ -32646,8 +32646,8 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#(0x[0-9a-fA-F]+)$/o,
 			k_jt_jf => 'hex_undef_undef',
 			opcodes => {
-				ld  => BPF_IMM | BPF_LD,
-				ldx => BPF_IMM | BPF_LDX,
+				ld  => BPF_IMM | BPF_LD | BPF_W,
+				ldx => BPF_IMM | BPF_LDX | BPF_W,
 				or  => BPF_K | BPF_ALU | BPF_OR,
 				and => BPF_K | BPF_ALU | BPF_AND,
 				xor => BPF_K | BPF_ALU | BPF_XOR,
@@ -32694,8 +32694,8 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+M\[([0-9]+)\]$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				ld  => BPF_MEM | BPF_LD,
-				ldx => BPF_MEM | BPF_LDX,
+				ld  => BPF_MEM | BPF_LD | BPF_W,
+				ldx => BPF_MEM | BPF_LDX | BPF_W,
 				st  => BPF_ST,
 				stx => BPF_STX,
 			},
