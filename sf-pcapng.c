@@ -343,6 +343,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			return (-1);
 		}
 		p->buffer = bigger_buffer;
+		p->bufsize = bhdr.total_length;
 	}
 
 	/*
