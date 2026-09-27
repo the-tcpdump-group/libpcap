@@ -32831,6 +32831,7 @@ sub cbpfsfdata_from_string {
 # and the other is an apply test.  The list elements use the following keys:
 #
 # * name (mandatory, string): same as elsewhere
+# * skip (optional, string): same as elsewhere
 # * program (mandatory, string): a sequence of BPF instructions in one of the
 #   following formats:
 #   * the binary cbpf-savefile encoding
@@ -34704,6 +34705,14 @@ foreach my $test (@fcode_tests) {
 		accept_test_label 'fcode', $test->{name} :
 		reject_test_label 'fcode', $test->{name};
 	next if defined $only_one && $only_one ne $label;
+	if (defined $test->{skip} && $test->{skip} ne '') {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_skip_test,
+			skip => $print_skipped ? $test->{skip} : '',
+		};
+		next;
+	}
 	# Prepare the cbpf-savefile contents in the main thread rather than in the
 	# tester threads: the latter fail without any diagnostics, which makes
 	# debugging unnecessarily complicated.
