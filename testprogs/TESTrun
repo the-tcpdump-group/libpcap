@@ -32570,6 +32570,25 @@ use constant {
 	CBPFSF_HEADER_SIZE => 20,
 	CBPFSF_SIGNATURE   => 0xA1B2C3CB,
 	CBPFSF_ASCII_HINT  => 0x63425046, # 'c' 'B' 'P' 'F'
+
+	# Linux BPF extensions
+	SKF_AD_OFF              => 0xFFFFF000, # -0x1000
+	SKF_AD_PROTOCOL         => 0,
+	SKF_AD_PKTTYPE          => 4,
+	SKF_AD_IFINDEX          => 8,
+	SKF_AD_NLATTR           => 12,
+	SKF_AD_NLATTR_NEST      => 16,
+	SKF_AD_MARK             => 20,
+	SKF_AD_QUEUE            => 24,
+	SKF_AD_HATYPE           => 28,
+	SKF_AD_RXHASH           => 32,
+	SKF_AD_CPU              => 36,
+	SKF_AD_ALU_XOR_X        => 40,
+	SKF_AD_VLAN_TAG         => 44,
+	SKF_AD_VLAN_TAG_PRESENT => 48,
+	SKF_AD_PAY_OFFSET       => 52,
+	SKF_AD_RANDOM           => 56,
+	SKF_AD_VLAN_TPID        => 60,
 };
 
 sub bpf_restore_line {
@@ -34104,6 +34123,70 @@ my @fcode_tests = (
 		dump => undef,
 		savefile => 'pppoe.pcap',
 		results => [0],
+	},
+
+	{
+		name => 'linux_offsets_uncond',
+		skip => skip_os_not ('linux'),
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PROTOCOL },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PKTTYPE },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_IFINDEX },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_NLATTR },
+			# Any supported (>= 2.6.27) Linux implements everything above.
+			{ opcode => BPF_RET | BPF_K, k => 70773 },
+		),
+		dump => '
+			(000) ld       [proto]
+			(001) ld       [type]
+			(002) ld       [ifidx]
+			(003) ld       [nla]
+			(004) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [0], # All offsets are invalid without the aux data.
+	},
+	{
+		name => 'linux_offsets_cond',
+		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
+		program => cbpfsfdata_from_list (
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_NLATTR_NEST },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_MARK },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_QUEUE },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_HATYPE },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_RXHASH },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_CPU },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_ALU_XOR_X },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TAG },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT },
+			# Any Linux that defines SKF_AD_VLAN_TAG_PRESENT implements everything
+			# above.  Any modern (>= 4.1.0, also some 3.x releases with backports)
+			# Linux implements everything below.  If this test needs to pass on older
+			# supported Linux hosts, the build systems will also have to test whether
+			# SKF_AD_VLAN_TPID is defined, and the instructions below will have to be
+			# a separate test conditional on HAVE_DECL_SKF_AD_VLAN_TPID in config.h.
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PAY_OFFSET },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_RANDOM },
+			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TPID },
+			{ opcode => BPF_RET | BPF_K, k => 70773 },
+		),
+		dump => '
+			(000) ld       [nlan]
+			(001) ld       [mark]
+			(002) ld       [queue]
+			(003) ld       [hatype]
+			(004) ld       [rxhash]
+			(005) ld       [cpu]
+			(006) ld       [xor_x]
+			(007) ld       [vlan_tci]
+			(008) ld       [vlanp]
+			(009) ld       [poff]
+			(010) ld       [random]
+			(011) ld       [vlan_tpid]
+			(012) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [0], # All offsets are invalid without the aux data.
 	},
 );
 
