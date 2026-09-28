@@ -3625,6 +3625,15 @@ static int rpcap_recv(PCAP_SOCKET sock, SSL *ssl, void *buffer, size_t toread, u
 static void rpcap_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen, char *remote_errbuf)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
+	char local_errbuf[PCAP_ERRBUF_SIZE];
+
+	/*
+	 * Some callers have no buffer into which to put the error
+	 * message; drain the message into a scratch buffer rather
+	 * than dereferencing a null pointer.
+	 */
+	if (remote_errbuf == NULL)
+		remote_errbuf = local_errbuf;
 
 	if (plen >= PCAP_ERRBUF_SIZE)
 	{
