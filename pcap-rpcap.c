@@ -3615,6 +3615,18 @@ static int rpcap_recv(PCAP_SOCKET sock, SSL *ssl, void *buffer, size_t toread, u
 	{
 		return -1;
 	}
+	if (nread == -3)
+	{
+		/*
+		 * Interrupted system call; we don't know how many
+		 * bytes were consumed, so we can't salvage this
+		 * message.  Fail rather than report success with a
+		 * partially-filled buffer and a corrupted plen.
+		 */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Message payload receive was interrupted");
+		return -1;
+	}
 	*plen -= nread;
 	return 0;
 }
