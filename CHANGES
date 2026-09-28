@@ -12,6 +12,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require config.h to be from the libpcap build.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
+      Place all long jumps in one pass, not one pass per long jump, so
+        that compiling a large filter is no longer quadratic in the
+        number of them. (issue #1255)
     Documentation:
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
