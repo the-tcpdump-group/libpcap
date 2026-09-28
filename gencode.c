@@ -9262,7 +9262,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
 }
 
 /*
- * Support PPPOE discovery and session.
+ * Support PPPoE discovery and session.
  */
 struct block *
 gen_pppoed(compiler_state_t *cstate)
