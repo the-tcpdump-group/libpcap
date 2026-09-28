@@ -1958,7 +1958,7 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
 	sampling_pars->method = (uint8_t)fp->rmt_samp.method;
-	sampling_pars->value = (uint16_t)htonl(fp->rmt_samp.value);
+	sampling_pars->value = htonl(fp->rmt_samp.value);
 
 	if (sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, sendbuf, sendbufidx, fp->errbuf,
 	    PCAP_ERRBUF_SIZE) < 0)
