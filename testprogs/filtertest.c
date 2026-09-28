@@ -80,7 +80,7 @@ PCAP_API void pcap_set_print_dot_graph(int);
 #endif
 
 #ifdef __linux__
-#include <linux/filter.h> // SKF_AD_VLAN_TAG_PRESENT
+#include <linux/filter.h> // SKF_AD_VLAN_TAG_PRESENT, SKF_AD_MARK
 #endif // __linux__
 
 /*
@@ -535,6 +535,9 @@ main(int argc, char **argv)
 			 */
 			pd->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 #endif // SKF_AD_VLAN_TAG_PRESENT
+#ifdef SKF_AD_MARK
+			pd->bpf_codegen_flags |= BPF_SPECIAL_MARK_HANDLING;
+#endif // SKF_AD_MARK
 			pd->bpf_codegen_flags |= BPF_SPECIAL_BASIC_HANDLING;
 		}
 #endif // __linux__

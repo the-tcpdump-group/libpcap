@@ -333,6 +333,7 @@ inbound		return INBOUND;
 outbound	return OUTBOUND;
 
 ifindex		return IFINDEX;
+mark		return MARK;
 
 vlan		return VLAN;
 mpls		return MPLS;

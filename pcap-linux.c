@@ -2806,6 +2806,8 @@ setup_socket(pcap_t *handle, int is_any_device)
 			 */
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
+		if (bpf_extensions > SKF_AD_MARK)
+			handle->bpf_codegen_flags |= BPF_SPECIAL_MARK_HANDLING;
 	}
 #endif // defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 

@@ -5517,6 +5517,48 @@ my @filter_accept_blocks = (
 			(003) ret      #0
 			',
 	}, # ifindex_linuxext
+	{
+		name => 'mark_linuxext',
+		skip => skip_os_not ('linux'),
+		linuxext => 1,
+		DLT => 'EN10MB',
+		aliases => [
+			'mark 0x20',
+			'mark 32',
+		],
+		optunopt => '
+			(000) ld       [mark]
+			(001) jeq      #0x20            jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mark_linuxext
+	{
+		name => 'mark_linuxext_NETANALYZER',
+		skip => skip_os_not ('linux'),
+		linuxext => 1,
+		DLT => 'NETANALYZER',
+		aliases => ['mark 1'],
+		optunopt => '
+			(000) ld       [mark]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mark_linuxext_NETANALYZER
+	{
+		name => 'mark_linuxext_IEEE802_11_RADIO',
+		skip => skip_os_not ('linux'),
+		linuxext => 1,
+		DLT => 'IEEE802_11_RADIO',
+		aliases => ['mark 1'],
+		optunopt => '
+			(000) ld       [mark]
+			(001) jeq      #0x1             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mark_linuxext_IEEE802_11_RADIO
 
 	{
 		name => 'pflog_ifname',
@@ -30946,6 +30988,24 @@ foreach (DLTs_without 'ifindex') {
 		DLT => $_,
 		expr => 'ifindex 2',
 		errstr => 'not a live capture',
+	};
+}
+
+# gen_mark()
+foreach (DLTs_without '') {
+	push @filter_reject_tests, {
+		name => "mark_1_${_}",
+		skip => skip_os ('linux'),
+		DLT => $_,
+		expr => 'mark 1',
+		errstr => errstr_kw_notsup_on ('mark', $_),
+	};
+	push @filter_reject_tests, {
+		name => "mark_2_${_}",
+		skip => skip_os_not ('linux'),
+		DLT => $_,
+		expr => 'mark 2',
+		errstr => errstr_notlive ('mark', $_),
 	};
 }
 

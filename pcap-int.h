@@ -406,6 +406,11 @@ struct pcap {
  * reading a savefile rather than doing a live capture.
  */
 #define BPF_OFFLINE_AF_HANDLING	0x00000004
+/*
+ * Special handling of the packet mark, which is an auxiliary data item
+ * available in Linux >= 2.6.33.
+ */
+#define BPF_SPECIAL_MARK_HANDLING	0x00000008
 
 /*
  * User data structure for the one-shot callback used for pcap_next()

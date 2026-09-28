@@ -177,6 +177,7 @@ that don't follow the pattern (for example:
 .BR inbound ,
 .BR outbound ,
 .BR ifindex ,
+.BR mark ,
 .BR llc ,
 .BR vlan ,
 .BR mpls ,
@@ -955,6 +956,14 @@ to the network).
 .IP "\fBifindex \fIinterface_index\fR"
 True if the packet was logged via the specified interface (applies only to
 packets logged by the Linux "any" cooked v2 interface).
+.IP "\fBmark \fIvalue\fR"
+True if the Linux packet mark is equal to
+.IR value .
+The mark is metadata that, for example, the iptables MARK target or the
+.B SO_MARK
+socket option can set.  An incoming packet is tested before netfilter
+processes it.  This primitive is supported for live captures on Linux 3.14
+and later only.
 .IP "\fBifname \fIinterface\fR"
 True, for
 .BR DLT_PFLOG
@@ -2009,6 +2018,10 @@ Before libpcap 1.11.0 the
 primitive had a different definition, which did not produce the expected
 results, also its support was conditional and since libpcap 1.0.0 was disabled
 by default.
+.PP
+The
+.B mark
+keyword became available in libpcap 1.11.1.
 .SH SEE ALSO
 .BR pcap (3PCAP)
 .SH BUGS
