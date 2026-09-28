@@ -2993,7 +2993,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	}
 
 	/* Discard the rest of the message. */
-	if (rpcap_discard(sockctrl, ssl, plen, errbuf) == 1)
+	if (rpcap_discard(sockctrl, ssl, plen, errbuf) == -1)
 		goto error_nodiscard;
 
 	/* Control connection has to be closed only in case the remote machine is in passive mode */
