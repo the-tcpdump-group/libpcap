@@ -1427,6 +1427,22 @@ dag_stream_long_description(char *strbuf, const size_t strbufsize,
 		    inf->bus_id);
 }
 
+static uint32_t
+dag_flags(const int stream)
+{
+	/*
+	 * A DAG card associates a link status with each physical port, but not
+	 * with the data streams.  The number of ports is a matter of hardware,
+	 * the number of streams and how each stream associates with zero or
+	 * more ports is a matter of how the user configures the card.  In this
+	 * context libpcap uses the streams only (i.e. "dag0" is a shorthand
+	 * for "dag0:0"), thus the notion of link status does not apply to the
+	 * resulting libpcap DAG capture devices.
+	 */
+	return PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE |
+	    (RX_ONLY(stream) ? PCAP_IF_NO_INJECT : PCAP_IF_NO_CAPTURE);
+}
+
 /*
  * Add all DAG devices.
  * This excludes vDAG Tx streams, which libpcap cannot use.
@@ -1438,14 +1454,6 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	int dagfd;
 	char description[256];
 	int stream, rxstreams;
-	// A DAG card associates a link status with each physical port, but not
-	// with the data streams.  The number of ports is a matter of hardware,
-	// the number of streams and how each stream associates with zero or
-	// more ports is a matter of how the user configures the card.  In this
-	// context libpcap uses the streams only (i.e. "dag0" is a shorthand
-	// for "dag0:0"), thus the notion of link status does not apply to the
-	// resulting libpcap DAG capture devices.
-	const bpf_u_int32 flags = PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 	FILE * sysfsinfo = NULL;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
@@ -1504,6 +1512,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				if (bufsize > 0 &&
 				    (RX_ONLY(stream) || inf->device_code != PCI_DEVICE_ID_VDAG)) {
 					dag_device_description(description, sizeof(description), c);
+					const uint32_t flags = dag_flags(stream);
 					// a conditional shorthand device
 					if (stream == 0 &&
 					    pcapint_add_dev(devlistp, name, flags, description, errbuf) == NULL)
@@ -1548,6 +1557,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 						if (TX_ONLY(stream) && c >= 16 && c <= 31)
 							continue;
 #endif // ENABLE_DAG_TX
+						const uint32_t flags = dag_flags(stream);
 						// a conditional shorthand device
 						dag_device_description(description, sizeof(description), c);
 						if (stream == 0 &&
