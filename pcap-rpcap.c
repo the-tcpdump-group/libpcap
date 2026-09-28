@@ -3415,7 +3415,7 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 
 		/* Get the numeric form of the name of the connecting host */
 		if (sock_getascii_addrport((struct sockaddr_storage *) &temp->host, hoststr,
-			RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST, errbuf, PCAP_ERRBUF_SIZE) != -1)
+			RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			/*	if (getnameinfo( (struct sockaddr *) &temp->host, sizeof (struct sockaddr_storage), hoststr, */
 			/*		RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST) ) */
 		{
@@ -3433,7 +3433,7 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 			return -1;
 		}
 
-		pcapint_strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
+		pcapint_strlcat(hostlist, hoststr, (size_t)size);
 		hostlist[len - 1] = sep;
 		hostlist[len] = 0;
 
