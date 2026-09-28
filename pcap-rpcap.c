@@ -2718,7 +2718,7 @@ error:
 	 * We already reported an error; if this gets an error, just
 	 * drive on.
 	 */
-	(void)rpcap_discard(sockctrl, pr->ctrl_ssl, plen, NULL);
+	(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 
 error_nodiscard:
 	if (!active)
