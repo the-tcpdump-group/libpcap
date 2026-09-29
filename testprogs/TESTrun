@@ -28010,6 +28010,21 @@ my @filter_apply_blocks = (
 		expr => 'outbound',
 		results => [0, 262144, 0, 262144, 0, 262144, 262144, 0],
 	},
+
+	# Two IDBs with LINKTYPE_RAW, which is not equal to DLT_RAW.  The first
+	# packet is IPv4 on interface 0, the second is IPv6 on interface 1.
+	{
+		name => 'pcapng_two_idbs_raw_ip',
+		savefile => 'pcapng-two-idbs-raw.pcapng',
+		expr => 'ip',
+		results => [65535, 0],
+	},
+	{
+		name => 'pcapng_two_idbs_raw_ip6',
+		savefile => 'pcapng-two-idbs-raw.pcapng',
+		expr => 'ip6',
+		results => [0, 65535],
+	},
 );
 
 # yyerror()

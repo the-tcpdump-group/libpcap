@@ -1247,8 +1247,12 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 *
 			 * XXX - just discard packets from those
 			 * interfaces?
+			 *
+			 * p->linktype is a DLT_ value, so compare it
+			 * with the DLT_ value for this IDB's LINKTYPE_
+			 * value.
 			 */
-			if (p->linktype != idbp->linktype) {
+			if (p->linktype != linktype_to_dlt(idbp->linktype)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a type %u different from the type of the first interface",
 				    idbp->linktype);
