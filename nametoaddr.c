@@ -130,7 +130,7 @@
 #endif
 
 /*
- *  Convert host name to internet address.
+ *  Convert a host name to an Internet address.
  *  Return 0 upon failure.
  *  XXX - not thread-safe; don't use it inside libpcap.
  */
@@ -192,7 +192,7 @@ pcap_nametoaddrinfo(const char *name)
 }
 
 /*
- *  Convert net name to internet address.
+ *  Convert a net name to an Internet address.
  *  Return 0 upon failure.
  *  XXX - not guaranteed to be thread-safe!  See below for platforms
  *  on which it is thread-safe and on which it isn't.
