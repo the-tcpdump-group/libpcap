@@ -1304,6 +1304,12 @@ int sock_send(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer,
  * only the buffer overflow check has to be made.
  * In this case, both 'data' and 'outbuf' can be NULL values.
  *
+ * In case 'size' is equal to 0, 'data' is not dereferenced at all, so in that
+ * case it can be a NULL value: passing a null pointer to memcpy() would be
+ * undefined behaviour even when copying zero bytes (C11 7.24.1 "String
+ * function conventions"), and callers do pass NULL pointers with a zero size
+ * for absent optional data.
+ *
  * This function is useful in case the userland application does not know immediately
  * all the data it has to write into the socket. This function provides a way to create
  * the "stream" step by step, appending the new data to the old one. Then, when all the
@@ -1351,7 +1357,7 @@ int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int to
 		return -1;
 	}
 
-	if (!checkonly)
+	if (!checkonly && size > 0)
 		memcpy(outbuf + (*offset), data, size);
 
 	(*offset) += size;
