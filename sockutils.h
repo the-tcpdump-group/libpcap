@@ -151,6 +151,8 @@ int sock_close(PCAP_SOCKET sock, char *errbuf, int errbuflen);
 int sock_send(PCAP_SOCKET sock, SSL *, const char *buffer, size_t size,
     char *errbuf, int errbuflen);
 int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen);
+size_t sock_strlen(const char *str);
+int sock_bufferize_str(const char *str, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen);
 int sock_discard(PCAP_SOCKET sock, SSL *, int size, char *errbuf,
     int errbuflen);
 int	sock_check_hostlist(const char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen);
