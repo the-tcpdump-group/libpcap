@@ -308,11 +308,11 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout
 		struct rpcap_sockaddr_in *sockaddrin_ipv4;
 		struct sockaddr_in *sockaddrout_ipv4;
 
-		(*sockaddrout) = (struct sockaddr *) malloc(sizeof(struct sockaddr_in));
+		(*sockaddrout) = (struct sockaddr *) calloc(1, sizeof(struct sockaddr_storage));
 		if ((*sockaddrout) == NULL)
 		{
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "malloc() failed");
+			    errno, "calloc() failed");
 			return -1;
 		}
 		sockaddrin_ipv4 = (struct rpcap_sockaddr_in *) sockaddrin;
@@ -337,11 +337,11 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout
 		struct rpcap_sockaddr_in6 *sockaddrin_ipv6;
 		struct sockaddr_in6 *sockaddrout_ipv6;
 
-		(*sockaddrout) = (struct sockaddr *) malloc(sizeof(struct sockaddr_in6));
+		(*sockaddrout) = (struct sockaddr *) calloc(1, sizeof(struct sockaddr_storage));
 		if ((*sockaddrout) == NULL)
 		{
 			pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "malloc() failed");
+			    errno, "calloc() failed");
 			return -1;
 		}
 		sockaddrin_ipv6 = (struct rpcap_sockaddr_in6 *) sockaddrin;
