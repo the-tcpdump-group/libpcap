@@ -1881,10 +1881,12 @@ return 0;
 	AC_DEFINE(ENABLE_REMOTE, 1,
 	    [Define to 1 if remote packet capture is to be supported])
 	REMOTE_C_SRC="$REMOTE_C_SRC pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	RPCAPOWNERSHIPTEST_SRC=rpcapownershiptest.c
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	AC_MSG_RESULT(no)
+	RPCAPOWNERSHIPTEST_SRC=
 	;;
 esac
 
@@ -2936,6 +2938,7 @@ AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(PLATFORM_C_SRC)
 AC_SUBST(MODULE_C_SRC)
 AC_SUBST(REMOTE_C_SRC)
+AC_SUBST(RPCAPOWNERSHIPTEST_SRC)
 AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
