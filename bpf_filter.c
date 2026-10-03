@@ -44,6 +44,7 @@
 #include "pcap-types.h"
 #include "extract.h"
 #include "diag-control.h"
+#include "no_sanitize.h"
 
 #ifndef _WIN32
 #include <sys/param.h>
@@ -94,12 +95,12 @@
  * Thanks to Ani Sinha <ani@arista.com> for providing initial implementation
  */
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
-u_int
+UNSIGNED_OVERFLOW_OK u_int
 pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
     const u_char *p, const u_int wirelen, const u_int buflen,
     const struct pcap_bpf_aux_data *aux_data)
 #else
-u_int
+UNSIGNED_OVERFLOW_OK u_int
 pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
     const u_char *p, const u_int wirelen, const u_int buflen,
     const struct pcap_bpf_aux_data *aux_data _U_)
@@ -572,7 +573,7 @@ pcapint_valid_insn(const struct bpf_insn *insn)
  * The kernel needs to be able to verify an application's filter code.
  * Otherwise, a bogus program could easily crash the system.
  */
-int
+UNSIGNED_OVERFLOW_OK int
 pcapint_validate_filter(const struct bpf_insn *f, const unsigned len)
 {
 	u_int i, from;

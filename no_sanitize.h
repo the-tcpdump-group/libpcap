@@ -34,13 +34,14 @@
 /*
  * If we have a compiler that supports an __attribute__ to say "if we're
  * building with unsigned behavior sanitization, don't complain about
- * unsigned left shifts in this function", we label these functions with
- * that attribute - it's *not* undefined in the C standard, and we
- * *also* know it does what we want.
+ * unsigned left shifts or unsigned integer overflow in this function", we
+ * label these functions with that attribute - it's *not* undefined in the
+ * C standard, and we *also* know it does what we want.
  *
  * We check for __attribute__((no_sanitize(XXX))) with __has_attribute,
  * as this check currently appears to be Clang-only, so we suppress it
- * with no_sanitize("unsigned-shift-base"). In addition, the
+ * with no_sanitize("unsigned-shift-base") or
+ * no_sanitize("unsigned-integer-overflow"). In addition, the
  * "-fsanitize=unsigned-shift-base" option, and thus
  * no_sanitize("unsigned-shift-base"),  is not supported before Clang 12,
  * so we check Clang 12 or later first.
@@ -51,8 +52,10 @@
  */
 #if PCAP_IS_AT_LEAST_CLANG_VERSION(12, 0) && __has_attribute(no_sanitize)
 #define UNSIGNED_SHIFT_OK	__attribute__((no_sanitize("unsigned-shift-base")))
+#define UNSIGNED_OVERFLOW_OK	__attribute__((no_sanitize("unsigned-integer-overflow")))
 #else
 #define UNSIGNED_SHIFT_OK
+#define UNSIGNED_OVERFLOW_OK
 #endif
 
 #endif /* NO_SANITIZE_H */
