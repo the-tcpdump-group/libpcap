@@ -298,7 +298,7 @@ make_server_ctx(void)
  * Stub for passive mode: listen on a free loopback port, tell the parent
  * which port that is, accept the library's connection and serve it.
  */
-static void
+static void PCAP_NORETURN
 stub_listen_and_serve(int ready_fd)
 {
 	struct sockaddr_in sa;
@@ -346,7 +346,7 @@ stub_listen_and_serve(int ready_fd)
  * and the build has OpenSSL.  It must be started before
  * pcap_remoteact_accept() blocks in accept().
  */
-static void
+static void PCAP_NORETURN
 stub_connect_and_serve(uint16_t port, int use_tls)
 {
 	struct sockaddr_in sa;
@@ -735,7 +735,7 @@ out:
 	return rc;
 }
 
-static void
+static void PCAP_NORETURN
 on_alarm(int signo _U_)
 {
 	_exit(2);
