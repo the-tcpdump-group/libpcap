@@ -408,7 +408,9 @@ struct pcap {
 #define BPF_OFFLINE_AF_HANDLING	0x00000004
 /*
  * Special handling of the packet mark, which is an auxiliary data item
- * available in Linux >= 2.6.33.
+ * available in Linux >= 2.6.33.  libpcap uses it only if the value of the
+ * SO_BPF_EXTENSIONS socket option (which is available since Linux 3.14+),
+ * is greater than SKF_AD_MARK.
  */
 #define BPF_SPECIAL_MARK_HANDLING	0x00000008
 

@@ -5518,21 +5518,34 @@ my @filter_accept_blocks = (
 			',
 	}, # ifindex_linuxext
 	{
-		name => 'mark_linuxext',
+		name => 'mark_min_linuxext',
+		skip => skip_os_not ('linux'),
+		linuxext => 1,
+		DLT => 'EN10MB',
+		aliases => ['mark 0'],
+		optunopt => '
+			(000) ld       [mark]
+			(001) jeq      #0x0             jt 2	jf 3
+			(002) ret      #262144
+			(003) ret      #0
+			',
+	}, # mark_min_linuxext
+	{
+		name => 'mark_max_linuxext',
 		skip => skip_os_not ('linux'),
 		linuxext => 1,
 		DLT => 'EN10MB',
 		aliases => [
-			'mark 0x20',
-			'mark 32',
+			'mark 4294967295',
+			'mark 0xffffffff',
 		],
 		optunopt => '
 			(000) ld       [mark]
-			(001) jeq      #0x20            jt 2	jf 3
+			(001) jeq      #0xffffffff      jt 2	jf 3
 			(002) ret      #262144
 			(003) ret      #0
 			',
-	}, # mark_linuxext
+	}, # mark_max_linuxext
 	{
 		name => 'mark_linuxext_NETANALYZER',
 		skip => skip_os_not ('linux'),
@@ -28180,6 +28193,26 @@ my @filter_reject_tests = (
 		errstr => errstr_val_too_high ('PPPoE session number 65536', 65535),
 	},
 	{
+		name => 'mark_value',
+		DLT => 'EN10MB',
+		expr => 'mark 4294967296',
+		errstr => 'decimal number 4294967296 overflows 32 bits',
+	},
+	{
+		name => 'mark_linux',
+		skip => skip_os_not ('linux'),
+		DLT => 'EN10MB',
+		expr => 'mark 1',
+		errstr => errstr_notlive ('mark', 'EN10MB'),
+	},
+	{
+		name => 'mark_other',
+		skip => skip_os ('linux'),
+		DLT => 'EN10MB',
+		expr => 'mark 1',
+		errstr => errstr_kw_notsup_on ('mark', 'EN10MB'),
+	},
+	{
 		name => 'mtp2_sio',
 		DLT => 'MTP2',
 		expr => 'sio 256',
@@ -30988,24 +31021,6 @@ foreach (DLTs_without 'ifindex') {
 		DLT => $_,
 		expr => 'ifindex 2',
 		errstr => 'not a live capture',
-	};
-}
-
-# gen_mark()
-foreach (DLTs_without '') {
-	push @filter_reject_tests, {
-		name => "mark_1_${_}",
-		skip => skip_os ('linux'),
-		DLT => $_,
-		expr => 'mark 1',
-		errstr => errstr_kw_notsup_on ('mark', $_),
-	};
-	push @filter_reject_tests, {
-		name => "mark_2_${_}",
-		skip => skip_os_not ('linux'),
-		DLT => $_,
-		expr => 'mark 2',
-		errstr => errstr_notlive ('mark', $_),
 	};
 }
 
