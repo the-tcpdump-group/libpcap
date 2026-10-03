@@ -76,6 +76,7 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 RANLIB = @RANLIB@
+STRIP = @STRIP@
 
 LEX = @LEX@
 BISON_BYACC = @BISON_BYACC@
@@ -641,6 +642,13 @@ install: install-shared install-archive libpcap.pc pcap-config @INSTALL_RPCAPD@
 	for i in $(MANMISC); do \
 		$(INSTALL_DATA) `echo $$i | sed 's/.manmisc.in/.manmisc/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
+
+install-strip: install
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	$(STRIP) $(DESTDIR)$(libdir)/libpcap.so.$$VER 2>/dev/null || :; \
+	$(STRIP) $(DESTDIR)$(libdir)/libpcap.$$VER.dylib 2>/dev/null || :; \
+	$(STRIP) $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER 2>/dev/null || :
 
 install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so
