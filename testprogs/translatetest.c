@@ -312,6 +312,38 @@ fail:
 	return EX_USAGE;
 }
 
+// All three must be decimal; tsresol must be non-zero (the function
+// divides by it, as do all of its in-tree callers with validated input).
+static int
+test_pcapint_scale_up_binary(const char *arg)
+{
+	uint64_t vals[3];
+	const char *p = arg;
+	for (int i = 0; i < 3; i++) {
+		char *endptr = NULL;
+		errno = 0;
+		unsigned long long v = strtoull(p, &endptr, 10);
+		if (endptr == p || errno)
+			goto fail;
+		if (i < 2) {
+			if (*endptr != ',')
+				goto fail;
+			p = endptr + 1;
+		} else if (*endptr) {
+			goto fail;
+		}
+		vals[i] = (uint64_t)v;
+	}
+	if (vals[2] == 0)
+		goto fail;
+	printf("OK: %" PRIu64 "\n",
+	    pcapint_scale_up_binary(vals[0], vals[1], vals[2]));
+	return EX_OK;
+fail:
+	fprintf(stderr, "ERROR: failed parsing \"%s\"\n", arg);
+	return EX_USAGE;
+}
+
 static const struct {
 	const char *name;
 	u_char null_ok;
@@ -332,6 +364,7 @@ static const struct {
 	{"PCAP_BSWAP_32", 0, test_PCAP_BSWAP_32, "0xXXXXXXXX"},
 	{"PCAP_BSWAP_64", 0, test_PCAP_BSWAP_64, "0xXXXXXXXXXXXXXXXX"},
 	{"pcapint_lowest_set_bit", 0, test_pcapint_lowest_set_bit, "0xXXXXXXXX (must not be 0)"},
+	{"pcapint_scale_up_binary", 0, test_pcapint_scale_up_binary, "frac,user_tsresol,tsresol (decimal, tsresol must not be 0)"},
 };
 #define NUM_FUNCS (sizeof(testfunc) / sizeof(testfunc[0]))
 

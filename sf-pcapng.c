@@ -1105,8 +1105,8 @@ pcap_ng_cleanup(pcap_t *p)
  * wrap around 64 bits; split it so every intermediate fits.  (tsresol
  * is a power of 2 here, so the final division is an exact right shift.)
  */
-static uint64_t
-scale_up_binary(uint64_t frac, uint64_t user_tsresol, uint64_t tsresol)
+uint64_t
+pcapint_scale_up_binary(uint64_t frac, uint64_t user_tsresol, uint64_t tsresol)
 {
 	uint64_t hi;
 	uint64_t lo;
@@ -1535,7 +1535,7 @@ found:
 		 * cannot wrap around 64 bits before the division folds
 		 * it back down.
 		 */
-		frac = scale_up_binary(frac, ps->user_tsresol,
+		frac = pcapint_scale_up_binary(frac, ps->user_tsresol,
 		    ps->ifaces[interface_id].tsresol);
 		break;
 	}
