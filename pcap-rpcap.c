@@ -121,6 +121,16 @@ struct pcap_rpcap {
 	 */
 	int rmt_clientside;
 
+	/*
+	 * '1' if this handle is in active mode, i.e. the control connection
+	 * was set up by pcap_remoteact_accept() and is owned by the matching
+	 * entry in the activeHosts list; '0' if we opened the control
+	 * connection ourselves.  It is recorded when the session is set up,
+	 * because the activeHosts list can change before this handle is
+	 * closed.
+	 */
+	int rmt_active;
+
 	PCAP_SOCKET rmt_sockctrl;	/* socket ID of the socket used for the control connection */
 	PCAP_SOCKET rmt_sockdata;	/* socket ID of the socket used for the data connection */
 	SSL *ctrl_ssl, *data_ssl;	/* optional transport of rmt_sockctrl and rmt_sockdata via TLS */
@@ -791,34 +801,51 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
-	int active = 0;				/* active mode or not? */
+	int active = pr->rmt_active;		/* active mode or not? Recorded when the session was set up. */
+	int ctrl_live = 0;			/* is the control socket still owned by an activeHosts entry? */
 
-	/* detect if we're in active mode */
-	temp = activeHosts;
-	while (temp)
+	/*
+	 * In active mode the control socket is owned by the entry in the
+	 * activeHosts list, not by this pcap_t.  That entry may already have
+	 * been torn down by pcap_remoteact_close(), in which case its socket
+	 * and its SSL handle are gone and must not be touched.
+	 */
+	if (active)
 	{
-		if (temp->sockctrl == pr->rmt_sockctrl)
+		temp = activeHosts;
+		while (temp)
 		{
-			active = 1;
-			break;
+			if (temp->sockctrl == pr->rmt_sockctrl)
+			{
+				ctrl_live = 1;
+				break;
+			}
+			temp = temp->next;
 		}
-		temp = temp->next;
 	}
 
 	if (!active)
 	{
-		rpcap_createhdr(&header, pr->protocol_version,
-		    RPCAP_MSG_CLOSE, 0, 0);
-
 		/*
-		 * Send the close request; don't report any errors, as
-		 * we're closing this pcap_t, and have no place to report
-		 * the error.  No reply is sent to this message.
+		 * We own the control connection; tell the peer we are done
+		 * with it.  If an earlier failure already closed the socket,
+		 * there is nothing left to notify.
 		 */
-		(void)sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, (char *)&header,
-		    sizeof(struct rpcap_header), NULL, 0);
+		if (pr->rmt_sockctrl)
+		{
+			rpcap_createhdr(&header, pr->protocol_version,
+			    RPCAP_MSG_CLOSE, 0, 0);
+
+			/*
+			 * Send the close request; don't report any errors, as
+			 * we're closing this pcap_t, and have no place to report
+			 * the error.  No reply is sent to this message.
+			 */
+			(void)sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, (char *)&header,
+			    sizeof(struct rpcap_header), NULL, 0);
+		}
 	}
-	else
+	else if (ctrl_live)
 	{
 		rpcap_createhdr(&header, pr->protocol_version,
 		    RPCAP_MSG_ENDCAP_REQ, 0, 0);
@@ -1136,8 +1163,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	uint16_t portdata = 0;			/* temp variable needed to keep the network port for the data connection */
 	uint32_t plen;
-	int active = 0;				/* '1' if we're in active mode */
-	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
+	int active = pr->rmt_active;		/* '1' if we're in active mode */
 	char host[INET6_ADDRSTRLEN + 1];	/* numeric name of the other host */
 
 	/* socket-related variables*/
@@ -1168,23 +1194,22 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	pr->data_ssl = NULL;
 
 	/*
+	 * If the control connection is gone, a previous attempt failed and
+	 * already closed it; there is nothing left to start the capture on.
+	 */
+	if (pr->rmt_sockctrl == 0)
+	{
+		snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "The remote capture connection is closed");
+		return -1;
+	}
+
+	/*
 	 * Let's check if sampling has been required.
 	 * If so, let's set it first
 	 */
 	if (pcap_setsampling_remote(fp) != 0)
 		return -1;
-
-	/* detect if we're in active mode */
-	temp = activeHosts;
-	while (temp)
-	{
-		if (temp->sockctrl == pr->rmt_sockctrl)
-		{
-			active = 1;
-			break;
-		}
-		temp = temp->next;
-	}
 
 	addrinfo = NULL;
 
@@ -1549,6 +1574,13 @@ error_nodiscard:
 	if ((sockdata != 0) && (sockdata != INVALID_SOCKET))
 		sock_close(sockdata, NULL, 0);
 
+	/*
+	 * The data socket was published to the handle before the failure,
+	 * so give ownership back; pcap_cleanup_rpcap() must not close it
+	 * a second time.
+	 */
+	pr->rmt_sockdata = 0;
+
 	if (!active)
 	{
 #ifdef HAVE_OPENSSL
@@ -1560,7 +1592,16 @@ error_nodiscard:
 			pr->ctrl_ssl = NULL;
 		}
 #endif
-		sock_close(pr->rmt_sockctrl, NULL, 0);
+		if (pr->rmt_sockctrl)
+			sock_close(pr->rmt_sockctrl, NULL, 0);
+
+		/*
+		 * We owned the control socket; it is closed now, so clear it
+		 * so that pcap_cleanup_rpcap() leaves it alone.  In active
+		 * mode the socket belongs to the activeHosts entry and is
+		 * deliberately left in place.
+		 */
+		pr->rmt_sockctrl = 0;
 	}
 
 	if (addrinfo != NULL)
@@ -2689,6 +2730,13 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	pr->protocol_version = protocol_version;
 	pr->byte_swapped = byte_swapped;
 	pr->rmt_clientside = 1;
+
+	/*
+	 * Record whether the control connection belongs to an entry in the
+	 * activeHosts list, so that teardown does not have to re-derive it
+	 * from that mutable list.
+	 */
+	pr->rmt_active = active;
 
 	/* This code is duplicated from the end of this function */
 	fp->read_op = pcap_read_rpcap;
