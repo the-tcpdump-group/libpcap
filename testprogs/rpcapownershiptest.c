@@ -545,7 +545,6 @@ test_passive_startcapture_failure(void)
 	if (child == 0) {
 		close(pfd[0]);
 		stub_listen_and_serve(pfd[1]);
-		_exit(0);
 	}
 	close(pfd[1]);
 	got = read(pfd[0], &port, sizeof port);
@@ -682,7 +681,6 @@ test_active_remoteact_close(void)
 		}
 		if (child == 0) {
 			stub_connect_and_serve(port, use_tls);
-			_exit(0);
 		}
 		s = pcap_remoteact_accept_ex("127.0.0.1", portstr, NULL,
 		    connectinghost, NULL, use_tls, errbuf);
