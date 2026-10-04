@@ -1097,6 +1097,62 @@ pcap_ng_cleanup(pcap_t *p)
  * in hdr and a pointer to the contents in data.  Return 1 on success, 0
  * if there were no more packets, and -1 on an error.
  */
+/*
+ * Scale a sub-second fraction from a binary (power-of-2) file resolution
+ * up to the user-requested resolution: frac * user_tsresol / tsresol.
+ *
+ * frac < tsresol <= 2^63 and user_tsresol <= 10^9, so the product can
+ * wrap around 64 bits; split it so every intermediate fits.  (tsresol
+ * is a power of 2 here, so the final division is an exact right shift.)
+ */
+uint64_t
+pcapint_scale_up_binary(uint64_t frac, uint64_t user_tsresol, uint64_t tsresol)
+{
+	uint64_t hi;
+	uint64_t lo;
+	uint64_t hi_scaled;
+	uint64_t lo_scaled;
+	int shift;
+	int i;
+
+	if (user_tsresol == 0 || frac <= UINT64_MAX / user_tsresol) {
+		/* Fast path: the product cannot overflow. */
+		return ((frac * user_tsresol) / tsresol);
+	}
+	/*
+	 * frac < 2^64, so both halves are < 2^32 and, with
+	 * user_tsresol < 2^30, both partial products fit in 64 bits.
+	 * The 96-bit product is (hi_scaled << 32) + lo_scaled; fold
+	 * in the power-of-2 division without materializing it.
+	 */
+	hi = frac >> 32;
+	lo = frac & 0xFFFFFFFFU;
+	hi_scaled = hi * user_tsresol;
+	lo_scaled = lo * user_tsresol;
+	/*
+	 * tsresol is a power of 2 on this path (binary file resolution,
+	 * validated at option-parse time); find its shift so the
+	 * division below is an exact right shift.
+	 */
+	shift = 0;
+	for (i = 0; i < 64; i++) {
+		if ((tsresol >> i) & 1U) {
+			shift = i;
+		}
+	}
+	if (shift < 32) {
+		/*
+		 * frac < 2^shift <= 2^31, so frac * user_tsresol cannot
+		 * overflow; the fast path above should have taken this.
+		 * Divide directly rather than risk a negative shift.
+		 */
+		return ((frac * user_tsresol) / tsresol);
+	}
+	return ((hi_scaled >> (shift - 32)) +
+	    ((((hi_scaled & ((UINT64_C(1) << (shift - 32)) - 1)) << 32) +
+	    lo_scaled) >> shift));
+}
+
 static int
 pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 {
@@ -1475,15 +1531,12 @@ found:
 		 * reciprocal, so, in order to do this entirely with
 		 * integer arithmetic, we multiply by the user-requested
 		 * resolution and divide by the file-supplied resolution.
-		 *
-		 * XXX - Is there something clever we could do here,
-		 * given that we know that the file-supplied resolution
-		 * is a power of 2?  Doing a multiplication followed by
-		 * a division runs the risk of overflowing, and involves
-		 * two non-simple arithmetic operations.
+		 * scale_up_binary() splits the product so the multiply
+		 * cannot wrap around 64 bits before the division folds
+		 * it back down.
 		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac = pcapint_scale_up_binary(frac, ps->user_tsresol,
+		    ps->ifaces[interface_id].tsresol);
 		break;
 	}
 #ifdef _WIN32

@@ -620,6 +620,17 @@ bool pcapint_opcode_without_k(const uint16_t);
 uint32_t pcapint_lowest_set_bit(const uint32_t);
 
 /*
+ * Scale a sub-second packet-timestamp fraction from a binary
+ * (power-of-2) file resolution up to a user-requested resolution:
+ * frac * user_tsresol / tsresol, computed without letting the
+ * intermediate product wrap around 64 bits.  Callers must pass a
+ * power-of-2 tsresol (as produced for binary file resolutions)
+ * and frac < tsresol; tsresol must be non-zero.
+ */
+uint64_t pcapint_scale_up_binary(const uint64_t, const uint64_t,
+    const uint64_t);
+
+/*
  * Internal interfaces for both "pcap_create()" and routines that
  * open savefiles.
  *
