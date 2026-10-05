@@ -356,7 +356,7 @@ struct addrinfo {
  */
 #define OPCODE_LOAD(size, mode) OPCODE_3ARY(BPF_LD, (size), (mode))
 #define NEW_STMT_LD_LEN(cstate) \
-        new_stmt((cstate), OPCODE_LOAD(BPF_W, BPF_LEN));
+        new_stmt((cstate), OPCODE_LOAD(BPF_W, BPF_LEN))
 #define NEW_STMT_LD_IMM(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOAD(BPF_W, BPF_IMM), (k))
 #define NEW_STMT_LD_M(cstate, regno) \
