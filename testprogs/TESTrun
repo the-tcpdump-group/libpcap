@@ -34571,6 +34571,130 @@ use constant {
 	SKF_AD_VLAN_TPID        => 60,
 };
 
+sub insn ($) {
+	return {
+		opcode => shift,
+	};
+}
+
+sub insn_k ($$) {
+	return {
+		opcode => shift,
+		k => shift,
+	};
+}
+
+sub insn_jt_jf ($$$) {
+	return {
+		opcode => shift,
+		jt => shift,
+		jf => shift,
+	};
+}
+
+sub insn_k_jt_jf ($$$$) {
+	return {
+		opcode => shift,
+		k => shift,
+		jt => shift,
+		jf => shift,
+	};
+}
+
+sub opcode_2ary ($$) { shift | shift }
+sub opcode_3ary ($$$) { shift | shift | shift }
+
+#
+# load
+#
+sub opcode_load ($$) { opcode_3ary BPF_LD, shift, shift }
+sub insn_ld_imm ($) { insn_k opcode_load (BPF_W, BPF_IMM), shift }
+sub insn_ld_len () { insn opcode_load BPF_W, BPF_LEN }
+sub insn_ld_m ($) { insn_k opcode_load (BPF_W, BPF_MEM), shift }
+sub insn_ld_abs ($) { insn_k opcode_load (BPF_W, BPF_ABS), shift }
+sub insn_ldh_abs ($) { insn_k opcode_load (BPF_H, BPF_ABS), shift }
+sub insn_ldb_abs ($) { insn_k opcode_load (BPF_B, BPF_ABS), shift }
+sub insn_ld_ind ($) { insn_k opcode_load (BPF_W, BPF_IND), shift }
+sub insn_ldh_ind ($) { insn_k opcode_load (BPF_H, BPF_IND), shift }
+sub insn_ldb_ind ($) { insn_k opcode_load (BPF_B, BPF_IND), shift }
+
+sub opcode_loadx ($$) { opcode_3ary BPF_LDX, shift, shift }
+sub insn_ldx_imm ($) { insn_k opcode_loadx (BPF_W, BPF_IMM), shift }
+sub insn_ldx_len () { insn opcode_loadx BPF_W, BPF_LEN }
+sub insn_ldx_m ($) { insn_k opcode_loadx (BPF_W, BPF_MEM), shift }
+sub insn_ldxb_msh ($) { insn_k opcode_loadx (BPF_B, BPF_MSH), shift }
+
+#
+# store
+#
+sub opcode_st_m { BPF_ST }
+sub insn_st_m ($) { insn_k opcode_st_m, shift }
+
+sub opcode_stx_m { BPF_STX }
+sub insn_stx_m ($) { insn_k opcode_stx_m, shift }
+
+#
+# branch
+#
+sub opcode_ja () { opcode_2ary BPF_JMP, BPF_JA }
+sub insn_ja ($) { insn_k opcode_ja, shift }
+
+sub opcode_branch_x ($) { opcode_3ary BPF_JMP, shift, BPF_X }
+sub insn_jeq_x ($$) { insn_jt_jf opcode_branch_x (BPF_JEQ), shift, shift }
+sub insn_jgt_x ($$) { insn_jt_jf opcode_branch_x (BPF_JGT), shift, shift }
+sub insn_jge_x ($$) { insn_jt_jf opcode_branch_x (BPF_JGE), shift, shift }
+sub insn_jset_x ($$) { insn_jt_jf opcode_branch_x (BPF_JSET), shift, shift }
+
+sub opcode_branch_k ($) { opcode_3ary BPF_JMP, shift, BPF_K }
+sub insn_jeq_k ($$$) { insn_k_jt_jf opcode_branch_k (BPF_JEQ), shift, shift, shift }
+sub insn_jgt_k ($$$) { insn_k_jt_jf opcode_branch_k (BPF_JGT), shift, shift, shift }
+sub insn_jge_k ($$$) { insn_k_jt_jf opcode_branch_k (BPF_JGE), shift, shift, shift }
+sub insn_jset_k ($$$) { insn_k_jt_jf opcode_branch_k (BPF_JSET), shift, shift, shift }
+
+#
+# ALU
+#
+sub opcode_neg () { opcode_2ary BPF_ALU, BPF_NEG }
+sub insn_neg () { insn opcode_neg }
+
+sub opcode_alu_x ($) { opcode_3ary BPF_ALU, shift, BPF_X }
+sub insn_add_x () { insn opcode_alu_x (BPF_ADD) }
+sub insn_sub_x () { insn opcode_alu_x (BPF_SUB) }
+sub insn_mul_x () { insn opcode_alu_x (BPF_MUL) }
+sub insn_div_x () { insn opcode_alu_x (BPF_DIV) }
+sub insn_mod_x () { insn opcode_alu_x (BPF_MOD) }
+sub insn_xor_x () { insn opcode_alu_x (BPF_XOR) }
+sub insn_and_x () { insn opcode_alu_x (BPF_AND) }
+sub insn_or_x () { insn opcode_alu_x (BPF_OR) }
+sub insn_lsh_x () { insn opcode_alu_x (BPF_LSH) }
+sub insn_rsh_x () { insn opcode_alu_x (BPF_RSH) }
+
+sub opcode_alu_k ($) { opcode_3ary BPF_ALU, shift, BPF_K }
+sub insn_add_k ($) { insn_k opcode_alu_k (BPF_ADD), shift }
+sub insn_sub_k ($) { insn_k opcode_alu_k (BPF_SUB), shift }
+sub insn_mul_k ($) { insn_k opcode_alu_k (BPF_MUL), shift }
+sub insn_div_k ($) { insn_k opcode_alu_k (BPF_DIV), shift }
+sub insn_mod_k ($) { insn_k opcode_alu_k (BPF_MOD), shift }
+sub insn_xor_k ($) { insn_k opcode_alu_k (BPF_XOR), shift }
+sub insn_and_k ($) { insn_k opcode_alu_k (BPF_AND), shift }
+sub insn_or_k ($) { insn_k opcode_alu_k (BPF_OR), shift }
+sub insn_lsh_k ($) { insn_k opcode_alu_k (BPF_LSH), shift }
+sub insn_rsh_k ($) { insn_k opcode_alu_k (BPF_RSH), shift }
+
+#
+# return
+#
+sub opcode_ret ($) { opcode_2ary BPF_RET, shift }
+sub insn_ret_k ($) { insn_k opcode_ret (BPF_K), shift }
+sub insn_ret_a () { insn opcode_ret BPF_A }
+
+#
+# miscellaneous
+#
+sub opcode_misc ($) { opcode_2ary BPF_MISC, shift }
+sub insn_tax () { insn opcode_misc BPF_TAX }
+sub insn_txa () { insn opcode_misc BPF_TXA }
+
 sub bpf_restore_line {
 	my $pc = shift;
 	my $line = shift;
@@ -34593,10 +34717,10 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)$/o,
 			k_jt_jf => 'undef_undef_undef',
 			opcodes => {
-				tax => BPF_MISC | BPF_TAX,
-				txa => BPF_MISC | BPF_TXA,
-				neg => BPF_ALU | BPF_NEG,
-				ret => BPF_RET | BPF_A,
+				tax => opcode_misc BPF_TAX,
+				txa => opcode_misc BPF_TXA,
+				neg => opcode_neg,
+				ret => opcode_ret BPF_A,
 			},
 		},
 		# The packet [wire] length register is the only explicit operand.
@@ -34604,8 +34728,8 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#pktlen$/o,
 			k_jt_jf => 'undef_undef_undef',
 			opcodes => {
-				ld  => BPF_LEN | BPF_LD | BPF_W,
-				ldx => BPF_LEN | BPF_LDX | BPF_W,
+				ld  => opcode_load (BPF_W, BPF_LEN),
+				ldx => opcode_loadx (BPF_W, BPF_LEN),
 			},
 		},
 		# X is the only explicit operand.
@@ -34613,16 +34737,16 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+x$/o,
 			k_jt_jf => 'undef_undef_undef',
 			opcodes => {
-				add => BPF_X | BPF_ALU | BPF_ADD,
-				sub => BPF_X | BPF_ALU | BPF_SUB,
-				mul => BPF_X | BPF_ALU | BPF_MUL,
-				div => BPF_X | BPF_ALU | BPF_DIV,
-				or  => BPF_X | BPF_ALU | BPF_OR,
-				and => BPF_X | BPF_ALU | BPF_AND,
-				lsh => BPF_X | BPF_ALU | BPF_LSH,
-				rsh => BPF_X | BPF_ALU | BPF_RSH,
-				mod => BPF_X | BPF_ALU | BPF_MOD,
-				xor => BPF_X | BPF_ALU | BPF_XOR,
+				add => opcode_alu_x BPF_ADD,
+				sub => opcode_alu_x BPF_SUB,
+				mul => opcode_alu_x BPF_MUL,
+				div => opcode_alu_x BPF_DIV,
+				or  => opcode_alu_x BPF_OR,
+				and => opcode_alu_x BPF_AND,
+				lsh => opcode_alu_x BPF_LSH,
+				rsh => opcode_alu_x BPF_RSH,
+				mod => opcode_alu_x BPF_MOD,
+				xor => opcode_alu_x BPF_XOR,
 			},
 		},
 		# An immediate value (decimal) is the only explicit operand.
@@ -34630,14 +34754,14 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#([0-9]+)$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				add => BPF_K | BPF_ALU | BPF_ADD,
-				sub => BPF_K | BPF_ALU | BPF_SUB,
-				mul => BPF_K | BPF_ALU | BPF_MUL,
-				div => BPF_K | BPF_ALU | BPF_DIV,
-				lsh => BPF_K | BPF_ALU | BPF_LSH,
-				rsh => BPF_K | BPF_ALU | BPF_RSH,
-				mod => BPF_K | BPF_ALU | BPF_MOD,
-				ret => BPF_K | BPF_RET,
+				add => opcode_alu_k BPF_ADD,
+				sub => opcode_alu_k BPF_SUB,
+				mul => opcode_alu_k BPF_MUL,
+				div => opcode_alu_k BPF_DIV,
+				lsh => opcode_alu_k BPF_LSH,
+				rsh => opcode_alu_k BPF_RSH,
+				mod => opcode_alu_k BPF_MOD,
+				ret => opcode_ret BPF_K,
 			},
 		},
 		# An immediate value (hexadecimal) is the only explicit operand.
@@ -34645,11 +34769,11 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#(0x[0-9a-fA-F]+)$/o,
 			k_jt_jf => 'hex_undef_undef',
 			opcodes => {
-				ld  => BPF_IMM | BPF_LD | BPF_W,
-				ldx => BPF_IMM | BPF_LDX | BPF_W,
-				or  => BPF_K | BPF_ALU | BPF_OR,
-				and => BPF_K | BPF_ALU | BPF_AND,
-				xor => BPF_K | BPF_ALU | BPF_XOR,
+				ld  => opcode_load (BPF_W, BPF_IMM),
+				ldx => opcode_loadx (BPF_W, BPF_IMM),
+				or  => opcode_alu_k BPF_OR,
+				and => opcode_alu_k BPF_AND,
+				xor => opcode_alu_k BPF_XOR,
 			},
 		},
 		# A label is the only explicit operand.
@@ -34657,7 +34781,7 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+([0-9]+)$/o,
 			k_jt_jf => 'L_undef_undef',
 			opcodes => {
-				ja => BPF_K | BPF_JMP | BPF_JA,
+				ja => opcode_ja,
 			},
 		},
 		# An absolute address (decimal) is the only explicit operand.
@@ -34665,9 +34789,9 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+\[([0-9]+)\]$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				ld  => BPF_ABS | BPF_LD | BPF_W,
-				ldh => BPF_ABS | BPF_LD | BPF_H,
-				ldb => BPF_ABS | BPF_LD | BPF_B,
+				ld  => opcode_load (BPF_W, BPF_ABS),
+				ldh => opcode_load (BPF_H, BPF_ABS),
+				ldb => opcode_load (BPF_B, BPF_ABS),
 			},
 		},
 		# Idem.
@@ -34675,7 +34799,7 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+4\*\(\[([0-9]+)\]&0xf\)$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				ldxb => BPF_MSH | BPF_LDX | BPF_B,
+				ldxb => opcode_loadx (BPF_B, BPF_MSH),
 			},
 		},
 		# An indirect address (decimal) is the only explicit operand.
@@ -34683,9 +34807,9 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+\[x\s*\+\s*([0-9]+)\]$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				ld  => BPF_IND | BPF_LD | BPF_W,
-				ldh => BPF_IND | BPF_LD | BPF_H,
-				ldb => BPF_IND | BPF_LD | BPF_B,
+				ld  => opcode_load (BPF_W, BPF_IND),
+				ldh => opcode_load (BPF_H, BPF_IND),
+				ldb => opcode_load (BPF_B, BPF_IND),
 			},
 		},
 		# A memory register index (decimal) is the only explicit operand.
@@ -34693,10 +34817,10 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+M\[([0-9]+)\]$/o,
 			k_jt_jf => 'dec_undef_undef',
 			opcodes => {
-				ld  => BPF_MEM | BPF_LD | BPF_W,
-				ldx => BPF_MEM | BPF_LDX | BPF_W,
-				st  => BPF_ST,
-				stx => BPF_STX,
+				ld  => opcode_load (BPF_W, BPF_MEM),
+				ldx => opcode_loadx (BPF_W, BPF_MEM),
+				st  => opcode_st_m,
+				stx => opcode_stx_m,
 			},
 		},
 		# X and two labels are the explicit operands.
@@ -34704,10 +34828,10 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+x\s+jt\s+([0-9]+)\s+jf\s+([0-9]+)$/o,
 			k_jt_jf => 'undef_L_L',
 			opcodes => {
-				jeq  => BPF_X | BPF_JMP | BPF_JEQ,
-				jgt  => BPF_X | BPF_JMP | BPF_JGT,
-				jge  => BPF_X | BPF_JMP | BPF_JGE,
-				jset => BPF_X | BPF_JMP | BPF_JSET,
+				jeq  => opcode_branch_x BPF_JEQ,
+				jgt  => opcode_branch_x BPF_JGT,
+				jge  => opcode_branch_x BPF_JGE,
+				jset => opcode_branch_x BPF_JSET,
 			},
 		},
 		# An immediate value (hexadecimal) and two labels are the explicit operands.
@@ -34715,46 +34839,46 @@ sub bpf_restore_line {
 			regexp => qr/^([a-z]+)\s+#0x([0-9a-f]+)\s+jt\s+([0-9]+)\s+jf\s+([0-9]+)$/o,
 			k_jt_jf => 'hex_L_L',
 			opcodes => {
-				jeq  => BPF_K | BPF_JMP | BPF_JEQ,
-				jgt  => BPF_K | BPF_JMP | BPF_JGT,
-				jge  => BPF_K | BPF_JMP | BPF_JGE,
-				jset => BPF_K | BPF_JMP | BPF_JSET,
+				jeq  => opcode_branch_k BPF_JEQ,
+				jgt  => opcode_branch_k BPF_JGT,
+				jge  => opcode_branch_k BPF_JGE,
+				jset => opcode_branch_k BPF_JSET,
 			},
 		},
 	) {
 		next if $line !~ $rule->{regexp};
 		die "Invalid BPF syntax in '$line'" unless exists $rule->{opcodes}{$1};
 		my $opcode = $rule->{opcodes}{$1};
-		return {
-			opcode => $opcode,
-		} if $rule->{k_jt_jf} eq 'undef_undef_undef';
-		return {
-			opcode => $opcode,
-			k => int ($2),
-		} if $rule->{k_jt_jf} eq 'dec_undef_undef';
-		return {
-			opcode => $opcode,
-			k => hex ($2),
-		} if $rule->{k_jt_jf} eq 'hex_undef_undef';
-		return {
-			opcode => $opcode,
+		return insn (
+			$opcode
+		) if $rule->{k_jt_jf} eq 'undef_undef_undef';
+		return insn_k (
+			$opcode,
+			int ($2)
+		) if $rule->{k_jt_jf} eq 'dec_undef_undef';
+		return insn_k (
+			$opcode,
+			hex ($2)
+		) if $rule->{k_jt_jf} eq 'hex_undef_undef';
+		return insn_k (
+			$opcode,
 			# Map "ja" signed offset back into the unsigned 32-bit range: although
 			# the subsequent pack() encodes the signed and the unsigned values
 			# identically, it is useful to keep the intermediate data structure as
 			# close to the spec as possible.
-			k => int32touint32 (bpf_restore_branch_offset ($2, $pc, INT32_MIN, INT32_MAX, $line)),
-		} if ($rule->{k_jt_jf} eq 'L_undef_undef');
-		return {
-			opcode => $opcode,
-			jt => bpf_restore_branch_offset ($2, $pc, 0, UINT8_MAX, $line),
-			jf => bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line),
-		} if ($rule->{k_jt_jf} eq 'undef_L_L');
-		return {
-			opcode => $opcode,
-			k => hex ($2),
-			jt => bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line),
-			jf => bpf_restore_branch_offset ($4, $pc, 0, UINT8_MAX, $line),
-		} if ($rule->{k_jt_jf} eq 'hex_L_L');
+			int32touint32 (bpf_restore_branch_offset ($2, $pc, INT32_MIN, INT32_MAX, $line))
+		) if ($rule->{k_jt_jf} eq 'L_undef_undef');
+		return insn_jt_jf (
+			$opcode,
+			bpf_restore_branch_offset ($2, $pc, 0, UINT8_MAX, $line),
+			bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line)
+		) if ($rule->{k_jt_jf} eq 'undef_L_L');
+		return insn_k_jt_jf (
+			$opcode,
+			hex ($2),
+			bpf_restore_branch_offset ($3, $pc, 0, UINT8_MAX, $line),
+			bpf_restore_branch_offset ($4, $pc, 0, UINT8_MAX, $line)
+		) if ($rule->{k_jt_jf} eq 'hex_L_L');
 		die "Internal error: invalid k_jt_jf value '$rule->{k_jt_jf}'";
 	}
 	die "No BPF restore rule has matched '$line'";
@@ -34861,6 +34985,65 @@ my @fcode_tests = (
 		savefile => 'pppoe.pcap',
 		results => [15], # (047) ret #15
 	},
+	{
+		# Compose the same filter program programmatically and expect its dump to
+		# match the output of the previous test.
+		name => 'insn_functions',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (15),
+			insn_ldx_imm (15),
+			insn_st_m (15),
+			insn_stx_m (15),
+			insn_add_k (15),
+			insn_ja (15),
+			insn_tax,
+			insn_add_x,
+			insn_sub_k (15),
+			insn_jeq_k (15, 1, 0),
+			insn_sub_x,
+			insn_jeq_x (1, 0),
+			insn_ld_abs (15),
+			insn_mul_k (15),
+			insn_jgt_k (15, 1, 0),
+			insn_ldh_abs (15),
+			insn_mul_x,
+			insn_jgt_x (1, 0),
+			insn_ldb_abs (15),
+			insn_div_k (15),
+			insn_jge_k (15, 1, 0),
+			insn_div_x,
+			insn_jge_x (1, 0),
+			insn_ld_ind (15),
+			insn_or_k (15),
+			insn_jset_k (15, 1, 0),
+			insn_ldh_ind (15),
+			insn_or_x,
+			insn_jset_x (1, 0),
+			insn_ldb_ind (15),
+			insn_and_k (15),
+			insn_and_x,
+			insn_ld_m (15),
+			insn_ldx_m (15),
+			insn_lsh_k (15),
+			insn_lsh_x,
+			insn_rsh_k (15),
+			insn_rsh_x,
+			insn_ld_len,
+			insn_ldx_len,
+			insn_neg,
+			insn_txa,
+			insn_mod_k (15),
+			insn_mod_x,
+			insn_xor_k (15),
+			insn_xor_x,
+			insn_ldxb_msh (15),
+			insn_ret_k (15),
+			insn_ret_a,
+		),
+		dump => $valid_opcodes_enumeration,
+		savefile => 'pppoe.pcap',
+		results => [15], # (047) ret #15
+	},
 	# Verify that standalone "ret #1" and "ret #70773" work at least when not
 	# mixed with other instructions.
 	{
@@ -34913,8 +35096,8 @@ my @fcode_tests = (
 	{
 		name => 'inv_opcode_MSB',
 		program => cbpfsfdata_from_list (
-			{ opcode => 0x1400 },                      # invalid opcode
-			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
+			insn (0x1400),      # invalid opcode
+			insn_ret_k (70773), # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -34923,8 +35106,8 @@ my @fcode_tests = (
 	{
 		name => 'inv_opcode_LSB',
 		program => cbpfsfdata_from_list (
-			{ opcode => 0x00b0 },                      # invalid opcode
-			{ opcode => BPF_RET | BPF_K, k => 70773 }, # not reached
+			insn (0x00b0),      # invalid opcode
+			insn_ret_k (70773), # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35534,8 +35717,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_neg_2_OOB',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xFFFFFFFE }, # k == -2, before the first instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xFFFFFFFE), # k == -2, before the first instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35579,8 +35762,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x1FFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x1FFFFFFF }, # k == 536870911
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x1FFFFFFF), # k == 536870911
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35589,8 +35772,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x3FFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x3FFFFFFF }, # k == 1073741823
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x3FFFFFFF), # k == 1073741823
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35599,8 +35782,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x5FFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x5FFFFFFF }, # k == 1610612735
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x5FFFFFFF), # k == 1610612735
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35609,8 +35792,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x7FFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x7FFFFFFF }, # k == 2147483647
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x7FFFFFFF), # k == 2147483647
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35619,8 +35802,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x9FFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x9FFFFFFF }, # k == -1610612737
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x9FFFFFFF), # k == -1610612737
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35629,8 +35812,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0xBFFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xBFFFFFFF }, # k == -1073741825
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xBFFFFFFF), # k == -1073741825
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35639,8 +35822,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0xDFFFFFFF',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xDFFFFFFF }, # k == -536870913
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xDFFFFFFF), # k == -536870913
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35824,8 +36007,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x20000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x20000000 }, # k == 536870912, after the last instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x20000000), # k == 536870912, after the last instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35834,8 +36017,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x40000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x40000000 }, # k == 1073741824, after the last instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x40000000), # k == 1073741824, after the last instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35844,8 +36027,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x60000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x60000000 }, # k == 1610612736, after the last instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x60000000), # k == 1610612736, after the last instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35854,8 +36037,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0x80000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0x80000000 }, # k == -2147483648, before the first instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0x80000000), # k == -2147483648, before the first instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35864,8 +36047,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0xA0000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xA0000000 }, # k == -1610612736, before the first instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xA0000000), # k == -1610612736, before the first instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35874,8 +36057,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0xC0000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xC0000000 }, # k == -1073741824, before the first instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xC0000000), # k == -1073741824, before the first instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -35884,8 +36067,8 @@ my @fcode_tests = (
 	{
 		name => 'ja_0xE0000000',
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_JMP | BPF_JA | BPF_K, k => 0xE0000000 }, # k == -536870912, before the first instruction
-			{ opcode => BPF_RET | BPF_K, k => 70773 },               # not reached
+			insn_ja (0xE0000000), # k == -536870912, before the first instruction
+			insn_ret_k (70773),   # not reached
 		),
 		dump => undef,
 		savefile => 'pppoe.pcap',
@@ -36109,12 +36292,12 @@ my @fcode_tests = (
 		name => 'linux_offsets_uncond',
 		skip => skip_os_not ('linux'),
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PROTOCOL },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PKTTYPE },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_IFINDEX },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_NLATTR },
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_PROTOCOL),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_PKTTYPE),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_IFINDEX),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_NLATTR),
 			# Any supported (>= 2.6.27) Linux implements everything above.
-			{ opcode => BPF_RET | BPF_K, k => 70773 },
+			insn_ret_k (70773),
 		),
 		dump => '
 			(000) ld       [proto]
@@ -36130,25 +36313,25 @@ my @fcode_tests = (
 		name => 'linux_offsets_cond',
 		skip => skip_config_not_def1 ('HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT'),
 		program => cbpfsfdata_from_list (
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_NLATTR_NEST },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_MARK },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_QUEUE },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_HATYPE },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_RXHASH },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_CPU },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_ALU_XOR_X },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TAG },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT },
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_NLATTR_NEST),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_MARK),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_QUEUE),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_HATYPE),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_RXHASH),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_CPU),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_ALU_XOR_X),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_VLAN_TAG),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT),
 			# Any Linux that defines SKF_AD_VLAN_TAG_PRESENT implements everything
 			# above.  Any modern (>= 4.1.0, also some 3.x releases with backports)
 			# Linux implements everything below.  If this test needs to pass on older
 			# supported Linux hosts, the build systems will also have to test whether
 			# SKF_AD_VLAN_TPID is defined, and the instructions below will have to be
 			# a separate test conditional on HAVE_DECL_SKF_AD_VLAN_TPID in config.h.
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_PAY_OFFSET },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_RANDOM },
-			{ opcode => BPF_LD | BPF_W | BPF_ABS, k => SKF_AD_OFF + SKF_AD_VLAN_TPID },
-			{ opcode => BPF_RET | BPF_K, k => 70773 },
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_PAY_OFFSET),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_RANDOM),
+			insn_ld_abs (SKF_AD_OFF + SKF_AD_VLAN_TPID),
+			insn_ret_k (70773),
 		),
 		dump => '
 			(000) ld       [nlan]
