@@ -1943,14 +1943,13 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
     u_int size, bpf_u_int32 mask, int jtype, int reverse,
     bpf_u_int32 v)
 {
-	struct slist *s, *s2;
+	struct slist *s;
 	struct block *b;
 
 	s = gen_load_a(cstate, offrel, offset, size);
 
 	if (mask != 0xffffffff) {
-		s2 = NEW_STMT_AND_K(cstate, mask);
-		sappend(s, s2);
+		sappend(s, NEW_STMT_AND_K(cstate, mask));
 	}
 
 	b = gen_jmp_k(cstate, jtype, v, s);
@@ -2786,7 +2785,7 @@ gen_load_a(compiler_state_t *cstate, const enum e_offrel offrel, u_int offset,
 static struct slist *
 gen_loadx_iphdrlen(compiler_state_t *cstate)
 {
-	struct slist *s, *s2;
+	struct slist *s;
 
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s != NULL) {
@@ -2800,13 +2799,10 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 		 * value in question into the A register and add to it
 		 * the value from the X register.
 		 */
-		s2 = NEW_STMT_LDB_IND(cstate,
-		    cstate->off_linkpl.constant_part + cstate->off_nl);
-		sappend(s, s2);
-		s2 = NEW_STMT_AND_K(cstate, 0xf);
-		sappend(s, s2);
-		s2 = NEW_STMT_LSH_K(cstate, 2);
-		sappend(s, s2);
+		sappend(s, NEW_STMT_LDB_IND(cstate,
+		    cstate->off_linkpl.constant_part + cstate->off_nl));
+		sappend(s, NEW_STMT_AND_K(cstate, 0xf));
+		sappend(s, NEW_STMT_LSH_K(cstate, 2));
 
 		/*
 		 * The A register now contains the length of the IP header.
@@ -2845,10 +2841,8 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 static struct block *
 gen_uncond(compiler_state_t *cstate, const u_char rsense)
 {
-	struct slist *s;
-
-	s = NEW_STMT_LD_IMM(cstate, !rsense);
-	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0, s);
+	struct block *ret = gen_jmp_k(cstate, BPF_JEQ, 0,
+	    NEW_STMT_LD_IMM(cstate, !rsense));
 	ret->meaning = rsense ? IS_TRUE : IS_FALSE;
 	return ret;
 }
@@ -3488,7 +3482,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 static struct slist *
 gen_load_pflog_llprefixlen(compiler_state_t *cstate)
 {
-	struct slist *s1, *s2;
+	struct slist *s1;
 
 	/*
 	 * Generate code to load the length of the pflog header into
@@ -3507,23 +3501,19 @@ gen_load_pflog_llprefixlen(compiler_state_t *cstate)
 		 * Round it up to a multiple of 4.
 		 * Add 3, and clear the lower 2 bits.
 		 */
-		s2 = NEW_STMT_ADD_K(cstate, 3);
-		sappend(s1, s2);
-		s2 = NEW_STMT_AND_K(cstate, 0xfffffffc);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_ADD_K(cstate, 3));
+		sappend(s1, NEW_STMT_AND_K(cstate, 0xfffffffc));
 
 		/*
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg));
 
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		return (s1);
 	} else
@@ -3572,8 +3562,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * AND it with 0xFFFFF000.
 		 */
-		s2 = NEW_STMT_AND_K(cstate, 0xFFFFF000);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_AND_K(cstate, 0xFFFFF000));
 
 		/*
 		 * Compare with 0x80211000.
@@ -3625,8 +3614,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		return (s1);
 	} else
@@ -3636,7 +3624,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 static struct slist *
 gen_load_avs_llprefixlen(compiler_state_t *cstate)
 {
-	struct slist *s1, *s2;
+	struct slist *s1;
 
 	/*
 	 * Generate code to load the length of the AVS header into
@@ -3657,14 +3645,12 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg));
 
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		return (s1);
 	} else
@@ -3674,7 +3660,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 static struct slist *
 gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 {
-	struct slist *s1, *s2;
+	struct slist *s1;
 
 	/*
 	 * Generate code to load the length of the radiotap header into
@@ -3696,32 +3682,26 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		 * left a byte, and put the result in the X register.
 		 */
 		s1 = NEW_STMT_LDB_ABS(cstate, 3);
-		s2 = NEW_STMT_LSH_K(cstate, 8);
-		sappend(s1, s2);
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_LSH_K(cstate, 8));
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		/*
 		 * Load the next byte, at an offset of 2, and OR the
 		 * value from the X register into it.
 		 */
-		s2 = NEW_STMT_LDB_ABS(cstate, 2);
-		sappend(s1, s2);
-		s2 = NEW_STMT_OR_X(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_LDB_ABS(cstate, 2));
+		sappend(s1, NEW_STMT_OR_X(cstate));
 
 		/*
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg));
 
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		return (s1);
 	} else
@@ -3740,7 +3720,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 static struct slist *
 gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 {
-	struct slist *s1, *s2;
+	struct slist *s1;
 
 	/*
 	 * Generate code to load the length of the radiotap header
@@ -3760,32 +3740,26 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		 * left a byte, and put the result in the X register.
 		 */
 		s1 = NEW_STMT_LDB_ABS(cstate, 3);
-		s2 = NEW_STMT_LSH_K(cstate, 8);
-		sappend(s1, s2);
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_LSH_K(cstate, 8));
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		/*
 		 * Load the next byte, at an offset of 2, and OR the
 		 * value from the X register into it.
 		 */
-		s2 = NEW_STMT_LDB_ABS(cstate, 2);
-		sappend(s1, s2);
-		s2 = NEW_STMT_OR_X(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_LDB_ABS(cstate, 2));
+		sappend(s1, NEW_STMT_OR_X(cstate));
 
 		/*
 		 * Now allocate a register to hold that value and store
 		 * it.
 		 */
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg));
 
 		/*
 		 * Now move it into the X register.
 		 */
-		s2 = NEW_STMT_TAX(cstate);
-		sappend(s1, s2);
+		sappend(s1, NEW_STMT_TAX(cstate));
 
 		return (s1);
 	} else
@@ -3858,15 +3832,11 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * in cstate->off_linkpl.reg, and then load the Frame Control field,
 	 * which is at the offset in the X register, with an indexed load.
 	 */
-	s2 = NEW_STMT_TXA(cstate);
-	sappend(s, s2);
-	s2 = NEW_STMT_ADD_K(cstate, 24);
-	sappend(s, s2);
-	s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
-	sappend(s, s2);
+	sappend(s, NEW_STMT_TXA(cstate));
+	sappend(s, NEW_STMT_ADD_K(cstate, 24));
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg));
 
-	s2 = NEW_STMT_LDB_IND(cstate, 0);
-	sappend(s, s2);
+	sappend(s, NEW_STMT_LDB_IND(cstate, 0));
 
 	/*
 	 * Check the Frame Control field to see if this is a data frame;
@@ -3903,10 +3873,8 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 */
 	sjset_qos->s.jt = s2 = NEW_STMT_LD_M(cstate, cstate->off_linkpl.reg);
 	sappend(s, s2);
-	s2 = NEW_STMT_ADD_K(cstate, 2);
-	sappend(s, s2);
-	s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
-	sappend(s, s2);
+	sappend(s, NEW_STMT_ADD_K(cstate, 2));
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg));
 
 	/*
 	 * If we have a radiotap header, look at it to see whether
@@ -4005,12 +3973,9 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 */
 		s_roundup = NEW_STMT_LD_M(cstate, cstate->off_linkpl.reg);
 		sappend(s, s_roundup);
-		s2 = NEW_STMT_ADD_K(cstate, 3);
-		sappend(s, s2);
-		s2 = NEW_STMT_AND_K(cstate, (bpf_u_int32)~3);
-		sappend(s, s2);
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
-		sappend(s, s2);
+		sappend(s, NEW_STMT_ADD_K(cstate, 3));
+		sappend(s, NEW_STMT_AND_K(cstate, (bpf_u_int32)~3));
+		sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg));
 
 		sjset_tsft_datapad->s.jt = s_roundup;
 		sjset_tsft_datapad->s.jf = snext;
@@ -4101,18 +4066,14 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * length offsets for VLAN, initialize them to zero
 	 */
 	if (s == NULL && cstate->is_vlan_vloffset) {
-		struct slist *s2;
-
 		if (cstate->off_linkpl.reg == -1)
 			cstate->off_linkpl.reg = alloc_reg(cstate);
 		if (cstate->off_linktype.reg == -1)
 			cstate->off_linktype.reg = alloc_reg(cstate);
 
 		s = NEW_STMT_LD_IMM(cstate, 0);
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg);
-		sappend(s, s2);
-		s2 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
-		sappend(s, s2);
+		sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkpl.reg));
+		sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linktype.reg));
 	}
 
 	/*
@@ -7970,8 +7931,7 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	free_reg_arth(cstate, inst);
 
 	inst->regno = regno;
-	s = NEW_STMT_ST_M(cstate, regno);
-	sappend(inst->s, s);
+	sappend(inst->s, NEW_STMT_ST_M(cstate, regno));
 
 	return inst;
 }
@@ -8037,7 +7997,6 @@ gen_loadlen(compiler_state_t *cstate)
 {
 	int regno;
 	struct arth *a;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8048,9 +8007,8 @@ gen_loadlen(compiler_state_t *cstate)
 
 	regno = alloc_reg(cstate);
 	a = (struct arth *)newchunk(cstate, sizeof(*a));
-	s = NEW_STMT_LD_LEN(cstate);
-	s->next = NEW_STMT_ST_M(cstate, regno);
-	a->s = s;
+	a->s = NEW_STMT_LD_LEN(cstate);
+	sappend(a->s, NEW_STMT_ST_M(cstate, regno));
 	a->regno = regno;
 
 	return a;
@@ -8060,16 +8018,14 @@ static struct arth *
 gen_loadi_internal(compiler_state_t *cstate, bpf_u_int32 val)
 {
 	struct arth *a;
-	struct slist *s;
 	int reg;
 
 	a = (struct arth *)newchunk(cstate, sizeof(*a));
 
 	reg = alloc_reg(cstate);
 
-	s = NEW_STMT_LD_IMM(cstate, val);
-	s->next = NEW_STMT_ST_M(cstate, reg);
-	a->s = s;
+	a->s = NEW_STMT_LD_IMM(cstate, val);
+	sappend(a->s, NEW_STMT_ST_M(cstate, reg));
 	a->regno = reg;
 
 	return a;
@@ -8110,7 +8066,6 @@ struct arth *
 gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 {
 	struct arth *a = a_arg;
-	struct slist *s;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -8119,12 +8074,9 @@ gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	s = xfer_to_a(cstate, a);
-	sappend(a->s, s);
-	s = NEW_STMT_NEG(cstate);
-	sappend(a->s, s);
-	s = NEW_STMT_ST_M(cstate, a->regno);
-	sappend(a->s, s);
+	sappend(a->s, xfer_to_a(cstate, a));
+	sappend(a->s, NEW_STMT_NEG(cstate));
+	sappend(a->s, NEW_STMT_ST_M(cstate, a->regno));
 
 	return a;
 }
@@ -8190,8 +8142,7 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
 	free_reg_arth(cstate, a1);
 
 	a0->regno = alloc_reg(cstate);
-	s0 = NEW_STMT_ST_M(cstate, a0->regno);
-	sappend(a0->s, s0);
+	sappend(a0->s, NEW_STMT_ST_M(cstate, a0->regno));
 
 	return a0;
 }
@@ -8268,10 +8219,7 @@ free_reg_arth(compiler_state_t *cstate, struct arth *a)
 static struct block *
 gen_len(compiler_state_t *cstate, int jmp, int n)
 {
-	struct slist *s;
-
-	s = NEW_STMT_LD_LEN(cstate);
-	return gen_jmp_k(cstate, jmp, n, s);
+	return gen_jmp_k(cstate, jmp, n, NEW_STMT_LD_LEN(cstate));
 }
 
 struct block *
@@ -8991,19 +8939,14 @@ static void
 gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off,
     bpf_u_int32 v, struct slist *s)
 {
-	struct slist *s2;
-
 	if (!off->is_variable)
 		off->is_variable = 1;
 	if (off->reg == -1)
 		off->reg = alloc_reg(cstate);
 
-	s2 = NEW_STMT_LD_M(cstate, off->reg);
-	sappend(s, s2);
-	s2 = NEW_STMT_ADD_K(cstate, v);
-	sappend(s, s2);
-	s2 = NEW_STMT_ST_M(cstate, off->reg);
-	sappend(s, s2);
+	sappend(s, NEW_STMT_LD_M(cstate, off->reg));
+	sappend(s, NEW_STMT_ADD_K(cstate, v));
+	sappend(s, NEW_STMT_ST_M(cstate, off->reg));
 }
 
 /*
@@ -9055,8 +8998,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)
 		cnt++;
-	s2 = NEW_STMT_JA(cstate, cnt - 1);
-	sappend(s, s2);
+	sappend(s, NEW_STMT_JA(cstate, cnt - 1));
 
 	/* insert our statements at the beginning of b_vid */
 	sprepend_to_block(s, b_vid);
@@ -9433,15 +9375,14 @@ static struct block *
 gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s, *s1;
+	struct slist *s;
 
 	b0 = gen_geneve_check(cstate, gen_port, OR_TRAN_IPV4, vni, has_vni);
 
 	/* Load the IP header length into A. */
 	s = gen_loadx_iphdrlen(cstate);
 
-	s1 = NEW_STMT_TXA(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TXA(cstate));
 
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
@@ -9455,7 +9396,7 @@ static struct block *
 gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s, *s1;
+	struct slist *s;
 
 	b0 = gen_geneve_check(cstate, gen_port6, OR_TRAN_IPV6, vni, has_vni);
 
@@ -9463,11 +9404,8 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * variable length link prefix if there is one. */
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
-		s1 = NEW_STMT_LD_IMM(cstate, IP6_HDRLEN);
-		sappend(s, s1);
-
-		s1 = NEW_STMT_ADD_X(cstate);
-		sappend(s, s1);
+		sappend(s, NEW_STMT_LD_IMM(cstate, IP6_HDRLEN));
+		sappend(s, NEW_STMT_ADD_X(cstate));
 	} else {
 		s = NEW_STMT_LD_IMM(cstate, IP6_HDRLEN);
 	}
@@ -9475,8 +9413,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	s1 = NEW_STMT_TAX(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TAX(cstate));
 
 	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
@@ -9501,40 +9438,32 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	    cstate->off_linkpl.constant_part + cstate->off_nl + 8);
 
 	/* Stash this in X since we'll need it later. */
-	s1 = NEW_STMT_TAX(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TAX(cstate));
 
 	/* The EtherType in Geneve is 2 bytes in. Calculate this and
 	 * store it. */
-	s1 = NEW_STMT_ADD_K(cstate, 2);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 2));
 
 	cstate->off_linktype.reg = alloc_reg(cstate);
 	cstate->off_linktype.is_variable = 1;
 	cstate->off_linktype.constant_part = 0;
 
-	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linktype.reg));
 
 	/* Load the Geneve option length and mask and shift to get the
 	 * number of bytes. It is stored in the first byte of the Geneve
 	 * header. */
-	s1 = NEW_STMT_LDB_IND(cstate, 0);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_LDB_IND(cstate, 0));
 
-	s1 = NEW_STMT_AND_K(cstate, 0x3f);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_AND_K(cstate, 0x3f));
 
-	s1 = NEW_STMT_MUL_K(cstate, 4);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_MUL_K(cstate, 4));
 
 	/* Add in the rest of the Geneve base header. */
-	s1 = NEW_STMT_ADD_K(cstate, 8);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 8));
 
 	/* Add the Geneve header length to its offset and store. */
-	s1 = NEW_STMT_ADD_X(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_X(cstate));
 
 	/* Set the encapsulated type as Ethernet. Even though we may
 	 * not actually have Ethernet inside there are two reasons this
@@ -9546,8 +9475,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	 *   Ethernet at runtime before executing these checks. */
 	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
 
-	s1 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg));
 
 	/* Calculate whether we have an Ethernet header or just raw IP/
 	 * MPLS/etc. If we have Ethernet, advance the end of the MAC offset
@@ -9558,12 +9486,10 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	cstate->no_optimize = 1;
 
 	/* Load the EtherType in the Geneve header, 2 bytes in. */
-	s1 = NEW_STMT_LDH_IND(cstate, 2);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_LDH_IND(cstate, 2));
 
 	/* Load X with the end of the Geneve header. */
-	s1 = NEW_STMT_LDX_M(cstate, cstate->off_linkhdr.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_LDX_M(cstate, cstate->off_linkhdr.reg));
 
 	/* Check if the EtherType is Transparent Ethernet Bridging. At the
 	 * end of this check, we should have the total length in X. In
@@ -9577,20 +9503,16 @@ gen_geneve_offsets(compiler_state_t *cstate)
 
 	/* Since this is Ethernet, use the EtherType of the payload
 	 * directly as the linktype. Overwrite what we already have. */
-	s1 = NEW_STMT_ADD_K(cstate, 12);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 12));
 
-	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linktype.reg));
 
 	/* Advance two bytes further to get the end of the Ethernet
 	 * header. */
-	s1 = NEW_STMT_ADD_K(cstate, 2);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 2));
 
 	/* Move the result to X. */
-	s1 = NEW_STMT_TAX(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TAX(cstate));
 
 	/* Store the final result of our linkpl calculation. */
 	cstate->off_linkpl.reg = alloc_reg(cstate);
@@ -9668,15 +9590,14 @@ static struct block *
 gen_vxlan4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s, *s1;
+	struct slist *s;
 
 	b0 = gen_vxlan_check(cstate, gen_port, OR_TRAN_IPV4, vni, has_vni);
 
 	/* Load the IP header length into A. */
 	s = gen_loadx_iphdrlen(cstate);
 
-	s1 = NEW_STMT_TXA(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TXA(cstate));
 
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
@@ -9690,7 +9611,7 @@ static struct block *
 gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
-	struct slist *s, *s1;
+	struct slist *s;
 
 	b0 = gen_vxlan_check(cstate, gen_port6, OR_TRAN_IPV6, vni, has_vni);
 
@@ -9698,11 +9619,8 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	 * variable length link prefix if there is one. */
 	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
 	if (s) {
-		s1 = NEW_STMT_LD_IMM(cstate, IP6_HDRLEN);
-		sappend(s, s1);
-
-		s1 = NEW_STMT_ADD_X(cstate);
-		sappend(s, s1);
+		sappend(s, NEW_STMT_LD_IMM(cstate, IP6_HDRLEN));
+		sappend(s, NEW_STMT_ADD_X(cstate));
 	} else {
 		s = NEW_STMT_LD_IMM(cstate, IP6_HDRLEN);
 	}
@@ -9710,8 +9628,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 	/* Forcibly append these statements to the true condition
 	 * of the protocol check by creating a new block that is
 	 * always true and ANDing them. */
-	s1 = NEW_STMT_TAX(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TAX(cstate));
 
 	b1 = gen_jmp_x(cstate, BPF_JEQ, s);
 
@@ -9725,7 +9642,7 @@ gen_vxlan6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 static struct slist *
 gen_vxlan_offsets(compiler_state_t *cstate)
 {
-	struct slist *s, *s1;
+	struct slist *s;
 
 	/* Calculate the offset of the VXLAN header itself. This
 	 * includes the IP header computed previously (including any
@@ -9735,44 +9652,37 @@ gen_vxlan_offsets(compiler_state_t *cstate)
 	    cstate->off_linkpl.constant_part + cstate->off_nl + 8);
 
 	/* Add the VXLAN header length to its offset and store */
-	s1 = NEW_STMT_ADD_K(cstate, 8);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 8));
 
 	/* Push the link header. VXLAN packets always contain Ethernet
 	 * frames. */
 	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
 
-	s1 = NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linkhdr.reg));
 
 	/* As the payload is an Ethernet packet, we can use the
 	 * EtherType of the payload directly as the linktype. */
-	s1 = NEW_STMT_ADD_K(cstate, 12);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 12));
 
 	cstate->off_linktype.reg = alloc_reg(cstate);
 	cstate->off_linktype.is_variable = 1;
 	cstate->off_linktype.constant_part = 0;
 
-	s1 = NEW_STMT_ST_M(cstate, cstate->off_linktype.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ST_M(cstate, cstate->off_linktype.reg));
 
 	/* Two bytes further is the end of the Ethernet header and the
 	 * start of the payload. */
-	s1 = NEW_STMT_ADD_K(cstate, 2);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_ADD_K(cstate, 2));
 
 	/* Move the result to X. */
-	s1 = NEW_STMT_TAX(cstate);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_TAX(cstate));
 
 	/* Store the final result of our linkpl calculation. */
 	cstate->off_linkpl.reg = alloc_reg(cstate);
 	cstate->off_linkpl.is_variable = 1;
 	cstate->off_linkpl.constant_part = 0;
 
-	s1 = NEW_STMT_STX_M(cstate, cstate->off_linkpl.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_STX_M(cstate, cstate->off_linkpl.reg));
 
 	cstate->off_nl = 0;
 
@@ -9818,7 +9728,7 @@ static struct block *
 gen_encap_ll_check(compiler_state_t *cstate)
 {
 	struct block *b0;
-	struct slist *s, *s1;
+	struct slist *s;
 
 	/* The easiest way to see if there is a link layer present
 	 * is to check if the link layer header and payload are not
@@ -9827,8 +9737,7 @@ gen_encap_ll_check(compiler_state_t *cstate)
 	/* Geneve always generates pure variable offsets so we can
 	 * compare only the registers. */
 	s = NEW_STMT_LD_M(cstate, cstate->off_linkhdr.reg);
-	s1 = NEW_STMT_LDX_M(cstate, cstate->off_linkpl.reg);
-	sappend(s, s1);
+	sappend(s, NEW_STMT_LDX_M(cstate, cstate->off_linkpl.reg));
 
 	b0 = gen_jmp_x(cstate, BPF_JEQ, s);
 
