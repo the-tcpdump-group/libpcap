@@ -26601,33 +26601,6 @@ my @filter_accept_blocks = (
 			',
 	},
 	{
-		name => 'div_by_neg_0_optimizer',
-		DLT => 'RAW',
-		aliases => ['1 / -0 == 1'],
-		# The "opt" leg of this block is a reject test.
-		opt => undef,
-		unopt => '
-			(000) ld       #0x1
-			(001) st       M[0]
-			(002) ld       #0x0
-			(003) st       M[1]
-			(004) ld       M[1]
-			(005) neg
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) div      x
-			(010) st       M[1]
-			(011) ld       #0x1
-			(012) st       M[2]
-			(013) ldx      M[2]
-			(014) ld       M[1]
-			(015) jeq      x                jt 16	jf 17
-			(016) ret      #262144
-			(017) ret      #0
-			',
-	},
-	{
 		name => 'div_by_0_optimizer',
 		DLT => 'RAW',
 		aliases => ['1 / (1 - 1) == 1'],
@@ -26688,33 +26661,6 @@ my @filter_accept_blocks = (
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
-			',
-	},
-	{
-		name => 'mod_by_neg_0_optimizer',
-		DLT => 'RAW',
-		aliases => ['1 % -0 == 1'],
-		# The "opt" leg of this block is a reject test.
-		opt => undef,
-		unopt => '
-			(000) ld       #0x1
-			(001) st       M[0]
-			(002) ld       #0x0
-			(003) st       M[1]
-			(004) ld       M[1]
-			(005) neg
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) mod      x
-			(010) st       M[1]
-			(011) ld       #0x1
-			(012) st       M[2]
-			(013) ldx      M[2]
-			(014) ld       M[1]
-			(015) jeq      x                jt 16	jf 17
-			(016) ret      #262144
-			(017) ret      #0
 			',
 	},
 	{
@@ -26886,7 +26832,11 @@ my @filter_accept_blocks = (
 	{
 		name => '0_eq_0',
 		DLT => 'RAW',
-		aliases => ['0 == 0'],
+		aliases => [
+			'0 == 0',
+			'-0 == 0',
+			'--0 == 0',
+		],
 		opt => '
 			(000) ret      #262144
 			',
@@ -26902,60 +26852,14 @@ my @filter_accept_blocks = (
 			(008) ret      #0
 			',
 	},
-	{
-		# This could potentially reduce to "0_eq_0".
-		name => 'neg_0_eq_0',
-		DLT => 'RAW',
-		aliases => ['-0 == 0'],
-		opt => '
-			(000) ret      #262144
-			',
-		unopt => '
-			(000) ld       #0x0
-			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       #0x0
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) jeq      x                jt 10	jf 11
-			(010) ret      #262144
-			(011) ret      #0
-			',
-	},
-	{
-		# This could potentially reduce to "0_eq_0".
-		name => 'neg_neg_0_eq_0',
-		DLT => 'RAW',
-		aliases => ['--0 == 0'],
-		opt => '
-			(000) ret      #262144
-			',
-		unopt => '
-			(000) ld       #0x0
-			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       M[0]
-			(006) neg
-			(007) st       M[0]
-			(008) ld       #0x0
-			(009) st       M[1]
-			(010) ldx      M[1]
-			(011) ld       M[0]
-			(012) jeq      x                jt 13	jf 14
-			(013) ret      #262144
-			(014) ret      #0
-			',
-	},
 
 	{
 		name => '1_eq_1',
 		DLT => 'RAW',
-		aliases => ['1 == 1'],
+		aliases => [
+			'1 == 1',
+			'--1 == 1',
+		],
 		opt => '
 			(000) ret      #262144
 			',
@@ -26974,78 +26878,23 @@ my @filter_accept_blocks = (
 	{
 		name => 'neg_1_ne_1',
 		DLT => 'RAW',
-		aliases => ['-1 != 1'],
+		aliases => [
+			'-1 != 1',
+			'---1 != 1',
+		],
 		opt => '
 			(000) ret      #262144
 			',
 		unopt => '
-			(000) ld       #0x1
+			(000) ld       #0xffffffff
 			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       #0x1
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) jeq      x                jt 10	jf 11
-			(010) ret      #0
-			(011) ret      #262144
-			',
-	},
-	{
-		# This could potentially reduce to "1_eq_1".
-		name => 'neg_neg_1_eq_1',
-		DLT => 'RAW',
-		aliases => ['--1 == 1'],
-		opt => '
-			(000) ret      #262144
-			',
-		unopt => '
-			(000) ld       #0x1
-			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
 			(005) ld       M[0]
-			(006) neg
-			(007) st       M[0]
-			(008) ld       #0x1
-			(009) st       M[1]
-			(010) ldx      M[1]
-			(011) ld       M[0]
-			(012) jeq      x                jt 13	jf 14
-			(013) ret      #262144
-			(014) ret      #0
-			',
-	},
-	{
-		# This could potentially reduce to "neg_1_ne_1".
-		name => 'neg_neg_neg_1_ne_1',
-		DLT => 'RAW',
-		aliases => ['---1 != 1'],
-		opt => '
-			(000) ret      #262144
-			',
-		unopt => '
-			(000) ld       #0x1
-			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       M[0]
-			(006) neg
-			(007) st       M[0]
-			(008) ld       M[0]
-			(009) neg
-			(010) st       M[0]
-			(011) ld       #0x1
-			(012) st       M[1]
-			(013) ldx      M[1]
-			(014) ld       M[0]
-			(015) jeq      x                jt 16	jf 17
-			(016) ret      #0
-			(017) ret      #262144
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #0
+			(008) ret      #262144
 			',
 	},
 
@@ -27058,18 +26907,15 @@ my @filter_accept_blocks = (
 			(000) ret      #262144
 			',
 		unopt => '
-			(000) ld       #0x7fffffff
+			(000) ld       #0x80000001
 			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       #0x80000001
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) jeq      x                jt 10	jf 11
-			(010) ret      #262144
-			(011) ret      #0
+			(002) ld       #0x80000001
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 	},
 	{
@@ -27083,16 +26929,13 @@ my @filter_accept_blocks = (
 		unopt => '
 			(000) ld       #0x80000000
 			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       #0x80000000
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) jeq      x                jt 10	jf 11
-			(010) ret      #262144
-			(011) ret      #0
+			(002) ld       #0x80000000
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 	},
 	{
@@ -27104,18 +26947,15 @@ my @filter_accept_blocks = (
 			(000) ret      #262144
 			',
 		unopt => '
-			(000) ld       #0xffffffff
+			(000) ld       #0x1
 			(001) st       M[0]
-			(002) ld       M[0]
-			(003) neg
-			(004) st       M[0]
-			(005) ld       #0x1
-			(006) st       M[1]
-			(007) ldx      M[1]
-			(008) ld       M[0]
-			(009) jeq      x                jt 10	jf 11
-			(010) ret      #262144
-			(011) ret      #0
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) jeq      x                jt 7	jf 8
+			(007) ret      #262144
+			(008) ret      #0
 			',
 	},
 
@@ -31302,7 +31142,7 @@ my @filter_reject_tests = (
 		errstr => errstr_div_by_zero,
 	},
 	{
-		name => 'div_by_neg_0_optimizer',
+		name => 'div_by_neg_0_gencode',
 		DLT => 'RAW',
 		expr => '1 / -0 == 1',
 		errstr => errstr_div_by_zero,
@@ -31321,7 +31161,7 @@ my @filter_reject_tests = (
 		errstr => errstr_mod_by_zero,
 	},
 	{
-		name => 'mod_by_neg_0_optimizer',
+		name => 'mod_by_neg_0_gencode',
 		DLT => 'RAW',
 		expr => '1 % -0 == 1',
 		errstr => errstr_mod_by_zero,

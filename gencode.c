@@ -8074,9 +8074,25 @@ gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	sappend(a->s, xfer_to_a(cstate, a));
-	sappend(a->s, NEW_STMT_NEG(cstate));
-	sappend(a->s, NEW_STMT_ST_M(cstate, a->regno));
+	if (is_loadi(a)) {
+		/*
+		 * An immediate value is the best case scenario.  Calculate the
+		 * negative now the same way as in the optimizer and in the
+		 * interpreter (see the comments about BPF_ALU|BPF_NEG there).
+		 */
+		a->s->s.k = 0U - a->s->s.k;
+	} else {
+		/*
+		 * Assume the worst case scenario and calculate the negative of
+		 * a generic arithmetic expression at the filter program run
+		 * time.  The optional optimization round may be able to
+		 * improve this later on if it reduces the expression to an
+		 * immediate value.
+		 */
+		sappend(a->s, xfer_to_a(cstate, a));
+		sappend(a->s, NEW_STMT_NEG(cstate));
+		sappend(a->s, NEW_STMT_ST_M(cstate, a->regno));
+	}
 
 	return a;
 }
