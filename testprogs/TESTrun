@@ -26880,6 +26880,9 @@ my @filter_accept_blocks = (
 	# beginning of the filter expression and looks like a command-line
 	# option (short or long) -- the Perl code that drives filtertest must
 	# handle this correctly.
+	#
+	# Test the calculation of a negative of an immediate constant, which in the
+	# current implementation occurs in the code generator.
 	{
 		name => '0_eq_0',
 		DLT => 'RAW',
@@ -27116,6 +27119,8 @@ my @filter_accept_blocks = (
 			',
 	},
 
+	# Test the calculation of a negative of a packet-specific value, which can be
+	# done in the interpreter only.
 	{
 		# This could potentially reduce to "always true".
 		name => 'len_eq_len',
@@ -27398,8 +27403,95 @@ my @filter_accept_blocks = (
 			',
 	},
 
+	# Test the calculation of a negative of an arithmetic expression, which in
+	# the current implementation occurs in the optimizer.
 	{
-		name => 'arth_eq_arth',
+		name => '0_arth_eq_0',
+		DLT => 'RAW',
+		aliases => ['1 - 1 == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) sub      x
+			(007) st       M[1]
+			(008) ld       #0x0
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[1]
+			(012) jeq      x                jt 13	jf 14
+			(013) ret      #262144
+			(014) ret      #0
+			',
+	},
+	{
+		name => 'neg_0_arth_eq_0',
+		DLT => 'RAW',
+		aliases => ['-(1 - 1) == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) sub      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x0
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		name => 'neg_neg_0_arth_eq_0',
+		DLT => 'RAW',
+		aliases => ['--(1 - 1) == 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) sub      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       M[1]
+			(012) neg
+			(013) st       M[1]
+			(014) ld       #0x0
+			(015) st       M[2]
+			(016) ldx      M[2]
+			(017) ld       M[1]
+			(018) jeq      x                jt 19	jf 20
+			(019) ret      #262144
+			(020) ret      #0
+			',
+	},
+
+	{
+		name => '1_arth_eq_1_arth',
 		DLT => 'RAW',
 		aliases => ['(1 + 0) == (0 + 1)'],
 		opt => '
@@ -27430,7 +27522,7 @@ my @filter_accept_blocks = (
 			',
 	},
 	{
-		name => 'neg_arth_ne_arth',
+		name => 'neg_1_arth_ne_1_arth',
 		DLT => 'RAW',
 		aliases => ['-(1 + 0) != (0 + 1)'],
 		opt => '
@@ -27465,7 +27557,7 @@ my @filter_accept_blocks = (
 	},
 	{
 		# This could potentially reduce to "arth_eq_arth".
-		name => 'neg_neg_arth_eq_arth',
+		name => 'neg_neg_1_arth_eq_1_arth',
 		DLT => 'RAW',
 		aliases => ['--(1 + 0) == (0 + 1)'],
 		opt => '
@@ -27503,7 +27595,7 @@ my @filter_accept_blocks = (
 	},
 	{
 		# This could potentially reduce to "neg_arth_ne_arth".
-		name => 'neg_neg_neg_arth_ne_arth',
+		name => 'neg_neg_neg_1_arth_ne_1_arth',
 		DLT => 'RAW',
 		aliases => ['---(1 + 0) != (0 + 1)'],
 		opt => '
@@ -27542,6 +27634,95 @@ my @filter_accept_blocks = (
 			(029) ret      #262144
 			',
 	},
+
+	{
+		# Negative of INT32_MAX.
+		name => 'neg_2147483647_arth_eq_2147483649',
+		DLT => 'RAW',
+		aliases => ['-(2147483646 + 1) == 2147483649'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x7ffffffe
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x80000001
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		# Negative of INT32_MAX + 1.
+		name => 'neg_2147483648_arth_eq_2147483648',
+		DLT => 'RAW',
+		aliases => ['-(2147483647 + 1) == 2147483648'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x7fffffff
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x80000000
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+	{
+		# Negative of UINT32_MAX.
+		name => 'neg_4294967295_arth_eq_1',
+		DLT => 'RAW',
+		aliases => ['-(4294967294 + 1) == 1'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0xfffffffe
+			(001) st       M[0]
+			(002) ld       #0x1
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       M[1]
+			(009) neg
+			(010) st       M[1]
+			(011) ld       #0x1
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
+			(015) jeq      x                jt 16	jf 17
+			(016) ret      #262144
+			(017) ret      #0
+			',
+	},
+
 
 	{
 		name => '14_memregs_before_link_EN10MB',
@@ -36350,6 +36531,164 @@ my @fcode_tests = (
 			',
 		savefile => 'pppoe.pcap',
 		results => [0], # All offsets are invalid without the aux data.
+	},
+
+	# The tests below test the same behaviour as the respective filter accept
+	# blocks, but this time in the interpreter rather than in the generator or
+	# the optimizer.
+	{
+		name => 'neg_0_eq_0',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (0),
+			insn_neg,
+			insn_ldx_imm (0),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x0
+			(001) neg
+			(002) ldx      #0x0
+			(003) jeq      x                jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'neg_neg_0_eq_0',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (0),
+			insn_neg,
+			insn_neg,
+			insn_ldx_imm (0),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x0
+			(001) neg
+			(002) neg
+			(003) ldx      #0x0
+			(004) jeq      x                jt 5	jf 6
+			(005) ret      #1
+			(006) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'neg_1_ne_1',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (1),
+			insn_neg,
+			insn_ldx_imm (1),
+			insn_jeq_x (1, 0),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x1
+			(001) neg
+			(002) ldx      #0x1
+			(003) jeq      x                jt 5	jf 4
+			(004) ret      #1
+			(005) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		name => 'neg_neg_1_eq_1',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (1),
+			insn_neg,
+			insn_neg,
+			insn_ldx_imm (1),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x1
+			(001) neg
+			(002) neg
+			(003) ldx      #0x1
+			(004) jeq      x                jt 5	jf 6
+			(005) ret      #1
+			(006) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		# Negative of INT32_MAX.
+		name => 'neg_2147483647_eq_2147483649',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (2147483647),
+			insn_neg,
+			insn_ldx_imm (2147483649),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x7fffffff
+			(001) neg
+			(002) ldx      #0x80000001
+			(003) jeq      x                jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		# Negative of INT32_MAX + 1.
+		name => 'neg_2147483648_eq_2147483648',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (2147483648),
+			insn_neg,
+			insn_ldx_imm (2147483648),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0x80000000
+			(001) neg
+			(002) ldx      #0x80000000
+			(003) jeq      x                jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
+	},
+	{
+		# Negative of UINT32_MAX.
+		name => 'neg_4294967295_eq_1',
+		program => cbpfsfdata_from_list (
+			insn_ld_imm (4294967295),
+			insn_neg,
+			insn_ldx_imm (1),
+			insn_jeq_x (0, 1),
+			insn_ret_k (1),
+			insn_ret_k (70773),
+		),
+		dump => '
+			(000) ld       #0xffffffff
+			(001) neg
+			(002) ldx      #0x1
+			(003) jeq      x                jt 4	jf 5
+			(004) ret      #1
+			(005) ret      #70773
+			',
+		savefile => 'pppoe.pcap',
+		results => [1],
 	},
 );
 
