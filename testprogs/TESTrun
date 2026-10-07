@@ -31231,7 +31231,7 @@ my @filter_reject_tests = (
 		errstr => errstr_too_many_regs,
 	},
 
-	# gen_loadi() -> alloc_reg()
+	# gen_loadi_internal() -> alloc_reg_arth() -> alloc_reg()
 	{
 		name => '17_memregs_before_link_EN10MB',
 		DLT => 'EN10MB',

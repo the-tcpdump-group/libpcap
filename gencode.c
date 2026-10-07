@@ -773,6 +773,8 @@ static void init_regs(compiler_state_t *);
 static int alloc_reg(compiler_state_t *);
 static int guard_reg(compiler_state_t *, const int);
 static void free_reg(compiler_state_t *, int);
+static struct arth *new_arth(compiler_state_t *);
+static void alloc_reg_arth(compiler_state_t *, struct arth *);
 static void free_reg_arth(compiler_state_t *, struct arth *);
 
 static bool initchunks_ok(compiler_state_t *cstate);
@@ -7995,9 +7997,6 @@ gen_relation(compiler_state_t *cstate, int code, struct arth *a0,
 struct arth *
 gen_loadlen(compiler_state_t *cstate)
 {
-	int regno;
-	struct arth *a;
-
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
 	 * on an error.
@@ -8005,29 +8004,20 @@ gen_loadlen(compiler_state_t *cstate)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
-	regno = alloc_reg(cstate);
-	a = (struct arth *)newchunk(cstate, sizeof(*a));
+	struct arth *a = new_arth(cstate);
+	alloc_reg_arth(cstate, a);
 	a->s = NEW_STMT_LD_LEN(cstate);
-	sappend(a->s, NEW_STMT_ST_M(cstate, regno));
-	a->regno = regno;
-
+	sappend(a->s, NEW_STMT_ST_M(cstate, a->regno));
 	return a;
 }
 
 static struct arth *
 gen_loadi_internal(compiler_state_t *cstate, bpf_u_int32 val)
 {
-	struct arth *a;
-	int reg;
-
-	a = (struct arth *)newchunk(cstate, sizeof(*a));
-
-	reg = alloc_reg(cstate);
-
+	struct arth *a = new_arth(cstate);
+	alloc_reg_arth(cstate, a);
 	a->s = NEW_STMT_LD_IMM(cstate, val);
-	sappend(a->s, NEW_STMT_ST_M(cstate, reg));
-	a->regno = reg;
-
+	sappend(a->s, NEW_STMT_ST_M(cstate, a->regno));
 	return a;
 }
 
@@ -8157,7 +8147,7 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
 	free_reg_arth(cstate, a0);
 	free_reg_arth(cstate, a1);
 
-	a0->regno = alloc_reg(cstate);
+	alloc_reg_arth(cstate, a0);
 	sappend(a0->s, NEW_STMT_ST_M(cstate, a0->regno));
 
 	return a0;
@@ -8216,6 +8206,32 @@ static void
 free_reg(compiler_state_t *cstate, int n)
 {
 	cstate->regused[guard_reg(cstate, n)] = 0;
+}
+
+/*
+ * If the code tries to use an arithmetic expression that has never been
+ * allocated a scratch memory register, it is a bug.  Invalidate the register
+ * index early to make the bug an early failure.
+ */
+static struct arth *
+new_arth(compiler_state_t *cstate)
+{
+	struct arth *ret = (struct arth *)newchunk(cstate, sizeof(*ret));
+	ret->regno = -1;
+	return ret;
+}
+
+/*
+ * If the code tries to allocate a new scratch memory register to an arithmetic
+ * expression that still has a valid register allocated to it, it is a bug.
+ */
+static void
+alloc_reg_arth(compiler_state_t *cstate, struct arth *a)
+{
+	if (a->regno != -1)
+		bpf_error(cstate,
+		    "Scratch memory register %d was about to leak.", a->regno);
+	a->regno = alloc_reg(cstate);
 }
 
 /*
