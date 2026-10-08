@@ -144,7 +144,7 @@ struct bpf_program {
 #define		BPF_B		0x10
 /*				0x18	reserved; used by BSD/OS */
 #define BPF_MODE(code)	((code) & 0xe0)
-#define		BPF_IMM	0x00
+#define		BPF_IMM		0x00
 #define		BPF_ABS		0x20
 #define		BPF_IND		0x40
 #define		BPF_MEM		0x60
