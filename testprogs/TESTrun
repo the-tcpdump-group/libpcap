@@ -606,11 +606,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #200
 			(011) ret      #0
@@ -632,11 +632,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #200
 			(011) ret      #0
@@ -658,11 +658,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #200
 			(011) ret      #0
@@ -681,20 +681,20 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[2]
+			(006) st       M[1]
 			(007) tax
 			(008) ld       #0xab
 			(009) st       M[0]
-			(010) ldx      M[2]
+			(010) ldx      M[1]
 			(011) ld       M[0]
 			(012) add      x
 			(013) tax
 			(014) ldb      [x + 0]
-			(015) st       M[1]
+			(015) st       M[2]
 			(016) ld       #0xcd
 			(017) st       M[3]
 			(018) ldx      M[3]
-			(019) ld       M[1]
+			(019) ld       M[2]
 			(020) jeq      x                jt 21	jf 22
 			(021) ret      #262144
 			(022) ret      #0
@@ -706,9 +706,9 @@ my @filter_accept_blocks = (
 		aliases => ['link[0xab] == 0xcd'],
 		opt => '
 			(000) ld       [4]
-			(001) st       M[2]
+			(001) st       M[1]
 			(002) ld       #0xab
-			(003) ldx      M[2]
+			(003) ldx      M[1]
 			(004) add      x
 			(005) tax
 			(006) ldb      [x + 0]
@@ -718,20 +718,20 @@ my @filter_accept_blocks = (
 			',
 		unopt => '
 			(000) ld       [4]
-			(001) st       M[2]
+			(001) st       M[1]
 			(002) tax
 			(003) ld       #0xab
 			(004) st       M[0]
-			(005) ldx      M[2]
+			(005) ldx      M[1]
 			(006) ld       M[0]
 			(007) add      x
 			(008) tax
 			(009) ldb      [x + 0]
-			(010) st       M[1]
+			(010) st       M[2]
 			(011) ld       #0xcd
 			(012) st       M[3]
 			(013) ldx      M[3]
-			(014) ld       M[1]
+			(014) ld       M[2]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -747,9 +747,9 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -763,20 +763,20 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) tax
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -794,9 +794,9 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[2]
+			(007) st       M[1]
 			(008) ld       #0xab
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 0]
@@ -812,20 +812,20 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[2]
+			(007) st       M[1]
 			(008) tax
 			(009) ld       #0xab
 			(010) st       M[0]
-			(011) ldx      M[2]
+			(011) ldx      M[1]
 			(012) ld       M[0]
 			(013) add      x
 			(014) tax
 			(015) ldb      [x + 0]
-			(016) st       M[1]
+			(016) st       M[2]
 			(017) ld       #0xcd
 			(018) st       M[3]
 			(019) ldx      M[3]
-			(020) ld       M[1]
+			(020) ld       M[2]
 			(021) jeq      x                jt 22	jf 23
 			(022) ret      #262144
 			(023) ret      #0
@@ -846,11 +846,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -871,11 +871,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -910,11 +910,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x12
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -943,11 +943,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x1234
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -976,11 +976,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x12345678
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1001,11 +1001,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1026,11 +1026,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1051,11 +1051,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1076,11 +1076,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1101,11 +1101,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1126,11 +1126,11 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xcd
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) jeq      x                jt 10	jf 11
 			(010) ret      #262144
 			(011) ret      #0
@@ -1149,37 +1149,37 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[3]
+			(006) st       M[2]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[2]
+			(015) ld       M[1]
 			(016) add      #2
-			(017) st       M[2]
-			(018) ldx      M[3]
+			(017) st       M[1]
+			(018) ldx      M[2]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 39
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x800           jt 25	jf 39
 			(025) ld       #0xab
 			(026) st       M[0]
-			(027) ldx      M[2]
+			(027) ldx      M[1]
 			(028) ld       M[0]
 			(029) add      x
 			(030) tax
 			(031) ldb      [x + 8]
-			(032) st       M[1]
+			(032) st       M[3]
 			(033) ld       #0xcd
 			(034) st       M[4]
 			(035) ldx      M[4]
-			(036) ld       M[1]
+			(036) ld       M[3]
 			(037) jeq      x                jt 38	jf 39
 			(038) ret      #262144
 			(039) ret      #0
@@ -1193,32 +1193,32 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 31
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 31
 			(017) ld       #0xab
 			(018) st       M[0]
-			(019) ldx      M[2]
+			(019) ldx      M[1]
 			(020) ld       M[0]
 			(021) add      x
 			(022) tax
 			(023) ldb      [x + 8]
-			(024) st       M[1]
+			(024) st       M[2]
 			(025) ld       #0xcd
 			(026) st       M[3]
 			(027) ldx      M[3]
-			(028) ld       M[1]
+			(028) ld       M[2]
 			(029) jeq      x                jt 30	jf 31
 			(030) ret      #262144
 			(031) ret      #0
@@ -1243,11 +1243,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 14]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1274,11 +1274,11 @@ my @filter_accept_blocks = (
 			(004) st       M[0]
 			(005) ldx      M[0]
 			(006) ldb      [x + 0]
-			(007) st       M[1]
+			(007) st       M[0]
 			(008) ld       #0xcd
-			(009) st       M[2]
-			(010) ldx      M[2]
-			(011) ld       M[1]
+			(009) st       M[1]
+			(010) ldx      M[1]
+			(011) ld       M[0]
 			(012) jeq      x                jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
@@ -1290,37 +1290,37 @@ my @filter_accept_blocks = (
 		aliases => ['arp[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 34
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x806           jt 20	jf 34
 			(020) ld       #0xab
 			(021) st       M[0]
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ld       M[0]
 			(024) add      x
 			(025) tax
 			(026) ldb      [x + 8]
-			(027) st       M[1]
+			(027) st       M[3]
 			(028) ld       #0xcd
 			(029) st       M[4]
 			(030) ldx      M[4]
-			(031) ld       M[1]
+			(031) ld       M[3]
 			(032) jeq      x                jt 33	jf 34
 			(033) ret      #262144
 			(034) ret      #0
@@ -1335,7 +1335,7 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ld       #0x1
 			(006) jeq      #0x0             jt 7	jf 8
@@ -1362,11 +1362,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 14]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1394,18 +1394,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[2]
+			(009) st       M[1]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[2]
+			(014) ld       M[1]
 			(015) add      #2
-			(016) st       M[2]
+			(016) st       M[1]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -1414,29 +1414,29 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[2]
+			(025) ld       M[1]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[2]
-			(029) ldx      M[3]
+			(028) st       M[1]
+			(029) ldx      M[2]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 50
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x8035          jt 36	jf 50
 			(036) ld       #0xab
 			(037) st       M[0]
-			(038) ldx      M[2]
+			(038) ldx      M[1]
 			(039) ld       M[0]
 			(040) add      x
 			(041) tax
 			(042) ldb      [x + 8]
-			(043) st       M[1]
+			(043) st       M[3]
 			(044) ld       #0xcd
 			(045) st       M[4]
 			(046) ldx      M[4]
-			(047) ld       M[1]
+			(047) ld       M[3]
 			(048) jeq      x                jt 49	jf 50
 			(049) ret      #262144
 			(050) ret      #0
@@ -1450,32 +1450,32 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 31
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x8035          jt 17	jf 31
 			(017) ld       #0xab
 			(018) st       M[0]
-			(019) ldx      M[2]
+			(019) ldx      M[1]
 			(020) ld       M[0]
 			(021) add      x
 			(022) tax
 			(023) ldb      [x + 8]
-			(024) st       M[1]
+			(024) st       M[2]
 			(025) ld       #0xcd
 			(026) st       M[3]
 			(027) ldx      M[3]
-			(028) ld       M[1]
+			(028) ld       M[2]
 			(029) jeq      x                jt 30	jf 31
 			(030) ret      #262144
 			(031) ret      #0
@@ -1500,11 +1500,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 4]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1522,40 +1522,40 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[3]
+			(007) st       M[2]
 			(008) tax
 			(009) txa
 			(010) add      #24
-			(011) st       M[2]
+			(011) st       M[1]
 			(012) ldb      [x + 0]
 			(013) jset     #0x8             jt 14	jf 19
 			(014) jset     #0x4             jt 19	jf 15
 			(015) jset     #0x80            jt 16	jf 19
-			(016) ld       M[2]
+			(016) ld       M[1]
 			(017) add      #2
-			(018) st       M[2]
-			(019) ldx      M[3]
+			(018) st       M[1]
+			(019) ldx      M[2]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
 			(022) jeq      #0x8             jt 23	jf 43
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ld       [x + 4]
 			(025) jeq      #0x7809b         jt 26	jf 43
-			(026) ldx      M[2]
+			(026) ldx      M[1]
 			(027) ld       [x + 0]
 			(028) jeq      #0xaaaa0308      jt 29	jf 43
 			(029) ld       #0xab
 			(030) st       M[0]
-			(031) ldx      M[2]
+			(031) ldx      M[1]
 			(032) ld       M[0]
 			(033) add      x
 			(034) tax
 			(035) ldb      [x + 8]
-			(036) st       M[1]
+			(036) st       M[3]
 			(037) ld       #0xcd
 			(038) st       M[4]
 			(039) ldx      M[4]
-			(040) ld       M[1]
+			(040) ld       M[3]
 			(041) jeq      x                jt 42	jf 43
 			(042) ret      #262144
 			(043) ret      #0
@@ -1570,7 +1570,7 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ld       #0x1
 			(006) jeq      #0x0             jt 7	jf 8
@@ -1597,11 +1597,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 8]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1618,37 +1618,37 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[3]
+			(006) st       M[2]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[2]
+			(015) ld       M[1]
 			(016) add      #2
-			(017) st       M[2]
-			(018) ldx      M[3]
+			(017) st       M[1]
+			(018) ldx      M[2]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 39
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x6003          jt 25	jf 39
 			(025) ld       #0xab
 			(026) st       M[0]
-			(027) ldx      M[2]
+			(027) ldx      M[1]
 			(028) ld       M[0]
 			(029) add      x
 			(030) tax
 			(031) ldb      [x + 8]
-			(032) st       M[1]
+			(032) st       M[3]
 			(033) ld       #0xcd
 			(034) st       M[4]
 			(035) ldx      M[4]
-			(036) ld       M[1]
+			(036) ld       M[3]
 			(037) jeq      x                jt 38	jf 39
 			(038) ret      #262144
 			(039) ret      #0
@@ -1662,32 +1662,32 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 31
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x6003          jt 17	jf 31
 			(017) ld       #0xab
 			(018) st       M[0]
-			(019) ldx      M[2]
+			(019) ldx      M[1]
 			(020) ld       M[0]
 			(021) add      x
 			(022) tax
 			(023) ldb      [x + 8]
-			(024) st       M[1]
+			(024) st       M[2]
 			(025) ld       #0xcd
 			(026) st       M[3]
 			(027) ldx      M[3]
-			(028) ld       M[1]
+			(028) ld       M[2]
 			(029) jeq      x                jt 30	jf 31
 			(030) ret      #262144
 			(031) ret      #0
@@ -1712,11 +1712,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 4]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1728,37 +1728,37 @@ my @filter_accept_blocks = (
 		aliases => ['sca[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 34
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x6007          jt 20	jf 34
 			(020) ld       #0xab
 			(021) st       M[0]
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ld       M[0]
 			(024) add      x
 			(025) tax
 			(026) ldb      [x + 8]
-			(027) st       M[1]
+			(027) st       M[3]
 			(028) ld       #0xcd
 			(029) st       M[4]
 			(030) ldx      M[4]
-			(031) ld       M[1]
+			(031) ld       M[3]
 			(032) jeq      x                jt 33	jf 34
 			(033) ret      #262144
 			(034) ret      #0
@@ -1773,7 +1773,7 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ld       #0x1
 			(006) jeq      #0x0             jt 7	jf 8
@@ -1800,11 +1800,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 16]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1820,18 +1820,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[2]
+			(009) st       M[1]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[2]
+			(014) ld       M[1]
 			(015) add      #2
-			(016) st       M[2]
+			(016) st       M[1]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -1840,29 +1840,29 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[2]
+			(025) ld       M[1]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[2]
-			(029) ldx      M[3]
+			(028) st       M[1]
+			(029) ldx      M[2]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 50
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x6004          jt 36	jf 50
 			(036) ld       #0xab
 			(037) st       M[0]
-			(038) ldx      M[2]
+			(038) ldx      M[1]
 			(039) ld       M[0]
 			(040) add      x
 			(041) tax
 			(042) ldb      [x + 8]
-			(043) st       M[1]
+			(043) st       M[3]
 			(044) ld       #0xcd
 			(045) st       M[4]
 			(046) ldx      M[4]
-			(047) ld       M[1]
+			(047) ld       M[3]
 			(048) jeq      x                jt 49	jf 50
 			(049) ret      #262144
 			(050) ret      #0
@@ -1876,32 +1876,32 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 31
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x6004          jt 17	jf 31
 			(017) ld       #0xab
 			(018) st       M[0]
-			(019) ldx      M[2]
+			(019) ldx      M[1]
 			(020) ld       M[0]
 			(021) add      x
 			(022) tax
 			(023) ldb      [x + 8]
-			(024) st       M[1]
+			(024) st       M[2]
 			(025) ld       #0xcd
 			(026) st       M[3]
 			(027) ldx      M[3]
-			(028) ld       M[1]
+			(028) ld       M[2]
 			(029) jeq      x                jt 30	jf 31
 			(030) ret      #262144
 			(031) ret      #0
@@ -1926,11 +1926,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 20]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -1948,37 +1948,37 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[3]
+			(007) st       M[2]
 			(008) tax
 			(009) txa
 			(010) add      #24
-			(011) st       M[2]
+			(011) st       M[1]
 			(012) ldb      [x + 0]
 			(013) jset     #0x8             jt 14	jf 19
 			(014) jset     #0x4             jt 19	jf 15
 			(015) jset     #0x80            jt 16	jf 19
-			(016) ld       M[2]
+			(016) ld       M[1]
 			(017) add      #2
-			(018) st       M[2]
-			(019) ldx      M[3]
+			(018) st       M[1]
+			(019) ldx      M[2]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
 			(022) jeq      #0x8             jt 23	jf 40
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 6]
 			(025) jeq      #0x6002          jt 26	jf 40
 			(026) ld       #0xab
 			(027) st       M[0]
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ld       M[0]
 			(030) add      x
 			(031) tax
 			(032) ldb      [x + 8]
-			(033) st       M[1]
+			(033) st       M[3]
 			(034) ld       #0xcd
 			(035) st       M[4]
 			(036) ldx      M[4]
-			(037) ld       M[1]
+			(037) ld       M[3]
 			(038) jeq      x                jt 39	jf 40
 			(039) ret      #262144
 			(040) ret      #0
@@ -1993,7 +1993,7 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ld       #0x1
 			(006) jeq      #0x0             jt 7	jf 8
@@ -2020,11 +2020,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 18]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -2041,37 +2041,37 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[3]
+			(006) st       M[2]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[2]
+			(015) ld       M[1]
 			(016) add      #2
-			(017) st       M[2]
-			(018) ldx      M[3]
+			(017) st       M[1]
+			(018) ldx      M[2]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 39
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x6001          jt 25	jf 39
 			(025) ld       #0xab
 			(026) st       M[0]
-			(027) ldx      M[2]
+			(027) ldx      M[1]
 			(028) ld       M[0]
 			(029) add      x
 			(030) tax
 			(031) ldb      [x + 8]
-			(032) st       M[1]
+			(032) st       M[3]
 			(033) ld       #0xcd
 			(034) st       M[4]
 			(035) ldx      M[4]
-			(036) ld       M[1]
+			(036) ld       M[3]
 			(037) jeq      x                jt 38	jf 39
 			(038) ret      #262144
 			(039) ret      #0
@@ -2085,32 +2085,32 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 31
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x6001          jt 17	jf 31
 			(017) ld       #0xab
 			(018) st       M[0]
-			(019) ldx      M[2]
+			(019) ldx      M[1]
 			(020) ld       M[0]
 			(021) add      x
 			(022) tax
 			(023) ldb      [x + 8]
-			(024) st       M[1]
+			(024) st       M[2]
 			(025) ld       #0xcd
 			(026) st       M[3]
 			(027) ldx      M[3]
-			(028) ld       M[1]
+			(028) ld       M[2]
 			(029) jeq      x                jt 30	jf 31
 			(030) ret      #262144
 			(031) ret      #0
@@ -2134,37 +2134,37 @@ my @filter_accept_blocks = (
 		aliases => ['ip6[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 34
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x86dd          jt 20	jf 34
 			(020) ld       #0xab
 			(021) st       M[0]
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ld       M[0]
 			(024) add      x
 			(025) tax
 			(026) ldb      [x + 8]
-			(027) st       M[1]
+			(027) st       M[3]
 			(028) ld       #0xcd
 			(029) st       M[4]
 			(030) ldx      M[4]
-			(031) ld       M[1]
+			(031) ld       M[3]
 			(032) jeq      x                jt 33	jf 34
 			(033) ret      #262144
 			(034) ret      #0
@@ -2179,11 +2179,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x5             jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2195,22 +2195,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x5             jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2225,11 +2225,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0xa             jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2241,22 +2241,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0xa             jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2271,11 +2271,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x16            jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2287,22 +2287,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x16            jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2317,11 +2317,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x18            jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2333,22 +2333,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x18            jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2363,11 +2363,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1a            jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2379,22 +2379,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1a            jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2409,11 +2409,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1c            jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2425,22 +2425,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1c            jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2455,11 +2455,11 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1e            jt 6	jf 13
 			(006) ld       #0xab
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) add      x
 			(009) tax
 			(010) ldb      [x + 0]
@@ -2471,22 +2471,22 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1e            jt 7	jf 21
 			(007) ld       #0xab
 			(008) st       M[0]
-			(009) ldx      M[2]
+			(009) ldx      M[1]
 			(010) ld       M[0]
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[2]
 			(015) ld       #0xcd
 			(016) st       M[3]
 			(017) ldx      M[3]
-			(018) ld       M[1]
+			(018) ld       M[2]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2511,11 +2511,11 @@ my @filter_accept_blocks = (
 			(003) st       M[0]
 			(004) ldx      M[0]
 			(005) ldb      [x + 14]
-			(006) st       M[1]
+			(006) st       M[0]
 			(007) ld       #0xcd
-			(008) st       M[2]
-			(009) ldx      M[2]
-			(010) ld       M[1]
+			(008) st       M[1]
+			(009) ldx      M[1]
+			(010) ld       M[0]
 			(011) jeq      x                jt 12	jf 13
 			(012) ret      #262144
 			(013) ret      #0
@@ -2535,34 +2535,34 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[3]
+			(006) st       M[2]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[2]
+			(015) ld       M[1]
 			(016) add      #2
-			(017) st       M[2]
-			(018) ldx      M[3]
+			(017) st       M[1]
+			(018) ldx      M[2]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 50
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x800           jt 25	jf 50
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 17]
 			(027) jeq      #0x84            jt 28	jf 50
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ldh      [x + 14]
 			(030) jset     #0x1fff          jt 50	jf 31
 			(031) ld       #0xab
 			(032) st       M[0]
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldb      [x + 8]
 			(035) and      #0xf
 			(036) lsh      #2
@@ -2572,11 +2572,11 @@ my @filter_accept_blocks = (
 			(040) add      x
 			(041) tax
 			(042) ldb      [x + 8]
-			(043) st       M[1]
+			(043) st       M[3]
 			(044) ld       #0xcd
 			(045) st       M[4]
 			(046) ldx      M[4]
-			(047) ld       M[1]
+			(047) ld       M[3]
 			(048) jeq      x                jt 49	jf 50
 			(049) ret      #262144
 			(050) ret      #0
@@ -2590,29 +2590,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x84            jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -2622,11 +2622,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -2663,11 +2663,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 14]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -2679,34 +2679,34 @@ my @filter_accept_blocks = (
 		aliases => ['tcp[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 45
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x800           jt 20	jf 45
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldb      [x + 17]
 			(022) jeq      #0x6             jt 23	jf 45
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 14]
 			(025) jset     #0x1fff          jt 45	jf 26
 			(026) ld       #0xab
 			(027) st       M[0]
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ldb      [x + 8]
 			(030) and      #0xf
 			(031) lsh      #2
@@ -2716,11 +2716,11 @@ my @filter_accept_blocks = (
 			(035) add      x
 			(036) tax
 			(037) ldb      [x + 8]
-			(038) st       M[1]
+			(038) st       M[3]
 			(039) ld       #0xcd
 			(040) st       M[4]
 			(041) ldx      M[4]
-			(042) ld       M[1]
+			(042) ld       M[3]
 			(043) jeq      x                jt 44	jf 45
 			(044) ret      #262144
 			(045) ret      #0
@@ -2734,29 +2734,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x6             jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -2766,11 +2766,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -2807,11 +2807,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 14]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -2850,11 +2850,11 @@ my @filter_accept_blocks = (
 			(011) add      x
 			(012) tax
 			(013) ldb      [x + 0]
-			(014) st       M[1]
+			(014) st       M[0]
 			(015) ld       #0xcd
-			(016) st       M[2]
-			(017) ldx      M[2]
-			(018) ld       M[1]
+			(016) st       M[1]
+			(017) ldx      M[1]
+			(018) ld       M[0]
 			(019) jeq      x                jt 20	jf 21
 			(020) ret      #262144
 			(021) ret      #0
@@ -2870,18 +2870,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[2]
+			(009) st       M[1]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[2]
+			(014) ld       M[1]
 			(015) add      #2
-			(016) st       M[2]
+			(016) st       M[1]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -2890,26 +2890,26 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[2]
+			(025) ld       M[1]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[2]
-			(029) ldx      M[3]
+			(028) st       M[1]
+			(029) ldx      M[2]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 61
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x800           jt 36	jf 61
-			(036) ldx      M[2]
+			(036) ldx      M[1]
 			(037) ldb      [x + 17]
 			(038) jeq      #0x11            jt 39	jf 61
-			(039) ldx      M[2]
+			(039) ldx      M[1]
 			(040) ldh      [x + 14]
 			(041) jset     #0x1fff          jt 61	jf 42
 			(042) ld       #0xab
 			(043) st       M[0]
-			(044) ldx      M[2]
+			(044) ldx      M[1]
 			(045) ldb      [x + 8]
 			(046) and      #0xf
 			(047) lsh      #2
@@ -2919,11 +2919,11 @@ my @filter_accept_blocks = (
 			(051) add      x
 			(052) tax
 			(053) ldb      [x + 8]
-			(054) st       M[1]
+			(054) st       M[3]
 			(055) ld       #0xcd
 			(056) st       M[4]
 			(057) ldx      M[4]
-			(058) ld       M[1]
+			(058) ld       M[3]
 			(059) jeq      x                jt 60	jf 61
 			(060) ret      #262144
 			(061) ret      #0
@@ -2938,10 +2938,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1             jt 6	jf 19
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 9]
 			(008) jeq      #0x11            jt 9	jf 19
 			(009) ldh      [x + 6]
@@ -2960,19 +2960,19 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1             jt 7	jf 32
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 9]
 			(009) jeq      #0x11            jt 10	jf 32
-			(010) ldx      M[2]
+			(010) ldx      M[1]
 			(011) ldh      [x + 6]
 			(012) jset     #0x1fff          jt 32	jf 13
 			(013) ld       #0xab
 			(014) st       M[0]
-			(015) ldx      M[2]
+			(015) ldx      M[1]
 			(016) ldb      [x + 0]
 			(017) and      #0xf
 			(018) lsh      #2
@@ -2982,11 +2982,11 @@ my @filter_accept_blocks = (
 			(022) add      x
 			(023) tax
 			(024) ldb      [x + 0]
-			(025) st       M[1]
+			(025) st       M[2]
 			(026) ld       #0xcd
 			(027) st       M[3]
 			(028) ldx      M[3]
-			(029) ld       M[1]
+			(029) ld       M[2]
 			(030) jeq      x                jt 31	jf 32
 			(031) ret      #262144
 			(032) ret      #0
@@ -3001,10 +3001,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x2             jt 6	jf 19
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 9]
 			(008) jeq      #0x11            jt 9	jf 19
 			(009) ldh      [x + 6]
@@ -3023,19 +3023,19 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x2             jt 7	jf 32
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 9]
 			(009) jeq      #0x11            jt 10	jf 32
-			(010) ldx      M[2]
+			(010) ldx      M[1]
 			(011) ldh      [x + 6]
 			(012) jset     #0x1fff          jt 32	jf 13
 			(013) ld       #0xab
 			(014) st       M[0]
-			(015) ldx      M[2]
+			(015) ldx      M[1]
 			(016) ldb      [x + 0]
 			(017) and      #0xf
 			(018) lsh      #2
@@ -3045,11 +3045,11 @@ my @filter_accept_blocks = (
 			(022) add      x
 			(023) tax
 			(024) ldb      [x + 0]
-			(025) st       M[1]
+			(025) st       M[2]
 			(026) ld       #0xcd
 			(027) st       M[3]
 			(028) ldx      M[3]
-			(029) ld       M[1]
+			(029) ld       M[2]
 			(030) jeq      x                jt 31	jf 32
 			(031) ret      #262144
 			(032) ret      #0
@@ -3086,11 +3086,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 14]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3127,11 +3127,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 4]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3149,34 +3149,34 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[3]
+			(007) st       M[2]
 			(008) tax
 			(009) txa
 			(010) add      #24
-			(011) st       M[2]
+			(011) st       M[1]
 			(012) ldb      [x + 0]
 			(013) jset     #0x8             jt 14	jf 19
 			(014) jset     #0x4             jt 19	jf 15
 			(015) jset     #0x80            jt 16	jf 19
-			(016) ld       M[2]
+			(016) ld       M[1]
 			(017) add      #2
-			(018) st       M[2]
-			(019) ldx      M[3]
+			(018) st       M[1]
+			(019) ldx      M[2]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
 			(022) jeq      #0x8             jt 23	jf 51
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 6]
 			(025) jeq      #0x800           jt 26	jf 51
-			(026) ldx      M[2]
+			(026) ldx      M[1]
 			(027) ldb      [x + 17]
 			(028) jeq      #0x1             jt 29	jf 51
-			(029) ldx      M[2]
+			(029) ldx      M[1]
 			(030) ldh      [x + 14]
 			(031) jset     #0x1fff          jt 51	jf 32
 			(032) ld       #0xab
 			(033) st       M[0]
-			(034) ldx      M[2]
+			(034) ldx      M[1]
 			(035) ldb      [x + 8]
 			(036) and      #0xf
 			(037) lsh      #2
@@ -3186,11 +3186,11 @@ my @filter_accept_blocks = (
 			(041) add      x
 			(042) tax
 			(043) ldb      [x + 8]
-			(044) st       M[1]
+			(044) st       M[3]
 			(045) ld       #0xcd
 			(046) st       M[4]
 			(047) ldx      M[4]
-			(048) ld       M[1]
+			(048) ld       M[3]
 			(049) jeq      x                jt 50	jf 51
 			(050) ret      #262144
 			(051) ret      #0
@@ -3204,29 +3204,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x1             jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -3236,11 +3236,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -3277,11 +3277,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 16]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3298,34 +3298,34 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[3]
+			(006) st       M[2]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[2]
+			(015) ld       M[1]
 			(016) add      #2
-			(017) st       M[2]
-			(018) ldx      M[3]
+			(017) st       M[1]
+			(018) ldx      M[2]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 50
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x800           jt 25	jf 50
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 17]
 			(027) jeq      #0x2             jt 28	jf 50
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ldh      [x + 14]
 			(030) jset     #0x1fff          jt 50	jf 31
 			(031) ld       #0xab
 			(032) st       M[0]
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldb      [x + 8]
 			(035) and      #0xf
 			(036) lsh      #2
@@ -3335,11 +3335,11 @@ my @filter_accept_blocks = (
 			(040) add      x
 			(041) tax
 			(042) ldb      [x + 8]
-			(043) st       M[1]
+			(043) st       M[3]
 			(044) ld       #0xcd
 			(045) st       M[4]
 			(046) ldx      M[4]
-			(047) ld       M[1]
+			(047) ld       M[3]
 			(048) jeq      x                jt 49	jf 50
 			(049) ret      #262144
 			(050) ret      #0
@@ -3355,18 +3355,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[2]
+			(009) st       M[1]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[2]
+			(014) ld       M[1]
 			(015) add      #2
-			(016) st       M[2]
+			(016) st       M[1]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -3375,26 +3375,26 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[2]
+			(025) ld       M[1]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[2]
-			(029) ldx      M[3]
+			(028) st       M[1]
+			(029) ldx      M[2]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 61
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x800           jt 36	jf 61
-			(036) ldx      M[2]
+			(036) ldx      M[1]
 			(037) ldb      [x + 17]
 			(038) jeq      #0x2             jt 39	jf 61
-			(039) ldx      M[2]
+			(039) ldx      M[1]
 			(040) ldh      [x + 14]
 			(041) jset     #0x1fff          jt 61	jf 42
 			(042) ld       #0xab
 			(043) st       M[0]
-			(044) ldx      M[2]
+			(044) ldx      M[1]
 			(045) ldb      [x + 8]
 			(046) and      #0xf
 			(047) lsh      #2
@@ -3404,11 +3404,11 @@ my @filter_accept_blocks = (
 			(051) add      x
 			(052) tax
 			(053) ldb      [x + 8]
-			(054) st       M[1]
+			(054) st       M[3]
 			(055) ld       #0xcd
 			(056) st       M[4]
 			(057) ldx      M[4]
-			(058) ld       M[1]
+			(058) ld       M[3]
 			(059) jeq      x                jt 60	jf 61
 			(060) ret      #262144
 			(061) ret      #0
@@ -3445,11 +3445,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 20]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3462,34 +3462,34 @@ my @filter_accept_blocks = (
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 45
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x800           jt 20	jf 45
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldb      [x + 17]
 			(022) jeq      #0x9             jt 23	jf 45
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 14]
 			(025) jset     #0x1fff          jt 45	jf 26
 			(026) ld       #0xab
 			(027) st       M[0]
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ldb      [x + 8]
 			(030) and      #0xf
 			(031) lsh      #2
@@ -3499,11 +3499,11 @@ my @filter_accept_blocks = (
 			(035) add      x
 			(036) tax
 			(037) ldb      [x + 8]
-			(038) st       M[1]
+			(038) st       M[3]
 			(039) ld       #0xcd
 			(040) st       M[4]
 			(041) ldx      M[4]
-			(042) ld       M[1]
+			(042) ld       M[3]
 			(043) jeq      x                jt 44	jf 45
 			(044) ret      #262144
 			(045) ret      #0
@@ -3518,29 +3518,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x9             jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -3550,11 +3550,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -3592,11 +3592,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 18]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3609,34 +3609,34 @@ my @filter_accept_blocks = (
 		aliases => ['igrp[0xab] == 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[3]
+			(001) st       M[2]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[2]
+			(010) ld       M[1]
 			(011) add      #2
-			(012) st       M[2]
-			(013) ldx      M[3]
+			(012) st       M[1]
+			(013) ldx      M[2]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 45
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x800           jt 20	jf 45
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldb      [x + 17]
 			(022) jeq      #0x58            jt 23	jf 45
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 14]
 			(025) jset     #0x1fff          jt 45	jf 26
 			(026) ld       #0xab
 			(027) st       M[0]
-			(028) ldx      M[2]
+			(028) ldx      M[1]
 			(029) ldb      [x + 8]
 			(030) and      #0xf
 			(031) lsh      #2
@@ -3646,11 +3646,11 @@ my @filter_accept_blocks = (
 			(035) add      x
 			(036) tax
 			(037) ldb      [x + 8]
-			(038) st       M[1]
+			(038) st       M[3]
 			(039) ld       #0xcd
 			(040) st       M[4]
 			(041) ldx      M[4]
-			(042) ld       M[1]
+			(042) ld       M[3]
 			(043) jeq      x                jt 44	jf 45
 			(044) ret      #262144
 			(045) ret      #0
@@ -3665,29 +3665,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x58            jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -3697,11 +3697,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -3739,11 +3739,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 18]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3759,18 +3759,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[2]
+			(009) st       M[1]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[2]
+			(014) ld       M[1]
 			(015) add      #2
-			(016) st       M[2]
+			(016) st       M[1]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -3779,26 +3779,26 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[2]
+			(025) ld       M[1]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[2]
-			(029) ldx      M[3]
+			(028) st       M[1]
+			(029) ldx      M[2]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 61
-			(033) ldx      M[2]
+			(033) ldx      M[1]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x800           jt 36	jf 61
-			(036) ldx      M[2]
+			(036) ldx      M[1]
 			(037) ldb      [x + 17]
 			(038) jeq      #0x67            jt 39	jf 61
-			(039) ldx      M[2]
+			(039) ldx      M[1]
 			(040) ldh      [x + 14]
 			(041) jset     #0x1fff          jt 61	jf 42
 			(042) ld       #0xab
 			(043) st       M[0]
-			(044) ldx      M[2]
+			(044) ldx      M[1]
 			(045) ldb      [x + 8]
 			(046) and      #0xf
 			(047) lsh      #2
@@ -3808,11 +3808,11 @@ my @filter_accept_blocks = (
 			(051) add      x
 			(052) tax
 			(053) ldb      [x + 8]
-			(054) st       M[1]
+			(054) st       M[3]
 			(055) ld       #0xcd
 			(056) st       M[4]
 			(057) ldx      M[4]
-			(058) ld       M[1]
+			(058) ld       M[3]
 			(059) jeq      x                jt 60	jf 61
 			(060) ret      #262144
 			(061) ret      #0
@@ -3826,29 +3826,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x67            jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -3858,11 +3858,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -3899,11 +3899,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 8]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -3924,34 +3924,34 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[3]
+			(007) st       M[2]
 			(008) tax
 			(009) txa
 			(010) add      #24
-			(011) st       M[2]
+			(011) st       M[1]
 			(012) ldb      [x + 0]
 			(013) jset     #0x8             jt 14	jf 19
 			(014) jset     #0x4             jt 19	jf 15
 			(015) jset     #0x80            jt 16	jf 19
-			(016) ld       M[2]
+			(016) ld       M[1]
 			(017) add      #2
-			(018) st       M[2]
-			(019) ldx      M[3]
+			(018) st       M[1]
+			(019) ldx      M[2]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
 			(022) jeq      #0x8             jt 23	jf 51
-			(023) ldx      M[2]
+			(023) ldx      M[1]
 			(024) ldh      [x + 6]
 			(025) jeq      #0x800           jt 26	jf 51
-			(026) ldx      M[2]
+			(026) ldx      M[1]
 			(027) ldb      [x + 17]
 			(028) jeq      #0x70            jt 29	jf 51
-			(029) ldx      M[2]
+			(029) ldx      M[1]
 			(030) ldh      [x + 14]
 			(031) jset     #0x1fff          jt 51	jf 32
 			(032) ld       #0xab
 			(033) st       M[0]
-			(034) ldx      M[2]
+			(034) ldx      M[1]
 			(035) ldb      [x + 8]
 			(036) and      #0xf
 			(037) lsh      #2
@@ -3961,11 +3961,11 @@ my @filter_accept_blocks = (
 			(041) add      x
 			(042) tax
 			(043) ldb      [x + 8]
-			(044) st       M[1]
+			(044) st       M[3]
 			(045) ld       #0xcd
 			(046) st       M[4]
 			(047) ldx      M[4]
-			(048) ld       M[1]
+			(048) ld       M[3]
 			(049) jeq      x                jt 50	jf 51
 			(050) ret      #262144
 			(051) ret      #0
@@ -3982,29 +3982,29 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 42
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x800           jt 17	jf 42
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 17]
 			(019) jeq      #0x70            jt 20	jf 42
-			(020) ldx      M[2]
+			(020) ldx      M[1]
 			(021) ldh      [x + 14]
 			(022) jset     #0x1fff          jt 42	jf 23
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[2]
+			(025) ldx      M[1]
 			(026) ldb      [x + 8]
 			(027) and      #0xf
 			(028) lsh      #2
@@ -4014,11 +4014,11 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 8]
-			(035) st       M[1]
+			(035) st       M[2]
 			(036) ld       #0xcd
 			(037) st       M[3]
 			(038) ldx      M[3]
-			(039) ld       M[1]
+			(039) ld       M[2]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -4058,11 +4058,11 @@ my @filter_accept_blocks = (
 			(010) add      x
 			(011) tax
 			(012) ldb      [x + 14]
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0xcd
-			(015) st       M[2]
-			(016) ldx      M[2]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -4081,40 +4081,40 @@ my @filter_accept_blocks = (
 			(003) ld       [4]
 			(004) ja       6
 			(005) ld       #0x90
-			(006) st       M[2]
+			(006) st       M[1]
 			(007) tax
 			(008) txa
 			(009) add      #24
-			(010) st       M[3]
+			(010) st       M[2]
 			(011) ldb      [x + 0]
 			(012) jset     #0x8             jt 13	jf 18
 			(013) jset     #0x4             jt 18	jf 14
 			(014) jset     #0x80            jt 15	jf 18
-			(015) ld       M[3]
+			(015) ld       M[2]
 			(016) add      #2
-			(017) st       M[3]
-			(018) ldx      M[2]
+			(017) st       M[2]
+			(018) ldx      M[1]
 			(019) ldb      [x + 0]
 			(020) and      #0xc
 			(021) jeq      #0x8             jt 22	jf 42
-			(022) ldx      M[3]
+			(022) ldx      M[2]
 			(023) ldh      [x + 6]
 			(024) jeq      #0x86dd          jt 25	jf 42
-			(025) ldx      M[3]
+			(025) ldx      M[2]
 			(026) ldb      [x + 14]
 			(027) jeq      #0x3a            jt 28	jf 42
 			(028) ld       #0xab
 			(029) st       M[0]
-			(030) ldx      M[3]
+			(030) ldx      M[2]
 			(031) ld       M[0]
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 48]
-			(035) st       M[1]
+			(035) st       M[3]
 			(036) ld       #0xcd
 			(037) st       M[4]
 			(038) ldx      M[4]
-			(039) ld       M[1]
+			(039) ld       M[3]
 			(040) jeq      x                jt 41	jf 42
 			(041) ret      #262144
 			(042) ret      #0
@@ -4126,40 +4126,40 @@ my @filter_accept_blocks = (
 		aliases => ['icmp6[0xab] = 0xcd'],
 		optunopt => '
 			(000) ld       [4]
-			(001) st       M[2]
+			(001) st       M[1]
 			(002) tax
 			(003) txa
 			(004) add      #24
-			(005) st       M[3]
+			(005) st       M[2]
 			(006) ldb      [x + 0]
 			(007) jset     #0x8             jt 8	jf 13
 			(008) jset     #0x4             jt 13	jf 9
 			(009) jset     #0x80            jt 10	jf 13
-			(010) ld       M[3]
+			(010) ld       M[2]
 			(011) add      #2
-			(012) st       M[3]
-			(013) ldx      M[2]
+			(012) st       M[2]
+			(013) ldx      M[1]
 			(014) ldb      [x + 0]
 			(015) and      #0xc
 			(016) jeq      #0x8             jt 17	jf 37
-			(017) ldx      M[3]
+			(017) ldx      M[2]
 			(018) ldh      [x + 6]
 			(019) jeq      #0x86dd          jt 20	jf 37
-			(020) ldx      M[3]
+			(020) ldx      M[2]
 			(021) ldb      [x + 14]
 			(022) jeq      #0x3a            jt 23	jf 37
 			(023) ld       #0xab
 			(024) st       M[0]
-			(025) ldx      M[3]
+			(025) ldx      M[2]
 			(026) ld       M[0]
 			(027) add      x
 			(028) tax
 			(029) ldb      [x + 48]
-			(030) st       M[1]
+			(030) st       M[3]
 			(031) ld       #0xcd
 			(032) st       M[4]
 			(033) ldx      M[4]
-			(034) ld       M[1]
+			(034) ld       M[3]
 			(035) jeq      x                jt 36	jf 37
 			(036) ret      #262144
 			(037) ret      #0
@@ -4175,18 +4175,18 @@ my @filter_accept_blocks = (
 			(002) tax
 			(003) ldb      [2]
 			(004) or       x
-			(005) st       M[2]
+			(005) st       M[1]
 			(006) tax
 			(007) txa
 			(008) add      #24
-			(009) st       M[3]
+			(009) st       M[2]
 			(010) ldb      [x + 0]
 			(011) jset     #0x8             jt 12	jf 29
 			(012) jset     #0x4             jt 29	jf 13
 			(013) jset     #0x80            jt 14	jf 17
-			(014) ld       M[3]
+			(014) ld       M[2]
 			(015) add      #2
-			(016) st       M[3]
+			(016) st       M[2]
 			(017) ld       [4]
 			(018) jset     #0x2000000       jt 19	jf 29
 			(019) jset     #0x80            jt 29	jf 20
@@ -4195,32 +4195,32 @@ my @filter_accept_blocks = (
 			(022) jset     #0x20            jt 25	jf 29
 			(023) ldb      [8]
 			(024) jset     #0x20            jt 25	jf 29
-			(025) ld       M[3]
+			(025) ld       M[2]
 			(026) add      #3
 			(027) and      #0xfffffffc
-			(028) st       M[3]
-			(029) ldx      M[2]
+			(028) st       M[2]
+			(029) ldx      M[1]
 			(030) ldb      [x + 0]
 			(031) and      #0xc
 			(032) jeq      #0x8             jt 33	jf 53
-			(033) ldx      M[3]
+			(033) ldx      M[2]
 			(034) ldh      [x + 6]
 			(035) jeq      #0x86dd          jt 36	jf 53
-			(036) ldx      M[3]
+			(036) ldx      M[2]
 			(037) ldb      [x + 14]
 			(038) jeq      #0x3a            jt 39	jf 53
 			(039) ld       #0xab
 			(040) st       M[0]
-			(041) ldx      M[3]
+			(041) ldx      M[2]
 			(042) ld       M[0]
 			(043) add      x
 			(044) tax
 			(045) ldb      [x + 48]
-			(046) st       M[1]
+			(046) st       M[3]
 			(047) ld       #0xcd
 			(048) st       M[4]
 			(049) ldx      M[4]
-			(050) ld       M[1]
+			(050) ld       M[3]
 			(051) jeq      x                jt 52	jf 53
 			(052) ret      #262144
 			(053) ret      #0
@@ -4238,40 +4238,40 @@ my @filter_accept_blocks = (
 			(004) tax
 			(005) ldb      [2]
 			(006) or       x
-			(007) st       M[2]
+			(007) st       M[1]
 			(008) tax
 			(009) txa
 			(010) add      #24
-			(011) st       M[3]
+			(011) st       M[2]
 			(012) ldb      [x + 0]
 			(013) jset     #0x8             jt 14	jf 19
 			(014) jset     #0x4             jt 19	jf 15
 			(015) jset     #0x80            jt 16	jf 19
-			(016) ld       M[3]
+			(016) ld       M[2]
 			(017) add      #2
-			(018) st       M[3]
-			(019) ldx      M[2]
+			(018) st       M[2]
+			(019) ldx      M[1]
 			(020) ldb      [x + 0]
 			(021) and      #0xc
 			(022) jeq      #0x8             jt 23	jf 43
-			(023) ldx      M[3]
+			(023) ldx      M[2]
 			(024) ldh      [x + 6]
 			(025) jeq      #0x86dd          jt 26	jf 43
-			(026) ldx      M[3]
+			(026) ldx      M[2]
 			(027) ldb      [x + 14]
 			(028) jeq      #0x3a            jt 29	jf 43
 			(029) ld       #0xab
 			(030) st       M[0]
-			(031) ldx      M[3]
+			(031) ldx      M[2]
 			(032) ld       M[0]
 			(033) add      x
 			(034) tax
 			(035) ldb      [x + 48]
-			(036) st       M[1]
+			(036) st       M[3]
 			(037) ld       #0xcd
 			(038) st       M[4]
 			(039) ldx      M[4]
-			(040) ld       M[1]
+			(040) ld       M[3]
 			(041) jeq      x                jt 42	jf 43
 			(042) ret      #262144
 			(043) ret      #0
@@ -4285,35 +4285,35 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[2]
+			(008) ld       M[1]
 			(009) add      #2
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ldb      [0]
 			(012) and      #0xc
 			(013) jeq      #0x8             jt 14	jf 34
-			(014) ldx      M[2]
+			(014) ldx      M[1]
 			(015) ldh      [x + 6]
 			(016) jeq      #0x86dd          jt 17	jf 34
-			(017) ldx      M[2]
+			(017) ldx      M[1]
 			(018) ldb      [x + 14]
 			(019) jeq      #0x3a            jt 20	jf 34
 			(020) ld       #0xab
 			(021) st       M[0]
-			(022) ldx      M[2]
+			(022) ldx      M[1]
 			(023) ld       M[0]
 			(024) add      x
 			(025) tax
 			(026) ldb      [x + 48]
-			(027) st       M[1]
+			(027) st       M[2]
 			(028) ld       #0xcd
 			(029) st       M[3]
 			(030) ldx      M[3]
-			(031) ld       M[1]
+			(031) ld       M[2]
 			(032) jeq      x                jt 33	jf 34
 			(033) ret      #262144
 			(034) ret      #0
@@ -4328,10 +4328,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x5             jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4343,25 +4343,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x5             jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4376,10 +4376,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0xa             jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4391,25 +4391,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0xa             jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4424,10 +4424,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x16            jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4439,25 +4439,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x16            jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4472,10 +4472,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x18            jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4487,25 +4487,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x18            jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4520,10 +4520,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1a            jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4535,25 +4535,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1a            jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4568,10 +4568,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1c            jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4583,25 +4583,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1c            jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4616,10 +4616,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) ldb      [1]
 			(005) jeq      #0x1e            jt 6	jf 12
-			(006) ldx      M[2]
+			(006) ldx      M[1]
 			(007) ldb      [x + 6]
 			(008) jeq      #0x3a            jt 9	jf 12
 			(009) ldb      [x + 211]
@@ -4631,25 +4631,25 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) add      #3
 			(002) and      #0xfffffffc
-			(003) st       M[2]
+			(003) st       M[1]
 			(004) tax
 			(005) ldb      [1]
 			(006) jeq      #0x1e            jt 7	jf 24
-			(007) ldx      M[2]
+			(007) ldx      M[1]
 			(008) ldb      [x + 6]
 			(009) jeq      #0x3a            jt 10	jf 24
 			(010) ld       #0xab
 			(011) st       M[0]
-			(012) ldx      M[2]
+			(012) ldx      M[1]
 			(013) ld       M[0]
 			(014) add      x
 			(015) tax
 			(016) ldb      [x + 40]
-			(017) st       M[1]
+			(017) st       M[2]
 			(018) ld       #0xcd
 			(019) st       M[3]
 			(020) ldx      M[3]
-			(021) ld       M[1]
+			(021) ld       M[2]
 			(022) jeq      x                jt 23	jf 24
 			(023) ret      #262144
 			(024) ret      #0
@@ -4678,11 +4678,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 54]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4713,11 +4713,11 @@ my @filter_accept_blocks = (
 			(006) st       M[0]
 			(007) ldx      M[0]
 			(008) ldb      [x + 40]
-			(009) st       M[1]
+			(009) st       M[0]
 			(010) ld       #0xcd
-			(011) st       M[2]
-			(012) ldx      M[2]
-			(013) ld       M[1]
+			(011) st       M[1]
+			(012) ldx      M[1]
+			(013) ld       M[0]
 			(014) jeq      x                jt 15	jf 16
 			(015) ret      #262144
 			(016) ret      #0
@@ -4746,11 +4746,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 44]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4779,11 +4779,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 56]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4812,11 +4812,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 60]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4845,11 +4845,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 58]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4878,11 +4878,11 @@ my @filter_accept_blocks = (
 			(005) st       M[0]
 			(006) ldx      M[0]
 			(007) ldb      [x + 48]
-			(008) st       M[1]
+			(008) st       M[0]
 			(009) ld       #0xcd
-			(010) st       M[2]
-			(011) ldx      M[2]
-			(012) ld       M[1]
+			(010) st       M[1]
+			(011) ldx      M[1]
+			(012) ld       M[0]
 			(013) jeq      x                jt 14	jf 15
 			(014) ret      #262144
 			(015) ret      #0
@@ -4970,11 +4970,11 @@ my @filter_accept_blocks = (
 			(072) add      x
 			(073) tax
 			(074) ldb      [x + 12]
-			(075) st       M[3]
+			(075) st       M[2]
 			(076) ld       #0xcd
-			(077) st       M[4]
-			(078) ldx      M[4]
-			(079) ld       M[3]
+			(077) st       M[3]
+			(078) ldx      M[3]
+			(079) ld       M[2]
 			(080) jeq      x                jt 81	jf 82
 			(081) ret      #262144
 			(082) ret      #0
@@ -5104,11 +5104,11 @@ my @filter_accept_blocks = (
 			(116) add      x
 			(117) tax
 			(118) ldb      [x + 0]
-			(119) st       M[6]
+			(119) st       M[5]
 			(120) ld       #0xcd
-			(121) st       M[7]
-			(122) ldx      M[7]
-			(123) ld       M[6]
+			(121) st       M[6]
+			(122) ldx      M[6]
+			(123) ld       M[5]
 			(124) jeq      x                jt 125	jf 126
 			(125) ret      #262144
 			(126) ret      #0
@@ -5225,11 +5225,11 @@ my @filter_accept_blocks = (
 			(103) add      x
 			(104) tax
 			(105) ldb      [x + 0]
-			(106) st       M[6]
+			(106) st       M[5]
 			(107) ld       #0xcd
-			(108) st       M[7]
-			(109) ldx      M[7]
-			(110) ld       M[6]
+			(108) st       M[6]
+			(109) ldx      M[6]
+			(110) ld       M[5]
 			(111) jeq      x                jt 112	jf 113
 			(112) ret      #262144
 			(113) ret      #0
@@ -25832,17 +25832,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x0
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -25864,17 +25864,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -25896,17 +25896,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -25928,17 +25928,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -25959,17 +25959,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -25991,17 +25991,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff00
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26023,17 +26023,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff0000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26055,17 +26055,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff000000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26084,17 +26084,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x0
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26115,17 +26115,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26147,17 +26147,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26179,17 +26179,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26210,17 +26210,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26241,17 +26241,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff00
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26273,17 +26273,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff0000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26305,17 +26305,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldh      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff000000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26334,17 +26334,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x0
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26365,17 +26365,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26396,17 +26396,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26427,17 +26427,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26458,17 +26458,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffffff
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26489,17 +26489,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffffff00
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26520,17 +26520,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xffff0000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -26551,17 +26551,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ld       [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0xff000000
-			(006) st       M[2]
-			(007) ldx      M[2]
-			(008) ld       M[1]
+			(006) st       M[1]
+			(007) ldx      M[1]
+			(008) ld       M[0]
 			(009) and      x
-			(010) st       M[2]
+			(010) st       M[1]
 			(011) ld       #0x0
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[2]
+			(012) st       M[2]
+			(013) ldx      M[2]
+			(014) ld       M[1]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #262144
 			(017) ret      #0
@@ -27107,14 +27107,14 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ld       #0x0
-			(006) st       M[2]
-			(007) ldx      M[2]
+			(006) st       M[1]
+			(007) ldx      M[1]
 			(008) ldb      [x + 0]
-			(009) st       M[3]
-			(010) ldx      M[3]
-			(011) ld       M[1]
+			(009) st       M[1]
+			(010) ldx      M[1]
+			(011) ld       M[0]
 			(012) jeq      x                jt 13	jf 14
 			(013) ret      #262144
 			(014) ret      #0
@@ -27127,10 +27127,10 @@ my @filter_accept_blocks = (
 		opt => '
 			(000) ldb      [0]
 			(001) neg
-			(002) st       M[1]
+			(002) st       M[0]
 			(003) ldb      [0]
 			(004) tax
-			(005) ld       M[1]
+			(005) ld       M[0]
 			(006) jeq      x                jt 7	jf 8
 			(007) ret      #0
 			(008) ret      #262144
@@ -27140,17 +27140,17 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
-			(005) ld       M[1]
+			(004) st       M[0]
+			(005) ld       M[0]
 			(006) neg
-			(007) st       M[1]
+			(007) st       M[0]
 			(008) ld       #0x0
-			(009) st       M[2]
-			(010) ldx      M[2]
+			(009) st       M[1]
+			(010) ldx      M[1]
 			(011) ldb      [x + 0]
-			(012) st       M[3]
-			(013) ldx      M[3]
-			(014) ld       M[1]
+			(012) st       M[1]
+			(013) ldx      M[1]
+			(014) ld       M[0]
 			(015) jeq      x                jt 16	jf 17
 			(016) ret      #0
 			(017) ret      #262144
@@ -27165,10 +27165,10 @@ my @filter_accept_blocks = (
 			(000) ldb      [0]
 			(001) neg
 			(002) neg
-			(003) st       M[1]
+			(003) st       M[0]
 			(004) ldb      [0]
 			(005) tax
-			(006) ld       M[1]
+			(006) ld       M[0]
 			(007) jeq      x                jt 8	jf 9
 			(008) ret      #262144
 			(009) ret      #0
@@ -27178,20 +27178,20 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
-			(005) ld       M[1]
+			(004) st       M[0]
+			(005) ld       M[0]
 			(006) neg
-			(007) st       M[1]
-			(008) ld       M[1]
+			(007) st       M[0]
+			(008) ld       M[0]
 			(009) neg
-			(010) st       M[1]
+			(010) st       M[0]
 			(011) ld       #0x0
-			(012) st       M[2]
-			(013) ldx      M[2]
+			(012) st       M[1]
+			(013) ldx      M[1]
 			(014) ldb      [x + 0]
-			(015) st       M[3]
-			(016) ldx      M[3]
-			(017) ld       M[1]
+			(015) st       M[1]
+			(016) ldx      M[1]
+			(017) ld       M[0]
 			(018) jeq      x                jt 19	jf 20
 			(019) ret      #262144
 			(020) ret      #0
@@ -27207,10 +27207,10 @@ my @filter_accept_blocks = (
 			(001) neg
 			(002) neg
 			(003) neg
-			(004) st       M[1]
+			(004) st       M[0]
 			(005) ldb      [0]
 			(006) tax
-			(007) ld       M[1]
+			(007) ld       M[0]
 			(008) jeq      x                jt 9	jf 10
 			(009) ret      #0
 			(010) ret      #262144
@@ -27220,23 +27220,23 @@ my @filter_accept_blocks = (
 			(001) st       M[0]
 			(002) ldx      M[0]
 			(003) ldb      [x + 0]
-			(004) st       M[1]
-			(005) ld       M[1]
+			(004) st       M[0]
+			(005) ld       M[0]
 			(006) neg
-			(007) st       M[1]
-			(008) ld       M[1]
+			(007) st       M[0]
+			(008) ld       M[0]
 			(009) neg
-			(010) st       M[1]
-			(011) ld       M[1]
+			(010) st       M[0]
+			(011) ld       M[0]
 			(012) neg
-			(013) st       M[1]
+			(013) st       M[0]
 			(014) ld       #0x0
-			(015) st       M[2]
-			(016) ldx      M[2]
+			(015) st       M[1]
+			(016) ldx      M[1]
 			(017) ldb      [x + 0]
-			(018) st       M[3]
-			(019) ldx      M[3]
-			(020) ld       M[1]
+			(018) st       M[1]
+			(019) ldx      M[1]
+			(020) ld       M[0]
 			(021) jeq      x                jt 22	jf 23
 			(022) ret      #0
 			(023) ret      #262144
@@ -27644,63 +27644,63 @@ my @filter_accept_blocks = (
 			(027) st       M[13]
 			(028) ldx      M[13]
 			(029) ldb      [x + 0]
-			(030) st       M[14]
-			(031) ldx      M[14]
+			(030) st       M[13]
+			(031) ldx      M[13]
 			(032) ld       M[12]
 			(033) add      x
-			(034) st       M[14]
-			(035) ldx      M[14]
+			(034) st       M[13]
+			(035) ldx      M[13]
 			(036) ld       M[11]
 			(037) add      x
-			(038) st       M[14]
-			(039) ldx      M[14]
+			(038) st       M[13]
+			(039) ldx      M[13]
 			(040) ld       M[10]
 			(041) add      x
-			(042) st       M[14]
-			(043) ldx      M[14]
+			(042) st       M[13]
+			(043) ldx      M[13]
 			(044) ld       M[9]
 			(045) add      x
-			(046) st       M[14]
-			(047) ldx      M[14]
+			(046) st       M[13]
+			(047) ldx      M[13]
 			(048) ld       M[8]
 			(049) add      x
-			(050) st       M[14]
-			(051) ldx      M[14]
+			(050) st       M[13]
+			(051) ldx      M[13]
 			(052) ld       M[7]
 			(053) add      x
-			(054) st       M[14]
-			(055) ldx      M[14]
+			(054) st       M[13]
+			(055) ldx      M[13]
 			(056) ld       M[6]
 			(057) add      x
-			(058) st       M[14]
-			(059) ldx      M[14]
+			(058) st       M[13]
+			(059) ldx      M[13]
 			(060) ld       M[5]
 			(061) add      x
-			(062) st       M[14]
-			(063) ldx      M[14]
+			(062) st       M[13]
+			(063) ldx      M[13]
 			(064) ld       M[4]
 			(065) add      x
-			(066) st       M[14]
-			(067) ldx      M[14]
+			(066) st       M[13]
+			(067) ldx      M[13]
 			(068) ld       M[3]
 			(069) add      x
-			(070) st       M[14]
-			(071) ldx      M[14]
+			(070) st       M[13]
+			(071) ldx      M[13]
 			(072) ld       M[2]
 			(073) add      x
-			(074) st       M[14]
-			(075) ldx      M[14]
+			(074) st       M[13]
+			(075) ldx      M[13]
 			(076) ld       M[1]
 			(077) add      x
-			(078) st       M[14]
-			(079) ldx      M[14]
+			(078) st       M[13]
+			(079) ldx      M[13]
 			(080) ld       M[0]
 			(081) add      x
-			(082) st       M[14]
+			(082) st       M[13]
 			(083) ld       #0x0
-			(084) st       M[15]
-			(085) ldx      M[15]
-			(086) ld       M[14]
+			(084) st       M[14]
+			(085) ldx      M[14]
+			(086) ld       M[13]
 			(087) jeq      x                jt 88	jf 89
 			(088) ret      #262144
 			(089) ret      #0
@@ -27790,63 +27790,63 @@ my @filter_accept_blocks = (
 			(030) add      x
 			(031) tax
 			(032) ldb      [x + 14]
-			(033) st       M[14]
-			(034) ldx      M[14]
+			(033) st       M[13]
+			(034) ldx      M[13]
 			(035) ld       M[12]
 			(036) add      x
-			(037) st       M[14]
-			(038) ldx      M[14]
+			(037) st       M[13]
+			(038) ldx      M[13]
 			(039) ld       M[11]
 			(040) add      x
-			(041) st       M[14]
-			(042) ldx      M[14]
+			(041) st       M[13]
+			(042) ldx      M[13]
 			(043) ld       M[10]
 			(044) add      x
-			(045) st       M[14]
-			(046) ldx      M[14]
+			(045) st       M[13]
+			(046) ldx      M[13]
 			(047) ld       M[9]
 			(048) add      x
-			(049) st       M[14]
-			(050) ldx      M[14]
+			(049) st       M[13]
+			(050) ldx      M[13]
 			(051) ld       M[8]
 			(052) add      x
-			(053) st       M[14]
-			(054) ldx      M[14]
+			(053) st       M[13]
+			(054) ldx      M[13]
 			(055) ld       M[7]
 			(056) add      x
-			(057) st       M[14]
-			(058) ldx      M[14]
+			(057) st       M[13]
+			(058) ldx      M[13]
 			(059) ld       M[6]
 			(060) add      x
-			(061) st       M[14]
-			(062) ldx      M[14]
+			(061) st       M[13]
+			(062) ldx      M[13]
 			(063) ld       M[5]
 			(064) add      x
-			(065) st       M[14]
-			(066) ldx      M[14]
+			(065) st       M[13]
+			(066) ldx      M[13]
 			(067) ld       M[4]
 			(068) add      x
-			(069) st       M[14]
-			(070) ldx      M[14]
+			(069) st       M[13]
+			(070) ldx      M[13]
 			(071) ld       M[3]
 			(072) add      x
-			(073) st       M[14]
-			(074) ldx      M[14]
+			(073) st       M[13]
+			(074) ldx      M[13]
 			(075) ld       M[2]
 			(076) add      x
-			(077) st       M[14]
-			(078) ldx      M[14]
+			(077) st       M[13]
+			(078) ldx      M[13]
 			(079) ld       M[1]
 			(080) add      x
-			(081) st       M[14]
-			(082) ldx      M[14]
+			(081) st       M[13]
+			(082) ldx      M[13]
 			(083) ld       M[0]
 			(084) add      x
-			(085) st       M[14]
+			(085) st       M[13]
 			(086) ld       #0x0
-			(087) st       M[15]
-			(088) ldx      M[15]
-			(089) ld       M[14]
+			(087) st       M[14]
+			(088) ldx      M[14]
+			(089) ld       M[13]
 			(090) jeq      x                jt 91	jf 92
 			(091) ret      #262144
 			(092) ret      #0
@@ -27932,63 +27932,63 @@ my @filter_accept_blocks = (
 			(027) st       M[13]
 			(028) ldx      M[13]
 			(029) ldb      [x + 0]
-			(030) st       M[14]
-			(031) ldx      M[14]
+			(030) st       M[13]
+			(031) ldx      M[13]
 			(032) ld       M[12]
 			(033) add      x
-			(034) st       M[14]
-			(035) ldx      M[14]
+			(034) st       M[13]
+			(035) ldx      M[13]
 			(036) ld       M[11]
 			(037) add      x
-			(038) st       M[14]
-			(039) ldx      M[14]
+			(038) st       M[13]
+			(039) ldx      M[13]
 			(040) ld       M[10]
 			(041) add      x
-			(042) st       M[14]
-			(043) ldx      M[14]
+			(042) st       M[13]
+			(043) ldx      M[13]
 			(044) ld       M[9]
 			(045) add      x
-			(046) st       M[14]
-			(047) ldx      M[14]
+			(046) st       M[13]
+			(047) ldx      M[13]
 			(048) ld       M[8]
 			(049) add      x
-			(050) st       M[14]
-			(051) ldx      M[14]
+			(050) st       M[13]
+			(051) ldx      M[13]
 			(052) ld       M[7]
 			(053) add      x
-			(054) st       M[14]
-			(055) ldx      M[14]
+			(054) st       M[13]
+			(055) ldx      M[13]
 			(056) ld       M[6]
 			(057) add      x
-			(058) st       M[14]
-			(059) ldx      M[14]
+			(058) st       M[13]
+			(059) ldx      M[13]
 			(060) ld       M[5]
 			(061) add      x
-			(062) st       M[14]
-			(063) ldx      M[14]
+			(062) st       M[13]
+			(063) ldx      M[13]
 			(064) ld       M[4]
 			(065) add      x
-			(066) st       M[14]
-			(067) ldx      M[14]
+			(066) st       M[13]
+			(067) ldx      M[13]
 			(068) ld       M[3]
 			(069) add      x
-			(070) st       M[14]
-			(071) ldx      M[14]
+			(070) st       M[13]
+			(071) ldx      M[13]
 			(072) ld       M[2]
 			(073) add      x
-			(074) st       M[14]
-			(075) ldx      M[14]
+			(074) st       M[13]
+			(075) ldx      M[13]
 			(076) ld       M[1]
 			(077) add      x
-			(078) st       M[14]
-			(079) ldx      M[14]
+			(078) st       M[13]
+			(079) ldx      M[13]
 			(080) ld       M[0]
 			(081) add      x
-			(082) st       M[14]
+			(082) st       M[13]
 			(083) ld       #0x0
-			(084) st       M[15]
-			(085) ldx      M[15]
-			(086) ld       M[14]
+			(084) st       M[14]
+			(085) ldx      M[14]
+			(086) ld       M[13]
 			(087) jeq      x                jt 88	jf 89
 			(088) ret      #262144
 			(089) ret      #0
@@ -28002,14 +28002,14 @@ my @filter_accept_blocks = (
 			(000) ldx      #0x0
 			(001) txa
 			(002) add      #24
-			(003) st       M[15]
+			(003) st       M[14]
 			(004) ldb      [x + 0]
 			(005) jset     #0x8             jt 6	jf 11
 			(006) jset     #0x4             jt 11	jf 7
 			(007) jset     #0x80            jt 8	jf 11
-			(008) ld       M[15]
+			(008) ld       M[14]
 			(009) add      #2
-			(010) st       M[15]
+			(010) st       M[14]
 			(011) ld       #0x1
 			(012) st       M[0]
 			(013) ld       #0x2
@@ -28038,7 +28038,7 @@ my @filter_accept_blocks = (
 			(036) st       M[12]
 			(037) ld       #0x40
 			(038) st       M[13]
-			(039) ldx      M[15]
+			(039) ldx      M[14]
 			(040) ldb      [x + 8]
 			(041) and      #0xf
 			(042) lsh      #2
@@ -28048,63 +28048,63 @@ my @filter_accept_blocks = (
 			(046) add      x
 			(047) tax
 			(048) ldb      [x + 8]
-			(049) st       M[14]
-			(050) ldx      M[14]
+			(049) st       M[15]
+			(050) ldx      M[15]
 			(051) ld       M[12]
 			(052) add      x
-			(053) st       M[12]
-			(054) ldx      M[12]
+			(053) st       M[15]
+			(054) ldx      M[15]
 			(055) ld       M[11]
 			(056) add      x
-			(057) st       M[12]
-			(058) ldx      M[12]
+			(057) st       M[15]
+			(058) ldx      M[15]
 			(059) ld       M[10]
 			(060) add      x
-			(061) st       M[12]
-			(062) ldx      M[12]
+			(061) st       M[15]
+			(062) ldx      M[15]
 			(063) ld       M[9]
 			(064) add      x
-			(065) st       M[12]
-			(066) ldx      M[12]
+			(065) st       M[15]
+			(066) ldx      M[15]
 			(067) ld       M[8]
 			(068) add      x
-			(069) st       M[12]
-			(070) ldx      M[12]
+			(069) st       M[15]
+			(070) ldx      M[15]
 			(071) ld       M[7]
 			(072) add      x
-			(073) st       M[12]
-			(074) ldx      M[12]
+			(073) st       M[15]
+			(074) ldx      M[15]
 			(075) ld       M[6]
 			(076) add      x
-			(077) st       M[12]
-			(078) ldx      M[12]
+			(077) st       M[15]
+			(078) ldx      M[15]
 			(079) ld       M[5]
 			(080) add      x
-			(081) st       M[12]
-			(082) ldx      M[12]
+			(081) st       M[15]
+			(082) ldx      M[15]
 			(083) ld       M[4]
 			(084) add      x
-			(085) st       M[12]
-			(086) ldx      M[12]
+			(085) st       M[15]
+			(086) ldx      M[15]
 			(087) ld       M[3]
 			(088) add      x
-			(089) st       M[12]
-			(090) ldx      M[12]
+			(089) st       M[15]
+			(090) ldx      M[15]
 			(091) ld       M[2]
 			(092) add      x
-			(093) st       M[12]
-			(094) ldx      M[12]
+			(093) st       M[15]
+			(094) ldx      M[15]
 			(095) ld       M[1]
 			(096) add      x
-			(097) st       M[12]
-			(098) ldx      M[12]
+			(097) st       M[15]
+			(098) ldx      M[15]
 			(099) ld       M[0]
 			(100) add      x
-			(101) st       M[12]
+			(101) st       M[15]
 			(102) ld       #0x0
-			(103) st       M[13]
-			(104) ldx      M[13]
-			(105) ld       M[12]
+			(103) st       M[0]
+			(104) ldx      M[0]
+			(105) ld       M[15]
 			(106) jeq      x                jt 107	jf 108
 			(107) ret      #262144
 			(108) ret      #0
@@ -28196,67 +28196,67 @@ my @filter_accept_blocks = (
 			(029) st       M[14]
 			(030) ldx      M[14]
 			(031) ldb      [x + 0]
-			(032) st       M[15]
-			(033) ldx      M[15]
+			(032) st       M[14]
+			(033) ldx      M[14]
 			(034) ld       M[13]
 			(035) add      x
-			(036) st       M[15]
-			(037) ldx      M[15]
+			(036) st       M[14]
+			(037) ldx      M[14]
 			(038) ld       M[12]
 			(039) add      x
-			(040) st       M[15]
-			(041) ldx      M[15]
+			(040) st       M[14]
+			(041) ldx      M[14]
 			(042) ld       M[11]
 			(043) add      x
-			(044) st       M[15]
-			(045) ldx      M[15]
+			(044) st       M[14]
+			(045) ldx      M[14]
 			(046) ld       M[10]
 			(047) add      x
-			(048) st       M[15]
-			(049) ldx      M[15]
+			(048) st       M[14]
+			(049) ldx      M[14]
 			(050) ld       M[9]
 			(051) add      x
-			(052) st       M[15]
-			(053) ldx      M[15]
+			(052) st       M[14]
+			(053) ldx      M[14]
 			(054) ld       M[8]
 			(055) add      x
-			(056) st       M[15]
-			(057) ldx      M[15]
+			(056) st       M[14]
+			(057) ldx      M[14]
 			(058) ld       M[7]
 			(059) add      x
-			(060) st       M[15]
-			(061) ldx      M[15]
+			(060) st       M[14]
+			(061) ldx      M[14]
 			(062) ld       M[6]
 			(063) add      x
-			(064) st       M[15]
-			(065) ldx      M[15]
+			(064) st       M[14]
+			(065) ldx      M[14]
 			(066) ld       M[5]
 			(067) add      x
-			(068) st       M[15]
-			(069) ldx      M[15]
+			(068) st       M[14]
+			(069) ldx      M[14]
 			(070) ld       M[4]
 			(071) add      x
-			(072) st       M[15]
-			(073) ldx      M[15]
+			(072) st       M[14]
+			(073) ldx      M[14]
 			(074) ld       M[3]
 			(075) add      x
-			(076) st       M[15]
-			(077) ldx      M[15]
+			(076) st       M[14]
+			(077) ldx      M[14]
 			(078) ld       M[2]
 			(079) add      x
-			(080) st       M[15]
-			(081) ldx      M[15]
+			(080) st       M[14]
+			(081) ldx      M[14]
 			(082) ld       M[1]
 			(083) add      x
-			(084) st       M[15]
-			(085) ldx      M[15]
+			(084) st       M[14]
+			(085) ldx      M[14]
 			(086) ld       M[0]
 			(087) add      x
-			(088) st       M[15]
+			(088) st       M[14]
 			(089) ld       #0x0
-			(090) st       M[0]
-			(091) ldx      M[0]
-			(092) ld       M[15]
+			(090) st       M[15]
+			(091) ldx      M[15]
+			(092) ld       M[14]
 			(093) jeq      x                jt 94	jf 95
 			(094) ret      #262144
 			(095) ret      #0
@@ -28351,67 +28351,67 @@ my @filter_accept_blocks = (
 			(032) add      x
 			(033) tax
 			(034) ldb      [x + 14]
-			(035) st       M[15]
-			(036) ldx      M[15]
+			(035) st       M[14]
+			(036) ldx      M[14]
 			(037) ld       M[13]
 			(038) add      x
-			(039) st       M[15]
-			(040) ldx      M[15]
+			(039) st       M[14]
+			(040) ldx      M[14]
 			(041) ld       M[12]
 			(042) add      x
-			(043) st       M[15]
-			(044) ldx      M[15]
+			(043) st       M[14]
+			(044) ldx      M[14]
 			(045) ld       M[11]
 			(046) add      x
-			(047) st       M[15]
-			(048) ldx      M[15]
+			(047) st       M[14]
+			(048) ldx      M[14]
 			(049) ld       M[10]
 			(050) add      x
-			(051) st       M[15]
-			(052) ldx      M[15]
+			(051) st       M[14]
+			(052) ldx      M[14]
 			(053) ld       M[9]
 			(054) add      x
-			(055) st       M[15]
-			(056) ldx      M[15]
+			(055) st       M[14]
+			(056) ldx      M[14]
 			(057) ld       M[8]
 			(058) add      x
-			(059) st       M[15]
-			(060) ldx      M[15]
+			(059) st       M[14]
+			(060) ldx      M[14]
 			(061) ld       M[7]
 			(062) add      x
-			(063) st       M[15]
-			(064) ldx      M[15]
+			(063) st       M[14]
+			(064) ldx      M[14]
 			(065) ld       M[6]
 			(066) add      x
-			(067) st       M[15]
-			(068) ldx      M[15]
+			(067) st       M[14]
+			(068) ldx      M[14]
 			(069) ld       M[5]
 			(070) add      x
-			(071) st       M[15]
-			(072) ldx      M[15]
+			(071) st       M[14]
+			(072) ldx      M[14]
 			(073) ld       M[4]
 			(074) add      x
-			(075) st       M[15]
-			(076) ldx      M[15]
+			(075) st       M[14]
+			(076) ldx      M[14]
 			(077) ld       M[3]
 			(078) add      x
-			(079) st       M[15]
-			(080) ldx      M[15]
+			(079) st       M[14]
+			(080) ldx      M[14]
 			(081) ld       M[2]
 			(082) add      x
-			(083) st       M[15]
-			(084) ldx      M[15]
+			(083) st       M[14]
+			(084) ldx      M[14]
 			(085) ld       M[1]
 			(086) add      x
-			(087) st       M[15]
-			(088) ldx      M[15]
+			(087) st       M[14]
+			(088) ldx      M[14]
 			(089) ld       M[0]
 			(090) add      x
-			(091) st       M[15]
+			(091) st       M[14]
 			(092) ld       #0x0
-			(093) st       M[0]
-			(094) ldx      M[0]
-			(095) ld       M[15]
+			(093) st       M[15]
+			(094) ldx      M[15]
+			(095) ld       M[14]
 			(096) jeq      x                jt 97	jf 98
 			(097) ret      #262144
 			(098) ret      #0
@@ -28502,73 +28502,680 @@ my @filter_accept_blocks = (
 			(029) st       M[14]
 			(030) ldx      M[14]
 			(031) ldb      [x + 0]
-			(032) st       M[15]
-			(033) ldx      M[15]
+			(032) st       M[14]
+			(033) ldx      M[14]
 			(034) ld       M[13]
 			(035) add      x
-			(036) st       M[15]
-			(037) ldx      M[15]
+			(036) st       M[14]
+			(037) ldx      M[14]
 			(038) ld       M[12]
 			(039) add      x
-			(040) st       M[15]
-			(041) ldx      M[15]
+			(040) st       M[14]
+			(041) ldx      M[14]
 			(042) ld       M[11]
 			(043) add      x
-			(044) st       M[15]
-			(045) ldx      M[15]
+			(044) st       M[14]
+			(045) ldx      M[14]
 			(046) ld       M[10]
 			(047) add      x
-			(048) st       M[15]
-			(049) ldx      M[15]
+			(048) st       M[14]
+			(049) ldx      M[14]
 			(050) ld       M[9]
 			(051) add      x
-			(052) st       M[15]
-			(053) ldx      M[15]
+			(052) st       M[14]
+			(053) ldx      M[14]
 			(054) ld       M[8]
 			(055) add      x
-			(056) st       M[15]
-			(057) ldx      M[15]
+			(056) st       M[14]
+			(057) ldx      M[14]
 			(058) ld       M[7]
 			(059) add      x
-			(060) st       M[15]
-			(061) ldx      M[15]
+			(060) st       M[14]
+			(061) ldx      M[14]
 			(062) ld       M[6]
 			(063) add      x
-			(064) st       M[15]
-			(065) ldx      M[15]
+			(064) st       M[14]
+			(065) ldx      M[14]
 			(066) ld       M[5]
 			(067) add      x
-			(068) st       M[15]
-			(069) ldx      M[15]
+			(068) st       M[14]
+			(069) ldx      M[14]
 			(070) ld       M[4]
 			(071) add      x
-			(072) st       M[15]
-			(073) ldx      M[15]
+			(072) st       M[14]
+			(073) ldx      M[14]
 			(074) ld       M[3]
 			(075) add      x
-			(076) st       M[15]
-			(077) ldx      M[15]
+			(076) st       M[14]
+			(077) ldx      M[14]
 			(078) ld       M[2]
 			(079) add      x
-			(080) st       M[15]
-			(081) ldx      M[15]
+			(080) st       M[14]
+			(081) ldx      M[14]
 			(082) ld       M[1]
 			(083) add      x
-			(084) st       M[15]
-			(085) ldx      M[15]
+			(084) st       M[14]
+			(085) ldx      M[14]
 			(086) ld       M[0]
 			(087) add      x
-			(088) st       M[15]
+			(088) st       M[14]
 			(089) ld       #0x0
-			(090) st       M[0]
-			(091) ldx      M[0]
-			(092) ld       M[15]
+			(090) st       M[15]
+			(091) ldx      M[15]
+			(092) ld       M[14]
 			(093) jeq      x                jt 94	jf 95
 			(094) ret      #262144
 			(095) ret      #0
 			',
 	},
-	# "15_memregs_before_tcp_IEEE802_11" is a reject test.
+	{
+		name => '15_memregs_before_tcp_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0'],
+		optunopt => '
+			(000) ldx      #0x0
+			(001) txa
+			(002) add      #24
+			(003) st       M[15]
+			(004) ldb      [x + 0]
+			(005) jset     #0x8             jt 6	jf 11
+			(006) jset     #0x4             jt 11	jf 7
+			(007) jset     #0x80            jt 8	jf 11
+			(008) ld       M[15]
+			(009) add      #2
+			(010) st       M[15]
+			(011) ld       #0x1
+			(012) st       M[0]
+			(013) ld       #0x2
+			(014) st       M[1]
+			(015) ld       #0x3
+			(016) st       M[2]
+			(017) ld       #0x4
+			(018) st       M[3]
+			(019) ld       #0x5
+			(020) st       M[4]
+			(021) ld       #0x6
+			(022) st       M[5]
+			(023) ld       #0x7
+			(024) st       M[6]
+			(025) ld       #0x8
+			(026) st       M[7]
+			(027) ld       #0x9
+			(028) st       M[8]
+			(029) ld       #0xa
+			(030) st       M[9]
+			(031) ld       #0xb
+			(032) st       M[10]
+			(033) ld       #0xc
+			(034) st       M[11]
+			(035) ld       #0xd
+			(036) st       M[12]
+			(037) ld       #0xe
+			(038) st       M[13]
+			(039) ld       #0x40
+			(040) st       M[14]
+			(041) ldx      M[15]
+			(042) ldb      [x + 8]
+			(043) and      #0xf
+			(044) lsh      #2
+			(045) add      x
+			(046) tax
+			(047) ld       M[14]
+			(048) add      x
+			(049) tax
+			(050) ldb      [x + 8]
+			(051) st       M[14]
+			(052) ldx      M[14]
+			(053) ld       M[13]
+			(054) add      x
+			(055) st       M[14]
+			(056) ldx      M[14]
+			(057) ld       M[12]
+			(058) add      x
+			(059) st       M[14]
+			(060) ldx      M[14]
+			(061) ld       M[11]
+			(062) add      x
+			(063) st       M[14]
+			(064) ldx      M[14]
+			(065) ld       M[10]
+			(066) add      x
+			(067) st       M[14]
+			(068) ldx      M[14]
+			(069) ld       M[9]
+			(070) add      x
+			(071) st       M[14]
+			(072) ldx      M[14]
+			(073) ld       M[8]
+			(074) add      x
+			(075) st       M[14]
+			(076) ldx      M[14]
+			(077) ld       M[7]
+			(078) add      x
+			(079) st       M[14]
+			(080) ldx      M[14]
+			(081) ld       M[6]
+			(082) add      x
+			(083) st       M[14]
+			(084) ldx      M[14]
+			(085) ld       M[5]
+			(086) add      x
+			(087) st       M[14]
+			(088) ldx      M[14]
+			(089) ld       M[4]
+			(090) add      x
+			(091) st       M[14]
+			(092) ldx      M[14]
+			(093) ld       M[3]
+			(094) add      x
+			(095) st       M[14]
+			(096) ldx      M[14]
+			(097) ld       M[2]
+			(098) add      x
+			(099) st       M[14]
+			(100) ldx      M[14]
+			(101) ld       M[1]
+			(102) add      x
+			(103) st       M[14]
+			(104) ldx      M[14]
+			(105) ld       M[0]
+			(106) add      x
+			(107) st       M[14]
+			(108) ld       #0x0
+			(109) st       M[0]
+			(110) ldx      M[0]
+			(111) ld       M[14]
+			(112) jeq      x                jt 113	jf 114
+			(113) ret      #262144
+			(114) ret      #0
+			',
+	},
+
+	{
+		name => '16_memregs_before_link_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xf
+			(003) add      x
+			(004) tax
+			(005) ld       #0xe
+			(006) add      x
+			(007) tax
+			(008) ld       #0xd
+			(009) add      x
+			(010) tax
+			(011) ld       #0xc
+			(012) add      x
+			(013) tax
+			(014) ld       #0xb
+			(015) add      x
+			(016) tax
+			(017) ld       #0xa
+			(018) add      x
+			(019) tax
+			(020) ld       #0x9
+			(021) add      x
+			(022) tax
+			(023) ld       #0x8
+			(024) add      x
+			(025) tax
+			(026) ld       #0x7
+			(027) add      x
+			(028) tax
+			(029) ld       #0x6
+			(030) add      x
+			(031) tax
+			(032) ld       #0x5
+			(033) add      x
+			(034) tax
+			(035) ld       #0x4
+			(036) add      x
+			(037) tax
+			(038) ld       #0x3
+			(039) add      x
+			(040) tax
+			(041) ld       #0x2
+			(042) add      x
+			(043) tax
+			(044) ld       #0x1
+			(045) add      x
+			(046) jeq      #0x0             jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0xf
+			(029) st       M[14]
+			(030) ld       #0x40
+			(031) st       M[15]
+			(032) ldx      M[15]
+			(033) ldb      [x + 0]
+			(034) st       M[15]
+			(035) ldx      M[15]
+			(036) ld       M[14]
+			(037) add      x
+			(038) st       M[15]
+			(039) ldx      M[15]
+			(040) ld       M[13]
+			(041) add      x
+			(042) st       M[15]
+			(043) ldx      M[15]
+			(044) ld       M[12]
+			(045) add      x
+			(046) st       M[15]
+			(047) ldx      M[15]
+			(048) ld       M[11]
+			(049) add      x
+			(050) st       M[15]
+			(051) ldx      M[15]
+			(052) ld       M[10]
+			(053) add      x
+			(054) st       M[15]
+			(055) ldx      M[15]
+			(056) ld       M[9]
+			(057) add      x
+			(058) st       M[15]
+			(059) ldx      M[15]
+			(060) ld       M[8]
+			(061) add      x
+			(062) st       M[15]
+			(063) ldx      M[15]
+			(064) ld       M[7]
+			(065) add      x
+			(066) st       M[15]
+			(067) ldx      M[15]
+			(068) ld       M[6]
+			(069) add      x
+			(070) st       M[15]
+			(071) ldx      M[15]
+			(072) ld       M[5]
+			(073) add      x
+			(074) st       M[15]
+			(075) ldx      M[15]
+			(076) ld       M[4]
+			(077) add      x
+			(078) st       M[15]
+			(079) ldx      M[15]
+			(080) ld       M[3]
+			(081) add      x
+			(082) st       M[15]
+			(083) ldx      M[15]
+			(084) ld       M[2]
+			(085) add      x
+			(086) st       M[15]
+			(087) ldx      M[15]
+			(088) ld       M[1]
+			(089) add      x
+			(090) st       M[15]
+			(091) ldx      M[15]
+			(092) ld       M[0]
+			(093) add      x
+			(094) st       M[15]
+			(095) ld       #0x0
+			(096) st       M[0]
+			(097) ldx      M[0]
+			(098) ld       M[15]
+			(099) jeq      x                jt 100	jf 101
+			(100) ret      #262144
+			(101) ret      #0
+			',
+	},
+	{
+		name => '16_memregs_before_tcp_EN10MB',
+		DLT => 'EN10MB',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+tcp[64]))))))))))))))==0'],
+		opt => '
+			(000) ldxb     4*([14]&0xf)
+			(001) ldb      [x + 78]
+			(002) tax
+			(003) ld       #0xf
+			(004) add      x
+			(005) tax
+			(006) ld       #0xe
+			(007) add      x
+			(008) tax
+			(009) ld       #0xd
+			(010) add      x
+			(011) tax
+			(012) ld       #0xc
+			(013) add      x
+			(014) tax
+			(015) ld       #0xb
+			(016) add      x
+			(017) tax
+			(018) ld       #0xa
+			(019) add      x
+			(020) tax
+			(021) ld       #0x9
+			(022) add      x
+			(023) tax
+			(024) ld       #0x8
+			(025) add      x
+			(026) tax
+			(027) ld       #0x7
+			(028) add      x
+			(029) tax
+			(030) ld       #0x6
+			(031) add      x
+			(032) tax
+			(033) ld       #0x5
+			(034) add      x
+			(035) tax
+			(036) ld       #0x4
+			(037) add      x
+			(038) tax
+			(039) ld       #0x3
+			(040) add      x
+			(041) tax
+			(042) ld       #0x2
+			(043) add      x
+			(044) tax
+			(045) ld       #0x1
+			(046) add      x
+			(047) jeq      #0x0             jt 48	jf 49
+			(048) ret      #262144
+			(049) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0xf
+			(029) st       M[14]
+			(030) ld       #0x40
+			(031) st       M[15]
+			(032) ldxb     4*([14]&0xf)
+			(033) ld       M[15]
+			(034) add      x
+			(035) tax
+			(036) ldb      [x + 14]
+			(037) st       M[15]
+			(038) ldx      M[15]
+			(039) ld       M[14]
+			(040) add      x
+			(041) st       M[15]
+			(042) ldx      M[15]
+			(043) ld       M[13]
+			(044) add      x
+			(045) st       M[15]
+			(046) ldx      M[15]
+			(047) ld       M[12]
+			(048) add      x
+			(049) st       M[15]
+			(050) ldx      M[15]
+			(051) ld       M[11]
+			(052) add      x
+			(053) st       M[15]
+			(054) ldx      M[15]
+			(055) ld       M[10]
+			(056) add      x
+			(057) st       M[15]
+			(058) ldx      M[15]
+			(059) ld       M[9]
+			(060) add      x
+			(061) st       M[15]
+			(062) ldx      M[15]
+			(063) ld       M[8]
+			(064) add      x
+			(065) st       M[15]
+			(066) ldx      M[15]
+			(067) ld       M[7]
+			(068) add      x
+			(069) st       M[15]
+			(070) ldx      M[15]
+			(071) ld       M[6]
+			(072) add      x
+			(073) st       M[15]
+			(074) ldx      M[15]
+			(075) ld       M[5]
+			(076) add      x
+			(077) st       M[15]
+			(078) ldx      M[15]
+			(079) ld       M[4]
+			(080) add      x
+			(081) st       M[15]
+			(082) ldx      M[15]
+			(083) ld       M[3]
+			(084) add      x
+			(085) st       M[15]
+			(086) ldx      M[15]
+			(087) ld       M[2]
+			(088) add      x
+			(089) st       M[15]
+			(090) ldx      M[15]
+			(091) ld       M[1]
+			(092) add      x
+			(093) st       M[15]
+			(094) ldx      M[15]
+			(095) ld       M[0]
+			(096) add      x
+			(097) st       M[15]
+			(098) ld       #0x0
+			(099) st       M[0]
+			(100) ldx      M[0]
+			(101) ld       M[15]
+			(102) jeq      x                jt 103	jf 104
+			(103) ret      #262144
+			(104) ret      #0
+			',
+	},
+	{
+		name => '16_memregs_before_link_IEEE802_11',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0'],
+		opt => '
+			(000) ldb      [64]
+			(001) tax
+			(002) ld       #0xf
+			(003) add      x
+			(004) tax
+			(005) ld       #0xe
+			(006) add      x
+			(007) tax
+			(008) ld       #0xd
+			(009) add      x
+			(010) tax
+			(011) ld       #0xc
+			(012) add      x
+			(013) tax
+			(014) ld       #0xb
+			(015) add      x
+			(016) tax
+			(017) ld       #0xa
+			(018) add      x
+			(019) tax
+			(020) ld       #0x9
+			(021) add      x
+			(022) tax
+			(023) ld       #0x8
+			(024) add      x
+			(025) tax
+			(026) ld       #0x7
+			(027) add      x
+			(028) tax
+			(029) ld       #0x6
+			(030) add      x
+			(031) tax
+			(032) ld       #0x5
+			(033) add      x
+			(034) tax
+			(035) ld       #0x4
+			(036) add      x
+			(037) tax
+			(038) ld       #0x3
+			(039) add      x
+			(040) tax
+			(041) ld       #0x2
+			(042) add      x
+			(043) tax
+			(044) ld       #0x1
+			(045) add      x
+			(046) jeq      #0x0             jt 47	jf 48
+			(047) ret      #262144
+			(048) ret      #0
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0xf
+			(029) st       M[14]
+			(030) ld       #0x40
+			(031) st       M[15]
+			(032) ldx      M[15]
+			(033) ldb      [x + 0]
+			(034) st       M[15]
+			(035) ldx      M[15]
+			(036) ld       M[14]
+			(037) add      x
+			(038) st       M[15]
+			(039) ldx      M[15]
+			(040) ld       M[13]
+			(041) add      x
+			(042) st       M[15]
+			(043) ldx      M[15]
+			(044) ld       M[12]
+			(045) add      x
+			(046) st       M[15]
+			(047) ldx      M[15]
+			(048) ld       M[11]
+			(049) add      x
+			(050) st       M[15]
+			(051) ldx      M[15]
+			(052) ld       M[10]
+			(053) add      x
+			(054) st       M[15]
+			(055) ldx      M[15]
+			(056) ld       M[9]
+			(057) add      x
+			(058) st       M[15]
+			(059) ldx      M[15]
+			(060) ld       M[8]
+			(061) add      x
+			(062) st       M[15]
+			(063) ldx      M[15]
+			(064) ld       M[7]
+			(065) add      x
+			(066) st       M[15]
+			(067) ldx      M[15]
+			(068) ld       M[6]
+			(069) add      x
+			(070) st       M[15]
+			(071) ldx      M[15]
+			(072) ld       M[5]
+			(073) add      x
+			(074) st       M[15]
+			(075) ldx      M[15]
+			(076) ld       M[4]
+			(077) add      x
+			(078) st       M[15]
+			(079) ldx      M[15]
+			(080) ld       M[3]
+			(081) add      x
+			(082) st       M[15]
+			(083) ldx      M[15]
+			(084) ld       M[2]
+			(085) add      x
+			(086) st       M[15]
+			(087) ldx      M[15]
+			(088) ld       M[1]
+			(089) add      x
+			(090) st       M[15]
+			(091) ldx      M[15]
+			(092) ld       M[0]
+			(093) add      x
+			(094) st       M[15]
+			(095) ld       #0x0
+			(096) st       M[0]
+			(097) ldx      M[0]
+			(098) ld       M[15]
+			(099) jeq      x                jt 100	jf 101
+			(100) ret      #262144
+			(101) ret      #0
+			',
+	},
+	# "16_memregs_before_tcp_IEEE802_11" is a reject test.
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -31200,30 +31807,7 @@ my @filter_reject_tests = (
 		errstr => errstr_too_many_regs,
 	},
 
-	{
-		name => '15_memregs_before_tcp_IEEE802_11',
-		DLT => 'IEEE802_11',
-		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+tcp[64])))))))))))))==0',
-		errstr => errstr_too_many_regs,
-	},
-	{
-		name => '16_memregs_before_link_EN10MB',
-		DLT => 'EN10MB',
-		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0',
-		errstr => errstr_too_many_regs,
-	},
-	{
-		name => '16_memregs_before_tcp_EN10MB',
-		DLT => 'EN10MB',
-		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+tcp[64]))))))))))))))==0',
-		errstr => errstr_too_many_regs,
-	},
-	{
-		name => '16_memregs_before_link_IEEE802_11',
-		DLT => 'IEEE802_11',
-		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+link[64]))))))))))))))==0',
-		errstr => errstr_too_many_regs,
-	},
+	# gen_load_internal() -> gen_abs_offset_varpart() -> alloc_reg()
 	{
 		name => '16_memregs_before_tcp_IEEE802_11',
 		DLT => 'IEEE802_11',

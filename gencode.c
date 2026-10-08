@@ -7692,7 +7692,6 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
     bpf_u_int32 size)
 {
 	int size_code;
-	int regno = alloc_reg(cstate);
 
 	switch (size) {
 
@@ -7932,8 +7931,8 @@ gen_load_internal(compiler_state_t *cstate, int proto, struct arth *inst,
 	 */
 	free_reg_arth(cstate, inst);
 
-	inst->regno = regno;
-	sappend(inst->s, NEW_STMT_ST_M(cstate, regno));
+	alloc_reg_arth(cstate, inst);
+	sappend(inst->s, NEW_STMT_ST_M(cstate, inst->regno));
 
 	return inst;
 }
