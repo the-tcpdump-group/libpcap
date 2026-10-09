@@ -29176,6 +29176,547 @@ my @filter_accept_blocks = (
 			',
 	},
 	# "16_memregs_before_tcp_IEEE802_11" is a reject test.
+
+	# Prove that gen_loadi_internal() allocates at most one scratch memory register.
+	# gen_loadi_internal() -> alloc_reg_arth() -> alloc_reg()
+	{
+		name => '16_arth_imm',
+		DLT => 'IEEE802_11',
+		aliases => ['1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+16)))))))))))))) != 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ld       #0x3
+			(005) st       M[2]
+			(006) ld       #0x4
+			(007) st       M[3]
+			(008) ld       #0x5
+			(009) st       M[4]
+			(010) ld       #0x6
+			(011) st       M[5]
+			(012) ld       #0x7
+			(013) st       M[6]
+			(014) ld       #0x8
+			(015) st       M[7]
+			(016) ld       #0x9
+			(017) st       M[8]
+			(018) ld       #0xa
+			(019) st       M[9]
+			(020) ld       #0xb
+			(021) st       M[10]
+			(022) ld       #0xc
+			(023) st       M[11]
+			(024) ld       #0xd
+			(025) st       M[12]
+			(026) ld       #0xe
+			(027) st       M[13]
+			(028) ld       #0xf
+			(029) st       M[14]
+			(030) ld       #0x10
+			(031) st       M[15]
+			(032) ldx      M[15]
+			(033) ld       M[14]
+			(034) add      x
+			(035) st       M[15]
+			(036) ldx      M[15]
+			(037) ld       M[13]
+			(038) add      x
+			(039) st       M[15]
+			(040) ldx      M[15]
+			(041) ld       M[12]
+			(042) add      x
+			(043) st       M[15]
+			(044) ldx      M[15]
+			(045) ld       M[11]
+			(046) add      x
+			(047) st       M[15]
+			(048) ldx      M[15]
+			(049) ld       M[10]
+			(050) add      x
+			(051) st       M[15]
+			(052) ldx      M[15]
+			(053) ld       M[9]
+			(054) add      x
+			(055) st       M[15]
+			(056) ldx      M[15]
+			(057) ld       M[8]
+			(058) add      x
+			(059) st       M[15]
+			(060) ldx      M[15]
+			(061) ld       M[7]
+			(062) add      x
+			(063) st       M[15]
+			(064) ldx      M[15]
+			(065) ld       M[6]
+			(066) add      x
+			(067) st       M[15]
+			(068) ldx      M[15]
+			(069) ld       M[5]
+			(070) add      x
+			(071) st       M[15]
+			(072) ldx      M[15]
+			(073) ld       M[4]
+			(074) add      x
+			(075) st       M[15]
+			(076) ldx      M[15]
+			(077) ld       M[3]
+			(078) add      x
+			(079) st       M[15]
+			(080) ldx      M[15]
+			(081) ld       M[2]
+			(082) add      x
+			(083) st       M[15]
+			(084) ldx      M[15]
+			(085) ld       M[1]
+			(086) add      x
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[0]
+			(090) add      x
+			(091) st       M[15]
+			(092) ld       #0x0
+			(093) st       M[0]
+			(094) ldx      M[0]
+			(095) ld       M[15]
+			(096) jeq      x                jt 97	jf 98
+			(097) ret      #0
+			(098) ret      #262144
+			',
+	},
+
+	# Prove that gen_loadlen() allocates at most one scratch memory register.
+	# gen_loadlen() -> alloc_reg_arth() -> alloc_reg()
+	{
+		name => '16_arth_len',
+		DLT => 'IEEE802_11',
+		aliases => ['len+(len+(len+(len+(len+(len+(len+(len+(len+(len+(len+(len+(len+(len+(len+len)))))))))))))) != 0'],
+		opt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) st       M[1]
+			(003) st       M[2]
+			(004) st       M[3]
+			(005) st       M[4]
+			(006) st       M[5]
+			(007) st       M[6]
+			(008) st       M[7]
+			(009) st       M[8]
+			(010) st       M[9]
+			(011) st       M[10]
+			(012) st       M[11]
+			(013) st       M[12]
+			(014) st       M[13]
+			(015) tax
+			(016) add      x
+			(017) tax
+			(018) ld       M[13]
+			(019) add      x
+			(020) tax
+			(021) ld       M[12]
+			(022) add      x
+			(023) tax
+			(024) ld       M[11]
+			(025) add      x
+			(026) tax
+			(027) ld       M[10]
+			(028) add      x
+			(029) tax
+			(030) ld       M[9]
+			(031) add      x
+			(032) tax
+			(033) ld       M[8]
+			(034) add      x
+			(035) tax
+			(036) ld       M[7]
+			(037) add      x
+			(038) tax
+			(039) ld       M[6]
+			(040) add      x
+			(041) tax
+			(042) ld       M[5]
+			(043) add      x
+			(044) tax
+			(045) ld       M[4]
+			(046) add      x
+			(047) tax
+			(048) ld       M[3]
+			(049) add      x
+			(050) tax
+			(051) ld       M[2]
+			(052) add      x
+			(053) tax
+			(054) ld       M[1]
+			(055) add      x
+			(056) tax
+			(057) ld       M[0]
+			(058) add      x
+			(059) jeq      #0x0             jt 60	jf 61
+			(060) ret      #0
+			(061) ret      #262144
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       #pktlen
+			(003) st       M[1]
+			(004) ld       #pktlen
+			(005) st       M[2]
+			(006) ld       #pktlen
+			(007) st       M[3]
+			(008) ld       #pktlen
+			(009) st       M[4]
+			(010) ld       #pktlen
+			(011) st       M[5]
+			(012) ld       #pktlen
+			(013) st       M[6]
+			(014) ld       #pktlen
+			(015) st       M[7]
+			(016) ld       #pktlen
+			(017) st       M[8]
+			(018) ld       #pktlen
+			(019) st       M[9]
+			(020) ld       #pktlen
+			(021) st       M[10]
+			(022) ld       #pktlen
+			(023) st       M[11]
+			(024) ld       #pktlen
+			(025) st       M[12]
+			(026) ld       #pktlen
+			(027) st       M[13]
+			(028) ld       #pktlen
+			(029) st       M[14]
+			(030) ld       #pktlen
+			(031) st       M[15]
+			(032) ldx      M[15]
+			(033) ld       M[14]
+			(034) add      x
+			(035) st       M[15]
+			(036) ldx      M[15]
+			(037) ld       M[13]
+			(038) add      x
+			(039) st       M[15]
+			(040) ldx      M[15]
+			(041) ld       M[12]
+			(042) add      x
+			(043) st       M[15]
+			(044) ldx      M[15]
+			(045) ld       M[11]
+			(046) add      x
+			(047) st       M[15]
+			(048) ldx      M[15]
+			(049) ld       M[10]
+			(050) add      x
+			(051) st       M[15]
+			(052) ldx      M[15]
+			(053) ld       M[9]
+			(054) add      x
+			(055) st       M[15]
+			(056) ldx      M[15]
+			(057) ld       M[8]
+			(058) add      x
+			(059) st       M[15]
+			(060) ldx      M[15]
+			(061) ld       M[7]
+			(062) add      x
+			(063) st       M[15]
+			(064) ldx      M[15]
+			(065) ld       M[6]
+			(066) add      x
+			(067) st       M[15]
+			(068) ldx      M[15]
+			(069) ld       M[5]
+			(070) add      x
+			(071) st       M[15]
+			(072) ldx      M[15]
+			(073) ld       M[4]
+			(074) add      x
+			(075) st       M[15]
+			(076) ldx      M[15]
+			(077) ld       M[3]
+			(078) add      x
+			(079) st       M[15]
+			(080) ldx      M[15]
+			(081) ld       M[2]
+			(082) add      x
+			(083) st       M[15]
+			(084) ldx      M[15]
+			(085) ld       M[1]
+			(086) add      x
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[0]
+			(090) add      x
+			(091) st       M[15]
+			(092) ld       #0x0
+			(093) st       M[0]
+			(094) ldx      M[0]
+			(095) ld       M[15]
+			(096) jeq      x                jt 97	jf 98
+			(097) ret      #0
+			(098) ret      #262144
+			',
+	},
+
+	# Prove that gen_loadi_internal() does not leak a scratch memory register.
+	# gen_loadi_internal() -> alloc_reg_arth() -> alloc_reg()
+	{
+		name => '17_arth_imm',
+		DLT => 'RAW',
+		aliases => ['1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17 != 0'],
+		opt => '
+			(000) ret      #262144
+			',
+		unopt => '
+			(000) ld       #0x1
+			(001) st       M[0]
+			(002) ld       #0x2
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       #0x3
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[1]
+			(012) add      x
+			(013) st       M[2]
+			(014) ld       #0x4
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) add      x
+			(019) st       M[3]
+			(020) ld       #0x5
+			(021) st       M[4]
+			(022) ldx      M[4]
+			(023) ld       M[3]
+			(024) add      x
+			(025) st       M[4]
+			(026) ld       #0x6
+			(027) st       M[5]
+			(028) ldx      M[5]
+			(029) ld       M[4]
+			(030) add      x
+			(031) st       M[5]
+			(032) ld       #0x7
+			(033) st       M[6]
+			(034) ldx      M[6]
+			(035) ld       M[5]
+			(036) add      x
+			(037) st       M[6]
+			(038) ld       #0x8
+			(039) st       M[7]
+			(040) ldx      M[7]
+			(041) ld       M[6]
+			(042) add      x
+			(043) st       M[7]
+			(044) ld       #0x9
+			(045) st       M[8]
+			(046) ldx      M[8]
+			(047) ld       M[7]
+			(048) add      x
+			(049) st       M[8]
+			(050) ld       #0xa
+			(051) st       M[9]
+			(052) ldx      M[9]
+			(053) ld       M[8]
+			(054) add      x
+			(055) st       M[9]
+			(056) ld       #0xb
+			(057) st       M[10]
+			(058) ldx      M[10]
+			(059) ld       M[9]
+			(060) add      x
+			(061) st       M[10]
+			(062) ld       #0xc
+			(063) st       M[11]
+			(064) ldx      M[11]
+			(065) ld       M[10]
+			(066) add      x
+			(067) st       M[11]
+			(068) ld       #0xd
+			(069) st       M[12]
+			(070) ldx      M[12]
+			(071) ld       M[11]
+			(072) add      x
+			(073) st       M[12]
+			(074) ld       #0xe
+			(075) st       M[13]
+			(076) ldx      M[13]
+			(077) ld       M[12]
+			(078) add      x
+			(079) st       M[13]
+			(080) ld       #0xf
+			(081) st       M[14]
+			(082) ldx      M[14]
+			(083) ld       M[13]
+			(084) add      x
+			(085) st       M[14]
+			(086) ld       #0x10
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[14]
+			(090) add      x
+			(091) st       M[15]
+			(092) ld       #0x11
+			(093) st       M[0]
+			(094) ldx      M[0]
+			(095) ld       M[15]
+			(096) add      x
+			(097) st       M[0]
+			(098) ld       #0x0
+			(099) st       M[1]
+			(100) ldx      M[1]
+			(101) ld       M[0]
+			(102) jeq      x                jt 103	jf 104
+			(103) ret      #0
+			(104) ret      #262144
+			',
+	},
+
+	# Prove that gen_loadlen() does not leak a scratch memory register.
+	# gen_loadlen() -> alloc_reg_arth() -> alloc_reg()
+	{
+		name => '17_arth_len',
+		DLT => 'RAW',
+		aliases => ['len+len+len+len+len+len+len+len+len+len+len+len+len+len+len+len+len != 0'],
+		opt => '
+			(000) ld       #pktlen
+			(001) tax
+			(002) add      x
+			(003) add      x
+			(004) add      x
+			(005) add      x
+			(006) add      x
+			(007) add      x
+			(008) add      x
+			(009) add      x
+			(010) add      x
+			(011) add      x
+			(012) add      x
+			(013) add      x
+			(014) add      x
+			(015) add      x
+			(016) add      x
+			(017) add      x
+			(018) jeq      #0x0             jt 19	jf 20
+			(019) ret      #0
+			(020) ret      #262144
+			',
+		unopt => '
+			(000) ld       #pktlen
+			(001) st       M[0]
+			(002) ld       #pktlen
+			(003) st       M[1]
+			(004) ldx      M[1]
+			(005) ld       M[0]
+			(006) add      x
+			(007) st       M[1]
+			(008) ld       #pktlen
+			(009) st       M[2]
+			(010) ldx      M[2]
+			(011) ld       M[1]
+			(012) add      x
+			(013) st       M[2]
+			(014) ld       #pktlen
+			(015) st       M[3]
+			(016) ldx      M[3]
+			(017) ld       M[2]
+			(018) add      x
+			(019) st       M[3]
+			(020) ld       #pktlen
+			(021) st       M[4]
+			(022) ldx      M[4]
+			(023) ld       M[3]
+			(024) add      x
+			(025) st       M[4]
+			(026) ld       #pktlen
+			(027) st       M[5]
+			(028) ldx      M[5]
+			(029) ld       M[4]
+			(030) add      x
+			(031) st       M[5]
+			(032) ld       #pktlen
+			(033) st       M[6]
+			(034) ldx      M[6]
+			(035) ld       M[5]
+			(036) add      x
+			(037) st       M[6]
+			(038) ld       #pktlen
+			(039) st       M[7]
+			(040) ldx      M[7]
+			(041) ld       M[6]
+			(042) add      x
+			(043) st       M[7]
+			(044) ld       #pktlen
+			(045) st       M[8]
+			(046) ldx      M[8]
+			(047) ld       M[7]
+			(048) add      x
+			(049) st       M[8]
+			(050) ld       #pktlen
+			(051) st       M[9]
+			(052) ldx      M[9]
+			(053) ld       M[8]
+			(054) add      x
+			(055) st       M[9]
+			(056) ld       #pktlen
+			(057) st       M[10]
+			(058) ldx      M[10]
+			(059) ld       M[9]
+			(060) add      x
+			(061) st       M[10]
+			(062) ld       #pktlen
+			(063) st       M[11]
+			(064) ldx      M[11]
+			(065) ld       M[10]
+			(066) add      x
+			(067) st       M[11]
+			(068) ld       #pktlen
+			(069) st       M[12]
+			(070) ldx      M[12]
+			(071) ld       M[11]
+			(072) add      x
+			(073) st       M[12]
+			(074) ld       #pktlen
+			(075) st       M[13]
+			(076) ldx      M[13]
+			(077) ld       M[12]
+			(078) add      x
+			(079) st       M[13]
+			(080) ld       #pktlen
+			(081) st       M[14]
+			(082) ldx      M[14]
+			(083) ld       M[13]
+			(084) add      x
+			(085) st       M[14]
+			(086) ld       #pktlen
+			(087) st       M[15]
+			(088) ldx      M[15]
+			(089) ld       M[14]
+			(090) add      x
+			(091) st       M[15]
+			(092) ld       #pktlen
+			(093) st       M[0]
+			(094) ldx      M[0]
+			(095) ld       M[15]
+			(096) add      x
+			(097) st       M[0]
+			(098) ld       #0x0
+			(099) st       M[1]
+			(100) ldx      M[1]
+			(101) ld       M[0]
+			(102) jeq      x                jt 103	jf 104
+			(103) ret      #0
+			(104) ret      #262144
+			',
+	},
 );
 
 # In filter_apply_blocks each test block always generates two tests: optimized
@@ -31815,6 +32356,7 @@ my @filter_reject_tests = (
 		errstr => errstr_too_many_regs,
 	},
 
+	# Prove that gen_loadi_internal() allocates at least one scratch memory register.
 	# gen_loadi_internal() -> alloc_reg_arth() -> alloc_reg()
 	{
 		name => '17_memregs_before_link_EN10MB',
@@ -31838,6 +32380,15 @@ my @filter_reject_tests = (
 		name => '17_memregs_before_tcp_IEEE802_11',
 		DLT => 'IEEE802_11',
 		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+tcp[64])))))))))))))))==0',
+		errstr => errstr_too_many_regs,
+	},
+
+	# Prove that gen_loadlen() allocates at least one scratch memory register.
+	# gen_loadlen() -> alloc_reg_arth() -> alloc_reg()
+	{
+		name => '16_memregs_before_len',
+		DLT => 'IEEE802_11',
+		expr => '1+(2+(3+(4+(5+(6+(7+(8+(9+(10+(11+(12+(13+(14+(15+(16+len)))))))))))))))==0',
 		errstr => errstr_too_many_regs,
 	},
 );
