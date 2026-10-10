@@ -1381,6 +1381,19 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 {
 	struct pcap_linux	*handlep = handle->priv;
 
+	/*
+	 * On Linux 4.20 and later, pcap_setdirection_linux() sets
+	 * PACKET_IGNORE_OUTGOING for PCAP_D_IN, so outgoing packets
+	 * never reach user-space. No duplicates or wrong-direction
+	 * packets need to be suppressed here, because none show up.
+	 * All conditions below evaluate to false, so the function
+	 * returns 1.
+	 *
+	 * Otherwise, if the kernel does not support that option, or
+	 * the user selected something other than PCAP_D_IN, the code
+	 * below suppresses duplicates and packets going the wrong
+	 * direction.
+	 */
 	if (sll->sll_pkttype == PACKET_OUTGOING) {
 		/*
 		 * Outgoing packet.
@@ -1990,11 +2003,49 @@ pcapint_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 static int
 pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 {
+#if defined(PACKET_IGNORE_OUTGOING)
+	pcap_direction_t old_direction = handle->direction;
+	unsigned int ignore_outgoing;
+	const char *direction_name;
+#endif
+
 	/*
 	 * It's guaranteed, at this point, that d is a valid
 	 * direction value.
 	 */
 	handle->direction = d;
+
+#if defined(PACKET_IGNORE_OUTGOING)
+	switch (d) {
+
+	case PCAP_D_IN:
+		ignore_outgoing = 1;
+		direction_name = "incoming only";
+		break;
+
+	case PCAP_D_OUT:
+		ignore_outgoing = 0;
+		direction_name = "outgoing only";
+		break;
+
+	default:
+		ignore_outgoing = 0;
+		direction_name = "incoming and outgoing";
+		break;
+	}
+
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_IGNORE_OUTGOING,
+	    &ignore_outgoing, sizeof(ignore_outgoing)) == -1 &&
+	    errno != ENOPROTOOPT)
+	{
+		handle->direction = old_direction;
+		pcapint_fmt_errmsg_for_errno(handle->errbuf,
+		    sizeof(handle->errbuf), errno,
+		    "Cannot set direction to \"%s\"", direction_name);
+		return PCAP_ERROR;
+	}
+#endif
+
 	return 0;
 }
 
