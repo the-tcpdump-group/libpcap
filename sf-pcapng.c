@@ -650,6 +650,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "more than %u interfaces in the file",
 				    0x80000000U);
+				ps->ifcount--;
 				return (0);
 			}
 
@@ -681,6 +682,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "more than %u interfaces in the file",
 				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
+				ps->ifcount--;
 				return (0);
 			}
 			new_ifaces = realloc(ps->ifaces, new_ifaces_size * sizeof (struct pcap_ng_if));
@@ -693,6 +695,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "out of memory for per-interface information (%u interfaces)",
 			    ps->ifcount);
+			ps->ifcount--;
 			return (0);
 		}
 		ps->ifaces_size = new_ifaces_size;
@@ -713,8 +716,10 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	 * how to interpret the time stamps for this interface.
 	 */
 	if (process_idb_options(p, cursor, &tsresol, &tsoffset, &is_binary,
-	    errbuf) == -1)
+	    errbuf) == -1) {
+		ps->ifcount--;
 		return (0);
+	}
 
 	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
 	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
