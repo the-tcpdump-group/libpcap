@@ -207,9 +207,9 @@
  */
 
 /*
- * 18 is used for DLT_PFSYNC in OpenBSD, NetBSD, DragonFly BSD and
- * macOS; don't use it for anything else.  (FreeBSD uses 121, which
- * collides with DLT_HHDLC, even though it doesn't use 18 for
+ * 18 is used for DLT_PFSYNC in OpenBSD, NetBSD, DragonFly BSD, macOS, and
+ * QNX; don't use it for anything else.  (FreeBSD and MidnightBSD use 121,
+ * which collides with DLT_HHDLC, even though it doesn't use 18 for
  * anything and doesn't appear to have ever used it for anything.)
  *
  * We define it as 18 on those platforms; it is, unfortunately, used
@@ -218,7 +218,11 @@
  * value that we assigned to LINKTYPE_PFSYNC on all remaining
  * platforms.
  */
-#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+#if defined(__OpenBSD__) || \
+    defined(__NetBSD__) || \
+    defined(__DragonFly__) || \
+    defined(__APPLE__) || \
+    defined(__QNX__)
 #define DLT_PFSYNC	18
 #endif
 
@@ -399,12 +403,14 @@
  * versions might not have done mapping, in which case they would
  * have written them out with a link-layer header type of 121.)
  *
+ * MidnightBSD has copied the above assignment too.
+ *
  * OpenBSD, from which pf came, however, uses 18 for DLT_PFSYNC;
  * its libpcap does no DLT_ <-> LINKTYPE_ mapping, so it would
  * write out DLT_PFSYNC dump files with use 18 as the link-layer
  * header type.
  *
- * NetBSD, DragonFly BSD, and Darwin also use 18 for DLT_PFSYNC; in
+ * NetBSD, DragonFly BSD, Darwin, and QNX also use 18 for DLT_PFSYNC; in
  * current versions, their libpcaps do DLT_ <-> LINKTYPE_ mapping,
  * mapping DLT_PFSYNC to a LINKTYPE_PFSYNC value of 246, so they
  * should write out DLT_PFSYNC dump files with 246 as the link-layer
@@ -414,9 +420,9 @@
  *
  * We'll define DLT_PFSYNC as:
  *
- *    18 on NetBSD, OpenBSD, DragonFly BSD, and Darwin;
+ *    18 on NetBSD, OpenBSD, DragonFly BSD, Darwin, and QNX;
  *
- *    121 on FreeBSD;
+ *    121 on FreeBSD and MidnightBSD;
  *
  *    246 everywhere else.
  *
@@ -1278,8 +1284,20 @@
  * DLT_PFSYNC has different values on different platforms, and all of
  * them collide with something used elsewhere.  On platforms that
  * don't already define it, define it as 246.
+ *
+ * Historically this test condition has been a Boolean NOT of a Boolean OR of
+ * the test conditions for code points 18 and 121.  This will generate a
+ * compiler warning on an "everywhere else" OS if DLT_PFSYNC has already been
+ * defined before including this header.  If this problem does not exist or has
+ * a better solution, it would make more sense to test for !defined(DLT_PFSYNC)
+ * instead.
  */
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__DragonFly__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && \
+    !defined(__OpenBSD__) && \
+    !defined(__NetBSD__) && \
+    !defined(__DragonFly__) && \
+    !defined(__APPLE__) && \
+    !defined(__QNX__)
 #define DLT_PFSYNC		246
 #endif
 

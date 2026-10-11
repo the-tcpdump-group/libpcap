@@ -35323,7 +35323,7 @@ $DLTnames{
 	16
 } = 'PPP_BSDOS';
 $DLTnames{
-	$^O eq 'openbsd' || $^O eq 'netbsd' || $^O eq 'dragonfly' || $^O eq 'darwin' ? 18 :
+	$^O eq 'openbsd' || $^O eq 'netbsd' || $^O eq 'dragonfly' || $^O eq 'darwin' || $^O eq 'nto' ? 18 :
 	$^O eq 'freebsd' || $^O eq 'midnightbsd' ? 121 :
 	246
 } = 'PFSYNC';
