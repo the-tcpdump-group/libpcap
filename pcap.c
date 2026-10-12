@@ -537,6 +537,30 @@ pcap_free_tstamp_types(int *tstamp_type_list)
 }
 
 /*
+ * Attempt to grow the packet buffer to the specified size.
+ *
+ * p points to the pcap_t for which the buffer should be grown.
+ * bufsize is the desired new buffer size.
+ * errbuf is filled in if the attempt fails.
+ *
+ * Returns 1 on success and 0 on failure.
+ */
+int
+pcapint_grow_buffer(pcap_t *p, u_int bufsize, char *errbuf)
+{
+	void *bigger_buffer;
+
+	bigger_buffer = realloc(p->buffer, bufsize);
+	if (bigger_buffer == NULL) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		return (0);
+	}
+	p->buffer = bigger_buffer;
+	p->bufsize = bufsize;
+	return (1);
+}
+
+/*
  * Default one-shot callback; overridden for capture types where the
  * packet data cannot be guaranteed to be available after the callback
  * returns, so that a copy must be made.

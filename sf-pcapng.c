@@ -330,19 +330,13 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		 * No - make it big enough, unless it's too big, in
 		 * which case we fail.
 		 */
-		void *bigger_buffer;
-
 		if (bhdr.total_length > ps->max_blocksize) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", bhdr.total_length,
 			    ps->max_blocksize);
 			return (-1);
 		}
-		bigger_buffer = realloc(p->buffer, bhdr.total_length);
-		if (bigger_buffer == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		if (!pcapint_grow_buffer(p, bhdr.total_length, errbuf))
 			return (-1);
-		}
-		p->buffer = bigger_buffer;
 	}
 
 	/*

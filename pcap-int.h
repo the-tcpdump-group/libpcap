@@ -424,6 +424,17 @@ struct oneshot_userdata {
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+/*
+ * Attempt to grow the packet buffer to the specified size.
+ *
+ * p points to the pcap_t whose buffer should be increased in size.
+ * bufsize is the new buffer size.
+ * errbuf is filled in if the attempt fails.
+ *
+ * Returns 1 on success, 0 on failure.
+ */
+int	pcapint_grow_buffer(pcap_t *p, u_int bufsize, char *errbuf);
+
 int	pcapint_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
 /*
