@@ -655,6 +655,8 @@ PCAP_SOCKET sock_open(const char *host, struct addrinfo *addrinfo,
 		{
 			tempaddrinfo = addrs_to_try[i].info;
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+			sock = sock_create_socket(tempaddrinfo, errbuf,
+			    errbuflen);
 			break;
 #endif
 			/*
