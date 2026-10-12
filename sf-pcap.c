@@ -484,24 +484,6 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 }
 
 /*
- * Grow the packet buffer to the specified size.
- */
-static int
-grow_buffer(pcap_t *p, u_int bufsize)
-{
-	void *bigger_buffer;
-
-	bigger_buffer = realloc(p->buffer, bufsize);
-	if (bigger_buffer == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-		return (0);
-	}
-	p->buffer = bigger_buffer;
-	p->bufsize = bufsize;
-	return (1);
-}
-
-/*
  * Read and return the next packet from the savefile.  Return the header
  * in hdr and a pointer to the contents in data.  Return 1 on success, 0
  * if there were no more packets, and -1 on an error.
@@ -669,7 +651,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Grow the buffer to the snapshot length.
 			 */
-			if (!grow_buffer(p, p->snapshot))
+			if (!pcapint_grow_buffer(p, p->snapshot, p->errbuf))
 				return (-1);
 		}
 
@@ -754,7 +736,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			if (new_bufsize > (u_int)p->snapshot)
 				new_bufsize = p->snapshot;
 
-			if (!grow_buffer(p, new_bufsize))
+			if (!pcapint_grow_buffer(p, new_bufsize, p->errbuf))
 				return (-1);
 		}
 
