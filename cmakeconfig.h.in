@@ -8,6 +8,9 @@
 /* Enable optimizer debugging */
 #cmakedefine BDEBUG 1
 
+/* Define to 1 if DAG transmit support is enabled */
+#cmakedefine ENABLE_DAG_TX 1
+
 /* Define to 1 if remote packet capture is to be supported */
 #cmakedefine ENABLE_REMOTE 1
 
@@ -17,20 +20,20 @@
 /* define if we have the AIX getprotobyname_r() */
 #cmakedefine HAVE_AIX_GETPROTOBYNAME_R 1
 
-/* Define to 1 if you have the `asprintf' function. */
+/* Define to 1 if you have the 'asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
 /* Define to 1 if you have the '__builtin_bswap16' compiler builtin. */
-#cmakedefine HAVE_BUILTIN_BSWAP16
+#cmakedefine HAVE_BUILTIN_BSWAP16 1
 
 /* Define to 1 if you have the '__builtin_bswap32' compiler builtin. */
-#cmakedefine HAVE_BUILTIN_BSWAP32
+#cmakedefine HAVE_BUILTIN_BSWAP32 1
 
 /* Define to 1 if you have the '__builtin_bswap64' compiler builtin. */
-#cmakedefine HAVE_BUILTIN_BSWAP64
+#cmakedefine HAVE_BUILTIN_BSWAP64 1
 
 /* Define to 1 if you have the '__builtin_ctz' compiler builtin. */
-#cmakedefine HAVE_BUILTIN_CTZ
+#cmakedefine HAVE_BUILTIN_CTZ 1
 
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
@@ -38,25 +41,26 @@
 /* define if you have vdag_set_device_info() */
 #cmakedefine HAVE_DAG_VDAG 1
 
-/* Define to 1 if DAG transmit support is enabled */
-#cmakedefine ENABLE_DAG_TX 1
-
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #cmakedefine HAVE_DECL_ETHER_HOSTTON 1
 
-/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
+/* Define to 1 if you have the declaration of 'SKF_AD_VLAN_TAG_PRESENT', and
+   to 0 if you don't. */
+#cmakedefine01 HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT
+
+/* Define to 1 if 'dl_module_id_1' is a member of 'dl_hp_ppa_info_t'. */
 #cmakedefine HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1 1
 
-/* Define to 1 if the system has the type `dl_passive_req_t'. */
+/* Define to 1 if the system has the type 'dl_passive_req_t'. */
 #cmakedefine HAVE_DL_PASSIVE_REQ_T 1
 
-/* Define to 1 if you have the `ether_hostton' function. */
+/* Define to 1 if you have the 'ether_hostton' function. */
 #cmakedefine HAVE_ETHER_HOSTTON 1
 
-/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+/* Define to 1 if fseeko (and ftello) are declared in stdio.h. */
 #cmakedefine HAVE_FSEEKO 1
 
-/* Define to 1 if you have the `getspnam' function. */
+/* Define to 1 if you have the 'getspnam' function. */
 #cmakedefine HAVE_GETSPNAM 1
 
 /* Define to 1 if using GNU libc. */
@@ -119,10 +123,7 @@
 /* define if you have the Myricom SNF API */
 #cmakedefine HAVE_SNF_API 1
 
-/* Define to 1 if you have the `snprintf' function. */
-#cmakedefine HAVE_SNPRINTF 1
-
-/* Define to 1 if the system has the type `socklen_t'. */
+/* Define to 1 if the system has the type 'socklen_t'. */
 #cmakedefine HAVE_SOCKLEN_T 1
 
 /* On Solaris */
@@ -137,38 +138,34 @@
 /* define if we have the Solaris getprotobyname_r() */
 #cmakedefine HAVE_SOLARIS_GETPROTOBYNAME_R 1
 
-/* Define to 1 if you have the `strlcat' function. */
+/* Define to 1 if you have the 'strlcat' function. */
 #cmakedefine HAVE_STRLCAT 1
 
-/* Define to 1 if you have the `strlcpy' function. */
+/* Define to 1 if you have the 'strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
 
-/* Define to 1 if you have the `strtok_r' function. */
+/* Define to 1 if you have the 'strtok_r' function. */
 #cmakedefine HAVE_STRTOK_R 1
 
-/* Define to 1 if the system has the type `struct BPF_TIMEVAL'. */
+/* Define to 1 if the system has the type 'struct BPF_TIMEVAL'. */
 #cmakedefine HAVE_STRUCT_BPF_TIMEVAL 1
 
-/* Define to 1 if the system has the type `struct ether_addr'. */
+/* Define to 1 if the system has the type 'struct ether_addr'. */
 #cmakedefine HAVE_STRUCT_ETHER_ADDR 1
 
-/* Define to 1 if `msg_control' is a member of `struct msghdr'. */
+/* Define to 1 if 'msg_control' is a member of 'struct msghdr'. */
 #cmakedefine HAVE_STRUCT_MSGHDR_MSG_CONTROL 1
 
-/* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
+/* Define to 1 if 'msg_flags' is a member of 'struct msghdr'. */
 #cmakedefine HAVE_STRUCT_MSGHDR_MSG_FLAGS 1
 
-/* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
+/* Define to 1 if 'hci_channel' is a member of 'struct sockaddr_hci'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL 1
 
-/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
+/* Define to 1 if 'sa_len' is a member of 'struct sockaddr'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_SA_LEN 1
 
-/* Define to 1 if you have the declaration of `SKF_AD_VLAN_TAG_PRESENT', and
-   to 0 if you don't. */
-#cmakedefine01 HAVE_DECL_SKF_AD_VLAN_TAG_PRESENT
-
-/* Define to 1 if `bRequestType' is a member of `struct
+/* Define to 1 if 'bRequestType' is a member of 'struct
    usbdevfs_ctrltransfer'. */
 #cmakedefine HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 
@@ -190,16 +187,16 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
 
-/* Define to 1 if you have the `vasprintf' function. */
+/* Define to 1 if you have the 'vasprintf' function. */
 #cmakedefine HAVE_VASPRINTF 1
 
-/* Define to 1 if you have the `vsnprintf' function. */
-#cmakedefine HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the `vsyslog' function. */
+/* Define to 1 if you have the 'vsyslog' function. */
 #cmakedefine HAVE_VSYSLOG 1
 
-/* Define to 1 if you have the `_wcserror_s' function. */
+/* Define to 1 if you have the <zone.h> header file. */
+#cmakedefine HAVE_ZONE_H 1
+
+/* Define to 1 if you have the '_wcserror_s' function. */
 #cmakedefine HAVE__WCSERROR_S 1
 
 /* define if __atomic_load_n is supported by the compiler */
@@ -271,10 +268,10 @@
 /* target host supports RDMA sniffing */
 #cmakedefine PCAP_SUPPORT_RDMASNIFF 1
 
-/* The size of `time_t', as computed by sizeof. */
+/* The size of 'time_t', as computed by sizeof. */
 #cmakedefine SIZEOF_TIME_T @SIZEOF_TIME_T@
 
-/* The size of `void *', as computed by sizeof. */
+/* The size of 'void *', as computed by sizeof. */
 #cmakedefine SIZEOF_VOID_P @SIZEOF_VOID_P@
 
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
@@ -291,8 +288,8 @@
 /* Number of bits in a file offset, on hosts where this is settable. */
 #cmakedefine _FILE_OFFSET_BITS 1
 
-/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+/* Define to 1 if necessary to make fseeko visible. */
 #cmakedefine _LARGEFILE_SOURCE 1
 
-/* Define for large files, on AIX-style hosts. */
+/* Define to 1 on platforms where this makes off_t a 64-bit type. */
 #cmakedefine _LARGE_FILES 1
