@@ -587,6 +587,8 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
     struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
+	bpf_u_int32 new_ifcount;
+	bpf_u_int32 new_if_index;
 	uint64_t tsresol;
 	int64_t tsoffset;
 	int is_binary;
@@ -596,12 +598,18 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	/*
 	 * Count this interface.
 	 */
-	ps->ifcount++;
+	new_ifcount = ps->ifcount + 1;
+
+	/*
+	 * The array of interfaces is 0-based, so the current number of
+	 * interfaces will be the index of the new interface.
+	 */
+	new_if_index = ps->ifcount;
 
 	/*
 	 * Grow the array of per-interface information as necessary.
 	 */
-	if (ps->ifcount > ps->ifaces_size) {
+	if (new_ifcount > ps->ifaces_size) {
 		/*
 		 * We need to grow the array.
 		 */
@@ -686,14 +694,14 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 			 */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "out of memory for per-interface information (%u interfaces)",
-			    ps->ifcount);
+			    new_ifcount);
 			return (0);
 		}
 		ps->ifaces_size = new_ifaces_size;
 		ps->ifaces = new_ifaces;
 	}
 
-	ps->ifaces[ps->ifcount - 1].snaplen = idbp->snaplen;
+	ps->ifaces[new_if_index].snaplen = idbp->snaplen;
 
 	/*
 	 * Set the default time stamp resolution and offset.
@@ -710,8 +718,8 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	    errbuf) == -1)
 		return (0);
 
-	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
-	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
+	ps->ifaces[new_if_index].tsresol = tsresol;
+	ps->ifaces[new_if_index].tsoffset = tsoffset;
 
 	/*
 	 * Determine whether we're scaling up or down or not
@@ -722,20 +730,20 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 		 * The resolution is the resolution the user wants,
 		 * so we don't have to do scaling.
 		 */
-		ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+		ps->ifaces[new_if_index].scale_type = PASS_THROUGH;
 	} else if (tsresol > ps->user_tsresol) {
 		/*
 		 * The resolution is greater than what the user wants,
 		 * so we have to scale the timestamps down.
 		 */
 		if (is_binary)
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_BIN;
+			ps->ifaces[new_if_index].scale_type = SCALE_DOWN_BIN;
 		else {
 			/*
 			 * Calculate the scale factor.
 			 */
-			ps->ifaces[ps->ifcount - 1].scale_factor = tsresol/ps->user_tsresol;
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_DEC;
+			ps->ifaces[new_if_index].scale_factor = tsresol/ps->user_tsresol;
+			ps->ifaces[new_if_index].scale_type = SCALE_DOWN_DEC;
 		}
 	} else {
 		/*
@@ -743,15 +751,20 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 		 * so we have to scale the timestamps up.
 		 */
 		if (is_binary)
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_BIN;
+			ps->ifaces[new_if_index].scale_type = SCALE_UP_BIN;
 		else {
 			/*
 			 * Calculate the scale factor.
 			 */
-			ps->ifaces[ps->ifcount - 1].scale_factor = ps->user_tsresol/tsresol;
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_DEC;
+			ps->ifaces[new_if_index].scale_factor = ps->user_tsresol/tsresol;
+			ps->ifaces[new_if_index].scale_type = SCALE_UP_DEC;
 		}
 	}
+
+	/*
+	 * We've succeeded, so update the interface count.
+	 */
+	ps->ifcount = new_ifcount;
 	return (1);
 }
 
