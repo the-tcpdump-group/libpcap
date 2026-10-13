@@ -122,6 +122,8 @@ fi
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
+AC_CHECK_HEADERS_ONCE([sysexits.h])
+
 #
 # Get the size of a void *, to determine whether this is a 32-bit
 # or 64-bit build.

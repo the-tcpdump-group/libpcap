@@ -715,6 +715,7 @@ endif(NOT HAVE_UNISTD_H)
 if(NOT WIN32)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 endif(NOT WIN32)
+check_include_file(sysexits.h HAVE_SYSEXITS_H)
 
 #
 # Check for various system functions.  These are not compiler builtins, so it

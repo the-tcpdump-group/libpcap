@@ -1,4 +1,3 @@
-// for "pcap-int.h"
 #include <config.h>
 
 #include <inttypes.h>
@@ -10,14 +9,9 @@
 
 #ifdef _WIN32
   #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
-#if defined(_WIN32) || defined(__QNX__)
   #include "unix.h"
 #else
-  #include <sysexits.h>
+  #include <unistd.h>
 #endif
 
 #include "pcap/pcap.h"
@@ -28,6 +22,7 @@
 // pcapint_parsesrcstr_ex() and pcapint_createsrcstr_ex()
 #include "pcap-int.h"
 #include "pcap-util.h" // PCAP_BSWAP_16() etc.
+#include "portability.h"
 
 static const char *program_name;
 

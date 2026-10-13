@@ -29,6 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <config.h>
+
 #include "varattrs.h"
 
 #include <pcap.h>
@@ -38,23 +40,15 @@
 #include <stdarg.h>
 #ifdef _WIN32
   #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
-#if defined(_WIN32) || defined(__QNX__)
   #include "unix.h"
 #else
-  #include <sysexits.h>
+  #include <unistd.h>
 #endif
 
 #include <errno.h>
 
 #include "pcap/funcattrs.h"
-
-#ifdef _WIN32
-  #include "portability.h"
-#endif
+#include "portability.h"
 
 #define MAXIMUM_SNAPLEN		262144
 

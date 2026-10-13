@@ -29,7 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <config.h> // for "pcap-int.h"
+#include <config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,19 +38,15 @@
 
 #ifdef _WIN32
   #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
-#if defined(_WIN32) || defined(__QNX__)
   #include "unix.h"
 #else
-  #include <sysexits.h>
+  #include <unistd.h>
 #endif
 
 #include "pcap/pcap.h"
 #include "pcap/bpf.h"
 #include "pcap-int.h" // PCAP_ISDIGIT() etc.
+#include "portability.h"
 
 /*
  * For functions that take an int it is not practicable to test every possible

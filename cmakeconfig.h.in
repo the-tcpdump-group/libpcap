@@ -169,6 +169,9 @@
    usbdevfs_ctrltransfer'. */
 #cmakedefine HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 
+/* Define to 1 if you have the <sysexits.h> header file. */
+#cmakedefine HAVE_SYSEXITS_H 1
+
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
 #cmakedefine HAVE_SYS_BUFMOD_H 1
 
