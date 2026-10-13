@@ -116,7 +116,7 @@ or
 .BR pcap_perror ()
 may be called with
 .I p
-as an argument to fetch or display an message giving additional details
+as an argument to fetch or display a message giving additional details
 about the problem that might be useful for debugging the problem if it's
 unexpected.
 .LP
