@@ -550,8 +550,16 @@ atomuse(const struct stmt *s)
 	case BPF_MISC:
 		return BPF_MISCOP(c) == BPF_TXA ? X_ATOM : A_ATOM;
 	}
-	abort();
+
+	/*
+	 * BPF_CLASS() evaluates to [0x00, 0x07], each of which is a case
+	 * above, hence this function always returns from within the switch
+	 * statement.  At least one compiler (TinyCC) fails to see this and
+	 * without the mock last-resort return statement below would generate
+	 * a "function might return no value" warning.
+	 */
 	/* NOTREACHED */
+	return -1;
 }
 
 /*
