@@ -16,7 +16,34 @@
 
 #include "varattrs.h"
 #include "pcap/funcattrs.h"
+
+#ifdef _WIN32
 #include "portability.h"
+#endif
+
+/* For Solaris before 11. */
+#ifndef timeradd
+#define timeradd(a, b, result)                       \
+  do {                                               \
+    (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;    \
+    (result)->tv_usec = (a)->tv_usec + (b)->tv_usec; \
+    if ((result)->tv_usec >= 1000000) {              \
+      ++(result)->tv_sec;                            \
+      (result)->tv_usec -= 1000000;                  \
+    }                                                \
+  } while (0)
+#endif /* timeradd */
+#ifndef timersub
+#define timersub(a, b, result)                       \
+  do {                                               \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;    \
+    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec; \
+    if ((result)->tv_usec < 0) {                     \
+      --(result)->tv_sec;                            \
+      (result)->tv_usec += 1000000;                  \
+    }                                                \
+  } while (0)
+#endif /* timersub */
 
 int main(int argc _U_, char **argv _U_)
 {
