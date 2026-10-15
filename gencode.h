@@ -422,6 +422,8 @@ struct icode {
 int bpf_optimize(struct icode *, char *);
 void bpf_set_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
+void PCAP_NORETURN scanner_fatal_error(compiler_state_t *, const char *);
+void pcapint_prime_buffer_stack(void *yyscanner);
 
 int finish_parse(compiler_state_t *, struct block *);
 char *sdup(compiler_state_t *, const char *);

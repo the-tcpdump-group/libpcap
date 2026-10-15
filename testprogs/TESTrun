@@ -109,6 +109,7 @@ my $test_timeout;
 my $filtertest;
 my $translatetest;
 my $enumeratetest;
+my $oomtest;
 
 sub usage_text {
 	my $detailed = shift;
@@ -138,7 +139,8 @@ binary works.  If it is set (on macOS there is no default \"timeout\" and the
 binary from GNU coreutils package may be available as \"gtimeout\" only), the
 custom binary must work.
 
-FILTERTEST_BIN, TRANSLATETEST_BIN, ENUMERATETEST_BIN and CONFIG_H allow to
+FILTERTEST_BIN, TRANSLATETEST_BIN, ENUMERATETEST_BIN, OOMTEST_BIN and CONFIG_H
+allow to
 specify custom paths to respective files if the current working directory is
 not the directory where the build output files go to.  Otherwise by default
 this script finds the files for both Autoconf and CMake, both in-tree and
@@ -380,6 +382,10 @@ sub skip_no_networks_casecmp {
 }
 
 sub skip_no_translatetest {
+	return skip_os ('msys');
+}
+
+sub skip_no_oomtest {
 	return skip_os ('msys');
 }
 
@@ -35645,6 +35651,22 @@ my @enumerate_tests = (
 	},
 );
 
+# In oom_tests each element defines one test and is a hash, where the
+# keys have the following meaning:
+#
+# * name (mandatory, string): the test name (this is the first argument
+#   to oomtest), also used as the test name.
+# * expect (mandatory, [multi-line] string): the expected output.
+
+my @oom_tests = (
+	# Fail every allocation of pcap_compile() in turn and check that it
+	# terminates cleanly and leaks nothing.
+	{
+		name => 'compile',
+		expect => 'OK',
+	},
+);
+
 # Minimalistic BPF assembler and cbpf-savefile generator follow.
 
 use constant {
@@ -37956,6 +37978,16 @@ sub run_enumerate_test {
 	);
 }
 
+sub run_oom_test {
+	my $test = shift;
+	file_put_contents mytmpfile ($filename_expected), $test->{expected};
+	return run_generic_accept_test (
+		$oomtest,
+		'--', # for consistency with common_translatetest_args()
+		$test->{name},
+	);
+}
+
 sub run_filter_reject_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
@@ -38172,6 +38204,7 @@ foreach my $test (@filter_reject_tests) {
 }
 
 my $skip_no_translatetest = skip_no_translatetest;
+my $skip_no_oomtest = skip_no_oomtest;
 foreach my $block (@translate_accept_blocks) {
 	my $descr = 'parse accept block';
 	validate_generic_accept_block $descr, $block;
@@ -38255,6 +38288,30 @@ foreach my $test (@enumerate_tests) {
 	}
 }
 
+foreach my $test (@oom_tests) {
+	my $descr = 'oom test';
+	assert_nonempty_strings $descr, $test, 'name', 'expect';
+	my $label = accept_test_label 'oom', $test->{name};
+	next if defined $only_one && $only_one ne $label;
+	my $skip_reason =
+		$skip_no_oomtest ne '' ? $skip_no_oomtest :
+		undef;
+	if (defined $skip_reason) {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_skip_test,
+			skip => $print_skipped ? $skip_reason : '',
+		};
+	} else {
+		push @ready_to_run, {
+			label => $label,
+			func => \&run_oom_test,
+			name => $test->{name},
+			expected => normalise_expected_output $test->{expect},
+		};
+	}
+}
+
 foreach my $test (@fcode_tests) {
 	my $descr = 'fcode validate test';
 	assert_named $descr, $test;
@@ -38323,6 +38380,7 @@ $diff_flags = get_diff_flags;
 $filtertest = detect_testprog 'filtertest', 'FILTERTEST_BIN';
 $translatetest = detect_testprog 'translatetest', 'TRANSLATETEST_BIN';
 $enumeratetest = detect_testprog 'enumeratetest', 'ENUMERATETEST_BIN';
+$oomtest = detect_testprog 'oomtest', 'OOMTEST_BIN';
 
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking

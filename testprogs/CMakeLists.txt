@@ -41,6 +41,10 @@ if(NOT WIN32)
   # pcapint_opcode_without_k()
   # pcapint_valid_insn()
   add_test_executable(enumeratetest)
+  # oomtest defines its own malloc()/free() and relies on link-time
+  # interposition, which requires linking against the static library;
+  # on Windows the test executables link against the shared library.
+  add_test_executable(oomtest)
   # On Windows, pcap_fileno() is deprecated and pcap_get_selectable_fd()
   # is not available
   add_test_executable(opendeadtest)

@@ -32,6 +32,14 @@
 #include "diag-control.h"
 
 /*
+ * Flex invokes YY_FATAL_ERROR() for internal failures, such as running
+ * out of memory while growing its buffer stack.  The default handler
+ * prints the message on stderr and calls exit(), which a library must
+ * not do; turn such failures into ordinary compilation errors instead.
+ */
+#define YY_FATAL_ERROR(msg) scanner_fatal_error(yyget_extra(yyscanner), msg)
+
+/*
  * Convert string to 32-bit unsigned integer; the string starts at
  * string and is string_len bytes long.
  *
@@ -473,6 +481,41 @@ tcp-cwr			{ yylval->h = 0x80; return NUM; }
  * Turn diagnostics back on, so we check the code that we've written.
  */
 DIAG_ON_FLEX
+
+/*
+ * Pre-allocate the scanner's buffer stack.
+ *
+ * Flex's yy_scan_buffer() allocates the buffer state and only then, in
+ * yy_switch_to_buffer() -> yyensure_buffer_stack(), allocates the buffer
+ * stack that the state must be installed into.  If that second allocation
+ * fails, Flex reports a fatal error (see YY_FATAL_ERROR above) and the
+ * just-allocated buffer state is leaked: nothing references it yet.
+ *
+ * Allocate the buffer stack here instead, before any buffer state exists,
+ * so that installing a buffer state can no longer fail after it has been
+ * allocated.  Two slots are requested up front because yyensure_buffer_stack()
+ * grows a one-slot stack as soon as a buffer is installed (it keeps a spare
+ * slot for pushing), and that growth is a second allocation inside
+ * yy_scan_buffer().
+ */
+void
+pcapint_prime_buffer_stack(void *yyscanner)
+{
+	struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
+
+	if (yyg->yy_buffer_stack != NULL)
+		return;
+
+	yyg->yy_buffer_stack_max = 2;
+	yyg->yy_buffer_stack_top = 0;
+	yyg->yy_buffer_stack = (struct yy_buffer_state **)yyalloc(
+	    yyg->yy_buffer_stack_max * sizeof(struct yy_buffer_state *),
+	    yyscanner);
+	if (yyg->yy_buffer_stack == NULL)
+		YY_FATAL_ERROR("out of dynamic memory in pcapint_prime_buffer_stack()");
+	memset(yyg->yy_buffer_stack, 0,
+	    yyg->yy_buffer_stack_max * sizeof(struct yy_buffer_state *));
+}
 
 #define FORMAT_OVERFLOWS_32_BITS "%s number %.*s overflows 32 bits"
 

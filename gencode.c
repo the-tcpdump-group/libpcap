@@ -544,6 +544,15 @@ struct chunk_align {
 
 struct _compiler_state {
 	jmp_buf top_ctx;
+	/*
+	 * Jump target for fatal errors inside the scanner, such as
+	 * allocation failures in the scanner's own data structures.
+	 * This is separate from top_ctx because the code generator
+	 * routines replace top_ctx with their own setjmp() targets while
+	 * they run, so it may point into an already-returned frame when
+	 * the scanner is running.
+	 */
+	jmp_buf scan_ctx;
 	pcap_t *bpf_pcap;
 	int error_set;
 
@@ -761,6 +770,26 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	    fmt, ap);
 	va_end(ap);
 	longjmp(cstate->top_ctx, 1);
+	/*NOTREACHED*/
+#ifdef _AIX
+	PCAP_UNREACHABLE
+#endif /* _AIX */
+}
+
+/*
+ * Called by the scanner (see YY_FATAL_ERROR in scanner.l) for a fatal
+ * error, such as an allocation failure in the scanner's own data
+ * structures.  The default flex handler prints the message and calls
+ * exit(), which a library must not do; instead, report the error the
+ * way the scanner reports other errors and abandon the scan and parse.
+ * pcap_compile() sets up a setjmp() for cstate->scan_ctx around the
+ * scan and parse phase and treats this as a compilation failure.
+ */
+void PCAP_NORETURN
+scanner_fatal_error(compiler_state_t *cstate, const char *msg)
+{
+	bpf_set_error(cstate, "%s", msg);
+	longjmp(cstate->scan_ctx, 1);
 	/*NOTREACHED*/
 #ifdef _AIX
 	PCAP_UNREACHABLE
@@ -1419,6 +1448,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	compiler_state_t cstate;
 	yyscan_t scanner = NULL;
 	YY_BUFFER_STATE in_buffer = NULL;
+	char *scan_buf = NULL;
+	size_t scan_buf_len = 0;
 	int rc;
 
 	/*
@@ -1497,13 +1528,80 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		rc = PCAP_ERROR;
 		goto quit;
 	}
-	in_buffer = pcap__scan_string(buf ? buf : "", scanner);
 
 	/*
 	 * Associate the compiler state with the lexical analyzer
-	 * state.
+	 * state; this must be done before anything that can fail inside
+	 * the scanner, so that the scanner can report errors through
+	 * the compiler state (see YY_FATAL_ERROR in scanner.l).
 	 */
 	pcap_set_extra(&cstate, scanner);
+
+	/*
+	 * Set up the scanner input ourselves rather than with
+	 * pcap__scan_string(), so that we own the buffer memory; the
+	 * generated yy_scan_bytes() leaks its copy of the string if the
+	 * allocation of the buffer state fails after the copy was made.
+	 *
+	 * pcap__scan_buffer() requires two trailing EOB characters.
+	 */
+	scan_buf_len = strlen(buf ? buf : "") + 2;
+	scan_buf = malloc(scan_buf_len);
+	if (scan_buf == NULL) {
+		(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "can't allocate scanner buffer");
+		pcap_lex_destroy(scanner);
+		freechunks(&cstate);
+		return (PCAP_ERROR);
+	}
+	memcpy(scan_buf, buf ? buf : "", scan_buf_len - 2);
+	scan_buf[scan_buf_len - 2] = '\0';
+	scan_buf[scan_buf_len - 1] = '\0';
+
+	/*
+	 * Catch fatal errors in the scanner and parser, e.g. allocation
+	 * failures in the scanner's data structures, and turn them into
+	 * a compilation failure.  This is a different setjmp() from the
+	 * ones used by the code generator routines, as those replace
+	 * top_ctx while they run.
+	 */
+	if (setjmp(cstate.scan_ctx)) {
+		/*
+		 * The scanner may have been only partially set up, so just
+		 * destroy it completely; that releases everything it
+		 * allocated.  in_buffer may or may not have been set (and
+		 * its value is indeterminate if we jumped out after it was
+		 * set), so the buffer is not deleted separately here.
+		 *
+		 * The error message has already been put into p->errbuf.
+		 */
+		if (cstate.ai != NULL)
+			freeaddrinfo(cstate.ai);
+		pcap_lex_destroy(scanner);
+		free(scan_buf);
+		freechunks(&cstate);
+		return (PCAP_ERROR);
+	}
+
+	/*
+	 * Allocate the scanner's buffer stack before creating the scan
+	 * buffer, so that installing the scan buffer into the stack cannot
+	 * fail after the buffer state has been allocated (which would leak
+	 * it); see pcapint_prime_buffer_stack() in scanner.l.
+	 */
+	pcapint_prime_buffer_stack(scanner);
+
+	in_buffer = pcap__scan_buffer(scan_buf, scan_buf_len, scanner);
+	if (in_buffer == NULL) {
+		/*
+		 * Failed, and the scanner didn't consider it a fatal error.
+		 */
+		(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "can't allocate scanner buffer");
+		pcap_lex_destroy(scanner);
+		freechunks(&cstate);
+		return (PCAP_ERROR);
+	}
 
 	if (init_linktype(&cstate, p) == -1) {
 		rc = PCAP_ERROR;
@@ -1578,6 +1676,7 @@ quit:
 		pcap__delete_buffer(in_buffer, scanner);
 	if (scanner != NULL)
 		pcap_lex_destroy(scanner);
+	free(scan_buf);
 
 	/*
 	 * Clean up our own allocated memory.
