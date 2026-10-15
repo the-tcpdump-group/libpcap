@@ -74,7 +74,15 @@ if [ ! -w "$MAKE" ]; then
 	exit 1
 fi
 
-TMP=${TMPDIR:-/tmp}/mkdep$$
+if command -v mktemp >/dev/null 2>&1; then
+	# The ".XXXXXXXX" suffix is reasonably portable, although does not
+	# produce nice file names on all OSes, see the comments in
+	# build_common.sh (not in a release tarball).
+	TMP=`mktemp -t mkdep_Makefile.XXXXXXXX`
+else
+	# This is AIX or some other OS without mktemp(1).
+	TMP=${TMPDIR:-/tmp}/mkdep_Makefile.$$
+fi
 
 trap 'rm -f "$TMP" ; exit 1' HUP INT QUIT PIPE TERM
 
