@@ -29,7 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
+#include <config.h>
 
 #include "rpcapd.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE

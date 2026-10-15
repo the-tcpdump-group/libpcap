@@ -68,6 +68,8 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+#include "portability.h"
+
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_AIX) || defined(sun)
 /* OS with BPF - use BPF */
 #define USE_BPF
@@ -122,7 +124,7 @@ static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 
 /*
@@ -144,10 +146,10 @@ read_infile(char *fname)
 
 	fd = open(fname, O_RDONLY|O_BINARY);
 	if (fd < 0)
-		error("can't open %s: %s", fname, pcap_strerror(errno));
+		error(EX_NOINPUT, "can't open %s: %s", fname, pcap_strerror(errno));
 
 	if (fstat(fd, &buf) < 0)
-		error("can't stat %s: %s", fname, pcap_strerror(errno));
+		error(EX_OSERR, "can't stat %s: %s", fname, pcap_strerror(errno));
 
 	/*
 	 * _read(), on Windows, has an unsigned int byte count and an
@@ -157,17 +159,18 @@ read_infile(char *fname)
 	 * the end of the string.)
 	 */
 	if (buf.st_size > INT_MAX - 1)
-		error("%s is larger than %d bytes; that's too large", fname,
-		    INT_MAX - 1);
+		error(EX_IOERR, "%s is larger than %d bytes; that's too large",
+		    fname, INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
 	if (cp == NULL)
-		error("malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
+		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
 	cc = (int)read(fd, cp, (u_int)buf.st_size);
 	if (cc < 0)
-		error("read %s: %s", fname, pcap_strerror(errno));
+		error(EX_IOERR, "read %s: %s", fname, pcap_strerror(errno));
 	if (cc != buf.st_size)
-		error("short read %s (%d != %d)", fname, cc, (int)buf.st_size);
+		error(EX_IOERR, "short read %s (%d != %d)", fname, cc,
+		    (int)buf.st_size);
 
 	close(fd);
 	/* replace "# comment" with spaces */
@@ -182,7 +185,7 @@ read_infile(char *fname)
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -195,7 +198,7 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
 
@@ -236,7 +239,7 @@ copy_argv(char **argv)
 
 	buf = (char *)malloc(len);
 	if (buf == NULL)
-		error("copy_argv: malloc");
+		error(EX_OSERR, "copy_argv: malloc");
 
 	p = argv;
 	dst = buf;
@@ -263,7 +266,7 @@ main(int argc, char **argv)
 	const char *cmdbuf;
 	pcap_if_t *devlist;
 	pcap_t *pd;
-	int status = 0;
+	int status;
 	int pcap_fd;
 #if defined(USE_BPF)
 	struct bpf_program bad_fcode;
@@ -317,9 +320,10 @@ main(int argc, char **argv)
 		 * finds.
 		 */
 		if (pcap_findalldevs(&devlist, ebuf) == -1)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		if (devlist == NULL)
-			error("no interfaces available for capture");
+			error(EX_UNAVAILABLE,
+			    "no interfaces available for capture");
 		device = strdup(devlist->name);
 		pcap_freealldevs(devlist);
 	}
@@ -349,31 +353,32 @@ main(int argc, char **argv)
 	if (useactivate) {
 		pd = pcap_create(device, ebuf);
 		if (pd == NULL)
-			error("%s: pcap_create() failed: %s", device, ebuf);
+			error(EX_OSERR, "%s: pcap_create() failed: %s",
+			    device, ebuf);
 		status = pcap_set_snaplen(pd, 65535);
 		if (status != 0)
-			error("%s: pcap_set_snaplen failed: %s",
+			error(EX_OSERR, "%s: pcap_set_snaplen failed: %s",
 			    device, pcap_statustostr(status));
 		status = pcap_set_promisc(pd, 1);
 		if (status != 0)
-			error("%s: pcap_set_promisc failed: %s",
+			error(EX_OSERR, "%s: pcap_set_promisc failed: %s",
 			    device, pcap_statustostr(status));
 		if (dorfmon) {
 			status = pcap_set_rfmon(pd, 1);
 			if (status != 0)
-				error("%s: pcap_set_rfmon failed: %s",
+				error(EX_OSERR, "%s: pcap_set_rfmon failed: %s",
 				    device, pcap_statustostr(status));
 		}
 		status = pcap_set_timeout(pd, 1000);
 		if (status != 0)
-			error("%s: pcap_set_timeout failed: %s",
+			error(EX_OSERR, "%s: pcap_set_timeout failed: %s",
 			    device, pcap_statustostr(status));
 		status = pcap_activate(pd);
 		if (status < 0) {
 			/*
 			 * pcap_activate() failed.
 			 */
-			error("%s: %s\n(%s)", device,
+			error(EX_OSERR, "%s: %s\n(%s)", device,
 			    pcap_statustostr(status), pcap_geterr(pd));
 		} else if (status > 0) {
 			/*
@@ -387,7 +392,7 @@ main(int argc, char **argv)
 		*ebuf = '\0';
 		pd = pcap_open_live(device, 65535, 1, 1000, ebuf);
 		if (pd == NULL)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		else if (*ebuf)
 			warning("%s", ebuf);
 	}
@@ -441,12 +446,12 @@ DIAG_ON_UNINITIALIZED_CONST_POINTER
 	 * problem.
 	 */
 	if (pcap_compile(pd, &fcode, cmdbuf, 1, 0) < 0)
-		error("can't compile filter: %s", pcap_geterr(pd));
+		error(EX_DATAERR, "can't compile filter: %s", pcap_geterr(pd));
 	if (pcap_setfilter(pd, &fcode) < 0)
-		error("can't set filter: %s", pcap_geterr(pd));
+		error(EX_OSERR, "can't set filter: %s", pcap_geterr(pd));
 
 	pcap_close(pd);
-	exit(status < 0 ? 1 : 0);
+	exit(EX_OK);
 }
 
 static void
@@ -457,5 +462,5 @@ usage(void)
 	(void)fprintf(stderr,
 	    "Usage: %s [-aI] [ -F file ] [ -i interface ] [ expression ]\n",
 	    program_name);
-	exit(1);
+	exit(EX_USAGE);
 }

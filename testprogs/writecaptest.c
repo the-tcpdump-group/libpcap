@@ -27,6 +27,8 @@ static const char copyright[] _U_ =
 The Regents of the University of California.  All rights reserved.\n";
 #endif
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,15 +49,13 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
-#ifdef _WIN32
-  #include "portability.h"
-#endif
+#include "portability.h"
 
 static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 static char *copy_argv(char **);
 
@@ -117,7 +117,7 @@ parse_interface_number(const char *device)
 			/*
 			 * No, it's not an ordinal.
 			 */
-			error("Invalid adapter index");
+			error(EX_USAGE, "Invalid adapter index");
 		}
 		return (devnum);
 	} else {
@@ -140,7 +140,7 @@ find_interface_by_number(long devnum)
 
 	status = pcap_findalldevs(&devlist, ebuf);
 	if (status < 0)
-		error("%s", ebuf);
+		error(EX_OSERR, "%s", ebuf);
 	/*
 	 * Look for the devnum-th entry in the list of devices (1-based).
 	 */
@@ -148,7 +148,7 @@ find_interface_by_number(long devnum)
 	    i++, dev = dev->next)
 		;
 	if (dev == NULL)
-		error("Invalid adapter index");
+		error(EX_USAGE, "Invalid adapter index");
 	device = strdup(dev->name);
 	pcap_freealldevs(devlist);
 	return (device);
@@ -171,17 +171,17 @@ open_interface(const char *device, int snaplen_set, int snaplen, char *ebuf)
 		 */
 		if (strstr(ebuf, "No such device") != NULL)
 			return (NULL);
-		error("%s", ebuf);
+		error(EX_OSERR, "%s", ebuf);
 	}
 	if (snaplen_set) {
 		status = pcap_set_snaplen(pc, snaplen);
 		if (status != 0)
-			error("%s: pcap_set_snaplen failed: %s",
+			error(EX_OSERR, "%s: pcap_set_snaplen failed: %s",
 			    device, pcap_statustostr(status));
 	}
 	status = pcap_set_timeout(pc, 100);
 	if (status != 0)
-		error("%s: pcap_set_timeout failed: %s",
+		error(EX_OSERR, "%s: pcap_set_timeout failed: %s",
 		    device, pcap_statustostr(status));
 	status = pcap_activate(pc);
 	if (status < 0) {
@@ -190,7 +190,7 @@ open_interface(const char *device, int snaplen_set, int snaplen, char *ebuf)
 		 */
 		cp = pcap_geterr(pc);
 		if (status == PCAP_ERROR)
-			error("%s", cp);
+			error(EX_OSERR, "%s", cp);
 		else if (status == PCAP_ERROR_NO_SUCH_DEVICE) {
 			/*
 			 * Return an error for our caller to handle.
@@ -198,10 +198,10 @@ open_interface(const char *device, int snaplen_set, int snaplen, char *ebuf)
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s\n(%s)",
 			    device, pcap_statustostr(status), cp);
 		} else if (status == PCAP_ERROR_PERM_DENIED && *cp != '\0')
-			error("%s: %s\n(%s)", device,
+			error(EX_OSERR, "%s: %s\n(%s)", device,
 			    pcap_statustostr(status), cp);
 		else
-			error("%s: %s", device,
+			error(EX_OSERR, "%s: %s", device,
 			    pcap_statustostr(status));
 		pcap_close(pc);
 		return (NULL);
@@ -249,6 +249,7 @@ main(int argc, char **argv)
 	const char *dlt_name = NULL;
 	int status;
 	pcap_dumper_t *pdd;
+	int exit_status = EX_OK;
 
 	device = NULL;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
@@ -275,7 +276,8 @@ main(int argc, char **argv)
 		case 's':
 			snaplen = (int)strtol(optarg, &end, 0);
 			if (optarg == end || *end != '\0' || snaplen < 0)
-				error("invalid snaplen %s (must be >= 0)",
+				error(EX_USAGE,
+				    "invalid snaplen %s (must be >= 0)",
 				    optarg);
 			snaplen_set = 1;
 			break;
@@ -299,7 +301,7 @@ main(int argc, char **argv)
 		int i;
 
 		if (pcap_findalldevs(&devlist, ebuf) < 0)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		for (i = 0, dev = devlist; dev != NULL; i++, dev = dev->next) {
 			printf("%d.%s", i+1, dev->name);
 			if (dev->description != NULL)
@@ -312,22 +314,23 @@ main(int argc, char **argv)
 
 	if (device == NULL) {
 		if (pcap_findalldevs(&devlist, ebuf) == -1)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		if (devlist == NULL)
-			error("no interfaces available for capture");
+			error(EX_UNAVAILABLE,
+			    "no interfaces available for capture");
 		device = strdup(devlist->name);
 		pcap_freealldevs(devlist);
 	}
 	if (show_dlt_types) {
 		pd = pcap_create(device, ebuf);
 		if (pd == NULL)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		status = pcap_activate(pd);
 		if (status < 0) {
 			/*
 			 * pcap_activate() failed.
 			 */
-			error("%s: %s\n(%s)", device,
+			error(EX_OSERR, "%s: %s\n(%s)", device,
 			    pcap_statustostr(status), pcap_geterr(pd));
 		}
 		ndlts = pcap_list_datalinks(pd, &dlts);
@@ -335,7 +338,7 @@ main(int argc, char **argv)
 			/*
 			 * pcap_list_datalinks() failed.
 			 */
-			error("%s: %s\n(%s)", device,
+			error(EX_OSERR, "%s: %s\n(%s)", device,
 			    pcap_statustostr(status), pcap_geterr(pd));
 		}
 		for (int i = 0; i < ndlts; i++) {
@@ -352,7 +355,7 @@ main(int argc, char **argv)
 	}
 
 	if (savefile == NULL)
-		error("no savefile specified");
+		error(EX_USAGE, "no savefile specified");
 
 	*ebuf = '\0';
 
@@ -371,7 +374,7 @@ main(int argc, char **argv)
 			 * It's not a number; just report
 			 * the open error and fail.
 			 */
-			error("%s", ebuf);
+			error(EX_USAGE, "%s", ebuf);
 		}
 
 		/*
@@ -385,7 +388,7 @@ main(int argc, char **argv)
 		device = find_interface_by_number(devnum);
 		pd = open_interface(device, snaplen_set, snaplen, ebuf);
 		if (pd == NULL)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 	}
 
 	if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) {
@@ -397,9 +400,9 @@ main(int argc, char **argv)
 	if (dlt_name != NULL) {
 		dlt = pcap_datalink_name_to_val(dlt_name);
 		if (dlt == PCAP_ERROR)
-			error("%s isn't a valid DLT name", dlt_name);
+			error(EX_OSERR, "%s isn't a valid DLT name", dlt_name);
 		if (pcap_set_datalink(pd, dlt) == PCAP_ERROR)
-			error("%s: %s", device, pcap_geterr(pd));
+			error(EX_OSERR, "%s: %s", device, pcap_geterr(pd));
 	}
 
 	/*
@@ -412,15 +415,15 @@ main(int argc, char **argv)
 		cmdbuf = copy_argv(&argv[optind]);
 
 		if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
-			error("%s", pcap_geterr(pd));
+			error(EX_DATAERR, "%s", pcap_geterr(pd));
 
 		if (pcap_setfilter(pd, &fcode) < 0)
-			error("%s", pcap_geterr(pd));
+			error(EX_OSERR, "%s", pcap_geterr(pd));
 	}
 
 	pdd = pcap_dump_open(pd, savefile);
 	if (pdd == NULL)
-		error("%s", pcap_geterr(pd));
+		error(EX_CANTCREAT, "%s", pcap_geterr(pd));
 
 #ifdef _WIN32
 	SetConsoleCtrlHandler(stop_capture, TRUE);
@@ -429,7 +432,7 @@ main(int argc, char **argv)
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
 	if (sigaction(SIGINT, &action, NULL) == -1)
-		error("Can't catch SIGINT: %s\n", strerror(errno));
+		error(EX_OSERR, "Can't catch SIGINT: %s\n", strerror(errno));
 #endif
 
 	printf("Listening on %s, link-type ", device);
@@ -472,13 +475,14 @@ main(int argc, char **argv)
 		 */
 		(void)fprintf(stderr, "%s: pcap_dispatch: %s\n",
 		    program_name, pcap_geterr(pd));
+		exit_status = EX_OSERR;
 	}
 	pcap_close(pd);
 	if (cmdbuf != NULL) {
 		pcap_freecode(&fcode);
 		free(cmdbuf);
 	}
-	exit(status == -1 ? 1 : 0);
+	exit(exit_status);
 }
 
 static void
@@ -486,12 +490,12 @@ usage(void)
 {
 	(void)fprintf(stderr, "Usage: %s -D -L [ -i interface ] [ -s snaplen ] [ -w file ] [ -y dlt ] [expression]\n",
 	    program_name);
-	exit(1);
+	exit(EX_USAGE);
 }
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -504,7 +508,7 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
 
@@ -545,7 +549,7 @@ copy_argv(char **argv)
 
 	buf = (char *)malloc(len);
 	if (buf == NULL)
-		error("copy_argv: malloc");
+		error(EX_OSERR, "copy_argv: malloc");
 
 	p = argv;
 	dst = buf;

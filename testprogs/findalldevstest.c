@@ -44,9 +44,9 @@
 
 static int ifprint(pcap_if_t *d);
 
-#ifdef _WIN32
 #include "portability.h"
 
+#ifdef _WIN32
 /*
  * Generate a string for a Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
@@ -91,19 +91,19 @@ getpass(const char *prompt)
   if (!GetConsoleMode(console_handle, &console_mode)) {
     fprintf(stderr, "Can't get console mode: %s\n",
             win32_strerror(GetLastError()));
-    exit(1);
+    exit(EX_OSERR);
   }
   save_console_mode = console_mode;
   console_mode &= ~ENABLE_ECHO_INPUT;
   if (!SetConsoleMode(console_handle, console_mode)) {
     fprintf(stderr, "Can't set console mode: %s\n",
             win32_strerror(GetLastError()));
-    exit(1);
+    exit(EX_OSERR);
   }
   if (fgets(password, sizeof password, stdin) == NULL) {
     fprintf(stderr, "\n");
     SetConsoleMode(console_handle, save_console_mode);
-    exit(1);
+    exit(EX_IOERR);
   }
   fprintf(stderr, "\n");
   SetConsoleMode(console_handle, save_console_mode);
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
   pcap_if_t *alldevs;
   pcap_if_t *d;
   bpf_u_int32 net, mask;
-  int exit_status = 0;
+  int exit_status = EX_OK;
   char errbuf[PCAP_ERRBUF_SIZE+1];
   struct pcap_rmtauth auth;
   char username[128+1];
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
        */
       fprintf(stderr, "User name: ");
       if (fgets(username, sizeof username, stdin) == NULL)
-        exit(1);
+        exit(EX_IOERR);
       p = strchr(username, '\n');
       if (p != NULL)
         *p = '\0';
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
       if (pcap_findalldevs_ex(argv[1], &auth, &alldevs, errbuf) == -1)
       {
         fprintf(stderr, "Error in pcap_findalldevs_ex: %s\n", errbuf);
-        exit(1);
+        exit(EX_OSERR);
       }
     }
   }
@@ -155,13 +155,13 @@ int main(int argc, char **argv)
     if (pcap_findalldevs(&alldevs, errbuf) == -1)
     {
       fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
-      exit(1);
+      exit(EX_OSERR);
     }
   }
   for(d=alldevs;d;d=d->next)
   {
     if (!ifprint(d))
-      exit_status = 2;
+      exit_status = EX_OSERR;
   }
 
   if (alldevs != NULL)
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
         printf("Preferred device is not on an IPv4 network\n");
       else {
         fprintf(stderr,"Error in pcap_lookupnet: %s\n",errbuf);
-        exit_status = 2;
+        exit_status = EX_OSERR;
       }
     }
     else

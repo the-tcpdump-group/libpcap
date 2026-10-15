@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 			case 'i':
 #ifdef _WIN32
 				printusage(stderr);
-				exit(1);
+				exit(EX_USAGE);
 #else
 				isrunbyinetd = 1;
 				log_to_systemlog = 1;
@@ -326,10 +326,10 @@ int main(int argc, char *argv[])
 #endif
 			case 'h':
 				printusage(stdout);
-				exit(0);
+				exit(EX_OK);
 				/*NOTREACHED*/
 			default:
-				exit(1);
+				exit(EX_USAGE);
 				/*NOTREACHED*/
 		}
 	}
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 	if (isdaemon && isrunbyinetd)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "rpcapd: -d and -i can't be used together");
-		exit(1);
+		exit(EX_USAGE);
 	}
 #endif
 
@@ -348,14 +348,14 @@ int main(int argc, char *argv[])
 	if (pcap_init(PCAP_CHAR_ENC_UTF_8, errbuf) == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-		exit(-1);
+		exit(EX_OSERR);
 	}
 	pcapint_fmt_set_encoding(PCAP_CHAR_ENC_UTF_8);
 
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-		exit(-1);
+		exit(EX_OSERR);
 	}
 
 	if (savefile[0] && fileconf_save(savefile))
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 		sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't create state change event");
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-		exit(2);
+		exit(EX_OSERR);
 	}
 
 	//
@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 		sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't set control handler");
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-		exit(2);
+		exit(EX_OSERR);
 	}
 #else
 	memset(&action, 0, sizeof (action));
@@ -417,7 +417,7 @@ int main(int argc, char *argv[])
 		{
 			rpcapd_log(LOGPRIO_ERROR, "Can't initialize SSL: %s",
 			    errbuf);
-			exit(2);
+			exit(EX_OSERR);
 		}
 	}
 # endif
@@ -448,7 +448,7 @@ int main(int argc, char *argv[])
 			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't dup standard input");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-			exit(2);
+			exit(EX_OSERR);
 		}
 
 		//
@@ -476,7 +476,7 @@ int main(int argc, char *argv[])
 		if (hostlist_copy == NULL)
 		{
 			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
-			exit(0);
+			exit(EX_OSERR);
 		}
 		(void)daemon_serviceloop(sockctrl, 0, hostlist_copy,
 		    nullAuthAllowed, data_port, uses_ssl);
@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
 		//
 		// Nothing more to do.
 		//
-		exit(0);
+		exit(EX_OK);
 	}
 #endif
 
@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
 		// Unix Network Programming, pg 336
 		//
 		if ((pid = fork()) != 0)
-			exit(0);		// Parent terminates
+			exit(EX_OK);		// Parent terminates
 
 		// First child continues
 		// Set daemon mode
@@ -518,7 +518,7 @@ int main(int argc, char *argv[])
 		sigaction(SIGHUP, &action, NULL);
 
 		if ((pid = fork()) != 0)
-			exit(0);		// First child terminates
+			exit(EX_OK);		// First child terminates
 
 		// LINUX WARNING: the current linux implementation of pthreads requires a management thread
 		// to handle some hidden stuff. So, as soon as you create the first thread, two threads are
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
 			rpcapd_log(LOGPRIO_DEBUG, "Unable to start the service");
 
 		// When the previous call returns, the entire application has to be stopped.
-		exit(0);
+		exit(EX_OK);
 #endif
 	}
 	else	// Console mode
@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 
 	// The code should never arrive here (since the main_startup is blocking)
 	//  however this avoids a compiler warning
-	exit(0);
+	exit(EX_OK);
 }
 
 void main_startup(void)
@@ -604,7 +604,7 @@ void main_startup(void)
 		if ((pid = fork()) == 0)	// I am the child
 		{
 			main_active((void *) &activelist[i]);
-			exit(0);
+			exit(EX_OK);
 		}
 #endif
 		i++;
@@ -688,7 +688,7 @@ void main_startup(void)
 			if (sock_info == NULL)
 			{
 				rpcapd_log(LOGPRIO_ERROR, "Can't allocate structure for listen socket");
-				exit(2);
+				exit(EX_OSERR);
 			}
 			sock_info->sock = sock;
 			sock_info->next = listen_socks;
@@ -700,7 +700,7 @@ void main_startup(void)
 		if (listen_socks == NULL)
 		{
 			rpcapd_log(LOGPRIO_ERROR, "Can't listen on any address");
-			exit(2);
+			exit(EX_OSERR);
 		}
 
 		//
@@ -745,7 +745,7 @@ void main_startup(void)
 	// ExitProcess." - the latter appears to be the case, even for
 	// threads waiting on the event for a pcap_t).
 	//
-	exit(0);
+	exit(EX_OK);
 }
 
 #ifdef _WIN32
@@ -893,7 +893,7 @@ accept_connections(void)
 			// on which to wait.
 			//
 			rpcapd_log(LOGPRIO_ERROR, "Too many sockets on which to listen");
-			exit(2);
+			exit(EX_OSERR);
 		}
 		num_events++;
 	}
@@ -905,7 +905,7 @@ accept_connections(void)
 	if (events == NULL)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "Can't allocate array of events which to listen");
-		exit(2);
+		exit(EX_OSERR);
 	}
 
 	//
@@ -927,14 +927,14 @@ accept_connections(void)
 			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't create socket event");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-			exit(2);
+			exit(EX_OSERR);
 		}
 		if (WSAEventSelect(sock_info->sock, event, FD_ACCEPT) == SOCKET_ERROR)
 		{
 			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't setup socket event");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-			exit(2);
+			exit(EX_OSERR);
 		}
 		events[i] = event;
 	}
@@ -953,7 +953,7 @@ accept_connections(void)
 			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 			    "WSAWaitForMultipleEvents failed");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-			exit(2);
+			exit(EX_OSERR);
 		}
 
 		if (ret == WSA_WAIT_EVENT_0)
@@ -992,7 +992,7 @@ accept_connections(void)
 				sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
 				    "WSAEnumNetworkEvents failed");
 				rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
-				exit(2);
+				exit(EX_OSERR);
 			}
 			if (network_events.lNetworkEvents & FD_ACCEPT)
 			{
@@ -1036,7 +1036,7 @@ accept_connections(void)
 			    (unsigned int)FD_SETSIZE)
 			{
 				rpcapd_log(LOGPRIO_ERROR, "Socket FD is too bit for an fd_set");
-				exit(2);
+				exit(EX_OSERR);
 			}
 			num_sock_fds = sock_info->sock + 1;
 		}
@@ -1100,7 +1100,7 @@ accept_connections(void)
 			{
 				rpcapd_log(LOGPRIO_ERROR, "select failed: %s",
 				    strerror(errno));
-				exit(2);
+				exit(EX_OSERR);
 			}
 		}
 
@@ -1316,12 +1316,12 @@ accept_connection(PCAP_SOCKET listen_sock)
 		if (hostlist_copy == NULL)
 		{
 			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
-			exit(0);
+			exit(EX_OSERR);
 		}
 		(void)daemon_serviceloop(sockctrl, 0, hostlist_copy,
 		    nullAuthAllowed, data_port, uses_ssl);
 
-		exit(0);
+		exit(EX_OK);
 	}
 
 	// I am the parent

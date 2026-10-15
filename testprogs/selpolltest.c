@@ -35,6 +35,8 @@ The Regents of the University of California.  All rights reserved.\n";
  * how WaitForMultipleObjects() would work on the event handle for a
  * pcap_t.
  */
+#include <config.h>
+
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,12 +50,14 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+#include "portability.h"
+
 static const char *program_name;
 
 /* Forwards */
 static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 static char *copy_argv(char **);
 
@@ -74,6 +78,7 @@ main(int argc, char **argv)
 	const struct timeval *required_timeout;
 	int status;
 	int packet_count;
+	int exit_status = EX_OK;
 
 	device = NULL;
 	doselect = 0;
@@ -133,16 +138,16 @@ main(int argc, char **argv)
 	}
 	if (device == NULL) {
 		if (pcap_findalldevs(&devlist, ebuf) == -1)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		if (devlist == NULL)
-			error("no interfaces available for capture");
+			error(EX_OSERR, "no interfaces available for capture");
 		device = strdup(devlist->name);
 		pcap_freealldevs(devlist);
 	}
 	*ebuf = '\0';
 	pd = pcap_open_live(device, 65535, 0, 1000, ebuf);
 	if (pd == NULL)
-		error("%s", ebuf);
+		error(EX_OSERR, "%s", ebuf);
 	else if (*ebuf)
 		warning("%s", ebuf);
 	if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) {
@@ -153,9 +158,9 @@ main(int argc, char **argv)
 	cmdbuf = copy_argv(&argv[optind]);
 
 	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
-		error("%s", pcap_geterr(pd));
+		error(EX_DATAERR, "%s", pcap_geterr(pd));
 	if (pcap_setfilter(pd, &fcode) < 0)
-		error("%s", pcap_geterr(pd));
+		error(EX_OSERR, "%s", pcap_geterr(pd));
 
 	if (doselect || dopoll) {
 		/*
@@ -169,7 +174,8 @@ main(int argc, char **argv)
 			    device, mechanism);
 			required_timeout = pcap_get_required_select_timeout(pd);
 			if (required_timeout == NULL)
-				error("select()/poll() isn't supported on %s, even with a timeout",
+				error(EX_OSERR,
+				    "select()/poll() isn't supported on %s, even with a timeout",
 				    device);
 
 			/*
@@ -191,7 +197,7 @@ main(int argc, char **argv)
 
 	if (dononblock) {
 		if (pcap_setnonblock(pd, 1, ebuf) == -1)
-			error("pcap_setnonblock failed: %s", ebuf);
+			error(EX_OSERR, "pcap_setnonblock failed: %s", ebuf);
 	}
 	if (doselect) {
 		for (;;) {
@@ -349,9 +355,10 @@ main(int argc, char **argv)
 		 */
 		(void)fprintf(stderr, "%s: pcap_dispatch: %s\n",
 		    program_name, pcap_geterr(pd));
+		exit_status = EX_OSERR;
 	}
 	pcap_close(pd);
-	exit(status == -1 ? 1 : 0);
+	exit(exit_status);
 }
 
 static void
@@ -367,12 +374,12 @@ usage(void)
 {
 	(void)fprintf(stderr, "Usage: %s [ -sptnq ] [ -i interface ] [expression]\n",
 	    program_name);
-	exit(1);
+	exit(EX_USAGE);
 }
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -385,7 +392,7 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
 
@@ -426,7 +433,7 @@ copy_argv(char **argv)
 
 	buf = (char *)malloc(len);
 	if (buf == NULL)
-		error("copy_argv: malloc");
+		error(EX_OSERR, "copy_argv: malloc");
 
 	p = argv;
 	dst = buf;

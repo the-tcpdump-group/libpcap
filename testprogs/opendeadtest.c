@@ -133,7 +133,7 @@ main(int argc, char **argv)
 		    selectable_fd);
 	}
 	pcap_close(pd);
-	return 0;
+	exit(EX_OK);
 }
 
 static void
@@ -142,7 +142,7 @@ usage(void)
 	(void)fprintf(stderr,
 	    "Usage: %s [ -s snaplen ] <DLT>\n",
 	    program_name);
-	exit(1);
+	exit(EX_USAGE);
 }
 
 /* VARARGS */

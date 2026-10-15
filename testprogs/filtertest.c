@@ -94,7 +94,7 @@ static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(FILE *);
-static void PCAP_NORETURN error(const int, const char *, ...) PCAP_PRINTFLIKE(2, 3);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 
 /*

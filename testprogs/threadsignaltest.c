@@ -27,6 +27,8 @@ static const char copyright[] _U_ =
 The Regents of the University of California.  All rights reserved.\n";
 #endif
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,16 +59,14 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
-#ifdef _WIN32
-  #include "portability.h"
-#endif
+#include "portability.h"
 
 static const char *program_name;
 
 /* Forwards */
 static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 static char *copy_argv(char **);
 
@@ -141,7 +141,7 @@ capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 	action.sa_mask = mask;
 	action.sa_flags = 0;
 	if (sigaction(SIGUSR1, &action, NULL) == -1)
-		error("Can't catch SIGUSR1: %s", strerror(errno));
+		error(EX_OSERR, "Can't catch SIGUSR1: %s", strerror(errno));
 #endif
 
 	printf("Listening on %s\n", device);
@@ -219,30 +219,31 @@ main(int argc, char **argv)
 
 	if (device == NULL) {
 		if (pcap_findalldevs(&devlist, ebuf) == -1)
-			error("%s", ebuf);
+			error(EX_OSERR, "%s", ebuf);
 		if (devlist == NULL)
-			error("no interfaces available for capture");
+			error(EX_UNAVAILABLE,
+			    "no interfaces available for capture");
 		device = strdup(devlist->name);
 		pcap_freealldevs(devlist);
 	}
 	*ebuf = '\0';
 	pd = pcap_create(device, ebuf);
 	if (pd == NULL)
-		error("%s", ebuf);
+		error(EX_OSERR, "%s", ebuf);
 	status = pcap_set_snaplen(pd, 65535);
 	if (status != 0)
-		error("%s: pcap_set_snaplen failed: %s",
+		error(EX_OSERR, "%s: pcap_set_snaplen failed: %s",
 			    device, pcap_statustostr(status));
 	status = pcap_set_timeout(pd, 5*60*1000);
 	if (status != 0)
-		error("%s: pcap_set_timeout failed: %s",
+		error(EX_OSERR, "%s: pcap_set_timeout failed: %s",
 		    device, pcap_statustostr(status));
 	status = pcap_activate(pd);
 	if (status < 0) {
 		/*
 		 * pcap_activate() failed.
 		 */
-		error("%s: %s\n(%s)", device,
+		error(EX_OSERR, "%s: %s\n(%s)", device,
 		    pcap_statustostr(status), pcap_geterr(pd));
 	} else if (status > 0) {
 		/*
@@ -260,22 +261,23 @@ main(int argc, char **argv)
 	cmdbuf = copy_argv(&argv[optind]);
 
 	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
-		error("%s", pcap_geterr(pd));
+		error(EX_DATAERR, "%s", pcap_geterr(pd));
 
 	if (pcap_setfilter(pd, &fcode) < 0)
-		error("%s", pcap_geterr(pd));
+		error(EX_OSERR, "%s", pcap_geterr(pd));
 
 #ifdef _WIN32
 	capture_thread = CreateThread(NULL, 0, capture_thread_func, device,
 	    0, NULL);
 	if (capture_thread == NULL)
-		error("Can't create capture thread: %s",
+		error(EX_OSERR, "Can't create capture thread: %s",
 		    win32_strerror(GetLastError()));
 #else
 	status = pthread_create(&capture_thread, NULL, capture_thread_func,
 	    device);
 	if (status != 0)
-		error("Can't create capture thread: %s", strerror(status));
+		error(EX_OSERR, "Can't create capture thread: %s",
+		    strerror(status));
 #endif
 	sleep_secs(60);
 	printf("Doing pcap_breakloop()\n");
@@ -291,14 +293,16 @@ main(int argc, char **argv)
 #ifdef _WIN32
 		printf("Setting event\n");
 		if (!SetEvent(pcap_getevent(pd)))
-			error("Can't set event for pcap_t: %s",
+			error(EX_OSERR, "Can't set event for pcap_t: %s",
 			    win32_strerror(GetLastError()));
 #else
 		printf("Sending SIGUSR1\n");
 		status = pthread_kill(capture_thread, SIGUSR1);
-		if (status != 0)
+		if (status != 0) {
 			warning("Can't interrupt capture thread: %s",
-			strerror(status));
+			    strerror(status));
+			status = EX_OSERR;
+		}
 #endif
 	}
 
@@ -307,19 +311,19 @@ main(int argc, char **argv)
 	 */
 #ifdef _WIN32
 	if (WaitForSingleObject(capture_thread, INFINITE) == WAIT_FAILED)
-		error("Wait for thread termination failed: %s",
+		error(EX_OSERR, "Wait for thread termination failed: %s",
 		    win32_strerror(GetLastError()));
 	CloseHandle(capture_thread);
 #else
 	status = pthread_join(capture_thread, &retval);
 	if (status != 0)
-		error("Wait for thread termination failed: %s",
+		error(EX_OSERR, "Wait for thread termination failed: %s",
 		    strerror(status));
 #endif
 
 	pcap_close(pd);
 	pcap_freecode(&fcode);
-	exit(status == -1 ? 1 : 0);
+	exit(EX_OK);
 }
 
 static void
@@ -335,12 +339,12 @@ usage(void)
 {
 	(void)fprintf(stderr, "Usage: %s [ -n ] [ -i interface ] [ expression ]\n",
 	    program_name);
-	exit(1);
+	exit(EX_USAGE);
 }
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -353,7 +357,7 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
 
@@ -394,7 +398,7 @@ copy_argv(char **argv)
 
 	buf = (char *)malloc(len);
 	if (buf == NULL)
-		error("copy_argv: malloc");
+		error(EX_OSERR, "copy_argv: malloc");
 
 	p = argv;
 	dst = buf;

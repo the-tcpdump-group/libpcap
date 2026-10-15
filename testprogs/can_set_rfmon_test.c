@@ -27,6 +27,8 @@ static const char copyright[] _U_ =
 The Regents of the University of California.  All rights reserved.\n";
 #endif
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,10 +38,12 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+#include "portability.h"
+
 static const char *program_name;
 
 /* Forwards */
-static void PCAP_NORETURN error(PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(1,2);
+static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 
 int
 main(int argc, char **argv)
@@ -61,23 +65,23 @@ main(int argc, char **argv)
 
 	pd = pcap_create(argv[1], ebuf);
 	if (pd == NULL)
-		error("%s", ebuf);
+		error(EX_OSERR, "%s", ebuf);
 	status = pcap_can_set_rfmon(pd);
 	if (status < 0) {
 		if (status == PCAP_ERROR)
-			error("%s: pcap_can_set_rfmon failed: %s", argv[1],
-			    pcap_geterr(pd));
+			error(EX_OSERR, "%s: pcap_can_set_rfmon failed: %s",
+			    argv[1], pcap_geterr(pd));
 		else
-			error("%s: pcap_can_set_rfmon failed: %s", argv[1],
-			    pcap_statustostr(status));
+			error(EX_OSERR, "%s: pcap_can_set_rfmon failed: %s",
+			    argv[1], pcap_statustostr(status));
 	}
 	printf("%s: Monitor mode %s be set\n", argv[1], status ? "can" : "cannot");
-	return 0;
+	exit(EX_OK);
 }
 
 /* VARARGS */
 static void
-error(const char *fmt, ...)
+error(const int status, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -90,6 +94,6 @@ error(const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	exit(1);
+	exit(status);
 	/* NOTREACHED */
 }
