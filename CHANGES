@@ -13,6 +13,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require config.h to be from the libpcap build.
       Test for <sysexits.h> instead of specific OSes.
       mkdep: Use mktemp(1) if it is available.
+      mkdep: Propagate compiler errors.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
       Fix a dangling register index in "proto[expr]".
