@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -eu
 #
 # Copyright (c) 1994, 1996
 #	The Regents of the University of California.  All rights reserved.
@@ -17,6 +17,7 @@ MAKE=Makefile			# default makefile name is "Makefile"
 CC=cc				# default C compiler is "cc"
 DEPENDENCY_CFLAG=-M		# default dependency-generation flag is -M
 SOURCE_DIRECTORY=.		# default source directory is the current directory
+SED=''
 
 # No command-line flags seen yet.
 flags=""
