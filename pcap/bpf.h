@@ -256,11 +256,11 @@ struct bpf_insn {
 #ifdef BPF_STMT
 #undef BPF_STMT
 #endif
-#define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
+#define BPF_STMT(code, k) { (u_short)(code), 0, 0, (k) }
 #ifdef BPF_JUMP
 #undef BPF_JUMP
 #endif
-#define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
+#define BPF_JUMP(code, k, jt, jf) { (u_short)(code), (jt), (jf), (k) }
 
 PCAP_AVAILABLE_0_4
 PCAP_DEPRECATED("use pcap_offline_filter()")
