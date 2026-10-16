@@ -809,31 +809,13 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 		break;
 
 	case BPF_LSH:
-		/*
-		 * A left shift of more than the width of the type
-		 * is undefined in C; we'll just treat it as shifting
-		 * all the bits out.
-		 *
-		 * The BPF interpreter in libpcap does the same.
-		 */
-		if (b < 32)
-			a <<= b;
-		else
-			a = 0;
+		// See the comment in gencode.h.
+		a = UINT32_LSH(a, b);
 		break;
 
 	case BPF_RSH:
-		/*
-		 * A right shift of more than the width of the type
-		 * is undefined in C; we'll just treat it as shifting
-		 * all the bits out.
-		 *
-		 * The BPF interpreter in libpcap does the same.
-		 */
-		if (b < 32)
-			a >>= b;
-		else
-			a = 0;
+		// See the comment in gencode.h.
+		a = UINT32_RSH(a, b);
 		break;
 
 	default:
@@ -1256,23 +1238,8 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 	case BPF_ALU|BPF_NEG:
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
 			s->code = BPF_LD|BPF_W|BPF_IMM;
-			/*
-			 * Do this negation as unsigned arithmetic; that's
-			 * what modern BPF engines do, and it guarantees
-			 * that all possible values can be negated.  (Yeah,
-			 * negating 0x80000000, the minimum signed 32-bit
-			 * two's-complement value, results in 0x80000000,
-			 * so it's still negative, but we *should* be doing
-			 * all unsigned arithmetic here, to match what
-			 * modern BPF engines do.)
-			 *
-			 * Express it as 0U - (unsigned value) so that we
-			 * don't get compiler warnings about negating an
-			 * unsigned value and don't get UBSan warnings
-			 * about the result of negating 0x80000000 being
-			 * undefined.
-			 */
-			s->k = 0U - opt_state->vmap[val[A_ATOM]].const_val;
+			// See the comment in gencode.h.
+			s->k = UINT_NEG(opt_state->vmap[val[A_ATOM]].const_val);
 			val[A_ATOM] = K(s->k);
 		}
 		else

@@ -8067,9 +8067,9 @@ gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 		/*
 		 * An immediate value is the best case scenario.  Calculate the
 		 * negative now the same way as in the optimizer and in the
-		 * interpreter (see the comments about BPF_ALU|BPF_NEG there).
+		 * interpreter (see the comment in gencode.h).
 		 */
-		a->s->s.k = 0U - a->s->s.k;
+		a->s->s.k = UINT_NEG(a->s->s.k);
 	} else {
 		/*
 		 * Assume the worst case scenario and calculate the negative of
