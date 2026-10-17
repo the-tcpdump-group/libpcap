@@ -44,6 +44,7 @@
 #include "pcap-types.h"
 #include "extract.h"
 #include "diag-control.h"
+#include "gencode.h"
 
 #ifndef _WIN32
 #include <sys/param.h>
@@ -400,17 +401,13 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_X:
-			if (X < 32)
-				A <<= X;
-			else
-				A = 0;
+			// See the comment in gencode.h.
+			A = UINT32_LSH(A, X);
 			continue;
 
 		case BPF_ALU|BPF_RSH|BPF_X:
-			if (X < 32)
-				A >>= X;
-			else
-				A = 0;
+			// See the comment in gencode.h.
+			A = UINT32_RSH(A, X);
 			continue;
 
 		case BPF_ALU|BPF_ADD|BPF_K:
@@ -450,23 +447,18 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_K:
-			A = (pc->k < 32) ? A << pc->k : 0;
+			// See the comment in gencode.h.
+			A = UINT32_LSH(A, pc->k);
 			continue;
 
 		case BPF_ALU|BPF_RSH|BPF_K:
-			A = (pc->k < 32) ? A >> pc->k : 0;
+			// See the comment in gencode.h.
+			A = UINT32_RSH(A, pc->k);
 			continue;
 
 		case BPF_ALU|BPF_NEG:
-			/*
-			 * Most BPF arithmetic is unsigned, but negation
-			 * can't be unsigned; respecify it as subtracting
-			 * the accumulator from 0U, so that 1) we don't
-			 * get compiler warnings about negating an unsigned
-			 * value and 2) don't get UBSan warnings about
-			 * the result of negating 0x80000000 being undefined.
-			 */
-			A = (0U - A);
+			// See the comment in gencode.h.
+			A = UINT_NEG(A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
