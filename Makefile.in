@@ -760,7 +760,7 @@ distclean: clean
 	(cd testprogs; $(MAKE) distclean)
 
 check: testprogs
-	$(PERL) $(srcdir)/testprogs/TESTrun
+	LANG=C $(PERL) $(srcdir)/testprogs/TESTrun
 	testprogs/opendeadtest EN10MB
 
 extags: $(TAGFILES)

@@ -179,7 +179,7 @@ elif [ "$CMAKE" = no ]; then
     export FILTERTEST_BIN
     TRANSLATETEST_BIN="$VALGRIND_CMD testprogs/translatetest"
     export TRANSLATETEST_BIN
-    run_after_echo "$MAKE_BIN" -s check
+    LANG=C run_after_echo "$MAKE_BIN" -s check
     run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=testprogs/findalldevstest.supp} testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
@@ -188,7 +188,7 @@ else
     export FILTERTEST_BIN
     TRANSLATETEST_BIN="$VALGRIND_CMD run/translatetest"
     export TRANSLATETEST_BIN
-    run_after_echo "$MAKE_BIN" -s check
+    LANG=C run_after_echo "$MAKE_BIN" -s check
     run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=../testprogs/findalldevstest.supp} run/findalldevstest
 fi
 handle_matrix_debug
