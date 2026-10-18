@@ -64,6 +64,7 @@ DYEXT = @DYEXT@
 RPATH = @RPATH@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
+VER = @PACKAGE_VERSION@
 PTHREAD_LIBS=@PTHREAD_LIBS@
 BUILD_RPCAPD=@BUILD_RPCAPD@
 INSTALL_RPCAPD=@INSTALL_RPCAPD@
@@ -152,8 +153,8 @@ GENHDR = \
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.a libpcap.so.`cat $(srcdir)/VERSION` \
-	$(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENERATED_C_SRC) $(GENHDR) \
+CLEANFILES = $(OBJ) libpcap.a libpcap.so.$(VER) \
+	$(PROG)-$(VER).tar.gz $(GENERATED_C_SRC) $(GENHDR) \
 	lex.yy.c pcap-config libpcap.pc libpcap.$(DYEXT)
 
 MAN1 = pcap-config.1
@@ -392,10 +393,9 @@ shared: libpcap.$(DYEXT)
 
 libpcap.so: $(OBJ)
 	@rm -f $@
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	@V_SHLIB_CMD@ $(LDFLAGS) @V_SHLIB_OPT@ @V_SONAME_OPT@$@.$$MAJOR_VER \
-	    -o $@.$$VER $(OBJ) $(ADDLOBJS) $(LIBS)
+	    -o $@.$(VER) $(OBJ) $(ADDLOBJS) $(LIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -415,12 +415,11 @@ libpcap.so: $(OBJ)
 #
 libpcap.dylib: $(OBJ)
 	rm -f libpcap*.dylib
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
 	$(CC) -dynamiclib -undefined error $(LDFLAGS) @V_LIB_LDFLAGS_FAT@ \
-	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(LIBS) \
+	    -o libpcap.$(VER).dylib $(OBJ) $(ADDLOBJS) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
 	    -current_version $$CURRENT_VER
@@ -646,18 +645,16 @@ install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
-	$(INSTALL_PROGRAM) libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
-	ln -sf libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
+	$(INSTALL_PROGRAM) libpcap.so.$(VER) $(DESTDIR)$(libdir)/libpcap.so.$(VER); \
+	ln -sf libpcap.so.$(VER) $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
 	ln -sf libpcap.so.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.so
 install-shared-dylib: libpcap.dylib
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
-	$(INSTALL_PROGRAM) libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
-	ln -sf libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
+	$(INSTALL_PROGRAM) libpcap.$(VER).dylib $(DESTDIR)$(libdir)/libpcap.$(VER).dylib; \
+	ln -sf libpcap.$(VER).dylib $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	ln -sf libpcap.$$MAJOR_VER.dylib $(DESTDIR)$(libdir)/libpcap.dylib
 install-shared-sl: libpcap.sl
 	[ -d $(DESTDIR)$(libdir) ] || \
@@ -729,15 +726,13 @@ uninstall: uninstall-shared uninstall-rpcapd
 
 uninstall-shared: uninstall-shared-$(DYEXT)
 uninstall-shared-so:
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
-	rm -f $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.so.$(VER); \
 	rm -f $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.so
 uninstall-shared-dylib:
-	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
-	rm -f $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.$(VER).dylib; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
 uninstall-shared-sl:
@@ -796,7 +791,7 @@ tags: $(TAGFILES)
 # git archive doesn't write one.)
 #
 releasetar:
-	@TAG=$(PROG)-`cat VERSION` && \
+	@TAG=$(PROG)-$(VER) && \
 	if [ ! -d .git ]; then echo 'Not in a git clone, stop.'; exit 1; fi && \
 	TMPTESTFILE=`mktemp -t tmptestfile_XXXXXXXX` && \
 	rm -f "$$TMPTESTFILE" && \
@@ -822,7 +817,7 @@ releasetar:
 	rm -rf "$$AUTORECONF_DIR"
 
 releasecheck: releasetar
-	@TAG=$(PROG)-`cat VERSION` && \
+	@TAG=$(PROG)-$(VER) && \
 	INSTALL_DIR=/tmp/install_"$$TAG"_$$$$ && \
 	DIR=`pwd` && \
 	cd /tmp && \
