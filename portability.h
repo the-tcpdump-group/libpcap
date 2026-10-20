@@ -34,6 +34,8 @@
 #ifndef portability_h
 #define	portability_h
 
+#include <config.h> // HAVE_xxx
+
 /*
  * Helpers for portability between Windows and UN*X and between different
  * flavors of UN*X.

@@ -1,6 +1,8 @@
 #ifndef dlpisubs_h
 #define	dlpisubs_h
 
+#include <config.h> // HAVE_xxx
+
 #ifdef __cplusplus
 extern "C" {
 #endif
