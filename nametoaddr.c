@@ -41,12 +41,16 @@
       /*
        * In musl libc (which does not identify itself) ether_hostton() is
        * present and does not work.
+       *
+       * The headers below will include config.h at least one more time, so
+       * instead of undefining HAVE_ETHER_HOSTTON define another macro that is
+       * local to this file, and make it a part of the test condition.
        */
-      #undef HAVE_ETHER_HOSTTON
+      #define BROKEN_ETHER_HOSTTON
     #endif
   #endif // defined(__linux__) && defined(HAVE_ETHER_HOSTTON)
 
-  #ifdef HAVE_ETHER_HOSTTON
+  #if defined(HAVE_ETHER_HOSTTON) && ! defined(BROKEN_ETHER_HOSTTON)
     #if defined(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON)
       /*
        * OK, just include <net/ethernet.h>.
@@ -100,7 +104,7 @@
        */
       extern int ether_hostton(const char *, struct ether_addr *);
     #endif /* !defined(HAVE_DECL_ETHER_HOSTTON) */
-  #endif /* HAVE_ETHER_HOSTTON */
+  #endif /* defined(HAVE_ETHER_HOSTTON) && ! defined(BROKEN_ETHER_HOSTTON) */
 
   #include <arpa/inet.h>
   #include <netdb.h>
@@ -1167,7 +1171,7 @@ pcap_ether_aton(const char *s)
 	return (e);
 }
 
-#ifndef HAVE_ETHER_HOSTTON
+#if ! defined(HAVE_ETHER_HOSTTON) || defined(BROKEN_ETHER_HOSTTON)
 /*
  * Roll our own.
  *
