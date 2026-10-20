@@ -5,6 +5,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Have pcap_fileno() return -1 rather than PCAP_ERRNO if the HANDLE
         is invalid, as the return value isn't a general error.
       Indicate no-capture and no-inject devices.
+      Require libpcap [internal-only] config.h in [internal-only] pcap-int.h.
     General:
       Set all the file descriptors/HANDLEs to an invalid value in
         pcap_open_dead().

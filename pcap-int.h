@@ -34,6 +34,25 @@
 #ifndef pcap_int_h
 #define	pcap_int_h
 
+/*
+ * Note to libpcap packages maintainers: pcap-int.h is an *internal-only*
+ * header of libpcap, which is why "make install" does not copy it from the
+ * source tree to the destination directory, and which is why it is wrong to
+ * copy the header manually and to package it.  Software that tries to use
+ * pcap-int.h needs to be fixed to use the public libpcap API instead [1].
+ *
+ * config.h is an *internal-only* header too, and pcap-int.h requires it to
+ * work correctly.  The directives below do not cause this dependency, only
+ * make it visible.  Please do not try to package pcap-int.h and do not try to
+ * override these safety guards, or things will break randomly.
+ *
+ * 1: https://www.tcpdump.org/faq.html#q14
+ */
+#include <config.h> // ENABLE_xxx, SIZEOF_xxx and PACKAGE_xxx
+#ifndef LIBPCAP_CONFIG_H
+#error "libpcap internal-only pcap-int.h needs libpcap internal-only config.h"
+#endif
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>

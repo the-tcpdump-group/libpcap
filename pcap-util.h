@@ -24,6 +24,8 @@
 #ifndef pcap_util_h
 #define pcap_util_h
 
+#include <config.h> // HAVE_xxx
+
 #include <pcap/pcap-inttypes.h>
 /*
  * We use the "receiver-makes-right" approach to byte order;

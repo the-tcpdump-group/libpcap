@@ -33,6 +33,8 @@
 #ifndef __SSLUTILS_H__
 #define __SSLUTILS_H__
 
+#include <config.h> // HAVE_xxx
+
 #ifdef HAVE_OPENSSL
 #include "pcap/socket.h"  // for PCAP_SOCKET
 // If this is OpenSSL 1.0, at least one header may trigger a -Wdocumentation
