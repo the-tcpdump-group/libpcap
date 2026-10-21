@@ -376,7 +376,7 @@ EXTRA_DIST = \
 	testprogs/visopts.py \
 	testprogs/writecaptest.c
 
-TEST_DIST = `git -C "$$DIR" ls-files tests | grep -v 'tests/\..*'`
+TEST_DIST = `git -C "$$DIR" ls-files tests`
 
 RELEASE_FILES = $(COMMON_C_SRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
 	$(MAN3PCAP_NOEXPAND) $(MANFILE) $(MANMISC) $(EXTRA_DIST) \
