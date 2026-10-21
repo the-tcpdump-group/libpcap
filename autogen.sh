@@ -59,10 +59,14 @@ env ${AUTOCONF_WARNINGS:+WARNINGS="$AUTOCONF_WARNINGS"} LANG=C "$AUTORECONF" -f 
 # Autoconf 2.71 adds a blank line after the final "exit 0" on Linux, but not
 # on OpenBSD.  Remove this difference to make it easier to compare the result
 # of "make releasetar" across different platforms.  From sed one-liners:
-# "delete all trailing blank lines at end of file (works on all seds)".  Don't
-# use mktemp(1) because AIX does not have it.
+# "delete all trailing blank lines at end of file (works on all seds)".
 CONFIGURE_OLD="$SRCDIR/configure"
-CONFIGURE_NEW="$SRCDIR/configure.new$$"
+# Same as in mkdep.
+if command -v mktemp >/dev/null 2>&1; then
+	CONFIGURE_NEW=`mktemp -t configure.new.XXXXXXXX`
+else
+	CONFIGURE_NEW=${TMPDIR:-/tmp}/configure.new.$$
+fi
 sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' <"$CONFIGURE_OLD" >"$CONFIGURE_NEW"
 # The "cat" replaces the file contents, but keeps the permissions intact.
 cmp -s "$CONFIGURE_OLD" "$CONFIGURE_NEW" || cat "$CONFIGURE_NEW" >"$CONFIGURE_OLD"
