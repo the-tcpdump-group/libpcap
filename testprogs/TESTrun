@@ -102,6 +102,12 @@ use constant {
 # timeout to work around that in specific tests only.
 use constant DNS_NXDOMAIN_TIMEOUT => 10;
 
+use constant {
+	IPPROTO_ICMP => 1,
+	IPPROTO_AH => 51,
+	IPPROTO_ICMPV6 => 58,
+};
+
 # Set these later only if running any tests.
 my $diff_flags;
 my $timeout_bin;
@@ -31086,6 +31092,39 @@ my @filter_apply_blocks = (
 		results => [0, 262144, 0, 262144, 0, 262144, 262144, 0],
 	},
 );
+
+# The savefile contains packets with the following headers:
+# 1. Ethernet->IPv4->AH->AH->ICMP
+# 2. Ethernet->IPv6->AH->AH->ICMPv6
+# The filter program correctly matches the outer AH, but it incorrectly matches
+# 0xE1 instead of the nested ICMP and 0xFE instead of the nested ICMPv6 because
+# of a bug in gen_protochain().
+foreach (0 .. 255) {
+	push @filter_apply_blocks, {
+		name => sprintf ('protochain_%u_AHAH_mismatch', $_),
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		savefile => 'AH-in-AH.pcap',
+		expr => sprintf ('protochain %u', $_),
+		results => [
+			($_ == IPPROTO_AH || $_ == 0xE1) ? 65535 : 0,
+			($_ == IPPROTO_AH || $_ == 0xFE) ? 65535 : 0,
+		],
+	} if ! $only_short || $_ == IPPROTO_AH || $_ == 0xE1 || $_ == 0xFE;
+}
+# This is a variation of the above, the same bug causes the filter program to
+# loop until the interpreter terminates it.
+foreach (0 .. 255) {
+	push @filter_apply_blocks, {
+		name => sprintf ('protochain_%u_AHAH_loop', $_),
+		skip => skip_config_def1 ('NO_PROTOCHAIN'),
+		savefile => 'AH-in-AH-CVE-2026-6554.pcap',
+		expr => sprintf ('protochain %u', $_),
+		results => [
+			$_ == IPPROTO_AH ? 65535 : 0,
+			$_ == IPPROTO_AH ? 65535 : 0,
+		],
+	} if ! $only_short || $_ == IPPROTO_AH || $_ == IPPROTO_ICMP || $_ == IPPROTO_ICMPV6;
+}
 
 # yyerror()
 sub errstr_syntax {
