@@ -6578,14 +6578,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 */
 	cstate->no_optimize = 1;
 
-	/*
-	 * s[0] is a dummy entry to protect other BPF insn from damage
-	 * by s[fix] = foo with uninitialized variable "fix".  It is somewhat
-	 * hard to find interdependency made by jump table fixup.
-	 */
 	unsigned i = 0;
-	s[i] = NEW_STMT_LD_IMM(cstate, 0);
-	i++;
 
 	if (proto == Q_IP) {
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
@@ -6772,9 +6765,8 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/*
 	 * emit final check
-	 * Remember, s[0] is dummy.
 	 */
-	b = gen_jmp_k(cstate, BPF_JEQ, v, s[1]);
+	b = gen_jmp_k(cstate, BPF_JEQ, v, s[0]);
 
 	free_reg(cstate, reg2);
 
