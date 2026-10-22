@@ -6604,14 +6604,12 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	unsigned again = i;
 	s[i] = NEW_STMT_JEQ_K(cstate, v);
 	// .jt: at "end", .jf: at the next statement.
-	unsigned fix5 = i;
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_NONE);
 	// .jt: at "end", .jf: at the next statement.
-	s[fix5]->s.jf = s[i];
-	unsigned fix2 = i;
+	s[i - 1]->s.jf = s[i];
 	i++;
 
 	int reg2 = alloc_reg(cstate);
@@ -6622,7 +6620,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
 		s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_HOPOPTS);
 		// .jt: in the "fixup" loop, .jf: at the next statement.
-		s[fix2]->s.jf = s[i];
+		s[i - 1]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_DSTOPTS);
@@ -6684,7 +6682,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	} else {
 		/* nop */
 		s[i] = NEW_STMT_ADD_K(cstate, 0);
-		s[fix2]->s.jf = s[i];
+		s[i - 1]->s.jf = s[i];
 		i++;
 	}
 
@@ -6695,7 +6693,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	// .jt: at the next statement, .jf: at "end".
 	if (fix3)
 		s[fix3]->s.jf = s[ahcheck];
-	unsigned fix4 = i;
 	i++;
 
 	/*
@@ -6743,9 +6740,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 
 	/* end: nop */
 	s[i] = NEW_STMT_ADD_K(cstate, 0);
-	s[fix2]->s.jt = s[i];
-	s[fix4]->s.jf = s[i];
-	s[fix5]->s.jt = s[i];
+	s[again]->s.jt = s[i];
+	s[again + 1]->s.jt = s[i];
+	s[ahcheck]->s.jf = s[i];
 	i++;
 
 	/*
