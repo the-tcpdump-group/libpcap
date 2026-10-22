@@ -885,7 +885,7 @@ static struct block *gen_portrange6(compiler_state_t *, uint16_t, uint16_t,
     int, int);
 static int lookup_proto(compiler_state_t *, const char *, const struct qual);
 #if !defined(NO_PROTOCHAIN)
-static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
+static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, uint8_t);
 #endif /* !defined(NO_PROTOCHAIN) */
 static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
 static struct slist *xfer_to_x(compiler_state_t *, const struct arth *);
@@ -6526,7 +6526,7 @@ lookup_proto(compiler_state_t *cstate, const char *name, const struct qual q)
  * to qualify it with a direction.
  */
 static struct block *
-gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
+gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 {
 	struct block *b0, *b;
 	struct slist *s[100];
@@ -6578,11 +6578,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 */
 	cstate->no_optimize = 1;
 
+	b0 = gen_linktype(cstate, pq_to_ethertype(cstate, proto));
+	if (b0->meaning == IS_FALSE)
+		return b0; // No need to produce the other operand of the AND.
+
 	unsigned i = 0;
 
 	if (proto == Q_IP) {
-		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-
 		/* A = ip->ip_p */
 		s[i] = gen_load_a(cstate, OR_LINKPL, IPV4_PROTO_OFFSET, BPF_B);
 		i++;
@@ -6590,8 +6592,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
 	} else {
-		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-
 		/* A = ip6->ip_nxt */
 		s[i] = gen_load_a(cstate, OR_LINKPL, IPV6_PROTO_OFFSET, BPF_B);
 		i++;
@@ -7333,7 +7333,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
-		return gen_protochain(cstate, lookup_proto(cstate, name, q), proto);
+		return gen_protochain(cstate, lookup_proto(cstate, name, q), q.proto);
 #endif /* !defined(NO_PROTOCHAIN) */
 
 	case Q_UNDEF:
@@ -7488,7 +7488,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
-		return gen_protochain(cstate, v, proto);
+		return gen_protochain(cstate, v, q.proto);
 #endif
 
 	case Q_UNDEF:
