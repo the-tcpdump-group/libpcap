@@ -6603,15 +6603,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	/* again: if (A == v) goto end; else fall through; */
 	unsigned again = i;
 	s[i] = NEW_STMT_JEQ_K(cstate, v);
-	s[i]->s.jt = NULL;		/*later*/
-	s[i]->s.jf = NULL;		/*update in next stmt*/
+	// .jt: at "end", .jf: at the next statement.
 	unsigned fix5 = i;
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_NONE);
-	s[i]->s.jt = NULL;	/*later*/
-	s[i]->s.jf = NULL;	/*update in next stmt*/
+	// .jt: at "end", .jf: at the next statement.
 	s[fix5]->s.jf = s[i];
 	unsigned fix2 = i;
 	i++;
@@ -6623,24 +6621,20 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
 		s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_HOPOPTS);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
+		// .jt: in the "fixup" loop, .jf: at the next statement.
 		s[fix2]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_DSTOPTS);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
+		// .jt: in the "fixup" loop, .jf: at the next statement.
 		i++;
 		/* if (A == IPPROTO_ROUTING) goto v6advance */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_ROUTING);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
+		// .jt: in the "fixup" loop, .jf: at the next statement.
 		i++;
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_FRAGMENT);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*later*/
+		// .jt: in the "fixup" loop, .jf: at "ahcheck".
 		fix3 = i;
 		unsigned v6end = i;
 		i++;
@@ -6682,7 +6676,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 
 		/* goto again; (must use BPF_JA for backward jump) */
 		s[i] = NEW_STMT_JA(cstate, again - i - 1);
-		s[i - 1]->s.jf = s[i];
 		i++;
 
 		/* fixup */
@@ -6699,8 +6692,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	unsigned ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_AH);
-	s[i]->s.jt = NULL;	/*later*/
-	s[i]->s.jf = NULL;	/*later*/
+	// .jt: at the next statement, .jf: at "end".
 	if (fix3)
 		s[fix3]->s.jf = s[ahcheck];
 	unsigned fix4 = i;
@@ -6720,7 +6712,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	s[i] = NEW_STMT_ST_M(cstate, reg2);
 	i++;
 	/* A = X */
-	s[i - 1]->s.jt = s[i] = NEW_STMT_TXA(cstate);
+	s[i] = NEW_STMT_TXA(cstate);
 	i++;
 	/* A += 1 */
 	s[i] = NEW_STMT_ADD_K(cstate, 1);
