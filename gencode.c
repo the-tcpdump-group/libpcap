@@ -6613,7 +6613,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	i++;
 
 	int reg2 = alloc_reg(cstate);
-	unsigned fix3 = 0;
+	unsigned jf_ahcheck;
 	if (proto == Q_IPV6) {
 		unsigned v6start = i;
 
@@ -6633,7 +6633,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_FRAGMENT);
 		// .jt: in the "fixup" loop, .jf: at "ahcheck".
-		fix3 = i;
+		jf_ahcheck = i;
 		unsigned v6end = i;
 		i++;
 
@@ -6680,10 +6680,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 		for (unsigned j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
 	} else {
-		/* nop */
-		s[i] = NEW_STMT_ADD_K(cstate, 0);
-		s[i - 1]->s.jf = s[i];
-		i++;
+		jf_ahcheck = again + 1;
 	}
 
 	/* ahcheck: */
@@ -6691,14 +6688,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_AH);
 	// .jt: at the next statement, .jf: at "end".
-	if (fix3)
-		s[fix3]->s.jf = s[ahcheck];
+	s[jf_ahcheck]->s.jf = s[ahcheck];
 	i++;
 
 	/*
 	 * in short,
-	 * A = P[X];
-	 * X = X + (P[X + 1] + 2) * 4;
+	 * A = P[X + packet head];
+	 * X = X + (P[X + packet head + 1] + 2) * 4;
 	 */
 	/* A = P[X + packet head]; */
 	s[i] = NEW_STMT_LDB_IND(cstate,
@@ -6708,24 +6704,18 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	/* MEM[reg2] = A */
 	s[i] = NEW_STMT_ST_M(cstate, reg2);
 	i++;
-	/* A = X */
-	s[i] = NEW_STMT_TXA(cstate);
-	i++;
-	/* A += 1 */
-	s[i] = NEW_STMT_ADD_K(cstate, 1);
-	i++;
-	/* X = A */
-	s[i] = NEW_STMT_TAX(cstate);
-	i++;
-	/* A = P[X + packet head] */
+	/* A = P[X + packet head + 1] */
 	s[i] = NEW_STMT_LDB_IND(cstate,
-	    cstate->off_linkpl.constant_part + cstate->off_nl);
+	    cstate->off_linkpl.constant_part + cstate->off_nl + 1);
 	i++;
 	/* A += 2 */
 	s[i] = NEW_STMT_ADD_K(cstate, 2);
 	i++;
 	/* A *= 4 */
 	s[i] = NEW_STMT_MUL_K(cstate, 4);
+	i++;
+	/* A += X */
+	s[i] = NEW_STMT_ADD_X(cstate);
 	i++;
 	/* X = A; */
 	s[i] = NEW_STMT_TAX(cstate);
