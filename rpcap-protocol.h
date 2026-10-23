@@ -438,6 +438,9 @@ struct rpcap_sampling
 #include "sslutils.h"
 
 extern void rpcap_createhdr(struct rpcap_header *header, uint8_t ver, uint8_t type, uint16_t value, uint32_t length);
+extern int rpcap_bufferize_hdr(char *sendbuf, int *sendbufidxp, int totsize,
+    uint8_t ver, uint8_t type, uint16_t value, uint32_t length,
+    char *errbuf, size_t errbufsize);
 extern const char *rpcap_msg_type_string(uint8_t type);
 extern int rpcap_senderror(PCAP_SOCKET sock, SSL *ssl, uint8_t ver, uint16_t errcode, const char *error, char *errbuf);
 
