@@ -73,6 +73,13 @@ endif()
 #
 if(HAVE_UNISTD_H)
   #
+  # The active-mode rpcap APIs only exist when remote capture is enabled.
+  #
+  if(ENABLE_REMOTE AND NOT WIN32)
+    add_test_executable(rpcapownershiptest)
+  endif()
+
+  #
   # We don't distribute the fuzz tests in the release tarball,
   # so only attempt to build them if we're in a Git repository.
   #
