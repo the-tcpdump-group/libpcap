@@ -1304,6 +1304,11 @@ int sock_send(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer,
  * only the buffer overflow check has to be made.
  * In this case, both 'data' and 'outbuf' can be NULL values.
  *
+ * Otherwise, 'data' must be a valid, non-null pointer even when 'size' is
+ * zero: passing a null pointer to memcpy() would be undefined behaviour even
+ * when copying zero bytes (C11 7.24.1 "String function conventions").
+ * Bufferizing a possibly-null string is what sock_bufferize_str() is for.
+ *
  * This function is useful in case the userland application does not know immediately
  * all the data it has to write into the socket. This function provides a way to create
  * the "stream" step by step, appending the new data to the old one. Then, when all the
@@ -1357,6 +1362,70 @@ int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int to
 	(*offset) += size;
 
 	return 0;
+}
+
+/*
+ * \brief It computes the length of a string, treating a null pointer
+ * as an empty (zero-length) string.
+ *
+ * This function basically returns the length of 'str', except that it
+ * returns 0 in case 'str' is NULL: the rpcap protocol bufferizes several
+ * optional strings whose absence is indicated by a null pointer, and
+ * those strings have to be copied into the send buffer as zero-length
+ * strings.
+ *
+ * \param str: a pointer to the string whose length has to be computed.
+ *
+ * \return the length of the string, or 0 in case 'str' is NULL.
+ */
+size_t sock_strlen(const char *str)
+{
+	if (str == NULL)
+		return 0;
+	return strlen(str);
+}
+
+/*
+ * \brief It copies a string into 'outbuf', treating a null pointer as an
+ * empty (zero-length) string, and it checks for buffer overflows.
+ *
+ * This function works like sock_bufferize() for a NUL-terminated string
+ * whose length is computed with sock_strlen(), except that a null 'str'
+ * is treated as an empty (zero-length) string instead of being an error:
+ * sock_bufferize() requires a valid, non-null data pointer even for a
+ * zero size, and callers bufferizing optional strings should use this
+ * routine for them.
+ *
+ * \param str: a pointer to the string that has to be copied, or NULL.
+ *
+ * \param outbuf: user-allocated buffer (of size 'totsize') into which the
+ * string has to be copied.
+ *
+ * \param offset: an index into 'outbuf' which keeps the location of its first
+ * empty location.
+ *
+ * \param totsize: total size of the buffer into which data is being copied.
+ *
+ * \param checkonly: '1' if we do not want to copy the string into the buffer
+ * and we want just do a buffer overflow control, '0' if it has to be copied
+ * as well.
+ *
+ * \param errbuf: a pointer to a user-allocated buffer that will contain the
+ * complete error message. This buffer has to be at least 'errbuflen' in
+ * length. It can be NULL; in this case the error cannot be printed.
+ *
+ * \param errbuflen: length of the buffer that will contain the error.
+ *
+ * \return '0' if everything is fine, '-1' if some errors occurred. The error
+ * message is returned in the 'errbuf' variable.
+ */
+int sock_bufferize_str(const char *str, char *outbuf, int *offset, int totsize,
+    int checkonly, char *errbuf, int errbuflen)
+{
+	if (str == NULL)
+		str = "";	/* bufferize a null string as an empty string */
+	return sock_bufferize(str, (int) strlen(str), outbuf, offset, totsize,
+	    checkonly, errbuf, errbuflen);
 }
 
 /*
