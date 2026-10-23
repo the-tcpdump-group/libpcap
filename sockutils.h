@@ -91,11 +91,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  *                                                  *
  ****************************************************/
 
-/* 'checkonly' flag, into the rpsock_bufferize() */
-#define SOCKBUF_CHECKONLY 1
-/* no 'checkonly' flag, into the rpsock_bufferize() */
-#define SOCKBUF_BUFFERIZE 0
-
 /* no 'server' flag; it opens a client socket */
 #define SOCKOPEN_CLIENT 0
 /* 'server' flag; it opens a server socket */
@@ -150,7 +145,10 @@ int sock_close(PCAP_SOCKET sock, char *errbuf, int errbuflen);
 
 int sock_send(PCAP_SOCKET sock, SSL *, const char *buffer, size_t size,
     char *errbuf, int errbuflen);
-int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen);
+void *sock_alloc_buffer_space(char *outbuf, int size, int *offset,
+    int totsize, char *errbuf, size_t errbuflen);
+int sock_bufferize(const void *data, int size, char *outbuf, int *offset,
+    int totsize, char *errbuf, int errbuflen);
 int sock_discard(PCAP_SOCKET sock, SSL *, int size, char *errbuf,
     int errbuflen);
 int	sock_check_hostlist(const char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen);

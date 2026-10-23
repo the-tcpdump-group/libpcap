@@ -1355,17 +1355,15 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32_t plen)
 	}
 
 	// The authentication succeeded; let the client know.
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE, 0,
+	    RPCAP_MSG_AUTH_REPLY, 0, sizeof(struct rpcap_authreply),
+	    errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, 0,
-	    RPCAP_MSG_AUTH_REPLY, 0, sizeof(struct rpcap_authreply));
-
-	authreply = (struct rpcap_authreply *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_authreply), NULL, &sendbufidx,
-	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	authreply = (struct rpcap_authreply *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_authreply), &sendbufidx, RPCAP_NETBUF_SIZE,
+	    errmsgbuf, PCAP_ERRBUF_SIZE);
+	if (authreply == NULL)
 		goto error;
 
 	//
@@ -1693,13 +1691,10 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 	}
 
 	// RPCAP findalldevs reply
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf,
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE, ver,
+	    RPCAP_MSG_FINDALLIF_REPLY, nif, replylen, errmsgbuf,
 	    PCAP_ERRBUF_SIZE) == -1)
 		goto error;
-
-	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
-	    RPCAP_MSG_FINDALLIF_REPLY, nif, replylen);
 
 	// send the interface list
 	for (d = alldevs; d != NULL; d = d->next)
@@ -1756,18 +1751,15 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 		findalldevs_if.dummy = 0;
 
 		if (sock_bufferize(&findalldevs_if, sizeof(struct rpcap_findalldevs_if), sendbuf,
-		    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		    &sendbufidx, RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
 		if (sock_bufferize(d->name, lname, sendbuf, &sendbufidx,
-		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
 		if (sock_bufferize(d->description, ldescr, sendbuf, &sendbufidx,
-		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
 		// send all addresses
@@ -1782,27 +1774,31 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 			{
 			case AF_INET:
 			case AF_INET6:
-				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
-				    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				sockaddr = (struct rpcap_sockaddr *) sock_alloc_buffer_space(sendbuf,
+				    sizeof(struct rpcap_sockaddr), &sendbufidx,
+				    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+				if (sockaddr == NULL)
 					goto error;
 				daemon_seraddr((struct sockaddr_storage *) address->addr, sockaddr);
 
-				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
-				    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				sockaddr = (struct rpcap_sockaddr *) sock_alloc_buffer_space(sendbuf,
+				    sizeof(struct rpcap_sockaddr), &sendbufidx,
+				    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+				if (sockaddr == NULL)
 					goto error;
 				daemon_seraddr((struct sockaddr_storage *) address->netmask, sockaddr);
 
-				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
-				    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				sockaddr = (struct rpcap_sockaddr *) sock_alloc_buffer_space(sendbuf,
+				    sizeof(struct rpcap_sockaddr), &sendbufidx,
+				    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+				if (sockaddr == NULL)
 					goto error;
 				daemon_seraddr((struct sockaddr_storage *) address->broadaddr, sockaddr);
 
-				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
-				    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+				sockaddr = (struct rpcap_sockaddr *) sock_alloc_buffer_space(sendbuf,
+				    sizeof(struct rpcap_sockaddr), &sendbufidx,
+				    RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+				if (sockaddr == NULL)
 					goto error;
 				daemon_seraddr((struct sockaddr_storage *) address->dstaddr, sockaddr);
 				break;
@@ -1888,17 +1884,14 @@ daemon_msg_open_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 		goto error;
 
 	// Now, I can send a RPCAP open reply message
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    ver, RPCAP_MSG_OPEN_REPLY, 0, sizeof(struct rpcap_openreply),
+	    errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
-	    RPCAP_MSG_OPEN_REPLY, 0, sizeof(struct rpcap_openreply));
-
-	openreply = (struct rpcap_openreply *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_openreply), NULL, &sendbufidx,
-	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	openreply = sock_alloc_buffer_space(sendbuf, sizeof(struct rpcap_openreply),
+	    &sendbufidx, RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+	if (openreply == NULL)
 		goto error;
 
 	memset(openreply, 0, sizeof(struct rpcap_openreply));
@@ -2149,17 +2142,14 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	}
 
 	// Now, I can send a RPCAP start capture reply message
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    ver, RPCAP_MSG_STARTCAP_REPLY, 0, sizeof(struct rpcap_startcapreply),
+	    errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
-	    RPCAP_MSG_STARTCAP_REPLY, 0, sizeof(struct rpcap_startcapreply));
-
-	startcapreply = (struct rpcap_startcapreply *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_startcapreply), NULL,
-	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	startcapreply = sock_alloc_buffer_space(sendbuf, sizeof(struct rpcap_startcapreply),
+	    &sendbufidx, RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+	if (startcapreply == NULL)
 		goto error;
 
 	memset(startcapreply, 0, sizeof(struct rpcap_startcapreply));
@@ -2546,17 +2536,14 @@ daemon_msg_stats_req(uint8_t ver, struct daemon_slpars *pars,
 		return -1;
 	}
 
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    ver, RPCAP_MSG_STATS_REPLY, 0, (uint16_t) sizeof(struct rpcap_stats),
+	    errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
-	    RPCAP_MSG_STATS_REPLY, 0, (uint16_t) sizeof(struct rpcap_stats));
-
-	netstats = (struct rpcap_stats *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_stats), NULL,
-	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+	netstats = sock_alloc_buffer_space(sendbuf, sizeof(struct rpcap_stats),
+	    &sendbufidx, RPCAP_NETBUF_SIZE, errmsgbuf, PCAP_ERRBUF_SIZE);
+	if (netstats == NULL)
 		goto error;
 
 	if (session && session->fp)
@@ -2712,29 +2699,25 @@ daemon_thrdatamain(void *ptr)
 		sendbufidx = 0;
 
 		// Bufferize the general header
-		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, (int)sendbufsize,
+		    session->protocol_version, RPCAP_MSG_PACKET, 0,
+		    (uint16_t) (sizeof(struct rpcap_pkthdr) + pkt_header->caplen),
+		    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
-			    "sock_bufferize() error sending packet message: %s",
+			    "rpcap_bufferize_hdr() error sending packet message: %s",
 			    errbuf);
 			goto error;
 		}
 
-		rpcap_createhdr((struct rpcap_header *) sendbuf,
-		    session->protocol_version, RPCAP_MSG_PACKET, 0,
-		    (uint16_t) (sizeof(struct rpcap_pkthdr) + pkt_header->caplen));
-
-		net_pkt_header = (struct rpcap_pkthdr *) &sendbuf[sendbufidx];
-
 		// Bufferize the pkt header
-		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL,
-		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		net_pkt_header = sock_alloc_buffer_space(sendbuf,
+		    sizeof(struct rpcap_pkthdr), &sendbufidx,
+		    (int)sendbufsize, errbuf, PCAP_ERRBUF_SIZE);
+		if (net_pkt_header == NULL)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
-			    "sock_bufferize() error sending packet message: %s",
+			    "sock_alloc_buffer_space() error sending packet message: %s",
 			    errbuf);
 			goto error;
 		}
@@ -2751,7 +2734,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,
-		    sendbuf, &sendbufidx, (int)sendbufsize, SOCKBUF_BUFFERIZE,
+		    sendbuf, &sendbufidx, (int)sendbufsize,
 		    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
