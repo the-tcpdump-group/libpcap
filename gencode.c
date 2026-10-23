@@ -885,7 +885,7 @@ static struct block *gen_portrange6(compiler_state_t *, uint16_t, uint16_t,
     int, int);
 static int lookup_proto(compiler_state_t *, const char *, const struct qual);
 #if !defined(NO_PROTOCHAIN)
-static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
+static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, uint8_t);
 #endif /* !defined(NO_PROTOCHAIN) */
 static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
 static struct slist *xfer_to_x(compiler_state_t *, const struct arth *);
@@ -6526,7 +6526,7 @@ lookup_proto(compiler_state_t *cstate, const char *name, const struct qual q)
  * to qualify it with a direction.
  */
 static struct block *
-gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
+gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 {
 	struct block *b0, *b;
 	struct slist *s[100];
@@ -6578,18 +6578,13 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	 */
 	cstate->no_optimize = 1;
 
-	/*
-	 * s[0] is a dummy entry to protect other BPF insn from damage
-	 * by s[fix] = foo with uninitialized variable "fix".  It is somewhat
-	 * hard to find interdependency made by jump table fixup.
-	 */
+	b0 = gen_linktype(cstate, pq_to_ethertype(cstate, proto));
+	if (b0->meaning == IS_FALSE)
+		return b0; // No need to produce the other operand of the AND.
+
 	unsigned i = 0;
-	s[i] = NEW_STMT_LD_IMM(cstate, 0);
-	i++;
 
 	if (proto == Q_IP) {
-		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-
 		/* A = ip->ip_p */
 		s[i] = gen_load_a(cstate, OR_LINKPL, IPV4_PROTO_OFFSET, BPF_B);
 		i++;
@@ -6597,8 +6592,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 		s[i] = gen_loadx_iphdrlen(cstate);
 		i++;
 	} else {
-		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-
 		/* A = ip6->ip_nxt */
 		s[i] = gen_load_a(cstate, OR_LINKPL, IPV6_PROTO_OFFSET, BPF_B);
 		i++;
@@ -6610,45 +6603,37 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/* again: if (A == v) goto end; else fall through; */
 	unsigned again = i;
 	s[i] = NEW_STMT_JEQ_K(cstate, v);
-	s[i]->s.jt = NULL;		/*later*/
-	s[i]->s.jf = NULL;		/*update in next stmt*/
-	unsigned fix5 = i;
+	// .jt: at "end", .jf: at the next statement.
 	i++;
 
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_NONE);
-	s[i]->s.jt = NULL;	/*later*/
-	s[i]->s.jf = NULL;	/*update in next stmt*/
-	s[fix5]->s.jf = s[i];
-	unsigned fix2 = i;
+	// .jt: at "end", .jf: at the next statement.
+	s[i - 1]->s.jf = s[i];
 	i++;
 
 	int reg2 = alloc_reg(cstate);
-	unsigned fix3 = 0;
+	unsigned jf_ahcheck;
 	if (proto == Q_IPV6) {
 		unsigned v6start = i;
 
 		/* if (A == IPPROTO_HOPOPTS) goto v6advance */
 		s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_HOPOPTS);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
-		s[fix2]->s.jf = s[i];
+		// .jt: in the "fixup" loop, .jf: at the next statement.
+		s[i - 1]->s.jf = s[i];
 		i++;
 		/* if (A == IPPROTO_DSTOPTS) goto v6advance */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_DSTOPTS);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
+		// .jt: in the "fixup" loop, .jf: at the next statement.
 		i++;
 		/* if (A == IPPROTO_ROUTING) goto v6advance */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_ROUTING);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*update in next stmt*/
+		// .jt: in the "fixup" loop, .jf: at the next statement.
 		i++;
 		/* if (A == IPPROTO_FRAGMENT) goto v6advance; else goto ahcheck; */
 		s[i - 1]->s.jf = s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_FRAGMENT);
-		s[i]->s.jt = NULL;	/*later*/
-		s[i]->s.jf = NULL;	/*later*/
-		fix3 = i;
+		// .jt: in the "fixup" loop, .jf: at "ahcheck".
+		jf_ahcheck = i;
 		unsigned v6end = i;
 		i++;
 
@@ -6689,34 +6674,27 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 		/* goto again; (must use BPF_JA for backward jump) */
 		s[i] = NEW_STMT_JA(cstate, again - i - 1);
-		s[i - 1]->s.jf = s[i];
 		i++;
 
 		/* fixup */
 		for (unsigned j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
 	} else {
-		/* nop */
-		s[i] = NEW_STMT_ADD_K(cstate, 0);
-		s[fix2]->s.jf = s[i];
-		i++;
+		jf_ahcheck = again + 1;
 	}
 
 	/* ahcheck: */
 	unsigned ahcheck = i;
 	/* if (A == IPPROTO_AH) then fall through; else goto end; */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_AH);
-	s[i]->s.jt = NULL;	/*later*/
-	s[i]->s.jf = NULL;	/*later*/
-	if (fix3)
-		s[fix3]->s.jf = s[ahcheck];
-	unsigned fix4 = i;
+	// .jt: at the next statement, .jf: at "end".
+	s[jf_ahcheck]->s.jf = s[ahcheck];
 	i++;
 
 	/*
 	 * in short,
-	 * A = P[X];
-	 * X = X + (P[X + 1] + 2) * 4;
+	 * A = P[X + packet head];
+	 * X = X + (P[X + packet head + 1] + 2) * 4;
 	 */
 	/* A = P[X + packet head]; */
 	s[i] = NEW_STMT_LDB_IND(cstate,
@@ -6726,24 +6704,18 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 	/* MEM[reg2] = A */
 	s[i] = NEW_STMT_ST_M(cstate, reg2);
 	i++;
-	/* A = X */
-	s[i - 1]->s.jt = s[i] = NEW_STMT_TXA(cstate);
-	i++;
-	/* A += 1 */
-	s[i] = NEW_STMT_ADD_K(cstate, 1);
-	i++;
-	/* X = A */
-	s[i] = NEW_STMT_TAX(cstate);
-	i++;
-	/* A = P[X + packet head] */
+	/* A = P[X + packet head + 1] */
 	s[i] = NEW_STMT_LDB_IND(cstate,
-	    cstate->off_linkpl.constant_part + cstate->off_nl);
+	    cstate->off_linkpl.constant_part + cstate->off_nl + 1);
 	i++;
 	/* A += 2 */
 	s[i] = NEW_STMT_ADD_K(cstate, 2);
 	i++;
 	/* A *= 4 */
 	s[i] = NEW_STMT_MUL_K(cstate, 4);
+	i++;
+	/* A += X */
+	s[i] = NEW_STMT_ADD_X(cstate);
 	i++;
 	/* X = A; */
 	s[i] = NEW_STMT_TAX(cstate);
@@ -6758,9 +6730,9 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/* end: nop */
 	s[i] = NEW_STMT_ADD_K(cstate, 0);
-	s[fix2]->s.jt = s[i];
-	s[fix4]->s.jf = s[i];
-	s[fix5]->s.jt = s[i];
+	s[again]->s.jt = s[i];
+	s[again + 1]->s.jt = s[i];
+	s[ahcheck]->s.jf = s[i];
 	i++;
 
 	/*
@@ -6772,9 +6744,8 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 
 	/*
 	 * emit final check
-	 * Remember, s[0] is dummy.
 	 */
-	b = gen_jmp_k(cstate, BPF_JEQ, v, s[1]);
+	b = gen_jmp_k(cstate, BPF_JEQ, v, s[0]);
 
 	free_reg(cstate, reg2);
 
@@ -7341,7 +7312,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
-		return gen_protochain(cstate, lookup_proto(cstate, name, q), proto);
+		return gen_protochain(cstate, lookup_proto(cstate, name, q), q.proto);
 #endif /* !defined(NO_PROTOCHAIN) */
 
 	case Q_UNDEF:
@@ -7496,7 +7467,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 
 #if !defined(NO_PROTOCHAIN)
 	case Q_PROTOCHAIN:
-		return gen_protochain(cstate, v, proto);
+		return gen_protochain(cstate, v, q.proto);
 #endif
 
 	case Q_UNDEF:
