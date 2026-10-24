@@ -6608,7 +6608,7 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_NONE);
-	// .jt: at "end", .jf: at the next statement.
+	// .jt: at "end", .jf: at "v6start" (IPv6) or at "ahcheck" (IPv4).
 	s[i - 1]->s.jf = s[i];
 	i++;
 
@@ -6679,11 +6679,6 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 		/* fixup */
 		for (unsigned j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
-	} else {
-		/* nop */
-		s[i] = NEW_STMT_ADD_K(cstate, 0);
-		s[i - 1]->s.jf = s[i];
-		i++;
 	}
 
 	/* ahcheck: */
@@ -6692,7 +6687,11 @@ gen_protochain(compiler_state_t *cstate, bpf_u_int32 v, uint8_t proto)
 	s[i] = NEW_STMT_JEQ_K(cstate, IPPROTO_AH);
 	// .jt: at the next statement, .jf: at "end".
 	if (fix3)
+		// Fixup the check for IPPROTO_FRAGMENT (IPv6).
 		s[fix3]->s.jf = s[ahcheck];
+	else
+		// Fixup the check for IPPROTO_NONE (IPv4).
+		s[i - 1]->s.jf = s[ahcheck];
 	i++;
 
 	/*

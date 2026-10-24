@@ -15972,28 +15972,27 @@ my @filter_accept_blocks = (
 		optunopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 23
+			(002) jeq      #0x40            jt 3	jf 22
 			(003) ldb      [9]
 			(004) ldxb     4*([0]&0xf)
-			(005) jeq      #0x11            jt 20	jf 6
-			(006) jeq      #0x3b            jt 20	jf 7
-			(007) add      #0
-			(008) jeq      #0x33            jt 9	jf 20
-			(009) ldb      [x + 0]
-			(010) st       M[0]
-			(011) txa
-			(012) add      #1
-			(013) tax
-			(014) ldb      [x + 0]
-			(015) add      #2
-			(016) mul      #4
-			(017) tax
-			(018) ld       M[0]
-			(019) ja       5
-			(020) add      #0
-			(021) jeq      #0x11            jt 22	jf 23
-			(022) ret      #262144
-			(023) ret      #0
+			(005) jeq      #0x11            jt 19	jf 6
+			(006) jeq      #0x3b            jt 19	jf 7
+			(007) jeq      #0x33            jt 8	jf 19
+			(008) ldb      [x + 0]
+			(009) st       M[0]
+			(010) txa
+			(011) add      #1
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) add      #2
+			(015) mul      #4
+			(016) tax
+			(017) ld       M[0]
+			(018) ja       5
+			(019) add      #0
+			(020) jeq      #0x11            jt 21	jf 22
+			(021) ret      #262144
+			(022) ret      #0
 			',
 	}, # ip_protochain
 	{
@@ -16054,62 +16053,61 @@ my @filter_accept_blocks = (
 		optunopt => '
 			(000) ldb      [0]
 			(001) and      #0xf0
-			(002) jeq      #0x40            jt 3	jf 22
+			(002) jeq      #0x40            jt 3	jf 21
 			(003) ldb      [9]
 			(004) ldxb     4*([0]&0xf)
-			(005) jeq      #0x11            jt 20	jf 6
-			(006) jeq      #0x3b            jt 20	jf 7
-			(007) add      #0
-			(008) jeq      #0x33            jt 9	jf 20
-			(009) ldb      [x + 0]
-			(010) st       M[0]
-			(011) txa
-			(012) add      #1
-			(013) tax
-			(014) ldb      [x + 0]
-			(015) add      #2
-			(016) mul      #4
-			(017) tax
-			(018) ld       M[0]
-			(019) ja       5
-			(020) add      #0
-			(021) jeq      #0x11            jt 56	jf 22
-			(022) ldb      [0]
-			(023) and      #0xf0
-			(024) jeq      #0x60            jt 25	jf 57
-			(025) ldb      [6]
-			(026) ldx      #0x28
-			(027) jeq      #0x11            jt 54	jf 28
-			(028) jeq      #0x3b            jt 54	jf 29
-			(029) jeq      #0x0             jt 33	jf 30
-			(030) jeq      #0x3c            jt 33	jf 31
-			(031) jeq      #0x2b            jt 33	jf 32
-			(032) jeq      #0x2c            jt 33	jf 42
-			(033) ldb      [x + 0]
-			(034) st       M[0]
-			(035) ldb      [x + 1]
-			(036) add      #1
-			(037) mul      #8
-			(038) add      x
-			(039) tax
-			(040) ld       M[0]
-			(041) ja       27
-			(042) jeq      #0x33            jt 43	jf 54
-			(043) ldb      [x + 0]
-			(044) st       M[0]
-			(045) txa
-			(046) add      #1
-			(047) tax
-			(048) ldb      [x + 0]
-			(049) add      #2
-			(050) mul      #4
-			(051) tax
-			(052) ld       M[0]
-			(053) ja       27
-			(054) add      #0
-			(055) jeq      #0x11            jt 56	jf 57
-			(056) ret      #262144
-			(057) ret      #0
+			(005) jeq      #0x11            jt 19	jf 6
+			(006) jeq      #0x3b            jt 19	jf 7
+			(007) jeq      #0x33            jt 8	jf 19
+			(008) ldb      [x + 0]
+			(009) st       M[0]
+			(010) txa
+			(011) add      #1
+			(012) tax
+			(013) ldb      [x + 0]
+			(014) add      #2
+			(015) mul      #4
+			(016) tax
+			(017) ld       M[0]
+			(018) ja       5
+			(019) add      #0
+			(020) jeq      #0x11            jt 55	jf 21
+			(021) ldb      [0]
+			(022) and      #0xf0
+			(023) jeq      #0x60            jt 24	jf 56
+			(024) ldb      [6]
+			(025) ldx      #0x28
+			(026) jeq      #0x11            jt 53	jf 27
+			(027) jeq      #0x3b            jt 53	jf 28
+			(028) jeq      #0x0             jt 32	jf 29
+			(029) jeq      #0x3c            jt 32	jf 30
+			(030) jeq      #0x2b            jt 32	jf 31
+			(031) jeq      #0x2c            jt 32	jf 41
+			(032) ldb      [x + 0]
+			(033) st       M[0]
+			(034) ldb      [x + 1]
+			(035) add      #1
+			(036) mul      #8
+			(037) add      x
+			(038) tax
+			(039) ld       M[0]
+			(040) ja       26
+			(041) jeq      #0x33            jt 42	jf 53
+			(042) ldb      [x + 0]
+			(043) st       M[0]
+			(044) txa
+			(045) add      #1
+			(046) tax
+			(047) ldb      [x + 0]
+			(048) add      #2
+			(049) mul      #4
+			(050) tax
+			(051) ld       M[0]
+			(052) ja       26
+			(053) add      #0
+			(054) jeq      #0x11            jt 55	jf 56
+			(055) ret      #262144
+			(056) ret      #0
 			',
 	}, # protochain
 	{
@@ -16123,893 +16121,877 @@ my @filter_accept_blocks = (
 			'protochain 13 and protochain 14 and protochain 15 and protochain 16'],
 		optunopt => '
 			(000) ldh      [12]
-			(001) jeq      #0x800           jt 2	jf 21
+			(001) jeq      #0x800           jt 2	jf 20
 			(002) ldb      [23]
 			(003) ldxb     4*([14]&0xf)
-			(004) jeq      #0x1             jt 19	jf 5
-			(005) jeq      #0x3b            jt 19	jf 6
-			(006) add      #0
-			(007) jeq      #0x33            jt 8	jf 19
-			(008) ldb      [x + 14]
-			(009) st       M[0]
-			(010) txa
-			(011) add      #1
-			(012) tax
-			(013) ldb      [x + 14]
-			(014) add      #2
-			(015) mul      #4
-			(016) tax
-			(017) ld       M[0]
-			(018) ja       4
-			(019) add      #0
-			(020) jeq      #0x1             jt 56	jf 21
-			(021) ldh      [12]
-			(022) jeq      #0x86dd          jt 24	jf 23
-			(023) ja       887
-			(024) ldb      [20]
-			(025) ldx      #0x28
-			(026) jeq      #0x1             jt 53	jf 27
-			(027) jeq      #0x3b            jt 53	jf 28
-			(028) jeq      #0x0             jt 32	jf 29
-			(029) jeq      #0x3c            jt 32	jf 30
-			(030) jeq      #0x2b            jt 32	jf 31
-			(031) jeq      #0x2c            jt 32	jf 41
-			(032) ldb      [x + 14]
-			(033) st       M[0]
-			(034) ldb      [x + 15]
-			(035) add      #1
-			(036) mul      #8
-			(037) add      x
-			(038) tax
-			(039) ld       M[0]
-			(040) ja       26
-			(041) jeq      #0x33            jt 42	jf 53
-			(042) ldb      [x + 14]
-			(043) st       M[0]
-			(044) txa
-			(045) add      #1
-			(046) tax
-			(047) ldb      [x + 14]
-			(048) add      #2
-			(049) mul      #4
-			(050) tax
-			(051) ld       M[0]
-			(052) ja       26
-			(053) add      #0
-			(054) jeq      #0x1             jt 56	jf 55
-			(055) ja       887
-			(056) ldh      [12]
-			(057) jeq      #0x800           jt 58	jf 77
-			(058) ldb      [23]
-			(059) ldxb     4*([14]&0xf)
-			(060) jeq      #0x2             jt 75	jf 61
-			(061) jeq      #0x3b            jt 75	jf 62
-			(062) add      #0
-			(063) jeq      #0x33            jt 64	jf 75
-			(064) ldb      [x + 14]
-			(065) st       M[0]
-			(066) txa
-			(067) add      #1
-			(068) tax
-			(069) ldb      [x + 14]
-			(070) add      #2
-			(071) mul      #4
-			(072) tax
-			(073) ld       M[0]
-			(074) ja       60
-			(075) add      #0
-			(076) jeq      #0x2             jt 112	jf 77
-			(077) ldh      [12]
-			(078) jeq      #0x86dd          jt 80	jf 79
-			(079) ja       887
-			(080) ldb      [20]
-			(081) ldx      #0x28
-			(082) jeq      #0x2             jt 109	jf 83
-			(083) jeq      #0x3b            jt 109	jf 84
-			(084) jeq      #0x0             jt 88	jf 85
-			(085) jeq      #0x3c            jt 88	jf 86
-			(086) jeq      #0x2b            jt 88	jf 87
-			(087) jeq      #0x2c            jt 88	jf 97
-			(088) ldb      [x + 14]
-			(089) st       M[0]
-			(090) ldb      [x + 15]
-			(091) add      #1
-			(092) mul      #8
-			(093) add      x
-			(094) tax
-			(095) ld       M[0]
-			(096) ja       82
-			(097) jeq      #0x33            jt 98	jf 109
-			(098) ldb      [x + 14]
-			(099) st       M[0]
-			(100) txa
-			(101) add      #1
-			(102) tax
-			(103) ldb      [x + 14]
-			(104) add      #2
-			(105) mul      #4
-			(106) tax
-			(107) ld       M[0]
-			(108) ja       82
-			(109) add      #0
-			(110) jeq      #0x2             jt 112	jf 111
-			(111) ja       887
-			(112) ldh      [12]
-			(113) jeq      #0x800           jt 114	jf 133
-			(114) ldb      [23]
-			(115) ldxb     4*([14]&0xf)
-			(116) jeq      #0x3             jt 131	jf 117
-			(117) jeq      #0x3b            jt 131	jf 118
-			(118) add      #0
-			(119) jeq      #0x33            jt 120	jf 131
-			(120) ldb      [x + 14]
-			(121) st       M[0]
-			(122) txa
-			(123) add      #1
-			(124) tax
-			(125) ldb      [x + 14]
-			(126) add      #2
-			(127) mul      #4
-			(128) tax
-			(129) ld       M[0]
-			(130) ja       116
-			(131) add      #0
-			(132) jeq      #0x3             jt 168	jf 133
-			(133) ldh      [12]
-			(134) jeq      #0x86dd          jt 136	jf 135
-			(135) ja       887
-			(136) ldb      [20]
-			(137) ldx      #0x28
-			(138) jeq      #0x3             jt 165	jf 139
-			(139) jeq      #0x3b            jt 165	jf 140
-			(140) jeq      #0x0             jt 144	jf 141
-			(141) jeq      #0x3c            jt 144	jf 142
-			(142) jeq      #0x2b            jt 144	jf 143
-			(143) jeq      #0x2c            jt 144	jf 153
-			(144) ldb      [x + 14]
-			(145) st       M[0]
-			(146) ldb      [x + 15]
-			(147) add      #1
-			(148) mul      #8
-			(149) add      x
-			(150) tax
-			(151) ld       M[0]
-			(152) ja       138
-			(153) jeq      #0x33            jt 154	jf 165
-			(154) ldb      [x + 14]
-			(155) st       M[0]
-			(156) txa
-			(157) add      #1
-			(158) tax
-			(159) ldb      [x + 14]
-			(160) add      #2
-			(161) mul      #4
-			(162) tax
-			(163) ld       M[0]
-			(164) ja       138
-			(165) add      #0
-			(166) jeq      #0x3             jt 168	jf 167
-			(167) ja       887
-			(168) ldh      [12]
-			(169) jeq      #0x800           jt 170	jf 189
-			(170) ldb      [23]
-			(171) ldxb     4*([14]&0xf)
-			(172) jeq      #0x4             jt 187	jf 173
-			(173) jeq      #0x3b            jt 187	jf 174
-			(174) add      #0
-			(175) jeq      #0x33            jt 176	jf 187
-			(176) ldb      [x + 14]
-			(177) st       M[0]
-			(178) txa
-			(179) add      #1
+			(004) jeq      #0x1             jt 18	jf 5
+			(005) jeq      #0x3b            jt 18	jf 6
+			(006) jeq      #0x33            jt 7	jf 18
+			(007) ldb      [x + 14]
+			(008) st       M[0]
+			(009) txa
+			(010) add      #1
+			(011) tax
+			(012) ldb      [x + 14]
+			(013) add      #2
+			(014) mul      #4
+			(015) tax
+			(016) ld       M[0]
+			(017) ja       4
+			(018) add      #0
+			(019) jeq      #0x1             jt 55	jf 20
+			(020) ldh      [12]
+			(021) jeq      #0x86dd          jt 23	jf 22
+			(022) ja       871
+			(023) ldb      [20]
+			(024) ldx      #0x28
+			(025) jeq      #0x1             jt 52	jf 26
+			(026) jeq      #0x3b            jt 52	jf 27
+			(027) jeq      #0x0             jt 31	jf 28
+			(028) jeq      #0x3c            jt 31	jf 29
+			(029) jeq      #0x2b            jt 31	jf 30
+			(030) jeq      #0x2c            jt 31	jf 40
+			(031) ldb      [x + 14]
+			(032) st       M[0]
+			(033) ldb      [x + 15]
+			(034) add      #1
+			(035) mul      #8
+			(036) add      x
+			(037) tax
+			(038) ld       M[0]
+			(039) ja       25
+			(040) jeq      #0x33            jt 41	jf 52
+			(041) ldb      [x + 14]
+			(042) st       M[0]
+			(043) txa
+			(044) add      #1
+			(045) tax
+			(046) ldb      [x + 14]
+			(047) add      #2
+			(048) mul      #4
+			(049) tax
+			(050) ld       M[0]
+			(051) ja       25
+			(052) add      #0
+			(053) jeq      #0x1             jt 55	jf 54
+			(054) ja       871
+			(055) ldh      [12]
+			(056) jeq      #0x800           jt 57	jf 75
+			(057) ldb      [23]
+			(058) ldxb     4*([14]&0xf)
+			(059) jeq      #0x2             jt 73	jf 60
+			(060) jeq      #0x3b            jt 73	jf 61
+			(061) jeq      #0x33            jt 62	jf 73
+			(062) ldb      [x + 14]
+			(063) st       M[0]
+			(064) txa
+			(065) add      #1
+			(066) tax
+			(067) ldb      [x + 14]
+			(068) add      #2
+			(069) mul      #4
+			(070) tax
+			(071) ld       M[0]
+			(072) ja       59
+			(073) add      #0
+			(074) jeq      #0x2             jt 110	jf 75
+			(075) ldh      [12]
+			(076) jeq      #0x86dd          jt 78	jf 77
+			(077) ja       871
+			(078) ldb      [20]
+			(079) ldx      #0x28
+			(080) jeq      #0x2             jt 107	jf 81
+			(081) jeq      #0x3b            jt 107	jf 82
+			(082) jeq      #0x0             jt 86	jf 83
+			(083) jeq      #0x3c            jt 86	jf 84
+			(084) jeq      #0x2b            jt 86	jf 85
+			(085) jeq      #0x2c            jt 86	jf 95
+			(086) ldb      [x + 14]
+			(087) st       M[0]
+			(088) ldb      [x + 15]
+			(089) add      #1
+			(090) mul      #8
+			(091) add      x
+			(092) tax
+			(093) ld       M[0]
+			(094) ja       80
+			(095) jeq      #0x33            jt 96	jf 107
+			(096) ldb      [x + 14]
+			(097) st       M[0]
+			(098) txa
+			(099) add      #1
+			(100) tax
+			(101) ldb      [x + 14]
+			(102) add      #2
+			(103) mul      #4
+			(104) tax
+			(105) ld       M[0]
+			(106) ja       80
+			(107) add      #0
+			(108) jeq      #0x2             jt 110	jf 109
+			(109) ja       871
+			(110) ldh      [12]
+			(111) jeq      #0x800           jt 112	jf 130
+			(112) ldb      [23]
+			(113) ldxb     4*([14]&0xf)
+			(114) jeq      #0x3             jt 128	jf 115
+			(115) jeq      #0x3b            jt 128	jf 116
+			(116) jeq      #0x33            jt 117	jf 128
+			(117) ldb      [x + 14]
+			(118) st       M[0]
+			(119) txa
+			(120) add      #1
+			(121) tax
+			(122) ldb      [x + 14]
+			(123) add      #2
+			(124) mul      #4
+			(125) tax
+			(126) ld       M[0]
+			(127) ja       114
+			(128) add      #0
+			(129) jeq      #0x3             jt 165	jf 130
+			(130) ldh      [12]
+			(131) jeq      #0x86dd          jt 133	jf 132
+			(132) ja       871
+			(133) ldb      [20]
+			(134) ldx      #0x28
+			(135) jeq      #0x3             jt 162	jf 136
+			(136) jeq      #0x3b            jt 162	jf 137
+			(137) jeq      #0x0             jt 141	jf 138
+			(138) jeq      #0x3c            jt 141	jf 139
+			(139) jeq      #0x2b            jt 141	jf 140
+			(140) jeq      #0x2c            jt 141	jf 150
+			(141) ldb      [x + 14]
+			(142) st       M[0]
+			(143) ldb      [x + 15]
+			(144) add      #1
+			(145) mul      #8
+			(146) add      x
+			(147) tax
+			(148) ld       M[0]
+			(149) ja       135
+			(150) jeq      #0x33            jt 151	jf 162
+			(151) ldb      [x + 14]
+			(152) st       M[0]
+			(153) txa
+			(154) add      #1
+			(155) tax
+			(156) ldb      [x + 14]
+			(157) add      #2
+			(158) mul      #4
+			(159) tax
+			(160) ld       M[0]
+			(161) ja       135
+			(162) add      #0
+			(163) jeq      #0x3             jt 165	jf 164
+			(164) ja       871
+			(165) ldh      [12]
+			(166) jeq      #0x800           jt 167	jf 185
+			(167) ldb      [23]
+			(168) ldxb     4*([14]&0xf)
+			(169) jeq      #0x4             jt 183	jf 170
+			(170) jeq      #0x3b            jt 183	jf 171
+			(171) jeq      #0x33            jt 172	jf 183
+			(172) ldb      [x + 14]
+			(173) st       M[0]
+			(174) txa
+			(175) add      #1
+			(176) tax
+			(177) ldb      [x + 14]
+			(178) add      #2
+			(179) mul      #4
 			(180) tax
-			(181) ldb      [x + 14]
-			(182) add      #2
-			(183) mul      #4
-			(184) tax
-			(185) ld       M[0]
-			(186) ja       172
-			(187) add      #0
-			(188) jeq      #0x4             jt 224	jf 189
-			(189) ldh      [12]
-			(190) jeq      #0x86dd          jt 192	jf 191
-			(191) ja       887
-			(192) ldb      [20]
-			(193) ldx      #0x28
-			(194) jeq      #0x4             jt 221	jf 195
-			(195) jeq      #0x3b            jt 221	jf 196
-			(196) jeq      #0x0             jt 200	jf 197
-			(197) jeq      #0x3c            jt 200	jf 198
-			(198) jeq      #0x2b            jt 200	jf 199
-			(199) jeq      #0x2c            jt 200	jf 209
-			(200) ldb      [x + 14]
-			(201) st       M[0]
-			(202) ldb      [x + 15]
-			(203) add      #1
-			(204) mul      #8
-			(205) add      x
-			(206) tax
-			(207) ld       M[0]
-			(208) ja       194
-			(209) jeq      #0x33            jt 210	jf 221
-			(210) ldb      [x + 14]
-			(211) st       M[0]
-			(212) txa
-			(213) add      #1
+			(181) ld       M[0]
+			(182) ja       169
+			(183) add      #0
+			(184) jeq      #0x4             jt 220	jf 185
+			(185) ldh      [12]
+			(186) jeq      #0x86dd          jt 188	jf 187
+			(187) ja       871
+			(188) ldb      [20]
+			(189) ldx      #0x28
+			(190) jeq      #0x4             jt 217	jf 191
+			(191) jeq      #0x3b            jt 217	jf 192
+			(192) jeq      #0x0             jt 196	jf 193
+			(193) jeq      #0x3c            jt 196	jf 194
+			(194) jeq      #0x2b            jt 196	jf 195
+			(195) jeq      #0x2c            jt 196	jf 205
+			(196) ldb      [x + 14]
+			(197) st       M[0]
+			(198) ldb      [x + 15]
+			(199) add      #1
+			(200) mul      #8
+			(201) add      x
+			(202) tax
+			(203) ld       M[0]
+			(204) ja       190
+			(205) jeq      #0x33            jt 206	jf 217
+			(206) ldb      [x + 14]
+			(207) st       M[0]
+			(208) txa
+			(209) add      #1
+			(210) tax
+			(211) ldb      [x + 14]
+			(212) add      #2
+			(213) mul      #4
 			(214) tax
-			(215) ldb      [x + 14]
-			(216) add      #2
-			(217) mul      #4
-			(218) tax
-			(219) ld       M[0]
-			(220) ja       194
-			(221) add      #0
-			(222) jeq      #0x4             jt 224	jf 223
-			(223) ja       887
-			(224) ldh      [12]
-			(225) jeq      #0x800           jt 226	jf 245
-			(226) ldb      [23]
-			(227) ldxb     4*([14]&0xf)
-			(228) jeq      #0x5             jt 243	jf 229
-			(229) jeq      #0x3b            jt 243	jf 230
-			(230) add      #0
-			(231) jeq      #0x33            jt 232	jf 243
+			(215) ld       M[0]
+			(216) ja       190
+			(217) add      #0
+			(218) jeq      #0x4             jt 220	jf 219
+			(219) ja       871
+			(220) ldh      [12]
+			(221) jeq      #0x800           jt 222	jf 240
+			(222) ldb      [23]
+			(223) ldxb     4*([14]&0xf)
+			(224) jeq      #0x5             jt 238	jf 225
+			(225) jeq      #0x3b            jt 238	jf 226
+			(226) jeq      #0x33            jt 227	jf 238
+			(227) ldb      [x + 14]
+			(228) st       M[0]
+			(229) txa
+			(230) add      #1
+			(231) tax
 			(232) ldb      [x + 14]
-			(233) st       M[0]
-			(234) txa
-			(235) add      #1
-			(236) tax
-			(237) ldb      [x + 14]
-			(238) add      #2
-			(239) mul      #4
-			(240) tax
-			(241) ld       M[0]
-			(242) ja       228
-			(243) add      #0
-			(244) jeq      #0x5             jt 280	jf 245
-			(245) ldh      [12]
-			(246) jeq      #0x86dd          jt 248	jf 247
-			(247) ja       887
-			(248) ldb      [20]
-			(249) ldx      #0x28
-			(250) jeq      #0x5             jt 277	jf 251
-			(251) jeq      #0x3b            jt 277	jf 252
-			(252) jeq      #0x0             jt 256	jf 253
-			(253) jeq      #0x3c            jt 256	jf 254
-			(254) jeq      #0x2b            jt 256	jf 255
-			(255) jeq      #0x2c            jt 256	jf 265
-			(256) ldb      [x + 14]
-			(257) st       M[0]
-			(258) ldb      [x + 15]
-			(259) add      #1
-			(260) mul      #8
-			(261) add      x
-			(262) tax
-			(263) ld       M[0]
-			(264) ja       250
-			(265) jeq      #0x33            jt 266	jf 277
+			(233) add      #2
+			(234) mul      #4
+			(235) tax
+			(236) ld       M[0]
+			(237) ja       224
+			(238) add      #0
+			(239) jeq      #0x5             jt 275	jf 240
+			(240) ldh      [12]
+			(241) jeq      #0x86dd          jt 243	jf 242
+			(242) ja       871
+			(243) ldb      [20]
+			(244) ldx      #0x28
+			(245) jeq      #0x5             jt 272	jf 246
+			(246) jeq      #0x3b            jt 272	jf 247
+			(247) jeq      #0x0             jt 251	jf 248
+			(248) jeq      #0x3c            jt 251	jf 249
+			(249) jeq      #0x2b            jt 251	jf 250
+			(250) jeq      #0x2c            jt 251	jf 260
+			(251) ldb      [x + 14]
+			(252) st       M[0]
+			(253) ldb      [x + 15]
+			(254) add      #1
+			(255) mul      #8
+			(256) add      x
+			(257) tax
+			(258) ld       M[0]
+			(259) ja       245
+			(260) jeq      #0x33            jt 261	jf 272
+			(261) ldb      [x + 14]
+			(262) st       M[0]
+			(263) txa
+			(264) add      #1
+			(265) tax
 			(266) ldb      [x + 14]
-			(267) st       M[0]
-			(268) txa
-			(269) add      #1
-			(270) tax
-			(271) ldb      [x + 14]
-			(272) add      #2
-			(273) mul      #4
-			(274) tax
-			(275) ld       M[0]
-			(276) ja       250
-			(277) add      #0
-			(278) jeq      #0x5             jt 280	jf 279
-			(279) ja       887
-			(280) ldh      [12]
-			(281) jeq      #0x800           jt 282	jf 301
-			(282) ldb      [23]
-			(283) ldxb     4*([14]&0xf)
-			(284) jeq      #0x6             jt 299	jf 285
-			(285) jeq      #0x3b            jt 299	jf 286
-			(286) add      #0
-			(287) jeq      #0x33            jt 288	jf 299
-			(288) ldb      [x + 14]
-			(289) st       M[0]
-			(290) txa
-			(291) add      #1
-			(292) tax
-			(293) ldb      [x + 14]
-			(294) add      #2
-			(295) mul      #4
-			(296) tax
-			(297) ld       M[0]
-			(298) ja       284
-			(299) add      #0
-			(300) jeq      #0x6             jt 336	jf 301
-			(301) ldh      [12]
-			(302) jeq      #0x86dd          jt 304	jf 303
-			(303) ja       887
-			(304) ldb      [20]
-			(305) ldx      #0x28
-			(306) jeq      #0x6             jt 333	jf 307
-			(307) jeq      #0x3b            jt 333	jf 308
-			(308) jeq      #0x0             jt 312	jf 309
-			(309) jeq      #0x3c            jt 312	jf 310
-			(310) jeq      #0x2b            jt 312	jf 311
-			(311) jeq      #0x2c            jt 312	jf 321
-			(312) ldb      [x + 14]
-			(313) st       M[0]
-			(314) ldb      [x + 15]
-			(315) add      #1
-			(316) mul      #8
-			(317) add      x
-			(318) tax
-			(319) ld       M[0]
-			(320) ja       306
-			(321) jeq      #0x33            jt 322	jf 333
-			(322) ldb      [x + 14]
-			(323) st       M[0]
-			(324) txa
-			(325) add      #1
-			(326) tax
-			(327) ldb      [x + 14]
-			(328) add      #2
-			(329) mul      #4
-			(330) tax
-			(331) ld       M[0]
-			(332) ja       306
-			(333) add      #0
-			(334) jeq      #0x6             jt 336	jf 335
-			(335) ja       887
-			(336) ldh      [12]
-			(337) jeq      #0x800           jt 338	jf 357
-			(338) ldb      [23]
-			(339) ldxb     4*([14]&0xf)
-			(340) jeq      #0x7             jt 355	jf 341
-			(341) jeq      #0x3b            jt 355	jf 342
-			(342) add      #0
-			(343) jeq      #0x33            jt 344	jf 355
-			(344) ldb      [x + 14]
-			(345) st       M[0]
-			(346) txa
-			(347) add      #1
-			(348) tax
-			(349) ldb      [x + 14]
-			(350) add      #2
-			(351) mul      #4
-			(352) tax
-			(353) ld       M[0]
-			(354) ja       340
-			(355) add      #0
-			(356) jeq      #0x7             jt 392	jf 357
-			(357) ldh      [12]
-			(358) jeq      #0x86dd          jt 360	jf 359
-			(359) ja       887
-			(360) ldb      [20]
-			(361) ldx      #0x28
-			(362) jeq      #0x7             jt 389	jf 363
-			(363) jeq      #0x3b            jt 389	jf 364
-			(364) jeq      #0x0             jt 368	jf 365
-			(365) jeq      #0x3c            jt 368	jf 366
-			(366) jeq      #0x2b            jt 368	jf 367
-			(367) jeq      #0x2c            jt 368	jf 377
-			(368) ldb      [x + 14]
-			(369) st       M[0]
-			(370) ldb      [x + 15]
-			(371) add      #1
-			(372) mul      #8
-			(373) add      x
-			(374) tax
-			(375) ld       M[0]
-			(376) ja       362
-			(377) jeq      #0x33            jt 378	jf 389
-			(378) ldb      [x + 14]
-			(379) st       M[0]
-			(380) txa
-			(381) add      #1
-			(382) tax
-			(383) ldb      [x + 14]
-			(384) add      #2
-			(385) mul      #4
-			(386) tax
-			(387) ld       M[0]
-			(388) ja       362
-			(389) add      #0
-			(390) jeq      #0x7             jt 392	jf 391
-			(391) ja       887
-			(392) ldh      [12]
-			(393) jeq      #0x800           jt 394	jf 413
-			(394) ldb      [23]
-			(395) ldxb     4*([14]&0xf)
-			(396) jeq      #0x8             jt 411	jf 397
-			(397) jeq      #0x3b            jt 411	jf 398
-			(398) add      #0
-			(399) jeq      #0x33            jt 400	jf 411
-			(400) ldb      [x + 14]
-			(401) st       M[0]
-			(402) txa
-			(403) add      #1
-			(404) tax
-			(405) ldb      [x + 14]
-			(406) add      #2
-			(407) mul      #4
-			(408) tax
-			(409) ld       M[0]
-			(410) ja       396
-			(411) add      #0
-			(412) jeq      #0x8             jt 448	jf 413
-			(413) ldh      [12]
-			(414) jeq      #0x86dd          jt 416	jf 415
-			(415) ja       887
-			(416) ldb      [20]
-			(417) ldx      #0x28
-			(418) jeq      #0x8             jt 445	jf 419
-			(419) jeq      #0x3b            jt 445	jf 420
-			(420) jeq      #0x0             jt 424	jf 421
-			(421) jeq      #0x3c            jt 424	jf 422
-			(422) jeq      #0x2b            jt 424	jf 423
-			(423) jeq      #0x2c            jt 424	jf 433
-			(424) ldb      [x + 14]
-			(425) st       M[0]
-			(426) ldb      [x + 15]
-			(427) add      #1
-			(428) mul      #8
-			(429) add      x
+			(267) add      #2
+			(268) mul      #4
+			(269) tax
+			(270) ld       M[0]
+			(271) ja       245
+			(272) add      #0
+			(273) jeq      #0x5             jt 275	jf 274
+			(274) ja       871
+			(275) ldh      [12]
+			(276) jeq      #0x800           jt 277	jf 295
+			(277) ldb      [23]
+			(278) ldxb     4*([14]&0xf)
+			(279) jeq      #0x6             jt 293	jf 280
+			(280) jeq      #0x3b            jt 293	jf 281
+			(281) jeq      #0x33            jt 282	jf 293
+			(282) ldb      [x + 14]
+			(283) st       M[0]
+			(284) txa
+			(285) add      #1
+			(286) tax
+			(287) ldb      [x + 14]
+			(288) add      #2
+			(289) mul      #4
+			(290) tax
+			(291) ld       M[0]
+			(292) ja       279
+			(293) add      #0
+			(294) jeq      #0x6             jt 330	jf 295
+			(295) ldh      [12]
+			(296) jeq      #0x86dd          jt 298	jf 297
+			(297) ja       871
+			(298) ldb      [20]
+			(299) ldx      #0x28
+			(300) jeq      #0x6             jt 327	jf 301
+			(301) jeq      #0x3b            jt 327	jf 302
+			(302) jeq      #0x0             jt 306	jf 303
+			(303) jeq      #0x3c            jt 306	jf 304
+			(304) jeq      #0x2b            jt 306	jf 305
+			(305) jeq      #0x2c            jt 306	jf 315
+			(306) ldb      [x + 14]
+			(307) st       M[0]
+			(308) ldb      [x + 15]
+			(309) add      #1
+			(310) mul      #8
+			(311) add      x
+			(312) tax
+			(313) ld       M[0]
+			(314) ja       300
+			(315) jeq      #0x33            jt 316	jf 327
+			(316) ldb      [x + 14]
+			(317) st       M[0]
+			(318) txa
+			(319) add      #1
+			(320) tax
+			(321) ldb      [x + 14]
+			(322) add      #2
+			(323) mul      #4
+			(324) tax
+			(325) ld       M[0]
+			(326) ja       300
+			(327) add      #0
+			(328) jeq      #0x6             jt 330	jf 329
+			(329) ja       871
+			(330) ldh      [12]
+			(331) jeq      #0x800           jt 332	jf 350
+			(332) ldb      [23]
+			(333) ldxb     4*([14]&0xf)
+			(334) jeq      #0x7             jt 348	jf 335
+			(335) jeq      #0x3b            jt 348	jf 336
+			(336) jeq      #0x33            jt 337	jf 348
+			(337) ldb      [x + 14]
+			(338) st       M[0]
+			(339) txa
+			(340) add      #1
+			(341) tax
+			(342) ldb      [x + 14]
+			(343) add      #2
+			(344) mul      #4
+			(345) tax
+			(346) ld       M[0]
+			(347) ja       334
+			(348) add      #0
+			(349) jeq      #0x7             jt 385	jf 350
+			(350) ldh      [12]
+			(351) jeq      #0x86dd          jt 353	jf 352
+			(352) ja       871
+			(353) ldb      [20]
+			(354) ldx      #0x28
+			(355) jeq      #0x7             jt 382	jf 356
+			(356) jeq      #0x3b            jt 382	jf 357
+			(357) jeq      #0x0             jt 361	jf 358
+			(358) jeq      #0x3c            jt 361	jf 359
+			(359) jeq      #0x2b            jt 361	jf 360
+			(360) jeq      #0x2c            jt 361	jf 370
+			(361) ldb      [x + 14]
+			(362) st       M[0]
+			(363) ldb      [x + 15]
+			(364) add      #1
+			(365) mul      #8
+			(366) add      x
+			(367) tax
+			(368) ld       M[0]
+			(369) ja       355
+			(370) jeq      #0x33            jt 371	jf 382
+			(371) ldb      [x + 14]
+			(372) st       M[0]
+			(373) txa
+			(374) add      #1
+			(375) tax
+			(376) ldb      [x + 14]
+			(377) add      #2
+			(378) mul      #4
+			(379) tax
+			(380) ld       M[0]
+			(381) ja       355
+			(382) add      #0
+			(383) jeq      #0x7             jt 385	jf 384
+			(384) ja       871
+			(385) ldh      [12]
+			(386) jeq      #0x800           jt 387	jf 405
+			(387) ldb      [23]
+			(388) ldxb     4*([14]&0xf)
+			(389) jeq      #0x8             jt 403	jf 390
+			(390) jeq      #0x3b            jt 403	jf 391
+			(391) jeq      #0x33            jt 392	jf 403
+			(392) ldb      [x + 14]
+			(393) st       M[0]
+			(394) txa
+			(395) add      #1
+			(396) tax
+			(397) ldb      [x + 14]
+			(398) add      #2
+			(399) mul      #4
+			(400) tax
+			(401) ld       M[0]
+			(402) ja       389
+			(403) add      #0
+			(404) jeq      #0x8             jt 440	jf 405
+			(405) ldh      [12]
+			(406) jeq      #0x86dd          jt 408	jf 407
+			(407) ja       871
+			(408) ldb      [20]
+			(409) ldx      #0x28
+			(410) jeq      #0x8             jt 437	jf 411
+			(411) jeq      #0x3b            jt 437	jf 412
+			(412) jeq      #0x0             jt 416	jf 413
+			(413) jeq      #0x3c            jt 416	jf 414
+			(414) jeq      #0x2b            jt 416	jf 415
+			(415) jeq      #0x2c            jt 416	jf 425
+			(416) ldb      [x + 14]
+			(417) st       M[0]
+			(418) ldb      [x + 15]
+			(419) add      #1
+			(420) mul      #8
+			(421) add      x
+			(422) tax
+			(423) ld       M[0]
+			(424) ja       410
+			(425) jeq      #0x33            jt 426	jf 437
+			(426) ldb      [x + 14]
+			(427) st       M[0]
+			(428) txa
+			(429) add      #1
 			(430) tax
-			(431) ld       M[0]
-			(432) ja       418
-			(433) jeq      #0x33            jt 434	jf 445
-			(434) ldb      [x + 14]
-			(435) st       M[0]
-			(436) txa
-			(437) add      #1
-			(438) tax
-			(439) ldb      [x + 14]
-			(440) add      #2
-			(441) mul      #4
-			(442) tax
-			(443) ld       M[0]
-			(444) ja       418
-			(445) add      #0
-			(446) jeq      #0x8             jt 448	jf 447
-			(447) ja       887
-			(448) ldh      [12]
-			(449) jeq      #0x800           jt 450	jf 469
-			(450) ldb      [23]
-			(451) ldxb     4*([14]&0xf)
-			(452) jeq      #0x9             jt 467	jf 453
-			(453) jeq      #0x3b            jt 467	jf 454
-			(454) add      #0
-			(455) jeq      #0x33            jt 456	jf 467
-			(456) ldb      [x + 14]
-			(457) st       M[0]
-			(458) txa
-			(459) add      #1
-			(460) tax
-			(461) ldb      [x + 14]
-			(462) add      #2
-			(463) mul      #4
-			(464) tax
-			(465) ld       M[0]
-			(466) ja       452
-			(467) add      #0
-			(468) jeq      #0x9             jt 504	jf 469
-			(469) ldh      [12]
-			(470) jeq      #0x86dd          jt 472	jf 471
-			(471) ja       887
-			(472) ldb      [20]
-			(473) ldx      #0x28
-			(474) jeq      #0x9             jt 501	jf 475
-			(475) jeq      #0x3b            jt 501	jf 476
-			(476) jeq      #0x0             jt 480	jf 477
-			(477) jeq      #0x3c            jt 480	jf 478
-			(478) jeq      #0x2b            jt 480	jf 479
-			(479) jeq      #0x2c            jt 480	jf 489
-			(480) ldb      [x + 14]
-			(481) st       M[0]
-			(482) ldb      [x + 15]
-			(483) add      #1
-			(484) mul      #8
-			(485) add      x
-			(486) tax
-			(487) ld       M[0]
-			(488) ja       474
-			(489) jeq      #0x33            jt 490	jf 501
-			(490) ldb      [x + 14]
-			(491) st       M[0]
-			(492) txa
-			(493) add      #1
-			(494) tax
-			(495) ldb      [x + 14]
-			(496) add      #2
-			(497) mul      #4
-			(498) tax
-			(499) ld       M[0]
-			(500) ja       474
-			(501) add      #0
-			(502) jeq      #0x9             jt 504	jf 503
-			(503) ja       887
-			(504) ldh      [12]
-			(505) jeq      #0x800           jt 506	jf 525
-			(506) ldb      [23]
-			(507) ldxb     4*([14]&0xf)
-			(508) jeq      #0xa             jt 523	jf 509
-			(509) jeq      #0x3b            jt 523	jf 510
-			(510) add      #0
-			(511) jeq      #0x33            jt 512	jf 523
-			(512) ldb      [x + 14]
-			(513) st       M[0]
-			(514) txa
-			(515) add      #1
-			(516) tax
-			(517) ldb      [x + 14]
-			(518) add      #2
-			(519) mul      #4
-			(520) tax
-			(521) ld       M[0]
-			(522) ja       508
-			(523) add      #0
-			(524) jeq      #0xa             jt 560	jf 525
-			(525) ldh      [12]
-			(526) jeq      #0x86dd          jt 528	jf 527
-			(527) ja       887
-			(528) ldb      [20]
-			(529) ldx      #0x28
-			(530) jeq      #0xa             jt 557	jf 531
-			(531) jeq      #0x3b            jt 557	jf 532
-			(532) jeq      #0x0             jt 536	jf 533
-			(533) jeq      #0x3c            jt 536	jf 534
-			(534) jeq      #0x2b            jt 536	jf 535
-			(535) jeq      #0x2c            jt 536	jf 545
+			(431) ldb      [x + 14]
+			(432) add      #2
+			(433) mul      #4
+			(434) tax
+			(435) ld       M[0]
+			(436) ja       410
+			(437) add      #0
+			(438) jeq      #0x8             jt 440	jf 439
+			(439) ja       871
+			(440) ldh      [12]
+			(441) jeq      #0x800           jt 442	jf 460
+			(442) ldb      [23]
+			(443) ldxb     4*([14]&0xf)
+			(444) jeq      #0x9             jt 458	jf 445
+			(445) jeq      #0x3b            jt 458	jf 446
+			(446) jeq      #0x33            jt 447	jf 458
+			(447) ldb      [x + 14]
+			(448) st       M[0]
+			(449) txa
+			(450) add      #1
+			(451) tax
+			(452) ldb      [x + 14]
+			(453) add      #2
+			(454) mul      #4
+			(455) tax
+			(456) ld       M[0]
+			(457) ja       444
+			(458) add      #0
+			(459) jeq      #0x9             jt 495	jf 460
+			(460) ldh      [12]
+			(461) jeq      #0x86dd          jt 463	jf 462
+			(462) ja       871
+			(463) ldb      [20]
+			(464) ldx      #0x28
+			(465) jeq      #0x9             jt 492	jf 466
+			(466) jeq      #0x3b            jt 492	jf 467
+			(467) jeq      #0x0             jt 471	jf 468
+			(468) jeq      #0x3c            jt 471	jf 469
+			(469) jeq      #0x2b            jt 471	jf 470
+			(470) jeq      #0x2c            jt 471	jf 480
+			(471) ldb      [x + 14]
+			(472) st       M[0]
+			(473) ldb      [x + 15]
+			(474) add      #1
+			(475) mul      #8
+			(476) add      x
+			(477) tax
+			(478) ld       M[0]
+			(479) ja       465
+			(480) jeq      #0x33            jt 481	jf 492
+			(481) ldb      [x + 14]
+			(482) st       M[0]
+			(483) txa
+			(484) add      #1
+			(485) tax
+			(486) ldb      [x + 14]
+			(487) add      #2
+			(488) mul      #4
+			(489) tax
+			(490) ld       M[0]
+			(491) ja       465
+			(492) add      #0
+			(493) jeq      #0x9             jt 495	jf 494
+			(494) ja       871
+			(495) ldh      [12]
+			(496) jeq      #0x800           jt 497	jf 515
+			(497) ldb      [23]
+			(498) ldxb     4*([14]&0xf)
+			(499) jeq      #0xa             jt 513	jf 500
+			(500) jeq      #0x3b            jt 513	jf 501
+			(501) jeq      #0x33            jt 502	jf 513
+			(502) ldb      [x + 14]
+			(503) st       M[0]
+			(504) txa
+			(505) add      #1
+			(506) tax
+			(507) ldb      [x + 14]
+			(508) add      #2
+			(509) mul      #4
+			(510) tax
+			(511) ld       M[0]
+			(512) ja       499
+			(513) add      #0
+			(514) jeq      #0xa             jt 550	jf 515
+			(515) ldh      [12]
+			(516) jeq      #0x86dd          jt 518	jf 517
+			(517) ja       871
+			(518) ldb      [20]
+			(519) ldx      #0x28
+			(520) jeq      #0xa             jt 547	jf 521
+			(521) jeq      #0x3b            jt 547	jf 522
+			(522) jeq      #0x0             jt 526	jf 523
+			(523) jeq      #0x3c            jt 526	jf 524
+			(524) jeq      #0x2b            jt 526	jf 525
+			(525) jeq      #0x2c            jt 526	jf 535
+			(526) ldb      [x + 14]
+			(527) st       M[0]
+			(528) ldb      [x + 15]
+			(529) add      #1
+			(530) mul      #8
+			(531) add      x
+			(532) tax
+			(533) ld       M[0]
+			(534) ja       520
+			(535) jeq      #0x33            jt 536	jf 547
 			(536) ldb      [x + 14]
 			(537) st       M[0]
-			(538) ldb      [x + 15]
+			(538) txa
 			(539) add      #1
-			(540) mul      #8
-			(541) add      x
-			(542) tax
-			(543) ld       M[0]
-			(544) ja       530
-			(545) jeq      #0x33            jt 546	jf 557
-			(546) ldb      [x + 14]
-			(547) st       M[0]
-			(548) txa
-			(549) add      #1
-			(550) tax
-			(551) ldb      [x + 14]
-			(552) add      #2
-			(553) mul      #4
-			(554) tax
-			(555) ld       M[0]
-			(556) ja       530
-			(557) add      #0
-			(558) jeq      #0xa             jt 560	jf 559
-			(559) ja       887
-			(560) ldh      [12]
-			(561) jeq      #0x800           jt 562	jf 581
-			(562) ldb      [23]
-			(563) ldxb     4*([14]&0xf)
-			(564) jeq      #0xb             jt 579	jf 565
-			(565) jeq      #0x3b            jt 579	jf 566
-			(566) add      #0
-			(567) jeq      #0x33            jt 568	jf 579
-			(568) ldb      [x + 14]
-			(569) st       M[0]
-			(570) txa
-			(571) add      #1
-			(572) tax
-			(573) ldb      [x + 14]
-			(574) add      #2
-			(575) mul      #4
-			(576) tax
-			(577) ld       M[0]
-			(578) ja       564
-			(579) add      #0
-			(580) jeq      #0xb             jt 616	jf 581
-			(581) ldh      [12]
-			(582) jeq      #0x86dd          jt 584	jf 583
-			(583) ja       887
-			(584) ldb      [20]
-			(585) ldx      #0x28
-			(586) jeq      #0xb             jt 613	jf 587
-			(587) jeq      #0x3b            jt 613	jf 588
-			(588) jeq      #0x0             jt 592	jf 589
-			(589) jeq      #0x3c            jt 592	jf 590
-			(590) jeq      #0x2b            jt 592	jf 591
-			(591) jeq      #0x2c            jt 592	jf 601
-			(592) ldb      [x + 14]
-			(593) st       M[0]
-			(594) ldb      [x + 15]
-			(595) add      #1
-			(596) mul      #8
-			(597) add      x
-			(598) tax
-			(599) ld       M[0]
-			(600) ja       586
-			(601) jeq      #0x33            jt 602	jf 613
-			(602) ldb      [x + 14]
-			(603) st       M[0]
-			(604) txa
-			(605) add      #1
-			(606) tax
-			(607) ldb      [x + 14]
-			(608) add      #2
-			(609) mul      #4
-			(610) tax
-			(611) ld       M[0]
-			(612) ja       586
-			(613) add      #0
-			(614) jeq      #0xb             jt 616	jf 615
-			(615) ja       887
-			(616) ldh      [12]
-			(617) jeq      #0x800           jt 618	jf 637
-			(618) ldb      [23]
-			(619) ldxb     4*([14]&0xf)
-			(620) jeq      #0xc             jt 635	jf 621
-			(621) jeq      #0x3b            jt 635	jf 622
-			(622) add      #0
-			(623) jeq      #0x33            jt 624	jf 635
-			(624) ldb      [x + 14]
-			(625) st       M[0]
-			(626) txa
-			(627) add      #1
-			(628) tax
-			(629) ldb      [x + 14]
-			(630) add      #2
-			(631) mul      #4
-			(632) tax
-			(633) ld       M[0]
-			(634) ja       620
-			(635) add      #0
-			(636) jeq      #0xc             jt 670	jf 637
-			(637) ldh      [12]
-			(638) jeq      #0x86dd          jt 639	jf 887
-			(639) ldb      [20]
-			(640) ldx      #0x28
-			(641) jeq      #0xc             jt 668	jf 642
-			(642) jeq      #0x3b            jt 668	jf 643
-			(643) jeq      #0x0             jt 647	jf 644
-			(644) jeq      #0x3c            jt 647	jf 645
-			(645) jeq      #0x2b            jt 647	jf 646
-			(646) jeq      #0x2c            jt 647	jf 656
-			(647) ldb      [x + 14]
-			(648) st       M[0]
-			(649) ldb      [x + 15]
-			(650) add      #1
-			(651) mul      #8
-			(652) add      x
+			(540) tax
+			(541) ldb      [x + 14]
+			(542) add      #2
+			(543) mul      #4
+			(544) tax
+			(545) ld       M[0]
+			(546) ja       520
+			(547) add      #0
+			(548) jeq      #0xa             jt 550	jf 549
+			(549) ja       871
+			(550) ldh      [12]
+			(551) jeq      #0x800           jt 552	jf 570
+			(552) ldb      [23]
+			(553) ldxb     4*([14]&0xf)
+			(554) jeq      #0xb             jt 568	jf 555
+			(555) jeq      #0x3b            jt 568	jf 556
+			(556) jeq      #0x33            jt 557	jf 568
+			(557) ldb      [x + 14]
+			(558) st       M[0]
+			(559) txa
+			(560) add      #1
+			(561) tax
+			(562) ldb      [x + 14]
+			(563) add      #2
+			(564) mul      #4
+			(565) tax
+			(566) ld       M[0]
+			(567) ja       554
+			(568) add      #0
+			(569) jeq      #0xb             jt 605	jf 570
+			(570) ldh      [12]
+			(571) jeq      #0x86dd          jt 573	jf 572
+			(572) ja       871
+			(573) ldb      [20]
+			(574) ldx      #0x28
+			(575) jeq      #0xb             jt 602	jf 576
+			(576) jeq      #0x3b            jt 602	jf 577
+			(577) jeq      #0x0             jt 581	jf 578
+			(578) jeq      #0x3c            jt 581	jf 579
+			(579) jeq      #0x2b            jt 581	jf 580
+			(580) jeq      #0x2c            jt 581	jf 590
+			(581) ldb      [x + 14]
+			(582) st       M[0]
+			(583) ldb      [x + 15]
+			(584) add      #1
+			(585) mul      #8
+			(586) add      x
+			(587) tax
+			(588) ld       M[0]
+			(589) ja       575
+			(590) jeq      #0x33            jt 591	jf 602
+			(591) ldb      [x + 14]
+			(592) st       M[0]
+			(593) txa
+			(594) add      #1
+			(595) tax
+			(596) ldb      [x + 14]
+			(597) add      #2
+			(598) mul      #4
+			(599) tax
+			(600) ld       M[0]
+			(601) ja       575
+			(602) add      #0
+			(603) jeq      #0xb             jt 605	jf 604
+			(604) ja       871
+			(605) ldh      [12]
+			(606) jeq      #0x800           jt 607	jf 625
+			(607) ldb      [23]
+			(608) ldxb     4*([14]&0xf)
+			(609) jeq      #0xc             jt 623	jf 610
+			(610) jeq      #0x3b            jt 623	jf 611
+			(611) jeq      #0x33            jt 612	jf 623
+			(612) ldb      [x + 14]
+			(613) st       M[0]
+			(614) txa
+			(615) add      #1
+			(616) tax
+			(617) ldb      [x + 14]
+			(618) add      #2
+			(619) mul      #4
+			(620) tax
+			(621) ld       M[0]
+			(622) ja       609
+			(623) add      #0
+			(624) jeq      #0xc             jt 658	jf 625
+			(625) ldh      [12]
+			(626) jeq      #0x86dd          jt 627	jf 871
+			(627) ldb      [20]
+			(628) ldx      #0x28
+			(629) jeq      #0xc             jt 656	jf 630
+			(630) jeq      #0x3b            jt 656	jf 631
+			(631) jeq      #0x0             jt 635	jf 632
+			(632) jeq      #0x3c            jt 635	jf 633
+			(633) jeq      #0x2b            jt 635	jf 634
+			(634) jeq      #0x2c            jt 635	jf 644
+			(635) ldb      [x + 14]
+			(636) st       M[0]
+			(637) ldb      [x + 15]
+			(638) add      #1
+			(639) mul      #8
+			(640) add      x
+			(641) tax
+			(642) ld       M[0]
+			(643) ja       629
+			(644) jeq      #0x33            jt 645	jf 656
+			(645) ldb      [x + 14]
+			(646) st       M[0]
+			(647) txa
+			(648) add      #1
+			(649) tax
+			(650) ldb      [x + 14]
+			(651) add      #2
+			(652) mul      #4
 			(653) tax
 			(654) ld       M[0]
-			(655) ja       641
-			(656) jeq      #0x33            jt 657	jf 668
-			(657) ldb      [x + 14]
-			(658) st       M[0]
-			(659) txa
-			(660) add      #1
-			(661) tax
-			(662) ldb      [x + 14]
-			(663) add      #2
-			(664) mul      #4
-			(665) tax
-			(666) ld       M[0]
-			(667) ja       641
-			(668) add      #0
-			(669) jeq      #0xc             jt 670	jf 887
-			(670) ldh      [12]
-			(671) jeq      #0x800           jt 672	jf 691
-			(672) ldb      [23]
-			(673) ldxb     4*([14]&0xf)
-			(674) jeq      #0xd             jt 689	jf 675
-			(675) jeq      #0x3b            jt 689	jf 676
+			(655) ja       629
+			(656) add      #0
+			(657) jeq      #0xc             jt 658	jf 871
+			(658) ldh      [12]
+			(659) jeq      #0x800           jt 660	jf 678
+			(660) ldb      [23]
+			(661) ldxb     4*([14]&0xf)
+			(662) jeq      #0xd             jt 676	jf 663
+			(663) jeq      #0x3b            jt 676	jf 664
+			(664) jeq      #0x33            jt 665	jf 676
+			(665) ldb      [x + 14]
+			(666) st       M[0]
+			(667) txa
+			(668) add      #1
+			(669) tax
+			(670) ldb      [x + 14]
+			(671) add      #2
+			(672) mul      #4
+			(673) tax
+			(674) ld       M[0]
+			(675) ja       662
 			(676) add      #0
-			(677) jeq      #0x33            jt 678	jf 689
-			(678) ldb      [x + 14]
-			(679) st       M[0]
-			(680) txa
-			(681) add      #1
-			(682) tax
-			(683) ldb      [x + 14]
-			(684) add      #2
-			(685) mul      #4
-			(686) tax
-			(687) ld       M[0]
-			(688) ja       674
-			(689) add      #0
-			(690) jeq      #0xd             jt 724	jf 691
-			(691) ldh      [12]
-			(692) jeq      #0x86dd          jt 693	jf 887
-			(693) ldb      [20]
-			(694) ldx      #0x28
-			(695) jeq      #0xd             jt 722	jf 696
-			(696) jeq      #0x3b            jt 722	jf 697
-			(697) jeq      #0x0             jt 701	jf 698
-			(698) jeq      #0x3c            jt 701	jf 699
-			(699) jeq      #0x2b            jt 701	jf 700
-			(700) jeq      #0x2c            jt 701	jf 710
-			(701) ldb      [x + 14]
-			(702) st       M[0]
-			(703) ldb      [x + 15]
-			(704) add      #1
-			(705) mul      #8
-			(706) add      x
-			(707) tax
-			(708) ld       M[0]
-			(709) ja       695
-			(710) jeq      #0x33            jt 711	jf 722
-			(711) ldb      [x + 14]
-			(712) st       M[0]
-			(713) txa
-			(714) add      #1
-			(715) tax
-			(716) ldb      [x + 14]
-			(717) add      #2
-			(718) mul      #4
-			(719) tax
-			(720) ld       M[0]
-			(721) ja       695
-			(722) add      #0
-			(723) jeq      #0xd             jt 724	jf 887
-			(724) ldh      [12]
-			(725) jeq      #0x800           jt 726	jf 745
-			(726) ldb      [23]
-			(727) ldxb     4*([14]&0xf)
-			(728) jeq      #0xe             jt 743	jf 729
-			(729) jeq      #0x3b            jt 743	jf 730
-			(730) add      #0
-			(731) jeq      #0x33            jt 732	jf 743
-			(732) ldb      [x + 14]
-			(733) st       M[0]
-			(734) txa
-			(735) add      #1
-			(736) tax
-			(737) ldb      [x + 14]
-			(738) add      #2
-			(739) mul      #4
-			(740) tax
-			(741) ld       M[0]
-			(742) ja       728
-			(743) add      #0
-			(744) jeq      #0xe             jt 778	jf 745
-			(745) ldh      [12]
-			(746) jeq      #0x86dd          jt 747	jf 887
-			(747) ldb      [20]
-			(748) ldx      #0x28
-			(749) jeq      #0xe             jt 776	jf 750
-			(750) jeq      #0x3b            jt 776	jf 751
-			(751) jeq      #0x0             jt 755	jf 752
-			(752) jeq      #0x3c            jt 755	jf 753
-			(753) jeq      #0x2b            jt 755	jf 754
-			(754) jeq      #0x2c            jt 755	jf 764
-			(755) ldb      [x + 14]
-			(756) st       M[0]
-			(757) ldb      [x + 15]
-			(758) add      #1
-			(759) mul      #8
-			(760) add      x
-			(761) tax
-			(762) ld       M[0]
-			(763) ja       749
-			(764) jeq      #0x33            jt 765	jf 776
-			(765) ldb      [x + 14]
-			(766) st       M[0]
-			(767) txa
-			(768) add      #1
-			(769) tax
-			(770) ldb      [x + 14]
-			(771) add      #2
-			(772) mul      #4
-			(773) tax
-			(774) ld       M[0]
-			(775) ja       749
-			(776) add      #0
-			(777) jeq      #0xe             jt 778	jf 887
-			(778) ldh      [12]
-			(779) jeq      #0x800           jt 780	jf 799
-			(780) ldb      [23]
-			(781) ldxb     4*([14]&0xf)
-			(782) jeq      #0xf             jt 797	jf 783
-			(783) jeq      #0x3b            jt 797	jf 784
-			(784) add      #0
-			(785) jeq      #0x33            jt 786	jf 797
-			(786) ldb      [x + 14]
-			(787) st       M[0]
-			(788) txa
-			(789) add      #1
-			(790) tax
-			(791) ldb      [x + 14]
-			(792) add      #2
-			(793) mul      #4
-			(794) tax
-			(795) ld       M[0]
-			(796) ja       782
-			(797) add      #0
-			(798) jeq      #0xf             jt 832	jf 799
-			(799) ldh      [12]
-			(800) jeq      #0x86dd          jt 801	jf 887
-			(801) ldb      [20]
-			(802) ldx      #0x28
-			(803) jeq      #0xf             jt 830	jf 804
-			(804) jeq      #0x3b            jt 830	jf 805
-			(805) jeq      #0x0             jt 809	jf 806
-			(806) jeq      #0x3c            jt 809	jf 807
-			(807) jeq      #0x2b            jt 809	jf 808
-			(808) jeq      #0x2c            jt 809	jf 818
+			(677) jeq      #0xd             jt 711	jf 678
+			(678) ldh      [12]
+			(679) jeq      #0x86dd          jt 680	jf 871
+			(680) ldb      [20]
+			(681) ldx      #0x28
+			(682) jeq      #0xd             jt 709	jf 683
+			(683) jeq      #0x3b            jt 709	jf 684
+			(684) jeq      #0x0             jt 688	jf 685
+			(685) jeq      #0x3c            jt 688	jf 686
+			(686) jeq      #0x2b            jt 688	jf 687
+			(687) jeq      #0x2c            jt 688	jf 697
+			(688) ldb      [x + 14]
+			(689) st       M[0]
+			(690) ldb      [x + 15]
+			(691) add      #1
+			(692) mul      #8
+			(693) add      x
+			(694) tax
+			(695) ld       M[0]
+			(696) ja       682
+			(697) jeq      #0x33            jt 698	jf 709
+			(698) ldb      [x + 14]
+			(699) st       M[0]
+			(700) txa
+			(701) add      #1
+			(702) tax
+			(703) ldb      [x + 14]
+			(704) add      #2
+			(705) mul      #4
+			(706) tax
+			(707) ld       M[0]
+			(708) ja       682
+			(709) add      #0
+			(710) jeq      #0xd             jt 711	jf 871
+			(711) ldh      [12]
+			(712) jeq      #0x800           jt 713	jf 731
+			(713) ldb      [23]
+			(714) ldxb     4*([14]&0xf)
+			(715) jeq      #0xe             jt 729	jf 716
+			(716) jeq      #0x3b            jt 729	jf 717
+			(717) jeq      #0x33            jt 718	jf 729
+			(718) ldb      [x + 14]
+			(719) st       M[0]
+			(720) txa
+			(721) add      #1
+			(722) tax
+			(723) ldb      [x + 14]
+			(724) add      #2
+			(725) mul      #4
+			(726) tax
+			(727) ld       M[0]
+			(728) ja       715
+			(729) add      #0
+			(730) jeq      #0xe             jt 764	jf 731
+			(731) ldh      [12]
+			(732) jeq      #0x86dd          jt 733	jf 871
+			(733) ldb      [20]
+			(734) ldx      #0x28
+			(735) jeq      #0xe             jt 762	jf 736
+			(736) jeq      #0x3b            jt 762	jf 737
+			(737) jeq      #0x0             jt 741	jf 738
+			(738) jeq      #0x3c            jt 741	jf 739
+			(739) jeq      #0x2b            jt 741	jf 740
+			(740) jeq      #0x2c            jt 741	jf 750
+			(741) ldb      [x + 14]
+			(742) st       M[0]
+			(743) ldb      [x + 15]
+			(744) add      #1
+			(745) mul      #8
+			(746) add      x
+			(747) tax
+			(748) ld       M[0]
+			(749) ja       735
+			(750) jeq      #0x33            jt 751	jf 762
+			(751) ldb      [x + 14]
+			(752) st       M[0]
+			(753) txa
+			(754) add      #1
+			(755) tax
+			(756) ldb      [x + 14]
+			(757) add      #2
+			(758) mul      #4
+			(759) tax
+			(760) ld       M[0]
+			(761) ja       735
+			(762) add      #0
+			(763) jeq      #0xe             jt 764	jf 871
+			(764) ldh      [12]
+			(765) jeq      #0x800           jt 766	jf 784
+			(766) ldb      [23]
+			(767) ldxb     4*([14]&0xf)
+			(768) jeq      #0xf             jt 782	jf 769
+			(769) jeq      #0x3b            jt 782	jf 770
+			(770) jeq      #0x33            jt 771	jf 782
+			(771) ldb      [x + 14]
+			(772) st       M[0]
+			(773) txa
+			(774) add      #1
+			(775) tax
+			(776) ldb      [x + 14]
+			(777) add      #2
+			(778) mul      #4
+			(779) tax
+			(780) ld       M[0]
+			(781) ja       768
+			(782) add      #0
+			(783) jeq      #0xf             jt 817	jf 784
+			(784) ldh      [12]
+			(785) jeq      #0x86dd          jt 786	jf 871
+			(786) ldb      [20]
+			(787) ldx      #0x28
+			(788) jeq      #0xf             jt 815	jf 789
+			(789) jeq      #0x3b            jt 815	jf 790
+			(790) jeq      #0x0             jt 794	jf 791
+			(791) jeq      #0x3c            jt 794	jf 792
+			(792) jeq      #0x2b            jt 794	jf 793
+			(793) jeq      #0x2c            jt 794	jf 803
+			(794) ldb      [x + 14]
+			(795) st       M[0]
+			(796) ldb      [x + 15]
+			(797) add      #1
+			(798) mul      #8
+			(799) add      x
+			(800) tax
+			(801) ld       M[0]
+			(802) ja       788
+			(803) jeq      #0x33            jt 804	jf 815
+			(804) ldb      [x + 14]
+			(805) st       M[0]
+			(806) txa
+			(807) add      #1
+			(808) tax
 			(809) ldb      [x + 14]
-			(810) st       M[0]
-			(811) ldb      [x + 15]
-			(812) add      #1
-			(813) mul      #8
-			(814) add      x
-			(815) tax
-			(816) ld       M[0]
-			(817) ja       803
-			(818) jeq      #0x33            jt 819	jf 830
-			(819) ldb      [x + 14]
-			(820) st       M[0]
-			(821) txa
-			(822) add      #1
-			(823) tax
+			(810) add      #2
+			(811) mul      #4
+			(812) tax
+			(813) ld       M[0]
+			(814) ja       788
+			(815) add      #0
+			(816) jeq      #0xf             jt 817	jf 871
+			(817) ldh      [12]
+			(818) jeq      #0x800           jt 819	jf 837
+			(819) ldb      [23]
+			(820) ldxb     4*([14]&0xf)
+			(821) jeq      #0x10            jt 835	jf 822
+			(822) jeq      #0x3b            jt 835	jf 823
+			(823) jeq      #0x33            jt 824	jf 835
 			(824) ldb      [x + 14]
-			(825) add      #2
-			(826) mul      #4
-			(827) tax
-			(828) ld       M[0]
-			(829) ja       803
-			(830) add      #0
-			(831) jeq      #0xf             jt 832	jf 887
-			(832) ldh      [12]
-			(833) jeq      #0x800           jt 834	jf 853
-			(834) ldb      [23]
-			(835) ldxb     4*([14]&0xf)
-			(836) jeq      #0x10            jt 851	jf 837
-			(837) jeq      #0x3b            jt 851	jf 838
-			(838) add      #0
-			(839) jeq      #0x33            jt 840	jf 851
-			(840) ldb      [x + 14]
-			(841) st       M[0]
-			(842) txa
-			(843) add      #1
-			(844) tax
-			(845) ldb      [x + 14]
-			(846) add      #2
-			(847) mul      #4
-			(848) tax
-			(849) ld       M[0]
-			(850) ja       836
-			(851) add      #0
-			(852) jeq      #0x10            jt 886	jf 853
-			(853) ldh      [12]
-			(854) jeq      #0x86dd          jt 855	jf 887
-			(855) ldb      [20]
-			(856) ldx      #0x28
-			(857) jeq      #0x10            jt 884	jf 858
-			(858) jeq      #0x3b            jt 884	jf 859
-			(859) jeq      #0x0             jt 863	jf 860
-			(860) jeq      #0x3c            jt 863	jf 861
-			(861) jeq      #0x2b            jt 863	jf 862
-			(862) jeq      #0x2c            jt 863	jf 872
-			(863) ldb      [x + 14]
-			(864) st       M[0]
-			(865) ldb      [x + 15]
-			(866) add      #1
-			(867) mul      #8
-			(868) add      x
-			(869) tax
-			(870) ld       M[0]
-			(871) ja       857
-			(872) jeq      #0x33            jt 873	jf 884
-			(873) ldb      [x + 14]
-			(874) st       M[0]
-			(875) txa
-			(876) add      #1
-			(877) tax
-			(878) ldb      [x + 14]
-			(879) add      #2
-			(880) mul      #4
-			(881) tax
-			(882) ld       M[0]
-			(883) ja       857
-			(884) add      #0
-			(885) jeq      #0x10            jt 886	jf 887
-			(886) ret      #262144
-			(887) ret      #0
+			(825) st       M[0]
+			(826) txa
+			(827) add      #1
+			(828) tax
+			(829) ldb      [x + 14]
+			(830) add      #2
+			(831) mul      #4
+			(832) tax
+			(833) ld       M[0]
+			(834) ja       821
+			(835) add      #0
+			(836) jeq      #0x10            jt 870	jf 837
+			(837) ldh      [12]
+			(838) jeq      #0x86dd          jt 839	jf 871
+			(839) ldb      [20]
+			(840) ldx      #0x28
+			(841) jeq      #0x10            jt 868	jf 842
+			(842) jeq      #0x3b            jt 868	jf 843
+			(843) jeq      #0x0             jt 847	jf 844
+			(844) jeq      #0x3c            jt 847	jf 845
+			(845) jeq      #0x2b            jt 847	jf 846
+			(846) jeq      #0x2c            jt 847	jf 856
+			(847) ldb      [x + 14]
+			(848) st       M[0]
+			(849) ldb      [x + 15]
+			(850) add      #1
+			(851) mul      #8
+			(852) add      x
+			(853) tax
+			(854) ld       M[0]
+			(855) ja       841
+			(856) jeq      #0x33            jt 857	jf 868
+			(857) ldb      [x + 14]
+			(858) st       M[0]
+			(859) txa
+			(860) add      #1
+			(861) tax
+			(862) ldb      [x + 14]
+			(863) add      #2
+			(864) mul      #4
+			(865) tax
+			(866) ld       M[0]
+			(867) ja       841
+			(868) add      #0
+			(869) jeq      #0x10            jt 870	jf 871
+			(870) ret      #262144
+			(871) ret      #0
 			',
 	},
 
