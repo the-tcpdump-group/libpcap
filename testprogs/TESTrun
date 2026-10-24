@@ -33959,6 +33959,54 @@ push @translate_accept_blocks, {
 	expect => "0x0${_}",
 } foreach qw(a b c d e f);
 
+##### pcapint_scale_up_binary()
+# All vectors floor(frac * 1000000000 / tsresol) exactly, with tsresol a
+# power of 2, as sf-pcapng.c passes it on this path.  The first vector is
+# the overflow regression pair member: frac * 1000000000 overflows 64
+# bits, which scale_up_binary() must handle via the split-operand path.
+# cap_exact and cap_plus_one straddle the fast-path guard predicate
+# (frac <= UINT64_MAX / user_tsresol): one tick apart, one takes the fast
+# path and the other does not, and their results differ by exactly 1, so
+# a wrong guard is caught on the side it goes wrong.
+push @translate_accept_blocks, {
+	name => 'scale_up_binary_bug_triple_2p62_nano',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['4611686018427387903,1000000000,4611686018427387904'],
+	# The pre-fix value wrapped; the exact quotient is 999999999.999... .
+	expect => '999999999',
+}, {
+	name => 'scale_up_binary_max_tsresol_2p63_nano',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['9223372036854775807,1000000000,9223372036854775808'],
+	# Maximum permitted binary tsresol (2^63): the split path fills in
+	# right-shift 63.
+	expect => '999999999',
+}, {
+	name => 'scale_up_binary_fast_path',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['15,1000000000,16'],
+	# No overflow: floor(15000000000 / 16) = 937500000.
+	expect => '937500000',
+}, {
+	name => 'scale_up_binary_cap_exact',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['18446744073,1000000000,34359738368'],
+	# The last frac for which the product does not overflow.
+	expect => '536870911',
+}, {
+	name => 'scale_up_binary_cap_plus_one',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['18446744074,1000000000,34359738368'],
+	# The first frac for which the product overflows.
+	expect => '536870912',
+}, {
+	name => 'scale_up_binary_tiny_result',
+	cfunc => 'pcapint_scale_up_binary',
+	aliases => ['1,1000000000,9223372036854775808'],
+	# Under-representing one quantum: the correctly floored result is 0.
+	expect => '0',
+};
+
 # This is used for an enumeration test only.  There is a separate hash for more
 # detailed DLT-specific testing (%DLTfeatures).
 my %DLTnames = (
