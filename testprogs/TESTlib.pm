@@ -3,6 +3,7 @@ use strict;
 use warnings FATAL => qw(uninitialized);
 use Config;
 use File::Temp qw(tempdir);
+use File::Path qw(rmtree);
 use List::Util qw(min max sum);
 
 # TESTrun helper functions (common to all projects).
@@ -53,8 +54,12 @@ sub init_tmpdir {
 	$tmpdir = tempdir (
 		"${prefix}_XXXXXXXX",
 		TMPDIR => 1,
-		CLEANUP => 1
+		CLEANUP => 0
 	);
+}
+
+sub remove_tmpdir () {
+	rmtree $tmpdir, 0, 1;
 }
 
 sub mytmpfile {

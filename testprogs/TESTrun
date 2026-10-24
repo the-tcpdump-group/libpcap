@@ -44,6 +44,7 @@ use subs qw(
 	init_tmpdir
 	mytmpfile
 	read_config_h
+	remove_tmpdir
 	result_failed
 	result_passed
 	result_skipped
@@ -38295,4 +38296,6 @@ if ($test_timeout eq '0') {
 }
 
 init_tmpdir 'libpcap_TESTrun';
-exit test_and_report @ready_to_run;
+my $status = test_and_report @ready_to_run;
+remove_tmpdir;
+exit $status;
