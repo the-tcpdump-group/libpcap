@@ -200,12 +200,12 @@ sub run_skip_test {
 sub init_results_processing {
 	my $maxcols = 80;
 	$results_to_print = shift;
-	if ($Config{useithreads}) {
-		# When using threads, STDOUT becomes line-buffered on TTYs, which is
-		# not good for interactive progress monitoring.
-		STDOUT->autoflush (1) if -t STDOUT;
-		$flush_after_newline = ! -t STDOUT;
-	}
+	# When using threads, STDOUT becomes line-buffered on TTYs, which is
+	# not good for interactive progress monitoring.
+	STDOUT->autoflush (1) if -t STDOUT;
+	# When using threads, STDOUT becomes block-buffered on pipes, which is
+	# not good for CI progress monitoring.
+	$flush_after_newline = ! -t STDOUT;
 	$results_printed = 0;
 	$max_result_digits = 1 + int (log ($results_to_print) / log (10));
 	$max_results_per_line = $maxcols - 11 - 2 * $max_result_digits;
@@ -229,8 +229,6 @@ sub print_result_char {
 		$max_result_digits,
 		$results_to_print,
 		100 * $results_printed / $results_to_print;
-	# When using threads, STDOUT becomes block-buffered on pipes, which is
-	# not good for CI progress monitoring.
 	STDOUT->flush if $flush_after_newline;
 }
 
