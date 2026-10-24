@@ -153,7 +153,7 @@ out-of-tree builds.
 
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
-TESTRUN_JOBS allows to specify the number of tester threads (1 by default).
+TESTRUN_JOBS allows to specify the number of tester jobs (1 by default).
 
 TESTRUN_SHORT=1 generates a shorter list of tests (not recommended unless the
 host is very slow and time is a factor).
@@ -38287,12 +38287,12 @@ if ($test_timeout eq '0') {
 		print STDERR "ERROR: TIMEOUT_BIN='$timeout_bin' is not usable.\n";
 		exit EX_OSFILE;
 	}
-	print "INFO: Using a test timeout of $test_timeout (TIMEOUT_BIN='$timeout_bin').\n";
+	print "INFO: Using a test timeout of $test_timeout second(s) (TIMEOUT_BIN='$timeout_bin').\n";
 } elsif (system ('timeout', '0.1', 'sleep', '10') >> 8 != TIMED_OUT) {
 	print "WARNING: Not using a test timeout (the default 'timeout' is not usable).\n";
 } else {
 	$timeout_bin = 'timeout';
-	printf "INFO: Using a test timeout of %s.\n", $test_timeout;
+	printf "INFO: Using a test timeout of %s second(s).\n", $test_timeout;
 }
 
 init_tmpdir 'libpcap_TESTrun';

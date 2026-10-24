@@ -36,7 +36,7 @@ sub tester_thread_func {
 
 sub start_tests {
 	$njobs = get_njobs;
-	print "INFO: This Perl supports threads, using $njobs tester thread(s).\n";
+	print "INFO: Using $njobs tester thread(s).\n";
 	@tests = @_;
 	for (0 .. $njobs - 1) {
 		$result_queues[$_] = Thread::Queue->new;
