@@ -163,7 +163,7 @@ struct pcap_rpcap {
  *                                                  *
  ****************************************************/
 static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int mode);
-static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
+static int pcap_bufferize_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
 static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
 static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
@@ -1278,21 +1278,18 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	 * Now it's time to start playing with the RPCAP protocol
 	 * RPCAP start capture command: create the request message
 	 */
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error_nodiscard;
-
-	rpcap_createhdr((struct rpcap_header *) sendbuf,
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
 	    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
-	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn));
+	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn),
+            fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		goto error_nodiscard;
 
 	/* Fill the structure needed to open an adapter remotely */
-	startcapreq = (struct rpcap_startcapreq *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_startcapreq), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
+	startcapreq = (struct rpcap_startcapreq *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_startcapreq), &sendbufidx, RPCAP_NETBUF_SIZE,
+	    fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (startcapreq == NULL)
 		goto error_nodiscard;
-
 	memset(startcapreq, 0, sizeof(struct rpcap_startcapreq));
 
 	/* By default, apply half the timeout on one side, half of the other */
@@ -1317,8 +1314,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	startcapreq->flags = htons(startcapreq->flags);
 
-	/* Pack the capture filter */
-	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, &fp->fcode))
+	/* Put the capture filter into the packet */
+	if (pcap_bufferize_bpffilter(fp, sendbuf, &sendbufidx, &fp->fcode))
 		goto error_nodiscard;
 
 	if (sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, sendbuf, sendbufidx, fp->errbuf,
@@ -1605,7 +1602,7 @@ error_nodiscard:
  * \return '0' if everything is fine, '-1' otherwise. The error message (if one)
  * is returned into the 'errbuf' field of the pcap_t structure.
  */
-static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog)
+static int pcap_bufferize_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidxp, struct bpf_program *prog)
 {
 	struct rpcap_filter *filter;
 	struct rpcap_filterbpf_insn *insn;
@@ -1621,20 +1618,21 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 		prog = &fake_prog;
 	}
 
-	filter = (struct rpcap_filter *) sendbuf;
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_filter), NULL, sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
+	filter = (struct rpcap_filter *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_filter), sendbufidxp, RPCAP_NETBUF_SIZE,
+	    fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (filter == NULL)
 		return -1;
 
 	filter->filtertype = htons(RPCAP_UPDATEFILTER_BPF);
 	filter->nitems = htonl((int32_t)prog->bf_len);
 
-	if (sock_bufferize(NULL, prog->bf_len * sizeof(struct rpcap_filterbpf_insn),
-		NULL, sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
+	insn = (struct rpcap_filterbpf_insn *) sock_alloc_buffer_space(sendbuf,
+	    prog->bf_len * sizeof(struct rpcap_filterbpf_insn), sendbufidxp,
+	    RPCAP_NETBUF_SIZE, fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (insn == NULL)
 		return -1;
 
-	insn = (struct rpcap_filterbpf_insn *) (filter + 1);
 	bf_insn = prog->bf_insns;
 
 	for (i = 0; i < prog->bf_len; i++)
@@ -1683,15 +1681,13 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
 
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    pr->protocol_version, RPCAP_MSG_UPDATEFILTER_REQ, 0,
+	    sizeof(struct rpcap_filter) + prog->bf_len * sizeof(struct rpcap_filterbpf_insn),
+	    fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf,
-	    pr->protocol_version, RPCAP_MSG_UPDATEFILTER_REQ, 0,
-	    sizeof(struct rpcap_filter) + prog->bf_len * sizeof(struct rpcap_filterbpf_insn));
-
-	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, prog))
+	if (pcap_bufferize_bpffilter(fp, sendbuf, &sendbufidx, prog))
 		return -1;
 
 	if (sock_send(pr->rmt_sockctrl, pr->ctrl_ssl, sendbuf, sendbufidx, fp->errbuf,
@@ -1940,21 +1936,17 @@ static int pcap_setsampling_remote(pcap_t *fp)
 		return -1;
 	}
 
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
-		return -1;
-
-	rpcap_createhdr((struct rpcap_header *) sendbuf,
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
 	    pr->protocol_version, RPCAP_MSG_SETSAMPLING_REQ, 0,
-	    sizeof(struct rpcap_sampling));
+	    sizeof(struct rpcap_sampling), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		return -1;
 
 	/* Fill the structure needed to open an adapter remotely */
-	sampling_pars = (struct rpcap_sampling *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_sampling), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
+	sampling_pars = (struct rpcap_sampling *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_sampling), &sendbufidx, RPCAP_NETBUF_SIZE,
+	    fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (sampling_pars == NULL)
 		return -1;
-
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
 	sampling_pars->method = (uint8_t)fp->rmt_samp.method;
@@ -2081,19 +2073,15 @@ static int rpcap_doauth(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 		length = sizeof(struct rpcap_auth);
 	}
 
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE, 0,
+	    RPCAP_MSG_AUTH_REQ, 0, length, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, 0,
-	    RPCAP_MSG_AUTH_REQ, 0, length);
-
-	rpauth = (struct rpcap_auth *) &sendbuf[sendbufidx];
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_auth), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
+	rpauth = (struct rpcap_auth *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_auth), &sendbufidx, RPCAP_NETBUF_SIZE,
+	    errbuf, PCAP_ERRBUF_SIZE);
+	if (rpauth == NULL)
 		return -1;
-
 	memset(rpauth, 0, sizeof(struct rpcap_auth));
 
 	rpauth->type = htons(auth_type);
@@ -2106,7 +2094,7 @@ static int rpcap_doauth(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			rpauth->slen1 = 0;
 
 		if (sock_bufferize(auth->username, rpauth->slen1, sendbuf,
-			&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
+			&sendbufidx, RPCAP_NETBUF_SIZE, errbuf, PCAP_ERRBUF_SIZE))
 			return -1;
 
 		if (auth->password)
@@ -2115,7 +2103,7 @@ static int rpcap_doauth(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 			rpauth->slen2 = 0;
 
 		if (sock_bufferize(auth->password, rpauth->slen2, sendbuf,
-			&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
+			&sendbufidx, RPCAP_NETBUF_SIZE, errbuf, PCAP_ERRBUF_SIZE))
 			return -1;
 
 		rpauth->slen1 = htons(rpauth->slen1);
@@ -2652,15 +2640,13 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	 * Now it's time to start playing with the RPCAP protocol
 	 * RPCAP open command: create the request message
 	 */
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    protocol_version, RPCAP_MSG_OPEN_REQ, 0, (uint32_t) strlen(iface),
+	    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error_nodiscard;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, protocol_version,
-	    RPCAP_MSG_OPEN_REQ, 0, (uint32_t) strlen(iface));
-
 	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
+		RPCAP_NETBUF_SIZE, errbuf, PCAP_ERRBUF_SIZE))
 		goto error_nodiscard;
 
 	if (sock_send(sockctrl, ssl, sendbuf, sendbufidx, errbuf,
