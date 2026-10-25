@@ -9,6 +9,8 @@
  * snprintf() - so that, if you format into a 1-byte buffer, it
  * will return how many characters it would have produced had
  * it been given an infinite-sized buffer.
+ *
+ * At least AIX <= 7.3 needs this file at the time of this writing.
  */
 int
 pcapint_vasprintf(char **strp, const char *format, va_list args)
