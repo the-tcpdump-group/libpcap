@@ -295,6 +295,27 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *, pcap_t *p, size_t si
 #define AIX_AF_INET6			24
 #define SOLARIS_AF_INET6		26
 
+/*
+ * Deserialize an address from a RPCAP_MSG_FINDALLIF_REQ response.
+ *
+ * We allocate a `struct sockaddr_storage` because, on some platforms
+ * (Haiku, I'm looking at *you*!), a `struct sockaddr` is larger than
+ * a `struct sockaddr_in`, so we get a warning from newer versions
+ * of Clang about assigning a pointer to a smaller structure to a
+ * pointer to a larger structure. This *shouldn't* be an issue at
+ * run time, as we shouldn't ever refer to the data portion of the
+ * address via either a `struct sockaddr` or a `struct sockaddr_storage`,
+ * but this is not one of the nicer parts of the socket API, so....
+ *
+ * The pointer we provide is to a `struct sockaddr` because that's how
+ * the `pcap_findalldevs()` and `pcap_findalldevs_ex()` APIs are defined
+ * to work.
+ *
+ * (Hey, at least we're not passing `sockaddr_storage` over the wire
+ * with big-endian fields, which failed to work, for example, between
+ * Solaris and other operating systems when we were doing that.
+ * See commit 6ee13e223c9709e79ac112f8c37ff0a7272a4f5f.)
+ */
 static int
 rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr **sockaddrout, char *errbuf)
 {
