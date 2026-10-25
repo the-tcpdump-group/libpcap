@@ -23,6 +23,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Fix the skipping of AH in "protochain".
     Haiku:
       Fix a compiler warning. (Issue #1738)
+    rpcap:
+      Properly check for a network error in one case. (Pull request
+        #1793)
     Documentation:
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
