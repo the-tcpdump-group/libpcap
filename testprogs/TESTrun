@@ -34,13 +34,13 @@ use Getopt::Long;
 use Time::HiRes;
 use Config;
 use FindBin;
-require $FindBin::RealBin . '/TEST' . ($Config{useithreads} ? 'mt' : 'st') . '.pm';
 require $FindBin::RealBin . '/TESTlib.pm';
 # TESTlib.pm
 use subs qw(
 	file_get_contents
 	file_put_contents
 	get_diff_flags
+	get_helper_module
 	get_lib_usage
 	init_tmpdir
 	mytmpfile
@@ -58,6 +58,7 @@ use subs qw(
 	string_in_file
 	test_and_report
 );
+require $FindBin::RealBin . '/' . get_helper_module;
 
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/';
 my $filename_expected = 'expected.txt';

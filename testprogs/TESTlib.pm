@@ -40,6 +40,11 @@ my %osnames = (
 	solaris => 'illumos/Solaris',
 );
 
+my %helpers = (
+	mt => 'use multithreading',
+	st => 'use the main thread only',
+);
+
 my $results_to_print;
 my $results_printed;
 my $max_result_digits;
@@ -51,7 +56,10 @@ my %config;
 sub get_lib_usage () {
 	my $ret = "
 TESTRUN_JOBS allows to specify the number of tester jobs (1 by default).
+
+TESTRUN_HELPER allows to specify how to run the tests (auto-detect by default):
 ";
+	$ret .= "* \"$_\" -- $helpers{$_}\n" foreach sort keys %helpers;
 	return $ret;
 }
 
@@ -84,6 +92,27 @@ sub get_njobs {
 	}
 	die "ERROR: '$ENV{TESTRUN_JOBS}' is not a valid value for TESTRUN_JOBS" if ! $njobs;
 	return $njobs;
+}
+
+sub get_helper_module () {
+	my $njobs = get_njobs;
+	my $h;
+	if (defined $ENV{TESTRUN_HELPER}) {
+		$h = $ENV{TESTRUN_HELPER};
+		die "Invalid TESTRUN_HELPER value '$h'." unless grep $h eq $_, keys %helpers;
+	} elsif ($njobs == 1) {
+		# For one tester job "st" incurs the least overhead and is the best choice
+		# on all OSes except Solaris 10.
+		$h = 'st';
+	} elsif ($njobs <= 4 && $Config{useithreads}) {
+		# For more than one tester job "mt" performs better than "st", but quickly
+		# degrades.
+		$h = 'mt';
+	} else {
+		# The last-resort choice.
+		$h = 'st';
+	}
+	return "TEST${h}.pm";
 }
 
 sub get_diff_flags {
