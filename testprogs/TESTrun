@@ -41,6 +41,7 @@ use subs qw(
 	file_get_contents
 	file_put_contents
 	get_diff_flags
+	get_lib_usage
 	init_tmpdir
 	mytmpfile
 	read_config_h
@@ -153,11 +154,10 @@ out-of-tree builds.
 
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
-TESTRUN_JOBS allows to specify the number of tester jobs (1 by default).
-
 TESTRUN_SHORT=1 generates a shorter list of tests (not recommended unless the
 host is very slow and time is a factor).
 ";
+	$ret .= get_lib_usage;
 	return $ret;
 }
 

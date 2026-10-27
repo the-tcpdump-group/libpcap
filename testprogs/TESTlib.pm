@@ -48,6 +48,13 @@ my $flush_after_newline;
 my $tmpdir;
 my %config;
 
+sub get_lib_usage () {
+	my $ret = "
+TESTRUN_JOBS allows to specify the number of tester jobs (1 by default).
+";
+	return $ret;
+}
+
 sub init_tmpdir {
 	my $prefix = shift;
 	# No File::Temp->newdir() in Perl 5.8.4.
