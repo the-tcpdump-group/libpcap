@@ -41,6 +41,7 @@ my %osnames = (
 );
 
 my %helpers = (
+	mp => 'use multiprocessing',
 	mt => 'use multithreading',
 	st => 'use the main thread only',
 );
@@ -95,6 +96,18 @@ sub get_njobs {
 }
 
 sub get_helper_module () {
+	# OSes where for more than one tester job "mp" performs notably better.
+	# Tested negative: Haiku, NetBSD and QNX 8.0.
+	# Not tested: AIX, GNU/Hurd, HP-UX and Windows.
+	my @mpgood = qw(
+		darwin
+		dragonfly
+		freebsd
+		linux
+		midnightbsd
+		openbsd
+		solaris
+	);
 	my $njobs = get_njobs;
 	my $h;
 	if (defined $ENV{TESTRUN_HELPER}) {
@@ -104,6 +117,8 @@ sub get_helper_module () {
 		# For one tester job "st" incurs the least overhead and is the best choice
 		# on all OSes except Solaris 10.
 		$h = 'st';
+	} elsif (grep $^O eq $_, @mpgood) {
+		$h = 'mp';
 	} elsif ($njobs <= 4 && $Config{useithreads}) {
 		# For more than one tester job "mt" performs better than "st", but quickly
 		# degrades.

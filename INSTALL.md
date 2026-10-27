@@ -171,6 +171,7 @@ You can get around this by installing GCC.
 	ftmacros.h	    - feature test macros
 	testprogs/TESTrun   - a script for "make check"
 	testprogs/TESTlib.pm - TESTrun helper file
+	testprogs/TESTmp.pm - TESTrun helper file
 	testprogs/TESTmt.pm - TESTrun helper file
 	testprogs/TESTst.pm - TESTrun helper file
 	testprogs/enumeratetest.c   - test program for various enumerations
