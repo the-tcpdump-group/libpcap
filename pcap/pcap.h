@@ -736,26 +736,22 @@ PCAP_AVAILABLE_0_4
 PCAP_API pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 
 #ifdef _WIN32
+  /*
+   * Given that the version of the C runtime with which libpcap was built
+   * might be different from the version of the C runtime with which an
+   * application using libpcap was built, and that a FILE structure may
+   * differ between the two versions of the C runtime, calls to _fileno()
+   * must use the version of _fileno() in the C runtime used to open the
+   * FILE *, not the version in the C runtime with which libpcap was built.
+   * (Maybe once the Universal CRT rules the world, this will cease to
+   * be a problem, although that would require that all applications
+   * that use libpcap/Npcap be built to use the Universal CRT.)
+   */
   PCAP_AVAILABLE_0_9
   PCAP_API pcap_dumper_t *pcap_dump_hopen(pcap_t *, intptr_t);
 
-  /*
-   * If we're building libpcap, this is an internal routine in sf-pcap.c, so
-   * we must not define it as a macro.
-   *
-   * If we're not building libpcap, given that the version of the C runtime
-   * with which libpcap was built might be different from the version
-   * of the C runtime with which an application using libpcap was built,
-   * and that a FILE structure may differ between the two versions of the
-   * C runtime, calls to _fileno() must use the version of _fileno() in
-   * the C runtime used to open the FILE *, not the version in the C
-   * runtime with which libpcap was built.  (Maybe once the Universal CRT
-   * rules the world, this will cease to be a problem.)
-   */
-  #ifndef BUILDING_PCAP
-    #define pcap_dump_fopen(p,f) \
-	pcap_dump_hopen(p, _get_osfhandle(_fileno(f)))
-  #endif
+  #define pcap_dump_fopen(p, f) \
+    pcap_dump_hopen(p, _get_osfhandle(_fileno(f)))
 #else /*_WIN32*/
   PCAP_AVAILABLE_0_9
   PCAP_API pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
