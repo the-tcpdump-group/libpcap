@@ -84,6 +84,7 @@ SRC = @VALGRINDTEST_SRC@ \
 	findalldevstest.c \
 	opendeadtest.c \
 	opentest.c \
+	pcapngtest.c \
 	nonblocktest.c \
 	reactivatetest.c \
 	selpolltest.c \
@@ -141,6 +142,10 @@ opendeadtest: $(srcdir)/opendeadtest.c ../libpcap.a
 
 opentest: $(srcdir)/opentest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/opentest.c \
+	    ../libpcap.a $(LIBS)
+
+pcapngtest: $(srcdir)/pcapngtest.c $(top_srcdir)/pcap-util.h ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/pcapngtest.c \
 	    ../libpcap.a $(LIBS)
 
 nonblocktest: $(srcdir)/nonblocktest.c ../libpcap.a

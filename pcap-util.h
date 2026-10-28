@@ -27,6 +27,20 @@
 #include <config.h> // HAVE_xxx
 
 #include <pcap/pcap-inttypes.h>
+#include <stddef.h>
+
+/*
+ * Check an array allocation size before multiplying.  Return -1 if the
+ * byte count would not fit in size_t, or 0 otherwise.
+ */
+static inline int
+pcapint_check_array_size(size_t count, size_t element_size)
+{
+	if (element_size != 0 && count > SIZE_MAX / element_size)
+		return (-1);
+	return (0);
+}
+
 /*
  * We use the "receiver-makes-right" approach to byte order;
  * because time is at a premium when we are writing the file.

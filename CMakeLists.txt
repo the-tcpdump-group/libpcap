@@ -3202,6 +3202,7 @@ endif(WIN32)
 if(ENABLE_REMOTE)
     add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
+enable_testing()
 add_subdirectory(testprogs)
 
 ######################################
@@ -3704,7 +3705,12 @@ endif()
 if(PERL)
     add_custom_target(check
         COMMAND ${PERL} ${CMAKE_SOURCE_DIR}/testprogs/TESTrun
+        COMMAND $<TARGET_FILE:pcapngtest> ${CMAKE_BINARY_DIR}/pcapngtest.pcapng
         DEPENDS testprogs)
+    add_test(NAME filter-tests
+        COMMAND ${PERL} ${CMAKE_SOURCE_DIR}/testprogs/TESTrun)
+    set_tests_properties(filter-tests PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
 if(ENABLE_REMOTE)

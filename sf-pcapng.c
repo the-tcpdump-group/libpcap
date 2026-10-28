@@ -670,10 +670,10 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 			 * with a 64-bit size_t, as new_ifaces_size is
 			 * 32 bits.
 			 */
-			if (new_ifaces_size * sizeof (struct pcap_ng_if) < new_ifaces_size) {
+			if (pcapint_check_array_size(new_ifaces_size,
+			    sizeof (struct pcap_ng_if)) == -1) {
 				/*
 				 * As this fails only with 32-bit size_t,
-				 * the multiplication was 32x32->32, and
 				 * the largest 32-bit value that can safely
 				 * be multiplied by sizeof (struct pcap_ng_if)
 				 * without overflow is the largest 32-bit
