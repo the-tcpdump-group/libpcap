@@ -30,9 +30,15 @@ add_test_executable(activatetest)
 add_test_executable(can_set_rfmon_test)
 add_test_executable(capturetest)
 add_test_executable(filtertest)
+set_target_properties(filtertest PROPERTIES EXCLUDE_FROM_ALL FALSE)
 add_test_executable(findalldevstest)
 add_test_executable(findalldevstest-perf)
 add_test_executable(opentest)
+add_test_executable(pcapngtest)
+set_target_properties(pcapngtest PROPERTIES EXCLUDE_FROM_ALL FALSE)
+add_test(NAME pcapng-array-size COMMAND pcapngtest --arithmetic-only)
+add_test(NAME pcapng-interfaces
+  COMMAND pcapngtest ${CMAKE_CURRENT_BINARY_DIR}/pcapngtest.pcapng)
 add_test_executable(reactivatetest)
 add_test_executable(versiontest)
 add_test_executable(writecaptest)
@@ -57,6 +63,9 @@ if(NOT WIN32)
   # translatetest.obj : error LNK2019: unresolved external symbol
   #   _pcapint_parsesrcstr_ex referenced in function _test_pcapint_parsesrcstr_ex
   add_test_executable(translatetest)
+  set_target_properties(enumeratetest opendeadtest translatetest PROPERTIES
+    EXCLUDE_FROM_ALL FALSE)
+  add_test(NAME open-dead COMMAND opendeadtest EN10MB)
 endif()
 
 add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
