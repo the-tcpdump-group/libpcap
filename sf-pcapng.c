@@ -1117,7 +1117,8 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
 	FILE *fp = p->rfile;
-	uint64_t t, sec, frac;
+	uint64_t t, q, frac;
+	int64_t sec;
 
 	/*
 	 * Look for an Enhanced Packet Block, a Simple Packet Block,
@@ -1389,8 +1390,43 @@ found:
 	 * Convert the time stamp to seconds and fractions of a second,
 	 * with the fractions being in units of the file-supplied resolution.
 	 */
-	sec = t / ps->ifaces[interface_id].tsresol + ps->ifaces[interface_id].tsoffset;
+	q = t / ps->ifaces[interface_id].tsresol;
 	frac = t % ps->ifaces[interface_id].tsresol;
+
+	/*
+	 * The seconds part must fit in a signed 64-bit value, as we have
+	 * to add the time stamp offset, which is signed, to it and hand
+	 * a signed result to the caller.  A time stamp for which the
+	 * quotient doesn't fit is either a damaged or fuzzed savefile
+	 * or a time stamp with an absurdly distant value, so report an
+	 * error rather than producing a bogus result from arithmetic
+	 * that overflows.
+	 */
+	if (q > (uint64_t)INT64_MAX) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "time stamp in packet block is too large to convert to seconds");
+		return (-1);
+	}
+	sec = (int64_t)q;
+
+	/*
+	 * Add the time stamp offset.
+	 *
+	 * A negative offset can't overflow: the quotient is
+	 * non-negative and no bigger than INT64_MAX, and the offset
+	 * is no smaller than INT64_MIN, so the sum is between those
+	 * two values.
+	 *
+	 * A positive offset could overflow, so check for that
+	 * before doing the addition.
+	 */
+	if (ps->ifaces[interface_id].tsoffset > 0 &&
+	    q > (uint64_t)(INT64_MAX - ps->ifaces[interface_id].tsoffset)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "time stamp in packet block plus the time stamp offset is out of range");
+		return (-1);
+	}
+	sec += ps->ifaces[interface_id].tsoffset;
 
 	/*
 	 * Convert the fractions from units of the file-supplied resolution
@@ -1418,6 +1454,11 @@ found:
 		 * resolution, so the quotient in question is an integer.
 		 * We've calculated that quotient already, so we just
 		 * multiply by it.
+		 *
+		 * This cannot overflow: the fractional part is less than
+		 * the file-supplied resolution, so the product is less
+		 * than the user-requested resolution, which is at most
+		 * 10^9.
 		 */
 		frac *= ps->ifaces[interface_id].scale_factor;
 		break;
@@ -1436,12 +1477,26 @@ found:
 		 * user-requested resolution and divide by the file-
 		 * supplied resolution.
 		 *
-		 * XXX - Is there something clever we could do here,
-		 * given that we know that the file-supplied resolution
-		 * is a power of 2?  Doing a multiplication followed by
-		 * a division runs the risk of overflowing, and involves
-		 * two non-simple arithmetic operations.
+		 * Is there something clever we could do here, given
+		 * that we know that the file-supplied resolution is a
+		 * power of 2?  Doing a multiplication followed by a
+		 * division involves two non-simple arithmetic
+		 * operations.
+		 *
+		 * The fractional part can be almost as large as the
+		 * file-supplied resolution, which can be as large as
+		 * 2^63, and the user-requested resolution can be as
+		 * large as 10^9, so the product can be too large to
+		 * fit in a 64-bit value.  Check for that before
+		 * multiplying, and treat a fractional part for which
+		 * the scaling would overflow as a damaged or fuzzed
+		 * savefile.
 		 */
+		if (frac > UINT64_MAX / ps->user_tsresol) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "time stamp fraction in packet block is too large to scale to the requested resolution");
+			return (-1);
+		}
 		frac *= ps->user_tsresol;
 		frac /= ps->ifaces[interface_id].tsresol;
 		break;
@@ -1483,12 +1538,22 @@ found:
 		 * integer arithmetic, we multiply by the user-requested
 		 * resolution and divide by the file-supplied resolution.
 		 *
-		 * XXX - Is there something clever we could do here,
-		 * given that we know that the file-supplied resolution
-		 * is a power of 2?  Doing a multiplication followed by
-		 * a division runs the risk of overflowing, and involves
-		 * two non-simple arithmetic operations.
+		 * Is there something clever we could do here, given
+		 * that we know that the file-supplied resolution is a
+		 * power of 2?  Doing a multiplication followed by a
+		 * division involves two non-simple arithmetic
+		 * operations.
+		 *
+		 * As above, the product could be too large to fit in
+		 * a 64-bit value, so check for that before multiplying,
+		 * and treat a fractional part for which the scaling
+		 * would overflow as a damaged or fuzzed savefile.
 		 */
+		if (frac > UINT64_MAX / ps->user_tsresol) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "time stamp fraction in packet block is too large to scale to the requested resolution");
+			return (-1);
+		}
 		frac *= ps->user_tsresol;
 		frac /= ps->ifaces[interface_id].tsresol;
 		break;

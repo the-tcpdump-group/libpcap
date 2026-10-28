@@ -496,6 +496,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	FILE *fp = p->rfile;
 	size_t amt_read;
 	bpf_u_int32 t;
+	bpf_u_int32 ts_usec;
 
 	/*
 	 * Read the packet header; the structure we use as a buffer
@@ -527,13 +528,32 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		hdr->caplen = PCAP_BSWAP_32(sf_hdr.caplen);
 		hdr->len = PCAP_BSWAP_32(sf_hdr.len);
 		hdr->ts.tv_sec = PCAP_BSWAP_32(sf_hdr.ts.tv_sec);
-		hdr->ts.tv_usec = PCAP_BSWAP_32(sf_hdr.ts.tv_usec);
+		ts_usec = PCAP_BSWAP_32(sf_hdr.ts.tv_usec);
 	} else {
 		hdr->caplen = sf_hdr.caplen;
 		hdr->len = sf_hdr.len;
 		hdr->ts.tv_sec = sf_hdr.ts.tv_sec;
-		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
+		ts_usec = sf_hdr.ts.tv_usec;
 	}
+
+	/*
+	 * The microsecond part of a packet time stamp in a savefile
+	 * is a fraction of a second, so it must be a value between 0
+	 * and 999999.  A bigger value means a damaged or fuzzed
+	 * savefile, so reject it.  In particular, this guarantees
+	 * that scaling the value up to nanoseconds below doesn't
+	 * overflow, and that the value handed to the caller isn't
+	 * the result of an implementation-defined conversion too
+	 * big to fit in tv_usec on platforms where tv_usec is
+	 * 32 bits.
+	 */
+	if (ts_usec > 999999) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "invalid packet time stamp microseconds value %u, bigger than 999999",
+		    ts_usec);
+		return (-1);
+	}
+	hdr->ts.tv_usec = ts_usec;
 
 	switch (ps->scale_type) {
 

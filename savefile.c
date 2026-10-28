@@ -438,17 +438,25 @@ pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
 bpf_u_int32
 pcapint_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen)
 {
-	if (snaplen == 0 || snaplen > INT_MAX) {
+	u_int max_snaplen;
+	max_snaplen = max_snaplen_for_dlt(linktype);
+	if (snaplen == 0 || snaplen > max_snaplen) {
 		/*
 		 * Bogus snapshot length; use the maximum for this
-		 * link-layer type as a fallback.
-		 *
-		 * XXX - we don't clamp snapshot lengths that are
-		 * <= INT_MAX but > max_snaplen_for_dlt(linktype),
-		 * so a capture file could cause us to allocate
-		 * a Really Big Buffer.
+		 * link-layer type as a fallback.  This also clamps
+		 * snapshot lengths that fit in an int but are larger
+		 * than the maximum packet size for this link-layer
+		 * type, so that a damaged or fuzzed savefile can't
+		 * make the snapshot length reported to the caller
+		 * wildly larger than any packet the file can contain,
+		 * and can't make code that sizes a buffer based on
+		 * that snapshot length allocate a Really Big Buffer.
+		 * Any packet with a captured length bigger than the
+		 * maximum would be rejected anyway, so this doesn't
+		 * cause any packet that would have been read to be
+		 * rejected.
 		 */
-		snaplen = max_snaplen_for_dlt(linktype);
+		snaplen = max_snaplen;
 	}
 	return snaplen;
 }
