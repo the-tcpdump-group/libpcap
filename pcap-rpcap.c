@@ -2121,21 +2121,15 @@ static int rpcap_doauth(PCAP_SOCKET sockctrl, SSL *ssl, uint8_t *ver,
 
 	if (auth_type == RPCAP_RMTAUTH_PWD)
 	{
-		if (auth->username)
-			rpauth->slen1 = (uint16_t)strlen(auth->username);
-		else
-			rpauth->slen1 = 0;
+		rpauth->slen1 = (uint16_t) sock_strlen(auth->username);
 
-		if (sock_bufferize(auth->username, rpauth->slen1, sendbuf,
+		if (sock_bufferize_str(auth->username, sendbuf,
 			&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
 			return -1;
 
-		if (auth->password)
-			rpauth->slen2 = (uint16_t)strlen(auth->password);
-		else
-			rpauth->slen2 = 0;
+		rpauth->slen2 = (uint16_t) sock_strlen(auth->password);
 
-		if (sock_bufferize(auth->password, rpauth->slen2, sendbuf,
+		if (sock_bufferize_str(auth->password, sendbuf,
 			&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
 			return -1;
 

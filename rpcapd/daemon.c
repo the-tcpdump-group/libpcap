@@ -1722,14 +1722,8 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 		 * We've already established that the string lengths
 		 * fit in 16 bits.
 		 */
-		if (d->description)
-			ldescr = (uint16_t) strlen(d->description);
-		else
-			ldescr = 0;
-		if (d->name)
-			lname = (uint16_t) strlen(d->name);
-		else
-			lname = 0;
+		ldescr = (uint16_t) sock_strlen(d->description);
+		lname = (uint16_t) sock_strlen(d->name);
 
 		findalldevs_if.desclen = htons(ldescr);
 		findalldevs_if.namelen = htons(lname);
@@ -1760,12 +1754,12 @@ daemon_msg_findallif_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen)
 		    PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if (sock_bufferize(d->name, lname, sendbuf, &sendbufidx,
+		if (sock_bufferize_str(d->name, sendbuf, &sendbufidx,
 		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if (sock_bufferize(d->description, ldescr, sendbuf, &sendbufidx,
+		if (sock_bufferize_str(d->description, sendbuf, &sendbufidx,
 		    RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errmsgbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 			goto error;
