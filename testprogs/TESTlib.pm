@@ -46,10 +46,22 @@ my %helpers = (
 	st => 'use the main thread only',
 );
 
+my %progress_modes = (
+	bar => 'a horizontal progress bar',
+	lines => 'a line for every 5%',
+	map => 'a character for every test result',
+	none => 'no output',
+);
+
 my $results_to_print;
 my $results_printed;
+my $passedcount;
+my $skippedcount;
+my $failedcount;
 my $max_result_digits;
 my $max_results_per_line;
+my $points_printed;
+my $progress_mode;
 my $flush_after_newline;
 my $tmpdir;
 my %config;
@@ -61,6 +73,10 @@ TESTRUN_JOBS allows to specify the number of tester jobs (1 by default).
 TESTRUN_HELPER allows to specify how to run the tests (auto-detect by default):
 ";
 	$ret .= "* \"$_\" -- $helpers{$_}\n" foreach sort keys %helpers;
+	$ret .= "
+TESTRUN_PROGRESS allows to specify the progress reporting mode:
+";
+	$ret .= "* \"$_\" -- $progress_modes{$_}\n" foreach sort keys %progress_modes;
 	return $ret;
 }
 
@@ -266,16 +282,33 @@ sub init_results_processing {
 	# not good for CI progress monitoring.
 	$flush_after_newline = ! -t STDOUT;
 	$results_printed = 0;
+	$progress_mode = get_env_enum ('TESTRUN_PROGRESS', keys %progress_modes) ||
+		(-t STDOUT ? 'bar' : 'lines');
 	$max_result_digits = 1 + int (log ($results_to_print) / log (10));
-	$max_results_per_line = $maxcols - 11 - 2 * $max_result_digits;
+	if ($progress_mode eq 'bar') {
+		$points_printed = 0;
+		print "0% 5  10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100%\n";
+		print "+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+\n";
+	} elsif ($progress_mode eq 'lines') {
+		$points_printed = 0;
+	} elsif ($progress_mode eq 'map') {
+		$max_results_per_line = $maxcols - 11 - 2 * $max_result_digits;
+		printf "INFO: %s = skipped, %s = passed, %s = failed, %s = timed out\n",
+			CHAR_SKIPPED, CHAR_PASSED, CHAR_FAILED, CHAR_TIMED_OUT;
+	}
+}
+
+sub print_result_bar () {
+	my $points = int (61 * $results_printed / $results_to_print);
+	return if $points_printed == $points;
+	print '%' x ($points - $points_printed);
+	$points_printed = $points;
+	print "\n" if $results_printed == $results_to_print;
 }
 
 # Produce a results map in PHPUnit output format.
 sub print_result_char {
 	print shift;
-	if (++$results_printed > $results_to_print) {
-		die "Internal error: unexpected results after 100%!";
-	}
 	my $results_dangling = $results_printed % $max_results_per_line;
 	if ($results_dangling) {
 		return if $results_printed < $results_to_print;
@@ -289,6 +322,18 @@ sub print_result_char {
 		$results_to_print,
 		100 * $results_printed / $results_to_print;
 	STDOUT->flush if $flush_after_newline;
+}
+
+sub print_result_line () {
+	my $points = int (100 * $results_printed / $results_to_print);
+	return if $points % 5 || $points_printed == $points;
+	printf "%*u skipped, %*u failed, %*u passed (%3u%%)\n",
+		$max_result_digits, $skippedcount,
+		$max_result_digits, $failedcount,
+		$max_result_digits, $passedcount,
+		$points;
+	STDOUT->flush if $flush_after_newline;
+	$points_printed = $points;
 }
 
 sub print_result {
@@ -320,24 +365,36 @@ sub test_and_report {
 	# * reason (mandatory, string)
 	# * details (optional, [multi-line] string)
 	my %failed;
-	my $passedcount = 0;
+	$passedcount = 0;
 	my %passed; # May stay empty even if $passedcount > 0.
-
-	printf "INFO: %s = skipped, %s = passed, %s = failed, %s = timed out\n",
-		CHAR_SKIPPED, CHAR_PASSED, CHAR_FAILED, CHAR_TIMED_OUT;
+	$skippedcount = 0;
+	$failedcount = 0;
 
 	# Ordering of the results is the same as ordering of the tests.  Print the
 	# results map immediately and buffer any skipped/failed test details for the
 	# post-map diagnostics.
 	while (defined (my $result = get_next_result)) {
-		print_result_char ($result->{char});
 		if (defined $result->{skip}) {
+			$skippedcount++;
 			$skipped{$result->{label}} = $result->{skip};
 		} elsif (defined $result->{failure}) {
+			$failedcount++;
 			$failed{$result->{label}} = $result->{failure};
 		} else {
 			$passedcount++;
 			$passed{$result->{label}} = $result->{T} if defined $result->{T};
+		}
+		if (++$results_printed > $results_to_print) {
+			die 'Internal error: unexpected results after 100%!';
+		}
+		# Now $results_printed includes the current result before it has been
+		# printed, but each function below expects exactly that.
+		if ($progress_mode eq 'bar') {
+			print_result_bar;
+		} elsif ($progress_mode eq 'map') {
+			print_result_char $result->{char};
+		} elsif ($progress_mode eq 'lines') {
+			print_result_line;
 		}
 	}
 
@@ -365,8 +422,6 @@ sub test_and_report {
 	}
 
 	# scalar (%hash) returns incorrect value on Perl 5.8.4.
-	my $skippedcount = scalar keys %skipped;
-	my $failedcount = scalar keys %failed;
 	print "------------------------------------------------\n";
 	printf "%*u tests skipped\n", $max_result_digits, $skippedcount;
 	printf "%*u tests failed\n", $max_result_digits, $failedcount;
