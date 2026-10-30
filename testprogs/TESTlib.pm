@@ -5,6 +5,7 @@ use Config;
 use File::Temp qw(tempdir);
 use File::Path qw(rmtree);
 use List::Util qw(min max sum first);
+use Time::HiRes;
 
 # TESTrun helper functions (common to all projects).
 
@@ -356,6 +357,7 @@ sub test_and_report {
 	}
 	undef %seen_labels;
 
+	my $start = Time::HiRes::time;
 	start_tests (@tests);
 	init_results_processing scalar @tests;
 	my $ret = 0;
@@ -397,14 +399,14 @@ sub test_and_report {
 			print_result_line;
 		}
 	}
+	my $end = Time::HiRes::time;
 
-	print "\n";
 	if (%passed) {
 		print "Passed tests:\n";
 		print_result $_, sprintf ('T=%.06fs', $passed{$_}) foreach (sort keys %passed);
 		print "\n";
 	}
-	if (%skipped) {
+	if (%skipped && defined first {$_} values %skipped) {
 		print "Skipped tests:\n";
 		foreach (sort keys %skipped) {
 			print_result $_, $skipped{$_} if $skipped{$_} ne '';
@@ -422,25 +424,32 @@ sub test_and_report {
 	}
 
 	# scalar (%hash) returns incorrect value on Perl 5.8.4.
-	print "------------------------------------------------\n";
-	printf "%*u tests skipped\n", $max_result_digits, $skippedcount;
-	printf "%*u tests failed\n", $max_result_digits, $failedcount;
+	printf "INFO: %*u tests skipped\n", $max_result_digits, $skippedcount;
+	printf "INFO: %*u tests failed\n", $max_result_digits, $failedcount;
 	if (! scalar keys %passed) {
 		# There isn't any test duration statistics.
-		printf "%*u tests passed\n", $max_result_digits, $passedcount;
+		printf "INFO: %*u tests passed\n", $max_result_digits, $passedcount;
 	} elsif ($passedcount != scalar keys %passed) {
 		die sprintf ("Internal error: statistics bug (%u != %u)",
 			$passedcount,
 			scalar (keys %passed)
 		);
 	} else {
-		printf "%*u tests passed: T min/avg/max = %.06f/%.06f/%.06fs\n",
+		printf "INFO: %*u tests passed: T min/avg/max = %.06f/%.06f/%.06fs\n",
 			$max_result_digits,
 			scalar (keys %passed),
 			min (values %passed),
 			sum (values %passed) / scalar (keys %passed),
 			max (values %passed);
 	}
+
+	printf "INFO: Testing time = %.2f seconds.\n", $end - $start;
+	printf "INFO: Executed test rate overall = %.2f per second.\n",
+		($passedcount + $failedcount) / ($end - $start);
+	printf (
+		"INFO: Executed test rate per job = %.2f per second.\n",
+		($passedcount + $failedcount) / ($end - $start) / get_njobs
+	) if get_njobs > 1;
 
 	if ($skippedcount + $failedcount + $passedcount != $results_to_print) {
 		printf STDERR "Internal error: statistics bug (%u + %u + %u != %u)\n",
