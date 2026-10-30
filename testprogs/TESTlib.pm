@@ -4,7 +4,7 @@ use warnings FATAL => qw(uninitialized);
 use Config;
 use File::Temp qw(tempdir);
 use File::Path qw(rmtree);
-use List::Util qw(min max sum);
+use List::Util qw(min max sum first);
 
 # TESTrun helper functions (common to all projects).
 
@@ -95,6 +95,15 @@ sub get_njobs {
 	return $njobs;
 }
 
+sub get_env_enum ($@) {
+	my $name = shift;
+	my @valid = @_;
+	my $ret = $ENV{$name};
+	return $ret unless defined $ret;
+	die "Invalid $name value '$ret'." unless defined first {$ret eq $_} @valid;
+	return $ret;
+}
+
 sub get_helper_module () {
 	# OSes where for more than one tester job "mp" performs notably better.
 	# Tested negative: Haiku, NetBSD and QNX 8.0.
@@ -109,10 +118,9 @@ sub get_helper_module () {
 		solaris
 	);
 	my $njobs = get_njobs;
-	my $h;
-	if (defined $ENV{TESTRUN_HELPER}) {
-		$h = $ENV{TESTRUN_HELPER};
-		die "Invalid TESTRUN_HELPER value '$h'." unless grep $h eq $_, keys %helpers;
+	my $h = get_env_enum 'TESTRUN_HELPER', keys %helpers;
+	if (defined $h) {
+		# Use the validated value.
 	} elsif ($njobs == 1) {
 		# For one tester job "st" incurs the least overhead and is the best choice
 		# on all OSes except Solaris 10.
