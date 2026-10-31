@@ -34,6 +34,7 @@ use Getopt::Long;
 use Time::HiRes;
 use Config;
 use FindBin;
+use POSIX qw(WIFEXITED WEXITSTATUS);
 require $FindBin::RealBin . '/TESTlib.pm';
 # TESTlib.pm
 use subs qw(
@@ -49,6 +50,7 @@ use subs qw(
 	result_failed
 	result_passed
 	result_skipped
+	result_terminated
 	result_timed_out
 	run_skip_test
 	skip_config_def1
@@ -37691,41 +37693,64 @@ sub time_test_command {
 	# that is not possible so long as the command line uses shell
 	# redirection.
 	my $cmdline = join ' ', @_;
-	my $r;
+	my $stdout;
 	my $T;
 	if (! $print_passed) {
-		$r = system $cmdline;
+		$stdout = qx($cmdline);
 	} else {
 		my $t0 = Time::HiRes::time;
-		$r = system $cmdline;
+		$stdout = qx($cmdline);
 		$T = Time::HiRes::time - $t0;
 	}
-	return ($r >>= 8, $T);
+	# Do not apply WEXITSTATUS() here: other code needs to use WIFEXITED(),
+	# WIFSIGNALED() and WTERMSIG() to handle different errors differently.
+	return ($?, $stdout, $T);
 }
 
-sub run_generic_accept_test {
+sub run_generic_accept_test ($@) {
+	my $expected_stdout = shift;
+	my @args = @_;
 	push @_, (
-		'>' . mytmpfile ($filename_stdout),
-		"2>&1",
+		'2>' . mytmpfile $filename_diags # stderr
 	);
-	my ($r, $T) = time_test_command $test_timeout, @_;
+	my ($r, $stdout, $T) = time_test_command $test_timeout, @_;
+	return result_terminated 'test program', $r unless WIFEXITED $r;
+	$r = WEXITSTATUS $r;
 
 	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
-
 	return result_failed (
-		'test program error',
-		file_get_contents mytmpfile $filename_stdout
+		"test program exited with status $r",
+		file_get_contents mytmpfile $filename_diags # stderr
 	) if $r != EX_OK;
-
 	return result_failed (
-		'diff error',
-		file_get_contents mytmpfile $filename_diags
-	) if system sprintf "diff $diff_flags %s %s >%s 2>&1",
+		'test program generated standard error',
+		file_get_contents mytmpfile $filename_diags # stderr
+	) if -s mytmpfile $filename_diags;
+	return result_passed $T if $stdout eq $expected_stdout;
+
+	file_put_contents mytmpfile ($filename_expected), $expected_stdout;
+	file_put_contents mytmpfile ($filename_stdout), $stdout;
+	($r, $stdout, $T) = time_test_command $test_timeout,
+		'diff',
+		$diff_flags,
 		mytmpfile ($filename_expected),
 		mytmpfile ($filename_stdout),
-		mytmpfile ($filename_diags);
+		'2>' . mytmpfile ($filename_diags);
+	return result_terminated 'diff', $r unless WIFEXITED $r;
+	$r = WEXITSTATUS $r;
 
-	return result_passed $T;
+	return result_failed (
+		'diff generated standard error',
+		file_get_contents mytmpfile $filename_diags # stderr
+	) if -s mytmpfile $filename_diags;
+	return result_failed 'test output mismatch', $stdout if $r == 1;
+	return result_failed (
+		"diff exited with status $r",
+		file_get_contents mytmpfile $filename_diags # stderr
+	) if $r;
+	# The two files are supposed to have different contents, so diff is not
+	# supposed to exit with status 0, something is wrong.
+	return result_failed 'internal error', $stdout;
 }
 
 sub run_generic_reject_test {
@@ -37733,28 +37758,30 @@ sub run_generic_reject_test {
 	my $expected_status = shift;
 	my $expected_errstr = shift;
 	push @_, (
+		'2>&1',
 		'>' . mytmpfile ($filename_stdout),
-		"2>&1",
 	);
-	my ($r, $T) = time_test_command $this_test_timeout, @_;
+	my ($r, $stderr, $T) = time_test_command $this_test_timeout, @_;
+	return result_terminated 'test program', $r unless WIFEXITED $r;
+	$r = WEXITSTATUS $r;
 
 	return result_failed (
 		'no test program error',
 		file_get_contents mytmpfile $filename_stdout
 	) if $r == EX_OK;
-
+	return result_failed (
+		'test program generated standard output',
+		file_get_contents mytmpfile $filename_stdout
+	) if -s mytmpfile $filename_stdout;
 	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
-
 	return result_failed (
 		"test program status $r",
-		file_get_contents mytmpfile $filename_stdout
+		$stderr
 	) if $r != $expected_status;
-
 	return result_failed (
 		'error string mismatch',
-		file_get_contents mytmpfile $filename_stdout
-	) if ! string_in_file ($expected_errstr, mytmpfile $filename_stdout);
-
+		$stderr
+	) if -1 == index $stderr, $expected_errstr;
 	return result_passed $T;
 }
 
@@ -37843,7 +37870,6 @@ sub run_filter_accept_test {
 	# special characters in the filter expression, which becomes
 	# invalid shell syntax.
 	file_put_contents mytmpfile ($filename_filter), $test->{expr};
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
@@ -37856,49 +37882,55 @@ sub run_filter_accept_test {
 		'--', # for consistency with common_translatetest_args()
 		$test->{DLT},
 	);
-	return run_generic_accept_test @args;
+	return run_generic_accept_test
+		$test->{expected},
+		@args;
 }
 
 sub run_fcode_accept_test {
 	my $test = shift;
 	my @args = common_fcode_args $test;
 	push @args, '-q' unless $test->{expected};
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
-	return run_generic_accept_test @args;
+	return run_generic_accept_test
+		$test->{expected},
+		@args;
 }
 
 sub run_filter_apply_test {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	file_put_contents mytmpfile ($filename_filter), $test->{expr};
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	push @args, (
 		'-F',
 		mytmpfile ($filename_filter),
 		'-r',
 		SAVEFILE_DIR . $test->{savefile},
 	);
-	return run_generic_accept_test @args;
+	return run_generic_accept_test
+		$test->{expected},
+		@args;
 }
 
 sub run_fcode_apply_test {
 	my $test = shift;
 	my @args = common_fcode_args $test;
 	push @args, ('-r', SAVEFILE_DIR . $test->{savefile});
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
-	return run_generic_accept_test @args;
+	return run_generic_accept_test
+		$test->{expected},
+		@args;
 }
 
 sub run_translate_accept_test {
 	my $test = shift;
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
-	return run_generic_accept_test common_translatetest_args $test;
+	return run_generic_accept_test
+		$test->{expected},
+		common_translatetest_args $test;
 }
 
 sub run_enumerate_test {
 	my $test = shift;
-	file_put_contents mytmpfile ($filename_expected), $test->{expected};
 	return run_generic_accept_test (
+		$test->{expected},
 		$enumeratetest,
 		'--', # for consistency with common_translatetest_args()
 		$test->{cfuncname}

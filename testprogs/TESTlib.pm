@@ -6,6 +6,7 @@ use File::Temp qw(tempdir);
 use File::Path qw(rmtree);
 use List::Util qw(min max sum first);
 use Time::HiRes;
+use POSIX qw(WIFSIGNALED WTERMSIG);
 
 # TESTrun helper functions (common to all projects).
 
@@ -96,7 +97,8 @@ sub remove_tmpdir () {
 }
 
 sub mytmpfile {
-	return sprintf '%s/%s-%s', $tmpdir, my_tmp_id, shift;
+	# Do not use sprintf() in a busy loop.
+	return $tmpdir . '/' . my_tmp_id . '-' . shift;
 }
 
 sub get_njobs {
@@ -189,8 +191,8 @@ sub file_put_contents {
 sub file_get_contents {
 	my $filename = shift;
 	open FH, '<', $filename or die "failed opening '$filename'";
-	my $ret = '';
-	$ret .= $_ while (<FH>);
+	my $ret;
+	die "failed reading '$filename'" unless defined read FH, $ret, -s FH;
 	close FH or die "failed closing '$filename'";
 	return $ret;
 }
@@ -262,6 +264,15 @@ sub result_timed_out {
 		char => CHAR_TIMED_OUT,
 		failure => {reason => shift}
 	};
+}
+
+sub result_terminated ($$) {
+	my $what = shift;
+	my $status = shift;
+	return result_failed (
+		"$what terminated due to signal " . WTERMSIG $status
+	) if WIFSIGNALED $status;
+	return result_failed "$what terminated due to an unknown reason";
 }
 
 sub run_skip_test {
