@@ -40,6 +40,30 @@
 #include "pflog.h"
 
 /*
+ * Offset of the first byte past the member "field" of the structure
+ * type "type".
+ *
+ * The pseudo-header byte-swapping routines below modify packet data in
+ * place, through pointers to those structures.  Each field is touched
+ * only if the captured (and, where relevant, on-the-wire) length covers
+ * all of it.  Deriving that bound from the structure definition, rather
+ * than from a hand-written or hand-accumulated byte count, means the
+ * check always matches the field actually being accessed, even if a
+ * structure changes.
+ */
+#define FIELD_END(type, field) \
+	((u_int) (offsetof(type, field) + sizeof(((type *)0)->field)))
+
+/*
+ * Nonzero if a packet with captured length "caplen" and on-the-wire
+ * length "length", starting with a "type" structure, contains all of
+ * that structure's member "field".
+ */
+#define PACKET_HAS_FIELD(caplen, length, type, field) \
+	((caplen) >= FIELD_END(type, field) && \
+	 (length) >= FIELD_END(type, field))
+
+/*
  * Most versions of the DLT_PFLOG pseudo-header have UID and PID fields
  * that are saved in host byte order.
  *
@@ -55,48 +79,44 @@ swap_pflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	u_int pfloghdr_length;
 	struct pfloghdr *pflhdr = (struct pfloghdr *)buf;
 
-	if (caplen < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid) ||
-	    length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+	if (!PACKET_HAS_FIELD(caplen, length, struct pfloghdr, uid)) {
 		/* Not enough data to have the uid field */
 		return;
 	}
 
 	pfloghdr_length = pflhdr->length;
 
-	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, uid) + sizeof pflhdr->uid)) {
+	if (pfloghdr_length < FIELD_END(struct pfloghdr, uid)) {
 		/* Header doesn't include uid field */
 		return;
 	}
 	pflhdr->uid = PCAP_BSWAP_32(pflhdr->uid);
 
-	if (caplen < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid) ||
-	    length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+	if (!PACKET_HAS_FIELD(caplen, length, struct pfloghdr, pid)) {
 		/* Not enough data to have the pid field */
 		return;
 	}
-	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, pid) + sizeof pflhdr->pid)) {
+	if (pfloghdr_length < FIELD_END(struct pfloghdr, pid)) {
 		/* Header doesn't include pid field */
 		return;
 	}
 	pflhdr->pid = PCAP_BSWAP_32(pflhdr->pid);
 
-	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid) ||
-	    length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+	if (!PACKET_HAS_FIELD(caplen, length, struct pfloghdr, rule_uid)) {
 		/* Not enough data to have the rule_uid field */
 		return;
 	}
-	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_uid) + sizeof pflhdr->rule_uid)) {
+	if (pfloghdr_length < FIELD_END(struct pfloghdr, rule_uid)) {
 		/* Header doesn't include rule_uid field */
 		return;
 	}
 	pflhdr->rule_uid = PCAP_BSWAP_32(pflhdr->rule_uid);
 
-	if (caplen < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid) ||
-	    length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+	if (!PACKET_HAS_FIELD(caplen, length, struct pfloghdr, rule_pid)) {
 		/* Not enough data to have the rule_pid field */
 		return;
 	}
-	if (pfloghdr_length < (u_int) (offsetof(struct pfloghdr, rule_pid) + sizeof pflhdr->rule_pid)) {
+	if (pfloghdr_length < FIELD_END(struct pfloghdr, rule_pid)) {
 		/* Header doesn't include rule_pid field */
 		return;
 	}
@@ -134,8 +154,7 @@ swap_socketcan_header(uint16_t protocol, u_int caplen, u_int length,
 		 * by byte-swapping the CAN ID field.
 		 */
 		hdrp = (pcap_can_socketcan_hdr *)buf;
-		if (caplen < (u_int) (offsetof(pcap_can_socketcan_hdr, can_id) + sizeof hdrp->can_id) ||
-		    length < (u_int) (offsetof(pcap_can_socketcan_hdr, can_id) + sizeof hdrp->can_id)) {
+		if (!PACKET_HAS_FIELD(caplen, length, pcap_can_socketcan_hdr, can_id)) {
 			/* Not enough data to have the can_id field */
 			return;
 		}
@@ -149,20 +168,17 @@ swap_socketcan_header(uint16_t protocol, u_int caplen, u_int length,
 		 * payload length, and the acceptance field.
 		 */
 		xl_hdrp = (pcap_can_socketcan_xl_hdr *)buf;
-		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, priority_vcid) + sizeof xl_hdrp->priority_vcid) ||
-		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, priority_vcid) + sizeof xl_hdrp->priority_vcid)) {
+		if (!PACKET_HAS_FIELD(caplen, length, pcap_can_socketcan_xl_hdr, priority_vcid)) {
 			/* Not enough data to have the priority_vcid field */
 			return;
 		}
 		xl_hdrp->priority_vcid = PCAP_BSWAP_32(xl_hdrp->priority_vcid);
-		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, payload_length) + sizeof xl_hdrp->payload_length) ||
-		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, payload_length) + sizeof xl_hdrp->payload_length)) {
+		if (!PACKET_HAS_FIELD(caplen, length, pcap_can_socketcan_xl_hdr, payload_length)) {
 			/* Not enough data to have the payload_length field */
 			return;
 		}
 		xl_hdrp->payload_length = PCAP_BSWAP_16(xl_hdrp->payload_length);
-		if (caplen < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, acceptance_field) + sizeof xl_hdrp->acceptance_field) ||
-		    length < (u_int) (offsetof(pcap_can_socketcan_xl_hdr, acceptance_field) + sizeof xl_hdrp->acceptance_field)) {
+		if (!PACKET_HAS_FIELD(caplen, length, pcap_can_socketcan_xl_hdr, acceptance_field)) {
 			/* Not enough data to have the acceptance_field field */
 			return;
 		}
@@ -247,69 +263,61 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
     int header_len_64_bytes)
 {
 	pcap_usb_header_mmapped *uhdr = (pcap_usb_header_mmapped *)buf;
-	bpf_u_int32 offset = 0;
+	u_int caplen = hdr->caplen;
 
 	/*
-	 * "offset" is the offset *past* the field we're swapping;
-	 * we skip the field *before* checking to make sure
-	 * the captured data length includes the entire field.
+	 * Each field is byte-swapped only if the captured data includes
+	 * all of it; we stop at the first field that's not entirely
+	 * present.
+	 *
+	 * The DLT_USB_LINUX header is a prefix of the
+	 * DLT_USB_LINUX_MMAPPED header, so the field offsets of the
+	 * latter are used for both.
 	 */
+#define HAVE_USB_FIELD(field) \
+	(caplen >= FIELD_END(pcap_usb_header_mmapped, field))
 
 	/*
 	 * The URB id is a totally opaque value; do we really need to
 	 * convert it to the reading host's byte order???
 	 */
-	offset += 8;			/* skip past id */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(id))
 		return;
 	uhdr->id = swap_4_byte_aligned_uint64(uhdr->id);
 
-	offset += 4;			/* skip past various 1-byte fields */
-
-	offset += 2;			/* skip past bus_id */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(bus_id))
 		return;
 	uhdr->bus_id = PCAP_BSWAP_16(uhdr->bus_id);
 
-	offset += 2;			/* skip past various 1-byte fields */
-
-	offset += 8;			/* skip past ts_sec */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(ts_sec))
 		return;
 	uhdr->ts_sec = swap_4_byte_aligned_int64(uhdr->ts_sec);
 
-	offset += 4;			/* skip past ts_usec */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(ts_usec))
 		return;
 	uhdr->ts_usec = PCAP_BSWAP_32(uhdr->ts_usec);
 
-	offset += 4;			/* skip past status */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(status))
 		return;
 	uhdr->status = PCAP_BSWAP_32(uhdr->status);
 
-	offset += 4;			/* skip past urb_len */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(urb_len))
 		return;
 	uhdr->urb_len = PCAP_BSWAP_32(uhdr->urb_len);
 
-	offset += 4;			/* skip past data_len */
-	if (hdr->caplen < offset)
+	if (!HAVE_USB_FIELD(data_len))
 		return;
 	uhdr->data_len = PCAP_BSWAP_32(uhdr->data_len);
 
 	if (uhdr->transfer_type == URB_ISOCHRONOUS) {
-		offset += 4;			/* skip past s.iso.error_count */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(s.iso.error_count))
 			return;
 		uhdr->s.iso.error_count = PCAP_BSWAP_32(uhdr->s.iso.error_count);
 
-		offset += 4;			/* skip past s.iso.numdesc */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(s.iso.numdesc))
 			return;
 		uhdr->s.iso.numdesc = PCAP_BSWAP_32(uhdr->s.iso.numdesc);
-	} else
-		offset += 8;			/* skip USB setup header */
+	}
 
 	/*
 	 * With the old header, there are no isochronous descriptors
@@ -331,54 +339,65 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 		 * at the end.  Byte swap them as if this were
 		 * a "version 1" header.
 		 */
-		offset += 4;			/* skip past interval */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(interval))
 			return;
 		uhdr->interval = PCAP_BSWAP_32(uhdr->interval);
 
-		offset += 4;			/* skip past start_frame */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(start_frame))
 			return;
 		uhdr->start_frame = PCAP_BSWAP_32(uhdr->start_frame);
 
-		offset += 4;			/* skip past xfer_flags */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(xfer_flags))
 			return;
 		uhdr->xfer_flags = PCAP_BSWAP_32(uhdr->xfer_flags);
 
-		offset += 4;			/* skip past ndesc */
-		if (hdr->caplen < offset)
+		if (!HAVE_USB_FIELD(ndesc))
 			return;
 		uhdr->ndesc = PCAP_BSWAP_32(uhdr->ndesc);
 
 		if (uhdr->transfer_type == URB_ISOCHRONOUS) {
 			/* swap the values in struct linux_usb_isodesc */
 			usb_isodesc *pisodesc;
+			u_int remaining;
 			uint32_t i;
 
-			pisodesc = (usb_isodesc *)(void *)(buf+offset);
+			/*
+			 * The descriptors immediately follow the
+			 * header; "remaining" is the number of captured
+			 * bytes at and after the current descriptor.
+			 * We have the entire header, so this can't
+			 * underflow.
+			 */
+			pisodesc = (usb_isodesc *)(void *)(buf +
+			    sizeof(pcap_usb_header_mmapped));
+			remaining = caplen -
+			    (u_int) sizeof(pcap_usb_header_mmapped);
 			for (i = 0; i < uhdr->ndesc; i++) {
-				offset += 4;		/* skip past status */
-				if (hdr->caplen < offset)
+				if (remaining < FIELD_END(usb_isodesc, status))
 					return;
 				pisodesc->status = PCAP_BSWAP_32(pisodesc->status);
 
-				offset += 4;		/* skip past offset */
-				if (hdr->caplen < offset)
+				if (remaining < FIELD_END(usb_isodesc, offset))
 					return;
 				pisodesc->offset = PCAP_BSWAP_32(pisodesc->offset);
 
-				offset += 4;		/* skip past len */
-				if (hdr->caplen < offset)
+				if (remaining < FIELD_END(usb_isodesc, len))
 					return;
 				pisodesc->len = PCAP_BSWAP_32(pisodesc->len);
 
-				offset += 4;		/* skip past padding */
-
+				/*
+				 * Move to the next descriptor, if this
+				 * one, including its padding, is
+				 * entirely present.
+				 */
+				if (remaining < (u_int) sizeof(usb_isodesc))
+					return;
+				remaining -= (u_int) sizeof(usb_isodesc);
 				pisodesc++;
 			}
 		}
 	}
+#undef HAVE_USB_FIELD
 }
 
 /*
