@@ -30528,7 +30528,7 @@ my @filter_apply_blocks = (
 		skip => skip_config_def1 ('NO_PROTOCHAIN'),
 		savefile => 'ipv6_ext_headers.pcap',
 		expr => 'ip6 protochain 17',
-		results => [0, 0, 65535, 65535],
+		results => [65535, 65535, 65535, 65535],
 	},
 	{
 		name => 'ip6_protochain_51_tunnel',
@@ -37022,74 +37022,78 @@ my @fcode_tests = (
 	{
 		name => 'ja_neg_2_overlimit',
 		program => '
-			(000) ja       66 ; k >= 0, forward jump
-			(001) ja       67 ; k >= 0, not reached
-			(002) ja       1  ; k == -2, backward jump number 65, terminating!
-			(003) ja       2  ; k == -2, backward jump number 64
-			(004) ja       3  ; k == -2, backward jump number 63
-			(005) ja       4  ; k == -2, backward jump number 62
-			(006) ja       5  ; k == -2, backward jump number 61
-			(007) ja       6  ; k == -2, backward jump number 60
-			(008) ja       7  ; k == -2, backward jump number 59
-			(009) ja       8  ; k == -2, backward jump number 58
-			(010) ja       9  ; k == -2, backward jump number 57
-			(011) ja       10 ; k == -2, backward jump number 56
-			(012) ja       11 ; k == -2, backward jump number 55
-			(013) ja       12 ; k == -2, backward jump number 54
-			(014) ja       13 ; k == -2, backward jump number 53
-			(015) ja       14 ; k == -2, backward jump number 52
-			(016) ja       15 ; k == -2, backward jump number 51
-			(017) ja       16 ; k == -2, backward jump number 50
-			(018) ja       17 ; k == -2, backward jump number 49
-			(019) ja       18 ; k == -2, backward jump number 48
-			(020) ja       19 ; k == -2, backward jump number 47
-			(021) ja       20 ; k == -2, backward jump number 46
-			(022) ja       21 ; k == -2, backward jump number 45
-			(023) ja       22 ; k == -2, backward jump number 44
-			(024) ja       23 ; k == -2, backward jump number 43
-			(025) ja       24 ; k == -2, backward jump number 42
-			(026) ja       25 ; k == -2, backward jump number 41
-			(027) ja       26 ; k == -2, backward jump number 40
-			(028) ja       27 ; k == -2, backward jump number 39
-			(029) ja       28 ; k == -2, backward jump number 38
-			(030) ja       29 ; k == -2, backward jump number 37
-			(031) ja       30 ; k == -2, backward jump number 36
-			(032) ja       31 ; k == -2, backward jump number 35
-			(033) ja       32 ; k == -2, backward jump number 34
-			(034) ja       33 ; k == -2, backward jump number 33
-			(035) ja       34 ; k == -2, backward jump number 32
-			(036) ja       35 ; k == -2, backward jump number 31
-			(037) ja       36 ; k == -2, backward jump number 30
-			(038) ja       37 ; k == -2, backward jump number 29
-			(039) ja       38 ; k == -2, backward jump number 28
-			(040) ja       39 ; k == -2, backward jump number 27
-			(041) ja       40 ; k == -2, backward jump number 26
-			(042) ja       41 ; k == -2, backward jump number 25
-			(043) ja       42 ; k == -2, backward jump number 24
-			(044) ja       43 ; k == -2, backward jump number 23
-			(045) ja       44 ; k == -2, backward jump number 22
-			(046) ja       45 ; k == -2, backward jump number 21
-			(047) ja       46 ; k == -2, backward jump number 20
-			(048) ja       47 ; k == -2, backward jump number 19
-			(049) ja       48 ; k == -2, backward jump number 18
-			(050) ja       49 ; k == -2, backward jump number 17
-			(051) ja       50 ; k == -2, backward jump number 16
-			(052) ja       51 ; k == -2, backward jump number 15
-			(053) ja       52 ; k == -2, backward jump number 14
-			(054) ja       53 ; k == -2, backward jump number 13
-			(055) ja       54 ; k == -2, backward jump number 12
-			(056) ja       55 ; k == -2, backward jump number 11
-			(057) ja       56 ; k == -2, backward jump number 10
-			(058) ja       57 ; k == -2, backward jump number 9
-			(059) ja       58 ; k == -2, backward jump number 8
-			(060) ja       59 ; k == -2, backward jump number 7
-			(061) ja       60 ; k == -2, backward jump number 6
-			(062) ja       61 ; k == -2, backward jump number 5
-			(063) ja       62 ; k == -2, backward jump number 4
-			(064) ja       63 ; k == -2, backward jump number 3
-			(065) ja       64 ; k == -2, backward jump number 2
-			(066) ja       65 ; k == -2, backward jump number 1
-			(067) ret      #70773 ; not reached
+			(000) ja       70 ; k >= 0, forward jump
+			(001) ja       71 ; k >= 0, not reached
+			(002) ja       1  ; k == -2, backward jump number 69
+			(003) ja       2  ; k == -2, backward jump number 68
+			(004) ja       3  ; k == -2, backward jump number 67
+			(005) ja       4  ; k == -2, backward jump number 66
+			(006) ja       5  ; k == -2, backward jump number 65
+			(007) ja       6  ; k == -2, backward jump number 64
+			(008) ja       7  ; k == -2, backward jump number 63
+			(009) ja       8  ; k == -2, backward jump number 62
+			(010) ja       9  ; k == -2, backward jump number 61
+			(011) ja       10 ; k == -2, backward jump number 60
+			(012) ja       11 ; k == -2, backward jump number 59
+			(013) ja       12 ; k == -2, backward jump number 58
+			(014) ja       13 ; k == -2, backward jump number 57
+			(015) ja       14 ; k == -2, backward jump number 56
+			(016) ja       15 ; k == -2, backward jump number 55
+			(017) ja       16 ; k == -2, backward jump number 54
+			(018) ja       17 ; k == -2, backward jump number 53
+			(019) ja       18 ; k == -2, backward jump number 52
+			(020) ja       19 ; k == -2, backward jump number 51
+			(021) ja       20 ; k == -2, backward jump number 50
+			(022) ja       21 ; k == -2, backward jump number 49
+			(023) ja       22 ; k == -2, backward jump number 48
+			(024) ja       23 ; k == -2, backward jump number 47
+			(025) ja       24 ; k == -2, backward jump number 46
+			(026) ja       25 ; k == -2, backward jump number 45
+			(027) ja       26 ; k == -2, backward jump number 44
+			(028) ja       27 ; k == -2, backward jump number 43
+			(029) ja       28 ; k == -2, backward jump number 42
+			(030) ja       29 ; k == -2, backward jump number 41
+			(031) ja       30 ; k == -2, backward jump number 40
+			(032) ja       31 ; k == -2, backward jump number 39
+			(033) ja       32 ; k == -2, backward jump number 38
+			(034) ja       33 ; k == -2, backward jump number 37
+			(035) ja       34 ; k == -2, backward jump number 36
+			(036) ja       35 ; k == -2, backward jump number 35
+			(037) ja       36 ; k == -2, backward jump number 34
+			(038) ja       37 ; k == -2, backward jump number 33
+			(039) ja       38 ; k == -2, backward jump number 32
+			(040) ja       39 ; k == -2, backward jump number 31
+			(041) ja       40 ; k == -2, backward jump number 30
+			(042) ja       41 ; k == -2, backward jump number 29
+			(043) ja       42 ; k == -2, backward jump number 28
+			(044) ja       43 ; k == -2, backward jump number 27
+			(045) ja       44 ; k == -2, backward jump number 26
+			(046) ja       45 ; k == -2, backward jump number 25
+			(047) ja       46 ; k == -2, backward jump number 24
+			(048) ja       47 ; k == -2, backward jump number 23
+			(049) ja       48 ; k == -2, backward jump number 22
+			(050) ja       49 ; k == -2, backward jump number 21
+			(051) ja       50 ; k == -2, backward jump number 20
+			(052) ja       51 ; k == -2, backward jump number 19
+			(053) ja       52 ; k == -2, backward jump number 18
+			(054) ja       53 ; k == -2, backward jump number 17
+			(055) ja       54 ; k == -2, backward jump number 16
+			(056) ja       55 ; k == -2, backward jump number 15
+			(057) ja       56 ; k == -2, backward jump number 14
+			(058) ja       57 ; k == -2, backward jump number 13
+			(059) ja       58 ; k == -2, backward jump number 12
+			(060) ja       59 ; k == -2, backward jump number 11
+			(061) ja       60 ; k == -2, backward jump number 10
+			(062) ja       61 ; k == -2, backward jump number 9
+			(063) ja       62 ; k == -2, backward jump number 8
+			(064) ja       63 ; k == -2, backward jump number 7
+			(065) ja       64 ; k == -2, backward jump number 6
+			(066) ja       65 ; k == -2, backward jump number 5
+			(067) ja       66 ; k == -2, backward jump number 4
+			(068) ja       67 ; k == -2, backward jump number 3
+			(069) ja       68 ; k == -2, backward jump number 2
+			(070) ja       69 ; k == -2, backward jump number 1
+			(071) ret      #70773 ; not reached
 			',
 		savefile => 'pppoe.pcap',
 		results => [0],
