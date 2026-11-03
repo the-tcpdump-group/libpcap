@@ -75,6 +75,7 @@ INSTALL_DATA = @INSTALL_DATA@
 	$(CC) $(FULL_CFLAGS) -c -o $@ $<
 
 SRC = @VALGRINDTEST_SRC@ \
+	@RPCAPOWNERSHIPTEST_SRC@ \
 	activatetest.c \
 	can_set_rfmon_test.c \
 	capturetest.c \
@@ -150,6 +151,10 @@ nonblocktest: $(srcdir)/nonblocktest.c ../libpcap.a
 reactivatetest: $(srcdir)/reactivatetest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/reactivatetest.c ../libpcap.a $(LIBS)
+
+rpcapownershiptest: $(srcdir)/rpcapownershiptest.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
+	    $(srcdir)/rpcapownershiptest.c ../libpcap.a $(LIBS)
 
 selpolltest: $(srcdir)/selpolltest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/selpolltest.c \
