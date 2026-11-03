@@ -125,7 +125,7 @@ sub get_env_enum ($@) {
 
 sub get_helper_module () {
 	# OSes where for more than one tester job "mp" performs notably better.
-	# Tested negative: Haiku, NetBSD and QNX 8.0.
+	# Tested negative: Haiku and QNX 8.0.
 	# Not tested: AIX, GNU/Hurd, HP-UX and Windows.
 	my @mpgood = qw(
 		darwin
@@ -133,6 +133,7 @@ sub get_helper_module () {
 		freebsd
 		linux
 		midnightbsd
+		netbsd
 		openbsd
 		solaris
 	);
