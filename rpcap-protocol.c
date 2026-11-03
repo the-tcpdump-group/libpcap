@@ -90,14 +90,12 @@ rpcap_senderror(PCAP_SOCKET sock, SSL *ssl, uint8_t ver, unsigned short errcode,
 	if (length > PCAP_ERRBUF_SIZE)
 		length = PCAP_ERRBUF_SIZE;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, ver, RPCAP_MSG_ERROR, errcode, length);
-
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
+	if (rpcap_bufferize_hdr(sendbuf, &sendbufidx, RPCAP_NETBUF_SIZE,
+	    ver, RPCAP_MSG_ERROR, errcode, length, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
 	if (sock_bufferize(error, length, sendbuf, &sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
+		RPCAP_NETBUF_SIZE, errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	if (sock_send(sock, ssl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) < 0)
@@ -141,6 +139,22 @@ rpcap_createhdr(struct rpcap_header *header, uint8_t ver, uint8_t type, uint16_t
 	header->type = type;
 	header->value = htons(value);
 	header->plen = htonl(length);
+}
+
+int
+rpcap_bufferize_hdr(char *sendbuf, int *sendbufidxp, int totsize,
+    uint8_t ver, uint8_t type, uint16_t value, uint32_t length,
+    char *errbuf, size_t errbufsize)
+{
+	struct rpcap_header *headerp;
+
+	headerp = (struct rpcap_header *) sock_alloc_buffer_space(sendbuf,
+	    sizeof(struct rpcap_header), sendbufidxp, totsize, errbuf,
+	    errbufsize);
+	if (headerp == NULL)
+		return -1;
+	rpcap_createhdr(headerp, ver, type, value, length);
+	return 0;
 }
 
 /*
