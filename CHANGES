@@ -6,6 +6,8 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         is invalid, as the return value isn't a general error.
       Indicate no-capture and no-inject devices.
       Require libpcap [internal-only] config.h in [internal-only] pcap-int.h.
+      Clean up the implementation of pcap_dump_*open() routines.
+        (Issue #1781)
     General:
       Set all the file descriptors/HANDLEs to an invalid value in
         pcap_open_dead().
@@ -30,8 +32,12 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
         closed. (Issue #1722)
+      Document that pcap_dump_fopen() never closes the FILE * handed to
+        it. (Issue #1781)
+      Make some other improvements to the description of
+        pcap_dump_fopen() and pcap_dump_open_append().
     Linux:
-      Include sysfs rx_dropped in pcap_stat.ps_ifdrop (GH bug 1328).
+      Include sysfs rx_dropped in pcap_stat.ps_ifdrop (GH bug #1328).
     QNX:
       Fix DLT_PFSYNC definition on QNX 8.0.
 

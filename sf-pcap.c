@@ -175,20 +175,6 @@ struct pcap_sf_patched_pkthdr {
 
 static int pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **datap);
 
-#ifdef _WIN32
-/*
- * This isn't exported on Windows, because it would only work if both
- * libpcap and the code using it were using the same C runtime; otherwise they
- * would be using different definitions of a FILE structure.
- *
- * Instead we define this as a macro in pcap/pcap.h that wraps the hopen
- * version that we do export, passing it a raw OS HANDLE, as defined by the
- * Win32 / Win64 ABI, obtained from the _fileno() and _get_osfhandle()
- * functions of the appropriate CRT.
- */
-static pcap_dumper_t *pcap_dump_fopen(pcap_t *p, FILE *f);
-#endif /* _WIN32 */
-
 /*
  * Private data for reading pcap savefiles.
  */
@@ -291,7 +277,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 			 "unsupported pcap savefile version %u.%u",
 			 hdr.version_major, hdr.version_minor);
 		*err = 1;
-		return NULL;
+		return (NULL);
 	}
 
 	/*
@@ -302,7 +288,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 			 "savefile linktype reserved field not zero (0x%08x)",
 			 LT_RESERVED1(hdr.linktype));
 		*err = 1;
-		return NULL;
+		return (NULL);
 	}
 
 	/*
@@ -762,6 +748,29 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	return (1);
 }
 
+/*
+ * Given a pcap_t, get the value to write into the pcap header for a file
+ * to which packets from a pcap_t such as that would be written.
+ *
+ * Returns -1 if the pcap_t's DLT_ value is not known and thus cannot be
+ * mapped to a LINKTYPE_ value.
+ */
+static int
+get_header_type_value(pcap_t *p, const char *fname)
+{
+	int linktype;
+
+	linktype = dlt_to_linktype(p->linktype);
+	if (linktype == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: link-layer type %d isn't supported in savefiles",
+		    fname, p->linktype);
+		return (-1);
+	}
+	linktype |= p->linktype_ext;
+	return (linktype);
+}
+
 static int
 sf_write_header(pcap_t *p, FILE *fp, int linktype, int snaplen)
 {
@@ -843,10 +852,19 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	}
 }
 
-static pcap_dumper_t *
-pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
-{
+/*
+ * Flag values for whether pcap_setup_dump() should close the stream
+ * on failure.
+ */
+typedef enum {
+	CLOSE_STREAM_ON_FAILURE,
+	DONT_CLOSE_STREAM_ON_FAILURE
+} action_on_failure_e;
 
+static pcap_dumper_t *
+pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname,
+    action_on_failure_e action_on_failure)
+{
 #if defined(_WIN32)
 	/*
 	 * If we're writing to the standard output, put it in binary
@@ -863,7 +881,15 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 	if (sf_write_header(p, f, linktype, p->snapshot) == -1) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't write to %s", fname);
-		if (f != stdout)
+		/*
+		 * XXX - we probably don't need to check for stdout
+		 * here; the only places stdout would be handed to us
+		 * are pcap_dump_open() with a filename of "-" and
+		 * pcap_dump_fopen(), and, in those cases, we're
+		 * passed DONT_CLOSE_STREAM_ON_FAILURE.
+		 */
+		if (action_on_failure == CLOSE_STREAM_ON_FAILURE &&
+		    f != stdout)
 			(void)fclose(f);
 		return (NULL);
 	}
@@ -876,7 +902,6 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 pcap_dumper_t *
 pcap_dump_open(pcap_t *p, const char *fname)
 {
-	FILE *f;
 	int linktype;
 
 	/*
@@ -889,24 +914,30 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		    fname);
 		return (NULL);
 	}
-	linktype = dlt_to_linktype(p->linktype);
+	linktype = get_header_type_value(p, fname);
 	if (linktype == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: link-layer type %d isn't supported in savefiles",
-		    fname, p->linktype);
+		/* p->errbuf has been filled in */
 		return (NULL);
 	}
-	linktype |= p->linktype_ext;
 
 	if (fname == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "A null pointer was supplied as the file name");
-		return NULL;
+		return (NULL);
 	}
 	if (fname[0] == '-' && fname[1] == '\0') {
-		f = stdout;
-		fname = "standard output";
+		/*
+		 * "-" as a file name means "use the standard output".
+		 *
+		 * This is done for backwards compatibility; people
+		 * *should* now do this with pcap_dump_fopen(), which
+		 * has been around for over two decades now.
+		 */
+		return (pcap_setup_dump(p, linktype, stdout, "standard output",
+		    DONT_CLOSE_STREAM_ON_FAILURE));
 	} else {
+		FILE *f;
+
 		/*
 		 * "b" is supported as of C90, so *all* UN*Xes should
 		 * support it, even though it does nothing.  It's
@@ -919,8 +950,9 @@ pcap_dump_open(pcap_t *p, const char *fname)
 			    errno, "%s", fname);
 			return (NULL);
 		}
+		return (pcap_setup_dump(p, linktype, f, fname,
+		    CLOSE_STREAM_ON_FAILURE));
 	}
-	return (pcap_setup_dump(p, linktype, f, fname));
 }
 
 #ifdef _WIN32
@@ -931,14 +963,21 @@ pcap_dump_open(pcap_t *p, const char *fname)
 pcap_dumper_t *
 pcap_dump_hopen(pcap_t *p, intptr_t osfd)
 {
+	int linktype;
 	int fd;
 	FILE *file;
+
+	linktype = get_header_type_value(p, "stream");
+	if (linktype == -1) {
+		/* p->errbuf has been filled in */
+		return (NULL);
+	}
 
 	fd = _open_osfhandle(osfd, _O_APPEND);
 	if (fd < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "_open_osfhandle");
-		return NULL;
+		return (NULL);
 	}
 
 	file = _fdopen(fd, "wb");
@@ -946,35 +985,39 @@ pcap_dump_hopen(pcap_t *p, intptr_t osfd)
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "_fdopen");
 		_close(fd);
-		return NULL;
+		return (NULL);
 	}
 
-	return pcap_dump_fopen(p, file);
+	return (pcap_setup_dump(p, linktype, file, "stream",
+	    CLOSE_STREAM_ON_FAILURE));
 }
-#endif /* _WIN32 */
-
+#else /* _WIN32 */
 /*
  * Initialize so that sf_write() will output to the given stream.
  */
-#ifdef _WIN32
-static
-#endif /* _WIN32 */
 pcap_dumper_t *
 pcap_dump_fopen(pcap_t *p, FILE *f)
 {
 	int linktype;
 
-	linktype = dlt_to_linktype(p->linktype);
+	linktype = get_header_type_value(p, "stream");
 	if (linktype == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "stream: link-layer type %d isn't supported in savefiles",
-		    p->linktype);
+		/* p->errbuf has been filled in */
 		return (NULL);
 	}
-	linktype |= p->linktype_ext;
 
-	return (pcap_setup_dump(p, linktype, f, "stream"));
+	/*
+	 * We don't open the stream ourselves, it was passed to us as
+	 * an argument, so don't close it on failure.
+	 *
+	 * (Well, we *have* had the stream *loaned* to us, as we're
+	 * going to write to it, but, again, we didn't open it, so we
+	 * shouldn't close it.)
+	 */
+	return (pcap_setup_dump(p, linktype, f, "stream",
+	    DONT_CLOSE_STREAM_ON_FAILURE));
 }
+#endif /* _WIN32 */
 
 pcap_dumper_t *
 pcap_dump_open_append(pcap_t *p, const char *fname)
@@ -984,21 +1027,20 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	size_t amt_read;
 	struct pcap_file_header ph;
 
-	linktype = dlt_to_linktype(p->linktype);
+	linktype = get_header_type_value(p, fname);
 	if (linktype == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: link-layer type %d isn't supported in savefiles",
-		    fname, linktype);
+		/* p->errbuf has been filled in */
 		return (NULL);
 	}
 
 	if (fname == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "A null pointer was supplied as the file name");
-		return NULL;
+		return (NULL);
 	}
 	if (fname[0] == '-' && fname[1] == '\0')
-		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
+		return (pcap_setup_dump(p, linktype, stdout, "standard output",
+		    DONT_CLOSE_STREAM_ON_FAILURE));
 
 	/*
 	 * "a" will cause the file *not* to be truncated if it exists
