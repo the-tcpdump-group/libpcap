@@ -260,10 +260,12 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 	//
 	nrecv = sock_recv(sockctrl, NULL, (char *)&first_octet, 1,
 	    SOCK_EOF_ISNT_ERROR|SOCK_MSG_PEEK, errbuf, PCAP_ERRBUF_SIZE);
-	if (nrecv == -1)
+	if (nrecv < 0)
 	{
-		// Fatal error.
-		rpcapd_log(LOGPRIO_ERROR, "Peek from client failed: %s", errbuf);
+		// Fatal error (-1) or interrupted read (-3, on EINTR); either
+		// way, first_octet was not read, so don't use it.
+		if (nrecv == -1)
+			rpcapd_log(LOGPRIO_ERROR, "Peek from client failed: %s", errbuf);
 		goto end;
 	}
 	if (nrecv == 0)
@@ -362,10 +364,12 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 			nrecv = sock_recv(sockctrl, ssl, (char *) &tls_header,
 			    sizeof tls_header, SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR,
 			    errbuf, PCAP_ERRBUF_SIZE);
-			if (nrecv == -1)
+			if (nrecv < 0)
 			{
-				// Network error.
-				rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+				// Network error (-1) or interrupted read (-3, on
+				// EINTR); tls_header was not read, so don't use it.
+				if (nrecv == -1)
+					rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 				goto end;
 			}
 			if (nrecv == 0)
@@ -1140,6 +1144,7 @@ daemon_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char remote_errbuf[PCAP_ERRBUF_SIZE];
+	int nread;
 
 	if (plen >= PCAP_ERRBUF_SIZE)
 	{
@@ -1147,12 +1152,14 @@ daemon_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen)
 		 * Message is too long; just read as much of it as we
 		 * can into the buffer provided, and discard the rest.
 		 */
-		if (sock_recv(sockctrl, ssl, remote_errbuf, PCAP_ERRBUF_SIZE - 1,
+		nread = sock_recv(sockctrl, ssl, remote_errbuf, PCAP_ERRBUF_SIZE - 1,
 		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		    PCAP_ERRBUF_SIZE);
+		if (nread < 0)
 		{
-			// Network error.
-			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+			// Network error (-1) or interrupted read (-3, on EINTR).
+			if (nread == -1)
+				rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 			return -1;
 		}
 		if (rpcapd_discard(sockctrl, ssl, plen - (PCAP_ERRBUF_SIZE - 1)) == -1)
@@ -1173,12 +1180,14 @@ daemon_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen)
 	}
 	else
 	{
-		if (sock_recv(sockctrl, ssl, remote_errbuf, plen,
+		nread = sock_recv(sockctrl, ssl, remote_errbuf, plen,
 		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
-		    PCAP_ERRBUF_SIZE) == -1)
+		    PCAP_ERRBUF_SIZE);
+		if (nread < 0)
 		{
-			// Network error.
-			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+			// Network error (-1) or interrupted read (-3, on EINTR).
+			if (nread == -1)
+				rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 			return -1;
 		}
 
@@ -1862,9 +1871,13 @@ daemon_msg_open_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 
 	nread = sock_recv(pars->sockctrl, pars->ssl, source, plen,
 	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
+	if (nread < 0)
 	{
-		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+		// Network error (-1) or interrupted read (-3, on EINTR).  In
+		// the latter case nread is negative, so source[nread] would be
+		// an out-of-bounds write; bail out instead.
+		if (nread == -1)
+			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 		return -1;
 	}
 	source[nread] = '\0';
@@ -2920,10 +2933,12 @@ rpcapd_recv_msg_header(PCAP_SOCKET sock, SSL *ssl, struct rpcap_header *headerp)
 
 	nread = sock_recv(sock, ssl, (char *) headerp, sizeof(struct rpcap_header),
 	    SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR, errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
+	if (nread < 0)
 	{
-		// Network error.
-		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+		// Network error (-1) or interrupted read (-3, on EINTR); the
+		// header was not fully read, so don't use it.
+		if (nread == -1)
+			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 		return -1;
 	}
 	if (nread == 0)
@@ -2958,9 +2973,14 @@ rpcapd_recv(PCAP_SOCKET sock, SSL *ssl, char *buffer, size_t toread, uint32_t *p
 	}
 	nread = sock_recv(sock, ssl, buffer, toread,
 	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
+	if (nread < 0)
 	{
-		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+		// Network error (-1) or interrupted read (-3, on EINTR).  On
+		// -3 nread is negative; subtracting it from *plen would corrupt
+		// the remaining-payload count and leave "buffer" uninitialized,
+		// so treat it as a failure.
+		if (nread == -1)
+			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 		return -1;
 	}
 	*plen -= nread;
