@@ -3030,7 +3030,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 		}
 #endif
 		if (sock_close(sockctrl, errbuf, PCAP_ERRBUF_SIZE))
-			return -1;
+			goto error_closed;
 	}
 
 	/* To avoid inconsistencies in the number of sock_init() */
@@ -3069,6 +3069,7 @@ error_nodiscard:
 		sock_close(sockctrl, NULL, 0);
 	}
 
+error_closed:
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
 
