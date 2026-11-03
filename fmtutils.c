@@ -423,7 +423,7 @@ pcapint_vfmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
 	/*
 	 * Now append the error number, if it fits.
 	 */
-	utf_8_len = p - errbuf;
+	utf_8_len = p - (errbuf + msglen);
 	errbuflen_remaining -= utf_8_len;
 	if (utf_8_len == 0) {
 		/* The message was empty. */
