@@ -62,7 +62,9 @@
 #include <linux/filter.h>
 #endif
 
-#define MAX_BACKWARD_JUMPS 64U
+#define MAX_BACKWARD_JUMP_SLACK 64U
+#define MIN_PROTOCHAIN_HEADER_LENGTH 8U
+#define MAX_PROTOCHAIN_BACKWARD_JUMP_DISTANCE 128U
 
 /*
  * Kernel BPF implementations tend to define BPF_MAXINSNS to 512 or 4096, the
@@ -140,6 +142,8 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 	uint32_t mem[BPF_MEMWORDS] = {0};
 	const struct bpf_insn *pc0 = pc;
 	unsigned backward_jumps = 0;
+	const unsigned backward_jump_data_length =
+	    buflen < MAXIMUM_SNAPLEN ? buflen : MAXIMUM_SNAPLEN;
 	--pc;
 	for (;;) {
 		++pc;
@@ -322,9 +326,18 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			 * - a backward jump after many enough backward jumps
 			 *   already made for this packet.
 			 */
-			if ((bpf_int32)pc->k < 0 && ((bpf_int32)pc->k == -1 ||
-			    backward_jumps++ >= MAX_BACKWARD_JUMPS))
-				return 0;
+			if ((bpf_int32)pc->k < 0) {
+				const bpf_u_int32 jump_distance = 0U - pc->k;
+				const unsigned jump_allowance =
+				    MAX_BACKWARD_JUMP_SLACK +
+				    (jump_distance <=
+				    MAX_PROTOCHAIN_BACKWARD_JUMP_DISTANCE ?
+				    backward_jump_data_length /
+				    MIN_PROTOCHAIN_HEADER_LENGTH : 0);
+				if ((bpf_int32)pc->k == -1 ||
+				    backward_jumps++ >= jump_allowance)
+					return 0;
+			}
 			/*
 			 * XXX - we currently implement "ip6 protochain"
 			 * with backward jumps, so sign-extend pc->k.
