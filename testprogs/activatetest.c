@@ -1,5 +1,8 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <pcap.h>
+
+#include "portability.h"
 
 #define CAPTURE_DEVICE "nosuchdevice"
 
@@ -21,9 +24,9 @@ int main(void)
 		fprintf(stderr,
 		        "FAIL: Unexpected error from pcap_create() (%s).\n",
 		        errbuf);
-		return 1;
+		exit(EX_SOFTWARE);
 	}
-	int ret = 1, err = pcap_activate(p);
+	int ret = EX_SOFTWARE, err = pcap_activate(p);
 	switch (err) {
 	case 0:
 		fprintf(stderr, "FAIL: No error from pcap_activate().\n");
@@ -34,10 +37,11 @@ int main(void)
 	case PCAP_ERROR_PERM_DENIED:
 		fprintf(stderr, "FAIL: Permission denied from pcap_activate(), "
 		        "retry with higher privileges.\n");
+		ret = EX_NOPERM;
 		break;
 	case PCAP_ERROR_NO_SUCH_DEVICE:
 		printf("PASS: Correct specific error from pcap_activate().\n");
-		ret = 0;
+		ret = EX_OK;
 		break;
 	default:
 		fprintf(stderr,
@@ -52,5 +56,5 @@ int main(void)
 	 */
 	(void) pcap_can_set_rfmon(p);
 	pcap_close(p);
-	return ret;
+	exit(ret);
 }

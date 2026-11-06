@@ -60,7 +60,7 @@ main(int argc, char **argv)
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <device>\n", program_name);
-		return 2;
+		exit(EX_USAGE);
 	}
 
 	pd = pcap_create(argv[1], ebuf);

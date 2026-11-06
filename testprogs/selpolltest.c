@@ -130,11 +130,11 @@ main(int argc, char **argv)
 
 	if (doselect && dopoll) {
 		fprintf(stderr, "selpolltest: choose select (-s) or poll (-p), but not both\n");
-		return 1;
+		exit(EX_USAGE);
 	}
 	if (dotimeout && !doselect && !dopoll) {
 		fprintf(stderr, "selpolltest: timeout (-t) requires select (-s) or poll (-p)\n");
-		return 1;
+		exit(EX_USAGE);
 	}
 	if (device == NULL) {
 		if (pcap_findalldevs(&devlist, ebuf) == -1)
