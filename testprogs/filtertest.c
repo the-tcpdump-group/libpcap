@@ -111,11 +111,6 @@ static char *cmdbuf;
 static pcap_t *pd;
 static struct bpf_program fcode;
 
-/*
- * atexit() is broken on Linux/ARMv7 with TinyCC, work around by calling this
- * function explicitly just before exit() if there is a possibility any of
- * these resources have been allocated.
- */
 static void
 cleanup(void)
 {
@@ -137,7 +132,7 @@ blank_comments(char *cp, const size_t size)
 	}
 }
 
-static void
+static char *
 read_infile(char *fname)
 {
 	int fd, cc;
@@ -162,37 +157,45 @@ read_infile(char *fname)
 		error(EX_IOERR, "%s is larger than %d bytes; that's too large", fname,
 		    INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
-	cmdbuf = cp;
 	if (cp == NULL)
 		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
 	cc = (int)read(fd, cp, (u_int)buf.st_size);
-	if (cc < 0)
+	if (cc < 0) {
+		free(cp);
 		error(EX_IOERR, "read %s: %s", fname, pcap_strerror(errno));
-	if (cc != buf.st_size)
+	}
+	if (cc != buf.st_size) {
+		free(cp);
 		error(EX_IOERR, "short read %s (%d != %d)", fname, cc, (int)buf.st_size);
+	}
 
 	close(fd);
 	blank_comments(cp, (size_t)cc);
 	cp[cc] = '\0';
+	return cp;
 }
 
 // Copy stdin into a size-limited buffer.
-static void
+static char *
 read_stdin(void)
 {
 	char *buf = calloc(1, MAX_STDIN + 1);
-	cmdbuf = buf;
 	if (buf == NULL)
 		error(EX_OSERR, "%s: calloc", __func__);
 	size_t readsize = fread(buf, 1, MAX_STDIN, stdin);
-	if (! feof(stdin))
+	if (! feof(stdin)) {
+		free(buf);
 		error(EX_IOERR, "received more than %u bytes on stdin", MAX_STDIN);
-	if (ferror(stdin))
+	}
+	if (ferror(stdin)) {
+		free(buf);
 		error(EX_IOERR, "failed reading from stdin after %zd bytes", readsize);
+	}
 	fclose(stdin);
 	// No error, all data is within the buffer and NUL-terminated.
 	blank_comments(buf, readsize);
+	return buf;
 }
 
 #define CBPFSF_HEADER_SIZE 20
@@ -221,6 +224,7 @@ read_cbpffile(const char *fname)
 	fcode.bf_len = EXTRACT_BE_U_2(readbuf + 18);
 	fcode.bf_insns = fcode.bf_len ?
 		calloc(fcode.bf_len, sizeof(struct bpf_insn)) : NULL;
+	// cleanup() will deallocate fcode.bf_insns on error.
 	for (uint16_t i = 0; i < fcode.bf_len; i++) {
 		if (1 != fread(readbuf, sizeof(struct bpf_insn), 1, f))
 			error(EX_IOERR,
@@ -251,7 +255,6 @@ error(const int status, const char *fmt, ...)
 		if (fmt[-1] != '\n')
 			(void)fputc('\n', stderr);
 	}
-	cleanup();
 	exit(status);
 	/* NOTREACHED */
 }
@@ -277,7 +280,7 @@ warn(const char *fmt, ...)
 /*
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
-static void
+static char *
 copy_argv(char **argv)
 {
 	char **p;
@@ -287,13 +290,12 @@ copy_argv(char **argv)
 
 	p = argv;
 	if (*p == 0)
-		return;
+		return NULL;
 
 	while (*p)
 		len += strlen(*p++) + 1;
 
 	buf = (char *)malloc(len);
-	cmdbuf = buf;
 	if (buf == NULL)
 		error(EX_OSERR, "%s: malloc", __func__);
 
@@ -305,6 +307,8 @@ copy_argv(char **argv)
 		dst[-1] = ' ';
 	}
 	dst[-1] = '\0';
+
+	return buf;
 }
 
 int
@@ -343,6 +347,8 @@ main(int argc, char **argv)
 	 */
 	int validation_error = EX_SOFTWARE;
 
+	if (atexit(cleanup))
+		error(EX_OSERR, "atexit() failed: %s", pcap_strerror(errno));
 #ifdef _WIN32
 	WSADATA wsaData;
 	if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData))
@@ -553,12 +559,9 @@ main(int argc, char **argv)
 	if (cbpfsavefile)
 		read_cbpffile(cbpfsavefile);
 	else {
-		if (! infile)
-			copy_argv(&argv[optind]);
-		else if (strcmp(infile, "-"))
-			read_infile(infile);
-		else
-			read_stdin();
+		cmdbuf = infile == NULL ? copy_argv(&argv[optind]) :
+		    strcmp(infile, "-") == 0 ? read_stdin() :
+		    read_infile(infile);
 		// cmdbuf may still be NULL.
 
 		if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0) // cmdbuf == NULL is valid.
@@ -604,7 +607,6 @@ main(int argc, char **argv)
 				error(EX_IOERR, "pcap_next_ex() failed: %d", ret);
 		}
 	}
-	cleanup();
 #ifdef _WIN32
 	WSACleanup();
 #endif
