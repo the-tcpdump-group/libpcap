@@ -39,9 +39,6 @@
 
 #include <pcap.h>
 
-#include "varattrs.h"
-#include "pcap/funcattrs.h"
-
 static int ifprint(pcap_if_t *d);
 
 #include "portability.h"

@@ -33,7 +33,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <limits.h>
 #ifdef _WIN32
   #include "getopt.h"
 #else

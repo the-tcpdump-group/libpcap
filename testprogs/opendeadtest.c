@@ -31,8 +31,6 @@
 
 #include <config.h>
 
-#include "varattrs.h"
-
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +38,6 @@
 #include <stdarg.h>
 #ifdef _WIN32
   #include "getopt.h"
-  #include "unix.h"
 #else
   #include <unistd.h>
 #endif

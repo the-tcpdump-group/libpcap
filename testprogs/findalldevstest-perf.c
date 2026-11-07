@@ -15,8 +15,6 @@
 #include <pcap.h>
 
 #include "varattrs.h"
-#include "pcap/funcattrs.h"
-
 #include "portability.h"
 
 /* For Solaris before 11. */

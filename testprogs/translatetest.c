@@ -9,7 +9,6 @@
 
 #ifdef _WIN32
   #include "getopt.h"
-  #include "unix.h"
 #else
   #include <unistd.h>
 #endif
