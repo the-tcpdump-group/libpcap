@@ -34,8 +34,6 @@
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
 #ifdef _WIN32
   #include "getopt.h"
 #else
@@ -46,6 +44,7 @@
 
 #include "pcap/funcattrs.h"
 #include "portability.h"
+#include "test-util.h"
 
 #define MAXIMUM_SNAPLEN		262144
 
@@ -53,22 +52,17 @@ static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const int, const char *, ...) PCAP_PRINTFLIKE(2, 3);
 
 int
 main(int argc, char **argv)
 {
-	char *cp;
 	int op;
 	int snaplen;
 	char *p;
 	pcap_t *pd;
 
 	snaplen = MAXIMUM_SNAPLEN;
-	if ((cp = strrchr(argv[0], '/')) != NULL)
-		program_name = cp + 1;
-	else
-		program_name = argv[0];
+	program_name = set_program_name(argv[0]);
 
 	opterr = 0;
 	while ((op = getopt(argc, argv, "s:")) != -1) {
@@ -140,23 +134,4 @@ usage(void)
 	    "Usage: %s [ -s snaplen ] <DLT>\n",
 	    program_name);
 	exit(EX_USAGE);
-}
-
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
 }

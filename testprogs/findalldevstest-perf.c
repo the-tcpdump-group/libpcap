@@ -16,6 +16,7 @@
 
 #include "varattrs.h"
 #include "portability.h"
+#include "test-util.h"
 
 /* For Solaris before 11. */
 #ifndef timeradd
@@ -41,7 +42,7 @@
   } while (0)
 #endif /* timersub */
 
-int main(int argc _U_, char **argv _U_)
+int main(int argc _U_, char **argv)
 {
   pcap_if_t *alldevs;
   int exit_status = EX_OK;
@@ -56,40 +57,32 @@ int main(int argc _U_, char **argv _U_)
   struct timeval ktime, utime, tottime;
 #endif
 
+  set_program_name(argv[0]);
+
 #ifdef _WIN32
   if (!GetProcessTimes(GetCurrentProcess(), &dummy1, &dummy2,
                        &start_ktime, &start_utime))
-  {
-    fprintf(stderr, "GetProcessTimes() fails at start\n");
-    exit(EX_OSERR);
-  }
+    error(EX_OSERR, "GetProcessTimes() fails at start");
   start_kticks.LowPart = start_ktime.dwLowDateTime;
   start_kticks.HighPart = start_ktime.dwHighDateTime;
   start_uticks.LowPart = start_utime.dwLowDateTime;
   start_uticks.HighPart = start_utime.dwHighDateTime;
 #else
   if (getrusage(RUSAGE_SELF, &start_rusage) == -1) {
-    fprintf(stderr, "getrusage() fails at start\n");
-    exit(EX_OSERR);
+    error(EX_OSERR, "getrusage() fails at start");
   }
 #endif
   for (int i = 0; i < 500; i++)
   {
     if (pcap_findalldevs(&alldevs, errbuf) == -1)
-    {
-      fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
-      exit(EX_OSERR);
-    }
+      error(EX_OSERR, "Error in pcap_findalldevs: %s", errbuf);
     pcap_freealldevs(alldevs);
   }
 
 #ifdef _WIN32
   if (!GetProcessTimes(GetCurrentProcess(), &dummy1, &dummy2,
                        &end_ktime, &end_utime))
-  {
-    fprintf(stderr, "GetProcessTimes() fails at end\n");
-    exit(EX_OSERR);
-  }
+    error(EX_OSERR, "GetProcessTimes() fails at end");
   end_kticks.LowPart = end_ktime.dwLowDateTime;
   end_kticks.HighPart = end_ktime.dwHighDateTime;
   end_uticks.LowPart = end_utime.dwLowDateTime;
@@ -103,8 +96,7 @@ int main(int argc _U_, char **argv _U_)
       ((double)tottime) / 10000000.0);
 #else
   if (getrusage(RUSAGE_SELF, &end_rusage) == -1) {
-    fprintf(stderr, "getrusage() fails at end\n");
-    exit(EX_OSERR);
+    error(EX_OSERR, "getrusage() fails at end");
   }
   timersub(&end_rusage.ru_stime, &start_rusage.ru_stime, &ktime);
   timersub(&end_rusage.ru_utime, &start_rusage.ru_utime, &utime);

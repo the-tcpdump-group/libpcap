@@ -108,72 +108,87 @@ activatetest: $(srcdir)/activatetest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/activatetest.c \
 	    ../libpcap.a $(LIBS)
 
-capturetest: $(srcdir)/capturetest.c ../libpcap.a
+capturetest: $(srcdir)/capturetest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/capturetest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c ../libpcap.a
+can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/can_set_rfmon_test.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-enumeratetest: $(srcdir)/enumeratetest.c ../libpcap.a
+enumeratetest: $(srcdir)/enumeratetest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/enumeratetest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-filtertest: $(srcdir)/filtertest.c ../libpcap.a
+filtertest: $(srcdir)/filtertest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/filtertest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-findalldevstest: $(srcdir)/findalldevstest.c ../libpcap.a
+findalldevstest: $(srcdir)/findalldevstest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/findalldevstest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-findalldevstest-perf: $(srcdir)/findalldevstest-perf.c ../libpcap.a
+findalldevstest-perf: $(srcdir)/findalldevstest-perf.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/findalldevstest-perf.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-opendeadtest: $(srcdir)/opendeadtest.c ../libpcap.a
+opendeadtest: $(srcdir)/opendeadtest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/opendeadtest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-opentest: $(srcdir)/opentest.c ../libpcap.a
+opentest: $(srcdir)/opentest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/opentest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-nonblocktest: $(srcdir)/nonblocktest.c ../libpcap.a
+nonblocktest: $(srcdir)/nonblocktest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/nonblocktest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-reactivatetest: $(srcdir)/reactivatetest.c ../libpcap.a
+reactivatetest: $(srcdir)/reactivatetest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
+	    $(srcdir)/test-util.c \
 	    $(srcdir)/reactivatetest.c ../libpcap.a $(LIBS)
 
-selpolltest: $(srcdir)/selpolltest.c ../libpcap.a
+selpolltest: $(srcdir)/selpolltest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/selpolltest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-threadsignaltest: $(srcdir)/threadsignaltest.c ../libpcap.a
+threadsignaltest: $(srcdir)/threadsignaltest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ \
 	    $(srcdir)/threadsignaltest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS) $(PTHREAD_LIBS)
 
-translatetest: $(srcdir)/translatetest.c ../libpcap.a
+translatetest: $(srcdir)/translatetest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/translatetest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
-valgrindtest: $(srcdir)/valgrindtest.c ../libpcap.a
+valgrindtest: $(srcdir)/valgrindtest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/valgrindtest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
 versiontest: $(srcdir)/versiontest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/versiontest.c \
 	    ../libpcap.a $(LIBS)
 
-writecaptest: $(srcdir)/writecaptest.c ../libpcap.a
+writecaptest: $(srcdir)/writecaptest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/writecaptest.c \
+	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 
 clean:

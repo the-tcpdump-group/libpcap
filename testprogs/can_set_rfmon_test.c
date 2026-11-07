@@ -32,31 +32,22 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include <pcap.h>
 
-#include "pcap/funcattrs.h"
-
 #include "portability.h"
+#include "test-util.h"
 
 static const char *program_name;
-
-/* Forwards */
-static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
 
 int
 main(int argc, char **argv)
 {
-	const char *cp;
 	pcap_t *pd;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	int status;
 
-	if ((cp = strrchr(argv[0], '/')) != NULL)
-		program_name = cp + 1;
-	else
-		program_name = argv[0];
+	program_name = set_program_name(argv[0]);
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <device>\n", program_name);
@@ -77,23 +68,4 @@ main(int argc, char **argv)
 	}
 	printf("%s: Monitor mode %s be set\n", argv[1], status ? "can" : "cannot");
 	exit(EX_OK);
-}
-
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
 }

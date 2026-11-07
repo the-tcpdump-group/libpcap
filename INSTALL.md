@@ -177,6 +177,8 @@ You can get around this by installing GCC.
 	testprogs/enumeratetest.c   - test program for various enumerations
 	testprogs/filtertest.c      - test program for BPF compiler
 	testprogs/findalldevstest.c - test program for pcap_findalldevs()
+	testprogs/test-util.c       - test program common routines
+	testprogs/test-util.h       - test program common prototypes
 	testprogs/translatetest.c   - test program for various translation functions
 	gencode.c	    - BPF code generation routines
 	gencode.h	    - BPF code generation definitions

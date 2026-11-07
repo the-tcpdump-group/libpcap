@@ -22,6 +22,7 @@
 #include "pcap-int.h"
 #include "pcap-util.h" // PCAP_BSWAP_16() etc.
 #include "portability.h"
+#include "test-util.h"
 
 static const char *program_name;
 
@@ -359,10 +360,7 @@ usage_long(FILE *f)
 int
 main(int argc, char **argv)
 {
-	{
-		const char *cp = strrchr(argv[0], '/');
-		program_name = cp ? cp + 1 : argv[0];
-	}
+	program_name = set_program_name(argv[0]);
 
 	{
 		int op;

@@ -42,6 +42,7 @@
 static int ifprint(pcap_if_t *d);
 
 #include "portability.h"
+#include "test-util.h"
 
 #ifdef _WIN32
 /*
@@ -86,16 +87,14 @@ getpass(const char *prompt)
    * Turn off echoing.
    */
   if (!GetConsoleMode(console_handle, &console_mode)) {
-    fprintf(stderr, "Can't get console mode: %s\n",
+    error(EX_OSERR, "Can't get console mode: %s",
             win32_strerror(GetLastError()));
-    exit(EX_OSERR);
   }
   save_console_mode = console_mode;
   console_mode &= ~ENABLE_ECHO_INPUT;
   if (!SetConsoleMode(console_handle, console_mode)) {
-    fprintf(stderr, "Can't set console mode: %s\n",
+    error(EX_OSERR, "Can't set console mode: %s",
             win32_strerror(GetLastError()));
-    exit(EX_OSERR);
   }
   if (fgets(password, sizeof password, stdin) == NULL) {
     fprintf(stderr, "\n");
@@ -123,6 +122,7 @@ int main(int argc, char **argv)
   char *p;
   char *password;
 
+  set_program_name(argv[0]);
   if (argc >= 2)
   {
     if (pcap_findalldevs_ex(argv[1], NULL, &alldevs, errbuf) == -1)
@@ -141,19 +141,13 @@ int main(int argc, char **argv)
       auth.username = username;
       auth.password = password;
       if (pcap_findalldevs_ex(argv[1], &auth, &alldevs, errbuf) == -1)
-      {
-        fprintf(stderr, "Error in pcap_findalldevs_ex: %s\n", errbuf);
-        exit(EX_OSERR);
-      }
+        error(EX_OSERR, "Error in pcap_findalldevs_ex: %s", errbuf);
     }
   }
   else
   {
     if (pcap_findalldevs(&alldevs, errbuf) == -1)
-    {
-      fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
-      exit(EX_OSERR);
-    }
+      error(EX_OSERR, "Error in pcap_findalldevs: %s", errbuf);
   }
   for(d=alldevs;d;d=d->next)
   {
@@ -180,7 +174,7 @@ int main(int argc, char **argv)
           strcmp(errbuf + devnamelen + 2, "no IPv4 address assigned") == 0)
         printf("Preferred device is not on an IPv4 network\n");
       else {
-        fprintf(stderr,"Error in pcap_lookupnet: %s\n",errbuf);
+        warning("Error in pcap_lookupnet: %s", errbuf);
         exit_status = EX_OSERR;
       }
     }
@@ -287,7 +281,7 @@ static int ifprint(pcap_if_t *d)
 
   for (pcap_addr_t *a = d->addresses; a; a=a->next) {
     if (a->addr == NULL) {
-      fprintf(stderr, "\tWarning: a->addr is NULL, skipping this address.\n");
+      warning("a->addr is NULL, skipping this address.");
       status = 0;
     } else {
 #if ! defined(_WIN32) && (defined(__linux__) || defined(AF_LINK))

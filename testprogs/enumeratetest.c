@@ -46,6 +46,7 @@
 #include "pcap/bpf.h"
 #include "pcap-int.h" // PCAP_ISDIGIT() etc.
 #include "portability.h"
+#include "test-util.h"
 
 /*
  * For functions that take an int it is not practicable to test every possible
@@ -341,10 +342,7 @@ usage_long(FILE *f)
 int
 main(int argc, char **argv)
 {
-	{
-		const char *cp = strrchr(argv[0], '/');
-		program_name = cp ? cp + 1 : argv[0];
-	}
+	program_name = set_program_name(argv[0]);
 
 	{
 		int op;

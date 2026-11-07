@@ -38,56 +38,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
 #include "portability.h"
+#include "test-util.h"
 
 static pcap_t *pd;
-static const char *program_name = "nonblocktest";
+static const char *program_name;
 /* Forwards */
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
-static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
-
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
-}
-
-/* VARARGS */
-static void
-warning(const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: WARNING: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-}
 
 static void
 usage(void)
@@ -113,6 +75,7 @@ main(int argc, char **argv)
 	char ebuf[PCAP_ERRBUF_SIZE];
 
 	device = NULL;
+	program_name = set_program_name(argv[0]);
 	while ((op = getopt(argc, argv, "i:sptnq")) != -1) {
 		switch (op) {
 

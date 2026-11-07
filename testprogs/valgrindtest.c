@@ -57,8 +57,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -69,6 +67,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 #include "portability.h"
+#include "test-util.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_AIX) || defined(sun)
 /* OS with BPF - use BPF */
@@ -124,141 +123,13 @@ static const char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
-static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
-
-/*
- * On Windows, we need to open the file in binary mode, so that
- * we get all the bytes specified by the size we get from "fstat()".
- * On UNIX, that's not necessary.  O_BINARY is defined on Windows;
- * we define it as 0 if it's not defined, so it does nothing.
- */
-#ifndef O_BINARY
-#define O_BINARY	0
-#endif
-
-static char *
-read_infile(char *fname)
-{
-	int i, fd, cc;
-	char *cp;
-	struct stat buf;
-
-	fd = open(fname, O_RDONLY|O_BINARY);
-	if (fd < 0)
-		error(EX_NOINPUT, "can't open %s: %s", fname, pcap_strerror(errno));
-
-	if (fstat(fd, &buf) < 0)
-		error(EX_OSERR, "can't stat %s: %s", fname, pcap_strerror(errno));
-
-	/*
-	 * _read(), on Windows, has an unsigned int byte count and an
-	 * int return value, so we can't handle a file bigger than
-	 * INT_MAX - 1 bytes (and have no reason to do so; a filter *that*
-	 * big will take forever to compile).  (The -1 is for the '\0' at
-	 * the end of the string.)
-	 */
-	if (buf.st_size > INT_MAX - 1)
-		error(EX_IOERR, "%s is larger than %d bytes; that's too large",
-		    fname, INT_MAX - 1);
-	cp = malloc((u_int)buf.st_size + 1);
-	if (cp == NULL)
-		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
-			fname, pcap_strerror(errno));
-	cc = (int)read(fd, cp, (u_int)buf.st_size);
-	if (cc < 0)
-		error(EX_IOERR, "read %s: %s", fname, pcap_strerror(errno));
-	if (cc != buf.st_size)
-		error(EX_IOERR, "short read %s (%d != %d)", fname, cc,
-		    (int)buf.st_size);
-
-	close(fd);
-	/* replace "# comment" with spaces */
-	for (i = 0; i < cc; i++) {
-		if (cp[i] == '#')
-			while (i < cc && cp[i] != '\n')
-				cp[i++] = ' ';
-	}
-	cp[cc] = '\0';
-	return (cp);
-}
-
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
-}
-
-/* VARARGS */
-static void
-warning(const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: WARNING: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-}
-
-/*
- * Copy arg vector into a new buffer, concatenating arguments with spaces.
- */
-static char *
-copy_argv(char **argv)
-{
-	char **p;
-	size_t len = 0;
-	char *buf;
-	char *src, *dst;
-
-	p = argv;
-	if (*p == 0)
-		return 0;
-
-	while (*p)
-		len += strlen(*p++) + 1;
-
-	buf = (char *)malloc(len);
-	if (buf == NULL)
-		error(EX_OSERR, "copy_argv: malloc");
-
-	p = argv;
-	dst = buf;
-	while ((src = *p++) != NULL) {
-		while ((*dst++ = *src++) != '\0')
-			;
-		dst[-1] = ' ';
-	}
-	dst[-1] = '\0';
-
-	return buf;
-}
 
 #define INSN_COUNT	17
 
 int
 main(int argc, char **argv)
 {
-	char *cp, *device;
+	char *device;
 	int op;
 	int dorfmon, useactivate;
 	char ebuf[PCAP_ERRBUF_SIZE];
@@ -281,11 +152,7 @@ main(int argc, char **argv)
 	dorfmon = 0;
 	useactivate = 0;
 	infile = NULL;
-
-	if ((cp = strrchr(argv[0], '/')) != NULL)
-		program_name = cp + 1;
-	else
-		program_name = argv[0];
+	program_name = set_program_name(argv[0]);
 
 	opterr = 0;
 	while ((op = getopt(argc, argv, "aF:i:I")) != -1) {

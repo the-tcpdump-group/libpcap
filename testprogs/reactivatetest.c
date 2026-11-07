@@ -30,17 +30,10 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <config.h>
 
 #include <pcap.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-
-#include "pcap/funcattrs.h"
 
 #include "portability.h"
-
-/* Forwards */
-static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
+#include "test-util.h"
 
 int
 main(int argc, char **argv)
@@ -49,6 +42,7 @@ main(int argc, char **argv)
 	pcap_t *pd;
 	int status;
 
+	set_program_name(argv[0]);
 	if (argc != 2)
 		error(EX_USAGE,
 		    "expecting exactly one command-line argument with the interface name");
@@ -74,23 +68,4 @@ main(int argc, char **argv)
 			    pcap_statustostr(status));
 	}
 	exit(EX_OK);
-}
-
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "reactivatetest: ");
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
 }

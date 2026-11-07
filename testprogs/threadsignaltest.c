@@ -32,7 +32,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #ifdef _WIN32
   #include <winsock2.h>
   #include <windows.h>
@@ -59,15 +58,13 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 #include "portability.h"
+#include "test-util.h"
 
 static const char *program_name;
 
 /* Forwards */
 static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
 static void PCAP_NORETURN usage(void);
-static void PCAP_NORETURN error(const int, PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(2, 3);
-static void warning(const char *, ...) PCAP_PRINTFLIKE(1, 2);
-static char *copy_argv(char **);
 
 static pcap_t *pd;
 
@@ -170,8 +167,7 @@ capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 		/*
 		 * Error.  Report it.
 		 */
-		(void)fprintf(stderr, "%s: pcap_dispatch: %s\n",
-		    program_name, pcap_geterr(pd));
+		warning("pcap_dispatch: %s", pcap_geterr(pd));
 	}
 	return 0;
 }
@@ -180,7 +176,7 @@ int
 main(int argc, char **argv)
 {
 	int op;
-	char *cp, *cmdbuf, *device;
+	char *cmdbuf, *device;
 	int do_wakeup = 1;
 	pcap_if_t *devlist;
 	bpf_u_int32 localnet, netmask;
@@ -193,10 +189,7 @@ main(int argc, char **argv)
 #endif
 
 	device = NULL;
-	if ((cp = strrchr(argv[0], '/')) != NULL)
-		program_name = cp + 1;
-	else
-		program_name = argv[0];
+	program_name = set_program_name(argv[0]);
 
 	opterr = 0;
 	while ((op = getopt(argc, argv, "i:n")) != -1) {
@@ -341,72 +334,3 @@ usage(void)
 	exit(EX_USAGE);
 }
 
-/* VARARGS */
-static void
-error(const int status, const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-	exit(status);
-	/* NOTREACHED */
-}
-
-/* VARARGS */
-static void
-warning(const char *fmt, ...)
-{
-	va_list ap;
-
-	(void)fprintf(stderr, "%s: WARNING: ", program_name);
-	va_start(ap, fmt);
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	if (*fmt) {
-		fmt += strlen(fmt);
-		if (fmt[-1] != '\n')
-			(void)fputc('\n', stderr);
-	}
-}
-
-/*
- * Copy arg vector into a new buffer, concatenating arguments with spaces.
- */
-static char *
-copy_argv(char **argv)
-{
-	char **p;
-	size_t len = 0;
-	char *buf;
-	char *src, *dst;
-
-	p = argv;
-	if (*p == 0)
-		return 0;
-
-	while (*p)
-		len += strlen(*p++) + 1;
-
-	buf = (char *)malloc(len);
-	if (buf == NULL)
-		error(EX_OSERR, "copy_argv: malloc");
-
-	p = argv;
-	dst = buf;
-	while ((src = *p++) != NULL) {
-		while ((*dst++ = *src++) != '\0')
-			;
-		dst[-1] = ' ';
-	}
-	dst[-1] = '\0';
-
-	return buf;
-}

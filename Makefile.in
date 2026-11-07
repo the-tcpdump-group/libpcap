@@ -369,6 +369,8 @@ EXTRA_DIST = \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
+	testprogs/test-util.c \
+	testprogs/test-util.h \
 	testprogs/threadsignaltest.c \
 	testprogs/translatetest.c \
 	testprogs/unix.h \
