@@ -214,28 +214,28 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
 		case BPF_LD|BPF_W|BPF_IND:
-			k = X + pc->k;
 			if (pc->k > buflen || X > buflen - pc->k ||
-			    sizeof(int32_t) > buflen - k) {
+			    sizeof(int32_t) > buflen - X - pc->k) {
 				return 0;
 			}
+			k = X + pc->k;
 			A = EXTRACT_BE_U_4(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_H|BPF_IND:
-			k = X + pc->k;
 			if (X > buflen || pc->k > buflen - X ||
-			    sizeof(int16_t) > buflen - k) {
+			    sizeof(int16_t) > buflen - X - pc->k) {
 				return 0;
 			}
+			k = X + pc->k;
 			A = EXTRACT_BE_U_2(&p[k]);
 			continue;
 
 		case BPF_LD|BPF_B|BPF_IND:
-			k = X + pc->k;
 			if (pc->k >= buflen || X >= buflen - pc->k) {
 				return 0;
 			}
+			k = X + pc->k;
 			A = p[k];
 			continue;
 
