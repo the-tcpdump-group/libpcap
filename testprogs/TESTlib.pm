@@ -50,7 +50,7 @@ my %helpers = (
 
 my %progress_modes = (
 	bar => 'a horizontal progress bar',
-	lines => 'a line for every 5%',
+	lines => 'a line for every 10%',
 	map => 'a character for every test result',
 	none => 'no output',
 );
@@ -300,8 +300,8 @@ sub init_results_processing {
 	$max_result_digits = 1 + int (log ($results_to_print) / log (10));
 	if ($progress_mode eq 'bar') {
 		$points_printed = 0;
-		print "0% 5  10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100%\n";
-		print "+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+\n";
+		print "0%     10%    20%    30%    40%    50%    60%    70%    80%    90%    100%\n";
+		print "+------+------+------+------+------+------+------+------+------+------+\n";
 	} elsif ($progress_mode eq 'lines') {
 		$points_printed = 0;
 	} elsif ($progress_mode eq 'map') {
@@ -312,7 +312,7 @@ sub init_results_processing {
 }
 
 sub print_result_bar () {
-	my $points = int (61 * $results_printed / $results_to_print);
+	my $points = int (71 * $results_printed / $results_to_print);
 	return if $points_printed == $points;
 	print '%' x ($points - $points_printed);
 	$points_printed = $points;
@@ -339,7 +339,7 @@ sub print_result_char {
 
 sub print_result_line () {
 	my $points = int (100 * $results_printed / $results_to_print);
-	return if $points % 5 || $points_printed == $points;
+	return if $points % 10 || $points_printed == $points;
 	printf "%*u skipped, %*u failed, %*u passed (%3u%%)\n",
 		$max_result_digits, $skippedcount,
 		$max_result_digits, $failedcount,
