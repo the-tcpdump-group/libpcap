@@ -369,6 +369,7 @@ EXTRA_DIST = \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
+	testprogs/sock_bufferize_test.c \
 	testprogs/threadsignaltest.c \
 	testprogs/translatetest.c \
 	testprogs/unix.h \
@@ -763,6 +764,7 @@ distclean: clean
 check: testprogs
 	LANG=C $(PERL) $(srcdir)/testprogs/TESTrun
 	testprogs/opendeadtest EN10MB
+	testprogs/sock_bufferize_test
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)

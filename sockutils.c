@@ -1351,7 +1351,7 @@ int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int to
 		return -1;
 	}
 
-	if (!checkonly)
+	if (!checkonly && size != 0)
 		memcpy(outbuf + (*offset), data, size);
 
 	(*offset) += size;

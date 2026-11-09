@@ -45,6 +45,7 @@ if(NOT WIN32)
   # is not available
   add_test_executable(opendeadtest)
   add_test_executable(selpolltest)
+  add_test_executable(sock_bufferize_test)
   # Fails to link on Windows:
   # translatetest.obj : error LNK2019: unresolved external symbol
   #   _pcapint_atodn referenced in function _test_pcapint_atodn

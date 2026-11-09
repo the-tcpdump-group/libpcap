@@ -87,6 +87,7 @@ SRC = @VALGRINDTEST_SRC@ \
 	nonblocktest.c \
 	reactivatetest.c \
 	selpolltest.c \
+	sock_bufferize_test.c \
 	threadsignaltest.c \
 	translatetest.c \
 	versiontest.c \
@@ -153,6 +154,10 @@ reactivatetest: $(srcdir)/reactivatetest.c ../libpcap.a
 
 selpolltest: $(srcdir)/selpolltest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/selpolltest.c \
+	    ../libpcap.a $(LIBS)
+
+sock_bufferize_test: $(srcdir)/sock_bufferize_test.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/sock_bufferize_test.c \
 	    ../libpcap.a $(LIBS)
 
 threadsignaltest: $(srcdir)/threadsignaltest.c ../libpcap.a
