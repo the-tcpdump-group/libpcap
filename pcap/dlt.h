@@ -1718,6 +1718,14 @@
 #define DLT_DECT_NR_TAP		304
 
 /*
+ * Event Tracing for Windows messages v2
+ * Specification at https://www.tcpdump.org/linktypes/LINKTYPE_ETW2.html
+ *
+ * Requested by Gabriel Potter.
+ */
+#define DLT_ETW2		305
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_HIGH_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1728,6 +1736,6 @@
 #undef DLT_HIGH_MATCHING_MAX
 #endif
 
-#define DLT_HIGH_MATCHING_MAX	304	/* highest value in the "matching" range */
+#define DLT_HIGH_MATCHING_MAX	305	/* highest value in the "matching" range */
 
 #endif /* !defined(lib_pcap_dlt_h) */

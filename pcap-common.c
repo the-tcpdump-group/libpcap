@@ -1320,7 +1320,15 @@
  */
 #define LINKTYPE_DECT_NR_TAP		304
 
-#define LINKTYPE_HIGH_MATCHING_MAX	304		/* highest value in the "matching" range */
+/*
+ * Event Tracing for Windows messages v2
+ * Specification at https://www.tcpdump.org/linktypes/LINKTYPE_ETW2.html
+ *
+ * Requested by Gabriel Potter.
+ */
+#define LINKTYPE_ETW2		305
+
+#define LINKTYPE_HIGH_MATCHING_MAX	305		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

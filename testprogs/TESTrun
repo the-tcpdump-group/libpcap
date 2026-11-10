@@ -32747,6 +32747,8 @@ my %DLTfeatures = (
 	},
 	ETW => {
 	},
+	ETW2 => {
+	},
 	FC_2 => {
 	},
 	FC_2_WITH_FRAME_DELIMS => {
@@ -35249,6 +35251,7 @@ my %DLTnames = (
 	302 => 'EDK2_MM',
 	303 => 'DEBUG_ONLY',
 	304 => 'DECT_NR_TAP',
+	305 => 'ETW2',
 );
 # The conditional part is a subset of what "pcap/dlt.h" defines because
 # dlt_choices[] in pcap.c includes neither DLT_HIPPI nor DLT_HDLC nor
