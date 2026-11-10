@@ -43,12 +43,15 @@
  * include <threads.h> to so define it, but we don't use any of
  * the other stuff there.)
  *
- * Otherwise, we define it ourselves, based on the compiler.
+ * The build systems probe _Thread_local directly, since not all compilers
+ * advertise it through the C11 macros.  Otherwise, use compiler-specific
+ * storage specifiers.
  *
  * This is taken from https://stackoverflow.com/a/18298965/16139739.
  */
 #ifndef thread_local
-  #if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
+  #if defined HAVE_C11_THREAD_LOCAL || \
+      (__STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__)
     #define thread_local _Thread_local
   #elif defined __TINYC__
     #define thread_local
