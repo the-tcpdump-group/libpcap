@@ -2381,6 +2381,22 @@ AC_SUBST(LN_S)
 AC_LBL_DEVEL(V_CCOPT)
 
 #
+# Test the language feature rather than compiler versions or preprocessor
+# macros: TinyCC supports _Thread_local without advertising C11 threads.
+# Linking also checks that the target's TLS runtime support is available.
+#
+AC_MSG_CHECKING([whether the compiler implements _Thread_local])
+AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM([[static _Thread_local volatile int value;]],
+	    [[value = 1; return value != 1;]])],
+	[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_C11_THREAD_LOCAL, 1,
+		    [Define to 1 if the compiler supports _Thread_local.])
+	],
+	[AC_MSG_RESULT(no)])
+
+#
 # To get a correct builtin test result, the source must be compiled and linked,
 # which in Autoconf means AC_LINK_IFELSE().
 #
