@@ -2864,6 +2864,14 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
 endif()
 
 #
+# Test the language feature rather than compiler versions or preprocessor
+# macros: TinyCC supports _Thread_local without advertising C11 threads.
+# Linking also checks that the target's TLS runtime support is available.
+#
+check_c_source_compiles("static _Thread_local volatile int value;
+int main(void) { value = 1; return value != 1; }" HAVE_C11_THREAD_LOCAL)
+
+#
 # To get a correct builtin test result, the source must be compiled and linked,
 # which in CMake means check_c_source_compiles().
 #
