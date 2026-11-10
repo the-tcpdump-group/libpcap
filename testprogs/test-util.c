@@ -87,24 +87,20 @@ warning(const char *fmt, ...)
 char *
 copy_argv(char **argv)
 {
-	char **p;
-	size_t len = 0;
-	char *buf;
-	char *src, *dst;
-
-	p = argv;
-	if (*p == 0)
+	if (*argv == NULL)
 		return NULL;
 
+	char **p = argv;
+	size_t len = 0;
 	while (*p)
 		len += strlen(*p++) + 1;
 
-	buf = (char *)malloc(len);
+	char *buf = malloc(len);
 	if (buf == NULL)
 		error(EX_OSERR, "%s: malloc", __func__);
 
 	p = argv;
-	dst = buf;
+	char *src, *dst = buf;
 	while ((src = *p++) != NULL) {
 		while ((*dst++ = *src++) != '\0')
 			;
@@ -129,14 +125,11 @@ blank_comments(char *cp, const size_t size)
 char *
 read_infile(const char *fname)
 {
-	int fd, cc;
-	char *cp;
-	struct stat buf;
-
-	fd = open(fname, O_RDONLY|O_BINARY);
+	int fd = open(fname, O_RDONLY|O_BINARY);
 	if (fd < 0)
 		error(EX_IOERR, "can't open %s: %s", fname, pcap_strerror(errno));
 
+	struct stat buf;
 	if (fstat(fd, &buf) < 0)
 		error(EX_IOERR, "can't stat %s: %s", fname, pcap_strerror(errno));
 
@@ -150,11 +143,11 @@ read_infile(const char *fname)
 	if (buf.st_size > INT_MAX - 1)
 		error(EX_IOERR, "%s is larger than %d bytes; that's too large", fname,
 		    INT_MAX - 1);
-	cp = malloc((u_int)buf.st_size + 1);
+	char *cp = malloc((u_int)buf.st_size + 1);
 	if (cp == NULL)
 		error(EX_OSERR, "malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
-	cc = (int)read(fd, cp, (u_int)buf.st_size);
+	int cc = (int)read(fd, cp, (u_int)buf.st_size);
 	if (cc < 0) {
 		free(cp);
 		error(EX_IOERR, "read %s: %s", fname, pcap_strerror(errno));
