@@ -14,6 +14,9 @@
 /* Define to 1 if remote packet capture is to be supported */
 #cmakedefine ENABLE_REMOTE 1
 
+/* Define to 1 if the compiler supports _Thread_local. */
+#cmakedefine HAVE_C11_THREAD_LOCAL 1
+
 /* define if we have the AIX getnetbyname_r() */
 #cmakedefine HAVE_AIX_GETNETBYNAME_R 1
 
