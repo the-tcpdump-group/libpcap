@@ -1715,7 +1715,8 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 		 * from what the blocks before it did and isn't
 		 * doing any tests the results of which matter.
 		 */
-		if (!use_conflict(ep->pred, JT(ep->succ))) {
+		if (!use_conflict(ep->pred, JT(ep->succ)) &&
+		    (ep->succ->def & JT(ep->succ)->in_use) == 0) {
 			/*
 			 * No, there isn't.
 			 * Make this edge go to the block to
