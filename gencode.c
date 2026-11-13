@@ -7146,8 +7146,17 @@ stringtoportrange(compiler_state_t *cstate, const char *string,
 	 * Try to convert it to a port.
 	 */
 	*port2 = stringtoport(cstate, second, second_size, proto);
-	if (*proto != save_proto)
-		*proto = PROTO_UNDEF;
+
+	/*
+	 * If only one of the two ports resolved to a protocol, use that
+	 * protocol for the whole range; if both did, they must agree.
+	 */
+	if (*proto == PROTO_UNDEF)
+		*proto = save_proto;
+	else if (save_proto != PROTO_UNDEF && *proto != save_proto)
+		bpf_error(cstate,
+		    "port range '%s' mixes ports of different protocols",
+		    string);
 }
 
 struct block *
