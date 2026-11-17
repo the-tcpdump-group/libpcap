@@ -63,6 +63,7 @@ require $FindBin::RealBin . '/' . get_helper_module;
 use constant SAVEFILE_DIR => $FindBin::RealBin . '/../tests/';
 my $filename_expected = 'expected.txt';
 my $filename_stdout = 'stdout.txt';
+my $filename_stderr = 'stderr.txt';
 my $filename_filter = 'filter.txt';
 my $filename_diags = 'diags.txt';
 
@@ -99,6 +100,12 @@ use constant {
 	EX_OSFILE => 72,
 };
 
+#
+# Make true and false work as Booleans.
+#
+use constant true => 1;
+use constant false => 0;
+
 # In some environments a hostname that -- intentionally for the purposes of a
 # test -- resolves in neither IPv4 nor IPv6 tends to time the test out before
 # DNS manages to produce the expected negative result.  Define a uniform fixed
@@ -120,6 +127,7 @@ my %testprog = (
 	translatetest => 'TRANSLATETEST_BIN',
 	enumeratetest => 'ENUMERATETEST_BIN',
 	fcodetest => 'FCODETEST_BIN',
+	readtest => 'READTEST_BIN',
 );
 my %testprog_bin;
 
@@ -225,6 +233,96 @@ sub skip_musl_libc {
 		skip_config_not_def1 ('HAVE_GLIBC') &&
 		skip_config_not_def1 ('HAVE_UCLIBC') &&
 		'musl libc';
+}
+
+sub decode_exit_status {
+	my $r = shift;
+	my $status;
+	my $coredump = false;
+	if ($^O eq 'msys') {
+		#
+		# On Windows, the return value of system is the lower 8
+		# bits of the exit status of the process, shifted left
+		# 8 bits.
+		#
+		# If the process crashed, rather than exiting, the
+		# exit status will be one of the EXCEPTION_ values
+		# listed in the documentation for the GetExceptionCode()
+		# macro.
+		#
+		# Those are defined as STATUS_ values, which should have
+		# 0xC in the topmost 4 bits (being fatal error
+		# statuses); some of them have a value that fits in
+		# the lower 8 bits.  We could, I guess, assume that
+		# any value that 1) isn't returned by tcpdump and 2)
+		# corresponds to the lower 8 bits of a STATUS_ value
+		# used as an EXCEPTION_ value indicates that tcpdump
+		# exited with that exception.
+		#
+		# However, as we're running tcpdump with system, which
+		# runs the command through cmd.exe, and as cmd.exe
+		# doesn't map the command's exit code to its own exit
+		# code in any straightforward manner, we can't get
+		# that information in any case, so there's no point
+		# in trying to interpret it in that fashion.
+		#
+		$status = $r >> 8;
+	} else {
+		#
+		# On UN*Xes, the return status is a POSIX exit status
+		# as filled in by wait() or waitpid().
+		#
+		# POSIX offers some calls for analyzing it, such as
+		# WIFSIGNALED() to test whether it indicates that the
+		# process was terminated by a signal, WTERMSIG() to
+		# get the signal number from it, WIFEXITED() to test
+		# whether it indicates that the process exited normally,
+		# and WEXITSTATUS() to get the exit status from it.
+		#
+		# POSIX doesn't standardize core dumps, so the POSIX
+		# calls can't test whether a core dump occurred.
+		# However, all the UN*Xes we are likely to encounter
+		# follow Research UNIX in this regard, with the exit
+		# status containing either 0 or a signal number in
+		# the lower 7 bits, with 0 meaning "exited rather
+		# than being terminated by a signal", the "core dumped"
+		# flag in the 0x80 bit, and, if the signal number is
+		# 0, the exit status in the next 8 bits up.
+		#
+		# This should be cleaned up to use the POSIX calls
+		# from the Perl library - and to define an additional
+		# WCOREDUMP() call to test the "core dumped" bit and
+		# use that.
+		#
+		# But note also that, as we're running tcpdump with
+		# system, which runs the command through a shell, if
+		# tcpdump crashes, we'll only know that if the shell
+		# maps the signal indication and uses that as its
+		# exit status.
+		#
+		# The good news is that the Bourne shell, and compatible
+		# shells, have traditionally done that.  If the process
+		# for which the shell reports the exit status terminates
+		# with a signal, it adds 128 to the signal number and
+		# returns that as its exit status.  (This is why the
+		# "this is now working right" behavior described in a
+		# comment below is occurring.)
+		#
+		# As tcpdump itself never returns with an exit status
+		# >= 128, we can try checking for an exit status with
+		# the 0x80 bit set and, if we have one, get the signal
+		# number from the lower 7 bits of the exit status.  We
+		# can't get the "core dumped" indication from the
+		# shell's exit status; all we can do is check whether
+		# there's a core file.
+		#
+		$coredump = $r & 127 if ($r & 128);
+		# This works as intended only if the caller has removed any
+		# pre-existing core dumps before running the command.
+		$coredump = 'present' if (! $coredump && -f 'core');
+		$status = WEXITSTATUS ($r) if WIFEXITED ($r);
+	}
+	return ($status, $coredump);
 }
 
 # libpcap.test is a domain subject to RFC 6761 Section 6.2.
@@ -32174,39 +32272,6 @@ my @filter_reject_tests = (
 		expr => 'rarp host 1.2.3.4',
 		errstr => errstr_rejects_all,
 	},
-
-	# Savefile-based reject tests follow.
-	{
-		name => 'pcap_linktype_reserved_field_not_zero',
-		savefile => 'linktype-reserved-field-not-zero.pcap',
-		errstr => 'Failed opening: savefile linktype reserved field not zero (0x00300000)',
-	},
-	{
-		name => 'pcap_invalid_version_1',
-		savefile => 'pcap-invalid-version-1.pcap',
-		errstr => 'Failed opening: unsupported pcap savefile version 1.4',
-	},
-	{
-		name => 'pcap_invalid_version_2',
-		savefile => 'pcap-invalid-version-2.pcap',
-		errstr => 'Failed opening: unsupported pcap savefile version 2.5',
-	},
-	{
-		name => 'pcapng_invalid_version_1',
-		savefile => 'pcapng-invalid-vers-1.pcapng',
-		errstr => 'Failed opening: unsupported pcapng savefile version 0.1',
-	},
-	{
-		name => 'pcapng_invalid_version_2',
-		savefile => 'pcapng-invalid-vers-2.pcapng',
-		errstr => 'Failed opening: unsupported pcapng savefile version 1.1',
-	},
-	{
-		name => 'shb_option_too_long',
-		savefile => 'shb-option-too-long.pcapng',
-		errstr => 'Failed opening: block total length in header 32 and trailer 808464432 don\'t match',
-	},
-
 	{
 		name => 'bool_reduction_returns_false',
 		DLT => 'IPV4',
@@ -37625,6 +37690,104 @@ my @fcode_tests = (
 	},
 );
 
+# In read_accept_tests each element defines one test and is a hash,
+# where the keys have the following meaning:
+#
+# * name: same as in filter_accept_blocks above
+# * skip (optional, string): if defined and is not equal to an empty string,
+#   causes the test to skip using the string as the reason
+# * savefile (mandatory, string): the file in tests to use with
+#   "readtest", this should not have too many packets
+# * output (mandatory, string): the output expected from readtest
+
+my @read_accept_tests = (
+	{
+		name => 'usb-linux-le-lereader',
+		skip => skip_big_endian(),
+		savefile => 'usb-linux-le.pcap',
+		output => 'usb-linux-le-lereader.out',
+	},
+	{
+		name => 'usb-linux-be-lereader',
+		skip => skip_big_endian(),
+		savefile => 'usb-linux-be.pcap',
+		output => 'usb-linux-be-lereader.out',
+	},
+	{
+		name => 'usb-linux-le-bereader',
+		skip => skip_little_endian(),
+		savefile => 'usb-linux-le.pcap',
+		output => 'usb-linux-le-bereader.out',
+	},
+	{
+		name => 'usb-linux-be-bereader',
+		skip => skip_little_endian(),
+		savefile => 'usb-linux-be.pcap',
+		output => 'usb-linux-be-bereader.out',
+	},
+);
+
+# In read_reject_tests each element defines one test and is a hash,
+# where the keys have the following meaning:
+#
+# * name: same as in filter_accept_blocks above
+# * savefile (mandatory, string): the file in tests to use with
+#   "readtest", this should not have too many packets
+# * output (string): the output expected from readtest, if any is expected
+# * errcode: expected error code
+# * errstr (mandatory, string): a substring that must appear in standard error
+#   from readtest (this verifies that the reason for rejecting the expression
+#   is what the test expects, rather than some unrelated cause).
+
+my @read_reject_tests = (
+	# These test to make sure this file reports an error when read.
+
+	{
+		name => 'pcap_linktype_reserved_field_not_zero',
+		savefile => 'linktype-reserved-field-not-zero.pcap',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: savefile linktype reserved field not zero (0x00300000)',
+	},
+	{
+		name => 'pcap_invalid_version_1',
+		savefile => 'pcap-invalid-version-1.pcap',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: unsupported pcap savefile version 1.4',
+	},
+	{
+		name => 'pcap_invalid_version_2',
+		savefile => 'pcap-invalid-version-2.pcap',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: unsupported pcap savefile version 2.5',
+	},
+	{
+		name => 'pcapng_invalid_version_1',
+		savefile => 'pcapng-invalid-vers-1.pcapng',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: unsupported pcapng savefile version 0.1',
+	},
+	{
+		name => 'pcapng_invalid_version_2',
+		savefile => 'pcapng-invalid-vers-2.pcapng',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: unsupported pcapng savefile version 1.1',
+	},
+	{
+		name => 'shb_option_too_long',
+		savefile => 'shb-option-too-long.pcapng',
+		errcode => EX_NOINPUT,
+		errstr => 'Failed opening: block total length in header 32 and trailer 808464432 don\'t match',
+	},
+
+	# This will fail, but, with a fix for #1766, it will succeed.
+	{
+		name => 'two_dlt_raw_idbs',
+		savefile => 'two-dlt-raw-idbs.pcapng',
+		errcode => EX_DATAERR,
+		errstr => 'an interface has a type 101 different from the type of the first interface',
+	},
+);
+
 sub accept_test_label {
 	return join '_', ('accept', @_);
 }
@@ -37978,6 +38141,170 @@ sub run_translate_reject_test {
 		common_translatetest_args $test;
 }
 
+sub run_read_accept_test {
+	my $test = shift;
+	my $savefile = SAVEFILE_DIR . '/' . $test->{savefile};
+	my $output = SAVEFILE_DIR . '/' . $test->{output};
+
+	# we used to do this as a nice pipeline, but the problem is that $r fails to
+	# to be set properly if the readtest core dumps.
+	#
+	# Furthermore, on Windows, fc can't read the standard input, so we
+	# can't do it as a pipeline in any case.
+
+	my $cmdline = sprintf (
+		'%s "%s" >"%s" 2>"%s"',
+		($testprog_bin{readtest}),
+		$savefile,
+		mytmpfile ($filename_stdout),
+		mytmpfile ($filename_stderr)
+	);
+	my $r;
+	my $T;
+
+	if (! $print_passed) {
+		$r = system $cmdline;
+	} else {
+		my $t0 = Time::HiRes::time;
+		$r = system $cmdline;
+		$T = Time::HiRes::time - $t0;
+	}
+
+	return result_failed ('failed to run readtest', $!) if $r == -1;
+
+	return result_failed (
+		"test program error $r",
+		file_get_contents '/tmp/test_me.stdout'
+	) if $r != EX_OK;
+
+	return result_failed (
+		'diff error',
+		file_get_contents mytmpfile $filename_diags
+	) if system sprintf "diff $diff_flags %s %s >%s 2>&1",
+		$output,
+		mytmpfile ($filename_stdout),
+		mytmpfile ($filename_diags);
+
+	return result_passed $T;
+}
+
+sub run_read_reject_test {
+	my $test = shift;
+	my $savefile = SAVEFILE_DIR . '/' . $test->{savefile};
+	my $output = SAVEFILE_DIR . '/' . $test->{output} if defined $test->{output};
+
+	# we used to do this as a nice pipeline, but the problem is that $r fails to
+	# to be set properly if the readtest core dumps.
+	#
+	# Furthermore, on Windows, fc can't read the standard input, so we
+	# can't do it as a pipeline in any case.
+
+	my $cmdline = sprintf (
+		'%s "%s" >"%s" 2>"%s"',
+		($testprog_bin{readtest}),
+		$savefile,
+		mytmpfile ($filename_stdout),
+		mytmpfile ($filename_stderr)
+	);
+	my $r;
+	my $T;
+
+	if (! $print_passed) {
+		$r = system $cmdline;
+	} else {
+		my $t0 = Time::HiRes::time;
+		$r = system $cmdline;
+		$T = Time::HiRes::time - $t0;
+	}
+
+	return result_failed ('failed to run readtest', $!) if $r == -1;
+
+	return result_failed (
+		'no test program error',
+		file_get_contents mytmpfile $filename_stdout
+	) if $r == EX_OK;
+
+	return result_timed_out 'test program timeout' if $r == TIMED_OUT;
+
+	my ($status, $coredump) = decode_exit_status $r;
+
+	return result_failed (
+		"test program status $r",
+		file_get_contents mytmpfile $filename_stdout
+	) if $status != $test->{errcode};
+
+	return result_failed (
+		'error string mismatch',
+		file_get_contents mytmpfile $filename_stdout
+	) if ! string_in_file ($test->{errstr}, mytmpfile $filename_stderr);
+
+	if (defined $output) {
+		#
+		# The error code and error string are what we expect.
+		# Compare readtest's output with what we think it should be.
+		# (Yes, there might be output if the error occurs in the
+		# middle of reading packets.)
+		#
+		my $diffstat;
+		$cmdline = sprintf (
+			'diff %s "%s" "%s" >"%s" 2>&1',
+			$diff_flags,
+			$output,
+			mytmpfile ($filename_stdout),
+			mytmpfile ($filename_diags)
+		);
+		$diffstat = WEXITSTATUS (system $cmdline);
+		return result_failed (
+			"diff exited with $diffstat",
+			file_get_contents mytmpfile $filename_diags
+		) if $diffstat;
+	}
+
+	return result_passed $T;
+}
+
+sub request_read_accept_test {
+	my $testconfig = shift;
+	my $label = accept_test_label 'read', $testconfig->{name};
+	my $skip_reason = (defined $testconfig->{skip} && $testconfig->{skip} ne '') ?
+		$testconfig->{skip} : undef;
+
+	return {
+		label => $label,
+		func => \&run_skip_test,
+		skip => $print_skipped ? $skip_reason : '',
+	} if defined $testconfig->{skip} && $testconfig->{skip} ne '';
+
+	return {
+		label => $label,
+		func => \&run_read_accept_test,
+		savefile => $testconfig->{savefile},
+		output => $testconfig->{output},
+	};
+}
+
+sub request_read_reject_test {
+	my $testconfig = shift;
+	my $label = reject_test_label 'read', $testconfig->{name};
+	my $skip_reason = (defined $testconfig->{skip} && $testconfig->{skip} ne '') ?
+		$testconfig->{skip} : undef;
+
+	return {
+		label => $label,
+		func => \&run_skip_test,
+		skip => $print_skipped ? $skip_reason : '',
+	} if defined $testconfig->{skip} && $testconfig->{skip} ne '';
+
+	return {
+		label => $label,
+		func => \&run_read_reject_test,
+		savefile => $testconfig->{savefile},
+		output => $testconfig->{output},
+		errcode => $testconfig->{errcode},
+		errstr => $testconfig->{errstr},
+	};
+}
+
 sub detect_testprog {
 	my ($progname, $envvar) = (shift, shift);
 	my $executable = defined $ENV{$envvar} ? $ENV{$envvar} :
@@ -38296,6 +38623,16 @@ foreach my $test (@fcode_tests) {
 		savefile => 'filter/' . $test->{savefile},
 		expected => join ("\n", @{$test->{results}}) . "\n",
 	};
+}
+
+for (@read_accept_tests) {
+	next if defined ($only_one) && $only_one ne $_->{name};
+	push @ready_to_run, request_read_accept_test $_
+}
+
+for (@read_reject_tests) {
+	next if defined ($only_one) && $only_one ne $_->{name};
+	push @ready_to_run, request_read_reject_test $_
 }
 
 if (! scalar @ready_to_run) {

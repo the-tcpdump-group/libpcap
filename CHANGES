@@ -18,6 +18,10 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Enable out-of-tree invocation of autogen.sh.
       testprogs: Factor fcodetest out of filtertest.
       Avoid some compiler builtins in Clang < 9.0.0.
+      testprogs: Add a program to test the libpcap savefile reading code.
+      tests: use the read test program for tests to make sure files get
+        errors when read.
+      tests: add tests for the Linux USB capture byte-swapping.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
       Fix a dangling register index in "proto[expr]".
