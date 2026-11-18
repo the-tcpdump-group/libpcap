@@ -92,7 +92,7 @@ use constant {
 	EX_USAGE => 64,
 	# In this libpcap version filtertest exits with EX_DATAERR if the user input
 	# is invalid and with other status codes for other (memory/file/etc) error
-	# conditions.  translatetest implements the same convention.
+	# conditions.  translatetest implements the same convention.  Idem fcodetest.
 	EX_DATAERR => 65,
 	# Likewise, EX_NOINPUT if pcap_open_offline() has failed.
 	EX_NOINPUT => 66,
@@ -119,6 +119,7 @@ my %testprog = (
 	filtertest => 'FILTERTEST_BIN',
 	translatetest => 'TRANSLATETEST_BIN',
 	enumeratetest => 'ENUMERATETEST_BIN',
+	fcodetest => 'FCODETEST_BIN',
 );
 my %testprog_bin;
 
@@ -36033,10 +36034,10 @@ sub cbpfsfdata_from_list {
 		CBPFSF_SIGNATURE,
 		CBPFSF_ASCII_HINT,
 		1, # MajorVer
-		0, # MinorVer (ignored in filtertest)
-		0, # Flags (ignored in filtertest)
-		0, # SnapLen (ignored in filtertest)
-		0, # LinkTypeValue (ignored in filtertest)
+		0, # MinorVer (ignored in fcodetest)
+		0, # Flags (ignored in fcodetest)
+		0, # SnapLen (ignored in fcodetest)
+		0, # LinkTypeValue (ignored in fcodetest)
 		scalar @_, # InstructionCount
 	);
 	local *guard = sub {
@@ -37805,7 +37806,7 @@ sub common_fcode_args {
 	my $test = shift;
 	file_put_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
 	return (
-		$testprog_bin{filtertest},
+		$testprog_bin{fcodetest},
 		'-i',
 		mytmpfile $filename_filter,
 	);

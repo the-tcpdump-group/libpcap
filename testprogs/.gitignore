@@ -6,6 +6,7 @@ Makefile
 /can_set_rfmon_test
 /capturetest
 /enumeratetest
+/fcodetest
 /filtertest
 /findalldevstest
 /findalldevstest-perf

@@ -43,7 +43,6 @@ The Regents of the University of California.  All rights reserved.\n";
   #include <unistd.h>
 #endif
 
-#include <fcntl.h>
 #include <errno.h>
 #ifdef _WIN32
   #include <winsock2.h>
@@ -53,15 +52,12 @@ The Regents of the University of California.  All rights reserved.\n";
   #include <arpa/inet.h>
 #endif
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #include "pcap/funcattrs.h"
-#include "extract.h"
 #include "portability.h"
 #include "test-util.h"
 
 #define MAXIMUM_SNAPLEN		262144
-#define MAX_STDIN		(64 * 1024)
 
 #ifdef BDEBUG
 /*
@@ -107,70 +103,6 @@ cleanup(void)
 		pcap_close(pd);
 }
 
-// Copy stdin into a size-limited buffer.
-static char *
-read_stdin(void)
-{
-	char *buf = calloc(1, MAX_STDIN + 1);
-	if (buf == NULL)
-		error(EX_OSERR, "%s: calloc", __func__);
-	size_t readsize = fread(buf, 1, MAX_STDIN, stdin);
-	if (! feof(stdin)) {
-		free(buf);
-		error(EX_IOERR, "received more than %u bytes on stdin", MAX_STDIN);
-	}
-	if (ferror(stdin)) {
-		free(buf);
-		error(EX_IOERR, "failed reading from stdin after %zd bytes", readsize);
-	}
-	fclose(stdin);
-	// No error, all data is within the buffer and NUL-terminated.
-	blank_comments(buf, readsize);
-	return buf;
-}
-
-#define CBPFSF_HEADER_SIZE 20
-static void
-read_cbpffile(const char *fname)
-{
-	FILE *f = strcmp("-", fname) ? fopen(fname, "rb") : stdin;
-	if (! f)
-		error(EX_IOERR, "can't open '%s': %s",
-		    fname, pcap_strerror(errno));
-
-	uint8_t readbuf[CBPFSF_HEADER_SIZE];
-	if (1 != fread(readbuf, sizeof(readbuf), 1, f))
-		error(EX_IOERR,
-		    "failed to read cbpf-savefile header from '%s': %s",
-		    fname, pcap_strerror(errno));
-	const uint8_t cbpfhdrstart[] = {
-		0xa1, 0xb2, 0xc3, 0xcb, // binary signature
-		'c', 'B', 'P', 'F', // ASCII hint
-		1, // MajorVer
-		// Ignore: MinorVer, Flags, SnapLen, and LinkTypeValue.
-	};
-	if (memcmp(readbuf, cbpfhdrstart, sizeof(cbpfhdrstart)))
-		error(EX_IOERR, "invalid cbpf-savefile header in '%s'", fname);
-
-	fcode.bf_len = EXTRACT_BE_U_2(readbuf + 18);
-	fcode.bf_insns = fcode.bf_len ?
-		calloc(fcode.bf_len, sizeof(struct bpf_insn)) : NULL;
-	// cleanup() will deallocate fcode.bf_insns on error.
-	for (uint16_t i = 0; i < fcode.bf_len; i++) {
-		if (1 != fread(readbuf, sizeof(struct bpf_insn), 1, f))
-			error(EX_IOERR,
-			    "failed to read the next instruction from '%s': %s",
-			    fname, pcap_strerror(errno));
-		fcode.bf_insns[i].code = EXTRACT_BE_U_2(readbuf);
-		fcode.bf_insns[i].jt = readbuf[2];
-		fcode.bf_insns[i].jf = readbuf[3];
-		fcode.bf_insns[i].k = EXTRACT_BE_U_4(readbuf + 4);
-	}
-	// Ignore any TLVs after the instructions.
-	if (fclose(f))
-		error(EX_IOERR, "failed closing '%s'", fname);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -181,7 +113,6 @@ main(int argc, char **argv)
 #endif
 	char *infile = NULL;
 	char *insavefile = NULL;
-	char *cbpfsavefile = NULL;
 	int Oflag = 1;
 #ifdef __linux__
 	bool lflag = false;
@@ -195,16 +126,6 @@ main(int argc, char **argv)
 	} Sflag = NOT_SAVEFILE_FILTER;
 	char *p;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
-	/*
-	 * This program exits with EX_DATAERR iff the user input has a problem.
-	 * By default the user input is a filter expression, in which case the
-	 * filter program is an output of pcap_compile(), so if the latter has
-	 * accepted the expression, but produced a program that fails to
-	 * validate, this is a problem in libpcap, not in the user input.  If
-	 * the user input is a compiled filter program, a failure to validate
-	 * it means a problem in the user input.
-	 */
-	int validation_error = EX_SOFTWARE;
 
 	if (atexit(cleanup))
 		error(EX_OSERR, "atexit() failed: %s", pcap_strerror(errno));
@@ -217,17 +138,12 @@ main(int argc, char **argv)
 	program_name = set_program_name(argv[0]);
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "hi:dF:gm:Os:S:lqr:")) != -1) {
+	while ((op = getopt(argc, argv, "hdF:gm:Os:S:lqr:")) != -1) {
 		switch (op) {
 
 		case 'h':
 			usage(stdout);
 			/* NOTREACHED */
-
-		case 'i':
-			cbpfsavefile = optarg;
-			validation_error = EX_DATAERR;
-			break;
 
 		case 'd':
 			++dflag;
@@ -340,30 +256,6 @@ main(int argc, char **argv)
 		char errbuf[PCAP_ERRBUF_SIZE];
 		if (NULL == (pd = pcap_open_offline(insavefile, errbuf)))
 			error(EX_NOINPUT, "Failed opening: %s", errbuf);
-	} else if (cbpfsavefile) {
-		if (dflag > 1 && qflag)
-			error(EX_USAGE, "-d is not compatible with -q");
-		if (infile)
-			error(EX_USAGE, "-i is not compatible with -F");
-#ifdef BDEBUG
-		if (gflag)
-			error(EX_USAGE, "-i is not compatible with -g");
-#endif
-#ifdef __linux__
-		if (lflag)
-			error(EX_USAGE, "-i is not compatible with -l");
-#endif
-		if (netmask != PCAP_NETMASK_UNKNOWN)
-			error(EX_USAGE, "-i is not compatible with -m");
-		if (! Oflag)
-			error(EX_USAGE, "-i is not compatible with -O");
-		if (snaplen != MAXIMUM_SNAPLEN)
-			error(EX_USAGE, "-i is not compatible with -s");
-		if (Sflag != NOT_SAVEFILE_FILTER)
-			error(EX_USAGE, "-i is not compatible with -S");
-		// Must not have any non-option arguments.
-		if (optind < argc)
-			usage(stderr);
 	} else {
 		// Must have at least one command-line argument for the DLT.
 		if (optind >= argc) {
@@ -412,28 +304,29 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (cbpfsavefile)
-		read_cbpffile(cbpfsavefile);
-	else {
-		cmdbuf = infile == NULL ? copy_argv(&argv[optind]) :
-		    strcmp(infile, "-") == 0 ? read_stdin() :
-		    read_infile(infile);
-		// cmdbuf may still be NULL.
-
-		if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0) // cmdbuf == NULL is valid.
-			error(EX_DATAERR, "%s", pcap_geterr(pd));
-	}
+	cmdbuf = infile == NULL ? copy_argv(&argv[optind]) :
+	    strcmp(infile, "-") == 0 ? read_stdin() :
+	    read_infile(infile);
+	// cmdbuf may still be NULL.
 
 	/*
-	 * Skip the validation step when using a cbpf-savefile to filter a
-	 * savefile: this way a filter program can be fed into the interpreter
-	 * regardless of whether it would pass the validator.
+	 * If pcap_compile() has rejected the filter expression, it is a user
+	 * input problem.
 	 */
-	if (! (cbpfsavefile && insavefile) &&
-	    ! bpf_validate(fcode.bf_insns, fcode.bf_len))
-		error(validation_error, "Filter doesn't pass validation");
+	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0) // cmdbuf == NULL is valid.
+		error(EX_DATAERR, "%s", pcap_geterr(pd));
+	/*
+	 * If pcap_compile() has accepted the filter expression and produced a
+	 * filter program that fails to validate (which is supposed never to be
+	 * the case because the function validates its result), this is a bug
+	 * in libpcap.
+	 */
+	if (! bpf_validate(fcode.bf_insns, fcode.bf_len))
+		error(EX_SOFTWARE, "Filter doesn't pass validation");
 
-	if (! insavefile) {
+	if (insavefile) {
+		print_filtering_results(pd, &fcode);
+	} else {
 #ifdef BDEBUG
 		// only show machine code if BDEBUG defined, since dflag > 3
 		printf("machine codes for filter: ");
@@ -450,18 +343,6 @@ main(int argc, char **argv)
 #endif
 		if (! qflag)
 			bpf_dump(&fcode, dflag);
-	} else {
-		struct pcap_pkthdr *h;
-		const u_char *d;
-		int ret;
-		while (PCAP_ERROR_BREAK != (ret = pcap_next_ex(pd, &h, &d))) {
-			if (ret == PCAP_ERROR)
-				error(EX_IOERR, "pcap_next_ex() failed: %s", pcap_geterr(pd));
-			if (ret == 1)
-				printf("%d\n", pcap_offline_filter(&fcode, h, d));
-			else
-				error(EX_IOERR, "pcap_next_ex() failed: %d", ret);
-		}
 	}
 #ifdef _WIN32
 	WSACleanup();
@@ -490,11 +371,6 @@ usage(FILE *f)
 	    program_name);
 	(void)fprintf(f, "       (compile a filter expression, validate the program and print the\n");
 	(void)fprintf(f, "       filtering result for each packet in the specified savefile)\n");
-	(void)fprintf(f, "  or:  %s [-dq] -i <file>\n", program_name);
-	(void)fprintf(f, "       (load, validate and print a filter program)\n");
-	(void)fprintf(f, "  or:  %s -i <file> -r <file>\n", program_name);
-	(void)fprintf(f, "       (load a filter program and print the filtering result for each packet\n");
-	(void)fprintf(f, "       in the specified savefile)\n");
 	(void)fprintf(f, "  or:  %s -h\n", program_name);
 	(void)fprintf(f, "       (print the detailed help screen)\n");
 	if (f != stdout)
@@ -505,8 +381,6 @@ usage(FILE *f)
 #ifdef BDEBUG
 	(void)fprintf(f, "  -g              print Graphviz dot graphs for the optimizer steps\n");
 #endif
-	(void)fprintf(f, "  -i <file>       a compiled filter program in cbpf-savefile(5) format\n");
-	(void)fprintf(f, "                  (\"-\" means stdin)\n");
 #ifdef __linux__
 	(void)fprintf(f, "  -l              allow the use of Linux BPF extensions\n");
 #endif

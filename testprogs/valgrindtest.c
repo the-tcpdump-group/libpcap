@@ -67,7 +67,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 #include "portability.h"
-#include "test-util.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_AIX) || defined(sun)
 /* OS with BPF - use BPF */
@@ -118,6 +117,12 @@ The Regents of the University of California.  All rights reserved.\n";
 #undef BPF_STMT
 #undef BPF_JUMP
 #include <pcap.h>
+
+/*
+ * Because test-util.h includes pcap.h, including the former before it is safe
+ * to include the latter breaks things (e.g. on FreeBSD).
+ */
+#include "test-util.h"
 
 static const char *program_name;
 

@@ -79,6 +79,7 @@ SRC = @VALGRINDTEST_SRC@ \
 	can_set_rfmon_test.c \
 	capturetest.c \
 	enumeratetest.c \
+	fcodetest.c \
 	filtertest.c \
 	findalldevstest-perf.c \
 	findalldevstest.c \
@@ -121,6 +122,11 @@ can_set_rfmon_test: $(srcdir)/can_set_rfmon_test.c $(srcdir)/test-util.c ../libp
 
 enumeratetest: $(srcdir)/enumeratetest.c $(srcdir)/test-util.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/enumeratetest.c \
+	    $(srcdir)/test-util.c \
+	    ../libpcap.a $(LIBS)
+
+fcodetest: $(srcdir)/fcodetest.c $(srcdir)/test-util.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o $@ $(srcdir)/fcodetest.c \
 	    $(srcdir)/test-util.c \
 	    ../libpcap.a $(LIBS)
 

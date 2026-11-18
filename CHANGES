@@ -16,6 +16,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       mkdep: Use mktemp(1) if it is available.
       mkdep: Propagate compiler errors.
       Enable out-of-tree invocation of autogen.sh.
+      testprogs: Factor fcodetest out of filtertest.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
       Fix a dangling register index in "proto[expr]".
