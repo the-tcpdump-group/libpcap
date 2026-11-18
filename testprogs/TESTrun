@@ -115,9 +115,12 @@ use constant {
 my $diff_flags;
 my $timeout_bin;
 my $test_timeout;
-my $filtertest;
-my $translatetest;
-my $enumeratetest;
+my %testprog = (
+	filtertest => 'FILTERTEST_BIN',
+	translatetest => 'TRANSLATETEST_BIN',
+	enumeratetest => 'ENUMERATETEST_BIN',
+);
+my %testprog_bin;
 
 sub usage_text {
 	my $detailed = shift;
@@ -147,12 +150,14 @@ binary works.  If it is set (on macOS there is no default \"timeout\" and the
 binary from GNU coreutils package may be available as \"gtimeout\" only), the
 custom binary must work.
 
-FILTERTEST_BIN, TRANSLATETEST_BIN, ENUMERATETEST_BIN and CONFIG_H allow to
-specify custom paths to respective files if the current working directory is
-not the directory where the build output files go to.  Otherwise by default
-this script finds the files for both Autoconf and CMake, both in-tree and
-out-of-tree builds.
-
+The following environment variables allow to specify custom paths to respective
+files if the current working directory is not the directory where the build
+output files go to.  Otherwise by default this script finds the files for both
+Autoconf and CMake, both in-tree and out-of-tree builds.
+* CONFIG_H
+";
+	$ret .= "* $_\n" foreach sort values %testprog;
+	$ret .= "
 TIMEOUT_BIN allows to specify the path to a timeout(1) binary.
 
 TESTRUN_SHORT=1 generates a shorter list of tests (not recommended unless the
@@ -37788,7 +37793,7 @@ sub run_generic_reject_test {
 
 sub common_filtertest_args {
 	my $test = shift;
-	my @args = ($filtertest);
+	my @args = ($testprog_bin{filtertest});
 	push @args, ('-s', $test->{snaplen}) if defined $test->{snaplen};
 	push @args, ('-m', $test->{netmask}) if defined $test->{netmask};
 	push @args, '-O' unless $test->{optimize};
@@ -37800,7 +37805,7 @@ sub common_fcode_args {
 	my $test = shift;
 	file_put_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
 	return (
-		$filtertest,
+		$testprog_bin{filtertest},
 		'-i',
 		mytmpfile $filename_filter,
 	);
@@ -37848,7 +37853,7 @@ sub common_translatetest_args {
 	# as the second argument of translatetest and to get the expected
 	# behaviour from all known implementations of getopt().
 	#
-	my @args = ($translatetest, "--", $test->{cfuncname});
+	my @args = ($testprog_bin{translatetest}, '--', $test->{cfuncname});
 	# The hash key exists.  For the value Perl undef means C NULL and no
 	# command-line argument in the shell command, an empty Perl string
 	# means an empty C string and a quoted empty string argument in the
@@ -37932,7 +37937,7 @@ sub run_enumerate_test {
 	my $test = shift;
 	return run_generic_accept_test (
 		$test->{expected},
-		$enumeratetest,
+		$testprog_bin{enumeratetest},
 		'--', # for consistency with common_translatetest_args()
 		$test->{cfuncname}
 	);
@@ -38302,9 +38307,10 @@ if ($only_list) {
 }
 
 $diff_flags = get_diff_flags;
-$filtertest = detect_testprog 'filtertest', 'FILTERTEST_BIN';
-$translatetest = detect_testprog 'translatetest', 'TRANSLATETEST_BIN';
-$enumeratetest = detect_testprog 'enumeratetest', 'ENUMERATETEST_BIN';
+# For reasons unknown Perl map() does not work for this.
+foreach my $name (keys %testprog) {
+	$testprog_bin{$name} = detect_testprog ($name, $testprog{$name});
+}
 
 # Every test in this file uses an expression that under normal conditions takes
 # well under one second to process, so if a filtertest invocation is taking
