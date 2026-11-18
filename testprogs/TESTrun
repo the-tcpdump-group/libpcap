@@ -43,10 +43,8 @@ use subs qw(
 	get_diff_flags
 	get_helper_module
 	get_lib_usage
-	init_tmpdir
 	mytmpfile
 	read_config_h
-	remove_tmpdir
 	result_failed
 	result_passed
 	result_skipped
@@ -38331,7 +38329,4 @@ if ($test_timeout eq '0') {
 	printf "INFO: Using a test timeout of %s second(s).\n", $test_timeout;
 }
 
-init_tmpdir 'libpcap_TESTrun';
-my $status = test_and_report @ready_to_run;
-remove_tmpdir;
-exit $status;
+exit test_and_report 'libpcap_TESTrun', @ready_to_run;

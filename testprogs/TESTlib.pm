@@ -353,7 +353,8 @@ sub print_result {
 	printf "    %-40s: %s\n", @_;
 }
 
-sub test_and_report {
+sub test_and_report ($@) {
+	my $tmpdir_prefix = shift;
 	my @tests = @_;
 
 	my %seen_labels;
@@ -369,6 +370,7 @@ sub test_and_report {
 	}
 	undef %seen_labels;
 
+	init_tmpdir $tmpdir_prefix;
 	my $start = Time::HiRes::time;
 	start_tests (@tests);
 	init_results_processing scalar @tests;
@@ -412,6 +414,7 @@ sub test_and_report {
 		}
 	}
 	my $end = Time::HiRes::time;
+	remove_tmpdir;
 
 	if (%passed) {
 		print "Passed tests:\n";
