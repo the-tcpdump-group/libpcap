@@ -334,7 +334,7 @@ main(int argc, char **argv)
 			printf("NULL");
 		else {
 			// replace line feed with space
-			for (cp = cmdbuf; *cp != '\0'; ++cp)
+			for (char *cp = cmdbuf; *cp != '\0'; ++cp)
 				if (*cp == '\r' || *cp == '\n')
 					*cp = ' ';
 			printf("'%s'", cmdbuf);
