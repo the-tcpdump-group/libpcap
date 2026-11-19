@@ -567,8 +567,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 				/* Interrupted receive. */
 				return 0;
 			}
+			gen_header->plen = ntohl(gen_header->plen);
 		}
-		gen_header->plen = ntohl(gen_header->plen);
 
 		/*
 		 * Validate the rpcap general payload length declared in the
@@ -628,9 +628,18 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	 *   (i.e. the captured packet) length that fits in the rpcap general
 	 *   payload (not the entire buffer) after the RPCAP_MSG_PACKET header.
 	 */
-	if (rpcap_check_msg_ver(pr->rmt_sockdata, pr->data_ssl, pr->protocol_version,
-	    gen_header, p->errbuf) == -1)
-		return 0;	/* Return 'no packets received' */
+	/*
+	 * The entire message payload has already been read above, so do not
+	 * call rpcap_check_msg_ver() (which would rpcap_discard() again from
+	 * the socket).
+	 */
+	if (gen_header->ver != pr->protocol_version)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Server sent us a message with version %u when we were expecting %u",
+		    gen_header->ver, pr->protocol_version);
+		return -1;
+	}
 	if (gen_header->type != RPCAP_MSG_PACKET)
 		return 0;	/* Return 'no packets received' */
 	if (gen_header->plen < sizeof(struct rpcap_pkthdr))
@@ -2739,7 +2748,7 @@ error:
 	 * We already reported an error; if this gets an error, just
 	 * drive on.
 	 */
-	(void)rpcap_discard(sockctrl, pr->ctrl_ssl, plen, NULL);
+	(void)rpcap_discard(sockctrl, ssl, plen, NULL);
 
 error_nodiscard:
 	if (!active)

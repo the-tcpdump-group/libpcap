@@ -245,6 +245,7 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 	int retval;				// select() return value
 
 	*errbuf = 0;	// Initialize errbuf
+	*errmsgbuf = 0;	// Initialize errmsgbuf
 
 	//
 	// Peek into the socket to determine whether the client sent us
@@ -898,6 +899,29 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 					break;
 				}
 
+				if (session != NULL)
+				{
+					//
+					// A capture session is already active;
+					// starting another would overwrite session
+					// and orphan its data thread.
+					//
+					if (rpcap_senderror(pars.sockctrl, pars.ssl,
+					    header.ver,
+					    PCAP_ERR_STARTCAPTURE,
+					    "A capture is already in progress",
+					    errbuf) == -1)
+					{
+						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+						goto end;
+					}
+					if (rpcapd_discard(pars.sockctrl, pars.ssl, plen) == -1)
+					{
+						goto end;
+					}
+					break;
+				}
+
 				if (daemon_msg_startcap_req(header.ver, &pars,
 				    plen, source, data_port, &session,
 				    &samp_param, uses_ssl) == -1)
@@ -1083,7 +1107,7 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
-				    errbuf, errmsgbuf) == -1)
+				    errmsgbuf, errbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 					goto end;
@@ -1971,6 +1995,7 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	int serveropen_dp;							// keeps who is going to open the data connection
 
 	addrinfo = NULL;
+	errmsgbuf[0] = '\0';
 
 	status = rpcapd_recv(pars->sockctrl, pars->ssl, (char *) &startcapreq,
 	    sizeof(struct rpcap_startcapreq), &plen, errmsgbuf);
@@ -1989,7 +2014,7 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	// to enforce encryption, as SSL is not supported yet with UDP:
 	if (uses_ssl && (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_DGRAM))
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
 		    "SSL not supported with UDP forward of remote packets");
 		goto error;
 	}
@@ -2189,10 +2214,10 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 
 		if (socktemp == INVALID_SOCKET)
 		{
-			sock_geterrmsg(errbuf, PCAP_ERRBUF_SIZE,
+			sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
 			   "accept() failed");
 			rpcapd_log(LOGPRIO_ERROR, "Accept of data connection failed: %s",
-			    errbuf);
+			    errmsgbuf);
 			goto error;
 		}
 
@@ -2208,10 +2233,10 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 		/* In both active or passive cases, wait for the client to initiate the
 		 * TLS handshake. Yes during that time the control socket will not be
 		 * served, but the same was true from the above call to accept(). */
-		ssl = ssl_promotion(1, session->sockdata, errbuf, PCAP_ERRBUF_SIZE);
+		ssl = ssl_promotion(1, session->sockdata, errmsgbuf, PCAP_ERRBUF_SIZE);
 		if (! ssl)
 		{
-			rpcapd_log(LOGPRIO_ERROR, "TLS handshake failed: %s", errbuf);
+			rpcapd_log(LOGPRIO_ERROR, "TLS handshake failed: %s", errmsgbuf);
 			goto error;
 		}
 #endif
@@ -2224,7 +2249,7 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	    (void *) session, 0, NULL);
 	if (session->thread == 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
 		goto error;
 	}
 #else
@@ -2232,7 +2257,7 @@ daemon_msg_startcap_req(uint8_t ver, struct daemon_slpars *pars, uint32_t plen,
 	    (void *) session);
 	if (ret != 0)
 	{
-		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		pcapint_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
 		    ret, "Error creating the data thread");
 		goto error;
 	}
