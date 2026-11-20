@@ -26,6 +26,7 @@
 
 #include <config.h> // HAVE_xxx
 
+#include <pcap/compiler-tests.h>
 #include <pcap/pcap-inttypes.h>
 /*
  * We use the "receiver-makes-right" approach to byte order;
@@ -62,7 +63,25 @@
  * idioms and generate optimized machine-specific code for architectures
  * that include instructions that can be used to swap bytes.
  */
-#ifdef HAVE_BUILTIN_BSWAP64
+
+#if defined(__clang__) && ! PCAP_IS_AT_LEAST_CLANG_VERSION(9, 0)
+/*
+ * Clang releases before 9.0.0 used "unsigned long long" and "unsigned" to
+ * implement __builtin_bswap64() and __builtin_bswap32() respectively, which on
+ * non-mainstream architectures could work incorrectly for these and other
+ * 64-bit and 32-bit builtins (see LLVM commit 0e525a4) and resulted in a
+ * -Wformat on at least Linux/AMD64, where PRIx64 is defined to "lx".
+ *
+ * Avoid using these builtins in these Clang releases without trying to guess
+ * whether the architecture is affected or not: this avoids both the warning
+ * and the additional footprint that would be required in the build systems.
+ * Do not undefine any macros that config.h might have defined.
+ */
+#define BROKEN_BUILTIN_BSWAP64
+#define BROKEN_BUILTIN_BSWAP32
+#endif
+
+#if defined(HAVE_BUILTIN_BSWAP64) && ! defined(BROKEN_BUILTIN_BSWAP64)
 #define PCAP_BSWAP_64(y) __builtin_bswap64((uint64_t)(y))
 #else
 #define PCAP_BSWAP_64(y) \
@@ -76,7 +95,7 @@
                 ((((uint64_t)(y)) & UINT64_C(0x00000000000000ff)) << 56)))
 #endif // 64-bit
 
-#ifdef HAVE_BUILTIN_BSWAP32
+#if defined(HAVE_BUILTIN_BSWAP32) && ! defined(BROKEN_BUILTIN_BSWAP32)
 #define PCAP_BSWAP_32(y) __builtin_bswap32((uint32_t)(y))
 #else
 #define PCAP_BSWAP_32(y) \

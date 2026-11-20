@@ -17,6 +17,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       mkdep: Propagate compiler errors.
       Enable out-of-tree invocation of autogen.sh.
       testprogs: Factor fcodetest out of filtertest.
+      Avoid some compiler builtins in Clang < 9.0.0.
     Packet filtering:
       Fix validation of "/", "%", "<<" and ">>" 2nd operand.
       Fix a dangling register index in "proto[expr]".
