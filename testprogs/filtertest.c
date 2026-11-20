@@ -29,8 +29,6 @@ static const char copyright[] _U_ =
 The Regents of the University of California.  All rights reserved.\n";
 #endif
 
-#include <config.h>
-
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
