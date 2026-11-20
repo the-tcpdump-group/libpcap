@@ -736,10 +736,36 @@ static struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
 	struct sockaddr *newsa;
+	size_t alloc_length;
 
-	if ((newsa = malloc(sa_length)) == NULL)
+	/*
+	 * Some getifaddrs() implementations return a netmask whose length
+	 * is shorter than the size of the structure for its address family;
+	 * for example, OpenBSD can return an AF_INET netmask with a sa_len
+	 * of 5 for a /8 prefix.  Consumers such as addrtostr() treat the
+	 * result as a complete structure, so pad it with zeroes up to the
+	 * full size for the address family.
+	 */
+	alloc_length = sa_length;
+	switch (sa->sa_family) {
+
+	case AF_INET:
+		if (alloc_length < sizeof(struct sockaddr_in))
+			alloc_length = sizeof(struct sockaddr_in);
+		break;
+
+#ifdef AF_INET6
+	case AF_INET6:
+		if (alloc_length < sizeof(struct sockaddr_in6))
+			alloc_length = sizeof(struct sockaddr_in6);
+		break;
+#endif
+	}
+
+	if ((newsa = calloc(1, alloc_length)) == NULL)
 		return (NULL);
-	return (memcpy(newsa, sa, sa_length));
+	memcpy(newsa, sa, sa_length);
+	return (newsa);
 }
 
 /*
