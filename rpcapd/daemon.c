@@ -1529,6 +1529,30 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 #endif
 
 	//
+	// Reject locked or disabled accounts.
+	// Common markers: "*" (BSD), "!" or "!!" (Linux), "x" (shadow
+	// placeholder when shadow lookup failed).  A valid password hash
+	// is always longer than 2 characters.
+	//
+	if (user_password == NULL || strlen(user_password) < 3 ||
+	    user_password[0] == '*' || user_password[0] == '!')
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
+		return -1;
+	}
+
+	//
+	// Cap password length as defense-in-depth.
+	// Some crypt() implementations return error tokens (e.g. bare
+	// "*") for very long passwords, which could match a locked-
+	// account marker.  PBKDF2/bcrypt/sha-crypt all ignore bytes
+	// past their internal limit, so truncation is safe.
+	//
+#define RPCAPD_MAX_PASSWORD_LEN 256
+	if (strlen(password) > RPCAPD_MAX_PASSWORD_LEN)
+		password[RPCAPD_MAX_PASSWORD_LEN] = '\0';
+
+	//
 	// The Single UNIX Specification says that if crypt() fails it
 	// sets errno, but some implementations that haven't been run
 	// through the SUS test suite might not do so.
@@ -1549,6 +1573,17 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 			rpcapd_log(LOGPRIO_ERROR, "crypt() failed: %s",
 			    strerror(error));
 		}
+		return -1;
+	}
+	//
+	// Reject crypt() results that look like error tokens rather
+	// than real hashes: bare "*", "*0", "*1" etc.  A valid hash
+	// from any known scheme is always at least 13 characters
+	// (traditional DES crypt).
+	//
+	if (strlen(crypt_password) < 13)
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
 		return -1;
 	}
 	if (strcmp(user_password, crypt_password) != 0)
