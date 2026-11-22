@@ -47,7 +47,6 @@ use subs qw(
 	read_config_h
 	result_failed
 	result_passed
-	result_skipped
 	result_terminated
 	result_timed_out
 	run_skip_test
