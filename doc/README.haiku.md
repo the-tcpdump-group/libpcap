@@ -24,15 +24,15 @@ on Haiku are as follows:
 ## AMD64 R1/beta6
 
 * Autoconf 2.72 works.
-* CMake 4.1.6 works.
-* GCC 13.3.0 works.
-* Clang 22.1.8 works.
+* CMake 4.1.6 works, CMake 4.5.0 does not work.
+* GCC 15.3.0 works.
+* Clang 23.1.4 works.
 * flex 2.6.4 works.
 * bison 3.8.2 works.
 
 The following command will install respective non-default packages:
 ```
-pkgman install cmake llvm22_clang
+pkgman install cmake llvm23_clang
 ```
 
 For reference, the tests were done using a system installed from

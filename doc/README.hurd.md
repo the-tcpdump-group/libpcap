@@ -12,11 +12,12 @@ is not supported.
 [**pcap_set_promisc**](https://www.tcpdump.org/manpages/pcap_set_promisc.3pcap.html)(3PCAP)
 has no effect.
 
-## Debian GNU/Hurd 12
+## Debian GNU/Hurd unstable
 
+* Autoconf 2.73 works.
 * flex 2.6.4 and GNU Bison 3.8.2 work.
-* CMake 3.25.1 works.
-* GCC 12.2.0 and Clang 14.0.6 work.
+* CMake 4.4.5 works.
+* GCC 16.2.0 and Clang 21.1.8 work.
 
-For reference, the tests were done using a system installed from the 2023-06-08
-snapshot from [here](https://cdimage.debian.org/cdimage/ports/12.0/hurd-i386/).
+For reference, the tests were done using a system installed from the 2026-03-14
+snapshot from [here](https://cdimage.debian.org/cdimage/ports/latest/hurd-i386/).
