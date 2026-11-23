@@ -11,15 +11,6 @@
 * CMake 4.0.1 works.
 * GCC 14.2.0 and Clang 20.1.2 work.
 
-## OpenIndiana 2024.04/AMD64
-
-* flex 2.6.4 and GNU Bison 3.7.6 work.
-* CMake 3.30.2 works.
-* GCC 10.5.0, GCC 13.3.0 and Clang 18.1.8 work.
-
-For reference, the tests were done using a system installed from
-`OI-hipster-minimal-20240426.iso` plus the `build-essential` package.
-
 ## Solaris CBE 11.4.90.212.0/AMD64
 * flex 2.6.4 and GNU Bison 3.8.2 work.
 * CMake 3.24.0 works.
@@ -43,7 +34,7 @@ For reference, the tests were done using a system installed from
 * libpcap build fails with rpcapd enabled.
 * flex 2.6.4 and GNU Bison 3.7.5 work.
 * CMake 3.14.3 works.
-* Sun C 5.13 works, GCC 5.5.0 works.
+* Sun C 5.15 works, GCC 5.5.0 works.
 
 ## Solaris 9
 
