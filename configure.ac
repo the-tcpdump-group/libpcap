@@ -1694,7 +1694,7 @@ yes)	AC_MSG_RESULT(yes)
 			    RPCAPD_LIBS="$RPCAPD_LIBS -llogin"
 			],
 			[
-			    AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it])
+			    AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it; install a crypt devel library (libcrypt-dev|libcrypt-devel|libxcrypt-devel|...).])
 			])
 		    ])
 	    ])
