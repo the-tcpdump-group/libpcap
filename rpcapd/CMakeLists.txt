@@ -9,7 +9,7 @@ if(UNIX)
       set(RPCAPD_LINK_LIBRARIES ${RPCAPD_LINK_LIBRARIES} crypt)
       set(HAVE_CRYPT TRUE)
     else(HAVE_CRYPT_IN_LIBCRYPT)
-      message(WARNING "crypt() not found. Won't be able to build rpcapd.")
+      message(FATAL_ERROR "rpcapd requires crypt(), but we didn't find it; install a crypt devel library (libcrypt-dev|libcrypt-devel|libxcrypt-devel|...).")
     endif(HAVE_CRYPT_IN_LIBCRYPT)
   endif(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
 
