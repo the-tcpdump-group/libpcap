@@ -19,6 +19,8 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <config.h>
+
 #include <pcap.h>
 #include <stdio.h>
 

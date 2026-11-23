@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <config.h>
+
 #include <pcap.h>
 #include <errno.h>
 #include <fcntl.h>
