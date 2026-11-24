@@ -1,5 +1,5 @@
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.11.1 libpcap release (so far!)
+Tuesday, November 24, 2026 / The Tcpdump Group
+  Summary for 1.11.1 libpcap release
     Source code:
       Fix function names in two error messages.
       Have pcap_fileno() return -1 rather than PCAP_ERROR if the HANDLE
