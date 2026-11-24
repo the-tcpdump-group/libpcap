@@ -6,6 +6,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         is invalid, as the return value isn't a general error.
       Indicate no-capture and no-inject devices.
       Require libpcap [internal-only] config.h in [internal-only] pcap-int.h.
+      Use more parentheses in BPF_STMT() and BPF_JUMP().
     General:
       Set all the file descriptors/HANDLEs to an invalid value in
         pcap_open_dead().
@@ -32,6 +33,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Note in pcap_fileno(3PCAP) and pcap_get_selectable_fd(3PCAP) that
         the descriptors returned by those routines must not be
         closed. (Issue #1722)
+      Update a few OS-specific README files.
     Linux:
       Include sysfs rx_dropped in pcap_stat.ps_ifdrop (GH bug 1328).
     QNX:
