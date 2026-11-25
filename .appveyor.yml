@@ -14,8 +14,18 @@ install:
   - win_flex --version
   - win_bison --version
   - appveyor DownloadFile https://github.com/the-tcpdump-group/tcpdump-htdocs/raw/master/depends/WpdPack_4_1_2.zip
+  - ps: |
+      $hash = (Get-FileHash -LiteralPath '.\WpdPack_4_1_2.zip' -Algorithm SHA256 -ErrorAction Stop).Hash
+      if ($hash -ne 'ea799cf2f26e4afb1892938070fd2b1ca37ce5cf75fec4349247df12b784edbd') {
+          throw 'WpdPack_4_1_2.zip SHA-256 mismatch'
+      }
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
   - appveyor DownloadFile https://github.com/the-tcpdump-group/tcpdump-htdocs/raw/master/depends/npcap-sdk-1.15.zip
+  - ps: |
+      $hash = (Get-FileHash -LiteralPath '.\npcap-sdk-1.15.zip' -Algorithm SHA256 -ErrorAction Stop).Hash
+      if ($hash -ne '52c7b9fb4abee3ad9fe739bb545c3efe77b731c8e127122bdf328eafdae3ed4f') {
+          throw 'npcap-sdk-1.15.zip SHA-256 mismatch'
+      }
   - 7z x .\npcap-sdk-1.15.zip -oc:\projects\libpcap\Win32\npcap-sdk
 
 environment:
