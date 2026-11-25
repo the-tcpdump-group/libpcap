@@ -466,7 +466,7 @@ find_edom(opt_state_t *opt_state, struct block *root)
 	memset(root->et.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
 	memset(root->ef.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
 	for (level = root->level; level >= 0; --level) {
-		for (b = opt_state->levels[level]; b != 0; b = b->link) {
+		for (b = opt_state->levels[level]; b != NULL; b = b->link) {
 			propedom(opt_state, &b->et);
 			propedom(opt_state, &b->ef);
 		}
@@ -833,7 +833,7 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 static inline struct slist *
 this_op(struct slist *s)
 {
-	while (s != 0 && s->s.code == NOP)
+	while (s != NULL && s->s.code == NOP)
 		s = s->next;
 	return s;
 }
@@ -1442,7 +1442,7 @@ opt_deadstores(opt_state_t *opt_state, struct block *b)
 
 	memset((char *)last, 0, sizeof last);
 
-	for (s = b->stmts; s != 0; s = s->next)
+	for (s = b->stmts; s != NULL; s = s->next)
 		deadstmt(opt_state, &s->s, last);
 	deadstmt(opt_state, &b->s, last);
 
@@ -1547,8 +1547,8 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	      aval != VAL_UNKNOWN && b->val[A_ATOM] == aval &&
 	      xval != VAL_UNKNOWN && b->val[X_ATOM] == xval) ||
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
-		if (b->stmts != 0) {
-			b->stmts = 0;
+		if (b->stmts != NULL) {
+			b->stmts = NULL;
 			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
@@ -1761,7 +1761,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 			 * predecessor of that edge, there's a data
 			 * dependency that will be violated.
 			 */
-			if (target != 0 && !use_conflict(ep->pred, target)) {
+			if (target != NULL && !use_conflict(ep->pred, target)) {
 				/*
 				 * It's safe to replace the successor of
 				 * ep; do so, and note that we've made
@@ -1773,7 +1773,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 				 */
 				opt_state->done = 0;
 				ep->succ = target;
-				if (JT(target) != 0)
+				if (JT(target) != NULL)
 					/*
 					 * Start over unless we hit a leaf.
 					 */
@@ -1821,7 +1821,7 @@ or_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	 * XXX why?
 	 */
 	val = ep->pred->val[A_ATOM];
-	for (ep = ep->next; ep != 0; ep = ep->next)
+	for (ep = ep->next; ep != NULL; ep = ep->next)
 		if (val != ep->pred->val[A_ATOM])
 			return;
 
@@ -1989,7 +1989,7 @@ and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	 * Make sure each predecessor loads the same value.
 	 */
 	val = ep->pred->val[A_ATOM];
-	for (ep = ep->next; ep != 0; ep = ep->next)
+	for (ep = ep->next; ep != NULL; ep = ep->next)
 		if (val != ep->pred->val[A_ATOM])
 			return;
 
@@ -2051,7 +2051,7 @@ and_pullup(opt_state_t *opt_state, struct block *b, struct block *root)
 	 * to worry about.
 	 */
 	if (at_top) {
-		for (ep = b->in_edges; ep != 0; ep = ep->next) {
+		for (ep = b->in_edges; ep != NULL; ep = ep->next) {
 			if (JT(ep->pred) == b)
 				JT(ep->pred) = pull;
 			else
@@ -2145,7 +2145,7 @@ find_inedges(opt_state_t *opt_state, const struct block *root)
 	 * list of its successors.  Skip the leaves (i.e. level 0).
 	 */
 	for (level = root->level; level > 0; --level) {
-		for (b = opt_state->levels[level]; b != 0; b = b->link) {
+		for (b = opt_state->levels[level]; b != NULL; b = b->link) {
 			link_inedge(&b->et, JT(b));
 			link_inedge(&b->ef, JF(b));
 		}
@@ -2158,12 +2158,12 @@ opt_root(struct block **b)
 	struct slist *tmp, *s;
 
 	s = (*b)->stmts;
-	(*b)->stmts = 0;
+	(*b)->stmts = NULL;
 	while (BPF_CLASS((*b)->s.code) == BPF_JMP && JT(*b) == JF(*b))
 		*b = JT(*b);
 
 	tmp = (*b)->stmts;
-	if (tmp != 0)
+	if (tmp != NULL)
 		sappend(s, tmp);
 	(*b)->stmts = s;
 
@@ -2173,7 +2173,7 @@ opt_root(struct block **b)
 	 * has no side effects).
 	 */
 	if (BPF_CLASS((*b)->s.code) == BPF_RET)
-		(*b)->stmts = 0;
+		(*b)->stmts = NULL;
 }
 
 static void
