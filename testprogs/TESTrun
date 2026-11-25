@@ -39,6 +39,7 @@ require $FindBin::RealBin . '/TESTlib.pm';
 # TESTlib.pm
 use subs qw(
 	file_get_contents
+	file_put_binary_contents
 	file_put_contents
 	get_diff_flags
 	get_helper_module
@@ -37803,7 +37804,7 @@ sub common_filtertest_args {
 
 sub common_fcode_args {
 	my $test = shift;
-	file_put_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
+	file_put_binary_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
 	return (
 		$testprog_bin{fcodetest},
 		'-i',

@@ -188,6 +188,14 @@ sub file_put_contents {
 	close FH or die "failed closing '$filename'";
 }
 
+sub file_put_binary_contents ($$) {
+	my ($filename, $contents) = @_;
+	open FH, '>', $filename or die "failed opening '$filename'";
+	die "binmode('$filename') failed: $!" unless defined binmode FH;
+	print FH $contents;
+	close FH or die "failed closing '$filename'";
+}
+
 # Idem.
 sub file_get_contents {
 	my $filename = shift;
