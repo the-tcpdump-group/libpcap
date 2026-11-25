@@ -39,12 +39,9 @@ The Regents of the University of California.  All rights reserved.\n";
   #define THREAD_HANDLE			HANDLE
   #define THREAD_FUNC_ARG_TYPE		LPVOID
   #define THREAD_FUNC_RETURN_TYPE	DWORD __stdcall
-
-  #include "getopt.h"
 #else
   #include <pthread.h>
   #include <signal.h>
-  #include <unistd.h>
 
   #define THREAD_HANDLE			pthread_t
   #define THREAD_FUNC_ARG_TYPE		void *
@@ -57,7 +54,9 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+// strdup()
 #include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static const char *program_name;

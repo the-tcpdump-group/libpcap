@@ -34,8 +34,6 @@
 #include <syslog.h>
 #endif
 
-#include "portability.h"
-
 #include "log.h"
 
 static int log_to_systemlog;

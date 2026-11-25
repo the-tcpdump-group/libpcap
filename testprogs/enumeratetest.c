@@ -36,16 +36,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
 #include "pcap/pcap.h"
 #include "pcap/bpf.h"
 #include "pcap-int.h" // PCAP_ISDIGIT() etc.
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 /*

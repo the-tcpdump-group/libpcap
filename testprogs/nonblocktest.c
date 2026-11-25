@@ -38,12 +38,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+// strdup()
 #include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static pcap_t *pd;

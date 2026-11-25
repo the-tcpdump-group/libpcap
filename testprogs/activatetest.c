@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <pcap.h>
 
-#include "portability.h"
+#include "portability-exec.h"
 
 #define CAPTURE_DEVICE "nosuchdevice"
 

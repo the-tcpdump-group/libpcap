@@ -34,16 +34,10 @@
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
 #include <errno.h>
 
 #include "pcap/funcattrs.h"
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 #define MAXIMUM_SNAPLEN		262144

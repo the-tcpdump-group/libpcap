@@ -34,7 +34,6 @@
 #include "rpcapd.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "fmtutils.h"
-#include "portability.h"
 #include "fileconf.h"
 #include "log.h"
 

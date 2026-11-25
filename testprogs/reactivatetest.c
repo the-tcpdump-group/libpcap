@@ -32,7 +32,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <pcap.h>
 #include <stdlib.h>
 
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 int

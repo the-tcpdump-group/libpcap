@@ -13,14 +13,8 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
 #include "pcap/funcattrs.h"
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static const char *program_name;

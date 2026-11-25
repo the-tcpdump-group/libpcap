@@ -21,12 +21,10 @@
 // read() and close()
 #ifdef _WIN32
   #include "unix.h"
-#else
-  #include <unistd.h>
 #endif
 
 #include "test-util.h"
-#include "portability.h"
+#include "portability-exec.h"
 #include "extract.h"
 
 /*

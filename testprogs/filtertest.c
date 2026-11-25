@@ -34,13 +34,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
 #include <errno.h>
 #ifdef _WIN32
   #include <winsock2.h>
@@ -52,7 +45,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <sys/types.h>
 
 #include "pcap/funcattrs.h"
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 #define MAXIMUM_SNAPLEN		262144

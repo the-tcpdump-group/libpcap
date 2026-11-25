@@ -35,7 +35,7 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include <pcap.h>
 
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static const char *program_name;

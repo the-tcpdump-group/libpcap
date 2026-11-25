@@ -12,7 +12,6 @@
   #include <netinet/in.h>
   #include <arpa/inet.h>
   #include <netdb.h>
-  #include <unistd.h>
 
   // Different OSes define ETHER_ADDR_LEN in different headers, if at all, so
   // it would take an amount of conditionals similar to that in nametoaddr.c
@@ -41,7 +40,7 @@
 
 static int ifprint(pcap_if_t *d);
 
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 #ifdef _WIN32

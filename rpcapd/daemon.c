@@ -58,6 +58,7 @@
 
 #include "fmtutils.h"
 #include "sockutils.h"		// for socket calls
+// pcapint_strlcpy()
 #include "portability.h"
 #include "rpcap-protocol.h"
 #include "daemon.h"

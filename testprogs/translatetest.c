@@ -7,12 +7,6 @@
 #include <string.h>
 #include <errno.h>
 
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
-
 #include "pcap/pcap.h"
 // pcap_nametoeproto(), pcap_nametollc() and pcapint_xdtoi()
 #include "pcap/namedb.h"
@@ -21,7 +15,7 @@
 // pcapint_parsesrcstr_ex() and pcapint_createsrcstr_ex()
 #include "pcap-int.h"
 #include "pcap-util.h" // PCAP_BSWAP_16() etc.
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static const char *program_name;

@@ -255,6 +255,7 @@ You can get around this by installing GCC.
 	pcap-filter.manmisc.in   - manual entry for filter syntax
 	pcap-linktype.manmisc.in - manual entry for link-layer header types
 	pflog.h		    - header for DLT_PFLOG handling in filter code
+	portability-exec.h  - Portability declarations/definitions for executables
 	portability.h	    - Portability declarations/definitions
 	ppp.h		    - Point to Point Protocol definitions
 	rpcap-protocol.c    - RPCAP client/server common routines

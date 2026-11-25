@@ -32,11 +32,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-  #include "getopt.h"
-#else
-  #include <unistd.h>
-#endif
 #include <errno.h>
 #ifndef _WIN32
   #include <signal.h>
@@ -47,7 +42,9 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+// strdup()
 #include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 static const char *program_name;

@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
+// pcapint_strlcat(), pcapint_strlcpy(), pcapint_strtok_r()
 #include "portability.h"
 #include "pcap-int.h"
 #include "rpcapd.h"

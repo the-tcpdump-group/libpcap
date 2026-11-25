@@ -8,14 +8,13 @@
   #include <ws2tcpip.h>
   #include <windows.h>
 #else
-  #include <unistd.h>
   #include <sys/resource.h>
 #endif
 
 #include <pcap.h>
 
 #include "varattrs.h"
-#include "portability.h"
+#include "portability-exec.h"
 #include "test-util.h"
 
 /* For Solaris before 11. */

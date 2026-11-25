@@ -139,6 +139,7 @@ HDR = $(PUBHDR) \
 	pcap-usb-linux-common.h \
 	pcap-util.h \
 	pflog.h \
+	portability-exec.h \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \

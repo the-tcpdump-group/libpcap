@@ -45,7 +45,9 @@
 #include "fmtutils.h"
 #include "sockutils.h"		// for socket calls
 #include "varattrs.h"		// for _U_
+// pcapint_strlcpy(), strdup(), pcapint_strtok_r()
 #include "portability.h"
+#include "portability-exec.h"
 #include "rpcapd.h"
 #include "config_params.h"	// configuration file parameters
 #include "fileconf.h"		// for the configuration file management
@@ -60,10 +62,8 @@
 #ifdef _WIN32
   #include <process.h>		// for thread stuff
   #include "win32-svc.h"	// for Win32 service stuff
-  #include "getopt.h"		// for getopt()-for-Windows
 #else
   #include <fcntl.h>		// for open()
-  #include <unistd.h>		// for exit()
   #include <sys/wait.h>		// waitpid()
 #endif
 
