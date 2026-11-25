@@ -30,6 +30,10 @@ if [ -n "$TARGET" ] && [ "$CMAKE" != no ]; then
     echo "Error: this script does not implement cross-compiling with CMake." >&2
     exit 1
 fi
+if ! command -v "${CC:?}" >/dev/null 2>&1; then
+    echo "Error: CC='$CC' cannot be used" >&2
+    return 1
+fi
 
 . ./build_common.sh
 # Install directory prefix
