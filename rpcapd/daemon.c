@@ -226,6 +226,7 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 	int authenticated = 0;			// 1 if the client has successfully authenticated
 	char source[PCAP_BUF_SIZE+1];		// keeps the string that contains the interface to open
 	int got_source = 0;			// 1 if we've gotten the source from an open request
+	source[0] = '\0';
 #ifndef _WIN32
 	struct sigaction action;
 #endif
@@ -870,7 +871,18 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 					// been logged, so just give up.
 					goto end;
 				}
-				got_source = 1;
+				if (retval == 0)
+				{
+					got_source = 1;
+				}
+				else
+				{
+					// Non-fatal error; do not treat an
+					// uninitialized or rejected source as
+					// valid for subsequent STARTCAP_REQ.
+					got_source = 0;
+					source[0] = '\0';
+				}
 				break;
 			}
 
@@ -888,6 +900,24 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 					{
 						// Fatal error; log an
 						// error and  give up.
+						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+						goto end;
+					}
+					if (rpcapd_discard(pars.sockctrl, pars.ssl, plen) == -1)
+					{
+						goto end;
+					}
+					break;
+				}
+
+				if (session != NULL)
+				{
+					if (rpcap_senderror(pars.sockctrl, pars.ssl,
+					    header.ver,
+					    PCAP_ERR_STARTCAPTURE,
+					    "A capture is already in progress",
+					    errbuf) == -1)
+					{
 						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 						goto end;
 					}
@@ -931,6 +961,10 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 					{
 						// That failed; log a message and give up.
 						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+						goto end;
+					}
+					if (rpcapd_discard(pars.sockctrl, pars.ssl, plen) == -1)
+					{
 						goto end;
 					}
 				}
@@ -992,11 +1026,19 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 				}
 				else
 				{
-					rpcap_senderror(pars.sockctrl, pars.ssl,
+					if (rpcap_senderror(pars.sockctrl, pars.ssl,
 					    header.ver,
 					    PCAP_ERR_ENDCAPTURE,
 					    "Device not opened. Cannot close the capture",
-					    errbuf);
+					    errbuf) == -1)
+					{
+						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+						goto end;
+					}
+					if (rpcapd_discard(pars.sockctrl, pars.ssl, plen) == -1)
+					{
+						goto end;
+					}
 				}
 				break;
 			}
@@ -1937,7 +1979,7 @@ error:
 	{
 		return -1;
 	}
-	return 0;
+	return -2;
 }
 
 /*
