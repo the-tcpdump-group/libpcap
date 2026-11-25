@@ -175,21 +175,25 @@ if [ -n "$TARGET" ]; then
     echo '### Not running any tests for a cross-compile build. ###'
 elif [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/versiontest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=testprogs/findalldevstest.supp} testprogs/findalldevstest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=testprogs/findalldevstest.supp} testprogs/findalldevstest-perf
+    run_after_echo $VALGRIND_CMD testprogs/opendeadtest EN10MB
     FILTERTEST_BIN="$VALGRIND_CMD testprogs/filtertest"
     export FILTERTEST_BIN
     TRANSLATETEST_BIN="$VALGRIND_CMD testprogs/translatetest"
     export TRANSLATETEST_BIN
     LANG=C run_after_echo "$MAKE_BIN" -s check
-    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=testprogs/findalldevstest.supp} testprogs/findalldevstest
     [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
     run_after_echo $VALGRIND_CMD run/versiontest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=../testprogs/findalldevstest.supp} run/findalldevstest
+    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=../testprogs/findalldevstest.supp} run/findalldevstest-perf
+    run_after_echo $VALGRIND_CMD run/opendeadtest EN10MB
     FILTERTEST_BIN="$VALGRIND_CMD run/filtertest"
     export FILTERTEST_BIN
     TRANSLATETEST_BIN="$VALGRIND_CMD run/translatetest"
     export TRANSLATETEST_BIN
     LANG=C run_after_echo "$MAKE_BIN" -s check
-    run_after_echo $VALGRIND_CMD ${VALGRIND_CMD:+--suppressions=../testprogs/findalldevstest.supp} run/findalldevstest
 fi
 handle_matrix_debug
 if [ "$DELETE_PREFIX" = yes ]; then

@@ -765,7 +765,6 @@ distclean: clean
 
 check: testprogs
 	LANG=C $(PERL) $(srcdir)/testprogs/TESTrun
-	testprogs/opendeadtest EN10MB
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
