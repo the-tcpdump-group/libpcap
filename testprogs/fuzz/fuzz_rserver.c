@@ -6,6 +6,7 @@
 
 #include <pcap/pcap.h>
 #include "rpcapd/daemon.h"
+#include "portability-exec.h"
 
 FILE * outfile = NULL;
 
@@ -41,7 +42,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 
     //initialization
     if (outfile == NULL) {
-        fuzz_openFile("/dev/null");
+        fuzz_openFile(DEV_NULL);
     }
 
     sock_initfuzz(Data, Size);

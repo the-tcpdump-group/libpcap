@@ -39,4 +39,10 @@
   #define EX_CONFIG      78
 #endif // HAVE_SYSEXITS_H
 
+#ifdef _WIN32
+  #define DEV_NULL "NUL"
+#else
+  #define DEV_NULL "/dev/null"
+#endif
+
 #endif // PORTABILITY_EXEC_H

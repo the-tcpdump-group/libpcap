@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <pcap/pcap.h>
+#include "portability-exec.h"
 
 FILE * outfile = NULL;
 
@@ -48,7 +49,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
 
     //initialize output file
     if (outfile == NULL) {
-        outfile = fopen("/dev/null", "w");
+        outfile = fopen(DEV_NULL, "w");
         if (outfile == NULL) {
             return 0;
         }
