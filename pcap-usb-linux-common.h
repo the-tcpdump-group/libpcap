@@ -24,6 +24,7 @@
  */
 
 #include <limits.h>
+#include <string.h>
 
 /*
  * Return the sum of the two u_int arguments if that sum fits in a u_int,
@@ -69,9 +70,9 @@ static inline u_int
 incoming_isochronous_transfer_completed_len(struct pcap_pkthdr *phdr,
     const u_char *bp)
 {
-	const pcap_usb_header_mmapped *hdr;
+	pcap_usb_header_mmapped hdr;
 	u_int bytes_left;
-	const usb_isodesc *descs;
+	const u_char *desc_p;
 	u_int pre_truncation_data_len;
 
 	/*
@@ -81,8 +82,8 @@ incoming_isochronous_transfer_completed_len(struct pcap_pkthdr *phdr,
 	bytes_left = phdr->caplen;
 	bytes_left -= sizeof (pcap_usb_header_mmapped);
 
-	hdr = (const pcap_usb_header_mmapped *) bp;
-	descs = (const usb_isodesc *) (bp + sizeof(pcap_usb_header_mmapped));
+	memcpy(&hdr, bp, sizeof(hdr));
+	desc_p = bp + sizeof(pcap_usb_header_mmapped);
 
 	/*
 	 * Find the end of the last chunk of data in the buffer
@@ -94,11 +95,14 @@ incoming_isochronous_transfer_completed_len(struct pcap_pkthdr *phdr,
 	 */
 	pre_truncation_data_len = 0;
 	for (uint32_t desc = 0;
-	    desc < hdr->ndesc && bytes_left >= sizeof (usb_isodesc);
-	    desc++, bytes_left -= sizeof (usb_isodesc)) {
+	    desc < hdr.ndesc && bytes_left >= sizeof (usb_isodesc);
+	    desc++, bytes_left -= sizeof (usb_isodesc),
+	    desc_p += sizeof (usb_isodesc)) {
+		usb_isodesc cur_desc;
 		u_int desc_end;
 
-		if (descs[desc].len != 0) {
+		memcpy(&cur_desc, desc_p, sizeof(cur_desc));
+		if (cur_desc.len != 0) {
 			/*
 			 * Compute the end offset of the data
 			 * for this descriptor, i.e. the offset
@@ -106,8 +110,8 @@ incoming_isochronous_transfer_completed_len(struct pcap_pkthdr *phdr,
 			 * the sum at UINT_MAX, so that it fits
 			 * in a u_int.
 			 */
-			desc_end = u_int_sum(descs[desc].offset,
-			    descs[desc].len);
+			desc_end = u_int_sum(cur_desc.offset,
+			    cur_desc.len);
 			if (desc_end > pre_truncation_data_len)
 				pre_truncation_data_len = desc_end;
 		}
@@ -123,5 +127,5 @@ incoming_isochronous_transfer_completed_len(struct pcap_pkthdr *phdr,
 	 * in bytes, of the descriptors fits in a 32-bit
 	 * integer.
 	 */
-	return (u_int_sum(iso_pseudo_header_len(hdr), pre_truncation_data_len));
+	return (u_int_sum(iso_pseudo_header_len(&hdr), pre_truncation_data_len));
 }

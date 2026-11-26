@@ -199,6 +199,7 @@ typedef enum {
 struct pcap_ng_if {
 	uint32_t snaplen;		/* snapshot length */
 	uint64_t tsresol;		/* time stamp resolution */
+	uint8_t tsresol_shift;		/* shift count for power-of-2 tsresol */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	uint64_t scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
 	int64_t tsoffset;		/* time stamp offset */
@@ -281,7 +282,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	struct pcap_ng_sf *ps;
 	int status;
 	struct block_header bhdr;
-	struct block_trailer *btrlr;
+	struct block_trailer btrlr;
 	u_char *bdata;
 	size_t data_remaining;
 
@@ -352,21 +353,21 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	/*
 	 * Get the block size from the trailer.
 	 */
-	btrlr = (struct block_trailer *)(bdata + data_remaining - sizeof (struct block_trailer));
+	memcpy(&btrlr, bdata + data_remaining - sizeof (btrlr), sizeof (btrlr));
 	if (p->swapped)
-		btrlr->total_length = PCAP_BSWAP_32(btrlr->total_length);
+		btrlr.total_length = PCAP_BSWAP_32(btrlr.total_length);
 
 	/*
 	 * Is the total length from the trailer the same as the total
 	 * length from the header?
 	 */
-	if (bhdr.total_length != btrlr->total_length) {
+	if (bhdr.total_length != btrlr.total_length) {
 		/*
 		 * No.
 		 */
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block total length in header %u and trailer %u don't match",
-		    bhdr.total_length, btrlr->total_length);
+		    bhdr.total_length, btrlr.total_length);
 		return (-1);
 	}
 
@@ -451,9 +452,30 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 	return (optvalue);
 }
 
+/*
+ * Scale a fractional timestamp `frac` (strictly < 2^shift) from binary
+ * resolution 2^-shift to user resolution `user_tsresol` (<= 10^9 < 2^30),
+ * computing floor((frac * user_tsresol) / 2^shift) without 64-bit overflow.
+ */
+static uint64_t
+scale_binary_fraction(uint64_t frac, uint64_t user_tsresol, uint8_t shift)
+{
+	uint64_t hi, lo, p_lo, p_hi;
+
+	if (shift == 0)
+		return (0);
+	hi = frac >> 32;
+	lo = frac & 0xFFFFFFFFU;
+	p_lo = lo * user_tsresol;
+	p_hi = hi * user_tsresol + (p_lo >> 32);
+	if (shift < 32)
+		return ((p_hi << (32 - shift)) | ((p_lo & 0xFFFFFFFFU) >> shift));
+	return (p_hi >> (shift - 32));
+}
+
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
-    int64_t *tsoffset, int *is_binary, char *errbuf)
+    uint8_t *tsresol_shift_out, int64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
 	void *optvalue;
@@ -529,6 +551,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
 					return (-1);
 				}
 				*is_binary = 1;
+				*tsresol_shift_out = tsresol_shift;
 				*tsresol = ((uint64_t)1) << tsresol_shift;
 			} else {
 				/*
@@ -590,14 +613,20 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	bpf_u_int32 new_ifcount;
 	bpf_u_int32 new_if_index;
 	uint64_t tsresol;
+	uint8_t tsresol_shift;
 	int64_t tsoffset;
 	int is_binary;
 
 	ps = p->priv;
 
 	/*
-	 * Count this interface.
+	 * Count this interface, checking for 32-bit overflow.
 	 */
+	if (ps->ifcount == UINT32_MAX) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "more than %u interfaces in the file", UINT32_MAX);
+		return (0);
+	}
 	new_ifcount = ps->ifcount + 1;
 
 	/*
@@ -642,50 +671,23 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 			 *
 			 * Check for overflow if we double it.
 			 */
-			if (ps->ifaces_size * 2 < ps->ifaces_size) {
-				/*
-				 * The maximum number of interfaces before
-				 * ps->ifaces_size overflows is the largest
-				 * possible 32-bit power of 2, as we do
-				 * size doubling.
-				 */
+			if (ps->ifaces_size > UINT32_MAX / 2) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "more than %u interfaces in the file",
 				    0x80000000U);
 				return (0);
 			}
-
-			/*
-			 * ps->ifaces_size * 2 doesn't overflow, so it's
-			 * safe to multiply.
-			 */
 			new_ifaces_size = ps->ifaces_size * 2;
 
-			/*
-			 * Now make sure that's not so big that it overflows
-			 * if we multiply by sizeof (struct pcap_ng_if).
-			 *
-			 * That can happen on 32-bit platforms, with a 32-bit
-			 * size_t; it shouldn't happen on 64-bit platforms,
-			 * with a 64-bit size_t, as new_ifaces_size is
-			 * 32 bits.
-			 */
-			if (new_ifaces_size * sizeof (struct pcap_ng_if) < new_ifaces_size) {
-				/*
-				 * As this fails only with 32-bit size_t,
-				 * the multiplication was 32x32->32, and
-				 * the largest 32-bit value that can safely
-				 * be multiplied by sizeof (struct pcap_ng_if)
-				 * without overflow is the largest 32-bit
-				 * (unsigned) value divided by
-				 * sizeof (struct pcap_ng_if).
-				 */
+#if SIZE_MAX <= UINT32_MAX
+			if ((size_t)new_ifaces_size > SIZE_MAX / sizeof (struct pcap_ng_if)) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "more than %u interfaces in the file",
-				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
+				    "more than %zu interfaces in the file",
+				    SIZE_MAX / sizeof (struct pcap_ng_if));
 				return (0);
 			}
-			new_ifaces = realloc(ps->ifaces, new_ifaces_size * sizeof (struct pcap_ng_if));
+#endif
+			new_ifaces = realloc(ps->ifaces, (size_t)new_ifaces_size * sizeof (struct pcap_ng_if));
 		}
 		if (new_ifaces == NULL) {
 			/*
@@ -707,6 +709,7 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	 * Set the default time stamp resolution and offset.
 	 */
 	tsresol = 1000000;	/* microsecond resolution */
+	tsresol_shift = 0;
 	is_binary = 0;		/* which is a power of 10 */
 	tsoffset = 0;		/* absolute timestamps */
 
@@ -714,11 +717,12 @@ add_interface(pcap_t *p, struct interface_description_block *idbp,
 	 * Now look for various time stamp options, so we know
 	 * how to interpret the time stamps for this interface.
 	 */
-	if (process_idb_options(p, cursor, &tsresol, &tsoffset, &is_binary,
-	    errbuf) == -1)
+	if (process_idb_options(p, cursor, &tsresol, &tsresol_shift, &tsoffset,
+	    &is_binary, errbuf) == -1)
 		return (0);
 
 	ps->ifaces[new_if_index].tsresol = tsresol;
+	ps->ifaces[new_if_index].tsresol_shift = tsresol_shift;
 	ps->ifaces[new_if_index].tsoffset = tsoffset;
 
 	/*
@@ -876,6 +880,13 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		    total_length,
 		    BT_SHB_INSANE_MAX);
 
+		*err = 1;
+		return (NULL);
+	}
+	if ((total_length % 4) != 0) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Section Header Block in pcapng dump file has a length of %u that is not a multiple of 4",
+		    total_length);
 		*err = 1;
 		return (NULL);
 	}
@@ -1255,7 +1266,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * XXX - just discard packets from those
 			 * interfaces?
 			 */
-			if (p->linktype != idbp->linktype) {
+			if (p->linktype != linktype_to_dlt(idbp->linktype)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a type %u different from the type of the first interface",
 				    idbp->linktype);
@@ -1442,8 +1453,8 @@ found:
 		 * a division runs the risk of overflowing, and involves
 		 * two non-simple arithmetic operations.
 		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac = scale_binary_fraction(frac, ps->user_tsresol,
+		    ps->ifaces[interface_id].tsresol_shift);
 		break;
 
 	case SCALE_DOWN_DEC:
@@ -1489,8 +1500,8 @@ found:
 		 * a division runs the risk of overflowing, and involves
 		 * two non-simple arithmetic operations.
 		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
+		frac = scale_binary_fraction(frac, ps->user_tsresol,
+		    ps->ifaces[interface_id].tsresol_shift);
 		break;
 	}
 #ifdef _WIN32
