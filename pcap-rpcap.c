@@ -3658,6 +3658,15 @@ static void rpcap_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen, char *r
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 
+	if (remote_errbuf == NULL)
+	{
+		/*
+		 * Caller does not want the error message; discard it.
+		 */
+		(void)rpcap_discard(sockctrl, ssl, plen, NULL);
+		return;
+	}
+
 	if (plen >= PCAP_ERRBUF_SIZE)
 	{
 		/*
@@ -3692,7 +3701,7 @@ static void rpcap_msg_err(PCAP_SOCKET sockctrl, SSL *ssl, uint32_t plen, char *r
 		/*
 		 * Throw away the rest.
 		 */
-		(void)rpcap_discard(sockctrl, ssl, plen - (PCAP_ERRBUF_SIZE - 1), remote_errbuf);
+		(void)rpcap_discard(sockctrl, ssl, plen - (PCAP_ERRBUF_SIZE - 1), errbuf);
 	}
 	else if (plen == 0)
 	{
