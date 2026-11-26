@@ -49,6 +49,8 @@
 
 #ifdef _WIN32
 #include "charconv.h"		/* for utf_8_to_acp_truncated() */
+#else
+#include <poll.h>
 #endif
 
 #ifdef HAVE_OPENSSL
@@ -414,17 +416,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	int retval = 0;				/* generic return value */
 	int msglen;
 
-	/* Structures needed for the select() call */
-	struct timeval tv;			/* maximum time the select() can block waiting for data */
-	fd_set rfds;				/* set of socket descriptors we have to check */
-
-	/*
-	 * Define the packet buffer timeout, to be used in the select()
-	 * 'timeout', in pcap_t, is in milliseconds; we have to convert it into sec and microsec
-	 */
-	tv.tv_sec = p->opt.timeout / 1000;
-	tv.tv_usec = (suseconds_t)((p->opt.timeout - tv.tv_sec * 1000) * 1000);
-
 #ifdef HAVE_OPENSSL
 	/* Check if we still have bytes available in the last decoded TLS record.
 	 * If that's the case, we know SSL_read will not block. */
@@ -432,19 +423,36 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 #endif
 	if (! retval)
 	{
-		/* Watch out sockdata to see if it has input */
-		FD_ZERO(&rfds);
-
-		/*
-		 * 'fp->rmt_sockdata' has always to be set before calling the select(),
-		 * since it is cleared by the select()
-		 */
-		FD_SET(pr->rmt_sockdata, &rfds);
-
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 		retval = 1;
-#else
+#elif defined(_WIN32)
+		/* Structures needed for the select() call */
+		struct timeval tv;
+		fd_set rfds;
+
+		/*
+		 * Define the packet buffer timeout, to be used in the select()
+		 * 'timeout', in pcap_t, is in milliseconds; convert to sec and usec.
+		 */
+		tv.tv_sec = p->opt.timeout / 1000;
+		tv.tv_usec = (suseconds_t)((p->opt.timeout - tv.tv_sec * 1000) * 1000);
+
+		FD_ZERO(&rfds);
+		FD_SET(pr->rmt_sockdata, &rfds);
 		retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
+#else
+		/*
+		 * Use poll() on POSIX platforms to avoid FD_SET() stack buffer
+		 * overflow when the socket descriptor is >= FD_SETSIZE.
+		 */
+		struct pollfd pfd;
+		int timeout_ms = p->opt.timeout < 0 ? 0 : p->opt.timeout;
+
+		pfd.fd = pr->rmt_sockdata;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+
+		retval = poll(&pfd, 1, timeout_ms);
 #endif
 
 		if (retval == -1)
@@ -455,9 +463,12 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 				/* Interrupted. */
 				return 0;
 			}
-#endif
+			sock_geterrmsg(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "poll() failed");
+#else
 			sock_geterrmsg(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "select() failed");
+#endif
 			return -1;
 		}
 	}
