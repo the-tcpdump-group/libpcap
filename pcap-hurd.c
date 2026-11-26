@@ -20,6 +20,7 @@
 #include <net/if_ether.h>
 
 #include "pcap-int.h"
+#include "bpf_opcodes.h"
 
 struct pcap_hurd {
 	struct pcap_stat stat;
@@ -30,8 +31,8 @@ struct pcap_hurd {
 
 /* Accept all packets. */
 static struct bpf_insn filter[] = {
-	{ NETF_IN | NETF_OUT | NETF_BPF, 0, 0, 0 },
-	{ BPF_RET | BPF_K, 0, 0, MAXIMUM_SNAPLEN },
+	BPF_STMT(NETF_IN | NETF_OUT | NETF_BPF, 0),   // a Mach preamble
+	BPF_STMT(OPCODE_RET(BPF_K), MAXIMUM_SNAPLEN), // a BPF instruction
 };
 
 /* device_set_filter calls net_set_filter which uses CSPF_BYTES which counts in

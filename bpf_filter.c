@@ -45,6 +45,7 @@
 #include "extract.h"
 #include "diag-control.h"
 #include "gencode.h"
+#include "bpf_opcodes.h"
 
 #ifndef _WIN32
 #include <sys/param.h>
@@ -149,13 +150,13 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 
 		default:
 			return 0;
-		case BPF_RET|BPF_K:
+		case OPCODE_RET(BPF_K):
 			return pc->k;
 
-		case BPF_RET|BPF_A:
+		case OPCODE_RET(BPF_A):
 			return A;
 
-		case BPF_LD|BPF_W|BPF_ABS:
+		case OPCODE_LOAD(BPF_W, BPF_ABS):
 			k = pc->k;
 			if (k > buflen || sizeof(int32_t) > buflen - k) {
 				return 0;
@@ -163,7 +164,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 			A = EXTRACT_BE_U_4(&p[k]);
 			continue;
 
-		case BPF_LD|BPF_H|BPF_ABS:
+		case OPCODE_LOAD(BPF_H, BPF_ABS):
 			k = pc->k;
 			if (k > buflen || sizeof(int16_t) > buflen - k) {
 				return 0;
@@ -171,7 +172,7 @@ pcapint_filter_with_aux_data(const struct bpf_insn *pc, const u_int proglen,
 			A = EXTRACT_BE_U_2(&p[k]);
 			continue;
 
-		case BPF_LD|BPF_B|BPF_ABS:
+		case OPCODE_LOAD(BPF_B, BPF_ABS):
 			/*
 			 * Yes, we know, this switch doesn't do
 			 * anything unless we're building for
@@ -205,15 +206,15 @@ DIAG_OFF_DEFAULT_ONLY_SWITCH
 DIAG_ON_DEFAULT_ONLY_SWITCH
 			continue;
 
-		case BPF_LD|BPF_W|BPF_LEN:
+		case OPCODE_LOAD(BPF_W, BPF_LEN):
 			A = wirelen;
 			continue;
 
-		case BPF_LDX|BPF_W|BPF_LEN:
+		case OPCODE_LOADX(BPF_W, BPF_LEN):
 			X = wirelen;
 			continue;
 
-		case BPF_LD|BPF_W|BPF_IND:
+		case OPCODE_LOAD(BPF_W, BPF_IND):
 			k = X + pc->k;
 			if (pc->k > buflen || X > buflen - pc->k ||
 			    sizeof(int32_t) > buflen - k) {
@@ -222,7 +223,7 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			A = EXTRACT_BE_U_4(&p[k]);
 			continue;
 
-		case BPF_LD|BPF_H|BPF_IND:
+		case OPCODE_LOAD(BPF_H, BPF_IND):
 			k = X + pc->k;
 			if (X > buflen || pc->k > buflen - X ||
 			    sizeof(int16_t) > buflen - k) {
@@ -231,7 +232,7 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			A = EXTRACT_BE_U_2(&p[k]);
 			continue;
 
-		case BPF_LD|BPF_B|BPF_IND:
+		case OPCODE_LOAD(BPF_B, BPF_IND):
 			k = X + pc->k;
 			if (pc->k >= buflen || X >= buflen - pc->k) {
 				return 0;
@@ -239,7 +240,7 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			A = p[k];
 			continue;
 
-		case BPF_LDX|BPF_MSH|BPF_B:
+		case OPCODE_LOADX(BPF_B, BPF_MSH):
 			k = pc->k;
 			if (k >= buflen) {
 				return 0;
@@ -247,39 +248,39 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			X = (p[pc->k] & 0xf) << 2;
 			continue;
 
-		case BPF_LD|BPF_W|BPF_IMM:
+		case OPCODE_LOAD(BPF_W, BPF_IMM):
 			A = pc->k;
 			continue;
 
-		case BPF_LDX|BPF_W|BPF_IMM:
+		case OPCODE_LOADX(BPF_W, BPF_IMM):
 			X = pc->k;
 			continue;
 
-		case BPF_LD|BPF_W|BPF_MEM:
+		case OPCODE_LOAD(BPF_W, BPF_MEM):
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			A = mem[pc->k];
 			continue;
 
-		case BPF_LDX|BPF_W|BPF_MEM:
+		case OPCODE_LOADX(BPF_W, BPF_MEM):
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			X = mem[pc->k];
 			continue;
 
-		case BPF_ST:
+		case OPCODE_ST_M:
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			mem[pc->k] = A;
 			continue;
 
-		case BPF_STX:
+		case OPCODE_STX_M:
 			if (pc->k >= BPF_MEMWORDS)
 				return 0;
 			mem[pc->k] = X;
 			continue;
 
-		case BPF_JMP|BPF_JA:
+		case OPCODE_JA:
 			/*
 			 * The pointer (pc) decrements and increments in units
 			 * of sizeof(struct bpf_insn) == 8 bytes.  The number
@@ -332,140 +333,140 @@ DIAG_ON_DEFAULT_ONLY_SWITCH
 			pc += (bpf_int32)pc->k;
 			continue;
 
-		case BPF_JMP|BPF_JGT|BPF_K:
+		case OPCODE_BRANCH_K(BPF_JGT):
 			pc += (A > pc->k) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JGE|BPF_K:
+		case OPCODE_BRANCH_K(BPF_JGE):
 			pc += (A >= pc->k) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JEQ|BPF_K:
+		case OPCODE_BRANCH_K(BPF_JEQ):
 			pc += (A == pc->k) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JSET|BPF_K:
+		case OPCODE_BRANCH_K(BPF_JSET):
 			pc += (A & pc->k) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JGT|BPF_X:
+		case OPCODE_BRANCH_X(BPF_JGT):
 			pc += (A > X) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JGE|BPF_X:
+		case OPCODE_BRANCH_X(BPF_JGE):
 			pc += (A >= X) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JEQ|BPF_X:
+		case OPCODE_BRANCH_X(BPF_JEQ):
 			pc += (A == X) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_JMP|BPF_JSET|BPF_X:
+		case OPCODE_BRANCH_X(BPF_JSET):
 			pc += (A & X) ? pc->jt : pc->jf;
 			continue;
 
-		case BPF_ALU|BPF_ADD|BPF_X:
+		case OPCODE_ALU_X(BPF_ADD):
 			A += X;
 			continue;
 
-		case BPF_ALU|BPF_SUB|BPF_X:
+		case OPCODE_ALU_X(BPF_SUB):
 			A -= X;
 			continue;
 
-		case BPF_ALU|BPF_MUL|BPF_X:
+		case OPCODE_ALU_X(BPF_MUL):
 			A *= X;
 			continue;
 
-		case BPF_ALU|BPF_DIV|BPF_X:
+		case OPCODE_ALU_X(BPF_DIV):
 			if (X == 0)
 				return 0;
 			A /= X;
 			continue;
 
-		case BPF_ALU|BPF_MOD|BPF_X:
+		case OPCODE_ALU_X(BPF_MOD):
 			if (X == 0)
 				return 0;
 			A %= X;
 			continue;
 
-		case BPF_ALU|BPF_AND|BPF_X:
+		case OPCODE_ALU_X(BPF_AND):
 			A &= X;
 			continue;
 
-		case BPF_ALU|BPF_OR|BPF_X:
+		case OPCODE_ALU_X(BPF_OR):
 			A |= X;
 			continue;
 
-		case BPF_ALU|BPF_XOR|BPF_X:
+		case OPCODE_ALU_X(BPF_XOR):
 			A ^= X;
 			continue;
 
-		case BPF_ALU|BPF_LSH|BPF_X:
+		case OPCODE_ALU_X(BPF_LSH):
 			// See the comment in gencode.h.
 			A = UINT32_LSH(A, X);
 			continue;
 
-		case BPF_ALU|BPF_RSH|BPF_X:
+		case OPCODE_ALU_X(BPF_RSH):
 			// See the comment in gencode.h.
 			A = UINT32_RSH(A, X);
 			continue;
 
-		case BPF_ALU|BPF_ADD|BPF_K:
+		case OPCODE_ALU_K(BPF_ADD):
 			A += pc->k;
 			continue;
 
-		case BPF_ALU|BPF_SUB|BPF_K:
+		case OPCODE_ALU_K(BPF_SUB):
 			A -= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_MUL|BPF_K:
+		case OPCODE_ALU_K(BPF_MUL):
 			A *= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_DIV|BPF_K:
+		case OPCODE_ALU_K(BPF_DIV):
 			if (pc->k == 0)
 				return 0;
 			A /= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_MOD|BPF_K:
+		case OPCODE_ALU_K(BPF_MOD):
 			if (pc->k == 0)
 				return 0;
 			A %= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_AND|BPF_K:
+		case OPCODE_ALU_K(BPF_AND):
 			A &= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_OR|BPF_K:
+		case OPCODE_ALU_K(BPF_OR):
 			A |= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_XOR|BPF_K:
+		case OPCODE_ALU_K(BPF_XOR):
 			A ^= pc->k;
 			continue;
 
-		case BPF_ALU|BPF_LSH|BPF_K:
+		case OPCODE_ALU_K(BPF_LSH):
 			// See the comment in gencode.h.
 			A = UINT32_LSH(A, pc->k);
 			continue;
 
-		case BPF_ALU|BPF_RSH|BPF_K:
+		case OPCODE_ALU_K(BPF_RSH):
 			// See the comment in gencode.h.
 			A = UINT32_RSH(A, pc->k);
 			continue;
 
-		case BPF_ALU|BPF_NEG:
+		case OPCODE_NEG:
 			// See the comment in gencode.h.
 			A = UINT_NEG(A);
 			continue;
 
-		case BPF_MISC|BPF_TAX:
+		case OPCODE_MISC(BPF_TAX):
 			X = A;
 			continue;
 
-		case BPF_MISC|BPF_TXA:
+		case OPCODE_MISC(BPF_TXA):
 			A = X;
 			continue;
 		}
@@ -492,64 +493,64 @@ pcapint_valid_insn(const struct bpf_insn *insn)
 	 * the same as in bpf_filter() to make it easier to cross-reference.
 	 */
 	switch (insn->code) {
-	case BPF_RET|BPF_K:
-	case BPF_RET|BPF_A:
-	case BPF_LD|BPF_W|BPF_ABS:
-	case BPF_LD|BPF_H|BPF_ABS:
-	case BPF_LD|BPF_B|BPF_ABS:
-	case BPF_LD|BPF_W|BPF_LEN:
-	case BPF_LDX|BPF_W|BPF_LEN:
-	case BPF_LD|BPF_W|BPF_IND:
-	case BPF_LD|BPF_H|BPF_IND:
-	case BPF_LD|BPF_B|BPF_IND:
-	case BPF_LDX|BPF_MSH|BPF_B:
-	case BPF_LD|BPF_W|BPF_IMM:
-	case BPF_LDX|BPF_W|BPF_IMM:
+	case OPCODE_RET(BPF_K):
+	case OPCODE_RET(BPF_A):
+	case OPCODE_LOAD(BPF_W, BPF_ABS):
+	case OPCODE_LOAD(BPF_H, BPF_ABS):
+	case OPCODE_LOAD(BPF_B, BPF_ABS):
+	case OPCODE_LOAD(BPF_W, BPF_LEN):
+	case OPCODE_LOADX(BPF_W, BPF_LEN):
+	case OPCODE_LOAD(BPF_W, BPF_IND):
+	case OPCODE_LOAD(BPF_H, BPF_IND):
+	case OPCODE_LOAD(BPF_B, BPF_IND):
+	case OPCODE_LOADX(BPF_B, BPF_MSH):
+	case OPCODE_LOAD(BPF_W, BPF_IMM):
+	case OPCODE_LOADX(BPF_W, BPF_IMM):
 		return 1;
-	case BPF_LD|BPF_W|BPF_MEM:
-	case BPF_LDX|BPF_W|BPF_MEM:
-	case BPF_ST:
-	case BPF_STX:
+	case OPCODE_LOAD(BPF_W, BPF_MEM):
+	case OPCODE_LOADX(BPF_W, BPF_MEM):
+	case OPCODE_ST_M:
+	case OPCODE_STX_M:
 		// Reject a non-existent scratch memory register.
 		return insn->k < BPF_MEMWORDS;
-	case BPF_JMP|BPF_JA:
-	case BPF_JMP|BPF_JGT|BPF_K:
-	case BPF_JMP|BPF_JGE|BPF_K:
-	case BPF_JMP|BPF_JEQ|BPF_K:
-	case BPF_JMP|BPF_JSET|BPF_K:
-	case BPF_JMP|BPF_JGT|BPF_X:
-	case BPF_JMP|BPF_JGE|BPF_X:
-	case BPF_JMP|BPF_JEQ|BPF_X:
-	case BPF_JMP|BPF_JSET|BPF_X:
-	case BPF_ALU|BPF_ADD|BPF_X:
-	case BPF_ALU|BPF_SUB|BPF_X:
-	case BPF_ALU|BPF_MUL|BPF_X:
-	case BPF_ALU|BPF_DIV|BPF_X:
-	case BPF_ALU|BPF_MOD|BPF_X:
-	case BPF_ALU|BPF_AND|BPF_X:
-	case BPF_ALU|BPF_OR|BPF_X:
-	case BPF_ALU|BPF_XOR|BPF_X:
-	case BPF_ALU|BPF_LSH|BPF_X:
-	case BPF_ALU|BPF_RSH|BPF_X:
-	case BPF_ALU|BPF_ADD|BPF_K:
-	case BPF_ALU|BPF_SUB|BPF_K:
-	case BPF_ALU|BPF_MUL|BPF_K:
+	case OPCODE_JA:
+	case OPCODE_BRANCH_K(BPF_JGT):
+	case OPCODE_BRANCH_K(BPF_JGE):
+	case OPCODE_BRANCH_K(BPF_JEQ):
+	case OPCODE_BRANCH_K(BPF_JSET):
+	case OPCODE_BRANCH_X(BPF_JGT):
+	case OPCODE_BRANCH_X(BPF_JGE):
+	case OPCODE_BRANCH_X(BPF_JEQ):
+	case OPCODE_BRANCH_X(BPF_JSET):
+	case OPCODE_ALU_X(BPF_ADD):
+	case OPCODE_ALU_X(BPF_SUB):
+	case OPCODE_ALU_X(BPF_MUL):
+	case OPCODE_ALU_X(BPF_DIV):
+	case OPCODE_ALU_X(BPF_MOD):
+	case OPCODE_ALU_X(BPF_AND):
+	case OPCODE_ALU_X(BPF_OR):
+	case OPCODE_ALU_X(BPF_XOR):
+	case OPCODE_ALU_X(BPF_LSH):
+	case OPCODE_ALU_X(BPF_RSH):
+	case OPCODE_ALU_K(BPF_ADD):
+	case OPCODE_ALU_K(BPF_SUB):
+	case OPCODE_ALU_K(BPF_MUL):
 		return 1;
-	case BPF_ALU|BPF_DIV|BPF_K:
-	case BPF_ALU|BPF_MOD|BPF_K:
+	case OPCODE_ALU_K(BPF_DIV):
+	case OPCODE_ALU_K(BPF_MOD):
 		// Reject a constant division or modulo by 0.
 		return insn->k != 0;
-	case BPF_ALU|BPF_AND|BPF_K:
-	case BPF_ALU|BPF_OR|BPF_K:
-	case BPF_ALU|BPF_XOR|BPF_K:
+	case OPCODE_ALU_K(BPF_AND):
+	case OPCODE_ALU_K(BPF_OR):
+	case OPCODE_ALU_K(BPF_XOR):
 		return 1;
-	case BPF_ALU|BPF_LSH|BPF_K:
-	case BPF_ALU|BPF_RSH|BPF_K:
+	case OPCODE_ALU_K(BPF_LSH):
+	case OPCODE_ALU_K(BPF_RSH):
 		// Reject a constant shift by more than 31 bits.
 		return insn->k < 32;
-	case BPF_ALU|BPF_NEG:
-	case BPF_MISC|BPF_TAX:
-	case BPF_MISC|BPF_TXA:
+	case OPCODE_NEG:
+	case OPCODE_MISC(BPF_TAX):
+	case OPCODE_MISC(BPF_TXA):
 		return 1;
 	}
 	// Reject an invalid opcode.

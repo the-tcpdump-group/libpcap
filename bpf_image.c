@@ -43,6 +43,7 @@
 #include "pcap-int.h"
 
 #include "thread-local.h"
+#include "bpf_opcodes.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -142,276 +143,276 @@ bpf_image(const struct bpf_insn *p, int n)
 		operand = operand_buf;
 		break;
 
-	case BPF_RET|BPF_K:
+	case OPCODE_RET(BPF_K):
 		op = "ret";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_RET|BPF_A:
+	case OPCODE_RET(BPF_A):
 		op = "ret";
 		operand = "";
 		break;
 
-	case BPF_LD|BPF_W|BPF_ABS:
+	case OPCODE_LOAD(BPF_W, BPF_ABS):
 		op = "ld";
 		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_H|BPF_ABS:
+	case OPCODE_LOAD(BPF_H, BPF_ABS):
 		op = "ldh";
 		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_B|BPF_ABS:
+	case OPCODE_LOAD(BPF_B, BPF_ABS):
 		op = "ldb";
 		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_W|BPF_LEN:
+	case OPCODE_LOAD(BPF_W, BPF_LEN):
 		op = "ld";
 		operand = "#pktlen";
 		break;
 
-	case BPF_LDX|BPF_W|BPF_LEN:
+	case OPCODE_LOADX(BPF_W, BPF_LEN):
 		op = "ldx";
 		operand = "#pktlen";
 		break;
 
-	case BPF_LD|BPF_W|BPF_IND:
+	case OPCODE_LOAD(BPF_W, BPF_IND):
 		op = "ld";
 		(void)snprintf(operand_buf, sizeof operand_buf, "[x + %d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_H|BPF_IND:
+	case OPCODE_LOAD(BPF_H, BPF_IND):
 		op = "ldh";
 		(void)snprintf(operand_buf, sizeof operand_buf, "[x + %d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_B|BPF_IND:
+	case OPCODE_LOAD(BPF_B, BPF_IND):
 		op = "ldb";
 		(void)snprintf(operand_buf, sizeof operand_buf, "[x + %d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_W|BPF_IMM:
+	case OPCODE_LOAD(BPF_W, BPF_IMM):
 		op = "ld";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LDX|BPF_W|BPF_IMM:
+	case OPCODE_LOADX(BPF_W, BPF_IMM):
 		op = "ldx";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LDX|BPF_MSH|BPF_B:
+	case OPCODE_LOADX(BPF_B, BPF_MSH):
 		op = "ldxb";
 		(void)snprintf(operand_buf, sizeof operand_buf, "4*([%d]&0xf)", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LD|BPF_W|BPF_MEM:
+	case OPCODE_LOAD(BPF_W, BPF_MEM):
 		op = "ld";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_LDX|BPF_W|BPF_MEM:
+	case OPCODE_LOADX(BPF_W, BPF_MEM):
 		op = "ldx";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ST:
+	case OPCODE_ST_M:
 		op = "st";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_STX:
+	case OPCODE_STX_M:
 		op = "stx";
 		(void)snprintf(operand_buf, sizeof operand_buf, "M[%d]", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JA:
+	case OPCODE_JA:
 		op = "ja";
 		(void)snprintf(operand_buf, sizeof operand_buf, "%d", n + 1 + p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JGT|BPF_K:
+	case OPCODE_BRANCH_K(BPF_JGT):
 		op = "jgt";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JGE|BPF_K:
+	case OPCODE_BRANCH_K(BPF_JGE):
 		op = "jge";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JEQ|BPF_K:
+	case OPCODE_BRANCH_K(BPF_JEQ):
 		op = "jeq";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JSET|BPF_K:
+	case OPCODE_BRANCH_K(BPF_JSET):
 		op = "jset";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_JMP|BPF_JGT|BPF_X:
+	case OPCODE_BRANCH_X(BPF_JGT):
 		op = "jgt";
 		operand = "x";
 		break;
 
-	case BPF_JMP|BPF_JGE|BPF_X:
+	case OPCODE_BRANCH_X(BPF_JGE):
 		op = "jge";
 		operand = "x";
 		break;
 
-	case BPF_JMP|BPF_JEQ|BPF_X:
+	case OPCODE_BRANCH_X(BPF_JEQ):
 		op = "jeq";
 		operand = "x";
 		break;
 
-	case BPF_JMP|BPF_JSET|BPF_X:
+	case OPCODE_BRANCH_X(BPF_JSET):
 		op = "jset";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_ADD|BPF_X:
+	case OPCODE_ALU_X(BPF_ADD):
 		op = "add";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_SUB|BPF_X:
+	case OPCODE_ALU_X(BPF_SUB):
 		op = "sub";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_MUL|BPF_X:
+	case OPCODE_ALU_X(BPF_MUL):
 		op = "mul";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_DIV|BPF_X:
+	case OPCODE_ALU_X(BPF_DIV):
 		op = "div";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_MOD|BPF_X:
+	case OPCODE_ALU_X(BPF_MOD):
 		op = "mod";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_AND|BPF_X:
+	case OPCODE_ALU_X(BPF_AND):
 		op = "and";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_OR|BPF_X:
+	case OPCODE_ALU_X(BPF_OR):
 		op = "or";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_XOR|BPF_X:
+	case OPCODE_ALU_X(BPF_XOR):
 		op = "xor";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_LSH|BPF_X:
+	case OPCODE_ALU_X(BPF_LSH):
 		op = "lsh";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_RSH|BPF_X:
+	case OPCODE_ALU_X(BPF_RSH):
 		op = "rsh";
 		operand = "x";
 		break;
 
-	case BPF_ALU|BPF_ADD|BPF_K:
+	case OPCODE_ALU_K(BPF_ADD):
 		op = "add";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_SUB|BPF_K:
+	case OPCODE_ALU_K(BPF_SUB):
 		op = "sub";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_MUL|BPF_K:
+	case OPCODE_ALU_K(BPF_MUL):
 		op = "mul";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_DIV|BPF_K:
+	case OPCODE_ALU_K(BPF_DIV):
 		op = "div";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_MOD|BPF_K:
+	case OPCODE_ALU_K(BPF_MOD):
 		op = "mod";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_AND|BPF_K:
+	case OPCODE_ALU_K(BPF_AND):
 		op = "and";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_OR|BPF_K:
+	case OPCODE_ALU_K(BPF_OR):
 		op = "or";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_XOR|BPF_K:
+	case OPCODE_ALU_K(BPF_XOR):
 		op = "xor";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#0x%x", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_LSH|BPF_K:
+	case OPCODE_ALU_K(BPF_LSH):
 		op = "lsh";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_RSH|BPF_K:
+	case OPCODE_ALU_K(BPF_RSH):
 		op = "rsh";
 		(void)snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
 		operand = operand_buf;
 		break;
 
-	case BPF_ALU|BPF_NEG:
+	case OPCODE_NEG:
 		op = "neg";
 		operand = "";
 		break;
 
-	case BPF_MISC|BPF_TAX:
+	case OPCODE_MISC(BPF_TAX):
 		op = "tax";
 		operand = "";
 		break;
 
-	case BPF_MISC|BPF_TXA:
+	case OPCODE_MISC(BPF_TXA):
 		op = "txa";
 		operand = "";
 		break;

@@ -121,6 +121,7 @@ PUBHDR = \
 	pcap/vlan.h
 
 HDR = $(PUBHDR) \
+	bpf_opcodes.h \
 	diag-control.h \
 	ethertype.h \
 	extract.h \

@@ -152,6 +152,7 @@ You can get around this by installing GCC.
 	bpf_dump.c	    - BPF program printing routines
 	bpf_filter.c	    - BPF filtering routines
 	bpf_image.c	    - BPF disassembly routine
+	bpf_opcodes.h	    - BPF opcode arity guard definitions
 	charconv.c	    - Windows Unicode routines
 	charconv.h	    - Windows Unicode prototypes
 	config.guess	    - autoconf support
