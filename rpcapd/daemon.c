@@ -47,6 +47,7 @@
   #include <signal.h>
   #include <sys/time.h>
   #include <sys/types.h>	// for select() and such
+  #include <poll.h>		// for poll()
   #include <pwd.h>		// for password management
 #endif
 
@@ -241,8 +242,10 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 	struct rpcap_sampling samp_param;	// in case sampling has been requested
 
 	// Structures needed for the select() call
+#ifdef _WIN32
 	fd_set rfds;				// set of socket descriptors we have to check
 	struct timeval tv;			// maximum time the select() can block waiting for data
+#endif
 	int retval;				// select() return value
 
 	*errbuf = 0;	// Initialize errbuf
@@ -513,6 +516,7 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 		//
 		if (!pars.isactive)
 		{
+#ifdef _WIN32
 			FD_ZERO(&rfds);
 			// We do not have to block here
 			tv.tv_sec = RPCAP_TIMEOUT_INIT;
@@ -521,10 +525,24 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 			FD_SET(pars.sockctrl, &rfds);
 
 			retval = select((int)pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
+#else
+			struct pollfd pfd;
+
+			pfd.fd = pars.sockctrl;
+			pfd.events = POLLIN;
+			pfd.revents = 0;
+
+			retval = poll(&pfd, 1, RPCAP_TIMEOUT_INIT * 1000);
+#endif
 			if (retval == -1)
 			{
+#ifdef _WIN32
 				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
 				    "select() failed");
+#else
+				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+				    "poll() failed");
+#endif
 				if (rpcap_senderror(pars.sockctrl, pars.ssl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
@@ -750,6 +768,9 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 		//  sockdata is 0
 		if ((!pars.isactive) && (session == NULL || session->sockdata == 0))
 		{
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+			retval = 1;
+#elif defined(_WIN32)
 			// Check for the initial timeout
 			FD_ZERO(&rfds);
 			// We do not have to block here
@@ -757,15 +778,25 @@ daemon_serviceloop(PCAP_SOCKET sockctrl, int isactive, char *passiveClients,
 			tv.tv_usec = 0;
 
 			FD_SET(pars.sockctrl, &rfds);
-#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-			retval = 1;
-#else
 			retval = select((int)pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
+#else
+			struct pollfd pfd;
+
+			pfd.fd = pars.sockctrl;
+			pfd.events = POLLIN;
+			pfd.revents = 0;
+
+			retval = poll(&pfd, 1, RPCAP_TIMEOUT_RUNTIME * 1000);
 #endif
 			if (retval == -1)
 			{
+#ifdef _WIN32
 				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
 				    "select() failed");
+#else
+				sock_geterrmsg(errmsgbuf, PCAP_ERRBUF_SIZE,
+				    "poll() failed");
+#endif
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    0, PCAP_ERR_NETW,
 				    errmsgbuf, errbuf) == -1)
