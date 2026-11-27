@@ -178,6 +178,7 @@ You can get around this by installing GCC.
 	testprogs/fcodetest.c       - test program for filter programs
 	testprogs/filtertest.c      - test program for filter expressions
 	testprogs/findalldevstest.c - test program for pcap_findalldevs()
+	testprogs/readtest.c        - test program for reading capture files
 	testprogs/test-util.c       - test program common routines
 	testprogs/test-util.h       - test program common prototypes
 	testprogs/translatetest.c   - test program for various translation functions

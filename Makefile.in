@@ -370,6 +370,7 @@ EXTRA_DIST = \
 	testprogs/opendeadtest.c \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
+	testprogs/readtest.c \
 	testprogs/selpolltest.c \
 	testprogs/test-util.c \
 	testprogs/test-util.h \
