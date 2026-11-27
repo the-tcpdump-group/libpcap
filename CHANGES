@@ -39,6 +39,8 @@ Tuesday, November 24, 2026 / The Tcpdump Group
       Update a few OS-specific README files.
     Linux:
       Include sysfs rx_dropped in pcap_stat.ps_ifdrop (GH bug 1328).
+      Drop outgoing packets in the kernel when capturing incoming
+        traffic only (Linux 4.20 and later).
     QNX:
       Fix DLT_PFSYNC definition on QNX 8.0.
     Link-layer types:
