@@ -655,6 +655,16 @@ PCAP_SOCKET sock_open(const char *host, struct addrinfo *addrinfo,
 		{
 			tempaddrinfo = addrs_to_try[i].info;
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+			/*
+			 * When fuzzing, we don't connect to anything;
+			 * the data is supplied by sock_initfuzz().
+			 * Hand back an unconnected socket rather than
+			 * INVALID_SOCKET, so that callers that merely
+			 * check for failure proceed into the code we
+			 * actually want to fuzz.
+			 */
+			sock = sock_create_socket(tempaddrinfo, errbuf,
+			    errbuflen);
 			break;
 #endif
 			/*
