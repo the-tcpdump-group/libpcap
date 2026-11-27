@@ -1342,19 +1342,88 @@ int sock_send(PCAP_SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer,
  * \warning In case of 'checkonly', be carefully to call this function *before* copying
  * the data into the buffer. Otherwise, the control about the buffer overflow is useless.
  */
-int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen)
+void *sock_alloc_buffer_space(char *outbuf, int size, int *offset, int totsize, char *errbuf, size_t errbuflen)
 {
+	void *buffer_space;
+
 	if ((*offset + size) > totsize)
 	{
 		if (errbuf)
 			snprintf(errbuf, errbuflen, "Not enough space in the temporary send buffer.");
-		return -1;
+		return NULL;
 	}
 
-	if (!checkonly)
-		memcpy(outbuf + (*offset), data, size);
+	buffer_space = outbuf + (*offset);
 
 	(*offset) += size;
+
+	return buffer_space;
+}
+
+/*
+ * \brief It copies the amount of data contained in 'data' into 'outbuf'.
+ * and it checks for buffer overflows.
+ *
+ * This function basically copies 'size' bytes of data contained in 'data'
+ * into 'outbuf', starting at offset 'offset'. Before that, it checks that the
+ * resulting buffer will not be larger	than 'totsize'. Finally, it updates
+ * the 'offset' variable in order to point to the first empty location of the buffer.
+ *
+ * In case the function is called with 'checkonly' equal to 1, it does not copy
+ * the data into the buffer. It only checks for buffer overflows and it updates the
+ * 'offset' variable. This mode can be useful when the buffer already contains the
+ * data (maybe because the producer writes directly into the target buffer), so
+ * only the buffer overflow check has to be made.
+ * In this case, both 'data' and 'outbuf' can be NULL values.
+ *
+ * This function is useful in case the userland application does not know immediately
+ * all the data it has to write into the socket. This function provides a way to create
+ * the "stream" step by step, appending the new data to the old one. Then, when all the
+ * data has been bufferized, the application can call the sock_send() function.
+ *
+ * \param data: a void pointer to the data that has to be copied.
+ *
+ * \param size: number of bytes that have to be copied.
+ *
+ * \param outbuf: user-allocated buffer (of size 'totsize') into which data
+ * has to be copied.
+ *
+ * \param offset: an index into 'outbuf' which keeps the location of its first
+ * empty location.
+ *
+ * \param totsize: total size of the buffer into which data is being copied.
+ *
+ * \param checkonly: '1' if we do not want to copy data into the buffer and we
+ * want just do a buffer overflow control, '0' if data has to be copied as well.
+ *
+ * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
+ * error message. This buffer has to be at least 'errbuflen' in length.
+ * It can be NULL; in this case the error cannot be printed.
+ *
+ * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
+ * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
+ *
+ * \return '0' if everything is fine, '-1' if some errors occurred. The error message
+ * is returned in the 'errbuf' variable. When the function returns, 'outbuf' will
+ * have the new string appended, and 'offset' will keep the length of that buffer.
+ * In case of 'checkonly == 1', data is not copied, but 'offset' is updated in any case.
+ *
+ * \warning This function assumes that the buffer in which data has to be stored is
+ * large 'totbuf' bytes.
+ *
+ * \warning In case of 'checkonly', be carefully to call this function *before* copying
+ * the data into the buffer. Otherwise, the control about the buffer overflow is useless.
+ */
+int sock_bufferize(const void *data, int size, char *outbuf, int *offset, int totsize, char *errbuf, int errbuflen)
+{
+	void *buffer_space;
+
+	buffer_space = sock_alloc_buffer_space(outbuf, size, offset, totsize,
+	    errbuf, errbuflen);
+	if (buffer_space == NULL)
+		return -1;
+
+	memcpy(buffer_space, data, size);
 
 	return 0;
 }
