@@ -279,9 +279,9 @@ sub result_terminated ($$) {
 	my $what = shift;
 	my $status = shift;
 	return result_failed (
-		"$what terminated due to signal " . WTERMSIG $status
-	) if WIFSIGNALED $status;
-	return result_failed "$what terminated due to an unknown reason";
+		"$what terminated abnormally",
+		WIFSIGNALED ($status) ? 'signal ' . WTERMSIG $status : "unknown status $status",
+	);
 }
 
 sub run_skip_test {
