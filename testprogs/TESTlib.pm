@@ -357,8 +357,8 @@ sub print_result_line () {
 	$points_printed = $points;
 }
 
-sub print_result {
-	printf "    %-40s: %s\n", @_;
+sub print_result ($$) {
+	printf "    %-40s: %s\n", shift, shift;
 }
 
 sub test_and_report ($@) {
