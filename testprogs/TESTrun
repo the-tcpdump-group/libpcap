@@ -123,7 +123,7 @@ my %testprog = (
 );
 my %testprog_bin;
 
-sub usage_text {
+sub usage_text ($) {
 	my $detailed = shift;
 	my $myname = $FindBin::Script;
 
@@ -200,7 +200,7 @@ die 'ERROR: This script is not compatible with optimizer debugging.' if skip_con
 
 # Skip unless the file exists and is readable and contains every given line
 # (less any duplicates) at least once in any order.
-sub skip_unless_file_contains_lines {
+sub skip_unless_file_contains_lines ($@) {
 	my $filename = shift;
 	my %notfound = map {$_ => 1} @_;
 	# In Perl 5.8.4 "s///" does not have the "r" option.
@@ -220,7 +220,7 @@ sub skip_unless_file_contains_lines {
 }
 
 # Skip if running on Linux with musl libc.
-sub skip_musl_libc {
+sub skip_musl_libc () {
 	return skip_os ('linux') &&
 		skip_config_not_def1 ('HAVE_GLIBC') &&
 		skip_config_not_def1 ('HAVE_UCLIBC') &&
@@ -314,7 +314,7 @@ EOF
 # Do not use getent(1): it works, but experiences some portability issues and
 # does not always test the same code paths as what libpcap uses.
 my $cached_skip_no_ethers;
-sub skip_no_ethers {
+sub skip_no_ethers () {
 	$cached_skip_no_ethers =
 		# pcap_ether_hostton() currently cannot guess a suitable
 		# location for the libpcap-only ethers(5).
@@ -329,7 +329,7 @@ sub skip_no_ethers {
 
 # Same as the above, plus require the platform to treat hostnames in
 # ethers(5) correctly (case-insensitive).
-sub skip_no_ethers_casecmp {
+sub skip_no_ethers_casecmp () {
 	return skip_no_ethers ||
 		# pcap_ether_hostton() uses strcmp().
 		skip_musl_libc ||
@@ -350,7 +350,7 @@ sub skip_no_ethers_casecmp {
 # Do not use getent(1): it experiences too many portability issues (especially
 # with dual-stack hostnames) to be practicable.
 my $cached_skip_no_hosts;
-sub skip_no_hosts {
+sub skip_no_hosts () {
 	return '%SYSTEMROOT% not set' if $^O eq 'msys' && ! defined $ENV{SYSTEMROOT};
 	$cached_skip_no_hosts = skip_unless_file_contains_lines (
 		$^O eq 'haiku' ? '/boot/system/settings/network/hosts' :
@@ -364,7 +364,7 @@ sub skip_no_hosts {
 
 # Same as the above, plus require the platform to treat hostnames in
 # hosts(5) correctly (case-insensitive).
-sub skip_no_hosts_casecmp {
+sub skip_no_hosts_casecmp () {
 	return skip_no_hosts ||
 		# getaddrinfo() uses strcmp() on /etc/hosts.
 		skip_musl_libc();
@@ -372,7 +372,7 @@ sub skip_no_hosts_casecmp {
 
 # Skip if /etc/networks (or the equivalent) has not been configured for tests.
 my $cached_skip_no_networks;
-sub skip_no_networks {
+sub skip_no_networks () {
 	$cached_skip_no_networks =
 		# Does not implement getnetbyname().
 		skip_os ('msys') ||
@@ -388,24 +388,24 @@ sub skip_no_networks {
 	return $cached_skip_no_networks;
 }
 
-sub skip_no_networks_casecmp {
+sub skip_no_networks_casecmp () {
 	return skip_no_networks ||
 		skip_os ('solaris');
 }
 
-sub skip_no_translatetest {
+sub skip_no_translatetest () {
 	return skip_os ('msys');
 }
 
-sub skip_big_endian {
+sub skip_big_endian () {
 	return pack ('S', 0x4245) eq 'BE' ? 'big-endian' : '';
 }
 
-sub skip_little_endian {
+sub skip_little_endian () {
 	return pack ('S', 0x454c) eq 'LE' ? 'little-endian' : '';
 }
 
-sub skip_igrp9 {
+sub skip_igrp9 () {
 	return skip_os_not ('freebsd') &&
         skip_os_not ('darwin') &&
         skip_os_not ('nto') &&
@@ -413,7 +413,7 @@ sub skip_igrp9 {
         skip_os_not ('dragonfly');
 }
 
-sub skip_igrp88 {
+sub skip_igrp88 () {
 	return skip_os ('freebsd') ||
         skip_os ('darwin') ||
         skip_os ('nto') ||
@@ -423,7 +423,7 @@ sub skip_igrp88 {
 
 # Dedent, then discard all empty lines, then ensure every remaining line ends
 # with a newline.
-sub normalise_expected_output {
+sub normalise_expected_output ($) {
 	my $ret = '';
 	foreach (split /^/o, shift) {
 		$ret .= "$1\n" if /^[\t]*([^\t].+)$/o;
@@ -31043,104 +31043,104 @@ foreach (0 .. 255) {
 }
 
 # yyerror()
-sub errstr_syntax {
+sub errstr_syntax () {
 	return 'can\'t parse filter expression: syntax error';
 }
 
 # ERRSTR_INVALID_QUAL
-sub errstr_invqual {
+sub errstr_invqual ($$) {
 	return sprintf ('\'%s\' is not a valid qualifier for \'%s\'', shift, shift);
 }
 
 # gen_scode() case Q_NET
-sub errstr_nonet {
+sub errstr_nonet ($) {
 	return sprintf ('unknown network \'%s\'', shift);
 }
 
 # gen_host46_byname() -> pcap_nametoaddrinfo() == NULL
 # gen_host46_byname() -> ret == NULL && proto4 == Q_DEFAULT
-sub errstr_nohost {
+sub errstr_nohost ($) {
 	return sprintf ('unknown host \'%s\'', shift);
 }
 
 # gen_host46_byname() -> ret == NULL && proto4 != Q_DEFAULT
-sub errstr_nohost_af {
+sub errstr_nohost_af ($) {
 	return sprintf ('unknown host \'%s\' for specified address family', shift);
 }
 
 # gen_scode()
 # gen_ncode() -> gen_dnhost()
-sub errstr_invhost_dn {
+sub errstr_invhost_dn ($) {
 	return sprintf ('invalid DECnet address \'%s\'', shift);
 }
 
 # ERRSTR_INVALID_IPV4_ADDR
-sub errstr_invhost_ipv4 {
+sub errstr_invhost_ipv4 ($) {
 	return sprintf ('invalid IPv4 address \'%s\'', shift);
 }
 
 # scanner.l
-sub errstr_invhost_ipv6 {
+sub errstr_invhost_ipv6 ($) {
 	return sprintf ('invalid IPv6 address %s', shift);
 }
 
 # ERRSTR_UNKNOWN_MAC48HOST
-sub errstr_nomac48host {
+sub errstr_nomac48host ($) {
 	return sprintf ('unknown Ethernet-like host \'%s\'', shift);
 }
 
 # assert_nonwlan_dqual()
-sub errstr_invkw_notwlan {
+sub errstr_invkw_notwlan ($) {
 	return sprintf ('\'%s\' is valid for 802.11 syntax only', shift);
 }
 
 # gen_ncode() -> proto == Q_LINK
-sub errstr_invlinkaddr {
+sub errstr_invlinkaddr ($) {
 	return sprintf ('illegal link-layer address \'%s\'', shift);
 }
 
 # gen_ecode()
-sub errstr_mac48_noether {
+sub errstr_mac48_noether () {
 	return 'Ethernet address used in non-ether expression';
 }
 
 # assert_maxval()
-sub errstr_val_too_high {
+sub errstr_val_too_high ($$) {
 	return sprintf ('%s greater than maximum %u', shift, shift);
 }
 
 # gen_ncode() case Q_PORT, case Q_PORTRANGE
 # gen_scode() case Q_PORT (not really), case Q_PORTRANGE (sometimes)
-sub errstr_invport {
+sub errstr_invport ($) {
 	return errstr_val_too_high ('port number ' . shift, 65535),
 }
 
 # fail_kw_on_dlt()
-sub errstr_kw_notsup_on {
+sub errstr_kw_notsup_on ($$) {
 	return sprintf ('\'%s\' not supported on DLT_%s', shift, shift);
 }
 
-sub errstr_notlive {
+sub errstr_notlive ($$) {
 	return sprintf ('not a live capture, \'%s\' not supported on DLT_%s', shift, shift);
 }
 
-sub errstr_rejects_all {
+sub errstr_rejects_all () {
 	return 'expression rejects all packets';
 }
 
-sub errstr_div_by_zero {
+sub errstr_div_by_zero () {
 	return 'division by zero';
 }
 
-sub errstr_mod_by_zero {
+sub errstr_mod_by_zero () {
 	return 'modulo by zero';
 }
 
-sub errstr_shift_by_more {
+sub errstr_shift_by_more () {
 	return 'shift by more than 31 bits';
 }
 
-sub errstr_too_many_regs {
+sub errstr_too_many_regs () {
 	return 'too many registers needed to evaluate expression';
 }
 
@@ -32517,7 +32517,7 @@ my %pqual_features = (
 	},
 );
 
-sub item_with_without {
+sub item_with_without ($$$) {
 	my $hashref = shift;
 	my $feature = shift;
 	my $wanted_with = shift;
@@ -32525,7 +32525,7 @@ sub item_with_without {
 	return $wanted_with == $actual_with;
 }
 
-sub list_with_without {
+sub list_with_without ($$$) {
 	my $hohref = shift;
 	my $feature = shift;
 	my $wanted_with = shift;
@@ -32538,15 +32538,15 @@ sub list_with_without {
 	return @ret;
 }
 
-sub pquals_with {
+sub pquals_with ($) {
 	return list_with_without \%pqual_features, shift, 1;
 }
 
-sub pquals_without {
+sub pquals_without ($) {
 	return list_with_without \%pqual_features, shift, 0;
 }
 
-sub pqual_has {
+sub pqual_has ($$) {
 	my $proto = shift;
 	my $feature = shift;
 	return item_with_without $pqual_features{$proto}, $feature, 1;
@@ -32582,11 +32582,11 @@ my %dqual_features = (
 	},
 );
 
-sub dquals_with {
+sub dquals_with ($) {
 	return list_with_without \%dqual_features, shift, 1;
 }
 
-sub dquals_without {
+sub dquals_without ($) {
 	return list_with_without \%dqual_features, shift, 0;
 }
 
@@ -32610,11 +32610,11 @@ my %tqual_features = (
 	},
 );
 
-sub tquals_with {
+sub tquals_with ($) {
 	return list_with_without \%tqual_features, shift, 1;
 }
 
-sub tquals_without {
+sub tquals_without ($) {
 	return list_with_without \%tqual_features, shift, 0;
 }
 
@@ -33145,15 +33145,15 @@ my %DLTfeatures = (
 	},
 );
 
-sub DLTs_with {
+sub DLTs_with ($) {
 	return list_with_without \%DLTfeatures, shift, 1;
 }
 
-sub DLTs_without {
+sub DLTs_without ($) {
 	return list_with_without \%DLTfeatures, shift, 0;
 }
 
-sub DLT_feature {
+sub DLT_feature ($$) {
 	my $name = shift;
 	my $feature = shift;
 	return item_with_without $DLTfeatures{$name}, $feature, 1;
@@ -35809,7 +35809,7 @@ sub opcode_misc ($) { opcode_2ary BPF_MISC, shift }
 sub insn_tax () { insn opcode_misc BPF_TAX }
 sub insn_txa () { insn opcode_misc BPF_TXA }
 
-sub bpf_restore_line {
+sub bpf_restore_line ($$) {
 	my $pc = shift;
 	my $line = shift;
 
@@ -35998,13 +35998,13 @@ sub bpf_restore_line {
 	die "No BPF restore rule has matched '$line'";
 }
 
-sub bpf_strip_comments {
+sub bpf_strip_comments ($) {
 	my $ret = shift;
 	$ret =~ s/ *;.*$//ogm;
 	return $ret;
 }
 
-sub bpf_restore {
+sub bpf_restore ($) {
 	my @ret;
 	foreach my $line (split /^/o, normalise_expected_output bpf_strip_comments shift) {
 		chomp $line;
@@ -36019,14 +36019,14 @@ sub bpf_restore {
 	return @ret;
 }
 
-sub is_cbpfsfdata {
+sub is_cbpfsfdata ($) {
 	my $str = shift;
 	return 0 if length $str < CBPFSF_HEADER_SIZE;
 	my ($w1, $w2) = unpack 'NN', $str;
 	return $w1 == CBPFSF_SIGNATURE && $w2 == CBPFSF_ASCII_HINT;
 }
 
-sub cbpfsfdata_from_list {
+sub cbpfsfdata_from_list (@) {
 	if (scalar @_ > UINT16_MAX) {
 		die sprintf ("InstructionCount %u > %u", scalar @_, UINT16_MAX);
 	}
@@ -36058,7 +36058,7 @@ sub cbpfsfdata_from_list {
 # Translate a BPF dump to a cbpf-savefile.  This function is idempotent:
 # if applied to the same data more than once, the result will be
 # cbpf-savefile-encoded only once.
-sub cbpfsfdata_from_string {
+sub cbpfsfdata_from_string ($) {
 	my $arg = shift;
 	return is_cbpfsfdata ($arg) ? $arg : cbpfsfdata_from_list bpf_restore $arg;
 }
@@ -37625,26 +37625,26 @@ my @fcode_tests = (
 	},
 );
 
-sub accept_test_label {
+sub accept_test_label (@) {
 	return join '_', ('accept', @_);
 }
 
-sub apply_test_label {
+sub apply_test_label (@) {
 	return join '_', ('apply', @_);
 }
 
-sub reject_test_label {
+sub reject_test_label (@) {
 	return join '_', ('reject', @_);
 }
 
-sub assert_named {
+sub assert_named ($$) {
 	my $descr = shift;
 	my $hash = shift;
 	return if defined $hash->{name} && $hash->{name} ne '';
 	die "Internal error: $descr <UNKNOWN> does not define a name";
 }
 
-sub assert_exists {
+sub assert_exists ($$@) {
 	my $descr = shift;
 	my $hash = shift;
 	my @keys = @_;
@@ -37654,7 +37654,7 @@ sub assert_exists {
 	}
 }
 
-sub assert_nonempty_strings {
+sub assert_nonempty_strings ($$@) {
 	my $descr = shift;
 	my $hash = shift;
 	my @keys = @_;
@@ -37665,7 +37665,7 @@ sub assert_nonempty_strings {
 	}
 }
 
-sub assert_nonempty_array {
+sub assert_nonempty_array ($$$) {
 	my $descr = shift;
 	my $hash = shift;
 	my $key = shift;
@@ -37674,7 +37674,7 @@ sub assert_nonempty_array {
 	die "Internal error: $descr '$hash->{name}' defines '$key' as an empty array";
 }
 
-sub validate_generic_accept_block {
+sub validate_generic_accept_block ($$) {
 	my $descr = shift;
 	my $test = shift;
 	assert_named $descr, $test;
@@ -37685,14 +37685,14 @@ sub validate_generic_accept_block {
 	}
 }
 
-sub validate_generic_reject_test {
+sub validate_generic_reject_test ($$) {
 	my $descr = shift;
 	my $test = shift;
 	assert_named $descr, $test;
 	assert_nonempty_strings $descr, $test, 'errstr';
 }
 
-sub time_test_command {
+sub time_test_command ($@) {
 	my $this_test_timeout = shift;
 	# BSD timeout(1) does not implement --verbose.
 	unshift @_, ($timeout_bin, $this_test_timeout) if defined $timeout_bin;
@@ -37760,7 +37760,7 @@ sub run_generic_accept_test ($@) {
 	return result_failed 'internal error', $stdout;
 }
 
-sub run_generic_reject_test {
+sub run_generic_reject_test ($$$@) {
 	my $this_test_timeout = shift;
 	my $expected_status = shift;
 	my $expected_errstr = shift;
@@ -37792,7 +37792,7 @@ sub run_generic_reject_test {
 	return result_passed $T;
 }
 
-sub common_filtertest_args {
+sub common_filtertest_args ($) {
 	my $test = shift;
 	my @args = ($testprog_bin{filtertest});
 	push @args, ('-s', $test->{snaplen}) if defined $test->{snaplen};
@@ -37802,7 +37802,7 @@ sub common_filtertest_args {
 	return @args;
 }
 
-sub common_fcode_args {
+sub common_fcode_args ($) {
 	my $test = shift;
 	file_put_binary_contents mytmpfile ($filename_filter), $test->{cbpfsfdata};
 	return (
@@ -37812,7 +37812,7 @@ sub common_fcode_args {
 	);
 }
 
-sub common_translatetest_args {
+sub common_translatetest_args ($) {
 	my $test = shift;
 	#
 	# The GNU libc getopt() doesn't behave as one might expect,
@@ -37868,7 +37868,7 @@ sub common_translatetest_args {
 	return @args;
 }
 
-sub run_filter_accept_test {
+sub run_filter_accept_test ($) {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	# Write the filter expression to a file because the version of
@@ -37894,7 +37894,7 @@ sub run_filter_accept_test {
 		@args;
 }
 
-sub run_fcode_accept_test {
+sub run_fcode_accept_test ($) {
 	my $test = shift;
 	my @args = common_fcode_args $test;
 	push @args, '-q' unless $test->{expected};
@@ -37903,7 +37903,7 @@ sub run_fcode_accept_test {
 		@args;
 }
 
-sub run_filter_apply_test {
+sub run_filter_apply_test ($) {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	file_put_contents mytmpfile ($filename_filter), $test->{expr};
@@ -37918,7 +37918,7 @@ sub run_filter_apply_test {
 		@args;
 }
 
-sub run_fcode_apply_test {
+sub run_fcode_apply_test ($) {
 	my $test = shift;
 	my @args = common_fcode_args $test;
 	push @args, ('-r', SAVEFILE_DIR . $test->{savefile});
@@ -37927,14 +37927,14 @@ sub run_fcode_apply_test {
 		@args;
 }
 
-sub run_translate_accept_test {
+sub run_translate_accept_test ($) {
 	my $test = shift;
 	return run_generic_accept_test
 		$test->{expected},
 		common_translatetest_args $test;
 }
 
-sub run_enumerate_test {
+sub run_enumerate_test ($) {
 	my $test = shift;
 	return run_generic_accept_test (
 		$test->{expected},
@@ -37944,7 +37944,7 @@ sub run_enumerate_test {
 	);
 }
 
-sub run_filter_reject_test {
+sub run_filter_reject_test ($) {
 	my $test = shift;
 	my @args = common_filtertest_args $test;
 	push @args, ('-r', SAVEFILE_DIR . $test->{savefile}) if defined $test->{savefile};
@@ -37961,7 +37961,7 @@ sub run_filter_reject_test {
 		@args;
 }
 
-sub run_fcode_reject_test {
+sub run_fcode_reject_test ($) {
 	return run_generic_reject_test
 		$test_timeout,
 		EX_DATAERR,
@@ -37969,7 +37969,7 @@ sub run_fcode_reject_test {
 		common_fcode_args shift;
 }
 
-sub run_translate_reject_test {
+sub run_translate_reject_test ($) {
 	my $test = shift;
 	return run_generic_reject_test
 		$test_timeout,
@@ -37978,7 +37978,7 @@ sub run_translate_reject_test {
 		common_translatetest_args $test;
 }
 
-sub detect_testprog {
+sub detect_testprog ($$) {
 	my ($progname, $envvar) = (shift, shift);
 	my $executable = defined $ENV{$envvar} ? $ENV{$envvar} :
 		string_in_file ('/* cmakeconfig.h.in */', $config_h) ? "./run/$progname" :

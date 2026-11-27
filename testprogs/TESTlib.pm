@@ -82,7 +82,7 @@ TESTRUN_PROGRESS allows to specify the progress reporting mode:
 	return $ret;
 }
 
-sub init_tmpdir {
+sub init_tmpdir ($) {
 	my $prefix = shift;
 	# No File::Temp->newdir() in Perl 5.8.4.
 	$tmpdir = tempdir (
@@ -96,12 +96,12 @@ sub remove_tmpdir () {
 	rmtree $tmpdir, 0, 1;
 }
 
-sub mytmpfile {
+sub mytmpfile ($) {
 	# Do not use sprintf() in a busy loop.
 	return $tmpdir . '/' . my_tmp_id . '-' . shift;
 }
 
-sub get_njobs {
+sub get_njobs () {
 	my $njobs;
 	if (! defined $ENV{TESTRUN_JOBS}) {
 		$njobs = 1;
@@ -158,14 +158,14 @@ sub get_helper_module () {
 	return "TEST${h}.pm";
 }
 
-sub get_diff_flags {
+sub get_diff_flags () {
 	return defined $ENV{DIFF_FLAGS} ? $ENV{DIFF_FLAGS} :
 	$^O eq 'hpux' ? '-c' :
 	'-u';
 }
 
 # Parse config.h into a hash for later use.
-sub read_config_h {
+sub read_config_h ($) {
 	my $config_h = shift;
 	%config = ();
 	open FH, '<', $config_h or die "failed opening '$config_h'";
@@ -181,7 +181,7 @@ sub read_config_h {
 }
 
 # This is a simpler version of the PHP function.
-sub file_put_contents {
+sub file_put_contents ($$) {
 	my ($filename, $contents) = @_;
 	open FH, '>', $filename or die "failed opening '$filename'";
 	print FH $contents;
@@ -197,7 +197,7 @@ sub file_put_binary_contents ($$) {
 }
 
 # Idem.
-sub file_get_contents {
+sub file_get_contents ($) {
 	my $filename = shift;
 	open FH, '<', $filename or die "failed opening '$filename'";
 	my $ret;
@@ -206,7 +206,7 @@ sub file_get_contents {
 	return $ret;
 }
 
-sub string_in_file {
+sub string_in_file ($$) {
 	my ($string, $filename) = @_;
 	my $ret = 0;
 	open FH, '<', $filename or die "failed opening '$filename'";
@@ -220,45 +220,45 @@ sub string_in_file {
 	return $ret;
 }
 
-sub skip_os {
+sub skip_os ($) {
 	my $name = shift;
 	my $bettername = $osnames{$name} || $name;
 	return $^O eq $name ? "is $bettername" : '';
 }
 
-sub skip_os_not {
+sub skip_os_not ($) {
 	my $name = shift;
 	my $bettername = $osnames{$name} || $name;
 	return $^O ne $name ? "is not $bettername" : '';
 }
 
-sub skip_config_def1 {
+sub skip_config_def1 ($) {
 	my $symbol = shift;
 	return (defined $config{$symbol} && $config{$symbol} eq '1') ?
 		"$symbol==1" : '';
 }
 
-sub skip_config_not_def1 {
+sub skip_config_not_def1 ($) {
 	my $symbol = shift;
 	return (! defined $config{$symbol} || $config{$symbol} ne '1') ?
 		"${symbol}!=1" : '';
 }
 
-sub result_skipped {
+sub result_skipped ($) {
 	return {
 		char => CHAR_SKIPPED,
 		skip => shift
 	};
 }
 
-sub result_passed {
+sub result_passed ($) {
 	return {
 		char => CHAR_PASSED,
 		T => shift
 	};
 }
 
-sub result_failed {
+sub result_failed ($$) {
 	return {
 		char => CHAR_FAILED,
 		failure => {
@@ -268,7 +268,7 @@ sub result_failed {
 	};
 }
 
-sub result_timed_out {
+sub result_timed_out ($) {
 	return {
 		char => CHAR_TIMED_OUT,
 		failure => {reason => shift}
@@ -284,7 +284,7 @@ sub result_terminated ($$) {
 	);
 }
 
-sub run_skip_test {
+sub run_skip_test ($) {
 	my $test = shift;
 	return result_skipped $test->{skip};
 }
@@ -293,7 +293,7 @@ sub run_skip_test {
 # ............................................ 0000 / 0000 (000%)
 #                          $max_result_digits >----< >----<
 # <--------- $max_results_per_line ---------->
-sub init_results_processing {
+sub init_results_processing ($) {
 	my $maxcols = 80;
 	$results_to_print = shift;
 	# When using threads, STDOUT becomes line-buffered on TTYs, which is
@@ -328,7 +328,7 @@ sub print_result_bar () {
 }
 
 # Produce a results map in PHPUnit output format.
-sub print_result_char {
+sub print_result_char ($) {
 	print shift;
 	my $results_dangling = $results_printed % $max_results_per_line;
 	if ($results_dangling) {

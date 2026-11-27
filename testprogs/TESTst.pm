@@ -8,11 +8,11 @@ use subs qw(get_njobs);
 
 my @tests;
 
-sub my_tmp_id {
+sub my_tmp_id () {
 	return 'main';
 }
 
-sub start_tests {
+sub start_tests (@) {
 	print "INFO: Using the main thread only.\n";
 	my $njobs = get_njobs;
 	print STDERR "WARNING: TESTRUN_JOBS=$njobs has no effect!\n" if $njobs > 1;
@@ -20,7 +20,7 @@ sub start_tests {
 }
 
 # Here ordering of the results is obviously the same as ordering of the tests.
-sub get_next_result {
+sub get_next_result () {
 	my $test = shift @tests;
 	return undef unless defined $test;
 	my $result = $test->{func} ($test);
