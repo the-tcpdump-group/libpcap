@@ -48,6 +48,7 @@
   #include <sys/time.h>
   #include <sys/types.h>	// for select() and such
   #include <pwd.h>		// for password management
+  #include <grp.h>		// for setgid(), initgroups()
 #endif
 
 #ifdef HAVE_GETSPNAM
@@ -1558,6 +1559,43 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		return -1;
 	}
 
+	/*
+	 * Set the authenticated user's primary and supplementary groups
+	 * *before* dropping our (presumably root) privileges with setuid().
+	 * setuid() only changes the process's user ID; it does not touch
+	 * the real/effective/saved group ID or the supplementary group
+	 * list. If we don't do this, a client who authenticates as a
+	 * less-privileged user still runs with whatever GID and
+	 * supplementary groups this process happened to start with (e.g.
+	 * root's groups, if rpcapd was launched as root), rather than the
+	 * authenticated user's own groups. That can grant access to any
+	 * resource gated by group permissions, on top of whatever UID-based
+	 * access the authenticated account is actually supposed to have.
+	 *
+	 * This must happen before setuid(), because once we're no longer
+	 * root we may no longer have permission to change our GID or
+	 * supplementary groups.
+	 */
+	if (setgid(user->pw_gid))
+	{
+		error = errno;
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    error, "setgid");
+		rpcapd_log(LOGPRIO_ERROR, "setgid() failed: %s",
+		    strerror(error));
+		return -1;
+	}
+
+	if (initgroups(username, user->pw_gid))
+	{
+		error = errno;
+		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    error, "initgroups");
+		rpcapd_log(LOGPRIO_ERROR, "initgroups() failed: %s",
+		    strerror(error));
+		return -1;
+	}
+
 	if (setuid(user->pw_uid))
 	{
 		error = errno;
@@ -1567,17 +1605,6 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		    strerror(error));
 		return -1;
 	}
-
-/*	if (setgid(user->pw_gid))
-	{
-		error = errno;
-		pcapint_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "setgid");
-		rpcapd_log(LOGPRIO_ERROR, "setgid() failed: %s",
-		    strerror(error));
-		return -1;
-	}
-*/
 	return 0;
 
 #endif
