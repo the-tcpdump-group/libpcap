@@ -134,6 +134,7 @@
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 #include "pcap/can_socketcan.h"
+#include "bpf_opcodes.h"
 
 #include "diag-control.h"
 
@@ -358,7 +359,7 @@ static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
 static int	reset_kernel_filter(pcap_t *handle);
 
 static struct sock_filter	total_insn
-	= BPF_STMT(BPF_RET | BPF_K, 0);
+	= BPF_STMT(OPCODE_RET(BPF_K), 0);
 static struct sock_fprog	total_fcode
 	= { 1, &total_insn };
 
@@ -5870,13 +5871,13 @@ fix_dlt_can_socketcan(const u_int len, struct bpf_insn insn[])
 {
 	for (u_int i = 0; i < len; ++i) {
 		switch (insn[i].code) {
-		case BPF_LD|BPF_B|BPF_ABS: // ldb [k]
-		case BPF_LDX|BPF_MSH|BPF_B: // ldxb 4*([k]&0xf)
+		case OPCODE_LOAD(BPF_B, BPF_ABS):  // ldb [k]
+		case OPCODE_LOADX(BPF_B, BPF_MSH): // ldxb 4*([k]&0xf)
 			if (insn[i].k < 4)
 				insn[i].k = 3 - insn[i].k; // Fixed now.
 			break;
-		case BPF_LD|BPF_H|BPF_ABS: // ldh [k]
-		case BPF_LD|BPF_W|BPF_ABS: // ld [k]
+		case OPCODE_LOAD(BPF_H, BPF_ABS): // ldh [k]
+		case OPCODE_LOAD(BPF_W, BPF_ABS): // ld [k]
 			/*
 			 * A halfword or a word load cannot be fixed by just
 			 * changing k, even if every required byte is within
@@ -5885,9 +5886,9 @@ fix_dlt_can_socketcan(const u_int len, struct bpf_insn insn[])
 			 * rewriting the filter program extensively or
 			 * generating it differently in the first place.
 			 */
-		case BPF_LD|BPF_B|BPF_IND: // ldb [x + k]
-		case BPF_LD|BPF_H|BPF_IND: // ldh [x + k]
-		case BPF_LD|BPF_W|BPF_IND: // ld [x + k]
+		case OPCODE_LOAD(BPF_B, BPF_IND): // ldb [x + k]
+		case OPCODE_LOAD(BPF_H, BPF_IND): // ldh [x + k]
+		case OPCODE_LOAD(BPF_W, BPF_IND): // ld [x + k]
 			/*
 			 * In addition to the above, a variable offset load
 			 * cannot be fixed because x can have any value, thus

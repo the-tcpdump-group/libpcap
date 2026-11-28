@@ -41,6 +41,7 @@
 #include "optimize.h"
 #include "diag-control.h"
 #include "no_sanitize.h"
+#include "bpf_opcodes.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -200,7 +201,7 @@ struct valnode {
 };
 
 /* Integer constants mapped with the load immediate opcode. */
-#define K(i) F(opt_state, BPF_LD|BPF_IMM|BPF_W, i, 0U)
+#define K(i) F(opt_state, OPCODE_LOAD(BPF_W, BPF_IMM), i, 0U)
 
 struct vmapinfo {
 	int is_const;
@@ -822,7 +823,7 @@ fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 		abort();
 	}
 	s->k = a;
-	s->code = BPF_LD|BPF_W|BPF_IMM;
+	s->code = OPCODE_LOAD(BPF_W, BPF_IMM);
 	opt_state->done = 0;
 	/*
 	 * XXX - optimizer loop detection.
@@ -880,11 +881,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * st  M[k]	-->	st  M[k]
 		 * ldx M[k]		tax
 		 */
-		if (s->s.code == BPF_ST &&
-		    next->s.code == (BPF_LDX|BPF_W|BPF_MEM) &&
+		if (s->s.code == OPCODE_ST_M &&
+		    next->s.code == OPCODE_LOADX(BPF_W, BPF_MEM) &&
 		    s->s.k == next->s.k) {
 			opt_state->done = 0;
-			next->s.code = BPF_MISC|BPF_TAX;
+			next->s.code = OPCODE_MISC(BPF_TAX);
 			/*
 			 * The value of 'k' is still the scratch memory
 			 * register index from the "ldx M[k]", so if it is not
@@ -910,10 +911,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * ld  #k	-->	ldx  #k
 		 * tax			txa
 		 */
-		if (s->s.code == (BPF_LD|BPF_W|BPF_IMM) &&
-		    next->s.code == (BPF_MISC|BPF_TAX)) {
-			s->s.code = BPF_LDX|BPF_W|BPF_IMM;
-			next->s.code = BPF_MISC|BPF_TXA;
+		if (s->s.code == OPCODE_LOAD(BPF_W, BPF_IMM) &&
+		    next->s.code == OPCODE_MISC(BPF_TAX)) {
+			s->s.code = OPCODE_LOADX(BPF_W, BPF_IMM);
+			next->s.code = OPCODE_MISC(BPF_TXA);
 			opt_state->done = 0;
 			/*
 			 * XXX - optimizer loop detection.
@@ -924,7 +925,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * This is an ugly special case, but it happens
 		 * when you say tcp[k] or udp[k] where k is a constant.
 		 */
-		if (s->s.code == (BPF_LD|BPF_W|BPF_IMM)) {
+		if (s->s.code == OPCODE_LOAD(BPF_W, BPF_IMM)) {
 			struct slist *add, *tax, *ild;
 
 			/*
@@ -943,11 +944,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			 * following it (with 0 or more nops between the
 			 * "ldxb 4*([k]&0xf)" and "add x").
 			 */
-			if (next->s.code != (BPF_LDX|BPF_MSH|BPF_B))
+			if (next->s.code != OPCODE_LOADX(BPF_B, BPF_MSH))
 				add = next;
 			else
 				add = this_op(next->next);
-			if (add == NULL || add->s.code != (BPF_ALU|BPF_ADD|BPF_X))
+			if (add == NULL || add->s.code != OPCODE_ALU_X(BPF_ADD))
 				continue;
 
 			/*
@@ -955,7 +956,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			 * nops between them).
 			 */
 			tax = this_op(add->next);
-			if (tax == NULL || tax->s.code != (BPF_MISC|BPF_TAX))
+			if (tax == NULL || tax->s.code != OPCODE_MISC(BPF_TAX))
 				continue;
 
 			/*
@@ -1013,13 +1014,13 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 * the operation preceding the comparison is an arithmetic
 	 * operation, we can sometimes optimize it away.
 	 */
-	if (b->s.code == (BPF_JMP|BPF_JEQ|BPF_K) &&
+	if (b->s.code == OPCODE_BRANCH_K(BPF_JEQ) &&
 	    !ATOMELEM(b->out_use, A_ATOM)) {
 		/*
 		 * We can optimize away certain subtractions of the
 		 * X register.
 		 */
-		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X)) {
+		if (last->s.code == OPCODE_ALU_X(BPF_SUB)) {
 			val = b->val[X_ATOM];
 			if (opt_state->vmap[val].is_const) {
 				/*
@@ -1049,7 +1050,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 				 * jeq #0	jeq x
 				 */
 				last->s.code = NOP;
-				b->s.code = BPF_JMP|BPF_JEQ|BPF_X;
+				b->s.code = OPCODE_BRANCH_X(BPF_JEQ);
 				opt_state->done = 0;
 				/*
 				 * XXX - optimizer loop detection.
@@ -1063,7 +1064,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * sub #x ->	nop
 		 * jeq #y ->	jeq #(x+y)
 		 */
-		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K)) {
+		else if (last->s.code == OPCODE_ALU_K(BPF_SUB)) {
 			last->s.code = NOP;
 			b->s.k += last->s.k;
 			opt_state->done = 0;
@@ -1079,10 +1080,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 		 * and #k	nop
 		 * jeq #0  ->	jset #k
 		 */
-		else if (last->s.code == (BPF_ALU|BPF_AND|BPF_K) &&
+		else if (last->s.code == OPCODE_ALU_K(BPF_AND) &&
 		    b->s.k == 0) {
 			b->s.k = last->s.k;
-			b->s.code = BPF_JMP|BPF_K|BPF_JSET;
+			b->s.code = OPCODE_BRANCH_K(BPF_JSET);
 			last->s.code = NOP;
 			opt_state->done = 0;
 			opt_not(b);
@@ -1096,7 +1097,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 * jset #0x0         ->  never
 	 * jset #0xffffffff  ->  iff A != 0
 	 */
-	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
+	if (b->s.code == OPCODE_BRANCH_K(BPF_JSET)) {
 		/*
 		 * This can be, but not necessarily is a result of the folding
 		 * into "jset #k" above.
@@ -1111,7 +1112,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			 * This is not meant to be the inverse of the folding,
 			 * hence do not prepend a [no-op] "and #0xffffffff".
 			 */
-			b->s.code = BPF_JMP|BPF_JEQ|BPF_K;
+			b->s.code = OPCODE_BRANCH_K(BPF_JEQ);
 			b->s.k = 0;
 			opt_not(b);
 			opt_state->done = 0;
@@ -1189,19 +1190,19 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 
 	switch (s->code) {
 
-	case BPF_LD|BPF_ABS|BPF_W:
-	case BPF_LD|BPF_ABS|BPF_H:
-	case BPF_LD|BPF_ABS|BPF_B:
+	case OPCODE_LOAD(BPF_W, BPF_ABS):
+	case OPCODE_LOAD(BPF_H, BPF_ABS):
+	case OPCODE_LOAD(BPF_B, BPF_ABS):
 		v = F(opt_state, s->code, s->k, 0L);
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LD|BPF_IND|BPF_W:
-	case BPF_LD|BPF_IND|BPF_H:
-	case BPF_LD|BPF_IND|BPF_B:
+	case OPCODE_LOAD(BPF_W, BPF_IND):
+	case OPCODE_LOAD(BPF_H, BPF_IND):
+	case OPCODE_LOAD(BPF_B, BPF_IND):
 		v = val[X_ATOM];
 		if (alter && opt_state->vmap[v].is_const) {
-			s->code = BPF_LD|BPF_ABS|BPF_SIZE(s->code);
+			s->code = OPCODE_LOAD(BPF_SIZE(s->code), BPF_ABS);
 			s->k += opt_state->vmap[v].const_val;
 			v = F(opt_state, s->code, s->k, 0L);
 			opt_state->done = 0;
@@ -1215,29 +1216,29 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LD|BPF_W|BPF_LEN:
+	case OPCODE_LOAD(BPF_W, BPF_LEN):
 		v = F(opt_state, s->code, 0L, 0L);
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LD|BPF_W|BPF_IMM:
+	case OPCODE_LOAD(BPF_W, BPF_IMM):
 		v = K(s->k);
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_LDX|BPF_W|BPF_IMM:
+	case OPCODE_LOADX(BPF_W, BPF_IMM):
 		v = K(s->k);
 		vstore(s, &val[X_ATOM], v, alter);
 		break;
 
-	case BPF_LDX|BPF_MSH|BPF_B:
+	case OPCODE_LOADX(BPF_B, BPF_MSH):
 		v = F(opt_state, s->code, s->k, 0L);
 		vstore(s, &val[X_ATOM], v, alter);
 		break;
 
-	case BPF_ALU|BPF_NEG:
+	case OPCODE_NEG:
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
-			s->code = BPF_LD|BPF_W|BPF_IMM;
+			s->code = OPCODE_LOAD(BPF_W, BPF_IMM);
 			// See the comment in gencode.h.
 			s->k = UINT_NEG(opt_state->vmap[val[A_ATOM]].const_val);
 			val[A_ATOM] = K(s->k);
@@ -1246,16 +1247,16 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 			val[A_ATOM] = F(opt_state, s->code, val[A_ATOM], 0L);
 		break;
 
-	case BPF_ALU|BPF_ADD|BPF_K:
-	case BPF_ALU|BPF_SUB|BPF_K:
-	case BPF_ALU|BPF_MUL|BPF_K:
-	case BPF_ALU|BPF_DIV|BPF_K:
-	case BPF_ALU|BPF_MOD|BPF_K:
-	case BPF_ALU|BPF_AND|BPF_K:
-	case BPF_ALU|BPF_OR|BPF_K:
-	case BPF_ALU|BPF_XOR|BPF_K:
-	case BPF_ALU|BPF_LSH|BPF_K:
-	case BPF_ALU|BPF_RSH|BPF_K:
+	case OPCODE_ALU_K(BPF_ADD):
+	case OPCODE_ALU_K(BPF_SUB):
+	case OPCODE_ALU_K(BPF_MUL):
+	case OPCODE_ALU_K(BPF_DIV):
+	case OPCODE_ALU_K(BPF_MOD):
+	case OPCODE_ALU_K(BPF_AND):
+	case OPCODE_ALU_K(BPF_OR):
+	case OPCODE_ALU_K(BPF_XOR):
+	case OPCODE_ALU_K(BPF_LSH):
+	case OPCODE_ALU_K(BPF_RSH):
 		op = BPF_OP(s->code);
 		if (alter) {
 			if (s->k == 0) {
@@ -1277,7 +1278,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 					break;
 				}
 				if (op == BPF_MUL || op == BPF_AND) {
-					s->code = BPF_LD|BPF_W|BPF_IMM;
+					s->code = OPCODE_LOAD(BPF_W, BPF_IMM);
 					val[A_ATOM] = K(s->k);
 					break;
 				}
@@ -1297,16 +1298,16 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		val[A_ATOM] = F(opt_state, s->code, val[A_ATOM], K(s->k));
 		break;
 
-	case BPF_ALU|BPF_ADD|BPF_X:
-	case BPF_ALU|BPF_SUB|BPF_X:
-	case BPF_ALU|BPF_MUL|BPF_X:
-	case BPF_ALU|BPF_DIV|BPF_X:
-	case BPF_ALU|BPF_MOD|BPF_X:
-	case BPF_ALU|BPF_AND|BPF_X:
-	case BPF_ALU|BPF_OR|BPF_X:
-	case BPF_ALU|BPF_XOR|BPF_X:
-	case BPF_ALU|BPF_LSH|BPF_X:
-	case BPF_ALU|BPF_RSH|BPF_X:
+	case OPCODE_ALU_X(BPF_ADD):
+	case OPCODE_ALU_X(BPF_SUB):
+	case OPCODE_ALU_X(BPF_MUL):
+	case OPCODE_ALU_X(BPF_DIV):
+	case OPCODE_ALU_X(BPF_MOD):
+	case OPCODE_ALU_X(BPF_AND):
+	case OPCODE_ALU_X(BPF_OR):
+	case OPCODE_ALU_X(BPF_XOR):
+	case OPCODE_ALU_X(BPF_LSH):
+	case OPCODE_ALU_X(BPF_RSH):
 		op = BPF_OP(s->code);
 		if (alter && opt_state->vmap[val[X_ATOM]].is_const) {
 			if (opt_state->vmap[val[A_ATOM]].is_const) {
@@ -1314,7 +1315,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 				val[A_ATOM] = K(s->k);
 			}
 			else {
-				s->code = BPF_ALU|BPF_K|op;
+				s->code = OPCODE_ALU_K(op);
 				s->k = opt_state->vmap[val[X_ATOM]].const_val;
 				if ((op == BPF_LSH || op == BPF_RSH) &&
 				    s->k > 31)
@@ -1340,13 +1341,13 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const
 		    && opt_state->vmap[val[A_ATOM]].const_val == 0) {
 			if (op == BPF_ADD || op == BPF_OR || op == BPF_XOR) {
-				s->code = BPF_MISC|BPF_TXA;
+				s->code = OPCODE_MISC(BPF_TXA);
 				vstore(s, &val[A_ATOM], val[X_ATOM], alter);
 				break;
 			}
 			else if (op == BPF_MUL || op == BPF_DIV || op == BPF_MOD ||
 				 op == BPF_AND || op == BPF_LSH || op == BPF_RSH) {
-				s->code = BPF_LD|BPF_W|BPF_IMM;
+				s->code = OPCODE_LOAD(BPF_W, BPF_IMM);
 				s->k = 0;
 				vstore(s, &val[A_ATOM], K(s->k), alter);
 				break;
@@ -1359,14 +1360,14 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		val[A_ATOM] = F(opt_state, s->code, val[A_ATOM], val[X_ATOM]);
 		break;
 
-	case BPF_MISC|BPF_TXA:
+	case OPCODE_MISC(BPF_TXA):
 		vstore(s, &val[A_ATOM], val[X_ATOM], alter);
 		break;
 
-	case BPF_LD|BPF_W|BPF_MEM:
+	case OPCODE_LOAD(BPF_W, BPF_MEM):
 		v = val[s->k];
 		if (alter && opt_state->vmap[v].is_const) {
-			s->code = BPF_LD|BPF_W|BPF_IMM;
+			s->code = OPCODE_LOAD(BPF_W, BPF_IMM);
 			s->k = opt_state->vmap[v].const_val;
 			opt_state->done = 0;
 			/*
@@ -1377,14 +1378,14 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[A_ATOM], v, alter);
 		break;
 
-	case BPF_MISC|BPF_TAX:
+	case OPCODE_MISC(BPF_TAX):
 		vstore(s, &val[X_ATOM], val[A_ATOM], alter);
 		break;
 
-	case BPF_LDX|BPF_W|BPF_MEM:
+	case OPCODE_LOADX(BPF_W, BPF_MEM):
 		v = val[s->k];
 		if (alter && opt_state->vmap[v].is_const) {
-			s->code = BPF_LDX|BPF_W|BPF_IMM;
+			s->code = OPCODE_LOADX(BPF_W, BPF_IMM);
 			s->k = opt_state->vmap[v].const_val;
 			opt_state->done = 0;
 			/*
@@ -1395,11 +1396,11 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[X_ATOM], v, alter);
 		break;
 
-	case BPF_ST:
+	case OPCODE_ST_M:
 		vstore(s, &val[s->k], val[A_ATOM], alter);
 		break;
 
-	case BPF_STX:
+	case OPCODE_STX_M:
 		vstore(s, &val[s->k], val[X_ATOM], alter);
 		break;
 	}
@@ -1653,7 +1654,7 @@ fold_edge(struct block *child, struct edge *ep)
 		 */
 		return sense ? JT(child) : JF(child);
 
-	if (sense && code == (BPF_JMP|BPF_JEQ|BPF_K))
+	if (sense && code == OPCODE_BRANCH_K(BPF_JEQ))
 		/*
 		 * At this point, we only know the comparison if we
 		 * came down the true branch, and it was an equality
@@ -2320,27 +2321,27 @@ bool
 pcapint_opcode_without_k(const uint16_t opcode)
 {
 	static const bool without_k[UINT8_MAX + 1] = {
-		[BPF_LD   | BPF_W  | BPF_LEN] = true,
-		[BPF_LDX  | BPF_W  | BPF_LEN] = true,
-		[BPF_JMP  | BPF_JA          ] = true, // no_optimize == 1
-		[BPF_JMP  | BPF_JEQ  | BPF_X] = true, // block exit only
-		[BPF_JMP  | BPF_JGT  | BPF_X] = true, // block exit only
-		[BPF_JMP  | BPF_JGE  | BPF_X] = true, // block exit only
-		[BPF_JMP  | BPF_JSET | BPF_X] = true, // block exit only
-		[BPF_ALU  | BPF_ADD  | BPF_X] = true,
-		[BPF_ALU  | BPF_SUB  | BPF_X] = true,
-		[BPF_ALU  | BPF_MUL  | BPF_X] = true,
-		[BPF_ALU  | BPF_DIV  | BPF_X] = true,
-		[BPF_ALU  | BPF_OR   | BPF_X] = true,
-		[BPF_ALU  | BPF_AND  | BPF_X] = true,
-		[BPF_ALU  | BPF_LSH  | BPF_X] = true,
-		[BPF_ALU  | BPF_RSH  | BPF_X] = true,
-		[BPF_ALU  | BPF_NEG         ] = true,
-		[BPF_ALU  | BPF_MOD  | BPF_X] = true,
-		[BPF_ALU  | BPF_XOR  | BPF_X] = true,
-		[BPF_RET  | BPF_A           ] = true,
-		[BPF_MISC | BPF_TAX         ] = true,
-		[BPF_MISC | BPF_TXA         ] = true,
+		[OPCODE_LOAD(BPF_W, BPF_LEN) ] = true,
+		[OPCODE_LOADX(BPF_W, BPF_LEN)] = true,
+		[OPCODE_JA                   ] = true, // no_optimize == 1
+		[OPCODE_BRANCH_X(BPF_JEQ)    ] = true, // block exit only
+		[OPCODE_BRANCH_X(BPF_JGT)    ] = true, // block exit only
+		[OPCODE_BRANCH_X(BPF_JGE)    ] = true, // block exit only
+		[OPCODE_BRANCH_X(BPF_JSET)   ] = true, // block exit only
+		[OPCODE_ALU_X(BPF_ADD)       ] = true,
+		[OPCODE_ALU_X(BPF_SUB)       ] = true,
+		[OPCODE_ALU_X(BPF_MUL)       ] = true,
+		[OPCODE_ALU_X(BPF_DIV)       ] = true,
+		[OPCODE_ALU_X(BPF_OR)        ] = true,
+		[OPCODE_ALU_X(BPF_AND)       ] = true,
+		[OPCODE_ALU_X(BPF_LSH)       ] = true,
+		[OPCODE_ALU_X(BPF_RSH)       ] = true,
+		[OPCODE_NEG                  ] = true,
+		[OPCODE_ALU_X(BPF_MOD)       ] = true,
+		[OPCODE_ALU_X(BPF_XOR)       ] = true,
+		[OPCODE_RET(BPF_A)           ] = true,
+		[OPCODE_MISC(BPF_TAX)        ] = true,
+		[OPCODE_MISC(BPF_TXA)        ] = true,
 	};
 	return opcode <= UINT8_MAX && without_k[(uint8_t)opcode];
 }
@@ -2765,7 +2766,7 @@ convert_code_r(conv_state_t *conv_state, struct icode *ic, struct block *p)
 		dst->k = src->s.k;
 
 		/* fill block-local relative jump */
-		if (BPF_CLASS(src->s.code) != BPF_JMP || src->s.code == (BPF_JMP|BPF_JA)) {
+		if (BPF_CLASS(src->s.code) != BPF_JMP || src->s.code == OPCODE_JA) {
 #if 0
 			if (src->s.jt || src->s.jf) {
 				free(offset);
@@ -2858,7 +2859,7 @@ filled:
 		    }
 		    dst->jt = extrajmps;
 		    extrajmps++;
-		    dst[extrajmps].code = BPF_JMP|BPF_JA;
+		    dst[extrajmps].code = OPCODE_JA;
 		    dst[extrajmps].k = off - extrajmps;
 		}
 		else
@@ -2875,7 +2876,7 @@ filled:
 		    /* if two jumps are inserted, F goes to second one */
 		    dst->jf = extrajmps;
 		    extrajmps++;
-		    dst[extrajmps].code = BPF_JMP|BPF_JA;
+		    dst[extrajmps].code = OPCODE_JA;
 		    dst[extrajmps].k = off - extrajmps;
 		}
 		else

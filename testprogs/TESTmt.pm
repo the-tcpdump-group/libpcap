@@ -15,13 +15,13 @@ my @result_queues;
 my @tester_threads;
 my $next_to_dequeue;
 
-sub my_tmp_id {
+sub my_tmp_id () {
 	return $tmpid;
 }
 
 # Iterate over the list of tests, pick tests that belong to the current job,
 # run one test at a time and send the result to the job's results queue.
-sub tester_thread_func {
+sub tester_thread_func ($) {
 	my $jobid = shift;
 	$tmpid = sprintf 'job%03u', $jobid;
 	for (my $i = $jobid; $i < scalar @tests; $i += $njobs) {
@@ -34,7 +34,7 @@ sub tester_thread_func {
 	$result_queues[$jobid]->enqueue (undef);
 }
 
-sub start_tests {
+sub start_tests (@) {
 	$njobs = get_njobs;
 	print "INFO: Using $njobs tester thread(s).\n";
 	@tests = @_;
@@ -49,7 +49,7 @@ sub start_tests {
 # this function starts at job 0 and continues round-robin, which reverses the
 # interleaving done in the thread function above; also because every attempt
 # to dequeue blocks until it returns exactly one result.
-sub get_next_result {
+sub get_next_result () {
 	for (0 .. $njobs - 1) {
 		my $jobid = $next_to_dequeue;
 		$next_to_dequeue = ($next_to_dequeue + 1) % $njobs;

@@ -53,6 +53,7 @@
 #include "diag-control.h"
 #include "no_sanitize.h"
 #include "pcap-util.h"
+#include "bpf_opcodes.h"
 
 #include "scanner.h"
 
@@ -334,27 +335,13 @@ struct addrinfo {
 #endif
 
 /*
- * Valid BPF opcodes comprise one (e.g. BPF_ST), two (e.g. BPF_RET|BPF_K) or
- * three (e.g. BPF_ALU|BPF_ADD|BPF_X) constants.  Even constants that are only
- * nominally specified because they are defined to zero (e.g. BPF_K) have
- * meaning in the source code and the ISA.  Instead of ORing the constants in
- * place use the following two macros: so long as the code uses a correct
- * macro, not specifying the correct number of constants will be a compile-time
- * error.  Groups of related BPF opcodes can wrap these with their own macros
- * to factor common parts out.
- *
  * Each of the statement-specific NEW_STMT_xxx() macros wraps either new_stmt()
  * (if the statement does not use the 'k' member) or new_stmt_k() (if it does).
- * This likewise makes an erroneous absence or presence of 'k' a compile-time
- * error.
+ * This makes an erroneous absence or presence of 'k' a compile-time error
+ * similarly to the OPCODE_xxx macros.
  */
-#define OPCODE_2ARY(x1, x2) ((x1) | (x2))
-#define OPCODE_3ARY(x1, x2, x3) ((x1) | (x2) | (x3))
 
-/*
- * Load instruction opcodes comprise three constants.
- */
-#define OPCODE_LOAD(size, mode) OPCODE_3ARY(BPF_LD, (size), (mode))
+// load statements
 #define NEW_STMT_LD_LEN(cstate) \
         new_stmt((cstate), OPCODE_LOAD(BPF_W, BPF_LEN))
 #define NEW_STMT_LD_IMM(cstate, k) \
@@ -372,7 +359,6 @@ struct addrinfo {
 #define NEW_STMT_LDH_IND(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOAD(BPF_H, BPF_IND), (k))
 
-#define OPCODE_LOADX(size, mode) OPCODE_3ARY(BPF_LDX, (size), (mode))
 #define NEW_STMT_LDX_IMM(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOADX(BPF_W, BPF_IMM), (k))
 #define NEW_STMT_LDX_M(cstate, regno) \
@@ -380,43 +366,31 @@ struct addrinfo {
 #define NEW_STMT_LDXB_MSH(cstate, k) \
         new_stmt_k((cstate), OPCODE_LOADX(BPF_B, BPF_MSH), (k))
 
-/*
- * Store instruction opcodes are single constants.
- */
+// store statements
 #define NEW_STMT_ST_M(cstate, regno) \
-        new_stmt_k((cstate), BPF_ST, guard_reg((cstate), (regno)))
+        new_stmt_k((cstate), OPCODE_ST_M, guard_reg((cstate), (regno)))
+
 #define NEW_STMT_STX_M(cstate, regno) \
-        new_stmt_k((cstate), BPF_STX, guard_reg((cstate), (regno)))
+        new_stmt_k((cstate), OPCODE_STX_M, guard_reg((cstate), (regno)))
 
-/*
- * Branch instruction opcodes comprise two (for "ja L") or three (for
- * everything else) constants.
- */
+// branch statements
 #define NEW_STMT_JA(cstate, k) \
-        new_stmt_k((cstate), OPCODE_2ARY(BPF_JMP, BPF_JA), (k))
+        new_stmt_k((cstate), OPCODE_JA, (k))
 
-#define OPCODE_BRANCH_X(jtype) OPCODE_3ARY(BPF_JMP, (jtype), BPF_X)
-
-#define OPCODE_BRANCH_K(jtype) OPCODE_3ARY(BPF_JMP, (jtype), BPF_K)
 #define NEW_STMT_JEQ_K(cstate, k) \
         new_stmt_k((cstate), OPCODE_BRANCH_K(BPF_JEQ), (k))
 #define NEW_STMT_JSET_K(cstate, k) \
         new_stmt_k((cstate), OPCODE_BRANCH_K(BPF_JSET), (k))
 
-/*
- * ALU instruction opcodes comprise two (for "neg") or three (for everything
- * else) constants.
- */
+// ALU statements
 #define NEW_STMT_NEG(cstate) \
-        new_stmt((cstate), OPCODE_2ARY(BPF_ALU, BPF_NEG))
+        new_stmt((cstate), OPCODE_NEG)
 
-#define OPCODE_ALU_X(op) OPCODE_3ARY(BPF_ALU, (op), BPF_X)
 #define NEW_STMT_ADD_X(cstate) \
         new_stmt((cstate), OPCODE_ALU_X(BPF_ADD))
 #define NEW_STMT_OR_X(cstate) \
         new_stmt((cstate), OPCODE_ALU_X(BPF_OR))
 
-#define OPCODE_ALU_K(op) OPCODE_3ARY(BPF_ALU, (op), BPF_K)
 #define NEW_STMT_ADD_K(cstate, k) \
         new_stmt_k((cstate), OPCODE_ALU_K(BPF_ADD), (k))
 #define NEW_STMT_MUL_K(cstate, k) \
@@ -428,15 +402,9 @@ struct addrinfo {
 #define NEW_STMT_LSH_K(cstate, k) \
         new_stmt_k((cstate), OPCODE_ALU_K(BPF_LSH), (k))
 
-/*
- * Return instruction opcodes always comprise two constants.
- */
-#define OPCODE_RET(rval) OPCODE_2ARY(BPF_RET, (rval))
+// (no return statements)
 
-/*
- * Miscellaneous instruction opcodes always comprise two constants.
- */
-#define OPCODE_MISC(op) OPCODE_2ARY(BPF_MISC, (op))
+// miscellaneous statements
 #define NEW_STMT_TAX(cstate) \
         new_stmt((cstate), OPCODE_MISC(BPF_TAX))
 #define NEW_STMT_TXA(cstate) \
@@ -1535,7 +1503,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 			goto quit;
 		}
 		if (cstate.ic.root == NULL ||
-		    (cstate.ic.root->s.code == (BPF_RET|BPF_K) && cstate.ic.root->s.k == 0)) {
+		    (cstate.ic.root->s.code == OPCODE_RET(BPF_K) && cstate.ic.root->s.k == 0)) {
 			(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "expression rejects all packets");
 			rc = PCAP_ERROR;
@@ -8015,8 +7983,8 @@ gen_loadi(compiler_state_t *cstate, bpf_u_int32 val)
 static inline bool
 is_loadi(const struct arth *a)
 {
-	return a->s->s.code == (BPF_LD|BPF_W|BPF_IMM) &&
-	    a->s->next != NULL && a->s->next->s.code == BPF_ST &&
+	return a->s->s.code == OPCODE_LOAD(BPF_W, BPF_IMM) &&
+	    a->s->next != NULL && a->s->next->s.code == OPCODE_ST_M &&
 	    a->s->next->next == NULL;
 }
 

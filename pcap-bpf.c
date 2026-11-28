@@ -133,6 +133,7 @@ static int bpf_load(char *errbuf);
 #endif
 
 #include "pcap-int.h"
+#include "bpf_opcodes.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -1918,8 +1919,6 @@ pcap_activate_bpf(pcap_t *p)
 	u_int spoof_eth_src = 1;
 #endif
 	u_int v;
-	struct bpf_insn total_insn;
-	struct bpf_program total_prog;
 	struct utsname osinfo;
 	int have_osinfo = 0;
 #ifdef HAVE_ZEROCOPY_BPF
@@ -2685,13 +2684,8 @@ pcap_activate_bpf(pcap_t *p)
 	 * an "accept everything" filter with the specified
 	 * snapshot length.
 	 */
-	total_insn.code = (u_short)(BPF_RET | BPF_K);
-	total_insn.jt = 0;
-	total_insn.jf = 0;
-	total_insn.k = p->snapshot;
-
-	total_prog.bf_len = 1;
-	total_prog.bf_insns = &total_insn;
+	struct bpf_insn total_insn = BPF_STMT(OPCODE_RET(BPF_K), p->snapshot);
+	struct bpf_program total_prog = {1, &total_insn};
 	if (ioctl(p->fd, BIOCSETF, (caddr_t)&total_prog) < 0) {
 		pcapint_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "BIOCSETF");
